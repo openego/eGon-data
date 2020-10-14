@@ -1,0 +1,105 @@
+language: python
+dist: xenial
+cache: false
+env:
+  global:
+    - LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
+    - SEGFAULT_SIGNALS=all
+    - LANG=en_US.UTF-8
+matrix:
+  include:
+    - python: '3.6'
+      env:
+        - TOXENV=check
+    - python: '3.6'
+      env:
+        - TOXENV=docs
+    - os: osx
+      osx_image: xcode11
+      language: generic
+      env:
+        - TOXENV=py27-cover
+    - env:
+        - TOXENV=py27-cover,codecov,coveralls
+      python: '2.7'
+    - os: osx
+      osx_image: xcode11
+      language: generic
+      env:
+        - TOXENV=py27-nocov
+    - env:
+        - TOXENV=py27-nocov
+      python: '2.7'
+    - env:
+        - TOXENV=py35-cover,codecov,coveralls
+      python: '3.5'
+    - env:
+        - TOXENV=py35-nocov
+      python: '3.5'
+    - env:
+        - TOXENV=py36-cover,codecov,coveralls
+      python: '3.6'
+    - env:
+        - TOXENV=py36-nocov
+      python: '3.6'
+    - env:
+        - TOXENV=py37-cover,codecov,coveralls
+      python: '3.7'
+    - env:
+        - TOXENV=py37-nocov
+      python: '3.7'
+    - os: osx
+      osx_image: xcode11
+      language: generic
+      env:
+        - TOXENV=py38-cover
+    - env:
+        - TOXENV=py38-cover,codecov,coveralls
+      python: '3.8'
+    - os: osx
+      osx_image: xcode11
+      language: generic
+      env:
+        - TOXENV=py38-nocov
+    - env:
+        - TOXENV=py38-nocov
+      python: '3.8'
+    - env:
+        - TOXENV=pypy-cover,codecov,coveralls
+      python: 'pypy'
+    - env:
+        - TOXENV=pypy-nocov
+      python: 'pypy'
+    - env:
+        - TOXENV=pypy3-cover,codecov,coveralls
+        - TOXPYTHON=pypy3
+      python: 'pypy3'
+    - env:
+        - TOXENV=pypy3-nocov
+        - TOXPYTHON=pypy3
+      python: 'pypy3'
+before_install:
+  - python --version
+  - uname -a
+  - lsb_release -a || true
+  - |
+    if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+      [[ $TOXENV =~ py3 ]] && brew upgrade python
+      [[ $TOXENV =~ py2 ]] && brew install python@2
+      export PATH="/usr/local/opt/python/libexec/bin:${PATH}"
+    fi
+install:
+  - python -mpip install --progress-bar=off tox -rci/requirements.txt
+  - virtualenv --version
+  - easy_install --version
+  - pip --version
+  - tox --version
+script:
+  - tox -v
+after_failure:
+  - cat .tox/log/*
+  - cat .tox/*/log/*
+notifications:
+  email:
+    on_success: never
+    on_failure: always
