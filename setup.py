@@ -45,7 +45,7 @@ setup(
         "stephan.guenther@ovgu.de"
     ),
     url="https://github.com/openego/eGon-data",
-    packages=find_packages("src"),
+    packages=["egon"] + ["egon." + p for p in find_packages("src/egon")],
     package_dir={"": "src"},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
