@@ -14,28 +14,6 @@ matrix:
     - python: '3.6'
       env:
         - TOXENV=docs
-    - os: osx
-      osx_image: xcode11
-      language: generic
-      env:
-        - TOXENV=py27-cover
-    - env:
-        - TOXENV=py27-cover,codecov,coveralls
-      python: '2.7'
-    - os: osx
-      osx_image: xcode11
-      language: generic
-      env:
-        - TOXENV=py27-nocov
-    - env:
-        - TOXENV=py27-nocov
-      python: '2.7'
-    - env:
-        - TOXENV=py35-cover,codecov,coveralls
-      python: '3.5'
-    - env:
-        - TOXENV=py35-nocov
-      python: '3.5'
     - env:
         - TOXENV=py36-cover,codecov,coveralls
       python: '3.6'
@@ -64,20 +42,6 @@ matrix:
     - env:
         - TOXENV=py38-nocov
       python: '3.8'
-    - env:
-        - TOXENV=pypy-cover,codecov,coveralls
-      python: 'pypy'
-    - env:
-        - TOXENV=pypy-nocov
-      python: 'pypy'
-    - env:
-        - TOXENV=pypy3-cover,codecov,coveralls
-        - TOXPYTHON=pypy3
-      python: 'pypy3'
-    - env:
-        - TOXENV=pypy3-nocov
-        - TOXPYTHON=pypy3
-      python: 'pypy3'
 before_install:
   - python --version
   - uname -a
