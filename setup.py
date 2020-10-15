@@ -53,7 +53,7 @@ setup(
     classifiers=[
         # complete classifier list:
         # http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 1 - Planning",
         "Intended Audience :: Developers",
         (
             "License :: OSI Approved :: "
