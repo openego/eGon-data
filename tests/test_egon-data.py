@@ -1,4 +1,3 @@
-
 from click.testing import CliRunner
 
 from egon.data.cli import main
