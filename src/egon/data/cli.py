@@ -20,6 +20,12 @@ import egon.data
 
 
 @click.group()
+@click.pass_context
+def airflow(context):
+    pass
+
+
+@click.group()
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def main(context):
@@ -27,3 +33,4 @@ def main(context):
 
 
 main.name = "egon-data"
+main.add_command(airflow)
