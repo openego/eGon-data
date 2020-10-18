@@ -16,8 +16,14 @@ Why does this file exist, and why not put this in __main__?
 """
 import click
 
+import egon.data
 
-@click.command()
-@click.argument('names', nargs=-1)
-def main(names):
-    click.echo(repr(names))
+
+@click.group()
+@click.version_option(version=egon.data.__version__)
+@click.pass_context
+def main(context):
+    pass
+
+
+main.name = "egon-data"
