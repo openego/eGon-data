@@ -10,10 +10,10 @@ Contents
    workflow
    data
    literature
-   reference/index
    contributing
    authors
    changelog
+   Module documentation <reference/index>
 
 Indices and tables
 ==================
