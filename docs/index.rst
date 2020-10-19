@@ -6,8 +6,8 @@ Contents
    :maxdepth: 2
 
    getting_started
-   installation
    usage
+   data
    reference/index
    contributing
    authors
