@@ -8,6 +8,7 @@ Contents
    getting_started
    usage
    data
+   literature
    reference/index
    contributing
    authors
