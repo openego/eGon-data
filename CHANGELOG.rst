@@ -1,8 +1,19 @@
-
+*********
 Changelog
-=========
+*********
 
-0.0.0 (2020-10-13)
-------------------
+Unreleased
+==========
 
-* First release on PyPI.
+Added
+-----
+
+
+Changed
+-------
+
+* Adapt structure of the documentation to project specific requirements
+  `#20 <https://github.com/openego/eGon-data/issues/20>`_
+
+Bug fixes
+---------
