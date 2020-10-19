@@ -7,6 +7,7 @@ Contents
 
    getting_started
    usage
+   workflow
    data
    literature
    reference/index
