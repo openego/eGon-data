@@ -5,7 +5,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   readme
+   getting_started
    installation
    usage
    reference/index
