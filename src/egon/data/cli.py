@@ -14,10 +14,31 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+import os
+import os.path
+import subprocess
+
 import click
 
+import egon.data
+import egon.data.airflow
 
-@click.command()
-@click.argument('names', nargs=-1)
-def main(names):
-    click.echo(repr(names))
+
+@click.command(
+    add_help_option=False,
+    context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
+)
+@click.pass_context
+def airflow(context):
+    subprocess.run(["airflow"] + context.args)
+
+
+@click.group()
+@click.version_option(version=egon.data.__version__)
+@click.pass_context
+def main(context):
+    os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
+
+
+main.name = "egon-data"
+main.add_command(airflow)
