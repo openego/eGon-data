@@ -5,13 +5,14 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   readme
-   installation
-   usage
-   reference/index
+   getting_started
+   workflow
+   data
+   literature
    contributing
    authors
    changelog
+   Module documentation <reference/index>
 
 Indices and tables
 ==================
