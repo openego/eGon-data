@@ -18,3 +18,4 @@ include tox.ini .travis.yml .appveyor.yml .readthedocs.yml .pre-commit-config.ya
 
 global-exclude *.py[cod] __pycache__/* *.so *.dylib
 global-exclude airflow.db logs/**/* unittests.cfg
+global-exclude *.swp
