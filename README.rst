@@ -16,7 +16,7 @@ Overview
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
-.. |docs| image:: https://readthedocs.org/projects/eGon-data/badge/?style=flat
+.. |docs| image:: https://readthedocs.org/projects/egon-data/badge/?version=latest
     :target: https://egon-data.readthedocs.io
     :alt: Documentation Status
 
