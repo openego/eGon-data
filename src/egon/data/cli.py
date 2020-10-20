@@ -14,9 +14,13 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+import os
+import os.path
+
 import click
 
 import egon.data
+import egon.data.airflow
 
 
 @click.group()
@@ -29,7 +33,7 @@ def airflow(context):
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def main(context):
-    pass
+    os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
 
 
 main.name = "egon-data"
