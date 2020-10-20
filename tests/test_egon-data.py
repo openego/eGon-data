@@ -12,3 +12,10 @@ def test_main():
         name=main.name, version=__version__
     )
     assert result.exit_code == 0
+
+
+def test_airflow():
+    """ Test that `egon-data airflow` correctly forwards to airflow. """
+    runner = CliRunner()
+    result = runner.invoke(main, ["airflow", "--help"])
+    assert result.output == ""

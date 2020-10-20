@@ -16,6 +16,7 @@ Why does this file exist, and why not put this in __main__?
 """
 import os
 import os.path
+import subprocess
 
 import click
 
@@ -23,10 +24,13 @@ import egon.data
 import egon.data.airflow
 
 
-@click.group()
+@click.command(
+    add_help_option=False,
+    context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
+)
 @click.pass_context
 def airflow(context):
-    pass
+    subprocess.run(["airflow"] + context.args)
 
 
 @click.group()
