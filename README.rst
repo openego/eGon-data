@@ -17,7 +17,7 @@ Overview
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
 .. |docs| image:: https://readthedocs.org/projects/eGon-data/badge/?style=flat
-    :target: https://readthedocs.org/projects/eGon-data
+    :target: https://egon-data.readthedocs.io
     :alt: Documentation Status
 
 .. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=master
