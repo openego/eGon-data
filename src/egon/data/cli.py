@@ -17,6 +17,7 @@ Why does this file exist, and why not put this in __main__?
 import os
 import os.path
 import subprocess
+from multiprocessing import Process
 
 import click
 
@@ -33,6 +34,27 @@ def airflow(context):
     subprocess.run(["airflow"] + context.args)
 
 
+@click.command()
+@click.pass_context
+def serve(context):
+    """ Start the airflow webapp controlling the egon-data pipeline.
+
+    Airflow needs, among other things, a metadata database and a running
+    scheduler. This command acts as a shortcut, creating the database if it
+    doesn't exist and starting the scheduler in the background before starting
+    the webserver.
+
+    """
+    subprocess.run(["airflow", "initdb"])
+    scheduler = Process(
+        target=subprocess.run,
+        args=(["airflow", "scheduler"],),
+        kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
+    )
+    scheduler.start()
+    subprocess.run(["airflow", "webserver"])
+
+
 @click.group()
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
@@ -42,3 +64,4 @@ def main(context):
 
 main.name = "egon-data"
 main.add_command(airflow)
+main.add_command(serve)
