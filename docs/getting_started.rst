@@ -6,7 +6,7 @@ Installation
 ============
 
 Since no release is available on PyPI yet, you have to install
-egon.data from source by cloning the repository via
+:python:`egon.data` from source by cloning the repository via
 
 .. code-block:: bash
 
