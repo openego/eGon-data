@@ -1,6 +1,6 @@
-========
+=========================================
 Welcome to the documentation of eGon-data
-========
+=========================================
 
 Data processing and data model preparation within the research project ego_n
 
