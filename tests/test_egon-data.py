@@ -1,3 +1,5 @@
+from importlib import import_module
+
 from click.testing import CliRunner
 
 from egon.data import __version__
@@ -19,3 +21,15 @@ def test_airflow():
     runner = CliRunner()
     result = runner.invoke(main, ["airflow", "--help"])
     assert result.output == ""
+
+
+def test_pipeline_and_tasks_importability():
+    error = None
+    for m in ["egon.data.airflow.dags.pipeline", "egon.data.airflow.tasks"]:
+        try:
+            import_module(m)
+        except Exception as e:
+            error = e
+        assert error is None, (
+            "\nDid not expect an error when importing:\n\n  `{}`\n\nGot: {}"
+        ).format(m, error)

@@ -1,0 +1,18 @@
+version: '3'
+services:
+  egon-data-local-database:
+    image: postgres:12-postgis
+    container_name: egon-data-local-database
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile.postgis
+    ports:
+    - "127.0.0.1:54321:5432"
+    environment:
+      POSTGRES_DB: egon-data
+      POSTGRES_USER: egon
+      POSTGRES_PASSWORD: data
+    volumes:
+    - $HOME/docker/volumes/postgres/egon-data:/var/lib/postgresql/data
+    - ./entrypoints:/docker-entrypoint-initdb.d/
