@@ -14,10 +14,10 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+from multiprocessing import Process
 import os
 import os.path
 import subprocess
-from multiprocessing import Process
 
 import click
 
