@@ -3,6 +3,17 @@ from __future__ import unicode_literals
 
 import os
 
+rst_prolog ="""
+.. role:: python(code)
+   :language: python
+   :class: highlight
+
+.. role:: shell(code)
+   :language: shell
+   :class: highlight
+
+"""
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
