@@ -5,7 +5,7 @@ Getting Started
 Installation
 ============
 
-Since no release is available on PyPi and installations are probably used for
+Since no release is available on PyPI and installations are probably used for
 development, cloning
 
 .. code-block:: bash
