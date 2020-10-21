@@ -37,7 +37,7 @@ def airflow(context):
 @click.command()
 @click.pass_context
 def serve(context):
-    """ Start the airflow webapp controlling the egon-data pipeline.
+    """Start the airflow webapp controlling the egon-data pipeline.
 
     Airflow needs, among other things, a metadata database and a running
     scheduler. This command acts as a shortcut, creating the database if it
