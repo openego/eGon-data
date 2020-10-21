@@ -87,7 +87,7 @@ setup(
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
-        "dev": ["black", "pytest", "tox"]
+        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
