@@ -5,18 +5,25 @@ Getting Started
 Installation
 ============
 
-Since no release is available on PyPI and installations are probably used for
-development, cloning
+Since no release is available on PyPI yet, you have to install
+egon.data from source by cloning the repository via
 
 .. code-block:: bash
 
    git clone git@github.com:openego/eGon-data.git
 
-and installing in editable mode recommended.
+and installing it via
 
 .. code-block:: bash
 
-   pip install -e eGon-data
+   pip install eGon-data
+
+As a developer, you probable want to do an editable install and you also
+probably want the development dependencies:
+
+.. code-block:: bash
+
+   pip install -e eGon-data[dev]
 
 
 Pre-requisites
