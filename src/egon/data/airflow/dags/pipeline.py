@@ -4,7 +4,6 @@ import airflow
 
 from egon.data.airflow.tasks import initdb
 
-
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
