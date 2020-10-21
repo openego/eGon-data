@@ -5,8 +5,6 @@ import yaml
 import egon.data
 
 
-NUM_PROCESSES = 4
-CACHE_SIZE = 4096
 STYLEFILE = "oedb.style"
 PBFFILEURL = "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
 PBFFILE = "bremen-200101.osm.pbf"
@@ -20,7 +18,7 @@ def download_osm_file(url=PBFFILEURL, file=PBFFILE):
         urlretrieve(url, file)
 
 
-def osm2postgres():
+def osm2postgres(num_processes=4, cache_size=4096):
 
     # Read database configuration from docker-compose.yml
     package_path = egon.data.__path__[0]
@@ -36,8 +34,8 @@ def osm2postgres():
            "--create",
            "--slim",
            "--hstore-all",
-           f"--number-processes {NUM_PROCESSES}",
-           f"--cache {CACHE_SIZE}",
+           f"--number-processes {num_processes}",
+           f"--cache {cache_size}",
            f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} -d {docker_db_config['POSTGRES_DB']} -U {docker_db_config['POSTGRES_USER']}",
            f"-p {TABLE_PREFIX}",
            f"-S {STYLEFILE}",
@@ -50,9 +48,11 @@ def osm2postgres():
                    env={"PGPASSWORD": docker_db_config['POSTGRES_PASSWORD']},
                    cwd=os.path.dirname(__file__))
 
-# TODO: read database config params from docker-compose.yml
+# TODO: Specify OSM related params (version, etc.) in yaml file
+# TODO: call osm download from airflow
+# TODO: call osm import (.py) from airflow
+# TODO: add SQL import script and call it with airflow
 # TODO: maybe downgrade Postgres version to the same as in data_processing
-# TODO: Decide which of the parameters specified at top of file shall be passed as arguments when function is called from airflow
 
 
 if __name__ == "__main__":
