@@ -1,15 +1,12 @@
 import subprocess
 import os
 from urllib.request import urlretrieve
+import yaml
+import egon.data
 
 
 NUM_PROCESSES = 4
 CACHE_SIZE = 4096
-HOST = "localhost"
-POSTGRES_DB = "egon-data"
-POSTGRES_USER = "egon"
-POSTGRES_PASSWORD = "data"
-PORT = "54321"
 STYLEFILE = "oedb.style"
 PBFFILEURL = "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
 PBFFILE = "bremen-200101.osm.pbf"
@@ -25,21 +22,32 @@ def download_osm_file(url=PBFFILEURL, file=PBFFILE):
 
 def osm2postgres():
 
+    # Read database configuration from docker-compose.yml
+    package_path = egon.data.__path__[0]
+    docker_compose_file = os.path.join(package_path, "airflow", "docker-compose.yml")
+    docker_compose = yaml.load(open(docker_compose_file), Loader=yaml.SafeLoader)
+    docker_db_config = docker_compose['services']['egon-data-local-database']["environment"]
+    docker_db_config_additional = docker_compose['services']['egon-data-local-database']["ports"][0].split(":")
+    docker_db_config["HOST"] = docker_db_config_additional[0]
+    docker_db_config["PORT"] = docker_db_config_additional[1]
+
+    # Prepare osm2pgsql command
     cmd = ["osm2pgsql",
            "--create",
            "--slim",
            "--hstore-all",
            f"--number-processes {NUM_PROCESSES}",
            f"--cache {CACHE_SIZE}",
-           f"-H {HOST} -P {PORT} -d {POSTGRES_DB} -U {POSTGRES_USER}",
+           f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} -d {docker_db_config['POSTGRES_DB']} -U {docker_db_config['POSTGRES_USER']}",
            f"-p {TABLE_PREFIX}",
            f"-S {STYLEFILE}",
            f"{PBFFILE}"
            ]
 
+    # Execute osm2pgsql for import OSM data
     subprocess.run(" ".join(cmd),
                    shell=True,
-                   env={"PGPASSWORD": POSTGRES_PASSWORD},
+                   env={"PGPASSWORD": docker_db_config['POSTGRES_PASSWORD']},
                    cwd=os.path.dirname(__file__))
 
 # TODO: read database config params from docker-compose.yml

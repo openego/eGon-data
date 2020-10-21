@@ -89,6 +89,7 @@ setup(
     install_requires=[
         "apache-airflow",
         "click",
+        "pyaml"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
