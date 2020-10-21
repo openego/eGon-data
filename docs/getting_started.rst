@@ -18,8 +18,8 @@ and installing it via
 
    pip install eGon-data
 
-As a developer, you probable want to do an editable install and you also
-probably want the development dependencies:
+As a developer, you probably want to do an editable install and you probably
+also want the development dependencies:
 
 .. code-block:: bash
 
