@@ -8,5 +8,5 @@ with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
-) as example:
+) as pipeline:
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
