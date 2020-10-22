@@ -28,9 +28,9 @@ Overview
     :alt: AppVeyor Build Status
     :target: https://ci.appveyor.com/project/openego/eGon-data
 
-.. |requires| image:: https://requires.io/github/openego/eGon-data/requirements.svg?branch=master
+.. |requires| image:: https://requires.io/github/openego/eGon-data/requirements.svg?branch=dev
     :alt: Requirements Status
-    :target: https://requires.io/github/openego/eGon-data/requirements/?branch=master
+    :target: https://requires.io/github/openego/eGon-data/requirements/?branch=dev
 
 .. |coveralls| image:: https://coveralls.io/repos/openego/eGon-data/badge.svg?branch=master&service=github
     :alt: Coverage Status
