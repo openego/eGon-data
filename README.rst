@@ -4,17 +4,9 @@ Overview
 
 .. start-badges
 
-.. list-table::
-    :stub-columns: 1
+|commits-since| |travis| |docs| |requires|
 
-    * - docs
-      - |docs|
-    * - tests
-      - | |travis| |requires|
-        | |coveralls| |codecov|
-        | |scrutinizer| |codacy| |codeclimate|
-    * - package
-      - | |commits-since|
+|coveralls| |codecov| |scrutinizer| |codacy| |codeclimate|
 
 .. commented
     * - tests
