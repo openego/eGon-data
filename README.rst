@@ -62,8 +62,8 @@ Overview
     :alt: Supported implementations
     :target: https://pypi.org/project/egon.data
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/openego/eGon-data/v0.0.0.svg
-    :alt: Commits since latest release
+.. |commits-since| image:: https://img.shields.io/badge/dynamic/json.svg?label=v0.0.0&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fopenego%2FeGon-data%2Fcompare%2Fv0.0.0...dev&query=%24.total_commits&colorB=blue&prefix=%2b&suffix=%20commits
+    :alt: Latest release and commits since then
     :target: https://github.com/openego/eGon-data/compare/v0.0.0...dev
 
 
