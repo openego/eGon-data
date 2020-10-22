@@ -1,0 +1,8 @@
+openstreetmap:
+  original_data:
+    osm:
+      url: "https://download.geofabrik.de/europe/germany/"
+      file: "bremen-200101.osm.pbf"
+      stylefile: "oedb.style"
+      table_prefix: "osm"
+
