@@ -17,13 +17,7 @@ def download_osm_file():
 def osm2postgres(osm_file=None, num_processes=4, cache_size=4096):
 
     # Read database configuration from docker-compose.yml
-    package_path = egon.data.__path__[0]
-    docker_compose_file = os.path.join(package_path, "airflow", "docker-compose.yml")
-    docker_compose = yaml.load(open(docker_compose_file), Loader=yaml.SafeLoader)
-    docker_db_config = docker_compose['services']['egon-data-local-database']["environment"]
-    docker_db_config_additional = docker_compose['services']['egon-data-local-database']["ports"][0].split(":")
-    docker_db_config["HOST"] = docker_db_config_additional[0]
-    docker_db_config["PORT"] = docker_db_config_additional[1]
+    docker_db_config = utils.egon_data_db_credentials()
 
     # Get data set config
     data_config = utils.data_set_configuration()
@@ -36,7 +30,8 @@ def osm2postgres(osm_file=None, num_processes=4, cache_size=4096):
            "--hstore-all",
            f"--number-processes {num_processes}",
            f"--cache {cache_size}",
-           f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} -d {docker_db_config['POSTGRES_DB']} -U {docker_db_config['POSTGRES_USER']}",
+           f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} "
+           f"-d {docker_db_config['POSTGRES_DB']} -U {docker_db_config['POSTGRES_USER']}",
            f"-p {osm_config['table_prefix']}",
            f"-S {osm_config['stylefile']}",
            f"{osm_config['file']}"
