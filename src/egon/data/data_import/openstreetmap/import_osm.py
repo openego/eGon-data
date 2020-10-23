@@ -44,7 +44,7 @@ def osm2postgres(osm_file=None, num_processes=4, cache_size=4096):
                    cwd=os.path.dirname(__file__))
 
 
-def indices_and_constraints():
+def post_import_modifications():
 
     # Replace indices and primary keys
     for table in ["osm_" + suffix for suffix in ["line", "point", "polygon", "roads"]]:
@@ -80,23 +80,11 @@ def indices_and_constraints():
         utils.execute_sql(sql_statement)
 
 
-# TODO: call osm download from airflow
-# TODO: call osm import (.py) from airflow
-# TODO: Insert table names in SQL script read from data_sets.yml
 # TODO: Write Metadata JSON in table comment
-# TODO: add SQL import script and call it with airflow
 # TODO: rename "data_import" to "import"
 # TODO: write docstrings for added functions
 # TODO: add module docstring
 # TODO: report in CHANGELOG
-# TODO: maybe downgrade Postgres version to the same as in data_processing
 
 
-if __name__ == "__main__":
 
-    # from egon.data.airflow.tasks import initdb
-    # initdb()
-
-    download_osm_file()
-    osm2postgres()
-    indices_and_constraints()
