@@ -5,4 +5,12 @@ openstreetmap:
       file: "bremen-200101.osm.pbf"
       stylefile: "oedb.style"
       table_prefix: "osm"
-
+      output_schema: "openstreetmap"
+      output_tables:
+        - "osm_line"
+        - "osm_nodes"
+        - "osm_point"
+        - "osm_polygon"
+        - "osm_rels"
+        - "osm_roads"
+        - "osm_ways"
