@@ -73,3 +73,30 @@ def execute_sql(sql_string):
 
     with engine_local.connect().execution_options(autocommit=True) as con:
         con.execute(text(sql_string))
+
+
+def submit_comment(json, schema, table):
+    """
+    Add comment to table
+    Parameters
+    ----------
+    json : str
+        JSON string reflecting comment
+    schema : str
+        Desired database schema
+    table : str
+        Desired database table
+
+    Returns
+    -------
+    None
+    """
+
+    prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
+
+    check_json_str = "SELECT obj_description('{0}.{1}'::regclass)::json" \
+        .format(schema, table)
+
+    execute_sql(prefix_str + json + ";")
+
+    execute_sql(check_json_str)
