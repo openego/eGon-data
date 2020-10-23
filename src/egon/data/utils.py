@@ -1,6 +1,7 @@
 import egon
 import os
 import yaml
+from sqlalchemy import create_engine, text
 
 
 def data_set_configuration(config_file=None):
@@ -48,3 +49,27 @@ def egon_data_db_credentials():
     docker_db_config["PORT"] = docker_db_config_additional[1]
 
     return docker_db_config
+
+
+def execute_sql(sql_string):
+    """
+    Execute a SQL expression given as string
+
+    The SQL expression passed as plain string is convert to a
+    `sqlalchemy.sql.expression.TextClause`.
+
+    Parameters
+    ----------
+    sql_string : str
+        SQL expression
+
+    """
+
+    db_config = egon_data_db_credentials()
+
+    engine_local = create_engine(f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
+                                 f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
+                                 f"{db_config['PORT']}/{db_config['POSTGRES_DB']}", echo=False)
+
+    with engine_local.connect().execution_options(autocommit=True) as con:
+        con.execute(text(sql_string))

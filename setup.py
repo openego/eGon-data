@@ -89,7 +89,8 @@ setup(
     install_requires=[
         "apache-airflow",
         "click",
-        "pyaml"
+        "pyaml",
+        "psycopg2"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
