@@ -90,7 +90,8 @@ setup(
         "apache-airflow",
         "click",
         "pyaml",
-        "psycopg2"
+        "psycopg2",
+        "sqlalchemy"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
