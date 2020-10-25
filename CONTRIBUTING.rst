@@ -14,13 +14,18 @@ Development
 Adding changes to the egon-data repository should follow some guidelines:  
 
 
-1. Create an issue in our `repository <https://github.com/openego/eGon-data/issues>`_
+1. Create an issue in our `repository <https://github.com/openego/eGon-data/issues>`_ to describe the intended developments briefly
 
-2. Create a branch for your issue related development from `dev` following our branch naming convention::
+2. Create a branch for your issue related development from the dev-branch following our branch naming convention::
 
     git checkout -b `features/#<issued-id>-very-brief-description`
    
-   Further prefixes are `fixes/` or `refactorings/`.
+   Further prefixes are 
+
+    fixes/
+
+    refactorings/
+
 
    Now you can make your changes locally.
 
@@ -38,15 +43,17 @@ Adding changes to the egon-data repository should follow some guidelines:
 
 6. Submit a pull request through the GitHub website.
 
+
+
 Pull Request Guidelines
 -----------------------
 
-All changes or additions in the code need to be reviewed by a fellow developer before merging your changes to the `dev`. To trigger this review you should submit a pull request through the Github website. 
+All changes or additions in the code need to be reviewed by a fellow developer before merging your changes to the dev-branch. To trigger this review you should submit a pull request through the Github website. 
 
 For merging, you should:
 
 1. Include passing tests (run ``tox``) [1]_.
-2. Update documentation when there's new API, functionality etc.
+2. Update documentation when there are new functionalities etc.
 3. Add a note to ``CHANGELOG.rst`` about the changes.
 4. Add yourself to ``AUTHORS.rst``.
 
@@ -54,6 +61,23 @@ For merging, you should:
        `run the tests <https://travis-ci.org/openego/eGon-data/pull_requests>`_ for each change you add in the pull request.
 
        It will be slower though ...
+
+How to file a good issue
+========================
+
+The best way to report bugs, inform about intended developments, send feedback or propose a feature is to file an issue at <https://github.com/openego/eGon-data/issues>_.
+
+When `reporting a bug <https://github.com/openego/eGon-data/issues>`_ please include all information needed to reproduce the bug you found. 
+This may include information on
+
+    * Your operating system name and version.
+    * Any details about your local setup that might be helpful in troubleshooting.
+    * Detailed steps to reproduce the bug. 
+
+If you are proposing a feature:
+
+* Explain in detail how it would work.
+* Keep the scope as narrow as possible, to make it easier to implement.
 
 Documentation
 -------------
@@ -75,20 +99,5 @@ To run all the test environments in *parallel*::
 
 
 
-Bug reports and feature requests
-================================
 
-The best way to report bugs, send feedback or propose a feature is to file an issue at https://github.com/openego/eGon-data/issues.
-
-When `reporting a bug <https://github.com/openego/eGon-data/issues>`_ please include all information needed to reproduce the bug you found. 
-This may include information on
-
-    * Your operating system name and version.
-    * Any details about your local setup that might be helpful in troubleshooting.
-    * Detailed steps to reproduce the bug. 
-
-If you are proposing a feature:
-
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
 
