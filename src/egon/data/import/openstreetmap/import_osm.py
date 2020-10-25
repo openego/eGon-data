@@ -182,9 +182,7 @@ def metadata():
 
         utils.submit_comment(meta_json, "openstreetmap", table)
 
-# TODO: rename "data_import" to "import"
+
 # TODO: add module docstring
+# TODO: try to write some tests
 # TODO: report in CHANGELOG
-
-
-
