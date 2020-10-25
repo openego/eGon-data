@@ -78,6 +78,7 @@ def execute_sql(sql_string):
 def submit_comment(json, schema, table):
     """
     Add comment to table
+
     Parameters
     ----------
     json : str
@@ -86,10 +87,6 @@ def submit_comment(json, schema, table):
         Desired database schema
     table : str
         Desired database table
-
-    Returns
-    -------
-    None
     """
 
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)

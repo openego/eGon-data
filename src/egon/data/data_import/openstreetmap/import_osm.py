@@ -1,14 +1,13 @@
 import subprocess
 import os
 from urllib.request import urlretrieve
-import yaml
-import egon.data
 from egon.data import utils
 import time
 import json
 
 
 def download_osm_file():
+    """Download OpenStreetMap `.pbf` file"""
     data_config = utils.data_set_configuration()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
@@ -16,7 +15,18 @@ def download_osm_file():
         urlretrieve(osm_config["url"] + osm_config["file"], osm_config["file"])
 
 
-def osm2postgres(osm_file=None, num_processes=4, cache_size=4096):
+def osm2postgres(num_processes=4, cache_size=4096):
+    """
+    Import OSM data from `.pbf` file (downloaded from Geofabrik) to Postgres database
+
+    Parameters
+    ----------
+    num_processes : int, optional
+        Number of parallel processes used for processing during data import
+    cache_size: int, optional
+        Memory used during data import
+
+    """
 
     # Read database configuration from docker-compose.yml
     docker_db_config = utils.egon_data_db_credentials()
@@ -47,6 +57,13 @@ def osm2postgres(osm_file=None, num_processes=4, cache_size=4096):
 
 
 def post_import_modifications():
+    """
+    Adjust primary keys, indices and schema of OSM tables
+
+    * Column gid is introduced as new primary key
+    * Indices (GIST, GIN) are reset
+    * Tables are move to schema 'openstreemap'
+    """
 
     # Replace indices and primary keys
     for table in ["osm_" + suffix for suffix in ["line", "point", "polygon", "roads"]]:
@@ -83,6 +100,7 @@ def post_import_modifications():
 
 
 def metadata():
+    """Writes metadata JSON string into table comment"""
 
     # Prepare variables
     osm_config = utils.data_set_configuration()["openstreetmap"]["original_data"]["osm"]
@@ -165,7 +183,6 @@ def metadata():
         utils.submit_comment(meta_json, "openstreetmap", table)
 
 # TODO: rename "data_import" to "import"
-# TODO: write docstrings for added functions
 # TODO: add module docstring
 # TODO: report in CHANGELOG
 
