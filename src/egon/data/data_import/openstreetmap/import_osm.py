@@ -181,5 +181,3 @@ def metadata():
         meta_json = "'" + json.dumps(meta) + "'"
 
         utils.submit_comment(meta_json, "openstreetmap", table)
-
-
