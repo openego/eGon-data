@@ -4,39 +4,37 @@ Overview
 
 .. start-badges
 
-.. list-table::
-    :stub-columns: 1
+|commits-since| |travis| |docs| |requires|
 
-    * - docs
-      - |docs|
+|coveralls| |codecov| |scrutinizer| |codacy| |codeclimate|
+
+.. commented
     * - tests
-      - | |travis| |appveyor| |requires|
-        | |coveralls| |codecov|
-        | |scrutinizer| |codacy| |codeclimate|
+      - |appveyor|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
-        | |commits-since|
-.. |docs| image:: https://readthedocs.org/projects/eGon-data/badge/?style=flat
-    :target: https://readthedocs.org/projects/eGon-data
+
+.. |docs| image:: https://readthedocs.org/projects/egon-data/badge/?version=latest
+    :target: https://egon-data.readthedocs.io
     :alt: Documentation Status
 
-.. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=master
+.. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=dev
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/openego/eGon-data
 
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/openego/eGon-data?branch=master&svg=true
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/openego/eGon-data?branch=dev&svg=true
     :alt: AppVeyor Build Status
     :target: https://ci.appveyor.com/project/openego/eGon-data
 
-.. |requires| image:: https://requires.io/github/openego/eGon-data/requirements.svg?branch=master
+.. |requires| image:: https://requires.io/github/openego/eGon-data/requirements.svg?branch=dev
     :alt: Requirements Status
-    :target: https://requires.io/github/openego/eGon-data/requirements/?branch=master
+    :target: https://requires.io/github/openego/eGon-data/requirements/?branch=dev
 
-.. |coveralls| image:: https://coveralls.io/repos/openego/eGon-data/badge.svg?branch=master&service=github
+.. |coveralls| image:: https://coveralls.io/repos/openego/eGon-data/badge.svg?branch=dev&service=github
     :alt: Coverage Status
     :target: https://coveralls.io/r/openego/eGon-data
 
-.. |codecov| image:: https://codecov.io/gh/openego/eGon-data/branch/master/graphs/badge.svg?branch=master
+.. |codecov| image:: https://codecov.io/gh/openego/eGon-data/branch/dev/graphs/badge.svg?branch=dev
     :alt: Coverage Status
     :target: https://codecov.io/github/openego/eGon-data
 
@@ -64,12 +62,12 @@ Overview
     :alt: Supported implementations
     :target: https://pypi.org/project/egon.data
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/openego/eGon-data/v0.0.0.svg
-    :alt: Commits since latest release
-    :target: https://github.com/openego/eGon-data/compare/v0.0.0...master
+.. |commits-since| image:: https://img.shields.io/badge/dynamic/json.svg?label=v0.0.0&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fopenego%2FeGon-data%2Fcompare%2Fv0.0.0...dev&query=%24.total_commits&colorB=blue&prefix=%2b&suffix=%20commits
+    :alt: Latest release and commits since then
+    :target: https://github.com/openego/eGon-data/compare/v0.0.0...dev
 
 
-.. |scrutinizer| image:: https://img.shields.io/scrutinizer/quality/g/openego/eGon-data/master.svg
+.. |scrutinizer| image:: https://img.shields.io/scrutinizer/quality/g/openego/eGon-data/dev.svg
     :alt: Scrutinizer Status
     :target: https://scrutinizer-ci.com/g/openego/eGon-data/
 

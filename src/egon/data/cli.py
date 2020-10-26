@@ -3,8 +3,8 @@ Module that contains the command line app.
 
 Why does this file exist, and why not put this in __main__?
 
-  You might be tempted to import things from __main__ later, but that will cause
-  problems: the code will get executed twice:
+  You might be tempted to import things from __main__ later, but that will
+  cause problems: the code will get executed twice:
 
   - When you run `python -megon.data` python will execute
     ``__main__.py`` as a script. That means there won't be any
@@ -14,10 +14,10 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+from multiprocessing import Process
 import os
 import os.path
 import subprocess
-from multiprocessing import Process
 
 import click
 
@@ -37,7 +37,7 @@ def airflow(context):
 @click.command()
 @click.pass_context
 def serve(context):
-    """ Start the airflow webapp controlling the egon-data pipeline.
+    """Start the airflow webapp controlling the egon-data pipeline.
 
     Airflow needs, among other things, a metadata database and a running
     scheduler. This command acts as a shortcut, creating the database if it
