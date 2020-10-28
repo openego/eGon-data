@@ -1,9 +1,10 @@
-import subprocess
-import os
 from urllib.request import urlretrieve
-from egon.data import utils
-import time
 import json
+import os
+import subprocess
+import time
+
+from egon.data import utils
 
 
 def download_osm_file():

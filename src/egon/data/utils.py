@@ -1,7 +1,9 @@
-import egon
 import os
-import yaml
+
 from sqlalchemy import create_engine, text
+import yaml
+
+import egon
 
 
 def data_set_configuration(config_file=None):

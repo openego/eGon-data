@@ -5,7 +5,6 @@ import airflow
 from egon.data.airflow.tasks import initdb
 from egon.data.data_import.openstreetmap import import_osm
 
-
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
