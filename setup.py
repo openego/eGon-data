@@ -84,6 +84,7 @@ setup(
     install_requires=[
         "apache-airflow",
         "click",
+        "oedialect==0.0.8",
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
