@@ -54,7 +54,7 @@ For merging, you should:
 
 1. Include passing tests (run ``tox``) [1]_.
 2. Update documentation when there are new functionalities etc.
-3. Add a note to ``CHANGELOG.rst`` about the changes.
+3. Add a note to ``CHANGELOG.rst`` about the changes and refer to the corresponding Github issue.
 4. Add yourself to ``AUTHORS.rst``.
 
 .. [1] If you don't have all the necessary python versions available locally you can rely on Travis - it will
@@ -63,11 +63,17 @@ For merging, you should:
        It will be slower though ...
 
 How to file a good issue
-========================
+------------------------
 
 The best way to report bugs, inform about intended developments, send feedback or propose a feature is to file an issue at <https://github.com/openego/eGon-data/issues>_.
+Please tag your issue with one of the predefined labels as it helps others to keep track of unsolved bugs, open tasks and questions.
 
-When `reporting a bug <https://github.com/openego/eGon-data/issues>`_ please include all information needed to reproduce the bug you found. 
+To inform others about intended developments please include: 
+    * a describtion of the purpose and the value it adds
+    * outline the required steps for implementation 
+    * list open questions      
+
+When reporting a bug please include all information needed to reproduce the bug you found. 
 This may include information on
 
     * Your operating system name and version.
@@ -76,14 +82,30 @@ This may include information on
 
 If you are proposing a feature:
 
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
+    * Explain in detail how it would work.
+    * Keep the scope as narrow as possible, to make it easier to implement.
 
 Documentation
--------------
+=============
 
-eGon-data could always use more documentation, whether as part of the official eGon-data docs, in docstrings, or even on the web in blog posts, articles, and such.
+eGon-data could always use more documentation, whether as part of the official eGon-data docs, in docstrings, or even in articles, and such. Always keep in mind to update the documentation along with your code changes. 
 
+How to document python scripts
+------------------------------
+
+Use docstrings to document your python code. Please follow the conventions in the `PEP 8 Style Guide <https://www.python.org/dev/peps/pep-0008/#documentation-strings> on documentation strings. 
+
+
+
+How to document SQL scripts
+---------------------------
+
+
+
+ 
+
+How-to
+======
 
 Tips
 ----
