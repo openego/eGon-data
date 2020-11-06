@@ -18,6 +18,9 @@ Execution
 
 In principle egon-data is not limited to the use of a specific programming language as the workflow integrates different scripts using Apache Airflow, but Python and SQL are widely used within the process. Apache Airflow organizes the order of execution of processing steps through so-called operators. The SQL processing is executed on a containerized local PostgreSQL database. Only final datasets which function as an input for the optimization tools or selected interim results are uploaded to the `Open Energy Platform <https://openenergy-platform.org/>`_. 
 The data processing in egon-data needs to be performed locally, calculations on the Open Energy Platform are prohibited. 
+
+.. _DP_workflow_sketch:
+.. figure:: DP_Workflow_22102020.svg
  
 
 Versioning
