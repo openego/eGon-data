@@ -20,7 +20,7 @@ In principle egon-data is not limited to the use of a specific programming langu
 The data processing in egon-data needs to be performed locally, calculations on the Open Energy Platform are prohibited. 
 
 .. _DP_workflow_sketch:
-.. figure:: DP_Workflow_22102020.svg
+.. figure:: images/DP_Workflow_22102020.svg
  
 
 Versioning
