@@ -1,4 +1,4 @@
-from egon.data.utils import egon_data_db_credentials
+from egon.data.db import egon_data_db_credentials
 
 
 def test_egon_data_db_credentials():

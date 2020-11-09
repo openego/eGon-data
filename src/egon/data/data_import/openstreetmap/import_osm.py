@@ -4,12 +4,12 @@ import os
 import subprocess
 import time
 
-from egon.data import utils
+from egon.data import db
 
 
 def download_osm_file():
     """Download OpenStreetMap `.pbf` file"""
-    data_config = utils.data_set_configuration()
+    data_config = db.data_set_configuration()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
     if not os.path.isfile(osm_config["file"]):
@@ -30,10 +30,10 @@ def osm2postgres(num_processes=4, cache_size=4096):
     """
 
     # Read database configuration from docker-compose.yml
-    docker_db_config = utils.egon_data_db_credentials()
+    docker_db_config = db.egon_data_db_credentials()
 
     # Get data set config
-    data_config = utils.data_set_configuration()
+    data_config = db.data_set_configuration()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
     # Prepare osm2pgsql command
@@ -94,28 +94,28 @@ def post_import_modifications():
 
         # Execute collected SQL statements
         for statement in sql_statements:
-            utils.execute_sql(statement)
+            db.execute_sql(statement)
 
     # Get data set config
-    data_config = utils.data_set_configuration()["openstreetmap"][
+    data_config = db.data_set_configuration()["openstreetmap"][
         "original_data"]["osm"]
 
     # Move table to schema "openstreetmap"
-    utils.execute_sql(
+    db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS {data_config['output_schema']};")
 
     for out_table in data_config['output_tables']:
         sql_statement = f"ALTER TABLE public.{out_table} " \
             f"SET SCHEMA {data_config['output_schema']};"
 
-        utils.execute_sql(sql_statement)
+        db.execute_sql(sql_statement)
 
 
 def metadata():
     """Writes metadata JSON string into table comment"""
 
     # Prepare variables
-    osm_config = utils.data_set_configuration()[
+    osm_config = db.data_set_configuration()[
         "openstreetmap"]["original_data"]["osm"]
     spatial_and_date = os.path.basename(osm_config["file"]).split("-")
     spatial_extend = spatial_and_date[0]
@@ -207,4 +207,4 @@ def metadata():
 
         meta_json = "'" + json.dumps(meta) + "'"
 
-        utils.submit_comment(meta_json, "openstreetmap", table)
+        db.submit_comment(meta_json, "openstreetmap", table)
