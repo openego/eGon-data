@@ -93,10 +93,12 @@ The egon-data workflow uses Apache Airflow which organizes the order of differen
 How to add python scripts
 -------------------------
 
-To integrate a new python script to the egon-data workflow follow the steps listed: 
+To integrate a new python function to the egon-data workflow follow the steps listed: 
 
 1. Add your well documented script to the egon-data repository
-2. Integrate functions which need to be called within the workflow to pipeline.py 
+2. Integrate functions which need to be called within the workflow to pipeline.py, which organzies and calls the different tasks within the workflow
+3. Define the interdependencies between the scripts by setting the task downstream to another required task
+4. The workflow can now be triggered via Apache Airflow 
 
 Documentation
 =============
