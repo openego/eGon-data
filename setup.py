@@ -84,6 +84,7 @@ setup(
     install_requires=[
         "apache-airflow",
         "click",
+        "oedialect==0.0.8",
         "pyaml",
         "psycopg2",
         "sqlalchemy"
