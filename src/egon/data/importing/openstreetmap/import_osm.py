@@ -4,8 +4,8 @@ import os
 import subprocess
 import time
 
-import egon.data.config
 from egon.data import db
+import egon.data.config
 
 
 def download_osm_file():
