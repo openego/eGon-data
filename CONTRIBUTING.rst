@@ -45,8 +45,8 @@ Adding changes to the egon-data repository should follow some guidelines:
 
 
 
-Pull Request Guidelines
------------------------
+How to handle Pull Requests
+---------------------------
 
 All changes or additions in the code need to be reviewed by a fellow developer before merging your changes to the dev-branch. To trigger this review you should submit a pull request through the Github website. 
 
@@ -69,21 +69,34 @@ The best way to report bugs, inform about intended developments, send feedback o
 Please tag your issue with one of the predefined labels as it helps others to keep track of unsolved bugs, open tasks and questions.
 
 To inform others about intended developments please include: 
-    * a describtion of the purpose and the value it adds
-    * outline the required steps for implementation 
-    * list open questions      
+* a describtion of the purpose and the value it adds
+* outline the required steps for implementation 
+* list open questions      
 
 When reporting a bug please include all information needed to reproduce the bug you found. 
 This may include information on
 
-    * Your operating system name and version.
-    * Any details about your local setup that might be helpful in troubleshooting.
-    * Detailed steps to reproduce the bug. 
+* Your operating system name and version.
+* Any details about your local setup that might be helpful in troubleshooting.
+* Detailed steps to reproduce the bug. 
 
 If you are proposing a feature:
 
-    * Explain in detail how it would work.
-    * Keep the scope as narrow as possible, to make it easier to implement.
+* Explain in detail how it would work.
+* Keep the scope as narrow as possible, to make it easier to implement.
+
+Integration of new scripts
+==========================
+
+The egon-data workflow uses Apache Airflow which organizes the order of different processing steps and their execution. 
+
+How to add python scripts
+-------------------------
+
+To integrate a new python script to the egon-data workflow follow the steps listed: 
+
+1. Add your well documented script to the egon-data repository
+2. Integrate functions which need to be called within the workflow to pipeline.py 
 
 Documentation
 =============
