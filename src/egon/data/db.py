@@ -7,7 +7,8 @@ import egon
 
 
 def credentials():
-    """Return local database connection parameters.
+    """
+    Return local database connection parameters.
 
     Returns
     -------
@@ -39,7 +40,8 @@ def credentials():
 
 
 def execute_sql(sql_string):
-    """Execute a SQL expression given as string.
+    """
+    Execute a SQL expression given as string.
 
     The SQL expression passed as plain string is convert to a
     `sqlalchemy.sql.expression.TextClause`.
@@ -64,7 +66,8 @@ def execute_sql(sql_string):
 
 
 def submit_comment(json, schema, table):
-    """Add comment to table.
+    """
+    Add comment to table.
 
     Parameters
     ----------

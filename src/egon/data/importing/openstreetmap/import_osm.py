@@ -18,7 +18,8 @@ def download_osm_file():
 
 
 def osm2postgres(num_processes=4, cache_size=4096):
-    """Import OSM data from `.pbf` file (from Geofabrik) to Postgres DB.
+    """
+    Import OSM data from `.pbf` file (from Geofabrik) to Postgres DB.
 
     Parameters
     ----------
@@ -61,7 +62,8 @@ def osm2postgres(num_processes=4, cache_size=4096):
 
 
 def post_import_modifications():
-    """Adjust primary keys, indices and schema of OSM tables.
+    """
+    Adjust primary keys, indices and schema of OSM tables.
 
     * Column gid is introduced as new primary key
     * Indices (GIST, GIN) are reset

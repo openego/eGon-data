@@ -6,7 +6,8 @@ import egon
 
 
 def datasets(config_file=None):
-    """Return data set configuration.
+    """
+    Return data set configuration.
 
     Parameters
     ----------
