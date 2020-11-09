@@ -94,11 +94,36 @@ How to document python scripts
 ------------------------------
 
 Use docstrings to document your python code. Please follow the conventions in the `PEP 8 Style Guide <https://www.python.org/dev/peps/pep-0008/#documentation-strings> on documentation strings. 
+Additionally every python script needs to comprise a header describing the general functionality and objective and including information on copyright, license and authors. 
 
+.. code-block:: python
+
+   """
+   This is an example header describing the functionalities of a python script to give the user a general overview what's happening here
+   """
+   
+   __copyright__   = "Example Institut"
+   __license__ 	   = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+   __url__ 	   = "https://github.com/openego/eGon-data/blob/main/LICENSE"
+   __author__ 	   = "github_alias1, github_alias2"
 
 
 How to document SQL scripts
 ---------------------------
+
+Please also add a similar header to your SQL scripts to give users and fellow developers an insight into your scripts and the methodologies applied. Please describe the content and objectives of the script briefly but as detailed as needed to allow other to comprehend how it works. 
+
+.. code-block:: SQL
+
+   /*
+   This is an example header describing the functionalities of a SQL script to give the user a general overview what's happening here
+
+   __copyright__   = "Example Institut"
+   __license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+   __url__         = "https://github.com/openego/data_processing/blob/master/LICENSE"
+   __author__      = "github_alias1, github_alias2"
+   */
+   
 
 
 
