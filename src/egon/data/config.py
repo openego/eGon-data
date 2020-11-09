@@ -6,8 +6,7 @@ import egon
 
 
 def datasets(config_file=None):
-    """
-    Return data set configuration
+    """Return data set configuration.
 
     Parameters
     ----------
@@ -19,7 +18,6 @@ def datasets(config_file=None):
     dict
         Data set configuration
     """
-
     if not config_file:
         package_path = egon.data.__path__[0]
         config_file = os.path.join(package_path, "data_sets.yml")

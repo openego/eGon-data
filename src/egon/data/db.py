@@ -7,14 +7,13 @@ import egon
 
 
 def credentials():
-    """Return local database connection parameters
+    """Return local database connection parameters.
 
     Returns
     -------
     dict
         Complete DB connection information
     """
-
     # Read database configuration from docker-compose.yml
     package_path = egon.data.__path__[0]
     docker_compose_file = os.path.join(
@@ -40,8 +39,7 @@ def credentials():
 
 
 def execute_sql(sql_string):
-    """
-    Execute a SQL expression given as string
+    """Execute a SQL expression given as string.
 
     The SQL expression passed as plain string is convert to a
     `sqlalchemy.sql.expression.TextClause`.
@@ -52,7 +50,6 @@ def execute_sql(sql_string):
         SQL expression
 
     """
-
     db_config = credentials()
 
     engine_local = create_engine(
@@ -67,8 +64,7 @@ def execute_sql(sql_string):
 
 
 def submit_comment(json, schema, table):
-    """
-    Add comment to table
+    """Add comment to table.
 
     Parameters
     ----------
@@ -79,7 +75,6 @@ def submit_comment(json, schema, table):
     table : str
         Desired database table
     """
-
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
     check_json_str = (

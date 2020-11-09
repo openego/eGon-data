@@ -9,7 +9,7 @@ from egon.data import db
 
 
 def download_osm_file():
-    """Download OpenStreetMap `.pbf` file"""
+    """Download OpenStreetMap `.pbf` file."""
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
@@ -18,8 +18,7 @@ def download_osm_file():
 
 
 def osm2postgres(num_processes=4, cache_size=4096):
-    """
-    Import OSM data from `.pbf` file (downloaded from Geofabrik) to Postgres DB
+    """Import OSM data from `.pbf` file (from Geofabrik) to Postgres DB.
 
     Parameters
     ----------
@@ -29,7 +28,6 @@ def osm2postgres(num_processes=4, cache_size=4096):
         Memory used during data import
 
     """
-
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 
@@ -63,14 +61,12 @@ def osm2postgres(num_processes=4, cache_size=4096):
 
 
 def post_import_modifications():
-    """
-    Adjust primary keys, indices and schema of OSM tables
+    """Adjust primary keys, indices and schema of OSM tables.
 
     * Column gid is introduced as new primary key
     * Indices (GIST, GIN) are reset
     * Tables are move to schema 'openstreemap'
     """
-
     # Replace indices and primary keys
     for table in [
         "osm_" + suffix for suffix in ["line", "point", "polygon", "roads"]
@@ -125,8 +121,7 @@ def post_import_modifications():
 
 
 def metadata():
-    """Writes metadata JSON string into table comment"""
-
+    """Writes metadata JSON string into table comment."""
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]["original_data"][
         "osm"
