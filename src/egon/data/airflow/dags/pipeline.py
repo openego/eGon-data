@@ -13,13 +13,17 @@ with airflow.DAG(
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
 
     # Openstreetmap data import
-    osm_download = PythonOperator(task_id="OSM_download",
-                                  python_callable=import_osm.download_osm_file)
-    osm_import = PythonOperator(task_id="OSM_import",
-                                python_callable=import_osm.osm2postgres)
+    osm_download = PythonOperator(
+        task_id="OSM_download", python_callable=import_osm.download_osm_file
+    )
+    osm_import = PythonOperator(
+        task_id="OSM_import", python_callable=import_osm.osm2postgres
+    )
     osm_post_import = PythonOperator(
         task_id="OSM_post-import",
-        python_callable=import_osm.post_import_modifications)
-    osm_metadata = PythonOperator(task_id="OSM_metadata",
-                                  python_callable=import_osm.metadata)
+        python_callable=import_osm.post_import_modifications,
+    )
+    osm_metadata = PythonOperator(
+        task_id="OSM_metadata", python_callable=import_osm.metadata
+    )
     setup >> osm_download >> osm_import >> osm_post_import >> osm_metadata
