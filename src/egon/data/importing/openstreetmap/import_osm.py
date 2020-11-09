@@ -4,12 +4,13 @@ import os
 import subprocess
 import time
 
+import egon.data.config
 from egon.data import db
 
 
 def download_osm_file():
     """Download OpenStreetMap `.pbf` file"""
-    data_config = db.data_set_configuration()
+    data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
     if not os.path.isfile(osm_config["file"]):
@@ -33,7 +34,7 @@ def osm2postgres(num_processes=4, cache_size=4096):
     docker_db_config = db.credentials()
 
     # Get data set config
-    data_config = db.data_set_configuration()
+    data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
     # Prepare osm2pgsql command
@@ -97,7 +98,7 @@ def post_import_modifications():
             db.execute_sql(statement)
 
     # Get data set config
-    data_config = db.data_set_configuration()["openstreetmap"][
+    data_config = egon.data.config.datasets()["openstreetmap"][
         "original_data"]["osm"]
 
     # Move table to schema "openstreetmap"
@@ -115,7 +116,7 @@ def metadata():
     """Writes metadata JSON string into table comment"""
 
     # Prepare variables
-    osm_config = db.data_set_configuration()[
+    osm_config = egon.data.config.datasets()[
         "openstreetmap"]["original_data"]["osm"]
     spatial_and_date = os.path.basename(osm_config["file"]).split("-")
     spatial_extend = spatial_and_date[0]
