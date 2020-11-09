@@ -35,3 +35,7 @@ Test mode
 
 The workflow can be tested on a smaller subset of data on example of the federal state of Bremen.
 
+.. warning::
+
+   Right now, only OSM data for Bremen get's imported. This is hard-wired in
+   `egon.data/data_sets.yml`.
