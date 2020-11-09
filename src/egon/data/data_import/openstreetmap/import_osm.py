@@ -30,7 +30,7 @@ def osm2postgres(num_processes=4, cache_size=4096):
     """
 
     # Read database configuration from docker-compose.yml
-    docker_db_config = db.egon_data_db_credentials()
+    docker_db_config = db.credentials()
 
     # Get data set config
     data_config = db.data_set_configuration()

@@ -28,7 +28,7 @@ def data_set_configuration(config_file=None):
     return yaml.load(open(config_file), Loader=yaml.SafeLoader)
 
 
-def egon_data_db_credentials():
+def credentials():
     """Return local database connection parameters
 
     Returns
@@ -72,7 +72,7 @@ def execute_sql(sql_string):
 
     """
 
-    db_config = egon_data_db_credentials()
+    db_config = credentials()
 
     engine_local = create_engine(
         f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
