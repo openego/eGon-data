@@ -183,7 +183,8 @@ def metadata():
                         "Geofabrik - Download - OpenStreetMap Data Extracts"
                     ),
                     "description": (
-                        'Data dump taken on "referenceDate".'
+                        'Data dump taken on "referenceDate",'
+                        f" i.e. {osm_data_date}."
                         " A subset of this is selected using osm2pgsql"
                         ' using the style file "oedb.style".'
                     ),
