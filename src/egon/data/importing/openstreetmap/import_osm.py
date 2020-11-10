@@ -139,6 +139,18 @@ def metadata():
     osm_url = osm_config["url"]
 
     # Insert metadata for each table
+    licenses = [
+        {
+            "name": "Open Data Commons Open Database License 1.0",
+            "title": "",
+            "path": "https://opendatacommons.org/licenses/odbl/1.0/",
+            "instruction": (
+                "You are free: To Share, To Create, To Adapt;"
+                " As long as you: Attribute, Share-Alike, Keep open!"
+            ),
+            "attribution": "© Reiner Lemoine Institut",
+        }
+    ]
     for table in osm_config["output_tables"]:
         table_suffix = table.split("_")[1]
         meta = {
@@ -171,33 +183,10 @@ def metadata():
                     "subset is selected using"
                     "osm2pgsql with oedb.style style file",
                     "path": f"{osm_url}",
-                    "licenses": [
-                        {
-                            "name": "Open Data Commons Open Database "
-                            "License 1.0",
-                            "title": "",
-                            "path": "https://opendatacommons.org/licenses/"
-                            "odbl/1.0/",
-                            "instruction": "You are free: To Share, To "
-                            "Create, To Adapt; As long as you: "
-                            "Attribute, Share-Alike, Keep "
-                            "open!",
-                            "attribution": "© Reiner Lemoine Institut",
-                        }
-                    ],
+                    "licenses": licenses,
                 }
             ],
-            "licenses": [
-                {
-                    "name": "Open Data Commons Open Database License 1.0",
-                    "title": "",
-                    "path": "https://opendatacommons.org/licenses/odbl/1.0/",
-                    "instruction": "You are free: To Share, To Create, To "
-                    "Adapt; As long as you: Attribute, "
-                    "Share-Alike, Keep open!",
-                    "attribution": "© Reiner Lemoine Institut",
-                }
-            ],
+            "licenses": licenses,
             "contributors": [
                 {
                     "title": "Guido Pleßmann",
