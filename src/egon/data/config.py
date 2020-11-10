@@ -6,18 +6,17 @@ import egon
 
 
 def datasets(config_file=None):
-    """
-    Return data set configuration.
+    """Return dataset configuration.
 
     Parameters
     ----------
     config_file : str
-        Path to the data set configuration file
+        Path of the dataset configuration file
 
     Returns
     -------
     dict
-        Data set configuration
+        Dataset configuration
     """
     if not config_file:
         package_path = egon.data.__path__[0]
