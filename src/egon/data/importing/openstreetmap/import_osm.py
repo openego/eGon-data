@@ -63,9 +63,9 @@ def osm2postgres(num_processes=4, cache_size=4096):
 def post_import_modifications():
     """Adjust primary keys, indices and schema of OSM tables.
 
-    * Column gid is introduced as new primary key
+    * The Column "gid" is added and used as the new primary key.
     * Indices (GIST, GIN) are reset
-    * Tables are move to schema 'openstreemap'
+    * The tables are moved to the schema configured as the "output_schema".
     """
     # Replace indices and primary keys
     for table in [

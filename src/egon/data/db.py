@@ -71,9 +71,9 @@ def submit_comment(json, schema, table):
     json : str
         JSON string reflecting comment
     schema : str
-        Desired database schema
+        The target table's database schema
     table : str
-        Desired database table
+        Database table on which to put the given comment
     """
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
