@@ -155,10 +155,12 @@ def metadata():
         table_suffix = table.split("_")[1]
         meta = {
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
-            "description": "OpenStreetMap is a free, editable map of the "
-            "whole world that is being built by volunteers "
-            "largely from scratch and released with "
-            "an open-content license.",
+            "description": (
+                "OpenStreetMap is a free, editable map of the"
+                " whole world that is being built by volunteers"
+                " largely from scratch and released with"
+                " an open-content license."
+            ),
             "language": ["EN", "DE"],
             "spatial": {
                 "location": "",
@@ -177,11 +179,14 @@ def metadata():
             },
             "sources": [
                 {
-                    "title": "Geofabrik - Download - OpenStreetMap Data "
-                    "Extracts",
-                    "description": "Data dump of reference date. Thereof, a "
-                    "subset is selected using"
-                    "osm2pgsql with oedb.style style file",
+                    "title": (
+                        "Geofabrik - Download - OpenStreetMap Data Extracts"
+                    ),
+                    "description": (
+                        'Data dump taken on "referenceDate".'
+                        " A subset of this is selected using osm2pgsql"
+                        ' using the style file "oedb.style".'
+                    ),
                     "path": f"{osm_url}",
                     "licenses": licenses,
                 }
@@ -201,8 +206,9 @@ def metadata():
                 "metadataLicense": {
                     "name": "CC0-1.0",
                     "title": "Creative Commons Zero v1.0 Universal",
-                    "path": "https://creativecommons.org/publicdomain/"
-                    "zero/1.0/",
+                    "path": (
+                        "https://creativecommons.org/publicdomain/zero/1.0/"
+                    ),
                 },
             },
         }
