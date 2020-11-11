@@ -42,9 +42,6 @@ matrix:
     - env:
         - TOXENV=py38-nocov
       python: '3.8'
-  fast_finish: true
-  allow_failures:
-    - os: osx
 before_install:
   - python --version
   - uname -a
