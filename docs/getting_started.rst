@@ -21,6 +21,12 @@ and installing in editable mode recommended.
 Pre-requisites
 ==============
 
+In addition to the installation of python packages, OS-level packages are
+required
+
+* `osm2pgsql <https://osm2pgsql.org/>`_: Install with :code:`sudo apt install
+  osm2pgsql`
+
 Run the workflow
 ================
 
