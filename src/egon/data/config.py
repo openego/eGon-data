@@ -10,13 +10,18 @@ def datasets(config_file=None):
 
     Parameters
     ----------
-    config_file : str
-        Path of the dataset configuration file
+    config_file : str, optional
+        Path of the dataset configuration file in YAML format. If not
+        supplied, a default configuration shipped with this package is
+        used.
 
     Returns
     -------
     dict
-        Dataset configuration
+        A nested dictionary containing the configuration as parsed from
+        the supplied file, or the default configuration if no file was
+        given.
+
     """
     if not config_file:
         package_path = egon.data.__path__[0]
