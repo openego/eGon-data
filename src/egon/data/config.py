@@ -20,6 +20,6 @@ def datasets(config_file=None):
     """
     if not config_file:
         package_path = egon.data.__path__[0]
-        config_file = os.path.join(package_path, "data_sets.yml")
+        config_file = os.path.join(package_path, "datasets.yml")
 
     return yaml.load(open(config_file), Loader=yaml.SafeLoader)

@@ -31,7 +31,7 @@ def osm2postgres(num_processes=4, cache_size=4096):
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 
-    # Get data set config
+    # Get dataset config
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
 
@@ -101,7 +101,7 @@ def post_import_modifications():
         for statement in sql_statements:
             db.execute_sql(statement)
 
-    # Get data set config
+    # Get dataset config
     data_config = egon.data.config.datasets()["openstreetmap"][
         "original_data"
     ]["osm"]
