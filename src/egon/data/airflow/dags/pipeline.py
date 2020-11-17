@@ -4,6 +4,7 @@ import airflow
 
 from egon.data.airflow.tasks import initdb
 import egon.data.importing.openstreetmap as import_osm
+import egon.data.processing.openstreetmap as process_osm
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -21,7 +22,7 @@ with airflow.DAG(
     )
     osm_post_import = PythonOperator(
         task_id="OSM_post-import",
-        python_callable=import_osm.post_import_modifications,
+        python_callable=process_osm.modify_tables,
     )
     osm_metadata = PythonOperator(
         task_id="OSM_metadata", python_callable=import_osm.add_metadata
