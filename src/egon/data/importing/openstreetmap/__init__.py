@@ -19,7 +19,7 @@ from egon.data import db
 import egon.data.config
 
 
-def download_osm_file():
+def download_pbf_file():
     """Download OpenStreetMap `.pbf` file."""
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]["osm"]
@@ -28,7 +28,7 @@ def download_osm_file():
         urlretrieve(osm_config["url"] + osm_config["file"], osm_config["file"])
 
 
-def osm2postgres(num_processes=4, cache_size=4096):
+def to_postgres(num_processes=4, cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
@@ -131,7 +131,7 @@ def post_import_modifications():
         db.execute_sql(sql_statement)
 
 
-def metadata():
+def add_metadata():
     """Writes metadata JSON string into table comment."""
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]["original_data"][
