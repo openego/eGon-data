@@ -1,3 +1,14 @@
+"""The central module containing all code dealing with importing OSM data.
+
+This module either directly contains the code dealing with importing OSM
+data, or it re-exports everything needed to handle it. Please refrain
+from importing code from any modules below this one, because it might
+lead to unwanted behaviour.
+
+If you have to import code from a module below this one because the code
+isn't exported from this module, please file a bug, so we can fix this.
+"""
+
 from urllib.request import urlretrieve
 import json
 import os
