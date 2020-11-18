@@ -66,6 +66,11 @@ def execute_sql(sql_string):
 def submit_comment(json, schema, table):
     """Add comment to table.
 
+    We use `Open Energy Metadata <https://github.com/OpenEnergyPlatform/
+    oemetadata/blob/develop/metadata/v140/metadata_key_description.md>`_
+    standard for describging our data. Metadata is stored as JSON in the table
+    comment.
+
     Parameters
     ----------
     json : str
