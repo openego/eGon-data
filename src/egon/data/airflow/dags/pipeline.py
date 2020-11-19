@@ -3,6 +3,8 @@ from airflow.utils.dates import days_ago
 import airflow
 
 from egon.data.airflow.tasks import initdb
+import egon.data.importing.openstreetmap as import_osm
+import egon.data.processing.openstreetmap as process_osm
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -10,11 +12,19 @@ with airflow.DAG(
     default_args={"start_date": days_ago(1)},
 ) as pipeline:
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
-    # If you a second task, e.g. `teardown`, which should come after `setup`
-    # you would specify this in the following way:
-    #
-    # setup.set_downstream(teardown)
-    #
-    # or
-    #
-    # teardown.set_upstream(setup)
+
+    # Openstreetmap data import
+    osm_download = PythonOperator(
+        task_id="download-osm", python_callable=import_osm.download_pbf_file
+    )
+    osm_import = PythonOperator(
+        task_id="import-osm", python_callable=import_osm.to_postgres
+    )
+    osm_migrate = PythonOperator(
+        task_id="migrate-osm",
+        python_callable=process_osm.modify_tables,
+    )
+    osm_add_metadata = PythonOperator(
+        task_id="add-osm-metadata", python_callable=import_osm.add_metadata
+    )
+    setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata

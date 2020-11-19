@@ -8,6 +8,8 @@ Unreleased
 Added
 -----
 
+* OSM data import as done in open_ego
+  `#1 <https://github.com/openego/eGon-data/issues/1>`_
 
 Changed
 -------
