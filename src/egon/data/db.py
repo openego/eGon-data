@@ -90,4 +90,6 @@ def submit_comment(json, schema, table):
 
     execute_sql(prefix_str + json + ";")
 
+    # Query table comment and cast it into JSON
+    # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
