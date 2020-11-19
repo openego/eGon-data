@@ -48,7 +48,9 @@ def modify_tables():
             db.execute_sql(statement)
 
     # Move table to schema "openstreetmap"
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {data_config['processed']['schema']};")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {data_config['processed']['schema']};"
+    )
 
     for out_table in data_config["processed"]["tables"]:
         sql_statement = (

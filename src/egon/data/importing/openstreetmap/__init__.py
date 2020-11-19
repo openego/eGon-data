@@ -49,6 +49,9 @@ def to_postgres(num_processes=4, cache_size=4096):
     # Get dataset config
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
+    input_file = os.path.join(
+        os.path.dirname(__file__), osm_config["target"]["path"]
+    )
 
     # Prepare osm2pgsql command
     cmd = [
@@ -63,7 +66,7 @@ def to_postgres(num_processes=4, cache_size=4096):
         f"-U {docker_db_config['POSTGRES_USER']}",
         f"-p {osm_config['target']['table_prefix']}",
         f"-S {osm_config['source']['stylefile']}",
-        f"{os.path.join(os.path.dirname(__file__), osm_config['target']['path'])}",
+        f"{input_file}",
     ]
 
     # Execute osm2pgsql for import OSM data
