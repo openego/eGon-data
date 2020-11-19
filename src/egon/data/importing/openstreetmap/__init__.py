@@ -22,10 +22,14 @@ import egon.data.config
 def download_pbf_file():
     """Download OpenStreetMap `.pbf` file."""
     data_config = egon.data.config.datasets()
-    osm_config = data_config["openstreetmap"]["original_data"]["osm"]
+    osm_config = data_config["openstreetmap"]["original_data"]
 
-    if not os.path.isfile(osm_config["file"]):
-        urlretrieve(osm_config["url"] + osm_config["file"], osm_config["file"])
+    target_file = os.path.join(
+        os.path.dirname(__file__), osm_config["target"]["path"]
+    )
+
+    if not os.path.isfile(target_file):
+        urlretrieve(osm_config["source"]["url"], target_file)
 
 
 def to_postgres(num_processes=4, cache_size=4096):
@@ -44,7 +48,7 @@ def to_postgres(num_processes=4, cache_size=4096):
 
     # Get dataset config
     data_config = egon.data.config.datasets()
-    osm_config = data_config["openstreetmap"]["original_data"]["osm"]
+    osm_config = data_config["openstreetmap"]["original_data"]
 
     # Prepare osm2pgsql command
     cmd = [
@@ -57,9 +61,9 @@ def to_postgres(num_processes=4, cache_size=4096):
         f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} "
         f"-d {docker_db_config['POSTGRES_DB']} "
         f"-U {docker_db_config['POSTGRES_USER']}",
-        f"-p {osm_config['table_prefix']}",
-        f"-S {osm_config['stylefile']}",
-        f"{osm_config['file']}",
+        f"-p {osm_config['target']['table_prefix']}",
+        f"-S {osm_config['source']['stylefile']}",
+        f"{os.path.join(os.path.dirname(__file__), osm_config['target']['path'])}",
     ]
 
     # Execute osm2pgsql for import OSM data
@@ -74,10 +78,10 @@ def to_postgres(num_processes=4, cache_size=4096):
 def add_metadata():
     """Writes metadata JSON string into table comment."""
     # Prepare variables
-    osm_config = egon.data.config.datasets()["openstreetmap"]["original_data"][
-        "osm"
-    ]
-    spatial_and_date = os.path.basename(osm_config["file"]).split("-")
+    osm_config = egon.data.config.datasets()["openstreetmap"]
+    spatial_and_date = os.path.basename(
+        osm_config["original_data"]["target"]["path"]
+    ).split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"
@@ -87,7 +91,7 @@ def add_metadata():
         + "-"
         + spatial_and_date[1][4:6]
     )
-    osm_url = osm_config["url"]
+    osm_url = osm_config["original_data"]["source"]["url"]
 
     # Insert metadata for each table
     licenses = [
@@ -102,7 +106,7 @@ def add_metadata():
             "attribution": "© Reiner Lemoine Institut",
         }
     ]
-    for table in osm_config["output_tables"]:
+    for table in osm_config["processed"]["tables"]:
         table_suffix = table.split("_")[1]
         meta = {
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",

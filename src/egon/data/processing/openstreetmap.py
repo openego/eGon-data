@@ -44,19 +44,15 @@ def modify_tables():
             db.execute_sql(statement)
 
     # Get dataset config
-    data_config = egon.data.config.datasets()["openstreetmap"][
-        "original_data"
-    ]["osm"]
+    data_config = egon.data.config.datasets()["openstreetmap"]["processed"]
 
     # Move table to schema "openstreetmap"
-    db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {data_config['output_schema']};"
-    )
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {data_config['schema']};")
 
-    for out_table in data_config["output_tables"]:
+    for out_table in data_config["tables"]:
         sql_statement = (
             f"ALTER TABLE public.{out_table} "
-            f"SET SCHEMA {data_config['output_schema']};"
+            f"SET SCHEMA {data_config['schema']};"
         )
 
         db.execute_sql(sql_statement)

@@ -1,16 +1,18 @@
 openstreetmap:
   original_data:
-    osm:
-      url: "https://download.geofabrik.de/europe/germany/"
-      file: "bremen-200101.osm.pbf"
+    source:
+      url: "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
       stylefile: "oedb.style"
+    target:
       table_prefix: "osm"
-      output_schema: "openstreetmap"
-      output_tables:
-        - "osm_line"
-        - "osm_nodes"
-        - "osm_point"
-        - "osm_polygon"
-        - "osm_rels"
-        - "osm_roads"
-        - "osm_ways"
+      path: "bremen-200101.osm.pbf"
+  processed:
+    schema: "openstreetmap"
+    tables:
+      - "osm_line"
+      - "osm_nodes"
+      - "osm_point"
+      - "osm_polygon"
+      - "osm_rels"
+      - "osm_roads"
+      - "osm_ways"
