@@ -9,9 +9,13 @@ def modify_tables():
     * Indices (GIST, GIN) are reset
     * The tables are moved to the schema configured as the "output_schema".
     """
+    # Get dataset config
+    data_config = egon.data.config.datasets()["openstreetmap"]
+
     # Replace indices and primary keys
     for table in [
-        "osm_" + suffix for suffix in ["line", "point", "polygon", "roads"]
+        f"{data_config['original_data']['target']['table_prefix']}_" + suffix
+        for suffix in ["line", "point", "polygon", "roads"]
     ]:
 
         # Drop indices
@@ -43,16 +47,13 @@ def modify_tables():
         for statement in sql_statements:
             db.execute_sql(statement)
 
-    # Get dataset config
-    data_config = egon.data.config.datasets()["openstreetmap"]["processed"]
-
     # Move table to schema "openstreetmap"
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {data_config['schema']};")
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {data_config['processed']['schema']};")
 
-    for out_table in data_config["tables"]:
+    for out_table in data_config["processed"]["tables"]:
         sql_statement = (
             f"ALTER TABLE public.{out_table} "
-            f"SET SCHEMA {data_config['schema']};"
+            f"SET SCHEMA {data_config['processed']['schema']};"
         )
 
         db.execute_sql(sql_statement)
