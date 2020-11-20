@@ -1,3 +1,5 @@
 ignore-paths: ["ci"]
 pep257:
   disable: ["210", "212", "213"]
+pylint:
+  disable: ["import-error"]
