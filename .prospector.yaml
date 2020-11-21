@@ -1,5 +1,5 @@
 ignore-paths: ["ci"]
 pep257:
-  disable: ["210", "212", "213"]
+  disable: ["D210", "D212", "D213"]
 pylint:
   disable: ["import-error"]
