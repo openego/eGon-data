@@ -1,5 +1,6 @@
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
+from airflow.utils.helpers import chain
 import airflow
 
 from egon.data.airflow.tasks import initdb
@@ -27,4 +28,4 @@ with airflow.DAG(
     osm_add_metadata = PythonOperator(
         task_id="add-osm-metadata", python_callable=import_osm.add_metadata
     )
-    setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
+    chain(setup, osm_download, osm_import, osm_migrate, osm_add_metadata)
