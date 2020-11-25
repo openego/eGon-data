@@ -37,11 +37,12 @@ def create_input_tables_nep():
 
     Base = declarative_base()
     # TODO: Add metadata for both tables
-    class EgoSupplyScenarioCapacities(Base):
-        __tablename__ = 'ego_supply_scenario_capacities'
+    class EgonSupplyScenarioCapacities(Base):
+        __tablename__ = 'egon_supply_scenario_capacities'
         __table_args__ = {'schema': 'model_draft'}
         state = Column(String(50), primary_key=True)
-        generation_type = Column(String(25), primary_key=True)
+        component = Column(String(25), primary_key=True)
+        carrier = Column(String(50), primary_key=True)
         capacity = Column(Float)
         nuts = Column(String(12))
         scenario_name = Column(String(50), primary_key=True)
@@ -80,7 +81,7 @@ def create_input_tables_nep():
             + docker_db_config['PORT']+ '/'
             + docker_db_config['POSTGRES_DB']), echo=True)
 
-    EgoSupplyScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
+    EgonSupplyScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021Kraftwerksliste.__table__.create(bind=engine, checkfirst=True)
 
 def manipulate_federal_state_numbers(path_input, df, carrier, scn = 'C 2035'):
@@ -113,7 +114,7 @@ def manipulate_federal_state_numbers(path_input, df, carrier, scn = 'C 2035'):
     target_cap.index = target_cap.index.map(carrier)
 
     for c in target_cap.index:
-        mask = df.generation_type == c
+        mask = df.carrier == c
         df.loc[mask, 'capacity']= \
             df[mask].capacity /\
                 df[mask].capacity.sum() * target_cap[c]
@@ -124,7 +125,7 @@ def insert_capacities_per_federal_state_nep(path_input):
     engine = connect_to_engine()
 
     # read-in installed capacities per federal state of germany (Entwurf des Szenariorahmens)
-    df = pd.read_csv(path_input + 'NEP_2021_C2035.csv',
+    df = pd.read_csv(path_input + 'NEP_2021_C2035_new.csv',
                      delimiter=';', decimal=',',
                      index_col='Unnamed: 0')
 
@@ -142,7 +143,10 @@ def insert_capacities_per_federal_state_nep(path_input):
                      'Pumpspeicher': 'pumped_hydro',
                      'Sonstige EE': 'other_renewable',
                      'Photovoltaik': 'solar',
-                     'Oel': 'oil'}
+                     'Oel': 'oil',
+                     'Haushaltswaermepumpen': 'residential_rural_heat_pump',
+                     'Elektromobilitaet gesamt': 'transport',
+                     'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
     ## TODO: Can this be replaced by a sql-query?
@@ -167,14 +171,26 @@ def insert_capacities_per_federal_state_nep(path_input):
 
     for bl in nuts1.keys():
 
-        data = df[df.index==bl].transpose()
-        data['generation_type'] = data.index.map(rename_carrier)
-        data = data.groupby(data.generation_type).sum().reset_index()
+        data = pd.DataFrame(df[bl])
+        data['carrier'] = data.index.map(rename_carrier)
+        data = data.groupby(data.carrier).sum().reset_index()
+        data['component'] = 'generator'
         data['state'] = bl
         data['nuts'] = nuts1[bl]
         data['scenario_name'] = 'NEP 2035'
+
+        # According to NEP, each heatpump has 3kW_el installed capacity
+        data.loc[data.carrier == 'residential_rural_heat_pump', bl] *= 3e-6
+        # TODO: how to deal with number of EV?
+
+        data.loc[data.carrier ==
+                 'residential_rural_heat_pump', 'component'] = 'link'
+        data.loc[data.carrier == 'transport', 'component'] = 'load'
         data = data.rename(columns={bl: 'capacity'})
+
         insert_data = insert_data.append(data)
+
+    df
 
     # Scale numbers for federal states based on BNetzA (can be removed later)
     if True:
@@ -182,14 +198,17 @@ def insert_capacities_per_federal_state_nep(path_input):
             path_input, insert_data, rename_carrier, scn = 'C 2035')
 
     # Set Multiindex to fit to primary keys in table
-    insert_data.set_index(['state', 'scenario_name', 'generation_type'],
+    insert_data.set_index(['state', 'scenario_name', 'carrier', 'component'],
                           inplace=True)
 
     # Insert data to db
-    insert_data.to_sql('ego_supply_scenario_capacities',
+    try:
+        insert_data.to_sql('egon_supply_scenario_capacities',
                        engine,
                        schema='model_draft',
-                       if_exists='replace')
+                       if_exists='append')
+    except:
+        print('data already exists')
 
 def insert_nep_list_powerplants(path_input):
     # Connect to database
@@ -226,10 +245,68 @@ def insert_nep_list_powerplants(path_input):
                        schema='model_draft',
                        if_exists='replace')
 
+def district_heating_input(path_input):
+
+    ### will be later imported from another file ###
+    Base = declarative_base()
+    class EgonSupplyScenarioCapacities(Base):
+        __tablename__ = 'egon_supply_scenario_capacities'
+        __table_args__ = {'schema': 'model_draft'}
+        state = Column(String(50), primary_key=True)
+        component = Column(String(25), primary_key=True)
+        carrier = Column(String(50), primary_key=True)
+        capacity = Column(Float)
+        nuts = Column(String(12))
+        scenario_name = Column(String(50), primary_key=True)
+    ###
+
+    file = path_input + 'NEP_2021_C2035_district_heating.csv'
+
+    df = pd.read_csv(file, delimiter=';', dtype={'Wert':float})
+
+    df.set_index(['Energietraeger', 'Name'], inplace=True)
+
+    # Connect to database
+    engine = connect_to_engine()
+    session = sessionmaker(bind=engine)()
+
+    for c in ['Grosswaermepumpe', 'Elektrodenheizkessel']:
+        entry = EgonSupplyScenarioCapacities(
+            component = 'link',
+            scenario_name = 'NEP 2035',
+            state = 'Deutschland',
+            nuts = 'DE',
+            carrier = 'urban_central_'+ (
+                'heat_pump' if c=='Grosswaermepumpe' else 'resistive_heater'),
+            capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e3/
+                        df.loc[(c, 'Volllaststunden'), 'Wert']/
+                            df.loc[(c, 'Wirkungsgrad'), 'Wert'])
+
+        session.add(entry)
+
+    for c in ['Geothermie', 'Solarthermie']:
+        entry = EgonSupplyScenarioCapacities(
+        component = 'generator',
+        scenario_name = 'NEP 2035',
+        state = 'Deutschland',
+        nuts = 'DE',
+        carrier = 'urban_central_'+ (
+                'solar_thermal_collector' if c =='Solarthermie'
+                                else 'geo_thermal'),
+        capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e3/
+                        df.loc[(c, 'Volllaststunden'), 'Wert'])
+
+        session.add(entry)
+
+    session.commit()
+
+
+
 def setup_nep_scenario():
     # TODO: Change input path
     path_input_files = '/home/clara/GitHub/dp_new/input_data/'
     add_schema()
     create_input_tables_nep()
     insert_capacities_per_federal_state_nep(path_input=path_input_files)
+    district_heating_input(path_input=path_input_files)
     insert_nep_list_powerplants(path_input=path_input_files)
