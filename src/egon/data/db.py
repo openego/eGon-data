@@ -38,6 +38,17 @@ def credentials():
     return docker_db_config
 
 
+def engine():
+    """Engine for local database."""
+    db_config = credentials()
+    return create_engine(
+        f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
+        f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
+        f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
+        echo=False,
+    )
+
+
 def execute_sql(sql_string):
     """Execute a SQL expression given as string.
 
@@ -50,14 +61,7 @@ def execute_sql(sql_string):
         SQL expression
 
     """
-    db_config = credentials()
-
-    engine_local = create_engine(
-        f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
-        f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
-        f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
-        echo=False,
-    )
+    engine_local = engine()
 
     with engine_local.connect().execution_options(autocommit=True) as con:
         con.execute(text(sql_string))

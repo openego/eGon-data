@@ -22,3 +22,13 @@ vg250:
       url: "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.gk3.shape.ebenen.zip"
     target:
       path: "vg250_01-01.gk3.shape.ebenen.zip"
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "VG250_STA.shp": "vg250_sta"
+      "VG250_LAN.shp": "vg250_lan"
+      "VG250_RBZ.shp": "vg250_rbz"
+      "VG250_KRS.shp": "vg250_krs"
+      "VG250_VWG.shp": "vg250_vwg"
+      "VG250_GEM.shp": "vg250_gem"
+
