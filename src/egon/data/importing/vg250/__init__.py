@@ -42,32 +42,35 @@ def to_postgres():
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {vg250_processed['schema']};")
 
     zip_file = os.path.join(
-        os.path.dirname(__file__),
-        vg250_orig["target"]["path"]
+        os.path.dirname(__file__), vg250_orig["target"]["path"]
     )
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
     for filename, table in vg250_processed["file_table_map"].items():
         # Open files and read .shp with geopandas
-        data = gpd.read_file(f"zip://{zip_file}!vg250_01-01.gk3.shape.ebenen/vg250_ebenen_0101/{filename}")
+        data = gpd.read_file(
+            f"zip://{zip_file}!vg250_01-01.gk3.shape.ebenen/vg250_ebenen_0101/{filename}"
+        )
 
         # Define 'geom' as geometry column and convert to hex
-        data['geom'] = data['geometry'].apply(
-            lambda geom: geom.wkb_hex)
+        data["geom"] = data["geometry"].apply(lambda geom: geom.wkb_hex)
         data.drop("geometry", axis=1, inplace=True)
         data.index.set_names("gid", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
         # create database table from geopandas dataframe
-        data.to_sql(table,
-                    engine_local_db,
-                    vg250_processed["schema"],
-                    index=True,
-                    if_exists="replace",
-                    method="multi",
-                    # dtype={'geom': Geometry(geometry_type="MultiPolygon", srid=31467)}
-                    dtype={'geom': Geometry()}
-                    )
-        db.execute_sql(f"ALTER TABLE {vg250_processed['schema']}.{table} ADD PRIMARY KEY (gid);")
+        data.to_sql(
+            table,
+            engine_local_db,
+            vg250_processed["schema"],
+            index=True,
+            if_exists="replace",
+            method="multi",
+            # dtype={'geom': Geometry(geometry_type="MultiPolygon", srid=31467)}
+            dtype={"geom": Geometry()},
+        )
+        db.execute_sql(
+            f"ALTER TABLE {vg250_processed['schema']}.{table} ADD PRIMARY KEY (gid);"
+        )
 
