@@ -10,9 +10,10 @@ isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from urllib.request import urlretrieve
+import os
+
 from geoalchemy2 import Geometry
 import geopandas as gpd
-import os
 
 from egon.data import db
 import egon.data.config
@@ -48,29 +49,28 @@ def to_postgres():
 
     # Extract shapefiles from zip archive and send it to postgres db
     for filename, table in vg250_processed["file_table_map"].items():
-        # Open files and read .shp with geopandas
+        # Open files and read .shp (within .zip) with geopandas
         data = gpd.read_file(
-            f"zip://{zip_file}!vg250_01-01.gk3.shape.ebenen/vg250_ebenen_0101/{filename}"
+            f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+            f"vg250_ebenen_0101/{filename}"
         )
 
-        # Define 'geom' as geometry column and convert to hex
-        data["geom"] = data["geometry"].apply(lambda geom: geom.wkb_hex)
-        data.drop("geometry", axis=1, inplace=True)
+        # Set index column and format column headings
         data.index.set_names("gid", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
         # create database table from geopandas dataframe
-        data.to_sql(
+        data.to_postgis(
             table,
             engine_local_db,
-            vg250_processed["schema"],
+            schema=vg250_processed["schema"],
             index=True,
             if_exists="replace",
-            method="multi",
-            # dtype={'geom': Geometry(geometry_type="MultiPolygon", srid=31467)}
-            dtype={"geom": Geometry()},
+            dtype={"geometry": Geometry()},
         )
+
         db.execute_sql(
-            f"ALTER TABLE {vg250_processed['schema']}.{table} ADD PRIMARY KEY (gid);"
+            f"ALTER TABLE {vg250_processed['schema']}.{table} "
+            f"ADD PRIMARY KEY (gid);"
         )
 
