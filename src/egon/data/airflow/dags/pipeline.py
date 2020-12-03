@@ -1,3 +1,4 @@
+from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
@@ -16,6 +17,7 @@ with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
+    template_searchpath=["/home/guido/git/eGon-data/src/egon/data/importing/vg250"]
 ) as pipeline:
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
 
@@ -43,4 +45,10 @@ with airflow.DAG(
     vg250_import = PythonOperator(
         task_id="import-vg250", python_callable=import_vg250.to_postgres
     )
-    setup >> vg250_download >> vg250_import
+    vg250_nuts_mview = PostgresOperator(
+        task_id="vg250_nuts_mview",
+        sql="vg250_lan_nuts_id_mview.sql",
+        postgres_conn_id='egon_data',
+        autocommit=True
+    )
+    setup >> vg250_download >> vg250_import >> vg250_nuts_mview
