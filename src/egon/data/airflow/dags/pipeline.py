@@ -4,6 +4,7 @@ import airflow
 
 from egon.data.airflow.tasks import initdb
 import egon.data.importing.openstreetmap as import_osm
+import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
 
 with airflow.DAG(
@@ -28,3 +29,13 @@ with airflow.DAG(
         task_id="add-osm-metadata", python_callable=import_osm.add_metadata
     )
     setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
+
+    # VG250 (Verwaltungsgebiete 250) data import
+    vg250_download = PythonOperator(
+        task_id="download-vg250",
+        python_callable=import_vg250.download_vg250_files
+    )
+    vg250_import = PythonOperator(
+        task_id="import-vg250", python_callable=import_vg250.to_postgres
+    )
+    setup >> vg250_download >> vg250_import
