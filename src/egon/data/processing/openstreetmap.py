@@ -19,10 +19,10 @@ def modify_tables():
     ]:
 
         # Drop indices
-        sql_statements = [f"DROP INDEX {table}_index;"]
+        sql_statements = [f"DROP INDEX IF EXISTS {table}_index;"]
 
         # Drop primary keys
-        sql_statements.append(f"DROP INDEX {table}_pkey;")
+        sql_statements.append(f"DROP INDEX IF EXISTS {table}_pkey;")
 
         # Add primary key on newly created column "gid"
         sql_statements.append(f"ALTER TABLE public.{table} ADD gid SERIAL;")
