@@ -59,6 +59,10 @@ def to_postgres():
         data.index.set_names("gid", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
+        # Drop table before inserting data
+        db.execute_sql(f"DROP TABLE IF EXISTS "
+                       f"{vg250_processed['schema']}.{table} CASCADE;")
+
         # create database table from geopandas dataframe
         data.to_postgis(
             table,
