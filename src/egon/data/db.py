@@ -97,3 +97,17 @@ def submit_comment(json, schema, table):
     # Query table comment and cast it into JSON
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
+
+
+def airflow_db_connection():
+    """Define connection to egon data db via env variable.
+
+    This connection can be accessed by Operators and Hooks using
+    :code:`postgres_conn_id='egon_data'`.
+    """
+
+    cred = credentials()
+
+    os.environ["AIRFLOW_CONN_EGON_DATA"] = \
+        f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']}" \
+            f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"

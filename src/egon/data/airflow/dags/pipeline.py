@@ -3,9 +3,14 @@ from airflow.utils.dates import days_ago
 import airflow
 
 from egon.data.airflow.tasks import initdb
+from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
+
+
+# Prepare connection to db for operators
+airflow_db_connection()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
