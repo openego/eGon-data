@@ -20,6 +20,8 @@ with airflow.DAG(
     template_searchpath=[
         "/home/guido/git/eGon-data/src/egon/data/processing/vg250"
     ],
+    is_paused_upon_creation=False,
+    schedule_interval=None,
 ) as pipeline:
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
 
