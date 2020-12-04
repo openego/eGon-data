@@ -81,6 +81,12 @@ def to_postgres():
             f"ADD PRIMARY KEY (gid);"
         )
 
+        # Add index on geometry column
+        db.execute_sql(
+            f"CREATE INDEX {table}_geometry_idx ON "
+            f"{vg250_processed['schema']}.{table} USING gist (geometry);"
+        )
+
 
 def add_metadata():
     """Writes metadata JSON string into table comment."""
