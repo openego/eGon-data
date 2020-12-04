@@ -17,7 +17,9 @@ with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
-    template_searchpath=["/home/guido/git/eGon-data/src/egon/data/importing/vg250"]
+    template_searchpath=[
+        "/home/guido/git/eGon-data/src/egon/data/importing/vg250"
+    ],
 ) as pipeline:
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
 
@@ -40,7 +42,7 @@ with airflow.DAG(
     # VG250 (Verwaltungsgebiete 250) data import
     vg250_download = PythonOperator(
         task_id="download-vg250",
-        python_callable=import_vg250.download_vg250_files
+        python_callable=import_vg250.download_vg250_files,
     )
     vg250_import = PythonOperator(
         task_id="import-vg250", python_callable=import_vg250.to_postgres
@@ -48,8 +50,9 @@ with airflow.DAG(
     vg250_nuts_mview = PostgresOperator(
         task_id="vg250_nuts_mview",
         sql="vg250_lan_nuts_id_mview.sql",
-        postgres_conn_id='egon_data',
-        autocommit=True
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
     vg250_metadata = PythonOperator(
         task_id="add-vg250-metadata",
         python_callable=import_vg250.add_metadata,
