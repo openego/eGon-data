@@ -50,5 +50,9 @@ with airflow.DAG(
         sql="vg250_lan_nuts_id_mview.sql",
         postgres_conn_id='egon_data',
         autocommit=True
+    vg250_metadata = PythonOperator(
+        task_id="add-vg250-metadata",
+        python_callable=import_vg250.add_metadata,
     )
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
+    vg250_nuts_mview >> vg250_metadata

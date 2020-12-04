@@ -9,6 +9,7 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
+import json
 from urllib.request import urlretrieve
 import os
 
@@ -60,8 +61,10 @@ def to_postgres():
         data.columns = [x.lower() for x in data.columns]
 
         # Drop table before inserting data
-        db.execute_sql(f"DROP TABLE IF EXISTS "
-                       f"{vg250_processed['schema']}.{table} CASCADE;")
+        db.execute_sql(
+            f"DROP TABLE IF EXISTS "
+            f"{vg250_processed['schema']}.{table} CASCADE;"
+        )
 
         # create database table from geopandas dataframe
         data.to_postgis(
@@ -78,3 +81,168 @@ def to_postgres():
             f"ADD PRIMARY KEY (gid);"
         )
 
+
+def add_metadata():
+    """Writes metadata JSON string into table comment."""
+    # Prepare variables
+    vg250_config = egon.data.config.datasets()["vg250"]
+
+    title_and_description = {
+        "vg250_sta": {
+            "title": "BKG - Verwaltungsgebiete 1:250.000 - Staat (STA)",
+            "description": "Staatsgrenzen der Bundesrepublik Deutschland",
+        },
+        "vg250_lan": {
+            "title": "BKG - Verwaltungsgebiete 1:250.000 - Länder (LAN)",
+            "description": "Landesgrenzen der Bundesländer in der "
+            "Bundesrepublik Deutschland",
+        },
+        "vg250_rbz": {
+            "title": "BKG - Verwaltungsgebiete 1:250.000 - Regierungsbezirke "
+            "(RBZ)",
+            "description": "Grenzen der Regierungsbezirke in der "
+            "Bundesrepublik Deutschland",
+        },
+        "vg250_krs": {
+            "title": "BKG - Verwaltungsgebiete 1:250.000 - Kreise (KRS)",
+            "description": "Grenzen der Landkreise in der "
+            "Bundesrepublik Deutschland",
+        },
+        "vg250_vwg": {
+            "title": "BKG - Verwaltungsgebiete 1:250.000 - "
+            "Verwaltungsgemeinschaften (VWG)",
+            "description": "Grenzen der Verwaltungsgemeinschaften in der "
+            "Bundesrepublik Deutschland",
+        },
+        "vg250_gem": {
+            "title": "BKG - Verwaltungsgebiete 1:250.000 - Gemeinden (GEM)",
+            "description": "Grenzen der Gemeinden in der "
+            "Bundesrepublik Deutschland",
+        },
+    }
+
+    url = vg250_config["original_data"]["source"]["url"]
+
+    # Insert metadata for each table
+    licenses = [
+        {
+            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
+            "path": "www.govdata.de/dl-de/by-2-0",
+            "instruction": (
+                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
+                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
+                "bereitgestellten Daten und Metadaten dürfen für die "
+                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
+                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
+                "bearbeitet sowie an Dritte übermittelt werden;\n "
+                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
+                "zu selbständigen neuen Datensätzen verbunden werden;\n "
+                "(3) in interne und externe Geschäftsprozesse, Produkte und "
+                "Anwendungen in öffentlichen und nicht öffentlichen "
+                "elektronischen Netzwerken eingebunden werden."
+            ),
+            "attribution": "© Bundesamt für Kartographie und Geodäsie",
+        }
+    ]
+    for table in vg250_config["processed"]["file_table_map"].values():
+        meta = {
+            "title": title_and_description[table]["title"],
+            "description": title_and_description[table]["title"],
+            "language": ["DE"],
+            "spatial": {
+                "location": "",
+                "extent": f"Germany",
+                "resolution": "vector",
+            },
+            "temporal": {
+                "referenceDate": "2020-01-01",
+                "timeseries": {
+                    "start": "",
+                    "end": "",
+                    "resolution": "",
+                    "alignment": "",
+                    "aggregationType": "",
+                },
+            },
+            "sources": [
+                {
+                    "title": "Dienstleistungszentrum des Bundes für "
+                    "Geoinformation und Geodäsie - Open Data",
+                    "description": "Dieser Datenbestand steht über "
+                    "Geodatendienste gemäß "
+                    "Geodatenzugangsgesetz (GeoZG) "
+                    "(http://www.geodatenzentrum.de/auftrag/pdf"
+                    "/geodatenzugangsgesetz.pdf) für die "
+                    "kommerzielle und nicht kommerzielle "
+                    "Nutzung geldleistungsfrei zum Download "
+                    "und zur Online-Nutzung zur Verfügung. Die "
+                    "Nutzung der Geodaten und Geodatendienste "
+                    "wird durch die Verordnung zur Festlegung "
+                    "der Nutzungsbestimmungen für die "
+                    "Bereitstellung von Geodaten des Bundes "
+                    "(GeoNutzV) (http://www.geodatenzentrum.de"
+                    "/auftrag/pdf/geonutz.pdf) geregelt. "
+                    "Insbesondere hat jeder Nutzer den "
+                    "Quellenvermerk zu allen Geodaten, "
+                    "Metadaten und Geodatendiensten erkennbar "
+                    "und in optischem Zusammenhang zu "
+                    "platzieren. Veränderungen, Bearbeitungen, "
+                    "neue Gestaltungen oder sonstige "
+                    "Abwandlungen sind mit einem "
+                    "Veränderungshinweis im Quellenvermerk zu "
+                    "versehen. Quellenvermerk und "
+                    "Veränderungshinweis sind wie folgt zu "
+                    "gestalten. Bei der Darstellung auf einer "
+                    "Webseite ist der Quellenvermerk mit der "
+                    "URL http://www.bkg.bund.de zu verlinken. "
+                    "© GeoBasis-DE / BKG <Jahr des letzten "
+                    "Datenbezugs> © GeoBasis-DE / BKG "
+                    "<Jahr des letzten Datenbezugs> "
+                    "(Daten verändert) Beispiel: "
+                    "© GeoBasis-DE / BKG 2013",
+                    "path": url,
+                    "licenses": "Geodatenzugangsgesetz (GeoZG)",
+                    "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
+                },
+                {
+                    "title": "BKG - Verwaltungsgebiete 1:250.000 (vg250)",
+                    "description": "Der Datenbestand umfasst sämtliche "
+                    "Verwaltungseinheiten aller hierarchischen "
+                    "Verwaltungsebenen vom Staat bis zu den "
+                    "Gemeinden mit ihren Verwaltungsgrenzen, "
+                    "statistischen Schlüsselzahlen und dem "
+                    "Namen der Verwaltungseinheit sowie der "
+                    "spezifischen Bezeichnung der "
+                    "Verwaltungsebene des jeweiligen "
+                    "Bundeslandes.",
+                    "path": "http://www.bkg.bund.de",
+                    "licenses": licenses,
+                },
+            ],
+            "licenses": licenses,
+            "contributors": [
+                {
+                    "title": "Guido Pleßmann",
+                    "email": "http://github.com/gplssm",
+                    "date": "2020-12-04",
+                    "object": "",
+                    "comment": "Imported data",
+                }
+            ],
+            "metaMetadata": {
+                "metadataVersion": "OEP-1.4.0",
+                "metadataLicense": {
+                    "name": "CC0-1.0",
+                    "title": "Creative Commons Zero v1.0 Universal",
+                    "path": (
+                        "https://creativecommons.org/publicdomain/zero/1.0/"
+                    ),
+                },
+            },
+        }
+
+        meta_json = "'" + json.dumps(meta) + "'"
+
+        db.submit_comment(
+            meta_json, vg250_config["processed"]["schema"], table
+        )
