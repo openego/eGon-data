@@ -53,6 +53,9 @@ def modify_tables():
     )
 
     for out_table in data_config["processed"]["tables"]:
+        db.execute_sql(f"DROP TABLE IF EXISTS "
+                       f"{data_config['processed']['schema']}.{out_table};")
+
         sql_statement = (
             f"ALTER TABLE public.{out_table} "
             f"SET SCHEMA {data_config['processed']['schema']};"
