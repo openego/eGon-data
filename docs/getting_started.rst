@@ -11,6 +11,14 @@ Pre-requisites
 In addition to the installation of python packages, OS-level packages are
 required
 
+* `Docker <https://docs.docker.com/get-started/>`_: Docker is used to provide
+  a PostgreSQL database (in the default case).
+
+  Docker provides extensive installation instruction. Best you consult `their
+  docs <https://docs.docker.com/get-docker/>`_ and choose the appropriate
+  install method for your OS.
+
+  Docker is not required if you use a local postresql installation.
 * `osm2pgsql <https://osm2pgsql.org/>`_: Install with :code:`sudo apt install
   osm2pgsql`
 
