@@ -5,6 +5,16 @@ Getting Started
 Installation
 ============
 
+Pre-requisites
+--------------
+
+In addition to the installation of python packages, OS-level packages are
+required
+
+* `osm2pgsql <https://osm2pgsql.org/>`_: Install with :code:`sudo apt install
+  osm2pgsql`
+
+
 Since no release is available on PyPi and installations are probably used for development, cloning
 
 .. code-block:: bash
@@ -17,15 +27,19 @@ and installing in editable mode recommended.
 
    pip install -e eGon-data
 
+Troubleshooting
+---------------
 
-Pre-requisites
-==============
+Having trouble to install `eGon-data`? Here's a list of recurring issues with
+the installation including a solution.
 
-In addition to the installation of python packages, OS-level packages are
-required
+importlib_metadata.PackageNotFoundError
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* `osm2pgsql <https://osm2pgsql.org/>`_: Install with :code:`sudo apt install
-  osm2pgsql`
+It might happen that you have installed `importlib-metadata=3.1.0` for some
+reason which will lead to this error. Make sure you have
+`importlib-metadata>=3.1.1` installed. For more information read
+`here <https://github.com/openego/eGon-data/issues/60>`_.
 
 Run the workflow
 ================
