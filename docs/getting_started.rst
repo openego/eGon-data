@@ -2,11 +2,8 @@
 Getting Started
 ***************
 
-Installation
-============
-
 Pre-requisites
---------------
+==============
 
 In addition to the installation of python packages, OS-level packages are
 required
@@ -22,6 +19,8 @@ required
 * `osm2pgsql <https://osm2pgsql.org/>`_: Install with :code:`sudo apt install
   osm2pgsql`
 
+Installation
+============
 
 Since no release is available on PyPi and installations are probably used for development, cloning
 
@@ -36,7 +35,7 @@ and installing in editable mode recommended.
    pip install -e eGon-data
 
 Troubleshooting
----------------
+===============
 
 Having trouble to install `eGon-data`? Here's a list of recurring issues with
 the installation including a solution.
