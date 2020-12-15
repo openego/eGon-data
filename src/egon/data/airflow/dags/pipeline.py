@@ -2,6 +2,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
+import os
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
@@ -18,7 +19,8 @@ with airflow.DAG(
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
-        "/home/guido/git/eGon-data/src/egon/data/processing/vg250"
+        os.path.abspath(os.path.join(os.path.dirname(
+            __file__ ), '..', '..', 'processing', 'vg250'))
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
