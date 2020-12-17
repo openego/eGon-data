@@ -38,6 +38,17 @@ def credentials():
     return docker_db_config
 
 
+def engine():
+    """Engine for local database."""
+    db_config = credentials()
+    return create_engine(
+        f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
+        f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
+        f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
+        echo=False,
+    )
+
+
 def execute_sql(sql_string):
     """Execute a SQL expression given as string.
 
@@ -50,14 +61,7 @@ def execute_sql(sql_string):
         SQL expression
 
     """
-    db_config = credentials()
-
-    engine_local = create_engine(
-        f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
-        f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
-        f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
-        echo=False,
-    )
+    engine_local = engine()
 
     with engine_local.connect().execution_options(autocommit=True) as con:
         con.execute(text(sql_string))
@@ -93,3 +97,17 @@ def submit_comment(json, schema, table):
     # Query table comment and cast it into JSON
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
+
+
+def airflow_db_connection():
+    """Define connection to egon data db via env variable.
+
+    This connection can be accessed by Operators and Hooks using
+    :code:`postgres_conn_id='egon_data'`.
+    """
+
+    cred = credentials()
+
+    os.environ["AIRFLOW_CONN_EGON_DATA"] = \
+        f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']}" \
+            f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"
