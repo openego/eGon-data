@@ -157,7 +157,7 @@ def add_metadata():
             "language": ["DE"],
             "spatial": {
                 "location": "",
-                "extent": f"Germany",
+                "extent": "Germany",
                 "resolution": "vector",
             },
             "temporal": {
