@@ -85,6 +85,10 @@ setup(
         "apache-airflow",
         "click",
         "oedialect==0.0.8",
+        "pyaml",
+        "psycopg2",
+        "sqlalchemy",
+        "geopandas"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={

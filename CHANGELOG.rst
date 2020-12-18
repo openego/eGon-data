@@ -8,6 +8,10 @@ Unreleased
 Added
 -----
 
+* OSM data import as done in open_ego
+  `#1 <https://github.com/openego/eGon-data/issues/1>`_
+* Verwaltungsgebiete data import (vg250) more or less done as in open_ego
+  `#3 <https://github.com/openego/eGon-data/issues/3>`_
 
 Changed
 -------

@@ -1,0 +1,34 @@
+openstreetmap:
+  original_data:
+    source:
+      url: "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
+      stylefile: "oedb.style"
+    target:
+      table_prefix: "osm"
+      path: "bremen-200101.osm.pbf"
+  processed:
+    schema: "openstreetmap"
+    tables:
+      - "osm_line"
+      - "osm_nodes"
+      - "osm_point"
+      - "osm_polygon"
+      - "osm_rels"
+      - "osm_roads"
+      - "osm_ways"
+vg250:
+  original_data:
+    source:
+      url: "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+    target:
+      path: "vg250_01-01.geo84.shape.ebenen.zip"
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "VG250_STA.shp": "vg250_sta"
+      "VG250_LAN.shp": "vg250_lan"
+      "VG250_RBZ.shp": "vg250_rbz"
+      "VG250_KRS.shp": "vg250_krs"
+      "VG250_VWG.shp": "vg250_vwg"
+      "VG250_GEM.shp": "vg250_gem"
+

@@ -1,0 +1,3 @@
+ignore-paths: ["ci"]
+pep257:
+  disable: ["210", "212", "213"]
