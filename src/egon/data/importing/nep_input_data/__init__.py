@@ -6,10 +6,12 @@ import os
 import pandas as pd
 import sqlalchemy as sql
 import egon.data.config
+import zipfile
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, String, Float, func, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
+from urllib.request import urlretrieve
 ### will be later imported from another file ###
 Base = declarative_base()
 # TODO: Add metadata for both tables
@@ -285,6 +287,52 @@ def district_heating_input():
         session.add(entry)
 
     session.commit()
+
+def download_tyndp_data():
+    """ Download input data from TYNDP 2020
+
+
+    Returns
+    -------
+    None.
+
+    """
+    config = scenario_config('eGon2035')['tyndp']
+
+    for dataset in ['capacities', 'demand_2030', 'demand_2040']:
+        target_file = os.path.join(
+            os.path.dirname(__file__), config[dataset]["target_path"]
+        )
+
+        if not os.path.isfile(target_file):
+            urlretrieve(config[dataset]["url"], target_file)
+
+def map_carriers_tyndp:
+    return {
+
+        'Onshore Wind': 'wind_onshore',
+        'Offshore Wind': 'wind_offshore',
+        'Other non-RES': 'other_non_renewable',
+        'Reservoir': 'reservoir',
+        'Run-of-River': 'run_of_river',
+        'Battery': 'battery'}
+
+def insert_typnd_data():
+
+    config = scenario_config('eGon2035')['tyndp']
+
+    file = zipfile.ZipFile(
+        scenario_config('eGon2035')['tyndp']['capacities']['target_path'])
+
+    df = pd.read_excel(
+        file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
+        sheet_name='Capacity')
+
+    df = df.query("Scenario == 'Distributed Energy' & Year in [2030, 2040]")
+
+
+
+
 
 def setup_nep_scenario():
 
