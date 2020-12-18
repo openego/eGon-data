@@ -5,7 +5,7 @@ import os
 import zipfile
 
 from egon.data import db
-import egon.data.config 
+import egon.data.config
 
 
 def download_zensus_pop(): 
@@ -20,8 +20,6 @@ def download_zensus_pop():
     if not os.path.isfile(target_file):
         urlretrieve(zensus_population_config["source"]["url"], target_file)
         
-download_zensus_pop()
-
 
 def zspop_to_postgres(): 
     
@@ -54,10 +52,9 @@ def zspop_to_postgres():
     with zipfile.ZipFile(input_file) as zf:
         for filename in zf.namelist():
             zf.extract(filename)
-    
+            
             db.execute_sql(f"""COPY society.destatis_zensus_population_per_ha (grid_id, x_mp, y_mp, population)
-                               FROM '{os.path.join(
-                               os.path.dirname(__file__),filename)}' 
+                               FROM '{os.path.join(os.path.dirname(__file__), filename)}' 
                                DELIMITER ';'
                                CSV HEADER; """)
         os.remove(filename)
@@ -78,7 +75,7 @@ def zspop_to_postgres():
                         USING gist
                          (geom_point);""")
 
-zspop_to_postgres()
+
 
 
 

@@ -42,8 +42,7 @@ zensus_building:
       path: "csv_Gebaeude_100m_Gitter.zip"
   processed:
     schema: "society"
-    tables:
-      - "destatis_zensus_building_per_ha"
+    table: "destatis_zensus_building_per_ha"
 zensus_apartment: 
   original_data:
     source:
@@ -52,6 +51,5 @@ zensus_apartment:
       path: "csv_Wohnungen_100m_Gitter.zip"
   processed:
     schema: "society"
-    tables:
-      - "destatis_zensus_apartment_per_ha"
+    table: "destatis_zensus_apartment_per_ha"
 
