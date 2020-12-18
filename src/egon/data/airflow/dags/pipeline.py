@@ -9,7 +9,7 @@ from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
-from egon.data.airflow.input_data_nep_scenario import setup_nep_scenario
+from egon.data.importing.nep_input_data import add_schema, create_input_tables_nep, insert_capacities_per_federal_state_nep, district_heating_input, insert_nep_list_powerplants
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -71,5 +71,22 @@ with airflow.DAG(
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
     # NEP data import
-    nep_setup = PythonOperator(task_id="nep_scenario", python_callable=setup_nep_scenario)
-    setup.set_downstream(nep_setup)
+    create_schema = PythonOperator(
+        task_id="create-schema",
+        python_callable=add_schema)
+
+    create_tables = PythonOperator(
+        task_id="create-scenario-tables",
+        python_callable=create_input_tables_nep)
+
+    nep_cap = PythonOperator(
+        task_id="insert-nep-capacities",
+        python_callable=insert_capacities_per_federal_state_nep)
+
+    nep_conv_pp = PythonOperator(
+        task_id="insert-nep-list-conv-pp",
+        python_callable=insert_nep_list_powerplants)
+
+    setup >> create_schema >> create_tables
+    create_tables >> nep_cap
+    create_tables >> nep_conv_pp

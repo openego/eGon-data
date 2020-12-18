@@ -2,14 +2,51 @@
 # -*- coding: utf-8 -*-
 
 #import saio
+import os
 import pandas as pd
-#import geopandas as gpd
 import sqlalchemy as sql
 from egon.data import utils
-#from shapely import wkt
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Column, String, Float, func
+from sqlalchemy import Column, String, Float, func, Integer
 from sqlalchemy.ext.declarative import declarative_base
+
+### will be later imported from another file ###
+Base = declarative_base()
+# TODO: Add metadata for both tables
+class EgonScenarioCapacities(Base):
+        __tablename__ = 'egon_scenario_capacities'
+        __table_args__ = {'schema': 'model_draft'}
+        index = Column(Integer, primary_key=True)
+        country = Column(String(50))
+        component = Column(String(25))
+        carrier = Column(String(50))
+        capacity = Column(Float)
+        nuts = Column(String(12))
+        scenario_name = Column(String(50))
+
+class NEP2021Kraftwerksliste(Base):
+        __tablename__ = 'nep_2021_kraftwerksliste'
+        __table_args__ = {'schema': 'model_draft'}
+        index =  Column(String(50), primary_key=True)
+        bnetza_id = Column(String(50))
+        kraftwerksname = Column(String(100))
+        blockname = Column(String(50))
+        energietraeger = Column(String(12))
+        kwk_ja_nein = Column(String(12))
+        plz = Column(String(12))
+        ort = Column(String(50))
+        bundesland_land = Column(String(12))
+        inbetriebnamejahr = Column(String(12))
+        status = Column(String(50))
+        el_leistung = Column(Float)
+        a2035_kwk_ersatz = Column(String(12))
+        a2035_leistung = Column(Float)
+        b2035_kwk_ersatz = Column(String(12))
+        b2035_leistung = Column(Float)
+        c2035_kwk_ersatz = Column(String(12))
+        c2035_leistung = Column(Float)
+        b2040_kwk_ersatz = Column(String(12))
+        b2040_leistung = Column(Float)
 
 def connect_to_engine():
     # Read database configuration from docker-compose.yml
@@ -34,45 +71,6 @@ def add_schema():
             f"CREATE SCHEMA IF NOT EXISTS {schema};")
 
 def create_input_tables_nep():
-
-    Base = declarative_base()
-    # TODO: Add metadata for both tables
-    class EgonScenarioCapacities(Base):
-        __tablename__ = 'egon_scenario_capacities'
-        __table_args__ = {'schema': 'model_draft'}
-        state = Column(String(50), primary_key=True)
-        component = Column(String(25), primary_key=True)
-        carrier = Column(String(50), primary_key=True)
-        capacity = Column(Float)
-        nuts = Column(String(12))
-        scenario_name = Column(String(50), primary_key=True)
-
-    class NEP2021Kraftwerksliste(Base):
-        __tablename__ = 'nep_2021_kraftwerksliste'
-        __table_args__ = {'schema': 'model_draft'}
-        index =  Column(String(50), primary_key=True)
-        bnetza_id = Column(String(50))
-        kraftwerksname = Column(String(100))
-        blockname = Column(String(50))
-        energietraeger = Column(String(12))
-        kwk_ja_nein = Column(String(12))
-        plz = Column(String(12))
-        ort = Column(String(50))
-        bundesland_land = Column(String(12))
-        inbetriebnamejahr = Column(String(12))
-        status = Column(String(50))
-        el_leistung = Column(Float)
-        a2035_kwk_ersatz = Column(String(12))
-        a2035_leistung = Column(Float)
-        b2035_kwk_ersatz = Column(String(12))
-        b2035_leistung = Column(Float)
-        c2035_kwk_ersatz = Column(String(12))
-        c2035_leistung = Column(Float)
-        b2040_kwk_ersatz = Column(String(12))
-        b2040_leistung = Column(Float)
-
-    # Read database configuration from docker-compose.yml
-    docker_db_config = utils.egon_data_db_credentials()
 
     engine = connect_to_engine()
 
@@ -100,7 +98,11 @@ def manipulate_federal_state_numbers(df, carrier, scn = 'C 2035'):
 
     """
     # read-in installed capacities in germany (Genehmigung des Szenariorahmens)
-    df_g = pd.read_csv('NEP_2021_Genehmiging_C2035.csv',
+
+    target_file = os.path.join(
+        os.path.dirname(__file__), 'NEP_2021_Genehmiging_C2035.csv')
+
+    df_g = pd.read_csv(target_file,
                        delimiter=';', decimal=',',
                        index_col='Unnamed: 0')
 
@@ -120,7 +122,10 @@ def insert_capacities_per_federal_state_nep():
     engine = connect_to_engine()
 
     # read-in installed capacities per federal state of germany (Entwurf des Szenariorahmens)
-    df = pd.read_csv('NEP_2021_C2035.csv',
+    target_file = os.path.join(
+        os.path.dirname(__file__), 'NEP_2021_C2035.csv')
+
+    df = pd.read_csv(target_file,
                      delimiter=';', decimal=',',
                      index_col='Unnamed: 0')
 
@@ -170,7 +175,7 @@ def insert_capacities_per_federal_state_nep():
         data['carrier'] = data.index.map(rename_carrier)
         data = data.groupby(data.carrier).sum().reset_index()
         data['component'] = 'generator'
-        data['state'] = bl
+        data['country'] = 'Deutschland'
         data['nuts'] = nuts1[bl]
         data['scenario_name'] = 'NEP 2035'
 
@@ -185,32 +190,36 @@ def insert_capacities_per_federal_state_nep():
 
         insert_data = insert_data.append(data)
 
-    df
-
     # Scale numbers for federal states based on BNetzA (can be removed later)
     if True:
         insert_data = manipulate_federal_state_numbers(
             insert_data, rename_carrier, scn = 'C 2035')
 
-    # Set Multiindex to fit to primary keys in table
-    insert_data.set_index(['state', 'scenario_name', 'carrier', 'component'],
-                          inplace=True)
+    # # Set Multiindex to fit to primary keys in table
+    # insert_data.set_index(['state', 'scenario_name', 'carrier', 'component'],
+    #                       inplace=True)
 
     # Insert data to db
     try:
         insert_data.to_sql('egon_scenario_capacities',
                        engine,
                        schema='model_draft',
-                       if_exists='append')
+                       if_exists='append',
+                       index=insert_data.index)
     except:
         print('data already exists')
+
+    # Add district heating data accordning to energy and full load hours
+    district_heating_input()
 
 def insert_nep_list_powerplants():
     # Connect to database
     engine = connect_to_engine()
 
     # Read-in data from csv-file
-    kw_liste_nep = pd.read_csv(path_input+'Kraftwerksliste_NEP_2021_konv.csv',
+    target_file = os.path.join(
+        os.path.dirname(__file__), 'Kraftwerksliste_NEP_2021_konv.csv')
+    kw_liste_nep = pd.read_csv(target_file,
                                delimiter=';', decimal=',')
 
     # Adjust column names
@@ -240,22 +249,10 @@ def insert_nep_list_powerplants():
                        schema='model_draft',
                        if_exists='replace')
 
-def district_heating_input(path_input):
+def district_heating_input():
 
-    ### will be later imported from another file ###
-    Base = declarative_base()
-    class EgonScenarioCapacities(Base):
-        __tablename__ = 'egon_scenario_capacities'
-        __table_args__ = {'schema': 'model_draft'}
-        state = Column(String(50), primary_key=True)
-        component = Column(String(25), primary_key=True)
-        carrier = Column(String(50), primary_key=True)
-        capacity = Column(Float)
-        nuts = Column(String(12))
-        scenario_name = Column(String(50), primary_key=True)
-    ###
-
-    file = path_input + 'NEP_2021_C2035_district_heating.csv'
+    file = os.path.join(
+        os.path.dirname(__file__), 'NEP_2021_C2035_district_heating.csv')
 
     df = pd.read_csv(file, delimiter=';', dtype={'Wert':float})
 
@@ -269,8 +266,7 @@ def district_heating_input(path_input):
         entry = EgonScenarioCapacities(
             component = 'link',
             scenario_name = 'NEP 2035',
-            state = 'Deutschland',
-            nuts = 'DE',
+            country = 'Deutschland',
             carrier = 'urban_central_'+ (
                 'heat_pump' if c=='Grosswaermepumpe' else 'resistive_heater'),
             capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e3/
@@ -283,8 +279,7 @@ def district_heating_input(path_input):
         entry = EgonScenarioCapacities(
         component = 'generator',
         scenario_name = 'NEP 2035',
-        state = 'Deutschland',
-        nuts = 'DE',
+        country = 'Deutschland',
         carrier = 'urban_central_'+ (
                 'solar_thermal_collector' if c =='Solarthermie'
                                 else 'geo_thermal'),
@@ -295,13 +290,13 @@ def district_heating_input(path_input):
 
     session.commit()
 
-
-
 def setup_nep_scenario():
-    # TODO: Change input path
 
     add_schema()
     create_input_tables_nep()
     insert_capacities_per_federal_state_nep()
-    district_heating_input()
     insert_nep_list_powerplants()
+
+#setup_nep_scenario()
+test = os.path.join(
+        os.path.dirname(__file__), 'Kraftwerksliste_NEP_2021_konv.csv')
