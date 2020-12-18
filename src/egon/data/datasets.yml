@@ -24,8 +24,7 @@ zensus_population:
       path: "csv_Bevoelkerung_100m_Gitter.zip"
   processed:
     schema: "society"
-    tables:
-      - "destatis_zensus_population_per_ha"
+    table: "destatis_zensus_population_per_ha"
 zensus_household: 
   original_data:
     source:
@@ -34,8 +33,7 @@ zensus_household:
       path: "csv_Haushalte_100m_Gitter.zip"
   processed:
     schema: "society"
-    tables:
-      - "destatis_zensus_household_per_ha"
+    table: "destatis_zensus_household_per_ha"
 zensus_building: 
   original_data:
     source:
