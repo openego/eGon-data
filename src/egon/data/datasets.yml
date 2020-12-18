@@ -32,3 +32,11 @@ vg250:
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
 
+scenario_input:
+  eGon2035:
+    paths:
+      "capacities": "NEP_2021_C2035.csv"
+      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
+      "district_heating": "NEP_2021_C2035_district_heating.csv"
+    source: "draft"
+
