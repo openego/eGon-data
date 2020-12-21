@@ -40,14 +40,15 @@ scenario_input:
       "district_heating": "NEP_2021_C2035_district_heating.csv"
     source: "draft"
     tyndp:
+      countries: ["AT", "BE", "CH", "CZ", "DK", "FR", "NL", "NO", "SE", "PL", "UK"]
       capacities:
         url: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
         target_path: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
       demand_2030:
-        url: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/DE2030_Demand_CY1984.csv"
-        target_path: "DE2030_Demand_CY1984.csv"
+        url: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+        target_path: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
       demand_2040:
-        url: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/DE2040_Demand_CY1984.csv"
-        target_path: "DE2040_Demand_CY1984.csv"
+        url: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+        target_path: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
 
 

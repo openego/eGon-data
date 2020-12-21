@@ -307,36 +307,109 @@ def download_tyndp_data():
         if not os.path.isfile(target_file):
             urlretrieve(config[dataset]["url"], target_file)
 
-def map_carriers_tyndp:
+def map_carriers_tyndp():
     return {
-
         'Onshore Wind': 'wind_onshore',
         'Offshore Wind': 'wind_offshore',
         'Other non-RES': 'other_non_renewable',
         'Reservoir': 'reservoir',
         'Run-of-River': 'run_of_river',
-        'Battery': 'battery'}
+        'Battery': 'battery',
+        'Other RES': 'other_renewable',
+        'Solar PV': 'solar',
+        'Solar Thermal':'other_renewable',
+        'Nuclear': 'nuclear',
+        'Gas CCGT old 1': 'gas',
+        'P2G': 'power_to_gas',
+        'DSR': 'demand_side_response',
+        'Gas CCGT new': 'gas',
+        'Gas CCGT old 2': 'gas',
+        'Gas CCGT present 1': 'gas',
+        'Gas CCGT present 2': 'gas',
+        'Gas conventional old 1': 'gas',
+        'Gas conventional old 2': 'gas',
+        'Lignite new': 'lignite',
+        'Lignite old 1': 'lignite',
+        'Lignite old 2': 'lignite',
+        'Hard coal new': 'coal',
+        'Hard coal old 1': 'coal',
+        'Hard coal old 2': 'coal'}
 
 def insert_typnd_data():
 
     config = scenario_config('eGon2035')['tyndp']
 
-    file = zipfile.ZipFile(
-        scenario_config('eGon2035')['tyndp']['capacities']['target_path'])
+    # insert installed capacities
+    file = zipfile.ZipFile(os.path.join(
+        os.path.dirname(__file__),
+        scenario_config('eGon2035')['tyndp']['capacities']['target_path']))
 
     df = pd.read_excel(
         file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
         sheet_name='Capacity')
 
-    df = df.query("Scenario == 'Distributed Energy' & Year in [2030, 2040]")
+    # differneces between different climate years are very small (<1MW)
+    # choose 1984 because it is the mean value
+
+    df_2030 = df.rename(
+        {'Climate Year':'Climate_Year'}, axis = 'columns').query(
+            'Scenario == "Distributed Energy" & Year == 2030 & Climate_Year == 1984'
+            ).set_index(['Node/Line', 'Generator_ID'])
+
+    df_2040 =  df.rename(
+        {'Climate Year':'Climate_Year'}, axis = 'columns').query(
+            'Scenario == "Distributed Energy" & Year == 2040 & Climate_Year == 1984'
+            ).set_index(['Node/Line', 'Generator_ID'])
+
+    # interpolate linear between 2030 and 2040 for 2035 accordning to
+    # scenario report of TSO's and the approval by BNetzA
+    df_2035 = pd.DataFrame(index=df_2030.index)
+
+    df_2035['cap_2030'] = df_2030.Value
+    df_2035['cap_2040'] = df_2040.Value
+    df_2035['cap_2035'] = df_2035['cap_2030'] + (
+        df_2035['cap_2040']-df_2035['cap_2030'])/2
+    df_2035 = df_2035.reset_index()
+
+    df_2035['carrier'] = df_2035.Generator_ID.map(map_carriers_tyndp())
+
+    # group capacities by new carriers
+    grouped_capacities = df_2035.groupby(
+        ['carrier', 'Node/Line']).cap_2035.sum().reset_index()
+
+    # choose capacities for considered countries
+    grouped_capacities = grouped_capacities[
+        grouped_capacities['Node/Line'].str[:2].isin(config['countries'])]
+
+    # Connect to database
+    engine = db.engine()
+    session = sessionmaker(bind=engine)()
+
+    for i in grouped_capacities.index:
+        if grouped_capacities['carrier'][i] == 'battery':
+            comp = 'storage_unit'
+        elif grouped_capacities['carrier'][i] == 'power_to_gas':
+            comp = 'link'
+        else:
+            comp = 'generator'
+        entry = EgonScenarioCapacities(
+            component = comp,
+            scenario_name = 'NEP 2035',
+            country = grouped_capacities['Node/Line'][i], # not country but node (DK/UK)
+            carrier = grouped_capacities['carrier'][i],
+            capacity = grouped_capacities['cap_2035'][i])
+
+        session.add(entry)
+
+    session.commit()
 
 
+def insert_data():
 
-
-
-def setup_nep_scenario():
-
-    add_schema()
-    create_input_tables_nep()
     insert_capacities_per_federal_state_nep()
+
     insert_nep_list_powerplants()
+
+    download_tyndp_data()
+
+    insert_typnd_data()
