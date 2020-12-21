@@ -1,71 +1,102 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# TODO: Change docstring
+"""The central module containing all code dealing with importing VG250 data.
 
-#import saio
+This module either directly contains the code dealing with importing VG250
+data, or it re-exports everything needed to handle it. Please refrain
+from importing code from any modules below this one, because it might
+lead to unwanted behaviour.
+
+If you have to import code from a module below this one because the code
+isn't exported from this module, please file a bug, so we can fix this.
+"""
+
 import os
+import zipfile
+from urllib.request import urlretrieve
+import egon.data.config
 import pandas as pd
 import sqlalchemy as sql
-import egon.data.config
-import zipfile
-from sqlalchemy.orm import sessionmaker
+from egon.data import db
 from sqlalchemy import Column, String, Float, func, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from egon.data import db
-from urllib.request import urlretrieve
+from sqlalchemy.orm import sessionmaker
 ### will be later imported from another file ###
 Base = declarative_base()
 # TODO: Add metadata for both tables
 class EgonScenarioCapacities(Base):
-        __tablename__ = 'egon_scenario_capacities'
-        __table_args__ = {'schema': 'model_draft'}
-        index = Column(Integer, primary_key=True)
-        country = Column(String(50))
-        component = Column(String(25))
-        carrier = Column(String(50))
-        capacity = Column(Float)
-        nuts = Column(String(12))
-        scenario_name = Column(String(50))
+    __tablename__ = 'egon_scenario_capacities'
+    __table_args__ = {'schema': 'model_draft'}
+    index = Column(Integer, primary_key=True)
+    country = Column(String(50))
+    component = Column(String(25))
+    carrier = Column(String(50))
+    capacity = Column(Float)
+    nuts = Column(String(12))
+    scenario_name = Column(String(50))
 
 class NEP2021Kraftwerksliste(Base):
-        __tablename__ = 'nep_2021_kraftwerksliste'
-        __table_args__ = {'schema': 'model_draft'}
-        index =  Column(String(50), primary_key=True)
-        bnetza_id = Column(String(50))
-        kraftwerksname = Column(String(100))
-        blockname = Column(String(50))
-        energietraeger = Column(String(12))
-        kwk_ja_nein = Column(String(12))
-        plz = Column(String(12))
-        ort = Column(String(50))
-        bundesland_land = Column(String(12))
-        inbetriebnamejahr = Column(String(12))
-        status = Column(String(50))
-        el_leistung = Column(Float)
-        a2035_kwk_ersatz = Column(String(12))
-        a2035_leistung = Column(Float)
-        b2035_kwk_ersatz = Column(String(12))
-        b2035_leistung = Column(Float)
-        c2035_kwk_ersatz = Column(String(12))
-        c2035_leistung = Column(Float)
-        b2040_kwk_ersatz = Column(String(12))
-        b2040_leistung = Column(Float)
+    __tablename__ = 'nep_2021_kraftwerksliste'
+    __table_args__ = {'schema': 'model_draft'}
+    index =  Column(String(50), primary_key=True)
+    bnetza_id = Column(String(50))
+    kraftwerksname = Column(String(100))
+    blockname = Column(String(50))
+    energietraeger = Column(String(12))
+    kwk_ja_nein = Column(String(12))
+    plz = Column(String(12))
+    ort = Column(String(50))
+    bundesland_land = Column(String(12))
+    inbetriebnamejahr = Column(String(12))
+    status = Column(String(50))
+    el_leistung = Column(Float)
+    a2035_kwk_ersatz = Column(String(12))
+    a2035_leistung = Column(Float)
+    b2035_kwk_ersatz = Column(String(12))
+    b2035_leistung = Column(Float)
+    c2035_kwk_ersatz = Column(String(12))
+    c2035_leistung = Column(Float)
+    b2040_kwk_ersatz = Column(String(12))
+    b2040_leistung = Column(Float)
 
 def scenario_config(scn_name):
+    """Get scenario settings from datasets.yml
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
+
+    Returns
+    -------
+    dict
+        Configuration data for the specified scenario
+
+    """
     data_config = egon.data.config.datasets()
+
     return data_config["scenario_input"][scn_name]
 
-def select_table_input(tablename):
-    session = sessionmaker(bind=engine)()
-    query = session.query(tablename)
-    return pd.read_sql_query(query.statement,
-                                 session.bind)
-
 def add_schema():
+    """Add missing schemas to local database.
+    Will be removed to a central place later.
+
+    Returns
+    -------
+    None.
+
+    """
     for schema in ['model_draft']:
         db.execute_sql(
             f"CREATE SCHEMA IF NOT EXISTS {schema};")
 
-def create_input_tables_nep():
+def create_scenario_input_tables():
+    """Create input tables for scenario setup
+
+    Returns
+    -------
+    None.
+
+    """
 
     engine = db.engine()
 
@@ -112,11 +143,46 @@ def manipulate_federal_state_numbers(df, carrier, scn = 'C 2035'):
                 df[mask].capacity.sum() * target_cap[c]
     return df
 
-def insert_capacities_per_federal_state_nep():
+def nuts1_to_federal_state():
+    """Map nuts1 codes to names of federal states
 
+    Returns
+    -------
+    dict
+        nuts1 codes and names of federal states
+
+    """
+    return {'Baden-Wuerttemberg': 'DE1',
+             'Bayern': 'DE2',
+             'Berlin': 'DE3',
+             'Brandenburg': 'DE4',
+             'Bremen': 'DE5',
+             'Hamburg': 'DE6',
+             'Hessen': 'DE7',
+             'Mecklenburg-Vorpommern': 'DE8',
+             'Niedersachsen': 'DE9',
+             'Nordrhein-Westfalen': 'DEA',
+             'Rheinland-Pfalz': 'DEB',
+             'Saarland': 'DEC',
+             'Sachsen': 'DED',
+             'Sachsen-Anhalt': 'DEE',
+             'Schleswig-Holstein': 'DEF',
+             'Thueringen': 'DEG'}
+
+def insert_capacities_per_federal_state_nep():
+    """Inserts installed capacities per federal state accordning to
+    NEP 2035 (version 2021), scenario 2035 C
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Connect to local database
     engine = db.engine()
 
-    # read-in installed capacities per federal state of germany (Entwurf des Szenariorahmens)
+    # read-in installed capacities per federal state of germany
     target_file = os.path.join(
         os.path.dirname(__file__),
         scenario_config('eGon2035')['paths']['capacities'])
@@ -145,23 +211,7 @@ def insert_capacities_per_federal_state_nep():
                      'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
-    ## TODO: Can this be replaced by a sql-query?
-    nuts1 = {'Baden-Wuerttemberg': 'DE1',
-             'Bayern': 'DE2',
-             'Berlin': 'DE3',
-             'Brandenburg': 'DE4',
-             'Bremen': 'DE5',
-             'Hamburg': 'DE6',
-             'Hessen': 'DE7',
-             'Mecklenburg-Vorpommern': 'DE8',
-             'Niedersachsen': 'DE9',
-             'Nordrhein-Westfalen': 'DEA',
-             'Rheinland-Pfalz': 'DEB',
-             'Saarland': 'DEC',
-             'Sachsen': 'DED',
-             'Sachsen-Anhalt': 'DEE',
-             'Schleswig-Holstein': 'DEF',
-             'Thueringen': 'DEG'}
+    nuts1 = nuts1_to_federal_state()
 
     insert_data = pd.DataFrame()
 
@@ -191,10 +241,6 @@ def insert_capacities_per_federal_state_nep():
         insert_data = manipulate_federal_state_numbers(
             insert_data, rename_carrier, scn = 'C 2035')
 
-    # # Set Multiindex to fit to primary keys in table
-    # insert_data.set_index(['state', 'scenario_name', 'carrier', 'component'],
-    #                       inplace=True)
-
     # Insert data to db
     try:
         insert_data.to_sql('egon_scenario_capacities',
@@ -209,7 +255,15 @@ def insert_capacities_per_federal_state_nep():
     district_heating_input()
 
 def insert_nep_list_powerplants():
-    # Connect to database
+    """Insert list of conventional powerplants attachd to the approval
+    of the scenario report by BNetzA
+
+    Returns
+    -------
+    None.
+
+    """
+    # Connect to local database
     engine = db.engine()
 
     # Read-in data from csv-file
@@ -247,6 +301,13 @@ def insert_nep_list_powerplants():
                        if_exists='replace')
 
 def district_heating_input():
+    """Imports data for district heating networks in Germany
+
+    Returns
+    -------
+    None.
+
+    """
 
     file = os.path.join(
         os.path.dirname(__file__),
@@ -291,7 +352,6 @@ def district_heating_input():
 def download_tyndp_data():
     """ Download input data from TYNDP 2020
 
-
     Returns
     -------
     None.
@@ -308,6 +368,14 @@ def download_tyndp_data():
             urlretrieve(config[dataset]["url"], target_file)
 
 def map_carriers_tyndp():
+    """ Map carriers from TYNDP-data to carriers used in eGon
+
+    Returns
+    -------
+    dict
+        Carrier from TYNDP and eGon
+
+    """
     return {
         'Onshore Wind': 'wind_onshore',
         'Offshore Wind': 'wind_offshore',
@@ -336,6 +404,14 @@ def map_carriers_tyndp():
         'Hard coal old 2': 'coal'}
 
 def insert_typnd_data():
+    """Insert data from TYNDP 2020 accordning to NEP 2021
+    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+
+    Returns
+    -------
+    None.
+
+    """
 
     config = scenario_config('eGon2035')['tyndp']
 
@@ -350,7 +426,6 @@ def insert_typnd_data():
 
     # differneces between different climate years are very small (<1MW)
     # choose 1984 because it is the mean value
-
     df_2030 = df.rename(
         {'Climate Year':'Climate_Year'}, axis = 'columns').query(
             'Scenario == "Distributed Energy" & Year == 2030 & Climate_Year == 1984'
@@ -364,13 +439,11 @@ def insert_typnd_data():
     # interpolate linear between 2030 and 2040 for 2035 accordning to
     # scenario report of TSO's and the approval by BNetzA
     df_2035 = pd.DataFrame(index=df_2030.index)
-
     df_2035['cap_2030'] = df_2030.Value
     df_2035['cap_2040'] = df_2040.Value
     df_2035['cap_2035'] = df_2035['cap_2030'] + (
         df_2035['cap_2040']-df_2035['cap_2030'])/2
     df_2035 = df_2035.reset_index()
-
     df_2035['carrier'] = df_2035.Generator_ID.map(map_carriers_tyndp())
 
     # group capacities by new carriers
@@ -404,7 +477,14 @@ def insert_typnd_data():
     session.commit()
 
 
-def insert_data():
+def insert_data_nep():
+    """Overall function for importing scenario input data for eGon2035 scenario
+
+    Returns
+    -------
+    None.
+
+    """
 
     insert_capacities_per_federal_state_nep()
 

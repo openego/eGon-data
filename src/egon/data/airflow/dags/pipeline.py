@@ -81,6 +81,6 @@ with airflow.DAG(
 
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",
-        python_callable=nep_input.insert_data)
+        python_callable=nep_input.insert_data_nep)
 
     setup >> create_schema >> create_tables >>  nep_insert_data
