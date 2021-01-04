@@ -17,7 +17,7 @@ import egon.data.config
 import pandas as pd
 import sqlalchemy as sql
 from egon.data import db
-from sqlalchemy import Column, String, Float, func, Integer
+from sqlalchemy import Column, String, Float, func, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 ### will be later imported from another file ###
@@ -32,6 +32,16 @@ class EgonScenarioCapacities(Base):
     carrier = Column(String(50))
     capacity = Column(Float)
     nuts = Column(String(12))
+    scenario_name = Column(String(50))
+
+class EgonScenarioTimeseries(Base):
+    __tablename__ = 'egon_scenario_timeseries'
+    __table_args__ = {'schema': 'model_draft'}
+    index = Column(Integer, primary_key=True)
+    node = Column(String(50))
+    component = Column(String(25))
+    carrier = Column(String(50))
+    data = Column(ARRAY(Float))
     scenario_name = Column(String(50))
 
 class NEP2021Kraftwerksliste(Base):
@@ -101,6 +111,7 @@ def create_scenario_input_tables():
     engine = db.engine()
 
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
+    EgonScenarioTimeseries.__table__.create(bind=engine, checkfirst=True)
     NEP2021Kraftwerksliste.__table__.create(bind=engine, checkfirst=True)
 
 def manipulate_federal_state_numbers(df, carrier, scn = 'C 2035'):
@@ -403,7 +414,7 @@ def map_carriers_tyndp():
         'Hard coal old 1': 'coal',
         'Hard coal old 2': 'coal'}
 
-def insert_typnd_data():
+def insert_typnd_capacities():
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
 
@@ -477,6 +488,59 @@ def insert_typnd_data():
     session.commit()
 
 
+
+def insert_tyndp_timeseries():
+    """Copy load timeseries data from TYNDP 2020.
+    According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Connect to database
+    engine = db.engine()
+    session = sessionmaker(bind=engine)()
+
+    config = scenario_config('eGon2035')['tyndp']
+    data_config = egon.data.config.datasets()
+
+    nodes = ['AT00', 'BE00', 'CH00', 'CZ00', 'DKE1', 'DKW1', 'FR00', 'NL00',
+             'LUB1', 'LUF1', 'LUG1', 'NOM1', 'NON1', 'NOS0', 'SE01', 'SE02',
+             'SE03', 'SE04', 'PL00', 'UK00', 'UKNI']
+
+    dataset_2030 = pd.read_excel(
+        os.path.join(os.path.dirname(__file__),
+                     config['demand_2030']['target_path']),
+        sheet_name=nodes, skiprows=10)
+
+    dataset_2040 = pd.read_excel(
+        os.path.join(os.path.dirname(__file__),
+                     config['demand_2040']['target_path']),
+        sheet_name=None, skiprows=10)
+
+    for node in nodes:
+
+        data_2030 = dataset_2030[node][data_config['weather']['year']]
+
+        try:
+            data_2040 = dataset_2040[node][data_config['weather']['year']]
+        except:
+            data_2040 = data_2030
+
+        data_2035 = ((data_2030+data_2040)/2)[:8760]*1e-3
+
+        entry = EgonScenarioTimeseries(
+            component = 'load',
+            scenario_name = 'eGon2035',
+            node = node,
+            carrier = 'all',
+            data = list(data_2035.values))
+
+        session.add(entry)
+
+    session.commit()
+
 def insert_data_nep():
     """Overall function for importing scenario input data for eGon2035 scenario
 
@@ -492,4 +556,6 @@ def insert_data_nep():
 
     download_tyndp_data()
 
-    insert_typnd_data()
+    insert_typnd_capacities()
+
+    insert_tyndp_timeseries()

@@ -77,7 +77,7 @@ with airflow.DAG(
 
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
-        python_callable=nep_input.create_input_tables_nep)
+        python_callable=nep_input.create_scenario_input_tables)
 
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",

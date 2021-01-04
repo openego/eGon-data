@@ -52,3 +52,5 @@ scenario_input:
         target_path: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
 
 
+weather:
+  year: 2011
