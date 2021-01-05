@@ -93,7 +93,7 @@ packages are required too. Right now these are:
   docs <https://docs.docker.com/get-docker/>`_ and choose the appropriate
   install method for your OS.
 
-  Docker is not required if you use a local postresql installation.
+  Docker is not required if you use a local PostreSQL installation.
 
 * `osm2pgsql <https://osm2pgsql.org/>`_
   On recent Ubuntu version you can install it via
@@ -122,12 +122,12 @@ Run the workflow
 
 The :py:mod:`egon.data` package installs a command line application
 called :code:`egon-data` with which you can control the workflow so once
-the installation is successfull, you can explore the command line
+the installation is successful, you can explore the command line
 interface starting with :code:`egon-data --help`.
 
 The most useful subcommand is probably :code:`egon-data serve`. After
 running this command, you can open your browser and point it to
-`localhost:8080`, after which you will see the webinterface of `Apache
+`localhost:8080`, after which you will see the web interface of `Apache
 Airflow`_ with which you can control the :math:`eGo^n` data processing
 pipeline.
 
