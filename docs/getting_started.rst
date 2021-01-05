@@ -3,4 +3,5 @@ Getting Started
 ***************
 
 .. include:: ../README.rst
-    :start-after: .. getting-started
+    :start-after: .. begin-getting-started-information
+    :end-before: .. end-getting-started-information

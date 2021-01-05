@@ -78,7 +78,7 @@ The data used in the eGo^N project along with the code importing, generating and
 
 * Free software: GNU Affero General Public License v3 or later (AGPLv3+)
 
-.. getting-started
+.. begin-getting-started-information
 
 Pre-requisites
 ==============
@@ -183,3 +183,11 @@ It might happen that you have installed `importlib-metadata=3.1.0` for some
 reason which will lead to this error. Make sure you have
 `importlib-metadata>=3.1.1` installed. For more information read
 `here <https://github.com/openego/eGon-data/issues/60>`_.
+
+
+.. end-getting-started-information
+
+Further Reading
+===============
+
+You can find more in depth documentation at https://eGon-data.readthedocs.io/.
