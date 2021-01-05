@@ -5,8 +5,8 @@ Getting Started
 Pre-requisites
 ==============
 
-In addition to the installation of python packages, OS-level packages are
-required
+In addition to the installation of Python packages, some non-Python
+packages are required too. Right now these are:
 
 * `Docker <https://docs.docker.com/get-started/>`_: Docker is used to provide
   a PostgreSQL database (in the default case).
@@ -16,13 +16,17 @@ required
   install method for your OS.
 
   Docker is not required if you use a local postresql installation.
-* `osm2pgsql <https://osm2pgsql.org/>`_: Install with :code:`sudo apt install
-  osm2pgsql`
+
+* `osm2pgsql <https://osm2pgsql.org/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install osm2pgsql`.
+
 
 Installation
 ============
 
-Since no release is available on PyPi and installations are probably used for development, cloning
+Since no release is available on PyPI and installations are probably
+used for development, cloning
 
 .. code-block:: bash
 
@@ -69,16 +73,31 @@ reason which will lead to this error. Make sure you have
 Run the workflow
 ================
 
+The :py:mod:`egon.data` package installs a command line application
+called :code:`egon-data` with which you can control the workflow so once
+the installation is successfull, you can explore the command line
+interface starting with :code:`egon-data --help`.
+
+The most useful subcommand is probably :code:`egon-data serve`. After
+running this command, you can open your browser and point it to
+`localhost:8080`, after which you will see the webinterface of `Apache
+Airflow`_ with which you can control the :math:`eGo^n` data processing
+pipeline.
+
+.. _Apache Airflow: https://airflow.apache.org/docs/apache-airflow/stable/ui.html#ui-screenshots
+
 .. warning::
 
-   A complete run of the workflow might require much computing power and can't be run on laptop.
-   Use the :ref:`test mode <Test mode>` for experimenting.
+   A complete run of the workflow might require much computing power and
+   can't be run on laptop. Use the :ref:`test mode <Test mode>` for
+   experimenting.
 
 
 Test mode
 ---------
 
-The workflow can be tested on a smaller subset of data on example of the federal state of Bremen.
+The workflow can be tested on a smaller subset of data on example of the
+federal state of Bremen.
 
 .. warning::
 
