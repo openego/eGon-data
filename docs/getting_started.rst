@@ -2,6 +2,17 @@
 Getting Started
 ***************
 
+Pre-requisites
+==============
+
+In addition to the installation of Python packages, some non-Python
+packages are required too. Right now these are:
+
+* `osm2pgsql <https://osm2pgsql.org/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install osm2pgsql`.
+
+
 Installation
 ============
 
@@ -17,17 +28,6 @@ and installing in editable mode recommended.
 .. code-block:: bash
 
    pip install -e eGon-data
-
-
-Pre-requisites
-==============
-
-In addition to the installation of Python packages, some non-Python
-packages are required too. Right now these are:
-
-* `osm2pgsql <https://osm2pgsql.org/>`_
-  On recent Ubuntu version you can install it via
-  :code:`sudo apt install osm2pgsql`.
 
 
 Run the workflow
