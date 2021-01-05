@@ -59,7 +59,7 @@ how to add :code:`$USER` to the group `docker`. Read the `initial discussion
 <https://github.com/openego/eGon-data/issues/33>`_ for more context.
 
 importlib_metadata.PackageNotFoundError
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------
 
 It might happen that you have installed `importlib-metadata=3.1.0` for some
 reason which will lead to this error. Make sure you have
