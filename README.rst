@@ -164,7 +164,7 @@ Insufficient permissions for executing docker?
 To verify, please execute :code:`docker-compose up -d --build` and you should see
 something like
 
-.. code-block::
+.. code-block:: none
 
     ERROR: Couldn't connect to Docker daemon at http+docker://localunixsocket - is it running?
 
