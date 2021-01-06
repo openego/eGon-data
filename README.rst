@@ -168,7 +168,8 @@ something like
 
     ERROR: Couldn't connect to Docker daemon at http+docker://localunixsocket - is it running?
 
-    If it's at a non-standard location, specify the URL with the DOCKER_HOST environment variable.
+    If it's at a non-standard location, specify the URL with the DOCKER_HOST environment
+    variable.
 
 If this is the case, your :code:`$USER` is not member of the group `docker`.
 Read `in docker docs <https://docs.docker.com/engine/install/linux-postinstall/
