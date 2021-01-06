@@ -174,16 +174,16 @@ something like
 If this is the case, your :code:`$USER` is not member of the group `docker`.
 Read `in docker docs <https://docs.docker.com/engine/install/linux-postinstall/
 #manage-docker-as-a-non-root-user>`_
-how to add :code:`$USER` to the group `docker`. Read the `initial discussion
-<https://github.com/openego/eGon-data/issues/33>`_ for more context.
+how to add :code:`$USER` to the group `docker`. Read the :issue:`initial
+discussion <33>` for more context.
 
 importlib_metadata.PackageNotFoundError
 ---------------------------------------
 
 It might happen that you have installed `importlib-metadata=3.1.0` for some
 reason which will lead to this error. Make sure you have
-`importlib-metadata>=3.1.1` installed. For more information read
-`here <https://github.com/openego/eGon-data/issues/60>`_.
+`importlib-metadata>=3.1.1` installed. For more information read the
+discussion in :issue:`60`.
 
 Import errors or incompatible package version errors
 ----------------------------------------------------
