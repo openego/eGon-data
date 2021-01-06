@@ -116,6 +116,17 @@ and installing in editable mode is recommended.
 
    pip install -e eGon-data
 
+In order to keep the package installation isolated, we recommend
+installing the package in a dedicated virtual environment. There's both,
+an `external tool`_ and a `builtin module`_ which help in doing so. I
+also highly recommend spending the time to set up `virtualenvwrapper`_
+to manage your virtual environments if you start having to keep multiple
+ones around.
+
+.. _external tool: https://virtualenv.pypa.io/en/latest/
+.. _builtin module: https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages
+.. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/index.html
+
 
 Run the workflow
 ================
