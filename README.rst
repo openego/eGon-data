@@ -184,6 +184,22 @@ reason which will lead to this error. Make sure you have
 `importlib-metadata>=3.1.1` installed. For more information read
 `here <https://github.com/openego/eGon-data/issues/60>`_.
 
+Import errors or incompatible package version errors
+----------------------------------------------------
+
+If you get an :py:class:`ImportError` when trying to run ``egon-data``,
+or the installation complains with something like
+
+.. code-block:: none
+
+  first-package a.b.c requires second-package>=q.r.r, but you'll have
+  second-package x.y.z which is incompatible.
+
+you might have run into a problem of earlier ``pip`` versions. Either
+upgrade to a ``pip`` version >=20.3 and reinstall ``egon.data``, or
+reinstall the package via ``pip install -U --use-feature=2020-resolver``.
+The ``-U`` flag is important to actually force a reinstall. For more
+information read the discussions in issues :issue:`36` and :issue:`37`.
 
 .. end-getting-started-information
 
