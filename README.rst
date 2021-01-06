@@ -200,7 +200,8 @@ you might have run into a problem of earlier ``pip`` versions. Either
 upgrade to a ``pip`` version >=20.3 and reinstall ``egon.data``, or
 reinstall the package via ``pip install -U --use-feature=2020-resolver``.
 The ``-U`` flag is important to actually force a reinstall. For more
-information read the discussions in issues :issue:`36` and :issue:`37`.
+information read the discussions in issues :issue:`#36 <36>` and
+:issue:`#37 <37>`.
 
 .. end-getting-started-information
 
