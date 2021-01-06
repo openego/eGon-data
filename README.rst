@@ -110,7 +110,7 @@ used for development, cloning
 
    git clone git@github.com:openego/eGon-data.git
 
-and installing in editable mode recommended.
+and installing in editable mode is recommended.
 
 .. code-block:: bash
 
