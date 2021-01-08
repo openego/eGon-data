@@ -1,3 +1,4 @@
+from fileinput import FileInput
 from logging.config import fileConfig
 from pathlib import Path
 import re
@@ -25,6 +26,21 @@ target_metadata = None
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+
+@write_hooks.register("fixup")
+def fix_minor_issues(filename, options):
+    """Fix minor issues like grammar in comments or trailing whitespace."""
+    fixes = []
+    with FileInput(filename, inplace=True) as script:
+        for line in script:
+            if re.match(r"# revision identifiers, used by Alembic\.", line):
+                print("# Revision identifiers, used by Alembic.")
+                fixes.append('"# revision ..." -> "# Revision ..."')
+            else:
+                print(line, end="")
+    for fix in fixes:
+        print(f"Fixed: {fix}.")
 
 
 def script(filename=None, revision=None):
