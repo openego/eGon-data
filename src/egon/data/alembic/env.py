@@ -7,6 +7,7 @@ from alembic import context
 from alembic.script import ScriptDirectory, write_hooks
 
 from egon.data.db import engine
+from egon.data.orm.openstreetmap import metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,7 +21,7 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
