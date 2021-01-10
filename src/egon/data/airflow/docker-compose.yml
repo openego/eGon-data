@@ -15,4 +15,3 @@ services:
       POSTGRES_PASSWORD: data
     volumes:
     - $HOME/docker/volumes/postgres/egon-data:/var/lib/postgresql/data
-    - ./entrypoints:/docker-entrypoint-initdb.d/
