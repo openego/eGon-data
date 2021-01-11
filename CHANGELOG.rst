@@ -8,7 +8,7 @@ Unreleased
 Added
 -----
 
-* You can no override the default database configuration by putting a
+* You can now override the default database configuration by putting a
   "local-database.yaml" into the current working directory. Values read
   from this file will override the default values. You can also generate
   this file by specifying command line switches to ``egon-data``. Look
