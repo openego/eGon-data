@@ -14,6 +14,9 @@ Added
   this file by specifying command line switches to ``egon-data``. Look
   for the switches starting with ``--database`` in ``egon-data --help``.
 
+* Docker will not be used if there is already a service listening on the
+  HOST:PORT combination configured for the database.
+
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
 * Verwaltungsgebiete data import (vg250) more or less done as in open_ego
