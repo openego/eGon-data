@@ -7,6 +7,8 @@ import zipfile
 from egon.data import db
 import egon.data.config
 
+import subprocess
+
 
 def download_zensus_pop(): 
     """Download Zensus csv file on population per hectar grid cell."""
@@ -30,6 +32,9 @@ def zspop_to_postgres():
     input_file = os.path.join(
         os.path.dirname(__file__), zensus_population_orig["target"]["path"]
         )
+    
+    # Read database configuration from docker-compose.yml   
+    docker_db_config = db.credentials()
         
 
     # Create target schema  
@@ -53,28 +58,39 @@ def zspop_to_postgres():
         for filename in zf.namelist():
             zf.extract(filename)
             
-            db.execute_sql(f"""COPY society.destatis_zensus_population_per_ha (grid_id, x_mp, y_mp, population)
-                               FROM '{os.path.join(os.path.dirname(__file__), filename)}' 
-                               DELIMITER ';'
-                               CSV HEADER; """)
-        os.remove(filename)
-        
-    db.execute_sql("""UPDATE society.destatis_zensus_population_per_ha zs
-                        geom_point= ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp),3035);""")
-    
-    db.execute_sql("""UPDATE society.destatis_zensus_population_per_ha zs
-                        geom = ST_SetSRID((ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),3035);""")
-    
-    db.execute_sql("""CREATE INDEX destatis_zensus_population_per_ha_geom_idx
-                        ON society.destatis_zensus_population_per_ha
-                        USING gist
-                        (geom);""")
-    
-    db.execute_sql("""CREATE INDEX destatis_zensus_population_per_ha_geom_point_idx
-                        ON society.destatis_zensus_population_per_ha
-                        USING gist
-                         (geom_point);""")
+            subprocess.run(
+                ["psql", 
+                  "-h",f"{docker_db_config['HOST']}",
+                  "-p",f"{docker_db_config['PORT']}",
+                  "-d",f"{docker_db_config['POSTGRES_DB']}",
+                  "-U",f"{docker_db_config['POSTGRES_USER']}",
+                  "-c", 
+                  f"""\copy {zensus_population_processed['schema']}.{zensus_population_processed['table']} (grid_id, x_mp, y_mp, population)
+                              FROM '{os.path.join(os.path.dirname(__file__), filename)}' 
+                              DELIMITER ';'
+                                CSV HEADER; """], 
+            env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]}
+            )
 
+        os.remove(filename)
+    
+       
+    db.execute_sql(f"""UPDATE {zensus_population_processed['schema']}.{zensus_population_processed['table']} zs
+                   SET geom_point= ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp),3035);""")
+    
+    db.execute_sql(f"""UPDATE {zensus_population_processed['schema']}.{zensus_population_processed['table']} zs
+                   SET geom = ST_SetSRID((ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),3035);""")
+    
+    db.execute_sql(f"""CREATE INDEX destatis_zensus_population_per_ha_geom_idx
+                   ON {zensus_population_processed['schema']}.{zensus_population_processed['table']}
+                   USING gist
+                   (geom);""")
+    
+    db.execute_sql(f"""CREATE INDEX destatis_zensus_population_per_ha_geom_point_idx
+                   ON {zensus_population_processed['schema']}.{zensus_population_processed['table']}
+                   USING gist
+                   (geom_point);""")
+                         
 
 
 
