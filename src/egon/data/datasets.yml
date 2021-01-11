@@ -31,4 +31,26 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
+demandregio:
+  disaggregator_code:
+    url: "https://github.com/openego/disaggregator.git"
+  demand_data:
+    schema: "demand"
+    table_names:
+      "household": "egon_demandregio_hh"
+      "CTS": "egon_demandregio_cts_ind"
+      "industry": "egon_demandregio_cts_ind"
+    target_years:
+      - 2035
+      - 2050
+  society_data:
+    schema: "society"
+    table_names:
+      "household": "egon_demandregio_household"
+      "population": "egon_demandregio_population"
+    target_years:
+      - 2018
+      - 2035
+      - 2050
+
 

@@ -8,6 +8,7 @@ from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
+import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 
 
@@ -69,3 +70,11 @@ with airflow.DAG(
     )
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
+
+    # DemandRegio data import
+    demandregio_import = PythonOperator(
+        task_id="import-demandregio",
+        python_callable=import_dr.insert_data,
+    )
+    setup >> demandregio_import
+
