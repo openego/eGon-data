@@ -39,7 +39,7 @@ def credentials():
     custom = Path("local-database.yaml")
     if custom.is_file():
         with open(custom) as f:
-            docker_db_config = {**docker_db_config, **yaml.safe_load(f)}
+            docker_db_config.update(yaml.safe_load(f))
     return docker_db_config
 
 
