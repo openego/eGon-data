@@ -33,7 +33,7 @@ with airflow.DAG(
     # Zensus population import 
     zs_pop_download = PythonOperator(
         task_id="download-zensus-population", 
-        python_callable=import_zs.download_zs_pop
+        python_callable=import_zs.download_zensus_pop
     )
     
     zs_pop_import = PythonOperator(
