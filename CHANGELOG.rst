@@ -12,6 +12,8 @@ Added
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
 * Verwaltungsgebiete data import (vg250) more or less done as in open_ego
   `#3 <https://github.com/openego/eGon-data/issues/3>`_
+* Zensus population data import
+  `#2 <https://github.com/openego/eGon-data/issues/2>`_
 
 Changed
 -------
