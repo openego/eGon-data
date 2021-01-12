@@ -23,7 +23,7 @@ def download_zensus_pop():
         urlretrieve(zensus_population_config["source"]["url"], target_file)
         
 
-def zspop_to_postgres(): 
+def population_to_postgres(): 
     
         # Get information from data configuration file
     data_config = egon.data.config.datasets()

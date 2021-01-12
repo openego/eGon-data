@@ -78,6 +78,6 @@ with airflow.DAG(
     
     zs_pop_import = PythonOperator(
         task_id="import-zensus-population",
-        python_callable=import_zs.zspop_to_postgres
+        python_callable=import_zs.population_to_postgres
     )
     setup >> zs_pop_download >> zs_pop_import
