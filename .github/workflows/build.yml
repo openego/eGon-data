@@ -40,7 +40,7 @@ jobs:
         run: |
           python -mpip install --progress-bar=off tox -rci/requirements.txt
           virtualenv --version
-          easy_install --version
+          # easy_install --version
           pip --version
           tox --version
       - name: "Run tox targets for ${{ matrix.python-version }}"
