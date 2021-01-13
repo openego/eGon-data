@@ -57,21 +57,29 @@ def serve(context):
 
 
 @click.group()
-@click.option("--database", help=("Specify the name of the local database."))
+@click.option(
+    "--database",
+    metavar="DB",
+    help=("Specify the name of the local database."),
+)
 @click.option(
     "--database-host",
+    metavar="HOST",
     help=("Specify the host on which the local database is running."),
 )
 @click.option(
     "--database-password",
+    metavar="PW",
     help=("Specify the password used to access the local database."),
 )
 @click.option(
     "--database-port",
+    metavar="PORT",
     help=("Specify the port on which the local DBMS is listening."),
 )
 @click.option(
     "--database-user",
+    metavar="USERNAME",
     help=("Specify the user used to access the local database."),
 )
 @click.version_option(version=egon.data.__version__)
