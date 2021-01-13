@@ -21,11 +21,11 @@ def download_zensus_pop():
 
     if not os.path.isfile(target_file):
         urlretrieve(zensus_population_config["source"]["url"], target_file)
-        
+     
 
 def population_to_postgres(): 
-    
-        # Get information from data configuration file
+    """Import Zensus population data to postgres database"""
+    # Get information from data configuration file
     data_config = egon.data.config.datasets()
     zensus_population_orig = data_config["zensus_population"]["original_data"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
@@ -35,8 +35,7 @@ def population_to_postgres():
     
     # Read database configuration from docker-compose.yml   
     docker_db_config = db.credentials()
-        
-
+    
     # Create target schema  
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {zensus_population_processed['schema']};")
     
@@ -91,7 +90,6 @@ def population_to_postgres():
                    USING gist
                    (geom_point);""")
                          
-
 
 
 
