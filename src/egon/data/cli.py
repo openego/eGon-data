@@ -57,14 +57,14 @@ def serve(context):
 
 
 @click.group()
-@click.option("--database", help=("Specify name of the local database."))
+@click.option("--database", help=("Specify the name of the local database."))
 @click.option(
     "--database-host",
     help=("Specify the host on which the local database is running."),
 )
 @click.option(
     "--database-password",
-    help=("Specify password used to access the local database."),
+    help=("Specify the password used to access the local database."),
 )
 @click.option(
     "--database-port",
