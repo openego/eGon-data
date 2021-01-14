@@ -10,6 +10,7 @@ from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
+import egon.data.importing.zensus as import_zs
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -69,3 +70,15 @@ with airflow.DAG(
     )
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
+
+# Zensus population import 
+    zs_pop_download = PythonOperator(
+        task_id="download-zensus-population", 
+        python_callable=import_zs.download_zensus_pop
+    )
+    
+    zs_pop_import = PythonOperator(
+        task_id="import-zensus-population",
+        python_callable=import_zs.population_to_postgres
+    )
+    setup >> zs_pop_download >> zs_pop_import
