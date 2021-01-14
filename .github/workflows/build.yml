@@ -1,5 +1,5 @@
 # NB: this name is used in the status badge
-name: build
+name: "Tests, code style & coverage"
 
 on:
   push:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.python-version }}
+    name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
 
     strategy:
