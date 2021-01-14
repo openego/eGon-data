@@ -8,6 +8,11 @@ Unreleased
 Added
 -----
 
+* There's now a wrapper around `subprocess.run` in
+  `egon.data.subprocess.run`. This wrapper catches errors better and
+  displays better error messages that Python's built-in function. Use
+  this wrapper wenn calling other programs in Airflow tasks.
+
 * You can now override the default database configuration by putting a
   "local-database.yaml" into the current working directory. Values read
   from this file will override the default values. You can also generate
