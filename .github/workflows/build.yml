@@ -44,8 +44,6 @@ jobs:
           virtualenv --version
           pip --version
           tox --version
-      - name: "Check for required system packages"
-        run: "gdalinfo --version"
       - name: "Run tox targets for ${{ matrix.python-version }}"
         run: "python -m tox -vv"
         env:
