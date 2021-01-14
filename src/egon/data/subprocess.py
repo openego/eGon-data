@@ -25,21 +25,20 @@ class CalledProcessError(subprocess.CalledProcessError):
         errors = self.stderr.decode(getpreferredencoding()).split("\n")
         outputs = self.stdout.decode(getpreferredencoding()).split("\n")
 
-        p, q = ("  ", "| ")
         lines = itertools.chain(
             wrap(f"{super().__str__()}"),
             ["Output:"],
             *(
-                wrap(output, initial_indent=p, subsequent_indent=p + q)
+                wrap(output, initial_indent="  ", subsequent_indent="  ")
                 for output in outputs
             ),
             ["Errors:"],
             *(
-                wrap(error, initial_indent=p, subsequent_indent=p + q)
+                wrap(error, initial_indent="  ", subsequent_indent="  ")
                 for error in errors
             ),
         )
-        lines = indent("\n".join(lines), p + q)
+        lines = indent("\n".join(lines), "| ")
         return f"\n{lines}"
 
 
