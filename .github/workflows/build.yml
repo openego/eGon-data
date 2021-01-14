@@ -39,12 +39,11 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "Install dependencies"
-        run: python -mpip install --progress-bar=off tox tox-gh-actions -r'ci/requirements.txt'
-      #        run: |
-      #          python -mpip install --progress-bar=off tox tox-gh-actions -rci/requirements.txt
-      #          virtualenv --version
-      #          pip --version
-      #          tox --version
+        run: |
+          python -mpip install --progress-bar=off tox tox-gh-actions -r'ci/requirements.txt'
+          virtualenv --version
+          pip --version
+          tox --version
       - name: "Check for required system packages"
         run: "gdalinfo --version"
       - name: "Run tox targets for ${{ matrix.python-version }}"
