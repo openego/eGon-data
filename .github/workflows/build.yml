@@ -45,6 +45,6 @@ jobs:
           pip --version
           tox --version
       - name: "Run tox targets for ${{ matrix.python-version }}"
-        run: "python -m tox"
+        run: "python -m tox -vv"
         env:
           PLATFORM: ${{ matrix.platform }}
