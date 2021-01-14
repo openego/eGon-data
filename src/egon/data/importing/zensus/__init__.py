@@ -51,7 +51,7 @@ def population_to_postgres():
     db.execute_sql(f"DROP TABLE IF EXISTS {qualified_table} CASCADE;")
 
     db.execute_sql(
-        "CREATE TABLE {qualified_table}"
+        f"CREATE TABLE {qualified_table}"
         """ (gid        SERIAL NOT NULL,
              grid_id    character varying(254) NOT NULL,
              x_mp       int,
@@ -74,7 +74,7 @@ def population_to_postgres():
             command = [
                 "-c",
                 rf"\copy {qualified_table} (grid_id, x_mp, y_mp, population)"
-                " FROM '{filename}' DELIMITER ';' CSV HEADER;",
+                rf" FROM '{filename}' DELIMITER ';' CSV HEADER;",
             ]
             subprocess.run(
                 ["psql"] + host + port + pgdb + user + command,
@@ -84,12 +84,12 @@ def population_to_postgres():
         os.remove(filename)
 
     db.execute_sql(
-        "UPDATE {qualified_table}"
+        f"UPDATE {qualified_table}"
         " SET geom_point=ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp), 3035);"
     )
 
     db.execute_sql(
-        "UPDATE {qualified_table}"
+        f"UPDATE {qualified_table}"
         """ SET geom=ST_SetSRID(
                 (ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),
                 3035
