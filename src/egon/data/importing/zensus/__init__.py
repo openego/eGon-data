@@ -65,7 +65,7 @@ def population_to_postgres():
                   "-U",f"{docker_db_config['POSTGRES_USER']}",
                   "-c", 
                   f"""\copy {zensus_population_processed['schema']}.{zensus_population_processed['table']} (grid_id, x_mp, y_mp, population)
-                              FROM '{os.path.join(os.path.dirname(__file__), filename)}' 
+                              FROM '{filename}'
                               DELIMITER ';'
                                 CSV HEADER; """], 
             env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]}
