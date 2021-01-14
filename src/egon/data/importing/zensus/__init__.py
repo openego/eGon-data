@@ -84,12 +84,12 @@ def population_to_postgres():
         os.remove(filename)
 
     db.execute_sql(
-        f"UPDATE {qualified_table}"
+        f"UPDATE {qualified_table} zs"
         " SET geom_point=ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp), 3035);"
     )
 
     db.execute_sql(
-        f"UPDATE {qualified_table}"
+        f"UPDATE {qualified_table} zs"
         """ SET geom=ST_SetSRID(
                 (ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),
                 3035
