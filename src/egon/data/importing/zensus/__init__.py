@@ -75,7 +75,7 @@ def population_to_postgres():
             user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
             command = [
                 "-c",
-                "\copy"
+                r"\copy"
                 f" {zensus_population_processed['schema']}"
                 f".{zensus_population_processed['table']}"
                 " (grid_id, x_mp, y_mp, population)"
