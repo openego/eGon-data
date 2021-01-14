@@ -1,8 +1,8 @@
 import os.path
 import socket
-import subprocess
 
 from egon.data.db import credentials
+import egon.data.subprocess as subprocess
 
 
 def initdb():
