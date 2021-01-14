@@ -43,26 +43,25 @@ def population_to_postgres():
         f"CREATE SCHEMA IF NOT EXISTS {zensus_population_processed['schema']};"
     )
 
-    # Drop and create target table
-    db.execute_sql(
-        "DROP TABLE IF EXISTS"
-        f" {zensus_population_processed['schema']}"
+    qualified_table = (
+        f"{zensus_population_processed['schema']}"
         f".{zensus_population_processed['table']}"
-        " CASCADE;"
     )
 
+    # Drop and create target table
+    db.execute_sql(f"DROP TABLE IF EXISTS {qualified_table} CASCADE;")
+
     db.execute_sql(
-        "CREATE TABLE"
-        f" {zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-        """( gid        SERIAL NOT NULL,
+        "CREATE TABLE {qualified_table}"
+        """ (gid        SERIAL NOT NULL,
              grid_id    character varying(254) NOT NULL,
              x_mp       int,
              y_mp       int,
              population smallint,
              geom_point geometry(Point,3035),
              geom geometry (Polygon, 3035),
-             CONSTRAINT zensus_population_per_ha_pkey PRIMARY KEY (gid));
+             CONSTRAINT zensus_population_per_ha_pkey PRIMARY KEY (gid)
+        );
         """
     )
 
@@ -75,12 +74,8 @@ def population_to_postgres():
             user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
             command = [
                 "-c",
-                r"\copy"
-                f" {zensus_population_processed['schema']}"
-                f".{zensus_population_processed['table']}"
-                " (grid_id, x_mp, y_mp, population)"
-                " FROM '{filename}'"
-                " DELIMITER ';' CSV HEADER;",
+                rf"\copy {qualified_table} (grid_id, x_mp, y_mp, population)"
+                " FROM '{filename}' DELIMITER ';' CSV HEADER;",
             ]
             subprocess.run(
                 ["psql"] + host + port + pgdb + user + command,
@@ -90,16 +85,12 @@ def population_to_postgres():
         os.remove(filename)
 
     db.execute_sql(
-        "UPDATE"
-        f" {zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']} zs"
+        "UPDATE {qualified_table}"
         " SET geom_point=ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp), 3035);"
     )
 
     db.execute_sql(
-        "UPDATE"
-        f" {zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']} zs"
+        "UPDATE {qualified_table}"
         """ SET geom=ST_SetSRID(
                 (ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),
                 3035
@@ -109,14 +100,10 @@ def population_to_postgres():
 
     db.execute_sql(
         "CREATE INDEX destatis_zensus_population_per_ha_geom_idx ON"
-        f" {zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-        " USING gist (geom);"
+        f" {qualified_table} USING gist (geom);"
     )
 
     db.execute_sql(
         "CREATE INDEX destatis_zensus_population_per_ha_geom_point_idx ON"
-        f" {zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-        " USING gist (geom_point);"
+        f" {qualified_table} USING gist (geom_point);"
     )
