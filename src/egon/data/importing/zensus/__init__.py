@@ -3,10 +3,9 @@
 
 from urllib.request import urlretrieve
 import os
-import subprocess
 import zipfile
 
-from egon.data import db
+from egon.data import db, subprocess
 import egon.data.config
 
 
