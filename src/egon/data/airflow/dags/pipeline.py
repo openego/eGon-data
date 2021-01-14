@@ -71,13 +71,13 @@ with airflow.DAG(
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
 # Zensus population import 
-    zs_pop_download = PythonOperator(
-        task_id="download-zensus-population", 
-        python_callable=import_zs.download_zensus_pop
+    zensus_download = PythonOperator(
+        task_id="download-zensus", 
+        python_callable=import_zs.download_zensus
     )
     
     zs_pop_import = PythonOperator(
         task_id="import-zensus-population",
         python_callable=import_zs.population_to_postgres
     )
-    setup >> zs_pop_download >> zs_pop_import
+    setup >> zensus_download >> zs_pop_import

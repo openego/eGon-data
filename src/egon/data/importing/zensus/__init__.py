@@ -9,19 +9,25 @@ from egon.data import db, subprocess
 import egon.data.config
 
 
-def download_zensus_pop():
-    """Download Zensus csv file on population per hectar grid cell."""
+def download_zensus():
+    """Download Zensus csv files on data per hectar grid cell."""
     data_config = egon.data.config.datasets()
-    zensus_population_config = data_config["zensus_population"][
+    zensus_config = data_config["zensus"][
         "original_data"
     ]
+    zensus_url = zensus_config["source"]["url"]
+    zensus_path = zensus_config["target"]["path"]
+    path_url_map = list(zip(zensus_url, zensus_path))
 
-    target_file = os.path.join(
-        os.path.dirname(__file__), zensus_population_config["target"]["path"]
-    )
-
-    if not os.path.isfile(target_file):
-        urlretrieve(zensus_population_config["source"]["url"], target_file)
+   
+    for url, path in path_url_map:
+        target_file = os.path.join(
+            os.path.dirname(__file__), path
+        )
+        
+        if not os.path.isfile(target_file):
+            urlretrieve(url, target_file)
+        path_url_map
 
 
 def population_to_postgres():
