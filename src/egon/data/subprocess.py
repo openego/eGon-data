@@ -49,11 +49,14 @@ def run(*args, **kwargs):
     :py:class:`CalledProcessError` if the process in question returns a
     non-zero exit status. This is done by setting `check=True` and
     `capture_output=True`, so you don't have to specify these yourself anymore.
+    You can though, if you want to override these defaults.
     Other than that, the function accepts the same parameters as
     :py:func:`subprocess.run`.
     """
+    kwargs["check"] = kwargs.get("check", True)
+    kwargs["capture_output"] = kwargs.get("capture_output", True)
     try:
-        subprocess.run(*args, **kwargs, check=True, capture_output=True)
+        subprocess.run(*args, **kwargs)
     except subprocess.CalledProcessError as cpe:
         raise CalledProcessError(
             cpe.returncode, cpe.cmd, output=cpe.output, stderr=cpe.stderr
