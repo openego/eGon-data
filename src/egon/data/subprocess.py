@@ -7,10 +7,10 @@ with additional output information and makes it slightly more readable when
 encountered in a stack trace.
 """
 
+from locale import getpreferredencoding
 from textwrap import indent, wrap
 import itertools
 import subprocess
-import sys
 
 
 class CalledProcessError(subprocess.CalledProcessError):
@@ -22,8 +22,8 @@ class CalledProcessError(subprocess.CalledProcessError):
     """
 
     def __str__(self):
-        errors = self.stderr.decode(sys.stderr.encoding).split("\n")
-        outputs = self.stdout.decode(sys.stdout.encoding).split("\n")
+        errors = self.stderr.decode(getpreferredencoding()).split("\n")
+        outputs = self.stdout.decode(getpreferredencoding()).split("\n")
 
         p, q = ("  ", "| ")
         lines = itertools.chain(
