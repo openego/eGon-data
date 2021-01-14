@@ -20,7 +20,7 @@ with airflow.DAG(
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
         os.path.abspath(os.path.join(os.path.dirname(
-            __file__ ), '..', '..', 'processing', 'vg250'))
+            __file__), '..', '..', 'processing', 'vg250'))
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,

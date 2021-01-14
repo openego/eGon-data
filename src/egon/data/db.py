@@ -113,6 +113,7 @@ def airflow_db_connection():
 
     cred = credentials()
 
-    os.environ["AIRFLOW_CONN_EGON_DATA"] = \
-        f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']}" \
-            f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"
+    os.environ["AIRFLOW_CONN_EGON_DATA"] = (
+        f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']} "
+        f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"
+    )
