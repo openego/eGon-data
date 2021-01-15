@@ -88,7 +88,8 @@ setup(
         "pyaml",
         "psycopg2",
         "sqlalchemy",
-        "geopandas"
+        "geopandas",
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/adjustments_hh"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
