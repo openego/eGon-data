@@ -365,4 +365,3 @@ def insert_data():
     insert_demands()
     insert_cts_ind_wz_definitions()
     insert_society_data()
-insert_data()
