@@ -2,19 +2,32 @@
 adjusting data from demandRegio
 
 """
-import sys
 import os
 import pandas as pd
+import subprocess
 import egon.data.config
-import sqlalchemy as sql
 from egon.data import db
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from disaggregator import data, spatial
 
-### will be later imported from another file ###
+if not os.path.exists('disaggregator'):
+    subprocess.run(
+        "git clone --branch features/adjustments_hh " +
+        egon.data.config.datasets(
+            )['demandregio']['disaggregator_code']['url'],
+        shell=True,
+        cwd=os.path.dirname(__file__),
+        )
+    subprocess.run(
+        "pip install -e disaggregator",
+        shell=True,
+        cwd=os.path.dirname(__file__))
+
+from disaggregator import data, spatial
+# will be later imported from another file ###
 Base = declarative_base()
+
+
 class EgonDemandRegioHH(Base):
     __tablename__ = 'egon_demandregio_hh'
     __table_args__ = {'schema': 'demand'}
@@ -23,6 +36,7 @@ class EgonDemandRegioHH(Base):
     scenario = Column(String(50), primary_key=True)
     year = Column(Integer)
     demand = Column(Float)
+
 
 class EgonDemandRegioCtsInd(Base):
     __tablename__ = 'egon_demandregio_cts_ind'
@@ -33,12 +47,14 @@ class EgonDemandRegioCtsInd(Base):
     year = Column(Integer)
     demand = Column(Float)
 
+
 class EgonDemandRegioPopulation(Base):
     __tablename__ = 'egon_demandregio_population'
     __table_args__ = {'schema': 'society'}
     nuts3 = Column(String(5), primary_key=True)
     year = Column(Integer, primary_key=True)
     population = Column(Float)
+
 
 class EgonDemandRegioHouseholds(Base):
     __tablename__ = 'egon_demandregio_household'
@@ -48,12 +64,14 @@ class EgonDemandRegioHouseholds(Base):
     year = Column(Integer, primary_key=True)
     households = Column(Integer)
 
+
 class EgonDemandRegioWz(Base):
     __tablename__ = 'egon_demandregio_wz'
     __table_args__ = {'schema': 'demand'}
     wz = Column(Integer, primary_key=True)
     sector = Column(String(50))
     definition = Column(String(150))
+
 
 def create_tables():
     """Create tables for demandregio data
@@ -72,6 +90,7 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
+
 
 def insert_cts_ind_wz_definitions():
     """ Insert demandregio's definitions of CTS and industrial branches
@@ -92,12 +111,13 @@ def insert_cts_ind_wz_definitions():
                 os.path.dirname(__file__),
                 cfg['wz_definitions'][sector])).rename(
                     {'WZ': 'wz', 'Name': 'definition'},
-                    axis = 'columns').set_index('wz')
+                    axis='columns').set_index('wz')
         df['sector'] = sector
         df.to_sql(cfg['table_names']['wz_definitions'],
-                     engine,
-                     schema=cfg['schema'],
-                     if_exists='append')
+                  engine,
+                  schema=cfg['schema'],
+                  if_exists='append')
+
 
 def match_nuts3_bl():
     """ Function that maps the federal state to each nuts3 region
@@ -118,10 +138,11 @@ def match_nuts3_bl():
         "boundaries.vg250_lan.geometry, boundaries.vg250_krs.geometry)",
         con=engine)
 
-    df.gen[df.gen=='Baden-Württemberg (Bodensee)'] = 'Baden-Württemberg'
-    df.gen[df.gen=='Bayern (Bodensee)'] = 'Bayern'
+    df.gen[df.gen == 'Baden-Württemberg (Bodensee)'] = 'Baden-Württemberg'
+    df.gen[df.gen == 'Bayern (Bodensee)'] = 'Bayern'
 
     return df.set_index('nuts')
+
 
 def adjust_cts_ind_nep(ec_cts_ind, sector, cfg):
     """ Add electrical demand of new largescale CTS und industrial consumers
@@ -151,10 +172,12 @@ def adjust_cts_ind_nep(ec_cts_ind, sector, cfg):
 
     # update demands per federal state
     for group in groups.indices.keys():
-        ec_cts_ind[ec_cts_ind.bl==group] = ec_cts_ind[ec_cts_ind.bl==group].\
-            drop(columns='bl').mul(1 + new_con[sector][group]*1e3/\
-                                   ec_cts_ind[ec_cts_ind.bl==group].sum(
-                                       numeric_only = True).sum())
+        ec_cts_ind[ec_cts_ind.bl == group] = ec_cts_ind[
+            ec_cts_ind.bl == group].drop(
+                columns='bl').mul(
+                    1 + new_con[sector][group] * 1e3 /
+                    ec_cts_ind[ec_cts_ind.bl == group].sum(
+                        numeric_only=True).sum())
 
     ec_cts_ind = ec_cts_ind.drop(columns='bl')
 
@@ -194,9 +217,10 @@ def insert_hh_demand(scenario, year, engine, cfg):
         df['hh_size'] = hh_size
         df = df.rename({hh_size: 'demand'}, axis='columns')
         df.to_sql(cfg['table_names']['household'],
-                     engine,
-                     schema=cfg['schema'],
-                     if_exists='append')
+                  engine,
+                  schema=cfg['schema'],
+                  if_exists='append')
+
 
 def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
     """ Calculates electrical demands of CTS and industry using demandregio's
@@ -230,11 +254,11 @@ def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
         ec_cts_ind = ec_cts_ind.drop(columns='49', errors='ignore')
 
         # scale values according to target_values
-        ec_cts_ind *= target_values[scenario][sector]*1e3/\
-                ec_cts_ind.sum().sum()
+        ec_cts_ind *= target_values[scenario][sector]*1e3 / \
+            ec_cts_ind.sum().sum()
 
         # include new largescale consumers according to NEP
-        if scenario=='eGon2035':
+        if scenario == 'eGon2035':
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector, cfg)
 
         # insert into database
@@ -250,6 +274,7 @@ def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
                 engine,
                 schema=cfg['schema'],
                 if_exists='append')
+
 
 def insert_demands():
     """ Insert electricity demands per nuts3-region in Germany according to
@@ -274,17 +299,18 @@ def insert_demands():
         # Insert demands of private households
         insert_hh_demand(scenario, year, engine, cfg)
 
-        # Insert demands of CTS and industry, data only available for years before 2036
+        # Insert demands of CTS and industry
+        # data only available for years before 2036
         if cfg['scenarios'][scenario] > 2035:
             year = 2035
 
         target_values = {
-            'eGon2035': {
-                'CTS': 135.3, # according to NEP 2021 without new consumers
-                'industry': 225.4}, # according to NEP 2021 without new consumers
-            'eGon100RE': {
-                'CTS': 125.92, # source: JRC IDEES, data from 2011 without heat
-                'industry': 224.08}} # source: JRC IDEES, data from 2011
+            'eGon2035': {  # according to NEP 2021 without new consumers
+                'CTS': 135.3,
+                'industry': 225.4},
+            'eGon100RE': {  # source: JRC IDEES, data from 2011 without heat
+                'CTS': 125.92,
+                'industry': 224.08}}
 
         insert_cts_ind_demand(scenario, year, engine, target_values, cfg)
 
@@ -308,7 +334,7 @@ def insert_society_data():
     for year in cfg['target_years']:
         df_pop = pd.DataFrame(data.population(year=year))
         df_pop['year'] = year
-        df_pop = df_pop.rename({'value': 'population'}, axis = 'columns')
+        df_pop = df_pop.rename({'value': 'population'}, axis='columns')
         df_pop.to_sql(cfg['table_names']['population'],
                       engine,
                       schema=cfg['schema'],
@@ -319,11 +345,12 @@ def insert_society_data():
             df = pd.DataFrame(df_hh[hh_size])
             df['year'] = year
             df['hh_size'] = hh_size
-            df = df.rename({hh_size:'households'}, axis = 'columns')
+            df = df.rename({hh_size: 'households'}, axis='columns')
             df.to_sql(cfg['table_names']['household'],
                       engine,
                       schema=cfg['schema'],
                       if_exists='append')
+
 
 def insert_data():
     """ Overall function for importing data from demandregio
@@ -333,7 +360,9 @@ def insert_data():
     None.
 
     """
+
     create_tables()
     insert_demands()
     insert_cts_ind_wz_definitions()
     insert_society_data()
+insert_data()
