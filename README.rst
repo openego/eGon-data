@@ -123,9 +123,15 @@ also highly recommend spending the time to set up `virtualenvwrapper`_
 to manage your virtual environments if you start having to keep multiple
 ones around.
 
+If you run into any problems during the installation of ``egon.data``,
+try looking into the list of `known installation problems`_ we have
+collected. Maybe we already know of your problem and also of a solution
+to it.
+
 .. _external tool: https://virtualenv.pypa.io/en/latest/
 .. _builtin module: https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages
 .. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/index.html
+.. _known installation problems: https://eGon-data.readthedocs.io/en/latest/troubleshooting.html#installation-errors
 
 
 Run the workflow
@@ -142,7 +148,12 @@ running this command, you can open your browser and point it to
 Airflow`_ with which you can control the :math:`eGo^n` data processing
 pipeline.
 
+If running :code:`egon-data` results in an error, we also have collected
+a list of `known runtime errors`_, which can consult in search of a
+solution.
+
 .. _Apache Airflow: https://airflow.apache.org/docs/apache-airflow/stable/ui.html#ui-screenshots
+.. _known runtime errors: https://eGon-data.readthedocs.io/en/latest/troubleshooting.html#runtime-errors
 
 .. warning::
 
@@ -163,16 +174,9 @@ federal state of Bremen.
    `egon.data/data_sets.yml`.
 
 
+.. end-getting-started-information
+
 Further Reading
 ===============
 
-If you have trouble installing or running ``egon.data``, we have
-documented common issues in the troubleshooting_ section of our
-documentation_. The latter might also be interesting for you if you are
-just looking for more in depth information.
-
-
-.. _documentation: https://eGon-data.readthedocs.io/
-.. _troubleshooting: https://eGon-data.readthedocs.io/en/latest/troubleshooting.html
-
-.. end-getting-started-information
+You can find more in depth documentation at https://eGon-data.readthedocs.io.
