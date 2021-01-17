@@ -8,8 +8,9 @@ known issues including a solution.
 ``ERROR: Couldn't connect to Docker daemon ...``
 ------------------------------------------------
 
-To verify, please execute :code:`docker-compose up -d --build` and you should see
-something like
+To verify, please execute :code:`docker-compose -f <(echo {"service":
+{"image": "hellow-world"}}) ps` and you should see something like
+
 
 .. code-block:: none
 
