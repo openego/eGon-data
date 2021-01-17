@@ -114,7 +114,7 @@ and installing it in editable mode via
 
 .. code-block:: bash
 
-   pip install -e eGon-data
+   pip install -e eGon-data/
 
 are recommended.
 
