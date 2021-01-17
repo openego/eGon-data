@@ -104,17 +104,19 @@ Installation
 ============
 
 Since no release is available on PyPI and installations are probably
-used for development, cloning
+used for development, cloning it via
 
 .. code-block:: bash
 
    git clone git@github.com:openego/eGon-data.git
 
-and installing in editable mode is recommended.
+and installing it in editable mode via
 
 .. code-block:: bash
 
    pip install -e eGon-data
+
+are recommended.
 
 In order to keep the package installation isolated, we recommend
 installing the package in a dedicated virtual environment. There's both,
