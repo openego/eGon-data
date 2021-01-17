@@ -41,11 +41,20 @@ To verify, please execute :code:`docker-compose -f <(echo {"service":
     If it's at a non-standard location, specify the URL with the DOCKER_HOST environment
     variable.
 
-If this is the case, your :code:`$USER` is not member of the group `docker`.
-Read `in docker docs <https://docs.docker.com/engine/install/linux-postinstall/
-#manage-docker-as-a-non-root-user>`_
-how to add :code:`$USER` to the group `docker`. Read the :issue:`initial
-discussion <33>` for more context.
+This can have at least two possible reasons. First, the docker daemon
+might not be running. On Linux Systems, you can check for this by
+running :code:`ps -e | grep dockerd`. If this generates no output, you
+have to start the docker daemon, which you can do via :code:`sudo
+systemctl start docker.service` on recent Ubuntu systems.
+
+Second, your current user might not be a member of the `docker` group. On
+Linux, you can check this by running :code:`groups $(whoami)`. If the
+output does not contain the word `docker`, you have to add your current
+user to the `docker` group. You can find more information on how to do
+this in the `docker documentation`_. Read the :issue:`initial discussion
+<33>` for more context.
+
+.. _docker documentation: https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
 
 
 Other import or incompatible package version errors
