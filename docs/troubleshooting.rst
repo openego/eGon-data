@@ -5,8 +5,8 @@ Troubleshooting
 Having trouble installing or running ``eGon-data``? Here's a list of
 known issues including a solution.
 
-Insufficient permissions for executing docker?
-----------------------------------------------
+``ERROR: Couldn't connect to Docker daemon ...``
+------------------------------------------------
 
 To verify, please execute :code:`docker-compose up -d --build` and you should see
 something like
@@ -24,16 +24,16 @@ Read `in docker docs <https://docs.docker.com/engine/install/linux-postinstall/
 how to add :code:`$USER` to the group `docker`. Read the :issue:`initial
 discussion <33>` for more context.
 
-importlib_metadata.PackageNotFoundError
----------------------------------------
+``importlib_metadata.PackageNotFoundError: No package metadata ...``
+--------------------------------------------------------------------
 
 It might happen that you have installed `importlib-metadata=3.1.0` for some
 reason which will lead to this error. Make sure you have
 `importlib-metadata>=3.1.1` installed. For more information read the
 discussion in :issue:`60`.
 
-Import errors or incompatible package version errors
-----------------------------------------------------
+Other import or incompatible package version errors
+---------------------------------------------------
 
 If you get an :py:class:`ImportError` when trying to run ``egon-data``,
 or the installation complains with something like
