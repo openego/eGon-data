@@ -2,8 +2,8 @@
 Troubleshooting
 ***************
 
-Having trouble to install `eGon-data`? Here's a list of recurring issues with
-the installation including a solution.
+Having trouble installing or running ``eGon-data``? Here's a list of
+known issues including a solution.
 
 Insufficient permissions for executing docker?
 ----------------------------------------------
