@@ -291,7 +291,7 @@ class EgonPfHvTransformer(Base):
     s_nom_max = Column(Float(53))
     s_max_pu_fixed = Column(Float(53))
     tap_ratio = Column(Float(53))
-    tap_side = Column(Float(53))
+    tap_side = Column(BigInteger)
     tap_position = Column(BigInteger)
     phase_shift = Column(Float(53))
     v_ang_min = Column(Float(53))
