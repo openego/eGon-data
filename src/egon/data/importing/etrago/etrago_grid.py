@@ -89,7 +89,7 @@ class EgonPfHvLine(Base):
     s_nom_extendable = Column(Boolean)
     s_nom_min = Column(Float(53))
     s_nom_max = Column(Float(53))
-    s_max_pu_fixed = Column(ARRAY(Float(precision=53)))
+    s_max_pu_fixed = Column(Float(53))
     capital_cost = Column(Float(53))
     length = Column(Float(53))
     cables = Column(Integer)
