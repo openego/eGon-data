@@ -18,10 +18,20 @@ class EgonPfHvBus(Base):
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
     v_nom = Column(Float(53))
     carrier = Column(Text)
+    v_mag_pu_set_fixed = Column(Float(53))
     v_mag_pu_min = Column(Float(53))
     v_mag_pu_max = Column(Float(53))
     geom = Column(Geometry('POINT', 4326), index=True)
 
+    
+class EgonPfHvBusTimeseries(Base):
+    __tablename__ = 'egon_pf_hv_bus_timeseries'
+    __table_args__ = {'schema': 'grid'}
+
+    version = Column(Text, primary_key=True, nullable=False)
+    scn_name = Column(String, primary_key=True, nullable=False)
+    bus_id = Column(BigInteger, primary_key=True, nullable=False)
+    v_mag_pu_set = Column(ARRAY(Float(precision=53)))
 
 class EgonPfHvGenerator(Base):
     __tablename__ = 'egon_pf_hv_generator'
