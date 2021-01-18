@@ -104,6 +104,8 @@ class EgonPfHvLine(Base):
     length = Column(Float(53))
     cables = Column(Integer)
     terrain_factor = Column(Float(53))
+    v_ang_min = Column(Float(53))
+    v_ang_max = Column(Float(53))
     geom = Column(Geometry('MULTILINESTRING', 4326))
     topo = Column(Geometry('LINESTRING', 4326))
 
@@ -212,10 +214,13 @@ class EgonPfHvStorage(Base):
     capital_cost = Column(Float(53))
     state_of_charge_initial = Column(Float(53))
     cyclic_state_of_charge = Column(Boolean)
+    state_of_charge_set_fixed = Column(Float(53))
     max_hours = Column(Float(53))
     efficiency_store = Column(Float(53))
     efficiency_dispatch = Column(Float(53))
     standing_loss = Column(Float(53))
+    inflow_fixed = Column(Float(53))
+    
 
 
 class EgonPfHvStorageTimeseries(Base):
