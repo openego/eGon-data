@@ -80,6 +80,7 @@ class EgonPfHvLine(Base):
     line_id = Column(BigInteger, primary_key=True, nullable=False)
     bus0 = Column(BigInteger)
     bus1 = Column(BigInteger)
+    carrier = Column(Text)    
     x = Column(Numeric)
     r = Column(Numeric)
     g = Column(Numeric)
