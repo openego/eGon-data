@@ -98,6 +98,10 @@ packages are required too. Right now these are:
 * The `psql` executable. On Ubuntu, this is provided by the
   `postgresql-client-common` package.
 
+* Header files for the :code:`libpq5` PostgreSQL library. These are necessary
+  to build the :code:`psycopg2` package from source and are provided by the
+  :code:`libpq-dev` package on Ubuntu.
+
 * `osm2pgsql <https://osm2pgsql.org/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install osm2pgsql`.
