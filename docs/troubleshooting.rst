@@ -57,6 +57,21 @@ this in the `docker documentation`_. Read the :issue:`initial discussion
 .. _docker documentation: https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
 
 
+``[ERROR] Connection in use ...``
+---------------------------------
+
+This error might arise when running :code:`egon-data serve` making it
+shut down early with :code:`ERROR - Shutting down webserver`. The reason
+for this is that the local webserver from a previous :code:`egon-data
+serve` run didn't shut down properly and is still running. This can be
+fixed by running :code:`ps -eo pid,command  | grep "gunicorn: master" |
+grep -v grep` which should lead to output like :code:`NUMBER gunicorn:
+master [airflow-webserver]` where :code:`NUMBER` is a varying number.
+Once you got this, run :code:`kill -s INT NUMBER`, substituting
+:code:`NUMBER` with what you got previously. After this,
+:code:`egon-data serve` should run without errors again.
+
+
 Other import or incompatible package version errors
 ===================================================
 
