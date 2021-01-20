@@ -95,6 +95,9 @@ packages are required too. Right now these are:
 
   Docker is not required if you use a local PostreSQL installation.
 
+* The `psql` executable. On Ubuntu, this is provided by the
+  `postgresql-client-common` package.
+
 * `osm2pgsql <https://osm2pgsql.org/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install osm2pgsql`.
