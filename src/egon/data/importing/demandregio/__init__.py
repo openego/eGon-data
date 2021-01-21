@@ -9,20 +9,6 @@ import egon.data.config
 from egon.data import db
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
-
-if not os.path.exists('disaggregator'):
-    subprocess.run(
-        "git clone --branch features/adjustments_hh " +
-        egon.data.config.datasets(
-            )['demandregio']['disaggregator_code']['url'],
-        shell=True,
-        cwd=os.path.dirname(__file__),
-        )
-    subprocess.run(
-        "pip install -e disaggregator",
-        shell=True,
-        cwd=os.path.dirname(__file__))
-
 from disaggregator import data, spatial
 # will be later imported from another file ###
 Base = declarative_base()
