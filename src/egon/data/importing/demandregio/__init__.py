@@ -153,7 +153,6 @@ def adjust_cts_ind_nep(ec_cts_ind, sector, cfg):
         delimiter=';', decimal=',', index_col=0)
 
     # match nuts3 regions to federal states
-   # ec_cts_ind['bl'] = match_nuts3_bl().gen
     groups = ec_cts_ind.groupby(match_nuts3_bl().gen)
 
     # update demands per federal state
@@ -161,14 +160,7 @@ def adjust_cts_ind_nep(ec_cts_ind, sector, cfg):
         g = groups.get_group(group)
         data_new = g.mul(1 + new_con[sector][group] * 1e6 /g.sum().sum())
         ec_cts_ind[ec_cts_ind.index.isin(g.index)] = data_new
-        # ec_cts_ind[ec_cts_ind.bl == group] = ec_cts_ind[
-        #     ec_cts_ind.bl == group].drop(
-        #         columns='bl').mul(
-        #             1 + new_con[sector][group] * 1e6 /
-        #             ec_cts_ind[ec_cts_ind.bl == group].sum(
-        #                 numeric_only=True).sum())
 
-    #ec_cts_ind = ec_cts_ind.drop(columns='bl')
 
     return ec_cts_ind
 
