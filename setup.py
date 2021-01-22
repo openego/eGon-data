@@ -89,8 +89,7 @@ setup(
         "psycopg2",
         "sqlalchemy",
         "geopandas",
-        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/installable_package",
-        "openpyxl"
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
