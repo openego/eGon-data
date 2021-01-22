@@ -148,26 +148,88 @@ def adjust_cts_ind_nep(ec_cts_ind, sector, cfg):
     """
     # get data from NEP per federal state
     new_con = pd.read_csv(os.path.join(
-                os.path.dirname(__file__),
-                cfg['new_consumers_2035']),
+        os.path.dirname(__file__),
+        cfg['new_consumers_2035']),
         delimiter=';', decimal=',', index_col=0)
 
     # match nuts3 regions to federal states
-    ec_cts_ind['bl'] = match_nuts3_bl().gen
-    groups = ec_cts_ind.groupby('bl')
+   # ec_cts_ind['bl'] = match_nuts3_bl().gen
+    groups = ec_cts_ind.groupby(match_nuts3_bl().gen)
 
     # update demands per federal state
     for group in groups.indices.keys():
-        ec_cts_ind[ec_cts_ind.bl == group] = ec_cts_ind[
-            ec_cts_ind.bl == group].drop(
-                columns='bl').mul(
-                    1 + new_con[sector][group] * 1e3 /
-                    ec_cts_ind[ec_cts_ind.bl == group].sum(
-                        numeric_only=True).sum())
+        g = groups.get_group(group)
+        data_new = g.mul(1 + new_con[sector][group] * 1e6 /g.sum().sum())
+        ec_cts_ind[ec_cts_ind.index.isin(g.index)] = data_new
+        # ec_cts_ind[ec_cts_ind.bl == group] = ec_cts_ind[
+        #     ec_cts_ind.bl == group].drop(
+        #         columns='bl').mul(
+        #             1 + new_con[sector][group] * 1e6 /
+        #             ec_cts_ind[ec_cts_ind.bl == group].sum(
+        #                 numeric_only=True).sum())
 
-    ec_cts_ind = ec_cts_ind.drop(columns='bl')
+    #ec_cts_ind = ec_cts_ind.drop(columns='bl')
 
     return ec_cts_ind
+
+
+def disagg_households_power(scenario, year, weight_by_income=False,
+                            original=False, **kwargs):
+    """
+    Perform spatial disaggregation of electric power in [GWh/a] by key and
+    possibly weight by income.
+    Similar to disaggregator.spatial.disagg_households_power
+
+
+    Parameters
+    ----------
+    by : str
+        must be one of ['households', 'population']
+    weight_by_income : bool, optional
+        Flag if to weight the results by the regional income (default False)
+    orignal : bool, optional
+        Throughput to function households_per_size,
+        A flag if the results should be left untouched and returned in
+        original form for the year 2011 (True) or if they should be scaled to
+        the given `year` by the population in that year (False).
+
+    Returns
+    -------
+    pd.DataFrame or pd.Series
+    """
+    if scenario == 'eGon2035':
+        # source: survey of energieAgenturNRW (with weighted DHW demand)
+        # scaled to fit final demand of NEP 2021, scenario C 2035
+        demand_per_hh_size = {
+            1: 2077,
+            2: 2984,
+            3: 3907,
+            4: 4617,
+            5: 5523,
+            6: 5523}
+
+    elif scenario == 'eGon100RE':
+        # source: survey of energieAgenturNRW (without DHW demand)
+        demand_per_hh_size = {
+            1: 1714,
+            2: 2812,
+            3: 3704,
+            4: 4432,
+            5: 5317,
+            6: 5317}
+
+    else:
+        print(f"Electric demand per household size for scenario {scenario} "
+              "is not specified.")
+
+    # Bottom-Up: Power demand by household sizes in [MWh/a]
+    power_per_HH = pd.Series(index=range(1,7), data=demand_per_hh_size)/ 1e3
+    df = data.households_per_size(original=False, year=year) * power_per_HH
+
+    if weight_by_income:
+        df = spatial.adjust_by_income(df=df)
+
+    return df
 
 
 def insert_hh_demand(scenario, year, engine, cfg):
@@ -188,12 +250,7 @@ def insert_hh_demand(scenario, year, engine, cfg):
     """
 
     # get demands of private households per nuts and size from demandregio
-    ec_hh = spatial.disagg_households_power(
-        by='households',
-        weight_by_income=False,
-        year=year,
-        source='local',
-        filename='elc_consumption_by_HH_size_'+str(year)+'.csv')
+    ec_hh = disagg_households_power(scenario, year)
 
     # insert into database
     for hh_size in ec_hh.columns:
@@ -264,7 +321,7 @@ def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
 
 def insert_demands():
     """ Insert electricity demands per nuts3-region in Germany according to
-    demandregio using its disaggregator-tool
+    demandregio using its disaggregator-tool in MWh
 
     Returns
     -------
@@ -290,13 +347,14 @@ def insert_demands():
         if cfg['scenarios'][scenario] > 2035:
             year = 2035
 
+        # target values per scenario in MWh
         target_values = {
             'eGon2035': {  # according to NEP 2021 without new consumers
-                'CTS': 135.3,
-                'industry': 225.4},
+                'CTS': 135300,
+                'industry': 225400},
             'eGon100RE': {  # source: JRC IDEES, data from 2011 without heat
-                'CTS': 125.92,
-                'industry': 224.08}}
+                'CTS': 125920,
+                'industry': 224080}}
 
         insert_cts_ind_demand(scenario, year, engine, target_values, cfg)
 
