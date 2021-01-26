@@ -4,7 +4,7 @@ Overview
 
 .. start-badges
 
-|commits-since| |travis| |docs| |requires|
+|commits-since| |tests| |docs| |requires|
 
 |coveralls| |codecov| |scrutinizer| |codacy| |codeclimate|
 
@@ -17,10 +17,6 @@ Overview
 .. |docs| image:: https://readthedocs.org/projects/egon-data/badge/?version=latest
     :target: https://egon-data.readthedocs.io
     :alt: Documentation Status
-
-.. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=dev
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/openego/eGon-data
 
 .. |tests| image:: https://github.com/openego/eGon-data/workflows/Tests,%20code%20style%20&%20coverage/badge.svg
     :alt: GitHub actions tests status
