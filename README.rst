@@ -21,8 +21,10 @@ Overview
 .. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=dev
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/openego/eGon-data
-.. |Tests| image:: https://github.com/openego/eGon-data/workflows/Tests,%20code%20style%20&%20coverage/badge.svg
+
+.. |tests| image:: https://github.com/openego/eGon-data/workflows/Tests,%20code%20style%20&%20coverage/badge.svg
     :alt: GitHub actions tests status
+    :target: https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/openego/eGon-data?branch=dev&svg=true
     :alt: AppVeyor Build Status
