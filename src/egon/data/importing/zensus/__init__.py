@@ -159,74 +159,73 @@ def population_to_postgres():
     )
 
     db.execute_sql(
-        f"CREATE INDEX {population_table}_geom_idx ON"
+        f"CREATE INDEX {zensus_population_processed['table']}_geom_idx ON"
         f" {population_table} USING gist (geom);"
     )
 
     db.execute_sql(
-        f"CREATE INDEX {population_table}_geom_point_idx ON"
-        f" {population_table} USING gist (geom_point);"
+        f"CREATE INDEX {zensus_population_processed['table']}_geom_point_idx ON"
+        f"  {population_table} USING gist (geom_point);"
     )
 
 
-population_to_postgres()
+def zensus_misc_to_postgres():
+    """Import data on buildings, households and apartments to postgres db"""
+
+    # Get information from data configuration file
+    data_config = egon.data.config.datasets()
+    zensus_misc_processed = data_config["zensus_misc"]["processed"]
+    zensus_population_processed = data_config["zensus_population"]["processed"]
+
+    population_table = (
+        f"{zensus_population_processed['schema']}"
+        f".{zensus_population_processed['table']}"
+    )
+
+    # Read database configuration from docker-compose.yml
+    docker_db_config = db.credentials()
+
+    for input_file, table in zensus_misc_processed["path_table_map"].items():
+        with zipfile.ZipFile(input_file) as zf:
+            for filename in zf.namelist():
+                zf.extract(filename)
+                host = ["-h", f"{docker_db_config['HOST']}"]
+                port = ["-p", f"{docker_db_config['PORT']}"]
+                pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
+                user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
+                command = [
+                    "-c",
+                    rf"\copy {zensus_population_processed['schema']}.{table}"
+                    f"""(grid_id,
+                        grid_id_new,
+                        attribute,
+                        characteristics_code,
+                        characteristics_text,
+                        quantity,
+                        quantity_q)
+                        FROM '{filename}' DELIMITER ','
+                        CSV HEADER
+                        ENCODING 'iso-8859-1';""",
+                ]
+                subprocess.run(
+                        ["psql"] + host + port + pgdb + user + command,
+                        env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+                )
+
+            os.remove(filename)
+        db.execute_sql(
+            f"UPDATE {zensus_population_processed['schema']}.{table} b"
+            f"""  gid_ha = zs.gid
+                  FROM {population_table} zs
+                  WHERE b.grid_id = zs.grid_id;"""
+        )
+
+        db.execute_sql(
+            f"ALTER {zensus_population_processed['schema']}.{table}"
+            f"""  ADD CONSTRAINT {table}_fkey
+                  FOREIGN KEY (gid_ha)
+                  REFERENCES {population_table}(gid);"""
+        )
 
 
-# def zensus_misc_to_postgres():
-#     """Import data on buildings, households and apartments to postgres db"""
 
-#     # Get information from data configuration file
-#     data_config = egon.data.config.datasets()
-#     zensus_misc_processed = data_config["zensus_misc"]["processed"]
-#     zensus_population_processed = data_config["zensus_population"]["processed"]
-
-#     population_table = (
-#         f"{zensus_population_processed['schema']}"
-#         f".{zensus_population_processed['table']}"
-#     )
-
-#     # Read database configuration from docker-compose.yml
-#     docker_db_config = db.credentials()
-
-#     for input_file, table in zensus_misc_processed["path_table_map"].items():
-#         with zipfile.ZipFile(input_file) as zf:
-#             for filename in zf.namelist():
-#                 zf.extract(filename)
-#                 host = ["-h", f"{docker_db_config['HOST']}"]
-#                 port = ["-p", f"{docker_db_config['PORT']}"]
-#                 pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
-#                 user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
-#                 command = [
-#                     "-c",
-#                     rf"\copy {table}"
-#                     """(grid_id,
-#                         grid_id_new,
-#                         attribute,
-#                         characteristics_code,
-#                         characteristics_text,
-#                         quantity,
-#                         quantity_q)"""
-#                     rf" FROM '{filename}' DELIMITER ';' CSV HEADER;",
-#                 ]
-#                 subprocess.run(
-#                         ["psql"] + host + port + pgdb + user + command,
-#                         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-#                 )
-
-#             os.remove(filename)
-#         db.execute_sql(
-#             f"UPDATE {table} b"
-#             f"""  gid_ha = zs.gid
-#                   FROM {population_table} zs
-#                   WHERE b.grid_id = zs.grid_id;"""
-#         )
-
-#         db.execute_sql(
-#             f"ALTER {table}"
-#             f"""  ADD CONSTRAINT {table}_fkey
-#                   FOREIGN KEY (gid_ha)
-#                   REFERENCES {population_table}(gid);"""
-#         )
-
-
-# zensus_misc_to_postgres()
