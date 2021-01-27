@@ -187,7 +187,8 @@ def zensus_misc_to_postgres():
 
     for input_file, table in zensus_misc_processed["path_table_map"].items():
         with zipfile.ZipFile(input_file) as zf:
-            for filename in zf.namelist():
+            csvfiles = [n for n in zf.namelist() if n.lower()[-3:] == "csv"]
+            for filename in csvfiles:
                 zf.extract(filename)
                 host = ["-h", f"{docker_db_config['HOST']}"]
                 port = ["-p", f"{docker_db_config['PORT']}"]
