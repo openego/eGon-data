@@ -32,17 +32,13 @@ def download_zensus_misc():
 
     # Download remaining zensus data set on households, buildings, apartments
 
-    zensus_config = data_config["zensus_misc"][
-        "original_data"
-    ]
+    zensus_config = data_config["zensus_misc"]["original_data"]
     zensus_url = zensus_config["source"]["url"]
     zensus_path = zensus_config["target"]["path"]
     path_url_map = list(zip(zensus_url, zensus_path))
 
     for url, path in path_url_map:
-        target_file_misc = os.path.join(
-            os.path.dirname(__file__), path
-        )
+        target_file_misc = os.path.join(os.path.dirname(__file__), path)
 
         if not os.path.isfile(target_file_misc):
             urlretrieve(url, target_file_misc)
@@ -164,8 +160,9 @@ def population_to_postgres():
     )
 
     db.execute_sql(
-        f"CREATE INDEX {zensus_population_processed['table']}_geom_point_idx ON"
-        f"  {population_table} USING gist (geom_point);"
+        f"CREATE INDEX"
+        f" {zensus_population_processed['table']}_geom_point_idx"
+        f" ON  {population_table} USING gist (geom_point);"
     )
 
 
@@ -209,8 +206,8 @@ def zensus_misc_to_postgres():
                         ENCODING 'iso-8859-1';""",
                 ]
                 subprocess.run(
-                        ["psql"] + host + port + pgdb + user + command,
-                        env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+                    ["psql"] + host + port + pgdb + user + command,
+                    env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
                 )
 
             os.remove(filename)
@@ -227,6 +224,3 @@ def zensus_misc_to_postgres():
                   FOREIGN KEY (gid_ha)
                   REFERENCES {population_table}(gid);"""
         )
-
-
-
