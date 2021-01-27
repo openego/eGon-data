@@ -34,6 +34,8 @@ Changed
 
 * Adapt structure of the documentation to project specific requirements
   `#20 <https://github.com/openego/eGon-data/issues/20>`_
+* Switch from Travis to GitHub actions for CI jobs
+  `#92 <https://github.com/openego/eGon-data/issues/92>`_
 
 Bug fixes
 ---------
