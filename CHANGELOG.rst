@@ -8,6 +8,7 @@ Unreleased
 Added
 -----
 
+* Include description of the egon-data workflow in our documentation `#23 <https://github.com/openego/eGon-data/issues/23>`_
 
 Changed
 -------
