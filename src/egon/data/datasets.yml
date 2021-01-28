@@ -32,8 +32,6 @@ vg250:
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
 demandregio:
-  disaggregator_code:
-    url: "https://github.com/openego/disaggregator.git"
   demand_data:
     schema: "demand"
     table_names:
