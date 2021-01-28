@@ -22,6 +22,7 @@ In principle egon-data is not limited to the use of a specific programming langu
 The egon-data workflow is composed of four different sections: database setup, data import, data processing and data export to the OpenEnergy Platform. Each section consists of different tasks, which are managed by Apache Airflow and correspond with the local database. 
 Only final datasets which function as an input for the optimization tools or selected interim results are uploaded to the `Open Energy Platform <https://openenergy-platform.org/>`_. 
 The data processing in egon-data needs to be performed locally as calculations on the Open Energy Platform are prohibited. 
+More information on how to run the workflow can be found in the `getting started section <https://egon-data.readthedocs.io/en/latest/getting_started.html#run-the-workflow>`_ of our documentation.
 
 .. _DP_workflow_sketch:
 .. figure:: images/DP_Workflow_15012021.svg
