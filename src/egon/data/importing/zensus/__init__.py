@@ -33,16 +33,17 @@ def download_zensus_misc():
     # Download remaining zensus data set on households, buildings, apartments
 
     zensus_config = data_config["zensus_misc"]["original_data"]
+    zensus_misc_processed = data_config["zensus_misc"]["processed"]
     zensus_url = zensus_config["source"]["url"]
-    zensus_path = zensus_config["target"]["path"]
-    path_url_map = list(zip(zensus_url, zensus_path))
+    zensus_path = zensus_misc_processed["path_table_map"].keys()
+    url_path_map = list(zip(zensus_url, zensus_path))
 
-    for url, path in path_url_map:
+    for url, path in url_path_map:
         target_file_misc = os.path.join(os.path.dirname(__file__), path)
 
         if not os.path.isfile(target_file_misc):
             urlretrieve(url, target_file_misc)
-        path_url_map
+        url_path_map
 
 
 def create_zensus_tables():
@@ -69,13 +70,13 @@ def create_zensus_tables():
     db.execute_sql(
         f"CREATE TABLE {population_table}"
         f""" (gid        SERIAL NOT NULL,
-             grid_id    character varying(254) NOT NULL,
-             x_mp       int,
-             y_mp       int,
-             population smallint,
-             geom_point geometry(Point,3035),
-             geom geometry (Polygon, 3035),
-             CONSTRAINT {zensus_population_processed['table']}_pkey
+              grid_id    character varying(254) NOT NULL,
+              x_mp       int,
+              y_mp       int,
+              population smallint,
+              geom_point geometry(Point,3035),
+              geom geometry (Polygon, 3035),
+              CONSTRAINT {zensus_population_processed['table']}_pkey
               PRIMARY KEY (gid)
         );
         """
@@ -102,7 +103,7 @@ def create_zensus_tables():
             """
         )
 
-
+    
 def population_to_postgres():
     """Import Zensus population data to postgres database"""
     # Get information from data configuration file
@@ -183,7 +184,8 @@ def zensus_misc_to_postgres():
     docker_db_config = db.credentials()
 
     for input_file, table in zensus_misc_processed["path_table_map"].items():
-        with zipfile.ZipFile(input_file) as zf:
+        with zipfile.ZipFile(os.path.join(
+            os.path.dirname(__file__),input_file)) as zf:
             csvfiles = [n for n in zf.namelist() if n.lower()[-3:] == "csv"]
             for filename in csvfiles:
                 zf.extract(filename)
@@ -211,16 +213,20 @@ def zensus_misc_to_postgres():
                 )
 
             os.remove(filename)
+
         db.execute_sql(
-            f"UPDATE {zensus_population_processed['schema']}.{table} b"
-            f"""  gid_ha = zs.gid
-                  FROM {population_table} zs
-                  WHERE b.grid_id = zs.grid_id;"""
+            f"""UPDATE {zensus_population_processed['schema']}.{table} as b
+                    SET gid_ha = zs.gid
+                    FROM {population_table} zs
+                    WHERE b.grid_id = zs.grid_id;"""
         )
 
         db.execute_sql(
-            f"ALTER {zensus_population_processed['schema']}.{table}"
-            f"""  ADD CONSTRAINT {table}_fkey
-                  FOREIGN KEY (gid_ha)
-                  REFERENCES {population_table}(gid);"""
+            f"""ALTER TABLE {zensus_population_processed['schema']}.{table}
+                    ADD CONSTRAINT {table}_fkey
+                    FOREIGN KEY (gid_ha)
+                    REFERENCES {population_table}(gid);"""
         )
+
+
+zensus_misc_to_postgres()
