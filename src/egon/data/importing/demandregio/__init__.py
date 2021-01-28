@@ -189,34 +189,40 @@ def disagg_households_power(scenario, year, weight_by_income=False,
     -------
     pd.DataFrame or pd.Series
     """
+    # source: survey of energieAgenturNRW
+    demand_per_hh_size = pd.DataFrame(index=range(1,7), data = {
+        'weighted DWH': [2290, 3202, 4193, 4955, 5928, 5928],
+        'without DHW': [1714, 2812, 3704, 4432, 5317, 5317]})
+
+    # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
     if scenario == 'eGon2035':
-        # source: survey of energieAgenturNRW (with weighted DHW demand)
-        # scaled to fit final demand of NEP 2021, scenario C 2035
-        demand_per_hh_size = {
-            1: 2077,
-            2: 2984,
-            3: 3907,
-            4: 4617,
-            5: 5523,
-            6: 5523}
+        # chose demand per household size from survey including weighted DHW
+        power_per_HH = demand_per_hh_size['weighted DWH']/ 1e3
+
+        # calculate demand per nuts3
+        df = data.households_per_size(original=False, year=year) * power_per_HH
+
+        # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
+        df *= 119000000/df.sum().sum()
 
     elif scenario == 'eGon100RE':
-        # source: survey of energieAgenturNRW (without DHW demand)
-        demand_per_hh_size = {
-            1: 1714,
-            2: 2812,
-            3: 3704,
-            4: 4432,
-            5: 5317,
-            6: 5317}
+
+        # chose demand per household size from survey without DHW
+        power_per_HH = demand_per_hh_size['without DHW']/ 1e3
+
+        # calculate demand per nuts3 in 2011
+        df_2011 = data.households_per_size(year=2011) * power_per_HH
+
+        # scale demand per hh-size to meet demand without heat
+        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
+        power_per_HH *= (136.6-(20.14+9.41))*1e6/df_2011.sum().sum()
+
+        # calculate demand per nuts3 in 2050
+        df = data.households_per_size(year=year) * power_per_HH
 
     else:
         print(f"Electric demand per household size for scenario {scenario} "
               "is not specified.")
-
-    # Bottom-Up: Power demand by household sizes in [MWh/a]
-    power_per_HH = pd.Series(index=range(1,7), data=demand_per_hh_size)/ 1e3
-    df = data.households_per_size(original=False, year=year) * power_per_HH
 
     if weight_by_income:
         df = spatial.adjust_by_income(df=df)
@@ -286,13 +292,14 @@ def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
                     year=year).transpose()
 
         # exclude mobility sector from GHD
-        ec_cts_ind = ec_cts_ind.drop(columns='49', errors='ignore')
+        ec_cts_ind = ec_cts_ind.drop(columns=49, errors='ignore')
 
         # scale values according to target_values
-        ec_cts_ind *= target_values[scenario][sector]*1e3 / \
-            ec_cts_ind.sum().sum()
+        if sector in target_values[scenario].keys():
+            ec_cts_ind *= target_values[scenario][sector]*1e3 / \
+                ec_cts_ind.sum().sum()
 
-        # include new largescale consumers according to NEP
+        # include new largescale consumers according to NEP 2021
         if scenario == 'eGon2035':
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector, cfg)
 
@@ -341,12 +348,16 @@ def insert_demands():
 
         # target values per scenario in MWh
         target_values = {
-            'eGon2035': {  # according to NEP 2021 without new consumers
+            # according to NEP 2021
+            # new consumers will be added seperatly
+            'eGon2035': {
                 'CTS': 135300,
                 'industry': 225400},
-            'eGon100RE': {  # source: JRC IDEES, data from 2011 without heat
-                'CTS': 125920,
-                'industry': 224080}}
+            # CTS: reduce overall demand from demandregio (without traffic)
+            # by share of heat according to JRC IDEES, data from 2011
+            # industry: no specific heat demand, use data from demandregio
+            'eGon100RE': {
+                'CTS': (1-(5.96+6.13)/154.64)*125183.403}}
 
         insert_cts_ind_demand(scenario, year, engine, target_values, cfg)
 
