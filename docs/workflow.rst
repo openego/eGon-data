@@ -31,6 +31,8 @@ More information on how to run the workflow can be found in the `getting started
 Versioning
 ----------
 
+Please note: The following is not implemented yet, but we are working on it.
+
 Source code and data are versioned independendly from each other. Every data table uploaded to the Open Energy Platform contains a column 'version' which is used to identify different versions of the same data set. The version number is maintained for every table separately. This is a major difference to the versioning concept applied in the former data processing where all (interim) results were versioned under the same version number.  
 
 
