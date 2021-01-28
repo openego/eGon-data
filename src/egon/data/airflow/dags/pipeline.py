@@ -70,22 +70,22 @@ with airflow.DAG(
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
-# Zensus import 
+# Zensus import
     zensus_download_population = PythonOperator(
-        task_id="download-zensus-population", 
+        task_id="download-zensus-population",
         python_callable=import_zs.download_zensus_pop
     )
 
     zensus_download_misc = PythonOperator(
-        task_id="download-zensus-misc", 
+        task_id="download-zensus-misc",
         python_callable=import_zs.download_zensus_misc
     )
 
     zensus_tables = PythonOperator(
-        task_id="create-zensus-tables", 
+        task_id="create-zensus-tables",
         python_callable=import_zs.create_zensus_tables
     )
-    
+
     population_import = PythonOperator(
         task_id="import-zensus-population",
         python_callable=import_zs.population_to_postgres
@@ -95,6 +95,5 @@ with airflow.DAG(
         task_id="import-zensus-misc",
         python_callable=import_zs.zensus_misc_to_postgres
     )
-    setup >> zensus_tables >> zensus_download_population >> population_import
-    zensus_tables >> zensus_download_misc >> zensus_misc_import 
-
+    zensus_download_population >> zensus_download_misc >> zensus_tables
+    zensus_tables >> population_import >> zensus_misc_import

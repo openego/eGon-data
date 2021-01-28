@@ -103,7 +103,7 @@ def create_zensus_tables():
             """
         )
 
-    
+
 def population_to_postgres():
     """Import Zensus population data to postgres database"""
     # Get information from data configuration file
@@ -185,7 +185,7 @@ def zensus_misc_to_postgres():
 
     for input_file, table in zensus_misc_processed["path_table_map"].items():
         with zipfile.ZipFile(os.path.join(
-            os.path.dirname(__file__),input_file)) as zf:
+                os.path.dirname(__file__), input_file)) as zf:
             csvfiles = [n for n in zf.namelist() if n.lower()[-3:] == "csv"]
             for filename in csvfiles:
                 zf.extract(filename)
@@ -227,6 +227,3 @@ def zensus_misc_to_postgres():
                     FOREIGN KEY (gid_ha)
                     REFERENCES {population_table}(gid);"""
         )
-
-
-zensus_misc_to_postgres()
