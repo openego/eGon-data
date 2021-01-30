@@ -3,6 +3,7 @@ from feedinlib import era5
 import pandas as pd
 import psycopg2
 import numpy as np
+import statistics
 
 # The DLR_Regions function generates the dataframe with the hourly DLR (8760 h) for
 # each one of the 9 regions 
@@ -13,8 +14,8 @@ def DLR_Regions(Weather_info, Regions_shape):
     regions = regions.sort_values(by=["Region"])
     
     #Create data frame to save results(Min wind speed, max temperature and %DLR per region along 8760h in a year)
-    time = np.arange('2011-01-01T00', '2012-01-01T00', dtype='datetime64')
-    time = time.transpose()
+    time = pd.date_range("2011-01-01", "2011-12-31 23:00:00", freq = "H")
+    #time = time.transpose()
     dlr = pd.DataFrame(0, columns= ['R1-Wind_min', 'R1-Temp_max','R1-DLR',
                                     'R2-Wind_min', 'R2-Temp_max','R2-DLR',
                                     'R3-Wind_min', 'R3-Temp_max','R3-DLR',
@@ -120,8 +121,7 @@ def Lines_in_regions(Regions_shape):
     trans_lines_R ={}
     for i in regions.Region:
         shape_area = regions[regions["Region"] == i]
-        trans_lines_R[i] = gpd.clip(df, shape_area)
-        
+        trans_lines_R[i] = gpd.clip(df, shape_area)        
     trans_lines= df[["s_nom"]]
     trans_lines["in_regions"] = [[] for i in range(len(df))]
     for i in trans_lines_R:
@@ -144,16 +144,24 @@ def download_weather_data():
         latitude=latitude, longitude=longitude,
         target_file=target_file)
 
+
+
+
+
+
 # Download weather data for Germany in 2011
 download_weather_data()
 # Provide paths for weather information and reagions shapes
 era5_netcdf_filename = "Germany_Weather_2011.nc"
 regions_shape_path = "Germany borders/Germany_regions.shp"
 
-#Calculate hourly DLR per region and 
+#Calculate hourly DLR per region
 DLR_hourly_df = DLR_Regions(era5_netcdf_filename, regions_shape_path)
-Trans_lines_df = Lines_in_regions(regions_shape_path)
 
+# Generate a df with lines_id, nominal capacity, and the regions
+# in which each line is.
+lines = Lines_in_regions(regions_shape_path)
+Trans_lines_df = lines
 # Generate a diccionary with hourly DLR per region using lists
 DLR_hourly_df_dic = {}
 for i in DLR_hourly_df.columns:
@@ -162,6 +170,10 @@ for i in DLR_hourly_df.columns:
 DLR = []
 # Assign to each transmision line the final values of DLR based on location
 # and type of line (overhead or underground) 
+underground = 0
+more2 = 0
+outborder = 0
+just1 = 0
 for i in Trans_lines_df.index:
 #lines completely out of the Germany border have DLR = 1
     if len(Trans_lines_df.loc[i][1]) == 0: 
@@ -185,7 +197,7 @@ for i in Trans_lines_df.index:
         for j in Trans_lines_df.loc[i][1]:
             reg.append("Reg_" + str(j))
         min_DLR_reg = DLR_hourly_df[reg].min(axis = 1)
-        DLR.append(list(min_DLR_reg))    
+        DLR.append(list(min_DLR_reg))
                
 Trans_lines_df["Hourly DLR"] = DLR
 Trans_lines_df.to_pickle("Trans_lines_df")
