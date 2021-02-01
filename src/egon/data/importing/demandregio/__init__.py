@@ -4,7 +4,6 @@ adjusting data from demandRegio
 """
 import os
 import pandas as pd
-import subprocess
 import egon.data.config
 from egon.data import db
 from sqlalchemy import Column, String, Float, Integer
@@ -200,7 +199,8 @@ def disagg_households_power(scenario, year, weight_by_income=False,
         power_per_HH = demand_per_hh_size['weighted DWH']/ 1e3
 
         # calculate demand per nuts3
-        df = data.households_per_size(original=False, year=year) * power_per_HH
+        df = data.households_per_size(
+            original=original, year=year) * power_per_HH
 
         # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
         df *= 119000000/df.sum().sum()
