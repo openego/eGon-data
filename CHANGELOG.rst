@@ -8,6 +8,9 @@ Unreleased
 Added
 -----
 
+
+* Include description of the egon-data workflow in our documentation 
+  `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
   `egon.data.subprocess.run`. This wrapper catches errors better and
   displays better error messages that Python's built-in function. Use
