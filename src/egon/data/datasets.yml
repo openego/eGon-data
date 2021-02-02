@@ -35,10 +35,8 @@ vg250:
 scenario_input:
   eGon2035:
     paths:
-      "capacities": "NEP_2021_C2035.csv"
+      "capacities": "NEP2035_V2021_scnC2035.xlsx"
       "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
-      "district_heating": "NEP_2021_C2035_district_heating.csv"
-    source: "draft"
     tyndp:
       countries: ["AT", "BE", "CH", "CZ", "DK", "FR", "NL", "NO", "SE", "PL", "UK"]
       capacities:

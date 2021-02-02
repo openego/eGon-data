@@ -15,9 +15,8 @@ import zipfile
 from urllib.request import urlretrieve
 import egon.data.config
 import pandas as pd
-import sqlalchemy as sql
 from egon.data import db
-from sqlalchemy import Column, String, Float, func, Integer, ARRAY
+from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 ### will be later imported from another file ###
@@ -193,74 +192,94 @@ def insert_capacities_per_federal_state_nep():
     # Connect to local database
     engine = db.engine()
 
+    # Delete rows if already exist
+    db.execute_sql("DELETE FROM model_draft.egon_scenario_capacities "
+                   "WHERE scenario_name = 'eGon2035' "
+                   "AND country = 'Deutschland'")
+
     # read-in installed capacities per federal state of germany
     target_file = os.path.join(
         os.path.dirname(__file__),
         scenario_config('eGon2035')['paths']['capacities'])
 
-    df = pd.read_csv(target_file,
-                     delimiter=';', decimal=',',
+    df = pd.read_excel(target_file, sheet_name='1.Entwurf_NEP2035_V2021',
                      index_col='Unnamed: 0')
 
+    df_draft = pd.read_excel(target_file,
+                             sheet_name='Entwurf_des_Szenariorahmens',
+                             index_col='Unnamed: 0')
+
     # sort NEP-carriers:
-    rename_carrier = {'Windenergie onshore': 'wind_onshore',
-                     'Windenergie offshore': 'wind_offshore',
-                     'Sonstige konventionelle': 'other_non_renewable',
+    rename_carrier = {'Wind onshore': 'wind_onshore',
+                     'Wind offshore': 'wind_offshore',
+                     'Sonstige Konventionelle': 'other_non_renewable',
                      'Speicherwasser': 'reservoir',
                      'Laufwasser': 'run_of_river',
                      'Biomasse': 'biomass',
                      'Erdgas': 'gas',
                      'Kuppelgas': 'gas',
-                     'PV (Aufdach)': 'solar',
+                     'PV (Aufdach)': 'solar_rooftop',
                      'PV (Freiflaeche)': 'solar',
                      'Pumpspeicher': 'pumped_hydro',
                      'Sonstige EE': 'other_renewable',
-                     'Photovoltaik': 'solar',
                      'Oel': 'oil',
                      'Haushaltswaermepumpen': 'residential_rural_heat_pump',
-                     'Elektromobilitaet gesamt': 'transport',
-                     'Elektromobilitaet privat': 'transport'}
+                     'KWK < 10 MW': 'small_chp'}
+                     #'Elektromobilitaet gesamt': 'transport',
+                    # 'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
     nuts1 = nuts1_to_federal_state()
 
     insert_data = pd.DataFrame()
 
+    scaled_carriers = ['Haushaltswaermepumpen',
+                       'PV (Aufdach)', 'PV (Freiflaeche)']
+
     for bl in nuts1.keys():
 
         data = pd.DataFrame(df[bl])
+
+        # if distribution to federal states is not provided,
+        # use data from draft of scenario report
+        for c in scaled_carriers:
+            data.loc[c, bl] = (
+                df_draft.loc[c, bl]/ df_draft.loc[c, 'Summe']
+                * df.loc[c, 'Summe'])
+
+        # split hydro into run of river and reservoir
+        # according to draft of scenario report
+        if data.loc['Lauf- und Speicherwasser', bl] > 0:
+            for c in ['Speicherwasser', 'Laufwasser']:
+                data.loc[c, bl] = data.loc['Lauf- und Speicherwasser', bl] *\
+                    df_draft.loc[c, bl]/\
+                        df_draft.loc[['Speicherwasser', 'Laufwasser'], bl].sum()
+
+
         data['carrier'] = data.index.map(rename_carrier)
         data = data.groupby(data.carrier).sum().reset_index()
         data['component'] = 'generator'
         data['country'] = 'Deutschland'
         data['nuts'] = nuts1[bl]
-        data['scenario_name'] = 'NEP 2035'
+        data['scenario_name'] = 'eGon2035'
+
 
         # According to NEP, each heatpump has 3kW_el installed capacity
         data.loc[data.carrier == 'residential_rural_heat_pump', bl] *= 3e-6
-        # TODO: how to deal with number of EV?
-
         data.loc[data.carrier ==
                  'residential_rural_heat_pump', 'component'] = 'link'
-        data.loc[data.carrier == 'transport', 'component'] = 'load'
+
         data = data.rename(columns={bl: 'capacity'})
 
         insert_data = insert_data.append(data)
 
-    # Scale numbers for federal states based on BNetzA (can be removed later)
-    if scenario_config('eGon2035')['source'] == 'draft':
-        insert_data = manipulate_federal_state_numbers(
-            insert_data, rename_carrier, scn = 'C 2035')
-
     # Insert data to db
-    try:
-        insert_data.to_sql('egon_scenario_capacities',
+    insert_data.to_sql('egon_scenario_capacities',
                        engine,
                        schema='model_draft',
                        if_exists='append',
                        index=insert_data.index)
-    except:
-        print('data already exists')
+
 
     # Add district heating data accordning to energy and full load hours
     district_heating_input()
@@ -322,9 +341,9 @@ def district_heating_input():
 
     file = os.path.join(
         os.path.dirname(__file__),
-        scenario_config('eGon2035')['paths']['district_heating'])
+        scenario_config('eGon2035')['paths']['capacities'])
 
-    df = pd.read_csv(file, delimiter=';', dtype={'Wert':float})
+    df = pd.read_excel(file, sheet_name='Kurzstudie_KWK', dtype={'Wert':float})
 
     df.set_index(['Energietraeger', 'Name'], inplace=True)
 
@@ -335,7 +354,7 @@ def district_heating_input():
     for c in ['Grosswaermepumpe', 'Elektrodenheizkessel']:
         entry = EgonScenarioCapacities(
             component = 'link',
-            scenario_name = 'NEP 2035',
+            scenario_name = 'eGon2035',
             country = 'Deutschland',
             carrier = 'urban_central_'+ (
                 'heat_pump' if c=='Grosswaermepumpe' else 'resistive_heater'),
@@ -348,7 +367,7 @@ def district_heating_input():
     for c in ['Geothermie', 'Solarthermie']:
         entry = EgonScenarioCapacities(
         component = 'generator',
-        scenario_name = 'NEP 2035',
+        scenario_name = 'eGon2035',
         country = 'Deutschland',
         carrier = 'urban_central_'+ (
                 'solar_thermal_collector' if c =='Solarthermie'
@@ -423,6 +442,10 @@ def insert_typnd_capacities():
     None.
 
     """
+    # Delete rows if already exist
+    db.execute_sql("DELETE FROM model_draft.egon_scenario_capacities "
+                   "WHERE scenario_name = 'eGon2035' "
+                   "AND country != 'Deutschland'")
 
     config = scenario_config('eGon2035')['tyndp']
 
@@ -478,7 +501,7 @@ def insert_typnd_capacities():
             comp = 'generator'
         entry = EgonScenarioCapacities(
             component = comp,
-            scenario_name = 'NEP 2035',
+            scenario_name = 'eGon2035',
             country = grouped_capacities['Node/Line'][i], # not country but node (DK/UK)
             carrier = grouped_capacities['carrier'][i],
             capacity = grouped_capacities['cap_2035'][i])
