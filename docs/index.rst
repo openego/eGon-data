@@ -7,6 +7,7 @@ Contents
 
    getting_started
    workflow
+   troubleshooting
    data
    literature
    contributing
@@ -20,4 +21,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

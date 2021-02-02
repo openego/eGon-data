@@ -12,11 +12,11 @@ isn't exported from this module, please file a bug, so we can fix this.
 from urllib.request import urlretrieve
 import json
 import os
-import subprocess
 import time
 
 from egon.data import db
 import egon.data.config
+import egon.data.subprocess as subprocess
 
 
 def download_pbf_file():

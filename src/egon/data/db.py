@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 
 from sqlalchemy import create_engine, text
@@ -35,6 +36,10 @@ def credentials():
     docker_db_config["HOST"] = docker_db_config_additional[0]
     docker_db_config["PORT"] = docker_db_config_additional[1]
 
+    custom = Path("local-database.yaml")
+    if custom.is_file():
+        with open(custom) as f:
+            docker_db_config.update(yaml.safe_load(f))
     return docker_db_config
 
 

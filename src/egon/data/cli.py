@@ -20,6 +20,7 @@ import os.path
 import subprocess
 
 import click
+import yaml
 
 import egon.data
 import egon.data.airflow
@@ -56,10 +57,51 @@ def serve(context):
 
 
 @click.group()
+@click.option(
+    "--database",
+    metavar="DB",
+    help=("Specify the name of the local database."),
+)
+@click.option(
+    "--database-host",
+    metavar="HOST",
+    help=("Specify the host on which the local database is running."),
+)
+@click.option(
+    "--database-password",
+    metavar="PW",
+    help=("Specify the password used to access the local database."),
+)
+@click.option(
+    "--database-port",
+    metavar="PORT",
+    help=("Specify the port on which the local DBMS is listening."),
+)
+@click.option(
+    "--database-user",
+    metavar="USERNAME",
+    help=("Specify the user used to access the local database."),
+)
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
-def main(context):
+def main(context, **kwargs):
     os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
+    translations = {
+        "database": "POSTGRES_DB",
+        "database_password": "POSTGRES_PASSWORD",
+        "database_host": "HOST",
+        "database_port": "PORT",
+        "database_user": "POSTGRES_USER",
+    }
+    database_configuration = {
+        translations[k]: kwargs[k]
+        for k in kwargs
+        if "database" in k
+        if kwargs[k] is not None
+    }
+    if database_configuration:
+        with open("local-database.yaml", "w") as configuration:
+            configuration.write(yaml.safe_dump(database_configuration))
 
 
 main.name = "egon-data"

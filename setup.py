@@ -82,7 +82,7 @@ setup(
     ],
     python_requires=">=3.6.*",
     install_requires=[
-        "apache-airflow",
+        "apache-airflow<2.0",
         "click",
         "oedialect==0.0.8",
         "pyaml",

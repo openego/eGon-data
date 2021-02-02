@@ -31,6 +31,28 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
+zensus_population: 
+  original_data:
+    source:
+      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
+    target:
+      path: "csv_Bevoelkerung_100m_Gitter.zip"
+  processed:
+    schema: "society"
+    table: "destatis_zensus_population_per_ha"
+zensus_misc:
+  original_data:
+    source:
+      url:
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
+  processed:
+    schema: "society"
+    path_table_map:
+      "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
+      "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
+      "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
 
 scenario_input:
   eGon2035:

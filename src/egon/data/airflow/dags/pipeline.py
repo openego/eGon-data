@@ -9,6 +9,7 @@ from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
+import egon.data.importing.zensus as import_zs
 import egon.data.importing.nep_input_data as nep_input
 
 # Prepare connection to db for operators
@@ -70,7 +71,35 @@ with airflow.DAG(
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
-    # NEP data import
+# Zensus import
+    zensus_download_population = PythonOperator(
+        task_id="download-zensus-population",
+        python_callable=import_zs.download_zensus_pop
+    )
+
+    zensus_download_misc = PythonOperator(
+        task_id="download-zensus-misc",
+        python_callable=import_zs.download_zensus_misc
+    )
+
+    zensus_tables = PythonOperator(
+        task_id="create-zensus-tables",
+        python_callable=import_zs.create_zensus_tables
+    )
+
+    population_import = PythonOperator(
+        task_id="import-zensus-population",
+        python_callable=import_zs.population_to_postgres
+    )
+
+    zensus_misc_import = PythonOperator(
+        task_id="import-zensus-misc",
+        python_callable=import_zs.zensus_misc_to_postgres
+    )
+    zensus_download_population >> zensus_download_misc >> zensus_tables
+    zensus_tables >> population_import >> zensus_misc_import
+
+# NEP data import
     create_schema = PythonOperator(
         task_id="create-schema",
         python_callable=nep_input.add_schema)
