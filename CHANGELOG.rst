@@ -31,6 +31,8 @@ Added
   `#3 <https://github.com/openego/eGon-data/issues/3>`_
 * Zensus population data import
   `#2 <https://github.com/openego/eGon-data/issues/2>`_
+* Zensus data import for households, apartments and buildings
+  `#91 <https://github.com/openego/eGon-data/issues/91>`_
 
 Changed
 -------
