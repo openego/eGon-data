@@ -1,0 +1,2 @@
+CREATE EXTENSION hstore;
+CREATE EXTENSION postgis;

@@ -1,0 +1,69 @@
+openstreetmap:
+  original_data:
+    source:
+      url: "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
+      stylefile: "oedb.style"
+    target:
+      table_prefix: "osm"
+      path: "bremen-200101.osm.pbf"
+  processed:
+    schema: "openstreetmap"
+    tables:
+      - "osm_line"
+      - "osm_nodes"
+      - "osm_point"
+      - "osm_polygon"
+      - "osm_rels"
+      - "osm_roads"
+      - "osm_ways"
+vg250:
+  original_data:
+    source:
+      url: "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+    target:
+      path: "vg250_01-01.geo84.shape.ebenen.zip"
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "VG250_STA.shp": "vg250_sta"
+      "VG250_LAN.shp": "vg250_lan"
+      "VG250_RBZ.shp": "vg250_rbz"
+      "VG250_KRS.shp": "vg250_krs"
+      "VG250_VWG.shp": "vg250_vwg"
+      "VG250_GEM.shp": "vg250_gem"
+zensus_population: 
+  original_data:
+    source:
+      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
+    target:
+      path: "csv_Bevoelkerung_100m_Gitter.zip"
+  processed:
+    schema: "society"
+    table: "destatis_zensus_population_per_ha"
+zensus_household: 
+  original_data:
+    source:
+      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
+    target:
+      path: "csv_Haushalte_100m_Gitter.zip"
+  processed:
+    schema: "society"
+    table: "destatis_zensus_household_per_ha"
+zensus_building: 
+  original_data:
+    source:
+      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
+    target:
+      path: "csv_Gebaeude_100m_Gitter.zip"
+  processed:
+    schema: "society"
+    table: "destatis_zensus_building_per_ha"
+zensus_apartment: 
+  original_data:
+    source:
+      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
+    target:
+      path: "csv_Wohnungen_100m_Gitter.zip"
+  processed:
+    schema: "society"
+    table: "destatis_zensus_apartment_per_ha"
