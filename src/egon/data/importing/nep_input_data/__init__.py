@@ -106,32 +106,6 @@ def create_scenario_input_tables():
     EgonScenarioTimeseries.__table__.create(bind=engine, checkfirst=True)
     NEP2021Kraftwerksliste.__table__.create(bind=engine, checkfirst=True)
 
-def nuts1_to_federal_state():
-    """Map nuts1 codes to names of federal states
-
-    Returns
-    -------
-    dict
-        nuts1 codes and names of federal states
-
-    """
-    return {'Baden-Wuerttemberg': 'DE1',
-             'Bayern': 'DE2',
-             'Berlin': 'DE3',
-             'Brandenburg': 'DE4',
-             'Bremen': 'DE5',
-             'Hamburg': 'DE6',
-             'Hessen': 'DE7',
-             'Mecklenburg-Vorpommern': 'DE8',
-             'Niedersachsen': 'DE9',
-             'Nordrhein-Westfalen': 'DEA',
-             'Rheinland-Pfalz': 'DEB',
-             'Saarland': 'DEC',
-             'Sachsen': 'DED',
-             'Sachsen-Anhalt': 'DEE',
-             'Schleswig-Holstein': 'DEF',
-             'Thueringen': 'DEG'}
-
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state accordning to
     NEP 2035 (version 2021), scenario 2035 C
@@ -182,14 +156,16 @@ def insert_capacities_per_federal_state_nep():
                     # 'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
-    nuts1 = nuts1_to_federal_state()
+    map_nuts = pd.read_sql(
+        "SELECT DISTINCT ON (nuts) gen, nuts FROM boundaries.vg250_lan",
+        engine, index_col='gen')
 
     insert_data = pd.DataFrame()
 
     scaled_carriers = ['Haushaltswaermepumpen',
                        'PV (Aufdach)', 'PV (Freiflaeche)']
 
-    for bl in nuts1.keys():
+    for bl in map_nuts.index:
 
         data = pd.DataFrame(df[bl])
 
@@ -213,7 +189,7 @@ def insert_capacities_per_federal_state_nep():
         data = data.groupby(data.carrier).sum().reset_index()
         data['component'] = 'generator'
         data['country'] = 'Deutschland'
-        data['nuts'] = nuts1[bl]
+        data['nuts'] = map_nuts.nuts[bl]
         data['scenario_name'] = 'eGon2035'
 
 
