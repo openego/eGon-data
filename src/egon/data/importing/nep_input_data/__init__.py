@@ -407,18 +407,7 @@ def map_carriers_tyndp():
 
     """
     return {
-        'Onshore Wind': 'wind_onshore',
-        'Offshore Wind': 'wind_offshore',
-        'Other non-RES': 'other_non_renewable',
-        'Reservoir': 'reservoir',
-        'Run-of-River': 'run_of_river',
         'Battery': 'battery',
-        'Other RES': 'other_renewable',
-        'Solar PV': 'solar',
-        'Solar Thermal':'other_renewable',
-        'Nuclear': 'nuclear',
-        'Gas CCGT old 1': 'gas',
-        'P2G': 'power_to_gas',
         'DSR': 'demand_side_response',
         'Gas CCGT new': 'gas',
         'Gas CCGT old 2': 'gas',
@@ -426,12 +415,41 @@ def map_carriers_tyndp():
         'Gas CCGT present 2': 'gas',
         'Gas conventional old 1': 'gas',
         'Gas conventional old 2': 'gas',
+        'Gas OCGT new': 'gas',
+        'Gas OCGT old': 'gas',
+        'Gas CCGT old 1': 'gas',
+        'Gas CCGT old 2 Bio': 'biogas',#TODO: prüfen
+        'Gas conventional old 2 Bio': 'biogas',#TODO: prüfen
+        'Hard coal new': 'coal',
+        'Hard coal old 1': 'coal',
+        'Hard coal old 2': 'coal',
+        'Hard coal old 2 Bio': 'biogas',#TODO: prüfen
+        'Hard coal old 2 Bio': 'biogas',#TODO: prüfen
+        'Heavy oil old 1': 'oil',
+        'Heavy oil old 1 Bio': 'biogas',#TODO: prüfen
+        'Heavy oil old 2': 'oil',
+        'Light oil': 'oil',
         'Lignite new': 'lignite',
         'Lignite old 1': 'lignite',
         'Lignite old 2': 'lignite',
-        'Hard coal new': 'coal',
-        'Hard coal old 1': 'coal',
-        'Hard coal old 2': 'coal'}
+        'Lignite old 1 Bio': 'lignite',
+        'Lignite old 2 Bio': 'lignite',
+        'Nuclear': 'nuclear',
+        'Offshore Wind': 'wind_offshore',
+        'Onshore Wind': 'wind_onshore',
+        'Other non-RES': 'other_non_renewable',
+        'Other RES': 'other_renewable',
+        'P2G': 'power_to_gas',
+        'PS Closed': 'pumped_hydro',
+        'PS Open': 'reservoir',
+        'Reservoir': 'reservoir',
+        'Run-of-River': 'run_of_river',
+        'Solar PV': 'solar',
+        'Solar Thermal':'other_renewable',
+        'Waste': 'Other RES'
+
+
+}
 
 def insert_typnd_capacities():
     """Insert data from TYNDP 2020 accordning to NEP 2021
@@ -493,7 +511,8 @@ def insert_typnd_capacities():
     session = sessionmaker(bind=engine)()
 
     for i in grouped_capacities.index:
-        if grouped_capacities['carrier'][i] == 'battery':
+        if grouped_capacities['carrier'][i] in [
+                'battery', 'pumped_hydro', 'demand_side_response']:
             comp = 'storage_unit'
         elif grouped_capacities['carrier'][i] == 'power_to_gas':
             comp = 'link'
