@@ -28,6 +28,8 @@ Added
   `#3 <https://github.com/openego/eGon-data/issues/3>`_
 * Zensus population data import
   `#2 <https://github.com/openego/eGon-data/issues/2>`_
+* DemandRegio data import for annual electricity demands
+  `#5 <https://github.com/openego/eGon-data/issues/5>`_
 
 Changed
 -------
