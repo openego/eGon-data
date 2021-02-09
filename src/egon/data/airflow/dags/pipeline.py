@@ -10,6 +10,7 @@ import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.heat_demand_data as import_hd
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -97,3 +98,10 @@ with airflow.DAG(
     )
     zensus_download_population >> zensus_download_misc >> zensus_tables
     zensus_tables >> population_import >> zensus_misc_import
+    
+# Future heat demand calculation based on Peta5_0_1 data
+    heat_demand_import = PythonOperator(
+        task_id="import-heat-demand",
+        python_callable=import_hd.future_heat_demand_data_import
+    )
+    vg250_clean_and_prepare >> heat_demand_import

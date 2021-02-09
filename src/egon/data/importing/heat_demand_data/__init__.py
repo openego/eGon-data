@@ -426,7 +426,7 @@ def future_heat_demand_germany(scenario_name):
     return None
 
 
-def heatdemand_to_postgres():
+def heat_demand_to_postgres():
     """
     Import future heat demand data to postgres database
     
@@ -458,8 +458,7 @@ def census_ids_for_heat_demand_cells():
     """
     Assign the census cell id to the heat demand cells
     in the database using SQL or in python.      
-   
-    
+
     Parameters
     ----------
         None
@@ -476,13 +475,41 @@ def census_ids_for_heat_demand_cells():
         the hole task
    """
    
-    return None  
+    return None
+     
 
+def future_heat_demand_data_import():
+    
+    """
+    This fuction executes the functions that download, unzip and adjust
+    the heat demand distributions based on Peta5.0.1 data
+    and save the future heat demand distributions for Germany. 
+    
+    Parameters
+    ----------
+        None
 
+    Returns
+    -------
+        None
+
+    Notes
+    -----
+        
+    TODO
+    ----
+        add the database import function and the census id match function,
+        when ready
+   """
    
-# Execution of the functions
-download_peta5_0_1_heat_demands()
-unzip_peta5_0_1_heat_demands()
-future_heat_demand_germany("eGon2035") # scenario name specified
-future_heat_demand_germany("eGon100RE")   
-   
+    download_peta5_0_1_heat_demands()
+    unzip_peta5_0_1_heat_demands()
+    cutout_heat_demand_germany()
+    # Specifiy the scenario names for loading factors from csv file
+    future_heat_demand_germany("eGon2035")
+    future_heat_demand_germany("eGon100RE")
+    
+    # heat_demand_to_postgres():
+    # census_ids_for_heat_demand_cells()
+    
+    return None
