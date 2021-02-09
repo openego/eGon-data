@@ -1,13 +1,6 @@
 # TODO: Change docstring
-"""The central module containing all code dealing with importing VG250 data.
-
-This module either directly contains the code dealing with importing VG250
-data, or it re-exports everything needed to handle it. Please refrain
-from importing code from any modules below this one, because it might
-lead to unwanted behaviour.
-
-If you have to import code from a module below this one because the code
-isn't exported from this module, please file a bug, so we can fix this.
+"""The central module containing all code dealing with importing data from
+Netzentwicklungsplan 2035, Version 2031, Szenario C
 """
 
 import os
@@ -112,46 +105,6 @@ def create_scenario_input_tables():
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     EgonScenarioTimeseries.__table__.create(bind=engine, checkfirst=True)
     NEP2021Kraftwerksliste.__table__.create(bind=engine, checkfirst=True)
-
-def manipulate_federal_state_numbers(df, carrier, scn = 'C 2035'):
-    """
-    Temporary function that adjusts installed capacities per federal state of
-    the first draft to the approval of the scenario data NEP 2021
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Capacities per federal state.
-    carrier : dict
-        rename carriers
-    scn : str, optional
-        Name of the NEP-scenario. The default is 'C 2035'.
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        Adjusted capacities per federal state.
-
-    """
-    # read-in installed capacities in germany (Genehmigung des Szenariorahmens)
-
-    target_file = os.path.join(
-        os.path.dirname(__file__), 'NEP_2021_Genehmiging_C2035.csv')
-
-    df_g = pd.read_csv(target_file,
-                       delimiter=';', decimal=',',
-                       index_col='Unnamed: 0')
-
-    target_cap = df_g[~df_g.index.map(carrier).isnull()][scn]
-
-    target_cap.index = target_cap.index.map(carrier)
-
-    for c in target_cap.index:
-        mask = df.carrier == c
-        df.loc[mask, 'capacity']= \
-            df[mask].capacity /\
-                df[mask].capacity.sum() * target_cap[c]
-    return df
 
 def nuts1_to_federal_state():
     """Map nuts1 codes to names of federal states
@@ -271,6 +224,9 @@ def insert_capacities_per_federal_state_nep():
 
         data = data.rename(columns={bl: 'capacity'})
 
+        # convert GW to MW
+        data.capacity *= 1e3
+
         insert_data = insert_data.append(data)
 
     # Insert data to db
@@ -338,19 +294,18 @@ def district_heating_input():
     None.
 
     """
-
+    # import data to dataframe
     file = os.path.join(
         os.path.dirname(__file__),
         scenario_config('eGon2035')['paths']['capacities'])
-
     df = pd.read_excel(file, sheet_name='Kurzstudie_KWK', dtype={'Wert':float})
-
     df.set_index(['Energietraeger', 'Name'], inplace=True)
 
     # Connect to database
     engine = db.engine()
     session = sessionmaker(bind=engine)()
 
+    # insert heatpumps and resistive heater as link
     for c in ['Grosswaermepumpe', 'Elektrodenheizkessel']:
         entry = EgonScenarioCapacities(
             component = 'link',
@@ -358,12 +313,13 @@ def district_heating_input():
             country = 'Deutschland',
             carrier = 'urban_central_'+ (
                 'heat_pump' if c=='Grosswaermepumpe' else 'resistive_heater'),
-            capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e3/
+            capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e6/
                         df.loc[(c, 'Volllaststunden'), 'Wert']/
                             df.loc[(c, 'Wirkungsgrad'), 'Wert'])
 
         session.add(entry)
 
+    # insert solar- and geothermal as generator
     for c in ['Geothermie', 'Solarthermie']:
         entry = EgonScenarioCapacities(
         component = 'generator',
@@ -372,7 +328,7 @@ def district_heating_input():
         carrier = 'urban_central_'+ (
                 'solar_thermal_collector' if c =='Solarthermie'
                                 else 'geo_thermal'),
-        capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e3/
+        capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e6/
                         df.loc[(c, 'Volllaststunden'), 'Wert'])
 
         session.add(entry)
@@ -418,15 +374,15 @@ def map_carriers_tyndp():
         'Gas OCGT new': 'gas',
         'Gas OCGT old': 'gas',
         'Gas CCGT old 1': 'gas',
-        'Gas CCGT old 2 Bio': 'biogas',#TODO: prüfen
-        'Gas conventional old 2 Bio': 'biogas',#TODO: prüfen
+        'Gas CCGT old 2 Bio': 'biogas',
+        'Gas conventional old 2 Bio': 'biogas',
         'Hard coal new': 'coal',
         'Hard coal old 1': 'coal',
         'Hard coal old 2': 'coal',
-        'Hard coal old 2 Bio': 'biogas',#TODO: prüfen
-        'Hard coal old 2 Bio': 'biogas',#TODO: prüfen
+        'Hard coal old 2 Bio': 'coal',
+        'Hard coal old 2 Bio': 'coal',
         'Heavy oil old 1': 'oil',
-        'Heavy oil old 1 Bio': 'biogas',#TODO: prüfen
+        'Heavy oil old 1 Bio': 'oil',
         'Heavy oil old 2': 'oil',
         'Light oil': 'oil',
         'Lignite new': 'lignite',
@@ -480,12 +436,14 @@ def insert_typnd_capacities():
     # choose 1984 because it is the mean value
     df_2030 = df.rename(
         {'Climate Year':'Climate_Year'}, axis = 'columns').query(
-            'Scenario == "Distributed Energy" & Year == 2030 & Climate_Year == 1984'
+            'Scenario == "Distributed Energy" & Year == 2030 & '
+            'Climate_Year == 1984'
             ).set_index(['Node/Line', 'Generator_ID'])
 
     df_2040 =  df.rename(
         {'Climate Year':'Climate_Year'}, axis = 'columns').query(
-            'Scenario == "Distributed Energy" & Year == 2040 & Climate_Year == 1984'
+            'Scenario == "Distributed Energy" & Year == 2040 & '
+            'Climate_Year == 1984'
             ).set_index(['Node/Line', 'Generator_ID'])
 
     # interpolate linear between 2030 and 2040 for 2035 accordning to
@@ -510,6 +468,7 @@ def insert_typnd_capacities():
     engine = db.engine()
     session = sessionmaker(bind=engine)()
 
+    # insert data
     for i in grouped_capacities.index:
         if grouped_capacities['carrier'][i] in [
                 'battery', 'pumped_hydro', 'demand_side_response']:
