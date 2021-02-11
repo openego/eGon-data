@@ -40,33 +40,19 @@ zensus_population:
   processed:
     schema: "society"
     table: "destatis_zensus_population_per_ha"
-zensus_household: 
+zensus_misc:
   original_data:
     source:
-      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
-    target:
-      path: "csv_Haushalte_100m_Gitter.zip"
+      url:
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
   processed:
     schema: "society"
-    table: "destatis_zensus_household_per_ha"
-zensus_building: 
-  original_data:
-    source:
-      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
-    target:
-      path: "csv_Gebaeude_100m_Gitter.zip"
-  processed:
-    schema: "society"
-    table: "destatis_zensus_building_per_ha"
-zensus_apartment: 
-  original_data:
-    source:
-      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
-    target:
-      path: "csv_Wohnungen_100m_Gitter.zip"
-  processed:
-    schema: "society"
-    table: "destatis_zensus_apartment_per_ha"
+    path_table_map:
+      "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
+      "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
+      "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
 
 demandregio:
   demand_data:
