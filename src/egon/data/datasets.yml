@@ -54,3 +54,28 @@ zensus_misc:
       "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
       "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
 
+demandregio:
+  demand_data:
+    schema: "demand"
+    table_names:
+      "household": "egon_demandregio_hh"
+      "CTS": "egon_demandregio_cts_ind"
+      "industry": "egon_demandregio_cts_ind"
+      "wz_definitions": "egon_demandregio_wz"
+    scenarios:
+      "eGon2035": 2035
+      "eGon100RE": 2050
+    new_consumers_2035: 'new_largescale_consumers_nep.csv'
+    wz_definitions:
+      "CTS": 'CTS_WZ_definition.csv'
+      "industry": 'ind_WZ_definition.csv'
+  society_data:
+    schema: "society"
+    table_names:
+      "household": "egon_demandregio_household"
+      "population": "egon_demandregio_population"
+    target_years:
+      - 2018
+      - 2035
+      - 2050
+

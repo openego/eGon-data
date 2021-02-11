@@ -33,6 +33,8 @@ Added
   `#2 <https://github.com/openego/eGon-data/issues/2>`_
 * Zensus data import for households, apartments and buildings
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
+* DemandRegio data import for annual electricity demands
+  `#5 <https://github.com/openego/eGon-data/issues/5>`_
 
 Changed
 -------
