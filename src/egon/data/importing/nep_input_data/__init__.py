@@ -1,4 +1,3 @@
-# TODO: Change docstring
 """The central module containing all code dealing with importing data from
 Netzentwicklungsplan 2035, Version 2031, Szenario C
 """
@@ -355,7 +354,6 @@ def map_carriers_tyndp():
         'Hard coal new': 'coal',
         'Hard coal old 1': 'coal',
         'Hard coal old 2': 'coal',
-        'Hard coal old 2 Bio': 'coal',
         'Hard coal old 2 Bio': 'coal',
         'Heavy oil old 1': 'oil',
         'Heavy oil old 1 Bio': 'oil',
