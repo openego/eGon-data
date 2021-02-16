@@ -140,7 +140,7 @@ Use docstrings to document your Python code. Please follow the
 conventions in the `PEP 8 Style Guide
 <https://www.python.org/dev/peps/pep-0008/#documentation-strings>`_ on
 documentation strings.
-Additionally every Python script needs to comprise a header describing
+Additionally every Python script needs to contain a header describing
 the general functionality and objective and including information on
 copyright, license and authors.
 
