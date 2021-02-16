@@ -81,7 +81,7 @@ How to file a good issue
 
 The best way to report bugs, inform about intended developments, send
 feedback or propose a feature is to file an issue at
-<https://github.com/openego/eGon-data/issues>_.
+https://github.com/openego/eGon-data/issues.
 
 Please tag your issue with one of the predefined labels as it helps
 others to keep track of unsolved bugs, open tasks and questions.
