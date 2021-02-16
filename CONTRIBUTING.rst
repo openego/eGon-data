@@ -35,8 +35,10 @@ Adding changes to the egon-data repository should follow some guidelines:
 
    depending on which one is appropriate. This command creates a new
    branch in your local repository, in which you can now make your
-   changes.
+   changes. Be sure to check out our `style conventions`_ so that your
+   code is in line with them.
 
+   .. _style conventions: `Code and Commit Style`_
 
 3. Make sure to update the documentation along with your code changes
 
@@ -65,6 +67,70 @@ Adding changes to the egon-data repository should follow some guidelines:
 
 6. Submit a pull request through the GitHub website.
 
+
+Code and Commit Style
+---------------------
+
+We try the adhere to the `PEP 8 Style Guide <PEP8_>`_ wherever possible.
+In addition to that, we use `a code formatter` to have a consistent
+style, even in cases where PEP 8 leaves multiple degrees of freedom. So
+please run your code through :code:`black` before committing it. [#black]_
+PEP 8 also specifies a way to group imports, onto which we put the
+additional constraint that the imports within each group are ordered
+alphabetically. Once again, you don't have to keep track of this
+manually, but you can use `isort`_ to have imports sorted automatically.
+Note that `pre-commit` hooks are configured for this repository, so you
+can just :code:`pip install pre-commit` followed by :code:`pre-commit
+install` in the repository, and every commit will automatically be
+checked for style violations.
+
+Unfortunately these tools don't catch everything, so here's a short list
+of things you have to keep track of manually:
+
+  - :code:`Black` can't automatically break up overly long strings, so
+    make use of Python's automatic string concatenation feature by e.g.
+    converting
+
+    .. code-block:: python
+
+      something = "A really really long string"
+
+    into the equivalent:
+
+    .. code-block:: python
+
+      something = (
+          "A really really"
+          " long string"
+      )
+
+  - :code:`Black` also can't check whether you're using readable names
+    for your variables. So please don't use abbreviations. Use `readable
+    names`_.
+
+  - :code:`Black` also can't reformat your comments. So please keep in
+    mind that PEP 8 specifies a line length of 72 for free flowing text
+    like comments and docstrings. This also extends to the documentation
+    in reStructuredText files.
+
+Last but not least, commit message are a kind of documentation, too,
+which should adhere to a certain style. There are quite a few documents
+detailing this style, but the shortest and easiest to find is probably
+https://commit.style. Try to to commit small, related changes. If you
+have to use an "and" when trying to summarize your changes, they should
+probably be grouped into separate commits.
+
+.. _a code formatter: https://pypi.org/project/black/
+.. _isort: https://pypi.org/project/isort/
+.. _pre-commit: https://pre-commit.com
+.. _readable names: https://chrisdone.com/posts/german-naming-convention/
+.. [#black]
+    If you want to be really nice, run any file you touch through
+    :code:`black` before making changes, and commit the result
+    separately from other changes.. The repository may contain wrongly
+    formatted legacy code, and this way you commit eventually necessary
+    style fixes separated from your actually meaningful changes, which
+    makes the reviewers job a lot easier.
 
 How to handle Pull Requests
 ---------------------------
@@ -210,3 +276,6 @@ To run a subset of tests::
 To run all the test environments in *parallel*::
 
     tox -p auto
+
+
+.. _PEP8: https://www.python.org/dev/peps/pep-0008
