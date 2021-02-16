@@ -70,12 +70,13 @@ For merging, you should:
    corresponding Github issue.
 4. Add yourself to ``AUTHORS.rst``.
 
-.. [#tox-note] If you don't have all the necessary Python versions available
-       locally you can rely on Travis - it will `run the tests
-       <https://travis-ci.org/openego/eGon-data/pull_requests>`_ for
-       each change you add in the pull request.
+.. [#tox-note]
+    If you don't have all the necessary Python versions available
+    locally you can rely on Travis - it will `run the tests
+    <https://travis-ci.org/openego/eGon-data/pull_requests>`_ for each
+    change you add in the pull request.
 
-       It will be slower though ...
+    It will be slower though ...
 
 
 How to file a good issue
