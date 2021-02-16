@@ -25,8 +25,9 @@ Adding changes to the egon-data repository should follow some guidelines:
 2. Create a branch for your issue related development from the
    dev-branch following our branch naming convention::
 
-    git checkout -b `features/#<issued-id>-very-brief-description`
+    git checkout -b `features/#<issue-id>-very-brief-description`
 
+   where `issue-id` is the issue number on GitHub.
    Further prefixes are
 
     fixes/
@@ -47,7 +48,7 @@ Adding changes to the egon-data repository should follow some guidelines:
 
     git add .
     git commit -m "Your detailed description of your changes."
-    git push origin features/#<issued-id>-very-brief-description
+    git push origin features/#<issue-id>-very-brief-description
 
 6. Submit a pull request through the GitHub website.
 
