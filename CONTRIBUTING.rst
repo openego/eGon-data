@@ -151,10 +151,10 @@ copyright, license and authors.
    script to give the user a general overview what's happening here
    """
 
-   __copyright__   = "Example Institut"
-   __license__ 	   = "GNU Affero General Public License Version 3 (AGPL-3.0)"
-   __url__ 	   = "https://github.com/openego/eGon-data/blob/main/LICENSE"
-   __author__ 	   = "github_alias1, github_alias2"
+   __copyright__ = "Example Institut"
+   __license__ = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+   __url__ = "https://github.com/openego/eGon-data/blob/main/LICENSE"
+   __author__ = "github_alias1, github_alias2"
 
 
 How to document SQL scripts
@@ -172,10 +172,10 @@ works.
    This is an example header describing the functionalities of a SQL
    script to give the user a general overview what's happening here
 
-   __copyright__   = "Example Institut"
-   __license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
-   __url__         = "https://github.com/openego/data_processing/blob/master/LICENSE"
-   __author__      = "github_alias1, github_alias2"
+   __copyright__ = "Example Institut"
+   __license__ = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+   __url__ = "https://github.com/openego/data_processing/blob/master/LICENSE"
+   __author__ = "github_alias1, github_alias2"
    */
 
 
