@@ -9,6 +9,7 @@ collaboration.
 Any external contributions are welcome as well, and they are greatly
 appreciated! Every little bit helps, and credit will always be given.
 
+
 Contribution guidelines
 =======================
 
@@ -16,7 +17,6 @@ Development
 -----------
 
 Adding changes to the egon-data repository should follow some guidelines:
-
 
 1. Create an issue in our `repository
    <https://github.com/openego/eGon-data/issues>`_ to describe the
@@ -32,7 +32,6 @@ Adding changes to the egon-data repository should follow some guidelines:
     fixes/
 
     refactorings/
-
 
    Now you can make your changes locally.
 
@@ -51,7 +50,6 @@ Adding changes to the egon-data repository should follow some guidelines:
     git push origin features/#<issued-id>-very-brief-description
 
 6. Submit a pull request through the GitHub website.
-
 
 
 How to handle Pull Requests
@@ -75,6 +73,7 @@ For merging, you should:
        each change you add in the pull request.
 
        It will be slower though ...
+
 
 How to file a good issue
 ------------------------
@@ -105,11 +104,13 @@ If you are proposing a feature:
 * Explain in detail how it would work.
 * Keep the scope as narrow as possible, to make it easier to implement.
 
+
 Integration of new scripts
 ==========================
 
 The egon-data workflow uses Apache Airflow which organizes the order of
 different processing steps and their execution.
+
 
 How to add Python scripts
 -------------------------
@@ -125,6 +126,7 @@ steps listed:
    downstream to another required task
 4. The workflow can now be triggered via Apache Airflow
 
+
 Documentation
 =============
 
@@ -132,6 +134,7 @@ eGon-data could always use more documentation, whether as part of the
 official eGon-data docs, in docstrings, or even in articles, and such.
 Always keep in mind to update the documentation along with your code
 changes.
+
 
 How to document Python scripts
 ------------------------------
@@ -177,10 +180,6 @@ works.
    __url__ = "https://github.com/openego/data_processing/blob/master/LICENSE"
    __author__ = "github_alias1, github_alias2"
    */
-
-
-
-
 
 
 How-to
