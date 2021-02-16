@@ -51,7 +51,7 @@ Adding changes to the egon-data repository should follow some guidelines:
 5. Commit your changes and push your branch to GitHub::
 
     git add -p
-    git commit -m "Your detailed description of your changes."
+    git commit
     git push origin features/#<issue-id>-very-brief-description
 
   Note that the :code:`-p` switch will make :code:`git add` iterate
