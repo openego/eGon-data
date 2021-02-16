@@ -25,16 +25,18 @@ Adding changes to the egon-data repository should follow some guidelines:
 2. Create a branch for your issue related development from the
    dev-branch following our branch naming convention::
 
-    git checkout -b `features/#<issue-id>-very-brief-description`
+    git checkout -b `<prefix>/#<issue-id>-very-brief-description`
 
-   where `issue-id` is the issue number on GitHub.
-   Further prefixes are
+   where `issue-id` is the issue number on GitHub and `prefix` is one of
 
-    fixes/
+    - features
+    - fixes
+    - refactorings
 
-    refactorings/
+   depending on which one is appropriate. This command creates a new
+   branch in your local repository, in which you can now make your
+   changes.
 
-   Now you can make your changes locally.
 
 3. Make sure to update the documentation along with your code changes
 
