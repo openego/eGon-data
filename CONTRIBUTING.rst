@@ -138,7 +138,7 @@ How to document python scripts
 
 Use docstrings to document your python code. Please follow the
 conventions in the `PEP 8 Style Guide
-<https://www.python.org/dev/peps/pep-0008/#documentation-strings> on
+<https://www.python.org/dev/peps/pep-0008/#documentation-strings>`_ on
 documentation strings.
 Additionally every python script needs to comprise a header describing
 the general functionality and objective and including information on
