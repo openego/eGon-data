@@ -230,7 +230,8 @@ copyright, license and authors.
 
 .. code-block:: python
 
-   """
+   """ Provide an example of the first line of a module docstring.
+
    This is an example header describing the functionalities of a Python
    script to give the user a general overview what's happening here
    """
