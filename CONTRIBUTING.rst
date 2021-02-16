@@ -220,10 +220,10 @@ changes.
 How to document Python scripts
 ------------------------------
 
-Use docstrings to document your Python code. Please follow the
-conventions in the `PEP 8 Style Guide
-<https://www.python.org/dev/peps/pep-0008/#documentation-strings>`_ on
-documentation strings.
+Use docstrings to document your Python code. Note that PEP 8 also
+contains a `section <PEP8-docstrings_>`_ on docstrings and that there is
+a whole `PEP <PEP257_>`_ dedicated to docstring convetions. Try to
+adhere to both of them.
 Additionally every Python script needs to contain a header describing
 the general functionality and objective and including information on
 copyright, license and authors.
@@ -279,3 +279,5 @@ To run all the test environments in *parallel*::
 
 
 .. _PEP8: https://www.python.org/dev/peps/pep-0008
+.. _PEP8-docstrings: https://www.python.org/dev/peps/pep-0008/#documentation-strings
+.. _PEP257: https://www.python.org/dev/peps/pep-0257/
