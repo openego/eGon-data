@@ -69,7 +69,7 @@ For merging, you should:
    corresponding Github issue.
 4. Add yourself to ``AUTHORS.rst``.
 
-.. [1] If you don't have all the necessary python versions available
+.. [1] If you don't have all the necessary Python versions available
        locally you can rely on Travis - it will `run the tests
        <https://travis-ci.org/openego/eGon-data/pull_requests>`_ for
        each change you add in the pull request.
@@ -111,10 +111,10 @@ Integration of new scripts
 The egon-data workflow uses Apache Airflow which organizes the order of
 different processing steps and their execution.
 
-How to add python scripts
+How to add Python scripts
 -------------------------
 
-To integrate a new python function to the egon-data workflow follow the
+To integrate a new Python function to the egon-data workflow follow the
 steps listed:
 
 1. Add your well documented script to the egon-data repository
@@ -133,21 +133,21 @@ official eGon-data docs, in docstrings, or even in articles, and such.
 Always keep in mind to update the documentation along with your code
 changes.
 
-How to document python scripts
+How to document Python scripts
 ------------------------------
 
-Use docstrings to document your python code. Please follow the
+Use docstrings to document your Python code. Please follow the
 conventions in the `PEP 8 Style Guide
 <https://www.python.org/dev/peps/pep-0008/#documentation-strings>`_ on
 documentation strings.
-Additionally every python script needs to comprise a header describing
+Additionally every Python script needs to comprise a header describing
 the general functionality and objective and including information on
 copyright, license and authors.
 
 .. code-block:: python
 
    """
-   This is an example header describing the functionalities of a python
+   This is an example header describing the functionalities of a Python
    script to give the user a general overview what's happening here
    """
 
