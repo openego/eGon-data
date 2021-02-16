@@ -64,7 +64,7 @@ review you should submit a pull request through the Github website.
 
 For merging, you should:
 
-1. Include passing tests (run ``tox``) [1]_.
+1. Include passing tests (run ``tox``). [1]_
 2. Update documentation when there are new functionalities etc.
 3. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
    corresponding Github issue.
