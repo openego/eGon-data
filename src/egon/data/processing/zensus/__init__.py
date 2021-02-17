@@ -2,11 +2,11 @@
 forecast Zensus data.
 """
 
-import os
 
-from egon.data import db, subprocess
+from egon.data import db
 import egon.data.config
 import pandas as pd
+import geopandas as gpd
 
 
 def create_zensus_nuts_table():
@@ -31,7 +31,7 @@ def map_zensus_nuts3():
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
     zensus = data_config["zensus_population"]["processed"]
-
+    local_engine = db.engine()
     population_table = (
         f"{zensus['schema']}"
         f".{zensus['table']}"
@@ -41,30 +41,49 @@ def map_zensus_nuts3():
     zn_schema = "society"
 
     # Assign nuts3 code to zensus grid cells
-    db.execute_sql(
-        f"""INSERT INTO {zn_schema}.{zn_table} (gid, zensus_geom, nuts3)
-            SELECT DISTINCT ON (zs.gid) zs.gid,
-                    zs.geom_point,
-                    krs.nuts
-                FROM    {population_table} as zs,
-                        {nuts3_table} as krs
-                WHERE   ST_Transform(krs.geom,3035) && zs.geom AND
-                ST_INTERSECTS(ST_TRANSFORM(krs.geom,3035),zs.geom)
-            ORDER BY zs.gid, krs.nuts;"""
-    )
+    # TODO: remove LIMIT
+    gdf = gpd.read_postgis(
+        f"SELECT * FROM {population_table} LIMIT 10000",
+        local_engine, geom_col='geom_point')
+    gdf_boundaries = gpd.read_postgis(f"SELECT * FROM {nuts3_table}",
+                 local_engine, geom_col='geometry').to_crs(epsg=3035)
 
-    # Create index
-    db.execute_sql(
-        f"""CREATE INDEX {zn_table}_geom_idx
-                ON {zn_schema}.{zn_table}
-                USING gist
-                (zensus_geom);"""
-    )
+    # Join nuts3 with zensus cells
+    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op='intersects')
+
+    # Deal with cells that don't interect with boundaries (e.g. at borders)
+    missing_cells = gdf[~gdf.gid.isin(join.gid_left)]
+
+    # start with buffer of 100m
+    buffer = 100
+
+    # increase buffer until every zensus cell is matched to a nuts3 region
+    while len(missing_cells) > 0:
+        boundaries_buffer = gdf_boundaries.copy()
+        boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
+        join_missing = gpd.sjoin(
+            missing_cells,boundaries_buffer, how="inner", op='intersects')
+        buffer += 100
+        join = join.append(join_missing)
+        missing_cells = gdf[~gdf.gid.isin(join.gid_left)]
+    print(f"Maximal buffer to match zensus points to nuts3: {buffer}m")
+
+    # drop duplicates
+    join = join.drop_duplicates(subset=['gid_left'])
+
+    # Insert results to database
+    join.rename({'gid_left': 'gid',
+                 'geom_point': 'zensus_geom',
+                 'nuts': 'nuts3'}, axis = 1
+                )[['gid','zensus_geom', 'nuts3']].set_geometry(
+                    'zensus_geom').to_postgis(
+                         f'{zn_schema}.{zn_table}',
+                         local_engine, if_exists = 'replace')
 
 
-def population_prognosis_to_zensus(): 
+def population_prognosis_to_zensus():
     """Bring population prognosis from DemandRegio to Zensus grid"""
-    
+
     population_DR = "egon_demandregio_population"
     schema = "society"
 
