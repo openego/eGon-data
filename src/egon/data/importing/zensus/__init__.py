@@ -43,7 +43,6 @@ def download_zensus_misc():
 
         if not os.path.isfile(target_file_misc):
             urlretrieve(url, target_file_misc)
-        url_path_map
 
 
 def create_zensus_tables():
