@@ -216,7 +216,7 @@ def household_prognosis_to_zensus():
         f"""SELECT grid_id, quantity
         FROM {source_schema}.{source_zensus}
         WHERE grid_id in (
-            SELECT grid_id FROM {source_schema}.egon_population_prognosis)
+            SELECT grid_id FROM {source_schema}.{source_map})
         AND attribute = 'INSGESAMT'""",
         local_engine).set_index('grid_id')
 
