@@ -11,7 +11,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
-
+import egon.data.processing.zensus as process_zs
 # Prepare connection to db for operators
 airflow_db_connection()
 
@@ -106,3 +106,29 @@ with airflow.DAG(
         python_callable=import_dr.insert_data,
     )
     vg250_clean_and_prepare >> demandregio_import
+
+    # Society prognosis
+    map_zensus_nuts3 = PythonOperator(
+        task_id="map-zensus-to-nuts3",
+        python_callable=process_zs.map_zensus_nuts3
+    )
+
+    vg250_clean_and_prepare >> map_zensus_nuts3
+    population_import >> map_zensus_nuts3
+
+    population_prognosis = PythonOperator(
+        task_id="zensus-population-prognosis",
+        python_callable=process_zs.population_prognosis_to_zensus
+    )
+
+    map_zensus_nuts3 >> population_prognosis
+    demandregio_import >> population_prognosis
+
+    household_prognosis = PythonOperator(
+        task_id="zensus-household-prognosis",
+        python_callable=process_zs.household_prognosis_to_zensus
+    )
+
+    map_zensus_nuts3 >> household_prognosis
+    demandregio_import >> household_prognosis
+    zensus_misc_import >> household_prognosis
