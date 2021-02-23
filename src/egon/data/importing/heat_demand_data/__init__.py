@@ -48,6 +48,10 @@ def download_peta5_0_1_heat_demands():
     Notes
     -----
         None
+        
+    TODO
+    ----
+        Check if downloaded data already exists
 
     """
     
@@ -96,6 +100,10 @@ def unzip_peta5_0_1_heat_demands():
     Notes
     -----
         None
+        
+    TODO
+    ----
+        Check if unzipped data already exists
 
     """   
 
@@ -168,6 +176,8 @@ def cutout_heat_demand_germany():
         of cells belonging to Germany are used.
         
         Specify the crs of the created heat demand tiffs: EPSG 3035
+        
+        Check if cutcut already exists
         
     """    
     
@@ -334,6 +344,8 @@ def future_heat_demand_germany(scenario_name):
     ----
         Error messeage for the case that the specified scenario name is not in
         the file with the scenario data.
+        
+        Check if future heat demands already exists
         
         Specify the crs of the created heat demand tiffs: EPSG 3035
         
@@ -527,6 +539,7 @@ def census_ids_for_heat_demand_cells():
         
     TODO
     ----
+        check if task needs to run
         the hole task
    """
    
@@ -553,6 +566,8 @@ def future_heat_demand_data_import():
         
     TODO
     ----
+        check which tasks need to run (according to version number)
+    
         add the database import function and the census id match function,
         when ready
    """
