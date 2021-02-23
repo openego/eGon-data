@@ -15,6 +15,9 @@ import egon.data.importing.zensus as import_zs
 # Prepare connection to db for operators
 airflow_db_connection()
 
+# Temporary set testmode variable here
+testmode = True
+
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
@@ -50,7 +53,8 @@ with airflow.DAG(
         python_callable=import_vg250.download_vg250_files,
     )
     vg250_import = PythonOperator(
-        task_id="import-vg250", python_callable=import_vg250.to_postgres
+        task_id="import-vg250", python_callable=import_vg250.to_postgres,
+        op_args={'testmode': testmode}
     )
     vg250_nuts_mview = PostgresOperator(
         task_id="vg250_nuts_mview",
