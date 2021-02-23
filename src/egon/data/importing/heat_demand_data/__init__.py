@@ -24,6 +24,12 @@ import rasterio
 from rasterio.mask import mask
 # import matplotlib.pyplot as plt
 
+from pathlib import Path
+import click
+
+
+
+
 
 
 def download_peta5_0_1_heat_demands():
@@ -447,11 +453,60 @@ def heat_demand_to_postgres():
         OR WITH ORM
         https://github.com/openego/eGon-data/blob/features/%235-demandregio-integration/src/egon/data/importing/demandregio/__init__.py
 
+        Check if data exists in database
+        
+        Add a column with version number for versioning
+
         Add the meta data!!!
     
     """
     
     return None
+
+
+    
+@click.command()
+@click.argument("SOURCES", nargs=-1)
+
+def main(sources):
+    """Import demand rasters and convert them to vector data.
+    Specify the rasters to import as raster file patterns, the names of
+    raster files, or directories containing raster files via the SOURCES
+    argument, e.g.:
+        python import-demands.py *.tif rasters/
+    If you don't specify SOURCES, "*.tif" is assumed.
+    The rasters are stored in a temporary table called
+    "heat_demand_rasters". The final demands are stored in
+    "demand.heat_demands".
+    Note that the table "demand.heat_demands" is dropped prior to the import,
+    so make sure you're not loosing valuable data.
+    """
+    sources = ["*.tif"] if not sources else sources
+    sources = [path for pattern in sources for path in Path(".").glob(pattern)]
+
+    rasters = "heat_demand_rasters"
+    engine = db.engine()
+    import_rasters = subprocess.run(
+        ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
+        + sources
+        + [f"{rasters}"],
+        text=True,
+    ).stdout
+    with engine.begin() as connection:
+        connection.execute(
+            f'CREATE TEMPORARY TABLE "{rasters}"'
+            ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
+        )
+        connection.execute(import_rasters)
+        connection.execute(f'ANALYZE "{rasters}"')
+        with open("raster2cells-and-centroids.sql") as convert:
+            connection.execute(convert.read())
+
+
+if __name__ == "__main__":
+    main()
+    
+
     
 
 def census_ids_for_heat_demand_cells():
