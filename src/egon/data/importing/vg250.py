@@ -57,11 +57,14 @@ def to_postgres(testcase=True):
         )
 
         if testcase:
+            bl = "Schleswig-Holstein"
             # read-in borders of federal state Schleswig-Holstein
             data_sta = gpd.read_file(
                     f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
                     f"vg250_ebenen_0101/VG250_LAN.shp"
-                    ).query("GEN == 'Schleswig-Holstein'")
+                    ).query(f"GEN == '{bl}'")
+            data_sta.BEZ = 'Bundesrepublik'
+            data_sta.NUTS = 'DE'
             # import borders of Schleswig-Holstein as borders of state
             if table == 'vg250_sta':
                 data = data_sta
