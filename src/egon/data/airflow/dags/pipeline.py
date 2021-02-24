@@ -33,17 +33,23 @@ with airflow.DAG(
 
     # Openstreetmap data import
     osm_download = PythonOperator(
-        task_id="download-osm", python_callable=import_osm.download_pbf_file
+        task_id="download-osm",
+        python_callable=import_osm.download_pbf_file,
+        op_args={'testmode': testmode},
     )
     osm_import = PythonOperator(
-        task_id="import-osm", python_callable=import_osm.to_postgres
+        task_id="import-osm",
+        python_callable=import_osm.to_postgres,
+        op_args={'testmode': testmode},
     )
     osm_migrate = PythonOperator(
         task_id="migrate-osm",
         python_callable=process_osm.modify_tables,
     )
     osm_add_metadata = PythonOperator(
-        task_id="add-osm-metadata", python_callable=import_osm.add_metadata
+        task_id="add-osm-metadata",
+        python_callable=import_osm.add_metadata,
+        op_args={'testmode': testmode},
     )
     setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
 
