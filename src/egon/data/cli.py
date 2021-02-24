@@ -19,12 +19,15 @@ import os
 import os.path
 import subprocess
 
+from importlib_resources import files
+
 import click
 import yaml
 
 import egon.data
 import egon.data.airflow
 
+from importlib_resources import files
 
 @click.command(
     add_help_option=False,
@@ -85,7 +88,9 @@ def serve(context):
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def main(context, **kwargs):
-    os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
+    #os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
+    os.environ["AIRFLOW_HOME"] = os.path.dirname(files(egon.data.airflow).joinpath('__init__.py'))
+    #os.environ["AIRFLOW_HOME"] = files('egon.data.airflow')
     translations = {
         "database": "POSTGRES_DB",
         "database_password": "POSTGRES_PASSWORD",

@@ -18,6 +18,9 @@ from egon.data import db
 import egon.data.config
 import egon.data.subprocess as subprocess
 
+import egon.data.importing.openstreetmap as import_openstreetmap
+from importlib_resources import files
+
 
 def download_pbf_file():
     """Download OpenStreetMap `.pbf` file."""
@@ -25,7 +28,9 @@ def download_pbf_file():
     osm_config = data_config["openstreetmap"]["original_data"]
 
     target_file = os.path.join(
-        os.path.dirname(__file__), osm_config["target"]["path"]
+        #os.path.dirname(__file__),
+        files(import_openstreetmap),
+        osm_config["target"]["path"]
     )
 
     if not os.path.isfile(target_file):
@@ -50,7 +55,9 @@ def to_postgres(num_processes=4, cache_size=4096):
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
     input_file = os.path.join(
-        os.path.dirname(__file__), osm_config["target"]["path"]
+        #os.path.dirname(__file__),
+        files(import_openstreetmap),
+        osm_config["target"]["path"]
     )
 
     # Prepare osm2pgsql command
@@ -74,7 +81,8 @@ def to_postgres(num_processes=4, cache_size=4096):
         " ".join(cmd),
         shell=True,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-        cwd=os.path.dirname(__file__),
+        #cwd=os.path.dirname(__file__),
+        cwd=files(import_openstreetmap),
     )
 
 

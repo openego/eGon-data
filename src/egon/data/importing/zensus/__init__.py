@@ -8,6 +8,8 @@ import zipfile
 from egon.data import db, subprocess
 import egon.data.config
 
+import egon.data.importing.zensus as import_zensus
+from importlib_resources import files
 
 def download_zensus_pop():
     """Download Zensus csv file on population per hectar grid cell."""
@@ -17,7 +19,8 @@ def download_zensus_pop():
     ]
 
     target_file = os.path.join(
-        os.path.dirname(__file__), zensus_population_config["target"]["path"]
+        #os.path.dirname(__file__), zensus_population_config["target"]["path"]
+        files(import_zensus), zensus_population_config["target"]["path"]
     )
 
     if not os.path.isfile(target_file):
@@ -39,7 +42,8 @@ def download_zensus_misc():
     url_path_map = list(zip(zensus_url, zensus_path))
 
     for url, path in url_path_map:
-        target_file_misc = os.path.join(os.path.dirname(__file__), path)
+        #target_file_misc = os.path.join(os.path.dirname(__file__), path)
+        target_file_misc = os.path.join(files(import_zensus), path)
 
         if not os.path.isfile(target_file_misc):
             urlretrieve(url, target_file_misc)
@@ -110,7 +114,8 @@ def population_to_postgres():
     zensus_population_orig = data_config["zensus_population"]["original_data"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
     input_file = os.path.join(
-        os.path.dirname(__file__), zensus_population_orig["target"]["path"]
+        #os.path.dirname(__file__), zensus_population_orig["target"]["path"]
+        files(import_zensus), zensus_population_orig["target"]["path"]
     )
 
     # Read database configuration from docker-compose.yml
@@ -184,7 +189,8 @@ def zensus_misc_to_postgres():
 
     for input_file, table in zensus_misc_processed["path_table_map"].items():
         with zipfile.ZipFile(os.path.join(
-                os.path.dirname(__file__), input_file)) as zf:
+                #os.path.dirname(__file__), input_file)) as zf:
+                files(import_zensus), input_file)) as zf:
             csvfiles = [n for n in zf.namelist() if n.lower()[-3:] == "csv"]
             for filename in csvfiles:
                 zf.extract(filename)

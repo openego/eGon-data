@@ -15,5 +15,5 @@ def initdb():
         subprocess.run(
             ["docker-compose", "up", "-d", "--build"],
             #cwd=os.path.dirname(__file__),
-            files('egon.data.airflow'),
+            cwd=files('egon.data.airflow'),
         )
