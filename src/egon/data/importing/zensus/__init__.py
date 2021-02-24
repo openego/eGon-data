@@ -109,10 +109,10 @@ def create_zensus_tables():
         )
 
 
-def target(source):
+def target(source, dataset):
         """Generate the target path corresponding to a source path."""
         return Path(os.path.join(os.path.dirname(__file__),source.stem)
-                    + ".testmode" + source.suffix)
+                    + "." + dataset + source.suffix)
 
 def select_geom():
     """ Select the union of the geometries of Schleswig-Holstein from the
@@ -150,7 +150,7 @@ def select_geom():
 
     return prep(shape(features[0]["geometry"]))
 
-def filter_zensus_population(filename):
+def filter_zensus_population(filename, dataset):
     """ This block filters lines in the source CSV file and copies
     the appropriate ones to the destination based on geometry.
 
@@ -159,7 +159,12 @@ def filter_zensus_population(filename):
     ----------
     filename : str
         Path to input csv-file
-
+    dataset: str, optional
+        Toggles between production (`dataset='main'`) and test mode e.g.
+        (`dataset='Schleswig-Holstein'`).
+        In production mode, data covering entire Germany
+        is used. In the test mode a subset of this data is used for testing the
+        workflow.
     Returns
     -------
     str
@@ -172,12 +177,13 @@ def filter_zensus_population(filename):
 
     schleswig_holstein = select_geom()
 
-    if not os.path.isfile(target(csv_file)):
+    if not os.path.isfile(target(csv_file, dataset)):
 
         with open(csv_file, mode="r", newline="") as input_lines:
             rows = csv.DictReader(input_lines, delimiter=";")
             gitter_ids = set()
-            with open(target(csv_file), mode="w", newline="") as destination:
+            with open(target(csv_file, dataset),
+                      mode="w", newline="") as destination:
                 output = csv.DictWriter(
                     destination, delimiter=";", fieldnames=rows.fieldnames
                 )
@@ -189,9 +195,9 @@ def filter_zensus_population(filename):
                         Point(float(row["x_mp_100m"]), float(row["y_mp_100m"]))
                     )
                 )
-    return target(csv_file)
+    return target(csv_file, dataset)
 
-def filter_zensus_misc(filename):
+def filter_zensus_misc(filename, dataset):
     """ This block filters lines in the source CSV file and copies
     the appropriate ones to the destination based on grid_id values.
 
@@ -200,7 +206,12 @@ def filter_zensus_misc(filename):
     ----------
     filename : str
         Path to input csv-file
-
+    dataset: str, optional
+        Toggles between production (`dataset='main'`) and test mode e.g.
+        (`dataset='Schleswig-Holstein'`).
+        In production mode, data covering entire Germany
+        is used. In the test mode a subset of this data is used for testing the
+        workflow.
     Returns
     -------
     str
@@ -213,12 +224,12 @@ def filter_zensus_misc(filename):
         "SELECT grid_id from society.destatis_zensus_population_per_ha",
                             con = db.engine()).grid_id.values)
 
-    if not os.path.isfile(target(csv_file)):
+    if not os.path.isfile(target(csv_file, dataset)):
         with open(csv_file, mode="r", newline="",
                   encoding="iso-8859-1") as inputs:
             rows = csv.DictReader(inputs, delimiter=",")
             with open(
-                    target(csv_file),
+                    target(csv_file, dataset),
                     mode="w",
                     newline="",
                     encoding="iso-8859-1",
@@ -230,9 +241,9 @@ def filter_zensus_misc(filename):
                 output.writerows(
                     row for row in rows if row["Gitter_ID_100m"] in gitter_ids
                     )
-    return target(csv_file)
+    return target(csv_file, dataset)
 
-def population_to_postgres(testmode):
+def population_to_postgres(dataset='main'):
     """Import Zensus population data to postgres database"""
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
@@ -254,11 +265,10 @@ def population_to_postgres(testmode):
 
             zf.extract(filename)
 
-            if testmode:
-                print("Using testmode")
-                filename_insert = filter_zensus_population(filename)
-            else:
+            if dataset=='main':
                 filename_insert = filename
+            else:
+                filename_insert = filter_zensus_population(filename, dataset)
 
 
             host = ["-h", f"{docker_db_config['HOST']}"]
@@ -303,7 +313,7 @@ def population_to_postgres(testmode):
     )
 
 
-def zensus_misc_to_postgres(testmode):
+def zensus_misc_to_postgres(dataset='main'):
     """Import data on buildings, households and apartments to postgres db"""
 
     # Get information from data configuration file
@@ -326,11 +336,10 @@ def zensus_misc_to_postgres(testmode):
             for filename in csvfiles:
                 zf.extract(filename)
 
-                if testmode:
-                    print("Using testmode")
-                    filename_insert = filter_zensus_misc(filename)
-                else:
+                if dataset == 'main':
                     filename_insert = filename
+                else:
+                    filename_insert = filter_zensus_misc(filename, dataset)
 
                 host = ["-h", f"{docker_db_config['HOST']}"]
                 port = ["-p", f"{docker_db_config['PORT']}"]
