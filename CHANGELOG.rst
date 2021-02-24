@@ -9,11 +9,11 @@ Added
 -----
 
 
-* Include description of the egon-data workflow in our documentation 
+* Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
   `egon.data.subprocess.run`. This wrapper catches errors better and
-  displays better error messages that Python's built-in function. Use
+  displays better error messages than Python's built-in function. Use
   this wrapper wenn calling other programs in Airflow tasks.
 
 * You can now override the default database configuration by putting a
@@ -33,6 +33,8 @@ Added
   `#2 <https://github.com/openego/eGon-data/issues/2>`_
 * Zensus data import for households, apartments and buildings
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
+* DemandRegio data import for annual electricity demands
+  `#5 <https://github.com/openego/eGon-data/issues/5>`_
 
 Changed
 -------
