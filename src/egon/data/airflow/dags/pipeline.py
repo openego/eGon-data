@@ -12,16 +12,25 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
 
+from importlib_resources import files
+
 # Prepare connection to db for operators
 airflow_db_connection()
+
+print('*-*-*-*-*-*')
+print(os.path.abspath(os.path.join(os.path.dirname(
+    __file__ ), '..', '..', 'processing', 'vg250')))
+print(files('egon.data.processing').joinpath('vg250'))
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
-        os.path.abspath(os.path.join(os.path.dirname(
-            __file__ ), '..', '..', 'processing', 'vg250'))
+        #os.path.abspath(os.path.join(os.path.dirname(
+        #    __file__ ), '..', '..', 'processing', 'vg250'))
+        files('egon.data.processing').joinpath('vg250')
+
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
