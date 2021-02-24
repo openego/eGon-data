@@ -6,6 +6,7 @@ import egon
 
 from importlib_resources import files
 
+
 def datasets(config_file=None):
     """Return dataset configuration.
 

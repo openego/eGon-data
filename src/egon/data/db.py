@@ -6,6 +6,7 @@ import yaml
 
 import egon
 
+from importlib_resources import files
 
 def credentials():
     """Return local database connection parameters.
@@ -16,7 +17,8 @@ def credentials():
         Complete DB connection information
     """
     # Read database configuration from docker-compose.yml
-    package_path = egon.data.__path__[0]
+    #package_path = egon.data.__path__[0]
+    package_path = files('egon.data')
     docker_compose_file = os.path.join(
         package_path, "airflow", "docker-compose.yml"
     )
