@@ -17,11 +17,6 @@ from importlib_resources import files
 # Prepare connection to db for operators
 airflow_db_connection()
 
-print('*-*-*-*-*-*')
-print(os.path.abspath(os.path.join(os.path.dirname(
-    __file__ ), '..', '..', 'processing', 'vg250')))
-print(files('egon.data.processing').joinpath('vg250'))
-
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",

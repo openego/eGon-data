@@ -4,6 +4,7 @@ import socket
 from egon.data.db import credentials
 import egon.data.subprocess as subprocess
 
+from importlib_resources import files
 
 def initdb():
     """ Initialize the local database used for data processing. """
@@ -13,5 +14,6 @@ def initdb():
     if code != 0:
         subprocess.run(
             ["docker-compose", "up", "-d", "--build"],
-            cwd=os.path.dirname(__file__),
+            #cwd=os.path.dirname(__file__),
+            files('egon.data.airflow'),
         )
