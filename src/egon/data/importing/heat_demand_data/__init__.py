@@ -380,6 +380,11 @@ def future_heat_demand_germany(scenario_name):
             # print(ser_hd_reduction)
     
     
+    # Define the directory where the created rasters will be saved
+    if not os.path.exists('scenario_raster'):
+        os.mkdir('scenario_raster')
+        
+    os.chdir("./scenario_raster")
 
     # Open, read and adjust the cutout heat demand distributions for Germany
     # https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -423,7 +428,7 @@ def future_heat_demand_germany(scenario_name):
         dtype=rasterio.uint16,
         count=1,
         compress='lzw'
-        )
+        )   
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
     ser_result_filename = 'ser_HD_' + scenario_name + '.tif'
@@ -477,22 +482,40 @@ def heat_demand_to_postgres():
 
 
     
-@click.command()
-@click.argument("SOURCES", nargs=-1)
+# @click.command()
+# @click.argument("SOURCES", nargs=-1)
 
-def main(sources):
+def heat_demand_to_db_table():
     """Import demand rasters and convert them to vector data.
+    
     Specify the rasters to import as raster file patterns, the names of
     raster files, or directories containing raster files via the SOURCES
     argument, e.g.:
         python import-demands.py *.tif rasters/
     If you don't specify SOURCES, "*.tif" is assumed.
-    The rasters are stored in a temporary table called
-    "heat_demand_rasters". The final demands are stored in
-    "demand.heat_demands".
+    The rasters are stored in a temporary table called "heat_demand_rasters".
+    The final demands are stored in "demand.heat_demands".
     Note that the table "demand.heat_demands" is dropped prior to the import,
     so make sure you're not loosing valuable data.
+    
+    
+    Parameters
+    ----------
+        None
+    
+    Returns
+    -------
+        None
+
+    Notes
+    -----
+        
+    TODO
+    ----
+        make it work
+    
     """
+    sources = ["scenario_raster/"]
     sources = ["*.tif"] if not sources else sources
     sources = [path for pattern in sources for path in Path(".").glob(pattern)]
 
@@ -513,13 +536,9 @@ def main(sources):
         connection.execute(f'ANALYZE "{rasters}"')
         with open("raster2cells-and-centroids.sql") as convert:
             connection.execute(convert.read())
-
-
-if __name__ == "__main__":
-    main()
-    
-
-    
+              
+# if __name__ == "__main__":
+#     main()
 
 def census_ids_for_heat_demand_cells():
     """
@@ -579,7 +598,8 @@ def future_heat_demand_data_import():
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
     
-    # heat_demand_to_postgres():
+    # heat_demand_to_postgres()
     # census_ids_for_heat_demand_cells()
+    heat_demand_to_db_table()
     
     return None
