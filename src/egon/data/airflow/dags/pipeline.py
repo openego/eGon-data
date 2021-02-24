@@ -93,12 +93,14 @@ with airflow.DAG(
 
     population_import = PythonOperator(
         task_id="import-zensus-population",
-        python_callable=import_zs.population_to_postgres
+        python_callable=import_zs.population_to_postgres,
+        op_args={'testmode': testmode}
     )
 
     zensus_misc_import = PythonOperator(
         task_id="import-zensus-misc",
-        python_callable=import_zs.zensus_misc_to_postgres
+        python_callable=import_zs.zensus_misc_to_postgres,
+        op_args={'testmode': testmode}
     )
     setup >> zensus_download_population >> zensus_download_misc
     zensus_download_misc >> zensus_tables >> population_import
