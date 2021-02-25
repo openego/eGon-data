@@ -381,9 +381,9 @@ def future_heat_demand_germany(scenario_name):
     
     
     # Define the directory where the created rasters will be saved
+    os.chdir(os.path.dirname(__file__))
     if not os.path.exists('scenario_raster'):
         os.mkdir('scenario_raster')
-        
     os.chdir("./scenario_raster")
 
     # Open, read and adjust the cutout heat demand distributions for Germany
