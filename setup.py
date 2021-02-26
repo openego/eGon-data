@@ -89,7 +89,9 @@ setup(
         "psycopg2",
         "sqlalchemy",
         "geopandas",
-        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install"
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install",
+        "windpowerlib @ git+https://github.com/wind-python/windpowerlib.git@dev",
+        "feedinlib @ git+https://github.com/oemof/feedinlib.git@master"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={

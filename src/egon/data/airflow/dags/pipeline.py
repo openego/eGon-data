@@ -12,6 +12,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.era5 as import_era5
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -107,3 +108,20 @@ with airflow.DAG(
         python_callable=import_dr.insert_data,
     )
     vg250_clean_and_prepare >> demandregio_import
+
+    # Era5 Weather data download and import
+    era5_tables = PythonOperator(
+        task_id="create-era5-tables",
+        python_callable=import_era5.create_tables,
+    )
+
+    era5_download = PythonOperator(
+        task_id="download-era5",
+        python_callable=import_era5.download_weather_data,
+    )
+
+    era5_cells = PythonOperator(
+        task_id="import-era5-geom",
+        python_callable=import_era5.get_weather_cells,
+    )
+    vg250_clean_and_prepare >> era5_tables >> era5_download >> era5_cells

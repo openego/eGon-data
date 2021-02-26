@@ -31,7 +31,7 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
-zensus_population: 
+zensus_population:
   original_data:
     source:
       url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
@@ -79,3 +79,11 @@ demandregio:
       - 2035
       - 2050
 
+era5:
+  source:
+    year: 2011
+  target:
+    file: 'Germany_onshore.nc'
+    schema: 'supply'
+    table_cells: 'egon_era5_weather_cells'
+    table_feedin: 'egon_re_feed_in'
