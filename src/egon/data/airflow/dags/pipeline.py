@@ -1,9 +1,8 @@
-import os
-
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
+import os
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
@@ -22,7 +21,7 @@ with airflow.DAG(
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
         os.path.abspath(os.path.join(os.path.dirname(
-            __file__), '..', '..', 'processing', 'vg250'))
+            __file__ ), '..', '..', 'processing', 'vg250'))
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
@@ -72,7 +71,7 @@ with airflow.DAG(
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
-    # Zensus import
+# Zensus import
     zensus_download_population = PythonOperator(
         task_id="download-zensus-population",
         python_callable=import_zs.download_zensus_pop
@@ -97,13 +96,22 @@ with airflow.DAG(
         task_id="import-zensus-misc",
         python_callable=import_zs.zensus_misc_to_postgres
     )
-    setup >> zensus_download_population >> zensus_download_misc
-    zensus_download_misc >> zensus_tables >> population_import
-    population_import >> zensus_misc_import
+    zensus_download_population >> zensus_download_misc >> zensus_tables
+    zensus_tables >> population_import >> zensus_misc_import
+    
+# Substation extraction
 
-    # DemandRegio data import
-    demandregio_import = PythonOperator(
-        task_id="import-demandregio",
-        python_callable=import_dr.insert_data,
+    hvmv_substation_extraction = PythonOperator(
+        task_id="hvmv_substation_extraction",
+        sql="hvmv_substation.sql",
+        postgres_conn_id="egon_data",
+        autocommit=True,
     )
-    vg250_clean_and_prepare >> demandregio_import
+
+    ehv_substation_extraction = PythonOperator(
+        task_id="ehv_substation_extraction",
+        sql="ehv_substation.sql",
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
+        setup >> hvmv_substation_extraction >> ehv_substation_extraction
