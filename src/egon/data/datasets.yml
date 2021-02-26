@@ -31,7 +31,7 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
-zensus_population: 
+zensus_population:
   original_data:
     source:
       url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
@@ -84,18 +84,3 @@ scenario_input:
     paths:
       "capacities": "NEP2035_V2021_scnC2035.xlsx"
       "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
-    tyndp:
-      countries: ["AT", "BE", "CH", "CZ", "DK", "FR", "NL", "NO", "SE", "PL", "UK"]
-      capacities:
-        url: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
-        target_path: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
-      demand_2030:
-        url: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
-        target_path: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
-      demand_2040:
-        url: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
-        target_path: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
-
-
-weather:
-  year: 2011
