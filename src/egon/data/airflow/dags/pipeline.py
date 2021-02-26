@@ -12,7 +12,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
-
+import egon.data.processing.power_plants as power_plants
 # Prepare connection to db for operators
 airflow_db_connection()
 
@@ -107,3 +107,10 @@ with airflow.DAG(
         python_callable=import_dr.insert_data,
     )
     vg250_clean_and_prepare >> demandregio_import
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+    setup >> power_plant_tables
