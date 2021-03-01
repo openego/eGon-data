@@ -52,12 +52,12 @@ CREATE VIEW 		grid.egon_way_substations_with_hoes AS
 --> NODE: Erzeuge einen VIEW aus OSM node substations:
 DROP VIEW IF EXISTS 	grid.egon_node_substations_with_hoes CASCADE;
 CREATE VIEW 		grid.egon_node_substations_with_hoes AS
-	SELECT 	openstreetmap.osm_nodes.id, openstreetmap.osm_nodes.tags, openstreetmap.osm_point.geom
+	SELECT 	openstreetmap.osm_nodes.id, openstreetmap.osm_point.tags, openstreetmap.osm_point.geom
 	FROM 	openstreetmap.osm_nodes JOIN openstreetmap.osm_point ON openstreetmap.osm_nodes.id = openstreetmap.osm_point.osm_id
-	WHERE 	'220000' = ANY( string_to_array(hstore(openstreetmap.osm_nodes.tags)->'voltage',';')) 
-		and hstore(openstreetmap.osm_nodes.tags)->'power' in ('substation','sub_station','station') 
-		OR '380000' = ANY( string_to_array(hstore(openstreetmap.osm_nodes.tags)->'voltage',';')) 
-		and hstore(openstreetmap.osm_nodes.tags)->'power' in ('substation','sub_station','station');
+	WHERE 	'220000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';')) 
+		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station') 
+		OR '380000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';')) 
+		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station');
 
 
 --> RELATION: Erzeuge einen VIEW aus OSM relation substations:
@@ -88,12 +88,13 @@ CREATE VIEW 		grid.egon_substation_hoes AS
 		'w'|| grid.egon_way_substations_with_hoes.id as osm_id,
 		'2'::smallint as status
 	FROM grid.egon_way_substations_with_hoes
-	UNION 
-	SELECT *,
-		'http://www.osm.org/node/'|| grid.egon_node_substations_with_hoes.id as osm_www,
-		'n'|| grid.egon_node_substations_with_hoes.id as osm_id,
-		'4'::smallint as status
-	FROM grid.egon_node_substations_with_hoes;
+--	UNION 
+--	SELECT *,
+--		'http://www.osm.org/node/'|| grid.egon_node_substations_with_hoes.id as osm_www,
+--		'n'|| grid.egon_node_substations_with_hoes.id as osm_id,
+--		'4'::smallint as status
+--	FROM grid.egon_node_substations_with_hoes
+	;
 
 
 -- create view summary_total_hoes that contains substations without any filter
@@ -138,9 +139,9 @@ CREATE INDEX summary_hoes_gix ON grid.egon_summary_hoes USING GIST (polygon);
 DROP VIEW IF EXISTS 	grid.egon_summary_de_hoes CASCADE;
 CREATE VIEW		grid.egon_summary_de_hoes AS
 	SELECT 	*
-	FROM 	grid.egon_summary_hoes, boundaries.bkg_vg250_1_sta_union_mview as vg
-	WHERE 	ST_Transform(vg.geom,4326) && grid.egon_summary_hoes.polygon 
-	AND 	ST_CONTAINS(ST_Transform(vg.geom,4326),grid.egon_summary_hoes.polygon);
+	FROM 	grid.egon_summary_hoes, boundaries.vg250_sta_union as vg
+	WHERE 	ST_Transform(vg.geometry,4326) && grid.egon_summary_hoes.polygon 
+	AND 	ST_CONTAINS(ST_Transform(vg.geometry,4326),grid.egon_summary_hoes.polygon);
 
 -- create view with buffer of 75m around polygons
 DROP MATERIALIZED VIEW IF EXISTS 	grid.egon_buffer_75_hoes CASCADE;
