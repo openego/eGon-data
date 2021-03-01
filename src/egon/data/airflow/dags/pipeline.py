@@ -97,8 +97,13 @@ with airflow.DAG(
     )
     zensus_download_population >> zensus_download_misc >> zensus_tables
     zensus_tables >> population_import >> zensus_misc_import
-    
+
 # Substation extraction
+    substation_functions = PythonOperator(
+        task_id="substation_functions",
+        sql="substation_functions.sql",
+        postgres_conn_id="egon_data",
+        autocommit=True,)
 
     hvmv_substation_extraction = PythonOperator(
         task_id="hvmv_substation_extraction",
@@ -113,4 +118,5 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-        setup >> hvmv_substation_extraction >> ehv_substation_extraction
+    osm_add_metadata >> substation_functions >> hvmv_substation_extraction
+    hvmv_substation_extraction >> ehv_substation_extraction
