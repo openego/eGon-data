@@ -10,26 +10,6 @@ __author__      = "lukasol, C. Matke, Ludee, IlkaCu"
 */
 
 
--- ehv substation
-DROP TABLE IF EXISTS 	grid.egon_ehv_substation CASCADE;
-CREATE TABLE 		grid.egon_ehv_substation (
-	subst_id       	serial NOT NULL,
-	lon            	float NOT NULL,
-	lat            	float NOT NULL,
-	point	   	geometry(Point,4326) NOT NULL,
-	polygon	   	geometry NOT NULL,	
-	voltage        	text,
-	power_type    	text,
-	substation     	text,
-	osm_id         	text PRIMARY KEY NOT NULL,
-	osm_www        	text NOT NULL,
-	frequency      	text,
-	subst_name     	text,
-	ref            	text,
-	operator       	text,
-	dbahn          	text,
-	status   	smallint NOT NULL);  
-
 --> WAY: Erzeuge einen VIEW aus OSM way substations:
 DROP VIEW IF EXISTS	grid.egon_way_substations CASCADE;
 CREATE VIEW 		grid.egon_way_substations AS

@@ -12,6 +12,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.substation as substation
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -109,11 +110,17 @@ with airflow.DAG(
     vg250_clean_and_prepare >> demandregio_import
 
     # Substation extraction
+    substation_tables = PythonOperator(
+        task_id="create_substation_tables",
+        python_callable=substation.create_tables
+    )
+
     substation_functions = PythonOperator(
         task_id="substation_functions",
         sql="substation_functions.sql",
         postgres_conn_id="egon_data",
-        autocommit=True,)
+        autocommit=True,
+    )
 
     hvmv_substation_extraction = PythonOperator(
         task_id="hvmv_substation_extraction",
@@ -128,5 +135,5 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-    osm_add_metadata >> substation_functions >> hvmv_substation_extraction
-    hvmv_substation_extraction >> ehv_substation_extraction
+    osm_add_metadata >> substation_tables >> substation_functions
+    substation_functions >> hvmv_substation_extraction >> ehv_substation_extraction

@@ -11,27 +11,6 @@ __author__      = "lukasol, C. Matke, Ludee, ilkacu"
 */
 
 
--- hvmv substations
-DROP TABLE IF EXISTS 	grid.egon_hvmv_substation CASCADE;
-CREATE TABLE 		grid.egon_hvmv_substation (
-	subst_id       	serial NOT NULL,
-	lon            	float NOT NULL,
-	lat            	float NOT NULL,
-	point	   	geometry(Point,4326) NOT NULL,
-	polygon	   	geometry NOT NULL,	
-	voltage        	text,
-	power_type     	text,
-	substation     	text,
-	osm_id         	text PRIMARY KEY,
-	osm_www        	text NOT NULL,
-	frequency      	text,
-	subst_name     	text,
-	ref            	text,
-	operator       	text,
-	dbahn          	text,
-	status		smallint NOT NULL);
-
-
 --> WAY: create view of way substations:
 DROP VIEW IF EXISTS 	grid.egon_way_substations CASCADE;
 CREATE VIEW 		grid.egon_way_substations AS

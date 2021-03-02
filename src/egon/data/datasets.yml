@@ -31,7 +31,7 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
-zensus_population: 
+zensus_population:
   original_data:
     source:
       url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
@@ -78,4 +78,24 @@ demandregio:
       - 2018
       - 2035
       - 2050
+hvmv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_hvmv_substation"
+ehv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_ehv_substation"
+
+
 
