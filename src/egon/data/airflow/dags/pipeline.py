@@ -1,13 +1,15 @@
+import os
+
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
-import os
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
+import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
 
@@ -20,7 +22,7 @@ with airflow.DAG(
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
         os.path.abspath(os.path.join(os.path.dirname(
-            __file__ ), '..', '..', 'processing', 'vg250'))
+            __file__), '..', '..', 'processing', 'vg250'))
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
@@ -70,7 +72,7 @@ with airflow.DAG(
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
-# Zensus import
+    # Zensus import
     zensus_download_population = PythonOperator(
         task_id="download-zensus-population",
         python_callable=import_zs.download_zensus_pop
@@ -95,10 +97,18 @@ with airflow.DAG(
         task_id="import-zensus-misc",
         python_callable=import_zs.zensus_misc_to_postgres
     )
-    zensus_download_population >> zensus_download_misc >> zensus_tables
-    zensus_tables >> population_import >> zensus_misc_import
+    setup >> zensus_download_population >> zensus_download_misc
+    zensus_download_misc >> zensus_tables >> population_import
+    population_import >> zensus_misc_import
 
-# Substation extraction
+    # DemandRegio data import
+    demandregio_import = PythonOperator(
+        task_id="import-demandregio",
+        python_callable=import_dr.insert_data,
+    )
+    vg250_clean_and_prepare >> demandregio_import
+
+    # Substation extraction
     substation_functions = PythonOperator(
         task_id="substation_functions",
         sql="substation_functions.sql",
