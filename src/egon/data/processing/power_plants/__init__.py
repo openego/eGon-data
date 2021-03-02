@@ -22,6 +22,7 @@ class EgonPowerPlants(Base):
     w_id = Column(Integer)      # id of corresponding weather grid cell
     scenario = Column(String)
     geom = Column(Geometry('POINT', 4326))
+    geom_source = Column(String)    # source of geom, eg. MaStR/NEP...
 
 def create_tables():
     """Create tables for power plant data
