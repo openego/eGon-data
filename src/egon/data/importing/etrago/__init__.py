@@ -1,7 +1,6 @@
 # coding: utf-8
-from sqlalchemy import ARRAY, BigInteger, Boolean, CHAR, Column, Date, DateTime, Float, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Table, Text, text
+from sqlalchemy import ARRAY, BigInteger, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Table, Text, text
 from geoalchemy2.types import Geometry
-from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
 
@@ -359,20 +358,21 @@ def create_tables():
         f"CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvGenerator.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvGeneratorTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvLine.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvLineTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvLink.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvLinkTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvLoad.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvLoadTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvCarrier.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvStorage.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvStorageTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvStore.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvStoreTimeseries.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvGenerator.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvGeneratorTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvLine.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvLineTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvLink.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvLinkTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvLoad.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvLoadTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvCarrier.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvStorage.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvStorageTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvStore.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvStoreTimeseries.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTempResolution.__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True).__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
+
