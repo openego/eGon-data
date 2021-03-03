@@ -24,7 +24,7 @@ class EgonScenarioCapacities(Base):
     nuts = Column(String(12))
     scenario_name = Column(String(50))
 
-class NEP2021Kraftwerksliste(Base):
+class NEP2021ConvPowerPlants(Base):
     __tablename__ = 'nep_2021_conv_powerplants'
     __table_args__ = {'schema': 'supply'}
     index =  Column(String(50), primary_key=True)
@@ -78,7 +78,7 @@ def create_scenario_input_tables():
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
-    NEP2021Kraftwerksliste.__table__.create(bind=engine, checkfirst=True)
+    NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state accordning to
@@ -231,7 +231,7 @@ def insert_nep_list_powerplants():
                                  'B 2040:\nLeistung': 'b2040_capacity'})
 
     # Insert data to db
-    kw_liste_nep.to_sql('nep_2021_kraftwerksliste',
+    kw_liste_nep.to_sql('nep_2021_conv_powerplants',
                        engine,
                        schema='supply',
                        if_exists='replace')
