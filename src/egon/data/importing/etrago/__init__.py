@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import ARRAY, BigInteger, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Table, Text, text
+from sqlalchemy import ARRAY, BigInteger, Boolean, Column, DateTime, Float, Integer, Numeric, String, Text
 from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
