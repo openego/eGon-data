@@ -1,8 +1,9 @@
+import os
+
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
-import os
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
@@ -11,6 +12,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.power_plants as power_plants
 import egon.data.importing.nep_input_data as nep_input
 
 # Prepare connection to db for operators
@@ -22,7 +24,7 @@ with airflow.DAG(
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
         os.path.abspath(os.path.join(os.path.dirname(
-            __file__ ), '..', '..', 'processing', 'vg250'))
+            __file__), '..', '..', 'processing', 'vg250'))
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
@@ -108,8 +110,15 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_import
 
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+    setup >> power_plant_tables
 
-# NEP data import
+
+    # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
         python_callable=nep_input.create_scenario_input_tables)
