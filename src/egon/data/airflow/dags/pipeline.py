@@ -1,15 +1,19 @@
+import os
+
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
-import os
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
+import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.power_plants as power_plants
+import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.etrago as etrago
 
 # Prepare connection to db for operators
@@ -21,7 +25,7 @@ with airflow.DAG(
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
         os.path.abspath(os.path.join(os.path.dirname(
-            __file__ ), '..', '..', 'processing', 'vg250'))
+            __file__), '..', '..', 'processing', 'vg250'))
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
@@ -71,18 +75,63 @@ with airflow.DAG(
     setup >> vg250_download >> vg250_import >> vg250_nuts_mview
     vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
 
-# Zensus population import 
-    zs_pop_download = PythonOperator(
-        task_id="download-zensus-population", 
+    # Zensus import
+    zensus_download_population = PythonOperator(
+        task_id="download-zensus-population",
         python_callable=import_zs.download_zensus_pop
     )
-    
-    zs_pop_import = PythonOperator(
+
+    zensus_download_misc = PythonOperator(
+        task_id="download-zensus-misc",
+        python_callable=import_zs.download_zensus_misc
+    )
+
+    zensus_tables = PythonOperator(
+        task_id="create-zensus-tables",
+        python_callable=import_zs.create_zensus_tables
+    )
+
+    population_import = PythonOperator(
         task_id="import-zensus-population",
         python_callable=import_zs.population_to_postgres
     )
-    setup >> zs_pop_download >> zs_pop_import
-    
+
+    zensus_misc_import = PythonOperator(
+        task_id="import-zensus-misc",
+        python_callable=import_zs.zensus_misc_to_postgres
+    )
+    setup >> zensus_download_population >> zensus_download_misc
+    zensus_download_misc >> zensus_tables >> population_import
+    population_import >> zensus_misc_import
+
+    # DemandRegio data import
+    demandregio_import = PythonOperator(
+        task_id="import-demandregio",
+        python_callable=import_dr.insert_data,
+    )
+    vg250_clean_and_prepare >> demandregio_import
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+    setup >> power_plant_tables
+
+
+    # NEP data import
+    create_tables = PythonOperator(
+        task_id="create-scenario-tables",
+        python_callable=nep_input.create_scenario_input_tables)
+
+    nep_insert_data = PythonOperator(
+        task_id="insert-nep-data",
+        python_callable=nep_input.insert_data_nep)
+
+    setup >> create_tables >> nep_insert_data
+    vg250_clean_and_prepare >> nep_insert_data
+
+
     # setting etrago input tables
     etrago_input_data = PythonOperator(
         task_id = "setting-etrago-input-tables",

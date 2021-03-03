@@ -31,7 +31,7 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
-zensus_population: 
+zensus_population:
   original_data:
     source:
       url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
@@ -40,30 +40,47 @@ zensus_population:
   processed:
     schema: "society"
     table: "destatis_zensus_population_per_ha"
-zensus_household: 
+zensus_misc:
   original_data:
     source:
-      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
-    target:
-      path: "csv_Haushalte_100m_Gitter.zip"
+      url:
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
+        - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
   processed:
     schema: "society"
-    table: "destatis_zensus_household_per_ha"
-zensus_building: 
-  original_data:
-    source:
-      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
-    target:
-      path: "csv_Gebaeude_100m_Gitter.zip"
-  processed:
+    path_table_map:
+      "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
+      "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
+      "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
+
+demandregio:
+  demand_data:
+    schema: "demand"
+    table_names:
+      "household": "egon_demandregio_hh"
+      "CTS": "egon_demandregio_cts_ind"
+      "industry": "egon_demandregio_cts_ind"
+      "wz_definitions": "egon_demandregio_wz"
+    scenarios:
+      "eGon2035": 2035
+      "eGon100RE": 2050
+    new_consumers_2035: 'new_largescale_consumers_nep.csv'
+    wz_definitions:
+      "CTS": 'CTS_WZ_definition.csv'
+      "industry": 'ind_WZ_definition.csv'
+  society_data:
     schema: "society"
-    table: "destatis_zensus_building_per_ha"
-zensus_apartment: 
-  original_data:
-    source:
-      url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
-    target:
-      path: "csv_Wohnungen_100m_Gitter.zip"
-  processed:
-    schema: "society"
-    table: "destatis_zensus_apartment_per_ha"
+    table_names:
+      "household": "egon_demandregio_household"
+      "population": "egon_demandregio_population"
+    target_years:
+      - 2018
+      - 2035
+      - 2050
+
+scenario_input:
+  eGon2035:
+    paths:
+      "capacities": "NEP2035_V2021_scnC2035.xlsx"
+      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
