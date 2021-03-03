@@ -10,6 +10,7 @@ import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.etrago as etrago
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -81,3 +82,10 @@ with airflow.DAG(
         python_callable=import_zs.population_to_postgres
     )
     setup >> zs_pop_download >> zs_pop_import
+    
+    # setting etrago input tables
+    etrago_input_data = PythonOperator(
+        task_id = "setting-etrago-input-tables",
+        python_callable = etrago.create_tables
+    )
+    setup >> etrago_input_data
