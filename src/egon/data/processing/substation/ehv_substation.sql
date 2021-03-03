@@ -68,12 +68,12 @@ CREATE VIEW 		grid.egon_substation_hoes AS
 		'w'|| grid.egon_way_substations_with_hoes.id as osm_id,
 		'2'::smallint as status
 	FROM grid.egon_way_substations_with_hoes
---	UNION 
---	SELECT *,
---		'http://www.osm.org/node/'|| grid.egon_node_substations_with_hoes.id as osm_www,
---		'n'|| grid.egon_node_substations_with_hoes.id as osm_id,
---		'4'::smallint as status
---	FROM grid.egon_node_substations_with_hoes
+	UNION 
+	SELECT id, hstore_to_array(tags), geom,
+		'http://www.osm.org/node/'|| grid.egon_node_substations_with_hoes.id as osm_www,
+		'n'|| grid.egon_node_substations_with_hoes.id as osm_id,
+		'4'::smallint as status
+	FROM grid.egon_node_substations_with_hoes
 	;
 
 
@@ -172,4 +172,3 @@ DROP VIEW IF EXISTS grid.egon_relation_substations_with_hoes CASCADE;
 DROP VIEW IF EXISTS grid.egon_node_substations_with_hoes CASCADE;
 DROP VIEW IF EXISTS grid.egon_way_substations_with_hoes CASCADE;
 DROP VIEW IF EXISTS grid.egon_way_substations CASCADE;
-
