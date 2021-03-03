@@ -11,6 +11,8 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.osmtgmod as osmtgmod
+
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -114,4 +116,13 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-        setup >> hvmv_substation_extraction >> ehv_substation_extraction
+    setup >> hvmv_substation_extraction >> ehv_substation_extraction
+
+# osmTGmod ehv/hv grid model generation
+
+    osmtgmod = PythonOperator(
+        task_id= "osmtgmod",
+        python_callable= osmtgmod.run_osmtgmod)
+    
+    ehv_substation_extraction >> osmtgmod
+
