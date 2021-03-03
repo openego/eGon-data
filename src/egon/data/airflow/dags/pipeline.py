@@ -117,23 +117,22 @@ with airflow.DAG(
 
     substation_functions = PythonOperator(
         task_id="substation_functions",
-        sql="substation_functions.sql",
-        postgres_conn_id="egon_data",
-        autocommit=True,
+        python_callable=substation.create_sql_functions
     )
 
-    hvmv_substation_extraction = PythonOperator(
+    hvmv_substation_extraction = PostgresOperator(
         task_id="hvmv_substation_extraction",
         sql="hvmv_substation.sql",
         postgres_conn_id="egon_data",
         autocommit=True,
     )
 
-    ehv_substation_extraction = PythonOperator(
+    ehv_substation_extraction = PostgresOperator(
         task_id="ehv_substation_extraction",
         sql="ehv_substation.sql",
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-    osm_add_metadata >> substation_tables >> substation_functions
-    substation_functions >> hvmv_substation_extraction >> ehv_substation_extraction
+    osm_add_metadata  >> substation_tables >> substation_functions
+    substation_functions >> hvmv_substation_extraction
+    substation_functions >> ehv_substation_extraction
