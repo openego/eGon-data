@@ -15,7 +15,7 @@ Base = declarative_base()
 
 class EgonScenarioCapacities(Base):
     __tablename__ = 'egon_scenario_capacities'
-    __table_args__ = {'schema': 'model_draft'}
+    __table_args__ = {'schema': 'supply'}
     index = Column(Integer, primary_key=True)
     country = Column(String(50))
     component = Column(String(25))
@@ -25,28 +25,28 @@ class EgonScenarioCapacities(Base):
     scenario_name = Column(String(50))
 
 class NEP2021Kraftwerksliste(Base):
-    __tablename__ = 'nep_2021_kraftwerksliste'
-    __table_args__ = {'schema': 'model_draft'}
+    __tablename__ = 'nep_2021_conv_powerplants'
+    __table_args__ = {'schema': 'supply'}
     index =  Column(String(50), primary_key=True)
     bnetza_id = Column(String(50))
-    kraftwerksname = Column(String(100))
-    blockname = Column(String(50))
-    energietraeger = Column(String(12))
-    kwk_ja_nein = Column(String(12))
-    plz = Column(String(12))
-    ort = Column(String(50))
-    bundesland_land = Column(String(12))
-    inbetriebnamejahr = Column(String(12))
+    name = Column(String(100))
+    name_unit = Column(String(50))
+    carrier = Column(String(12))
+    chp = Column(String(12))
+    postcode = Column(String(12))
+    city = Column(String(50))
+    federal_state = Column(String(12))
+    commissioned = Column(String(12))
     status = Column(String(50))
-    el_leistung = Column(Float)
-    a2035_kwk_ersatz = Column(String(12))
-    a2035_leistung = Column(Float)
-    b2035_kwk_ersatz = Column(String(12))
-    b2035_leistung = Column(Float)
-    c2035_kwk_ersatz = Column(String(12))
-    c2035_leistung = Column(Float)
-    b2040_kwk_ersatz = Column(String(12))
-    b2040_leistung = Column(Float)
+    capacity = Column(Float)
+    a2035_chp = Column(String(12))
+    a2035_capacity = Column(Float)
+    b2035_chp = Column(String(12))
+    b2035_capacity = Column(Float)
+    c2035_chp = Column(String(12))
+    c2035_capacity = Column(Float)
+    b2040_chp = Column(String(12))
+    b2040_capacity = Column(Float)
 
 def scenario_config(scn_name):
     """Get scenario settings from datasets.yml
@@ -76,7 +76,7 @@ def create_scenario_input_tables():
     """
 
     engine = db.engine()
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS model_draft;")
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021Kraftwerksliste.__table__.create(bind=engine, checkfirst=True)
 
@@ -94,7 +94,7 @@ def insert_capacities_per_federal_state_nep():
     engine = db.engine()
 
     # Delete rows if already exist
-    db.execute_sql("DELETE FROM model_draft.egon_scenario_capacities "
+    db.execute_sql("DELETE FROM supply.egon_scenario_capacities "
                    "WHERE scenario_name = 'eGon2035' "
                    "AND country = 'Deutschland'")
 
@@ -182,7 +182,7 @@ def insert_capacities_per_federal_state_nep():
     # Insert data to db
     insert_data.to_sql('egon_scenario_capacities',
                        engine,
-                       schema='model_draft',
+                       schema='supply',
                        if_exists='append',
                        index=insert_data.index)
 
@@ -211,29 +211,29 @@ def insert_nep_list_powerplants():
 
     # Adjust column names
     kw_liste_nep = kw_liste_nep.rename(columns={'BNetzA-ID': 'bnetza_id',
-                                 'Kraftwerksname': 'kraftwerksname',
-                                 'Blockname': 'blockname',
-                                 'Energieträger': 'energietraeger',
-                                 'KWK\nJa/Nein': 'kwk_ja_nein',
-                                 'PLZ': 'plz',
-                                 'Ort': 'ort',
-                                 'Bundesland/\nLand': 'bundesland_land',
-                                 'Inbetrieb-\nnahmejahr': 'inbetriebnamejahr',
+                                 'Kraftwerksname': 'name',
+                                 'Blockname': 'name_unit',
+                                 'Energieträger': 'carrier',
+                                 'KWK\nJa/Nein': 'chp',
+                                 'PLZ': 'postcode',
+                                 'Ort': 'city',
+                                 'Bundesland/\nLand': 'federal_state',
+                                 'Inbetrieb-\nnahmejahr': 'commissioned',
                                  'Status': 'status',
-                                 'el. Leistung\n06.02.2020': 'el_leistung',
-                                 'A 2035:\nKWK-Ersatz': 'a2035_kwk_ersatz',
-                                 'A 2035:\nLeistung': 'a2035_leistung',
-                                 'B 2035\nKWK-Ersatz':'b2035_kwk_ersatz',
-                                 'B 2035:\nLeistung':'b2035_leistung',
-                                 'C 2035:\nKWK-Ersatz': 'c2035_kwk_ersatz',
-                                 'C 2035:\nLeistung': 'c2035_leistung',
-                                 'B 2040:\nKWK-Ersatz': 'b2040_kwk_ersatz',
-                                 'B 2040:\nLeistung': 'b2040_leistung'})
+                                 'el. Leistung\n06.02.2020': 'capacity',
+                                 'A 2035:\nKWK-Ersatz': 'a2035_chp',
+                                 'A 2035:\nLeistung': 'a2035_capacity',
+                                 'B 2035\nKWK-Ersatz':'b2035_chp',
+                                 'B 2035:\nLeistung':'b2035_capacity',
+                                 'C 2035:\nKWK-Ersatz': 'c2035_chp',
+                                 'C 2035:\nLeistung': 'c2035_capacity',
+                                 'B 2040:\nKWK-Ersatz': 'b2040_chp',
+                                 'B 2040:\nLeistung': 'b2040_capacity'})
 
     # Insert data to db
     kw_liste_nep.to_sql('nep_2021_kraftwerksliste',
                        engine,
-                       schema='model_draft',
+                       schema='supply',
                        if_exists='replace')
 
 def district_heating_input():
