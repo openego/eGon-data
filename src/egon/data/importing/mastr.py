@@ -16,16 +16,22 @@ def download_mastr_data(data_stages=["cleaned"]):
 
     # Get parameters from config and set download URL
     data_config = egon.data.config.datasets()["mastr"]
-    zenodo_files_url = f"https://sandbox.zenodo.org/record/{data_config['deposit_id']}/files/"
+    zenodo_files_url = (
+        f"https://sandbox.zenodo.org/record/{data_config['deposit_id']}/files/"
+    )
 
     files = []
     for technology in data_config["technologies"]:
         # Download raw data
         if "raw" in data_stages:
-            files.append(f"{data_config['file_basename']}_{technology}_raw.csv")
+            files.append(
+                f"{data_config['file_basename']}_{technology}_raw.csv"
+            )
         # Download cleaned data
         if "cleaned" in data_stages:
-            files.append(f"{data_config['file_basename']}_{technology}_cleaned.csv")
+            files.append(
+                f"{data_config['file_basename']}_{technology}_cleaned.csv"
+            )
         files.append("datapackage.json")
 
     # Retrieve specified files
