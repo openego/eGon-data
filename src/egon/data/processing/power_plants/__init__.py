@@ -8,7 +8,8 @@ from geoalchemy2 import Geometry
 import pandas as pd
 import geopandas as gpd
 from sqlalchemy.orm import sessionmaker
-
+from pathlib import Path
+import egon.data.config
 Base = declarative_base()
 
 class EgonPowerPlants(Base):
@@ -33,7 +34,9 @@ def create_tables():
     -------
     None.
     """
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
+
+    cfg = egon.data.config.datasets()["power_plants"]
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
     engine = db.engine()
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
@@ -83,12 +86,13 @@ def select_target(carrier, scenario):
         Target values for carrier and scenario
 
     """
+    cfg = egon.data.config.datasets()["power_plants"]
 
     return pd.read_sql(f"""SELECT DISTINCT ON (b.gen)
                          REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
                          a.capacity
-                         FROM supply.egon_scenario_capacities a,
-                         boundaries.vg250_lan b
+                         FROM {cfg['sources']['capacities']} a,
+                         {cfg['sources']['geom_federal_states']} b
                          WHERE a.nuts = b.nuts
                          AND scenario_name = '{scenario}'
                          AND carrier = '{carrier}'
@@ -110,6 +114,7 @@ def filter_mastr_geometry(mastr):
         Power plants listed in MaStR with valid geometry
 
     """
+    cfg = egon.data.config.datasets()["power_plants"]
 
     # Drop entries without geometry for insert
     mastr_loc = mastr[
@@ -123,7 +128,7 @@ def filter_mastr_geometry(mastr):
     # Drop entries outside of germany
     mastr_loc = gpd.sjoin(
         gpd.read_postgis(
-            "SELECT geometry as geom FROM boundaries.vg250_sta_union",
+            f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}",
              con = db.engine()).to_crs(4326),
         mastr_loc, how='right').drop('index_left', axis=1)
 
@@ -143,19 +148,20 @@ def insert_biomass_plants(scenario='eGon2035'):
     None.
 
     """
+    cfg = egon.data.config.datasets()["power_plants"]
 
     # import target values from NEP 2021, scneario C 2035
     target = select_target('biomass', scenario)
 
-    # temporary use local data for MaStR
-    path ='/home/clara/GitHub/eGon-data/src/egon/data/importing/'
-    mastr = pd.read_csv(path+'bnetza_mastr_biomass_cleaned.csv')
+    # import data for MaStR
+    path = Path(__file__).parent.parent.parent/'importing/'
+    mastr = pd.read_csv(path/'bnetza_mastr_biomass_cleaned.csv')
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
-        """SELECT DISTINCT ON (gen)
+        f"""SELECT DISTINCT ON (gen)
         REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-        FROM boundaries.vg250_lan""",
+        FROM {cfg['sources']['geom_federal_states']}""",
         con=db.engine()).states.values)]
 
     # Scale capacities to meet target values
@@ -198,6 +204,7 @@ def insert_hydro_plants(scenario='eGon2035'):
     None.
 
     """
+    cfg = egon.data.config.datasets()["power_plants"]
 
     # Map MaStR carriers to eGon carriers
     map_carrier = {
@@ -210,18 +217,18 @@ def insert_hydro_plants(scenario='eGon2035'):
         # import target values from NEP 2021, scneario C 2035
         target = select_target(carrier, scenario)
 
-        # temporary use local data for MaStR
-        path ='/home/clara/GitHub/eGon-data/src/egon/data/importing/'
-        mastr = pd.read_csv(path+'bnetza_mastr_hydro_cleaned.csv')
+        # import data for MaStR
+        path = Path(__file__).parent.parent.parent/'importing/'
+        mastr = pd.read_csv(path/'bnetza_mastr_hydro_cleaned.csv')
 
         # Choose only plants with specific carriers
         mastr = mastr[mastr.ArtDerWasserkraftanlage.isin(map_carrier[carrier])]
 
         # Drop entries without federal state or 'AusschließlichWirtschaftszone'
         mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
-            """SELECT DISTINCT ON (gen)
+            f"""SELECT DISTINCT ON (gen)
             REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-            FROM boundaries.vg250_lan""",
+            FROM {cfg['sources']['geom_federal_states']}""",
             con=db.engine()).states.values)]
 
         # Scale capacities to meet target values
@@ -236,8 +243,8 @@ def insert_hydro_plants(scenario='eGon2035'):
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
-                sources ={'chp': 'MaStR',
-                              'el_capacity': 'MaStR scaled with NEP 2021'},
+                sources ={'chp':'MaStR',
+                          'el_capacity': 'MaStR scaled with NEP 2021'},
                 source_id = {'MastrNummer': row.EinheitMastrNummer},
                 carrier = carrier,
                 chp = type(row.KwkMastrNummer)!=float,
@@ -258,7 +265,9 @@ def insert_power_plants():
     None.
 
     """
-
+    cfg = egon.data.config.datasets()["power_plants"]
+    db.execute_sql(
+        f"DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}")
     for scenario in ['eGon2035']:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)

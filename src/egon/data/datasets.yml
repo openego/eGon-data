@@ -97,3 +97,14 @@ mastr:
     - "storage"
   file_basename: "bnetza_mastr"
   deposit_id: 740153
+
+power_plants:
+  sources:
+      mastr:
+      capacities: 'supply.egon_scenario_capacities'
+      geom_germany: 'boundaries.vg250_sta_union'
+      geom_federal_states: 'boundaries.vg250_lan'
+
+  target:
+      table: 'egon_power_plants'
+      schema: 'supply'
