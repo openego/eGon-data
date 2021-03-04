@@ -5,8 +5,11 @@
 # license text - to be added.
 
 """
-Central module containing all code dealing with the calculation of
-future heat demands based on Peta5.0.1.
+Central module containing all code dealing with the future heat demand import.
+
+This module obtains the residential and service-sector heat demand data for
+2015 from Peta5.0.1, calculates future heat demands and saves them in the
+database with assigned census cell IDs.
 
 """
 
@@ -24,18 +27,15 @@ import rasterio
 from rasterio.mask import mask
 # import matplotlib.pyplot as plt
 
-from pathlib import Path
-import click
-
-
-
-
+from pathlib import Path  # for database import
 
 
 def download_peta5_0_1_heat_demands():
     """
-    Download Peta5.0.1 tiff files with residential and service-sector heat
-    demands per hectar grid cell for 2015.
+    Download Peta5.0.1 tiff files.
+
+    The downloaded data contain residential and service-sector heat demands
+    per hectar grid cell for 2015.
 
     Parameters
     ----------
@@ -85,8 +85,7 @@ def download_peta5_0_1_heat_demands():
 
 def unzip_peta5_0_1_heat_demands():
     """
-    Unzip the downloaded Peta5.0.1 tiff files with residential and
-    service-sector heat demands per hectar grid cell for 2015.
+    Unzip the downloaded Peta5.0.1 tiff files.
 
     Parameters
     ----------
@@ -141,8 +140,7 @@ def unzip_peta5_0_1_heat_demands():
 
 def cutout_heat_demand_germany():
     """
-    Save cutouts of Germany's 2015 heat demand densities from pan-European
-    tif files
+    Save cutouts of Germany's 2015 heat demand densities from Europe-wide tifs.
 
     1. Get the German state boundaries
     2. Load the unzip 2015 heat demand data (Peta5_0_1) and
@@ -245,7 +243,6 @@ def cutout_heat_demand_germany():
                      f" FROM {schema}.{table_name}"),
                     local_engine, geom_col = "geometry")
 
-
     # rasterio wants the mask to be a GeoJSON-like dict or an object that
     # implements the Python geo interface protocol (such as a Shapely Polygon)
 
@@ -260,7 +257,6 @@ def cutout_heat_demand_germany():
     # gdf_boundaries.iloc[:,0]
     # gdf_boundaries.iloc[0,:]
     # gdf_boundaries.plot()
-
 
     # Load the unzipped heat demand data and cutout Germany
 
@@ -293,11 +289,11 @@ def cutout_heat_demand_germany():
                        **out_meta) as dest:
         dest.write(out_image)
 
-
     # Do the same for the service-sector
     with rasterio.open(ser_hd_2015) as dataset:
         # https://rasterio.readthedocs.io/en/latest/topics/masking-by-shapefile.html
-        out_image, out_transform = mask(dataset, gdf_boundaries.iloc[:, 0], crop=True)
+        out_image, out_transform = mask(dataset, gdf_boundaries.iloc[:, 0],
+                                        crop=True)
         out_meta = dataset.meta
 
         # Understanding the outputs
@@ -318,11 +314,11 @@ def cutout_heat_demand_germany():
 
 def future_heat_demand_germany(scenario_name):
     """
-    Calculate the future residential and service-sector heat demands per
-    hectare cell based on Peta5_0_1 heat demand densities, cutcut for Germany,
-    for the year 2015 and
-    the given scenario name which is used to read the adjustment factors for
-    the heat demand rasters from a file.
+    Calculate the future residential and service-sector heat demand per ha.
+
+    The calculation is based on Peta5_0_1 heat demand densities, cutcut for
+    Germany, for the year 2015. The given scenario name is used to read the
+    adjustment factors for the heat demand rasters from a file.
 
     Parameters
     ----------
@@ -335,6 +331,7 @@ def future_heat_demand_germany(scenario_name):
 
     Notes
     -----
+        None
 
     TODO
     ----
@@ -367,14 +364,13 @@ def future_heat_demand_germany(scenario_name):
     df_reductions = pd.read_csv(csvfilename)
 
     for index, row in df_reductions.iterrows():
-        if scenario_name == df_reductions.loc[index,"scenario"]:
+        if scenario_name == df_reductions.loc[index, "scenario"]:
             res_hd_reduction = df_reductions.loc[index,
                                                  "HD_reduction_residential"]
             # print(res_hd_reduction)
             ser_hd_reduction = df_reductions.loc[index,
                                                  "HD_reduction_service_sector"]
             # print(ser_hd_reduction)
-
 
     # Define the directory where the created rasters will be saved
     if not os.path.exists(os.path.join(os.path.dirname(__file__),
@@ -395,12 +391,12 @@ def future_heat_demand_germany(scenario_name):
         res_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
         res_profile = src.profile
 
-    res_scenario_raster = res_hd_reduction * res_hd_2015 # adjust
+    res_scenario_raster = res_hd_reduction * res_hd_2015  # adjusting
 
     res_profile.update(
-        dtype=rasterio.uint16, # set the dtype to uint16
-        count=1, # change the band count to 1
-        compress='lzw' # specify LZW compression
+        dtype=rasterio.uint16,  # set the dtype to uint16
+        count=1,  # change the band count to 1
+        compress='lzw'  # specify LZW compression
         )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
@@ -419,7 +415,7 @@ def future_heat_demand_germany(scenario_name):
         ser_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
         ser_profile = src.profile
 
-    ser_scenario_raster = ser_hd_reduction * ser_hd_2015 # adjust
+    ser_scenario_raster = ser_hd_reduction * ser_hd_2015  # adjusting
 
     ser_profile.update(
         dtype=rasterio.uint16,
@@ -435,7 +431,6 @@ def future_heat_demand_germany(scenario_name):
     with rasterio.open(ser_result_filename, 'w', **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)
 
-
     # Make some images
     # show(res_scenario_raster)
 
@@ -448,9 +443,17 @@ def future_heat_demand_germany(scenario_name):
     return None
 
 
-def heat_demand_to_postgres():
+def heat_demand_to_db_table():
     """
-    Import future heat demand data to postgres database
+    Import heat demand rasters and convert them to vector data.
+
+    Specify the rasters to import as raster file patterns (file type and
+    directory containing raster files, which all will be imported).
+    The rasters are stored in a temporary table called "heat_demand_rasters".
+    The final demand data, having the census IDs as foreign key, are genetated
+    by the provided sql script (raster2cells-and-centroids.sql) and
+    are stored in the table "demand.heat_demands".
+
 
     Parameters
     ----------
@@ -462,68 +465,33 @@ def heat_demand_to_postgres():
 
     Notes
     -----
+        Please note that the table "demand.heat_demands" is dropped prior to
+        the import, so make sure you're not loosing valuable data.
 
     TODO
     ----
-        as done in the census data import script
-        OR WITH ORM
-        https://github.com/openego/eGon-data/blob/features/%235-demandregio-integration/src/egon/data/importing/demandregio/__init__.py
+        Check if data already exists in database and the function does not need
+        to be executed again
 
-        Check if data exists in database
-
-        Add a column with version number for versioning
+        Add a column with version number for versioning!
 
         Add the meta data!!!
 
     """
 
-    return None
-
-
-
-# @click.command()
-# @click.argument("SOURCES", nargs=-1)
-
-def heat_demand_to_db_table():
-    """Import demand rasters and convert them to vector data.
-
-    Specify the rasters to import as raster file patterns, the names of
-    raster files, or directories containing raster files via the SOURCES
-    argument, e.g.:
-        python import-demands.py *.tif rasters/
-    If you don't specify SOURCES, "*.tif" is assumed.
-    The rasters are stored in a temporary table called "heat_demand_rasters".
-    The final demands are stored in "demand.heat_demands".
-    Note that the table "demand.heat_demands" is dropped prior to the import,
-    so make sure you're not loosing valuable data.
-
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        None
-
-    Notes
-    -----
-
-    TODO
-    ----
-        make it work
-
-    """
-
-
-    # sources = ["scenario_raster/"]
-    sources = ["*.tif"] # if not sources else sources
+    # Define the raster file type to be imported
+    sources = ["*.tif"]
+    # Define the directory from with all raster files having the defined type
+    # will be imported
     sources = [path for pattern in sources for path in
-               Path(os.path.join(os.path.dirname(__file__),'scenario_raster')
+               Path(os.path.join(os.path.dirname(__file__), 'scenario_raster')
                     ).glob(pattern)]
 
-    rasters = "heat_demand_rasters"
+    # Create the schema for the final table, if needed
     engine = db.engine()
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
+    # Create a temporary table and fill the final table using the sql script
+    rasters = "heat_demand_rasters"
     import_rasters = subprocess.run(
         ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
         + sources
@@ -540,43 +508,17 @@ def heat_demand_to_db_table():
         with open("raster2cells-and-centroids.sql") as convert:
             connection.execute(convert.read())
 
-# if __name__ == "__main__":
-#     main()
-
-        return None
-
-
-def census_ids_for_heat_demand_cells():
-    """
-    Assign the census cell id to the heat demand cells
-    in the database using SQL or in python.
-
-    Parameters
-    ----------
-        None
-
-    Returns
-    -------
-        None
-
-    Notes
-    -----
-
-    TODO
-    ----
-        check if task needs to run
-        the hole task
-   """
-
     return None
 
 
 def future_heat_demand_data_import():
-
     """
-    This fuction executes the functions that download, unzip and adjust
-    the heat demand distributions based on Peta5.0.1 data
-    and save the future heat demand distributions for Germany.
+    Call all heat demand import related functions.
+
+    This function executes the functions that download, unzip and adjust
+    the heat demand distributions from Peta5.0.1
+    and that save the future heat demand distributions for Germany as tiffs
+    as well as with census grid IDs as foreign key in the database.
 
     Parameters
     ----------
@@ -588,13 +530,11 @@ def future_heat_demand_data_import():
 
     Notes
     -----
+        None
 
     TODO
     ----
         check which tasks need to run (according to version number)
-
-        add the database import function and the census id match function,
-        when ready
    """
 
     download_peta5_0_1_heat_demands()
@@ -603,9 +543,6 @@ def future_heat_demand_data_import():
     # Specifiy the scenario names for loading factors from csv file
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
-
-    # heat_demand_to_postgres()
-    # census_ids_for_heat_demand_cells()
     heat_demand_to_db_table()
 
     return None
