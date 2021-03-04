@@ -35,6 +35,8 @@ Added
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
 * DemandRegio data import for annual electricity demands
   `#5 <https://github.com/openego/eGon-data/issues/5>`_
+* Abstraction of hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
 
 Changed
 -------
