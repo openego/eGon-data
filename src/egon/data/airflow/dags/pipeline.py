@@ -112,19 +112,6 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_import
 
-    # Power plant setup
-    power_plant_tables = PythonOperator(
-        task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables
-    )
-
-    power_plant_import = PythonOperator(
-        task_id="import-power-plants",
-        python_callable=power_plants.insert_power_plants()
-    )
-    setup >> power_plant_tables >> power_plant_import
-
-
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
@@ -136,7 +123,6 @@ with airflow.DAG(
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
-
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
@@ -151,3 +137,17 @@ with airflow.DAG(
         python_callable=mastr.download_mastr_data
     )
     setup >> retrieve_mastr_data
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+
+    power_plant_import = PythonOperator(
+        task_id="import-power-plants",
+        python_callable=power_plants.insert_power_plants
+    )
+    setup >> power_plant_tables >> power_plant_import
+    nep_insert_data >> power_plant_import
+    retrieve_mastr_data >> power_plant_import
