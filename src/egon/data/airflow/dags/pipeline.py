@@ -14,6 +14,8 @@ import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.power_plants as power_plants
 import egon.data.importing.nep_input_data as nep_input
+import egon.data.importing.etrago as etrago
+import egon.data.importing.mastr as mastr
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -134,3 +136,18 @@ with airflow.DAG(
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
+
+
+    # setting etrago input tables
+    etrago_input_data = PythonOperator(
+        task_id = "setting-etrago-input-tables",
+        python_callable = etrago.create_tables
+    )
+    setup >> etrago_input_data
+
+    # Retrieve MaStR data
+    retrieve_mastr_data = PythonOperator(
+        task_id="retrieve_mastr_data",
+        python_callable=mastr.download_mastr_data
+    )
+    setup >> retrieve_mastr_data
