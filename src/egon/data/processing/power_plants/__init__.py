@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
 import pandas as pd
+import geopandas as gpd
 from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
@@ -51,11 +52,8 @@ def scale_prox2now(df, target, level='federal_state'):
     return df
 
 
-def insert_biomass_plants(scenario='eGon2035'):
-    # temporary use local data for MaStR
-    path ='/home/clara/Dokumente/eGo^n/2021-02-11_StatistikFlagB'
-    mastr = pd.read_csv(path+'/bnetza_mastr_biomass_raw.csv')
-    mastr = mastr[mastr.Bundesland.notnull()]
+def insert_power_plants(carrier = 'biomass', scenario='eGon2035'):
+
     # import target values from NEP 2021, scneario C 2035
     target = pd.read_sql(f"""SELECT DISTINCT ON (b.gen)
                          REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
@@ -64,42 +62,58 @@ def insert_biomass_plants(scenario='eGon2035'):
                          boundaries.vg250_lan b
                          WHERE a.nuts = b.nuts
                          AND scenario_name = '{scenario}'
-                         AND carrier = 'biomass'
+                         AND carrier = '{carrier}'
                          AND b.gen NOT IN ('Baden-Württemberg (Bodensee)',
                                            'Bayern (Bodensee)')""",
                          con=db.engine()).set_index('state').capacity
 
-    df = scale_prox2now(mastr, target, level='federal_state')
+    # temporary use local data for MaStR
+    path ='/home/clara/GitHub/eGon-data/src/egon/data/importing/'
+    mastr = pd.read_csv(path+f'bnetza_mastr_{carrier}_cleaned.csv')
 
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
+    # Drop entries without federal state or 'AusschließlichWirtschaftszone'
+    mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
+        """SELECT DISTINCT ON (gen)
+        REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
+        FROM boundaries.vg250_lan""",
+        con=db.engine()).states.values)]
 
-    for i, row in df.iterrows():
-        if row.Laengengrad == row.Laengengrad:
-            entry = EgonPowerPlants(
-                sources ={'chp': 'MaStR',
+    # Scale capacities to meet target values
+    mastr = scale_prox2now(mastr, target, level='federal_state')
+
+
+    # Drop entries without geometry for insert
+    mastr_loc = mastr[
+        mastr.Laengengrad.notnull() & mastr.Breitengrad.notnull()]
+
+    # Create geodataframe
+    mastr_loc = gpd.GeoDataFrame(
+        mastr_loc, geometry=gpd.points_from_xy(
+            mastr_loc.Laengengrad, mastr_loc.Breitengrad, crs=4326))
+
+    # Drop entries outside of germany
+    mastr_loc = gpd.sjoin(
+        gpd.read_postgis(
+            "SELECT geometry as geom FROM boundaries.vg250_sta_union",
+             con = db.engine()).to_crs(4326),
+        mastr_loc, how='right').drop('index_left', axis=1)
+
+    # Insert entries with location
+    # TODO: change to gdf.to_postgis and update for sources to avoid loop?
+    session = sessionmaker(bind=db.engine())()
+    for i, row in mastr_loc.iterrows():
+        entry = EgonPowerPlants(
+            sources ={'chp': 'MaStR',
                           'el_capacity': 'MaStR scaled with NEP 2021',
                           'th_capacity': 'MaStR'},
-                source_id = {'MastrNummer': row.EinheitMastrNummer},
-                carrier = 'biomass',
-                chp = type(row.KwkMastrNummer)!=float,
-                el_capacity = row.Nettonennleistung,
-                th_capacity = row.ThermischeNutzleistung/1000,
-                scenario = scenario,
-                geom = f'SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})'
-                )
-        else:
-            entry = EgonPowerPlants(
-                sources ={'chp': 'MaStR',
-                          'el_capacity': 'MaStR scaled with NEP 2021',
-                          'th_capacity': 'MaStR'},
-                source_id = {'MastrNummer': row.EinheitMastrNummer},
-                carrier = 'biomass',
-                chp = type(row.KwkMastrNummer)!=float,
-                el_capacity = row.Nettonennleistung,
-                th_capacity = row.ThermischeNutzleistung/1000,
-                scenario = scenario)
+            source_id = {'MastrNummer': row.EinheitMastrNummer},
+            carrier = carrier,
+            chp = type(row.KwkMastrNummer)!=float,
+            el_capacity = row.Nettonennleistung,
+            th_capacity = row.ThermischeNutzleistung/1000,
+            scenario = scenario,
+            geom = f'SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})'
+            )
         session.add(entry)
 
     session.commit()
