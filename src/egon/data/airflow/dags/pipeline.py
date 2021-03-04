@@ -15,6 +15,7 @@ import egon.data.importing.zensus as import_zs
 import egon.data.processing.power_plants as power_plants
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.etrago as etrago
+import egon.data.importing.mastr as mastr
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -138,3 +139,10 @@ with airflow.DAG(
         python_callable = etrago.create_tables
     )
     setup >> etrago_input_data
+
+    # Retrieve MaStR data
+    retrieve_mastr_data = PythonOperator(
+        task_id="retrieve_mastr_data",
+        python_callable=mastr.download_mastr_data
+    )
+    setup >> retrieve_mastr_data
