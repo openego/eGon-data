@@ -1,0 +1,1071 @@
+"BNetzA-ID";"Kraftwerksname";"Blockname";"Energieträger";"KWK
+Ja/Nein";"PLZ";"Ort";"Bundesland/
+Land";"Inbetrieb-
+nahmejahr";"Status";"el. Leistung
+06.02.2020";"A 2035:
+KWK-Ersatz";"A 2035:
+Leistung";"B 2035
+KWK-Ersatz";"B 2035:
+Leistung";"C 2035:
+KWK-Ersatz";"C 2035:
+Leistung";"B 2040:
+KWK-Ersatz";"B 2040:
+Leistung"
+"BNAP194";"BNA0640";"ohne";"Abfall";"Ja";"68169";"Mannheim";"BW";2020;"in Betrieb";7,2;"Nein";7,2;"Nein";7,2;"Nein";7,2;"Nein";7,2
+"BNAP195";"Turbine I.0";"ohne";"Abfall";"Ja";"68169";"Mannheim";"BW";2020;"In Bau";6;"Nein";6;"Nein";6;"Nein";6;"Nein";6
+"BNA1867";"AVG Köln";"Turbosatz 2";"Abfall";"Nein";"50735";"Köln";"NW";2017;"in Betrieb";18;"Nein";18;"Nein";18;"Nein";18;"Nein";18
+"BNA1520";"Biomasseheizkraftwerk
+Wiesbaden";;"Abfall";"Ja";"65205";"Wiesbaden";"HE";2014;"in Betrieb";10,5;"Nein";10,5;"Nein";10,5;"Nein";10,5;"Nein";10,5
+"BNA1510";"Hamburger Rieger";;"Abfall";"Ja";"03130";"Spremberg";"BB";2013;"in Betrieb";18,7;"Nein";18,7;"Nein";18,7;"Nein";18,7;"Nein";18,7
+"BNA0641b";"HKW Mannheim";"Turbine D.0";"Abfall";"Ja";"68169";"Mannheim";"BW";2012;"in Betrieb";5,4;"Nein";5,4;"Nein";5,4;"Nein";5,4;"Nein";5,4
+"BNA0641c";"HKW Mannheim";"Turbine E.0";"Abfall";"Ja";"68169";"Mannheim";"BW";2012;"in Betrieb";3,9;"Nein";3,9;"Nein";3,9;"Nein";3,9;"Nein";3,9
+"BNA1114";"MHKW";"MHKW";"Abfall";"Ja";"28219";"Bremen";"HB";2012;"in Betrieb";44;"Nein";44;"Nein";44;"Nein";44;"Nein";44
+"BNA0599";;"entfällt";"Abfall";"Ja";"51373";"Leverkusen";"NW";2011;"in Betrieb";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6
+"BNA1255";"Kraftwerk Schwedt GmbH &
+Co.KG";;"Abfall";"Ja";"16303";"Schwedt";"BB";2011;"in Betrieb";28,9;"Nein";28,9;"Nein";28,9;"Nein";28,9;"Nein";28,9
+"BNA1447b";;"G3/Kontu";"Abfall";"Nein";"67547";"Worms";"RP";2011;"in Betrieb";6,9;"Nein";6,9;"Nein";6,9;"Nein";6,9;"Nein";6,9
+"BNA0088b";"Dampfturbinenanlage der
+EBS-Kessel";;"Abfall";"Ja";"06406";"Bernburg";"ST";2010;"in Betrieb";35;"Nein";35;"Nein";35;"Nein";35;"Nein";35
+"BNA1108";"PD energy GmbH";;"Abfall";"Ja";"06749";"Bitterfeld -Wolfen";"ST";2010;"in Betrieb";9,9;"Nein";9,9;"Nein";9,9;"Nein";9,9;"Nein";9,9
+"BNA1330";"Steinbeis Energie";;"Abfall";"Ja";"25348";"Glückstadt";"SH";2010;"in Betrieb";17;"Nein";17;"Nein";17;"Nein";17;"Nein";17
+"BNA0139";"KW Hafen";"MKK";"Abfall";"Nein";"28237";"Bremen";"HB";2009;"in Betrieb";33;"Nein";33;"Nein";33;"Nein";33;"Nein";33
+"BNA0641a";"HKW Mannheim";"Turbine 60";"Abfall";"Ja";"68169";"Mannheim";"BW";2009;"in Betrieb";22,1;"Nein";22,1;"Nein";22,1;"Nein";22,1;"Nein";22,1
+"BNA0855";"IKW Rüdersdorf";;"Abfall";"Nein";"15562";"Rüdersdorf bei Berlin";"BB";2009;"in Betrieb";30;"Nein";30;"Nein";30;"Nein";30;"Nein";30
+"BNA0939a";"Restmüll-Heizkraftwerk
+Stuttgart-Münster";"MÜN DT19 neu";"Abfall";"Ja";"70376";"Stuttgart";"BW";2009;"in Betrieb";19,5;"Nein";19,5;"Nein";19,5;"Nein";19,5;"Nein";19,5
+"BNA1144";"EEW Göppingen";"Turb. Neu";"Abfall";"Ja";"73037";"Göppingen";"BW";2009;"in Betrieb";11;"Nein";11;"Nein";11;"Nein";11;"Nein";11
+"BNA1155";"RZR Herten II";"RZR II";"Abfall";"Nein";"45699";"Herten";"NW";2009;"in Betrieb";11,7;"Nein";11,7;"Nein";11,7;"Nein";11,7;"Nein";11,7
+"BNA1199";"MHKW Mainz";;"Abfall";"Ja";"55120";"Mainz";"RP";2009;"in Betrieb";15,6;"Nein";15,6;"Nein";15,6;"Nein";15,6;"Nein";15,6
+"BNA1233";"EVE";"EVE";"Abfall";"Ja";"14727";"Premnitz";"BB";2009;"in Betrieb";14,5;"Nein";14,5;"Nein";14,5;"Nein";14,5;"Nein";14,5
+"BNA1243";"EBS-HKW Rostock";;"Abfall";"Ja";"18147";"Rostock";"MV";2009;"in Betrieb";17;"Nein";17;"Nein";17;"Nein";17;"Nein";17
+"BNA1291";"IHKW Andernach";;"Abfall";"Ja";"56626";"Andernach";"RP";2009;"in Betrieb";12,5;"Nein";12,5;"Nein";12,5;"Nein";12,5;"Nein";12,5
+"BNA0380";"EEW Großräschen";;"Abfall";"Ja";"01983";"Großräschen";"BB";2008;"in Betrieb";23,3;"Nein";23,3;"Nein";23,3;"Nein";23,3;"Nein";23,3
+"BNA1262";"REMONDIS Thermische
+Abfallverwertung GmbH";;"Abfall";"Ja";"39418";"Staßfurt";"ST";2008;"in Betrieb";24;"Nein";24;"Nein";24;"Nein";24;"Nein";24
+"BNA1490";"EBKW Knapsack";;"Abfall";"Ja";"50354";"Hürth";"NW";2008;"in Betrieb";33,4;"Nein";33,4;"Nein";33,4;"Nein";33,4;"Nein";33,4
+"BNA0591";"TREA Leuna";"Linie 2";"Abfall";"Nein";"06237";"Leuna";"ST";2007;"in Betrieb";16,3;"Nein";16,3;"Nein";16,3;"Nein";16,3;"Nein";16,3
+"BNA1286";"Restabfallbehandlungsanlage";1;"Abfall";"Ja";"98544";"Zella-Mehlis";"TH";2007;"in Betrieb";12,1;"Nein";12,1;"Nein";12,1;"Nein";12,1;"Nein";12,1
+"BNA0287b";"MHKW Frankfurt";"T 7";"Abfall";"Ja";"60439";"Frankfurt am
+Main";"HE";2006;"in Betrieb";46,5;"Nein";46,5;"Nein";46,5;"Nein";46,5;"Nein";46,5
+"BNA0623";"MHKW Rothensee";"Block 2";"Abfall";"Ja";"39126";"Magdeburg";"ST";2006;"in Betrieb";29,2;"Nein";29,2;"Nein";29,2;"Nein";29,2;"Nein";29,2
+"BNA0751";"GMVA Niederrhein";"Ausspeisung
+10/25kV (Turbine
+1)";"Abfall";"Ja";"46049";"Oberhausen";"NW";2006;"in Betrieb";21,1;"Nein";21,1;"Nein";21,1;"Nein";21,1;"Nein";21,1
+"BNA0417";"EEW Energy from Waste
+Hannover GmbH";"Hannover";"Abfall";"Nein";"30659";"Hannover";"NI";2005;"in Betrieb";22,5;"Nein";22,5;"Nein";22,5;"Nein";22,5;"Nein";22,5
+"BNA0590";"TREA Leuna";"Linie 1";"Abfall";"Nein";"06237";"Leuna";"ST";2005;"in Betrieb";16,3;"Nein";16,3;"Nein";16,3;"Nein";16,3;"Nein";16,3
+"BNA0622";"MHKW Rothensee";"Block 1";"Abfall";"Ja";"39126";"Magdeburg";"ST";2005;"in Betrieb";29,2;"Nein";29,2;"Nein";29,2;"Nein";29,2;"Nein";29,2
+"BNA0640";"HKW Mannheim";"Turbine 3";"Abfall";"Nein";"68169";"Mannheim";"BW";2005;"in Betrieb";8,7;"Nein";8,7;"Nein";8,7;"Nein";8,7;"Nein";8,7
+"BNA1139";"TREA Breisgau";;"Abfall";"Ja";"79427";"Eschbach";"BW";2005;"in Betrieb";13,6;"Nein";13,6;"Nein";13,6;"Nein";13,6;"Nein";13,6
+"BNA1198";"SITA Abfallverwertung GmbH";;"Abfall";"Ja";"06686";"Lützen OT Zorbau";"ST";2005;"in Betrieb";23;"Nein";23;"Nein";23;"Nein";23;"Nein";23
+"BNA1190";"Thermische Abfallbehandlung
+Lauta GmbH & Co. oHG";;"Abfall";"Ja";"02991";"Lauta";"SN";2004;"in Betrieb";15,7;"Nein";15,7;"Nein";15,7;"Nein";15,7;"Nein";15,7
+"BNA1232";"ZWSF";"ZWSF";"Abfall";"Nein";"14727";"Premnitz";"BB";2002;"in Betrieb";2,5;"Nein";2,5;"Nein";2,5;"Nein";2,5;"Nein";2,5
+"BNA1186b";"MKVA Krefeld";"Turbine 4";"Abfall";"Nein";"47829";"Krefeld";"NW";2001;"in Betrieb";13,8;"Nein";13,8;"Nein";13,8;"Nein";13,8;"Nein";13,8
+"BNA0223b";"DT";"Flingern T1";"Abfall";"Ja";"40233";"Düsseldorf";"NW";2000;"in Betrieb";53,7;"Nein";53,7;"Nein";53,7;"Nein";53,7;"Nein";53,7
+"BNA0398";"MVR Müllverwertung
+Rugenberger Damm GmbH &
+Co. KG";;"Abfall";"Ja";"21129";"Hamburg";"HH";1999;"in Betrieb";24;"Nein";24;"Nein";24;"Nein";24;"Nein";24
+"BNA1110";"Restmüllheizkraftwerk
+Böblingen";"Müllverbrennung";"Abfall";"Nein";"71032";"Böblingen";"BW";1999;"in Betrieb";9,5;"Nein";9,5;"Nein";9,5;"Nein";9,5;"Nein";9,5
+"BNA1229";"MHKW Pirmasens";;"Abfall";"Ja";"66954";"Pirmasens";"RP";1999;"in Betrieb";15;"Nein";15;"Nein";15;"Nein";15;"Nein";15
+"BNA1448";"AHKW Neunkirchen";"Linie 3 + 4";"Abfall";"Ja";"66538";"Neunkirchen";"SL";1999;"in Betrieb";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6
+"BNA0084";"Reuter";"Reuter M";"Abfall";"Ja";"13599";"Berlin";"BE";1998;"in Betrieb";36;"Nein";36;"Nein";36;"Nein";36;"Nein";36
+"BNA0287a";"MHKW Frankfurt";"T 3";"Abfall";"Ja";"60440";"Frankfurt am
+Main";"HE";1998;"in Betrieb";26;"Nein";26;"Nein";26;"Nein";26;"Nein";26
+"BNA0438";"TRV Buschhaus";"Linie 1-3";"Abfall";"Nein";"38350";"Helmstedt";"NI";1998;"in Betrieb";37,5;"Nein";37,5;"Nein";37,5;"Nein";37,5;"Nein";37,5
+"BNA1449b";"Turbosatz 2";;"Abfall";"Ja";"97076";"Würzburg";"BY";1998;"in Betrieb";12;"Nein";12;"Nein";12;"Nein";12;"Nein";12
+"BNA1167";"Abfallentsorgungszentrum
+Asdonkshof";"MVA";"Abfall";"Ja";"47475";"Kamp-Lintfort";"NW";1997;"in Betrieb";16;"Nein";16;"Nein";16;"Nein";16;"Nein";16
+"BNA1184";"RMVA Köln";"RMVA Köln";"Abfall";"Ja";"50735";"Köln";"NW";1997;"in Betrieb";45,1;"Nein";45,1;"Nein";45,1;"Nein";45,1;"Nein";45,1
+"BNA1186d";"MKVA Krefeld";"Turbine 5";"Abfall";"Ja";"47829";"Krefeld";"NW";1997;"in Betrieb";2,8;"Nein";2,8;"Nein";2,8;"Nein";2,8;"Nein";2,8
+"BNA1244";"AVA Velsen";;"Abfall";"Nein";"66127";"Saarbrücken-
+Velsen";"SL";1997;"in Betrieb";16;"Nein";16;"Nein";16;"Nein";16;"Nein";16
+"BNA0746";"HKW Sandreuth";;"Abfall";"Ja";"90441";"Nürnberg";"BY";1996;"in Betrieb";18;"Nein";18;"Nein";18;"Nein";18;"Nein";18
+"BNA1020";"MVA Weisweiler";"MVA";"Abfall";"Nein";"52249";"Weisweiler";"NW";1996;"in Betrieb";27;"Nein";27;"Nein";27;"Nein";27;"Nein";27
+"BNA0895";"GKS";"entfällt";"Abfall";"Ja";"97424";"Schweinfurt";"BY";1994;"in Betrieb";24,4;"Nein";24,4;"Nein";24,4;"Nein";24,4;"Nein";24,4
+"BNA1119";"MHKW Burgkirchen";;"Abfall";"Nein";"84508";"Burgkirchen";"BY";1994;"in Betrieb";12,5;"Nein";12,5;"Nein";12,5;"Nein";12,5;"Nein";12,5
+"BNA1295";"AVA GmbH";"AHKW";"Abfall";"Ja";"86167";"Augsburg";"BY";1993;"in Betrieb";10;"Nein";10;"Nein";10;"Nein";10;"Nein";10
+"BNA0969a";"Nord 1";1;"Abfall";"Ja";"85774";"Unterföhring";"BY";1992;"in Betrieb";18;"Nein";18;"Nein";18;"Nein";18;"Nein";18
+"BNA0117a";"Heizkraftwerk Karlstraße";"Heizkraftwerk
+Karlstraße";"Abfall";"Ja";"53115";"Bonn";"NW";1991;"in Betrieb";12;"Nein";12;"Nein";12;"Nein";12;"Nein";12
+"BNA0750";"GMVA Niederrhein";"Ausspeisung
+10/110kV
+(Turbine 2)";"Abfall";"Ja";"46049";"Oberhausen";"NW";1990;"in Betrieb";40,4;"Nein";40,4;"Nein";40,4;"Nein";40,4;"Nein";40,4
+"BNA1447a";;"G2";"Abfall";"Ja";"67547";"Worms";"RP";1990;"in Betrieb";11,9;"Nein";11,9;"Nein";11,9;"Nein";11,9;"Nein";11,9
+"BNA0845";"MHKW, WKW";"T1a/b, T2";"Abfall";"Ja";"83022";"Rosenheim";"BY";1988;"in Betrieb";9;"Nein";9;"Nein";9;"Nein";9;"Nein";9
+"BNA0519";"Karnap";"B";"Abfall";"Ja";"45329";"Essen";"NW";1987;"in Betrieb";38;"Nein";38;"Nein";38;"Nein";38;"Nein";38
+"BNA1148";"MVA Hamm";;"Abfall";"Ja";"59075";"Hamm";"NW";1985;"in Betrieb";14,6;"Nein";14,6;"Nein";14,6;"Nein";14,6;"Nein";14,6
+"BNA1168";"Müllheizkraftwerk";;"Abfall";"Ja";"34123";"Kassel";"HE";1985;"in Betrieb";14,7;"Nein";14,7;"Nein";14,7;"Nein";14,7;"Nein";14,7
+"BNA0969c";"Nord 3";3;"Abfall";"Ja";"85774";"Unterföhring";"BY";1984;"in Betrieb";22;"Nein";22;"Nein";22;"Nein";22;"Nein";22
+"BNA1161";"MVA Ingolstadt";"Müllheizkraftwerk
+(MHKW)";"Abfall";"Ja";"85055";"Ingolstadt";"BY";1984;"in Betrieb";25,5;"Nein";25,5;"Nein";25,5;"Nein";25,5;"Nein";25,5
+"BNA1449a";"Turbosatz 1";;"Abfall";"Ja";"97076";"Würzburg";"BY";1984;"in Betrieb";8,7;"Nein";8,7;"Nein";8,7;"Nein";8,7;"Nein";8,7
+"BNA1154";"RZR Herten I";"RZR I";"Abfall";"Ja";"45699";"Herten";"NW";1982;"in Betrieb";15,5;"Nein";15,5;"Nein";15,5;"Nein";15,5;"Nein";15,5
+"BNA1186a";"MKVA Krefeld";"Turbine 3";"Abfall";"Ja";"47829";"Krefeld";"NW";1982;"in Betrieb";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5
+"BNA1254";"Müllkraftwerk Schwandorf";;"Abfall";"Ja";"92421";"Schwandorf";"BY";1982;"in Betrieb";54;"Nein";54;"Nein";54;"Nein";54;"Nein";54
+"BNA0097";"MVA Bielefeld";"Linien 1 - 3";"Abfall";"Ja";"33609";"Bielefeld";"NW";1981;"in Betrieb";34;"Nein";34;"Nein";34;"Nein";34;"Nein";34
+"BNA1289";"AMK - Abfallentsorgungsge-
+sellschaft des Märkischen
+Kreises mbH";;"Abfall";"Ja";"58636";"Iserlohn";"NW";1981;"in Betrieb";12,6;"Nein";12,6;"Nein";12,6;"Nein";12,6;"Nein";12,6
+"BNA1261";;;"Abfall";"Ja";"22145";"Stapelfeld";"SH";1978;"in Betrieb";16,4;"Nein";16,4;"Nein";16,4;"Nein";16,4;"Nein";16,4
+"BNA1116";"BEG";;"Abfall";"Ja";"27570";"Bremerhaven";"HB";1977;"in Betrieb";14;"Nein";14;"Nein";14;"Nein";14;"Nein";14
+"BNA1186c";"MKVA Krefeld";"Turbine 2";"Abfall";"Ja";"47829";"Krefeld";"NW";1976;"in Betrieb";1,5;"Nein";1,5;"Nein";1,5;"Nein";1,5;"Nein";1,5
+"BNA1186e";"MKVA Krefeld";"Turbine 1";"Abfall";"Ja";"47829";"Krefeld";"NW";1976;"in Betrieb";1,5;"Nein";1,5;"Nein";1,5;"Nein";1,5;"Nein";1,5
+"BNA1316";"Müllheizkraftwerk";;"Abfall";"Ja";"42349";"Wuppertal";"NW";1976;"in Betrieb";30;"Nein";30;"Nein";30;"Nein";30;"Nein";30
+"BNA1222";"Müllheizkraftwerk Offenbach";;"Abfall";"Ja";"63069";"Offenbach";"HE";1972;"in Betrieb";14,5;"Nein";14,5;"Nein";14,5;"Nein";14,5;"Nein";14,5
+"BNA1197";"FHKW Ludwigshafen";"FHKW";"Abfall";"Ja";"67063";"Ludwigshafen";"RP";1967;"in Betrieb";28;"Nein";28;"Nein";28;"Nein";28;"Nein";28
+"BNA0223a";"DT";"Flingern T4";"Abfall";"Nein";"40233";"Düsseldorf";"NW";1955;"in Betrieb";48,9;"Nein";48,9;"Nein";48,9;"Nein";48,9;"Nein";48,9
+"BNA0407";"Enertec Hameln";"Linien 1,3,4";"Abfall";"Ja";"31789";"Hameln";"NI";1912;"in Betrieb";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2
+"BNAP232";"BNA1154";"RZR I";"Abfall";"Ja";"45699";"Herten";"NW";;"In Planung";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP233";"BNA1155";"RZR II";"Abfall";"Ja";"45699";"Herten";"NW";;"In Planung";11,7;"Nein";11,7;"Nein";11,7;"Nein";11,7;"Nein";11,7
+"KW<10 MW";;;"Abfall";"Ja";;"ohne
+Zuordnung";;;"in Betrieb";141,4;"Nein";141,4;"Nein";141,4;"Nein";141,4;"Nein";141,4
+"BNA1141";"P&L Werk Euskirchen";"Kessel 4 / 6";"Braunkohle";"Ja";"53879";"Euskirchen";"NW";2013;"in Betrieb";14,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1401a";"BoA 2";"Neurath F";"Braunkohle";"Nein";"41517";"Grevenbroich";"NW";2012;"in Betrieb";1060;"Nein";1060;"Nein";0;"Nein";0;"Nein";0
+"BNA1401b";"BoA 3";"Neurath G";"Braunkohle";"Nein";"41517";"Grevenbroich";"NW";2012;"in Betrieb";1060;"Nein";1060;"Nein";0;"Nein";0;"Nein";0
+"BNA1404";"Boxberg";"R";"Braunkohle";"Nein";"02943";"Boxberg";"SN";2012;"in Betrieb";640;"Nein";640;"Nein";0;"Nein";0;"Nein";0
+"BNA0543";"HKW Merkenich";"Block 6";"Braunkohle";"Ja";"50769";"Köln";"NW";2010;"in Betrieb";75,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1461";;;"Braunkohle";"Ja";"06712";"Zeitz";"ST";2005;"in Betrieb";17,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1164";"P&L Werk Jülich";"Kessel 5";"Braunkohle";"Ja";"52428";"Jülich";"NW";2004;"in Betrieb";23,2;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0709";"Niederaußem";"K";"Braunkohle";"Ja";"50129";"Bergheim";"NW";2002;"in Betrieb";944;"Nein";944;"Nein";0;"Nein";0;"Nein";0
+"BNA0115";"Lippendorf";"R";"Braunkohle";"Ja";"04007";"Böhlen";"SN";2000;"in Betrieb";875;"Nein";875;"Nein";0;"Nein";0;"Nein";0
+"BNA0124";"Boxberg";"Q";"Braunkohle";"Ja";"02943";"Boxberg";"SN";2000;"in Betrieb";857;"Nein";857;"Nein";0;"Nein";0;"Nein";0
+"BNA0116";"Braunkohlekraftwerk
+Lippendorf";"LIP S";"Braunkohle";"Ja";"04564";"Böhlen";"SN";1999;"in Betrieb";875;"Nein";875;"Nein";0;"Nein";0;"Nein";0
+"BNA0183";"HKW Cottbus";1;"Braunkohle";"Ja";"03052";"Cottbus";"BB";1999;"in Betrieb *";74;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0915";"Schwarze Pumpe";"B";"Braunkohle";"Ja";"03130";"Spremberg";"BB";1998;"in Betrieb";750;"Nein";750;"Nein";0;"Nein";0;"Nein";0
+"BNA0914";"Schwarze Pumpe";"A";"Braunkohle";"Ja";"03130";"Spremberg";"BB";1997;"in Betrieb";750;"Nein";750;"Nein";0;"Nein";0;"Nein";0
+"BNA0878";"Schkopau";"A";"Braunkohle";"Ja";"06258";"Schkopau";"ST";1996;"in Betrieb";450;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0879";"Schkopau";"B";"Braunkohle";"Ja";"06258";"Schkopau";"ST";1996;"in Betrieb";450;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1293a";"Kraftwerk";"K1/TG1";"Braunkohle";"Ja";"50127";"Bergheim";"NW";1995;"in Betrieb";10;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1293b";"Kraftwerk";"K2/TG2";"Braunkohle";"Ja";"50127";"Bergheim";"NW";1995;"in Betrieb";10;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1002";"Wählitz";;"Braunkohle";"Ja";"06679";"Wählitz";"ST";1994;"in Betrieb";31;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0490a";"Goldenberg";"F";"Braunkohle";"Ja";"50354";"Hürth";"NW";1993;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1185";"P&L Werk Könnern";"Kessel 1 und 2";"Braunkohle";"Ja";"06420";"Könnern";"ST";1993;"in Betrieb";20,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1400a";"EZ1";"WSK";"Braunkohle";"Ja";"06712";"Zeitz";"ST";1993;"in Betrieb";23,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0489";"Goldenberg";"E, Besicherung F";"Braunkohle";"Ja";"50354";"Hürth";"NW";1992;"Vorläufig
+Stillgelegt";40;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0491";"Ville/Berrenrath";"Ville/Berrenrath";"Braunkohle";"Ja";"50354";"Hürth";"NW";1991;"in Betrieb";98;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0179";"HKW Chemnitz Nord II";"Block C";"Braunkohle";"Ja";"09116";"Chemnitz";"SN";1990;"in Betrieb";90,8;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0790";"KW Jänschwalde";"F";"Braunkohle";"Ja";"03185";"Peitz";"BB";1989;"BK-
+Sicherheits-
+bereitschaft";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0177";"HKW Chemnitz Nord II";"Block B";"Braunkohle";"Ja";"09115";"Chemnitz";"SN";1988;"in Betrieb";56,8;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0523";"FKK";;"Braunkohle";"Ja";"34134";"Kassel";"HE";1988;"in Betrieb";33,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0789";"KW Jänschwalde";"E";"Braunkohle";"Ja";"03185";"Peitz";"BB";1987;"BK-
+Sicherheitsbereitschaft";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0439";"Buschhaus";"D";"Braunkohle";"Nein";"38350";"Helmstedt";"NI";1985;"BK-
+Sicherheits-
+bereitschaft";352;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0788";"KW Jänschwalde";"D";"Braunkohle";"Ja";"03185";"Peitz";"BB";1985;"in Betrieb";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0714";"Fortuna Nord";"Fortuna Nord";"Braunkohle";"Ja";"50129";"Bergheim";"NW";1984;"in Betrieb";15;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0787";"KW Jänschwalde";"C";"Braunkohle";"Ja";"03185";"Peitz";"BB";1984;"in Betrieb";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1511a";"Kessel 4";;"Braunkohle";"Ja";"52355";"Düren";"NW";1983;"in Betrieb";9,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0786";"KW Jänschwalde";"B";"Braunkohle";"Ja";"03185";"Peitz";"BB";1982;"in Betrieb";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0785";"KW Jänschwalde";"A";"Braunkohle";"Ja";"03185";"Peitz";"BB";1981;"in Betrieb";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0123";"Boxberg";"P";"Braunkohle";"Ja";"02943";"Boxberg";"SN";1980;"in Betrieb";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0122";"Boxberg";"N";"Braunkohle";"Ja";"02943";"Boxberg";"SN";1979;"in Betrieb";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1486";"Grubenheizkraftwerk";;"Braunkohle";"Ja";"06317";"Seegebiet
+Mansfelder
+Land";"ST";1979;"in Betrieb";45;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1097";"Kohlekraftwerk";"K06";"Braunkohle";"Ja";"53909";"Zülpich";"NW";1978;"in Betrieb";19,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0700";"Neurath";"E";"Braunkohle";"Ja";"41517";"Grevenbroich-
+Neurath";"NW";1976;"in Betrieb";604;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0699";"Neurath";"D";"Braunkohle";"Ja";"41517";"Grevenbroich-
+Neurath";"NW";1975;"in Betrieb";607;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1028";"Weisweiler";"H";"Braunkohle";"Ja";"52249";"Eschweiler-
+Weisweiler";"NW";1975;"in Betrieb";656;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0707";"Niederaußem";"H";"Braunkohle";"Ja";"50129";"Bergheim";"NW";1974;"in Betrieb";648;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0708";"Niederaußem";"G";"Braunkohle";"Ja";"50129";"Bergheim";"NW";1974;"in Betrieb";628;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1027";"Weisweiler";"G";"Braunkohle";"Ja";"52249";"Eschweiler-
+Weisweiler";"NW";1974;"in Betrieb";663;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0698";"Neurath";"C";"Braunkohle";"Nein";"41517";"Grevenbroich-
+Neurath";"NW";1973;"BK-
+Sicherheits-
+bereitschaft";292;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0696";"Neurath";"A";"Braunkohle";"Nein";"41517";"Grevenbroich-
+Neurath";"NW";1972;"in Betrieb";294;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0697";"Neurath";"B";"Braunkohle";"Nein";"41517";"Grevenbroich-
+Neurath";"NW";1972;"in Betrieb";294;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0706";"Niederaußem";"F";"Braunkohle";"Ja";"50129";"Bergheim";"NW";1971;"BK-
+Sicherheits-
+bereitschaft";299;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0314";"Frimmersdorf";"Q";"Braunkohle";"Nein";"41517";"Grevenbroich-
+Frimmersdorf";"NW";1970;"BK-
+Sicherheits-
+bereitschaft";278;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0713";"Niederaußem";"E";"Braunkohle";"Nein";"50129";"Bergheim";"NW";1970;"BK-
+Sicherheits-
+bereitschaft";295;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0705";"Niederaußem";"D";"Braunkohle";"Ja";"50129";"Bergheim";"NW";1968;"in Betrieb";297;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1026";"Weisweiler";"F";"Braunkohle";"Nein";"52249";"Eschweiler-
+Weisweiler";"NW";1967;"in Betrieb";321;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0313";"Frimmersdorf";"P";"Braunkohle";"Ja";"41517";"Grevenbroich-
+Frimmersdorf";"NW";1966;"BK-
+Sicherheitsbereitschaft";284;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0712";"Niederaußem";"C";"Braunkohle";"Ja";"50129";"Bergheim";"NW";1965;"in Betrieb";295;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1025";"Weisweiler";"E";"Braunkohle";"Nein";"52249";"Eschweiler-
+Weisweiler";"NW";1965;"in Betrieb";321;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1451";"HKW Sachtleben";;"Braunkohle";"Ja";"47198";"Duisburg";"NW";1962;"in Betrieb";27,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0292";"Frechen/Wachtberg";"Fre-
+chen/Wachtberg";"Braunkohle";"Ja";"50226";"Frechen";"NW";1959;"in Betrieb";176;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0196";"Deuben";;"Braunkohle";"Ja";"06682";"Teuchern";"ST";1936;"in Betrieb";67;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Braunkohle";"Ja";;"ohne
+Zuordnung";;;"in Betrieb";22,2;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Erdgas";"Ja";;;;2040;"Antizipierter
+Zubau";200;"Nein";0;"Nein";0;"Nein";0;"Nein";200
+"KW<10 MW";;;"Erdgas";"Ja";;;;2035;"Antizipierter
+Zubau";700;"Nein";700;"Nein";700;"Nein";700;"Nein";700
+"KW<10 MW";;;"Erdgas";"Ja";;;;2030;"Antizipierter
+Zubau";1200;"Nein";1200;"Nein";1200;"Nein";1200;"Nein";1200
+"BNAP060";"Ersatz Wedel in Hamburg";;"Erdgas";"Ja";"22880";"Wedel /
+Holstein";"SH";2026;"In Planung";245;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP066";"Blockdammweg/Klingenberg";;"Erdgas";"Ja";"10317";"Berlin";"BE";2026;"In Planung";100;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP065a";"GUD Krefeld-Uerdingen";"Block 1/2";"Erdgas";"Ja";"47829";"Krefeld";"NW";2025;"In Planung";1200;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Erdgas";"Ja";;;;2025;"Antizipierter
+Zubau";2100;"Nein";2100;"Nein";2100;"Nein";2100;"Nein";2100
+"BNAP058";"Gersteinwerk";"GuD Werne";"Erdgas";;"59368";"Werne";"NW";2023;"In Planung";1200;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP033";"KW Weiher";"Weiher 4";"Erdgas";"Nein";"66287";"Quierschied";"SL";2022;"In Planung";400;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP041";"GuD Leverkusen";"GuD-Leverkusen";"Erdgas";"Ja";"51373";"Leverkusen";"NW";2022;"In Planung";574;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP125";"KW Herne";"Herne 6";"Erdgas";"Ja";"44653";"Herne";"NW";2022;"In Planung";625;"Nein";625;"Nein";625;"Nein";625;"Nein";625
+"BNAP126";"Griesheim";;"Erdgas";"Nein";"65933";"Frankfurt am
+Main";"HE";2022;"In Planung";300;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP128";"Gundelfingen";;"Erdgas";"Nein";"89423";"Gundelfingen";"BY";2022;"In Planung";300;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP180";"Projekt Scholven";;"Erdgas";"Ja";;"Gelsenkirchen";"NW";2022;"In Planung";126,1;"Nein";126,1;"Nein";126,1;"Nein";126,1;"Nein";126,1
+"BNAP193";"MotorenHKW";"MotorenHKW";"Erdgas";"Ja";"75175";"Pforzheim";"BW";2022;"In Bau";52;"Nein";52;"Nein";52;"Nein";52;"Nein";52
+"BNAP201";"MHKWN";;"Erdgas";"Ja";"09114";"Chemnitz";"SN";2022;"In Planung";88;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP202";"MHKWA";;"Erdgas";"Ja";"09125";"Chemnitz";"SN";2022;"In Planung";55;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP210";;"GuD-West1";"Erdgas";"Ja";"38436";"Wolfsburg";"NI";2022;"In Bau";141;"Nein";141;"Nein";141;"Nein";141;"Nein";141
+"BNAP211";;"GuD-West2";"Erdgas";"Ja";"38436";"Wolfsburg";"NI";2022;"In Bau";141;"Nein";141;"Nein";141;"Nein";141;"Nein";141
+"BNAP215";"Irsching 6";6;"Erdgas";"Nein";"85088";"Vohburg";"BY";2022;"In Planung";300;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP222";"GMW";"GMA";"Erdgas";"Ja";"15236";"Frankfurt
+(Oder)";"BB";2022;"In Planung";50;"Nein";50;"Nein";50;"Nein";50;"Nein";50
+"BNAP223";"Gasmotoren Anlage";"GAMOR";"Erdgas";"Ja";"66111";"Saarbrücken";"SL";2022;"In Bau";59;"Nein";59;"Nein";59;"Nein";59;"Nein";59
+"BNAP227";"Mitte BHKW 2";"Mitte BHKW 2";"Erdgas";"Ja";"47053";"Duisburg";"NW";2022;"In Planung";30,8;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP229";"Kessel 13";"Kessel 13";"Erdgas";"Ja";"24939";"Flensburg";"SH";2022;"In Planung";56;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"n. v.";"Erlanger Stadtwerke";;"Erdgas";;;"Erlangen";"BY";2022;"In Planung";15;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP114";"GK Leipheim";"Block 1";"Erdgas";"Nein";"89340";"Leipheim";"BY";2021;"In Planung";319;"Nein";319;"Nein";319;"Nein";319;"Nein";319
+"BNAP116";"GuD Wolfsburg";"GuD-Süd";"Erdgas";"Ja";"38436";"Wolfsburg";"NI";2021;"In Bau";133;"Nein";133;"Nein";133;"Nein";133;"Nein";133
+"BNAP124";"KW Gundremmingen";"Gundremmingen
+D+E";"Erdgas";"Nein";"89355";"Gundremmin-
+gen";"BY";2021;"In Planung";300;"Nein";300;"Nein";300;"Nein";300;"Nein";300
+"BNAP190";"HKW EF-Ost";"Tandem-
+Dampfturbine";"Erdgas";"Ja";"99087";"Erfurt";"TH";2021;"In Planung";10;"Nein";10;"Nein";10;"Nein";10;"Nein";10
+"BNAP197";"Projekt Marl";"BHKW Marl";"Erdgas";"Ja";"45772";"Marl";"NW";2021;"In Planung";30,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP199";"Gasmotoren-HKW Dresden-
+Reick (KWK-Flexanlage)";;"Erdgas";"Ja";"01237";"Dresden";"SN";2021;"In Bau";90;"Nein";90;"Nein";90;"Nein";90;"Nein";90
+"BNAP214";"HKW Cottbus";;"Erdgas";"Ja";;"Cottbus";"BB";2021;"In Planung";52;"Nein";52;"Nein";52;"Nein";52;"Nein";52
+"BNAP219";"GK Leipheim";"Block 2";"Erdgas";"Nein";"89340";"Leipheim";"BY";2021;"In Planung";319;"Nein";319;"Nein";319;"Nein";319;"Nein";319
+"BNAP225";"GT HKW";"GTHKW BE30";"Erdgas";"Ja";"38114";"Braunschweig";"NI";2021;"In Planung";57;"Nein";57;"Nein";57;"Nein";57;"Nein";57
+"BNAP059";"Marzahn";;"Erdgas";"Ja";"12681";"Berlin";"BE";2020;"In Bau";235;"Nein";235;"Nein";235;"Nein";235;"Nein";235
+"BNAP152";"KW5";"KW5";"Erdgas";"Ja";"55120";"Mainz";"RP";2020;"In Bau";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNAP196";"HKW Merheim";"BHKW Merheim";"Erdgas";"Ja";"51109";"Köln-Merheim";"NW";2020;"In Bau";31,1;"Nein";31,1;"Nein";31,1;"Nein";31,1;"Nein";31,1
+"BNAP221";"BHKW1";;"Erdgas";"Ja";"89077";"Ulm";"BW";2020;"In Planung";20;"Nein";20;"Nein";20;"Nein";20;"Nein";20
+"BNA1934";"KWK Landshut";"KWK Landshut";"Erdgas";"Ja";"84030";"Landshut";"BY";2019;"in Betrieb";17,6;"Nein";17,6;"Nein";17,6;"Nein";17,6;"Nein";17,6
+"BNA1935";"Lichterfelde";;"Erdgas";"Ja";"12207";"Berlin";"BE";2019;"in Betrieb";289;"Nein";289;"Nein";289;"Nein";289;"Nein";289
+"BNA1944";"Dingolfing BA2";"BA2";"Erdgas";"Ja";"84130";"Dingolfing";"BY";2019;"in Betrieb";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5
+"BNA1945";"Küstenkraftwerk K.I.E.L.";"BHKW Modul 1-
+20";"Erdgas";"Ja";"24149";"Kiel";"SH";2019;"in Betrieb";188;"Nein";188;"Nein";188;"Nein";188;"Nein";188
+"BNAP172";"Block C";"Block C";"Erdgas";"Ja";"06130";"Halle (Saale)";"ST";2019;"In Bau";57,3;"Nein";57,3;"Nein";57,3;"Nein";57,3;"Nein";57,3
+"BNAP184";"KWK München";"KWK München";"Erdgas";"Ja";"80937";"München";"BY";2019;"in Betrieb";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2
+"BNAP185";"KWK München FIZ";"KWK München
+FIZ";"Erdgas";"Ja";"80788";"München";"BY";2019;"in Betrieb";13,4;"Nein";13,4;"Nein";13,4;"Nein";13,4;"Nein";13,4
+"BNA1868";"HKW West M5";"M5";"Erdgas";"Ja";"60327";"Frankfurt am
+Main";"HE";2018;"in Betrieb";38,7;"Nein";38,7;"Nein";38,7;"Nein";38,7;"Nein";38,7
+"BNA1909";"HKW 3 Stuttgart-Gaisburg";"HKW3";"Erdgas";"Ja";"70188";"Stuttgart";"BW";2018;"in Betrieb";29,2;"Nein";29,2;"Nein";29,2;"Nein";29,2;"Nein";29,2
+"BNA1911";"HKW Dresden-Nord";"HKW Dresden-
+Nord";"Erdgas";"Ja";"01099";"Dresden";"SN";2018;"in Betrieb";11,5;"Nein";11,5;"Nein";11,5;"Nein";11,5;"Nein";11,5
+"BNA1925";"HKW Lusan";;"Erdgas";"Ja";"07546";"Gera";"TH";2018;"in Betrieb";17,3;"Nein";17,3;"Nein";17,3;"Nein";17,3;"Nein";17,3
+"BNA1926";"HKW Tinz";;"Erdgas";"Ja";"07549";"Gera";"TH";2018;"in Betrieb";22,1;"Nein";22,1;"Nein";22,1;"Nein";22,1;"Nein";22,1
+"BNA1927";"GM";"GM";"Erdgas";"Ja";"36433";"Bad Salzungen";"TH";2018;"in Betrieb";10;"Nein";10;"Nein";10;"Nein";10;"Nein";10
+"BNA1937";"Dampfturbine 5";"DT 5";"Erdgas";"Ja";"60327";"Frankfurt am
+Main";"HE";2018;"in Betrieb";38,7;"Nein";38,7;"Nein";38,7;"Nein";38,7;"Nein";38,7
+"BNA0361";"Kraftwerk Grenzach-Wyhlen";;"Erdgas";"Ja";"79639";"Grenzach-
+Wyhlen";"BW";2017;"in Betrieb";30;"Nein";30;"Nein";30;"Nein";30;"Nein";30
+"BNA1873";"KWK Dingolfing BA 1";"KWK Dingolfing
+BA1";"Erdgas";"Ja";"84130";"Dingolfing";"BY";2017;"in Betrieb";16;"Nein";16;"Nein";16;"Nein";16;"Nein";16
+"BNA1676";"Kraftwerk IV";1;"Erdgas";"Ja";"45772";"Marl";"NW";2016;"in Betrieb";60,8;"Nein";60,8;"Nein";60,8;"Nein";60,8;"Nein";60,8
+"BNA1817";"GuD";"GuD F";"Erdgas";"Ja";"40221";"Düsseldorf";"NW";2016;"in Betrieb";595;"Nein";595;"Nein";595;"Nein";595;"Nein";595
+"BNA1818";"Niehl 3";"Niehl 31";"Erdgas";"Ja";"50735";"Köln";"NW";2016;"in Betrieb";459,9;"Nein";459,9;"Nein";459,9;"Nein";459,9;"Nein";459,9
+"BNA1819";"Heizkraftwerk FL";"Block 12";"Erdgas";"Ja";"24939";"Flensburg";"SH";2016;"in Betrieb";78;"Nein";78;"Nein";78;"Nein";78;"Nein";78
+"BNA1820";"KW Mittelsbüren";"GuD MiBÜ";"Erdgas";"Nein";"28237";"Bremen";"HB";2016;"in Betrieb";444,5;"Nein";444,5;"Nein";444,5;"Nein";444,5;"Nein";444,5
+"BNA1859";"Ford Saarlouis";;"Erdgas";"Ja";"66740";"Saarlouis";"SL";2016;"in Betrieb";22;"Nein";22;"Nein";22;"Nein";22;"Nein";22
+"BNA1862";"Regensburg";;"Erdgas";"Ja";"93055";"Regensburg";"BY";2016;"in Betrieb";2,7;"Nein";2,7;"Nein";2,7;"Nein";2,7;"Nein";2,7
+"BNA1904";"K5/T7";;"Erdgas";"Ja";"24939";"Flensburg";"SH";2016;"in Betrieb";29;"Nein";29;"Nein";29;"Nein";29;"Nein";29
+"BNA1248b";"HKW3 UPM Schongau";"HKW 3";"Erdgas";"Ja";"86956";"Schongau";"BY";2015;"in Betrieb";76;"Nein";76;"Nein";76;"Nein";76;"Nein";76
+"BNA1677";"BHKW Braunschweig";;"Erdgas";"Ja";"38436";"Wolfsburg";"NI";2015;"in Betrieb";10,4;"Nein";10,4;"Nein";10,4;"Nein";10,4;"Nein";10,4
+"BNA1678";"Energiezentrale 2016";;"Erdgas";"Ja";"85326";"München";"BY";2015;"in Betrieb";16,8;"Nein";16,8;"Nein";16,8;"Nein";16,8;"Nein";16,8
+"BNA0111";"HKW Hiltrop";;"Erdgas";"Ja";"44805";"Bochum";"NW";2014;"in Betrieb";44;"Nein";44;"Nein";44;"Nein";44;"Nein";44
+"BNA0256b";"HKW Erfurt-Ost";"GT2";"Erdgas";"Ja";"99087";"Erfurt";"TH";2014;"in Betrieb";32,6;"Nein";32,6;"Nein";32,6;"Nein";32,6;"Nein";32,6
+"BNA0261c";"HKW Erlangen";"GuD 2";"Erdgas";"Ja";"91052";"Erlangen";"BY";2014;"in Betrieb";6,7;"Nein";6,7;"Nein";6,7;"Nein";6,7;"Nein";6,7
+"BNA0918b";"Dow Stade";"Cogen Dow Stade";"Erdgas";"Ja";"21683";"Stade";"NI";2014;"in Betrieb";157;"Nein";157;"Nein";157;"Nein";157;"Nein";157
+"BNA1292b";"IHKW Heidenheim";"BHKW-Anlage";"Erdgas";"Ja";"89522";"Heidenheim";"BW";2014;"in Betrieb";18,9;"Nein";18,9;"Nein";18,9;"Nein";18,9;"Nein";18,9
+"BNA1531";"Industriekraftwerk Greifswald";;"Erdgas";"Ja";"17509";"Lubmin";"MV";2014;"in Betrieb";38;"Nein";38;"Nein";38;"Nein";38;"Nein";38
+"BNA1556";;;"Erdgas";"Ja";"01454";"Leppersdorf";"SN";2014;"in Betrieb";36;"Nein";36;"Nein";36;"Nein";36;"Nein";36
+"BNA1557";;;"Erdgas";"Ja";"08056";"Zwickau";"SN";2014;"in Betrieb";12,9;"Nein";12,9;"Nein";12,9;"Nein";12,9;"Nein";12,9
+"BNA1671";;;"Erdgas";"Ja";"26954";"Bremerhaven";"NI";2014;"in Betrieb";17,1;"Nein";17,1;"Nein";17,1;"Nein";17,1;"Nein";17,1
+"BNA1810";;;"Erdgas";"Ja";"30659";"Hannover";"NI";2014;"in Betrieb";30,2;"Nein";30,2;"Nein";30,2;"Nein";30,2;"Nein";30,2
+"BNA1863";"Gasturbinen-HKW St. Wendel";;"Erdgas";"Ja";"66606";"St. Wendel";"SL";2014;"in Betrieb";19,5;"Nein";19,5;"Nein";19,5;"Nein";19,5;"Nein";19,5
+"BNA0051";"KWK-Anlage Barby";"-";"Erdgas";"Ja";"39249";"Barby";"ST";2013;"in Betrieb";17,8;"Nein";17,8;"Nein";17,8;"Nein";17,8;"Nein";17,8
+"BNA0059b";"GuD Baunatal, VW Werksge-
+lände";;"Erdgas";"Ja";"34225";"Baunatal";"HE";2013;"in Betrieb";78;"Nein";78;"Nein";78;"Nein";78;"Nein";78
+"BNA0117b";"Heizkraftwerk Karlstraße";"Heizkraftwerk
+Karlstraße";"Erdgas";"Ja";"53115";"Bonn";"NW";2013;"in Betrieb";95;"Nein";95;"Nein";95;"Nein";95;"Nein";95
+"BNA0392b";"HKW Halle Trotha";"GuD";"Erdgas";"Ja";"06130";"Halle";"ST";2013;"in Betrieb";56,1;"Nein";56,1;"Nein";56,1;"Nein";56,1;"Nein";56,1
+"BNA0418";"GKL";"GKL";"Erdgas";"Ja";"30169";"Hannover";"NI";2013;"in Betrieb";230;"Nein";230;"Nein";230;"Nein";230;"Nein";230
+"BNA0548b";"Knapsack Gas II";;"Erdgas";"Nein";"50351";"Hürth-
+Knapsack";"NW";2013;"in Betrieb";430;"Nein";430;"Nein";430;"Nein";430;"Nein";430
+"BNA0842b";"Gasmotor 4";"Gasmotor 4";"Erdgas";"Ja";"83022";"Rosenheim";"BY";2013;"in Betrieb";9,2;"Nein";9,2;"Nein";9,2;"Nein";9,2;"Nein";9,2
+"BNA1260";"Heizkraftwerk Sindelfingen";"Sammelschienen-
+HKW";"Erdgas";"Ja";"71059";"Sindelfingen";"BW";2013;"in Betrieb";95;"Nein";95;"Nein";95;"Nein";95;"Nein";95
+"BNA1337e";"GuD-Anlage";"GuD-Anlage";"Erdgas";"Ja";"63741";"Aschaffenburg";"BY";2013;"in Betrieb";47;"Nein";47;"Nein";47;"Nein";47;"Nein";47
+"BNA1487";"GTKW Darmstadt";;"Erdgas";"Nein";"64293";"Darmstadt";"HE";2013;"in Betrieb ***";94,6;"Nein";94,6;"Nein";94,6;"Nein";94,6;"Nein";94,6
+"BNA1502";"Heizkraftwerk Krefeld";;"Erdgas";"Ja";"47804";"Krefeld";"NW";2013;"in Betrieb";12,6;"Nein";12,6;"Nein";12,6;"Nein";12,6;"Nein";12,6
+"BNA1504";"BHKW";;"Erdgas";"Ja";"76742";"Woerth";"RP";2013;"in Betrieb";13;"Nein";13;"Nein";13;"Nein";13;"Nein";13
+"BNA1523b";"Gemeinschaftskraftwerk Weig";"Block 2 (Kessel 6,
+GT 2, DT 3)";"Erdgas";"Ja";"56727";"Mayen";"RP";2013;"in Betrieb";27,4;"Nein";27,4;"Nein";27,4;"Nein";27,4;"Nein";27,4
+"BNA1541";"HKW Freiberg";;"Erdgas";"Ja";"09599";"Freiberg";"SN";2013;"in Betrieb";13,4;"Nein";13,4;"Nein";13,4;"Nein";13,4;"Nein";13,4
+"BNA0497";"ADS-Anlage";;"Erdgas";"Ja";"65926";"Industriepark
+Höchst";"HE";2012;"in Betrieb";96,5;"Nein";96,5;"Nein";96,5;"Nein";96,5;"Nein";96,5
+"BNA0843";"Gasmotor 5";"Gasmotor 5";"Erdgas";"Ja";"83026";"Rosenheim";"BY";2012;"in Betrieb";4,3;"Nein";4,3;"Nein";4,3;"Nein";4,3;"Nein";4,3
+"BNA0861a";"HKW Römerbrücke";"GuD-Anlage";"Erdgas";"Ja";"66121";"Saarbrücken";"SL";2012;"in Betrieb";75;"Nein";75;"Nein";75;"Nein";75;"Nein";75
+"BNA1437";"KWK AOS GmbH";"GT 1/2";"Erdgas";"Ja";"21683";"Stade-
+Bützfleth";"NI";2012;"in Betrieb";30,7;"Nein";30,7;"Nein";30,7;"Nein";30,7;"Nein";30,7
+"BNA1464";"Gas- u. Dampfturbinenanlage
+Südraum";;"Erdgas";"Ja";"66117";"Saarbrücken";"SL";2012;"in Betrieb";38,6;"Nein";38,6;"Nein";38,6;"Nein";38,6;"Nein";38,6
+"BNA1492b";"Kraftwerk 2";;"Erdgas";"Ja";"36039";"Fulda";"HE";2012;"in Betrieb";7,5;"Nein";7,5;"Nein";7,5;"Nein";7,5;"Nein";7,5
+"BNA1503";"BHKW H.120";;"Erdgas";"Ja";"40476";"Düsseldorf";"NW";2012;"in Betrieb";21,1;"Nein";21,1;"Nein";21,1;"Nein";21,1;"Nein";21,1
+"BNA0602";"Emsland";"C1";"Erdgas";"Ja";"49811";"Lingen";"NI";2011;"in Betrieb";116;"Nein";116;"Nein";116;"Nein";116;"Nein";116
+"BNA0603";"Emsland";"B1";"Erdgas";"Ja";"49811";"Lingen";"NI";2011;"in Betrieb";116;"Nein";116;"Nein";116;"Nein";116;"Nein";116
+"BNA0832";"BHKW-Hauffstraße";"Motorenanlage";"Erdgas";"Ja";"72762";"Reutlingen";"BW";2011;"in Betrieb";9,8;"Nein";9,8;"Nein";9,8;"Nein";9,8;"Nein";9,8
+"BNA0842a";"Gasmotore";"Gasmotore 1-3";"Erdgas";"Ja";"83022";"Rosenheim";"BY";2011;"in Betrieb";9,8;"Nein";9,8;"Nein";9,8;"Nein";9,8;"Nein";9,8
+"BNA0995";"Ulrich Hartmann (Irsching)";4;"Erdgas";"Nein";"85088";"Vohburg";"BY";2011;"in Betrieb ***";561;"Nein";561;"Nein";561;"Nein";561;"Nein";561
+"BNA1131";"MT, Düren";;"Erdgas";"Ja";"52349";"Düren";"NW";2011;"in Betrieb";14;"Nein";14;"Nein";14;"Nein";14;"Nein";14
+"BNA1861";"Regensburg";;"Erdgas";"Ja";"93055";"Regensburg";"BY";2011;"in Betrieb";10,6;"Nein";10,6;"Nein";10,6;"Nein";10,6;"Nein";10,6
+"BNA0136";"HKW-Mitte";"GuD";"Erdgas";"Ja";"38106";"Braunschweig";"NI";2010;"in Betrieb";74;"Nein";74;"Nein";74;"Nein";74;"Nein";74
+"BNA0606";"Emsland";"D";"Erdgas";"Ja";"49811";"Lingen";"NI";2010;"in Betrieb";887;"Nein";887;"Nein";887;"Nein";887;"Nein";887
+"BNA0805";"Kraftwerk Plattling";;"Erdgas";"Ja";"94447";"Plattling";"BY";2010;"in Betrieb";118,5;"Nein";118,5;"Nein";118,5;"Nein";118,5;"Nein";118,5
+"BNA0994";"Gemeinschaftskraftwerk
+Irsching";5;"Erdgas";"Nein";"85088";"Vohburg";"BY";2010;"in Betrieb ***";846;"Nein";846;"Nein";846;"Nein";846;"Nein";846
+"BNA0400";"GuD Tiefstack";"GuD Tiefstack";"Erdgas";"Ja";"22113";"Hamburg";"HH";2009;"in Betrieb";127;"Nein";127;"Nein";127;"Nein";127;"Nein";127
+"BNA1087";"Heizkraftwerke an der
+Friedensbrücke";"GTII";"Erdgas";"Ja";"97080";"Würzburg";"BY";2009;"in Betrieb";29,5;"Nein";29,5;"Nein";29,5;"Nein";29,5;"Nein";29,5
+"BNA0243";"HKW Eltmann";;"Erdgas";"Ja";"97483";"Eltmann";"BY";2008;"in Betrieb";57;"Nein";57;"Nein";57;"Nein";57;"Nein";57
+"BNA0410";"Trianel Gaskraftwerk";"Block 10";"Erdgas";"Nein";"59071";"Hamm";"NW";2008;"in Betrieb";407;"Nein";407;"Nein";407;"Nein";407;"Nein";407
+"BNA0411";"Trianel Gaskraftwerk";"Block 20";"Erdgas";"Nein";"59071";"Hamm";"NW";2008;"in Betrieb";410;"Nein";410;"Nein";410;"Nein";410;"Nein";410
+"BNA1078";"HKW Wörth";;"Erdgas";"Ja";"76744";"Wörth";"RP";2008;"in Betrieb";59;"Nein";59;"Nein";59;"Nein";59;"Nein";59
+"BNA0442";"Cuno Heizkraftwerk Herdecke";"H6";"Erdgas";"Nein";"58313";"Herdecke";"NW";2007;"in Betrieb";417;"Nein";417;"Nein";417;"Nein";417;"Nein";417
+"BNA0548a";"Knapsack Gas I";;"Erdgas";"Nein";"50351";"Hürth-
+Knapsack";"NW";2007;"in Betrieb";800;"Nein";800;"Nein";800;"Nein";800;"Nein";800
+"BNA1407";"STW";;"Erdgas";"Ja";"09600";"Weißenborn";"SN";2007;"in Betrieb";18,7;"Nein";18,7;"Nein";18,7;"Nein";18,7;"Nein";18,7
+"BNA1023";"Weisweiler";"G_VGT";"Erdgas";"Nein";"52249";"Eschweiler-
+Weisweiler";"NW";2006;"in Betrieb";200;"Nein";200;"Nein";200;"Nein";200;"Nein";200
+"BNA1024";"Weisweiler";"H_VGT";"Erdgas";"Nein";"52249";"Eschweiler-
+Weisweiler";"NW";2006;"in Betrieb";200;"Nein";200;"Nein";200;"Nein";200;"Nein";200
+"BNA1056";"Wi-Biebrich";"Block 1";"Erdgas";"Ja";"65203";"Wiesbaden";"HE";2006;"in Betrieb";25;"Nein";25;"Nein";25;"Nein";25;"Nein";25
+"BNA1507";;;"Erdgas";"Ja";"55543";"Bad Kreuznach";"RP";2006;"in Betrieb";10,7;"Nein";10,7;"Nein";10,7;"Nein";10,7;"Nein";10,7
+"BNA0100";"GuD Kraftwerk Hillegossen";"GuD";"Erdgas";"Ja";"33697";"Bielefeld";"NW";2005;"in Betrieb";37,5;"Nein";37,5;"Nein";37,5;"Nein";37,5;"Nein";37,5
+"BNA0214";"HKW III/B";"HKW III/B";"Erdgas";"Ja";"47249";"Duisburg";"NW";2005;"in Betrieb";234;"Nein";234;"Nein";234;"Nein";234;"Nein";234
+"BNA0261a";"HKW Erlangen";"GuD I";"Erdgas";"Ja";"91052";"Erlangen";"BY";2005;"in Betrieb";21,6;"Nein";21,6;"Nein";21,6;"Nein";21,6;"Nein";21,6
+"BNA0285";"HKW Niederrad";"Block 1";"Erdgas";"Ja";"60528";"Frankfurt am
+Main";"HE";2005;"in Betrieb";70;"Nein";70;"Nein";70;"Nein";70;"Nein";70
+"BNA0392a";"HKW Halle Trotha";"Block A und B";"Erdgas";"Ja";"06130";"Halle";"ST";2005;"in Betrieb";97;"Nein";97;"Nein";97;"Nein";97;"Nein";97
+"BNA0527";"HKW Humboldtstr.";;"Erdgas";"Ja";"24116";"Kiel";"SH";2005;"in Betrieb";21,5;"Nein";21,5;"Nein";21,5;"Nein";21,5;"Nein";21,5
+"BNA0545";"HKW Niehl 2";"GuD";"Erdgas";"Ja";"50735";"Köln";"NW";2005;"in Betrieb";413;"Nein";413;"Nein";413;"Nein";413;"Nein";413
+"BNA0556a";"KWK-Anlage Krefeld DT";"Dampfturbine";"Erdgas";"Ja";"47809";"Krefeld";"NW";2005;"in Betrieb";25,8;"Nein";25,8;"Nein";25,8;"Nein";25,8;"Nein";25,8
+"BNA0614b";"Kraftwerk Mitte";"GUD A 800
+GT 11, GT 12, DT
+10";"Erdgas";"Ja";"67056";"Ludwigshafen";"RP";2005;"in Betrieb";497,5;"Nein";497,5;"Nein";497,5;"Nein";497,5;"Nein";497,5
+"BNA0685";"Heizkraftwerk Hafen";"GuD";"Erdgas";"Ja";"48145";"Münster";"NW";2005;"in Betrieb";104,1;"Nein";104,1;"Nein";104,1;"Nein";104,1;"Nein";104,1
+"BNA0742";"HKW Sandreuth";"GuD 1";"Erdgas";"Ja";"90441";"Nürnberg";"BY";2005;"in Betrieb";75;"Nein";75;"Nein";75;"Nein";75;"Nein";75
+"BNA0743";"HKW Sandreuth";"GuD 2";"Erdgas";"Ja";"90441";"Nürnberg";"BY";2005;"in Betrieb";75;"Nein";75;"Nein";75;"Nein";75;"Nein";75
+"BNA1082";"HKW Barmen";"Block 1";"Erdgas";"Ja";"42275";"Wuppertal";"NW";2005;"in Betrieb";88;"Nein";88;"Nein";88;"Nein";88;"Nein";88
+"BNA1088";"Heizkraftwerke an der
+Friedensbrücke";"GTI";"Erdgas";"Ja";"97080";"Würzburg";"BY";2005;"in Betrieb";44,5;"Nein";44,5;"Nein";44,5;"Nein";44,5;"Nein";44,5
+"BNA1121";"Energiezentrale";"Energiecenter";"Erdgas";"Ja";"44579";"Castrop-
+Rauxel";"NW";2005;"in Betrieb";0,9;"Nein";0,9;"Nein";0,9;"Nein";0,9;"Nein";0,9
+"BNA1866";;;"Erdgas";"Ja";"01468";"Moritzburg";"SN";2005;"in Betrieb";33,9;"Nein";33,9;"Nein";33,9;"Nein";33,9;"Nein";33,9
+"BNA0033";"Gasturbine";"GT";"Erdgas";"Ja";"86167";"Augsburg";"BY";2004;"in Betrieb";30,7;"Nein";30,7;"Nein";30,7;"Nein";30,7;"Nein";30,7
+"BNA0202";"Dortmund";"KDO";"Erdgas";"Ja";"44143";"Dortmund";"NW";2004;"in Betrieb";26;"Nein";26;"Nein";26;"Nein";26;"Nein";26
+"BNA0546";"HKW Merkenich";"GuD";"Erdgas";"Ja";"50769";"Köln";"NW";2004;"in Betrieb";108;"Nein";108;"Nein";108;"Nein";108;"Nein";108
+"BNA0684a";"Süd GT 61";2;"Erdgas";"Ja";"81371";"München";"BY";2004;"in Betrieb";124,9;"Nein";124,9;"Nein";124,9;"Nein";124,9;"Nein";124,9
+"BNA0684b";"Süd GT 62";2;"Erdgas";"Ja";"81371";"München";"BY";2004;"in Betrieb";123,9;"Nein";123,9;"Nein";123,9;"Nein";123,9;"Nein";123,9
+"BNA0684c";"Süd DT60";2;"Erdgas";"Ja";"81371";"München";"BY";2004;"in Betrieb";127,6;"Nein";127,6;"Nein";127,6;"Nein";127,6;"Nein";127,6
+"BNA1165";"P&L Werk Appeldorn";"Lentjes-Kessel";"Erdgas";"Ja";"47546";"Kalkar";"NW";2004;"in Betrieb";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4
+"BNA0499";"Heizkraftwerk";"Block A";"Erdgas";"Ja";"65926";"Industriepark
+Höchst";"HE";2003;"in Betrieb";86;"Nein";86;"Nein";86;"Nein";86;"Nein";86
+"BNA1196a";"BHKW Ludwigshafen";"BHKW";"Erdgas";"Ja";"67065";"Ludwigshafen";"RP";2003;"in Betrieb";12,5;"Nein";12,5;"Nein";12,5;"Nein";12,5;"Nein";12,5
+"BNA1196b";"Industriekraftwerk Ludwigsha-
+fen";"GuD";"Erdgas";"Ja";"67065";"Ludwigshafen";"RP";2003;"in Betrieb";12;"Nein";12;"Nein";12;"Nein";12;"Nein";12
+"BNA1327b";"Erweiterung Energiezentrale
+2003";"AGG8 - AGG9";"Erdgas";"Ja";"85326";"München";"BY";2003;"in Betrieb";7,4;"Nein";7,4;"Nein";7,4;"Nein";7,4;"Nein";7,4
+"BNA0174";"Industriepark Werk Gendorf";;"Erdgas";"Ja";"84508";"Burgkirchen";"BY";2002;"in Betrieb";73,1;"Nein";73,1;"Nein";73,1;"Nein";73,1;"Nein";73,1
+"BNA0213";"HKW III/A";"HKW III/A";"Erdgas";"Ja";"47249";"Duisburg";"NW";2002;"in Betrieb";40;"Nein";40;"Nein";40;"Nein";40;"Nein";40
+"BNA1151";"KWKK Heidelberg";;"Erdgas";"Ja";"69120";"Heidelberg";"BW";2002;"in Betrieb";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5
+"BNA1334";"KWK-Anlage";"GT 1-3, DT";"Erdgas";"Ja";"28237";"Bremen";"HB";2002;"in Betrieb";14,8;"Nein";14,8;"Nein";14,8;"Nein";14,8;"Nein";14,8
+"BNA0172a";"Burghausen 01 - GT";;"Erdgas";"Ja";"84489";"Burghausen";"BY";2001;"in Betrieb";120;"Nein";120;"Nein";120;"Nein";120;"Nein";120
+"BNA0626";"Kraftwerk Mainz";"KW3";"Erdgas";"Ja";"55120";"Mainz";"RP";2001;"in Betrieb";434,2;"Nein";434,2;"Nein";434,2;"Nein";434,2;"Nein";434,2
+"BNA1183";"HKW Merheim";"GuD";"Erdgas";"Ja";"51109";"Köln";"NW";2001;"in Betrieb";15,8;"Nein";15,8;"Nein";15,8;"Nein";15,8;"Nein";15,8
+"BNA1193";"HKW-West";;"Erdgas";"Ja";"32657";"Lemgo";"NW";2001;"in Betrieb";12,6;"Nein";12,6;"Nein";12,6;"Nein";12,6;"Nein";12,6
+"BNA1315";"HKW";"HKW";"Erdgas";"Ja";"79106";"Freiburg";"BW";2001;"in Betrieb";27;"Nein";27;"Nein";27;"Nein";27;"Nein";27
+"BNA1328";"HBB";"GUD";"Erdgas";"Ja";"83064";"Raubling";"BY";2001;"in Betrieb";24;"Nein";24;"Nein";24;"Nein";24;"Nein";24
+"BNA0105";"GuD Bitterfeld";;"Erdgas";"Ja";"06749";"Bitterfeld";"ST";2000;"in Betrieb";106;"Nein";106;"Nein";106;"Nein";106;"Nein";106
+"BNA0199";"Dormagen";"GuD";"Erdgas";"Ja";"41539";"Dormagen";"NW";2000;"in Betrieb *";586;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0220";"GuD";"AGuD";"Erdgas";"Ja";"40221";"Düsseldorf";"NW";2000;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0256a";"HKW Erfurt-Ost";"GT1";"Erdgas";"Ja";"99087";"Erfurt";"TH";2000;"in Betrieb";76,5;"Nein";76,5;"Nein";76,5;"Nein";76,5;"Nein";76,5
+"BNA0957";"BHKW Obere Viehweide";"-";"Erdgas";"Ja";"72072";"Tübingen";"BW";2000;"in Betrieb";13,4;"Nein";13,4;"Nein";13,4;"Nein";13,4;"Nein";13,4
+"BNA1138";"BHKW an Klinkerweg";"Module 1, 2 und 3";"Erdgas";"Ja";"40699";"Erkrath";"NW";2000;"in Betrieb";10,2;"Nein";10,2;"Nein";10,2;"Nein";10,2;"Nein";10,2
+"BNA1238";"Kraftwerk Meggle";;"Erdgas";"Ja";"83512";"Reitmehring";"BY";2000;"in Betrieb";15,1;"Nein";15,1;"Nein";15,1;"Nein";15,1;"Nein";15,1
+"BNA1450";"GUD-Anlage DREWSEN";;"Erdgas";"Ja";"29331";"Lachendorf";"NI";2000;"in Betrieb";13;"Nein";13;"Nein";13;"Nein";13;"Nein";13
+"BNA1499";"Werk Clauen";;"Erdgas";"Ja";"31249";"Hohenhameln";"NI";2000;"in Betrieb";17,1;"Nein";17,1;"Nein";17,1;"Nein";17,1;"Nein";17,1
+"BNA0857";"GuD-Anlage Rüsselsheim";"M120";"Erdgas";"Ja";"65429";"Rüsselheim";"HE";1999;"in Betrieb";112,1;"Nein";112,1;"Nein";112,1;"Nein";112,1;"Nein";112,1
+"BNA1117";"Industriekraftwerk Breuberg";;"Erdgas";"Ja";"64747";"Breuberg";"HE";1999;"in Betrieb";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4
+"BNA1125";"Heizkraftwerk";"GT";"Erdgas";"Ja";"64293";"Darmstadt";"HE";1999;"in Betrieb";10;"Nein";10;"Nein";10;"Nein";10;"Nein";10
+"BNA1403";"Steinitz";"GUD";"Erdgas";"Ja";"29416";"Steinitz";"ST";1999;"in Betrieb";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4
+"BNA0293";"GuD Anlage WVK";"GuD Anlage";"Erdgas";"Ja";"79108";"Freiburg";"BW";1998;"in Betrieb";38,6;"Nein";38,6;"Nein";38,6;"Nein";38,6;"Nein";38,6
+"BNA0354";"HKW Göttingen";;"Erdgas";"Ja";"37075";"Göttingen";"NI";1998;"in Betrieb";18,8;"Nein";18,8;"Nein";18,8;"Nein";18,8;"Nein";18,8
+"BNA0514";"Rheinhafen-Dampfkraftwerk";"RDK 4S";"Erdgas";"Nein";"76189";"Karlsruhe";"BW";1998;"in Betrieb **";353;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0592";"GuD Leuna";;"Erdgas";"Nein";"06237";"Leuna";"ST";1998;"in Betrieb";39;"Nein";39;"Nein";39;"Nein";39;"Nein";39
+"BNA1396";"EVC / GLOBALFOUNDRIES";"EVC I";"Erdgas";"Ja";"01468";"Moritzburg";"SN";1998;"in Betrieb";34,3;"Nein";34,3;"Nein";34,3;"Nein";34,3;"Nein";34,3
+"BNA0015";"Heizkraftwerk Alt-
+bach/Deizisau";"ALT GT E (solo)";"Erdgas";"Ja";"73776";"Altbach";"BW";1997;"in Betrieb";65;"Nein";65;"Nein";65;"Nein";65;"Nein";65
+"BNA0129";"HKW";;"Erdgas";"Ja";"14772";"Brandenburg";"BB";1997;"in Betrieb";36;"Nein";36;"Nein";36;"Nein";36;"Nein";36
+"BNA0284";"Heizkraftwerk FFO";"Block1-GuD-EK";"Erdgas";"Ja";"15236";"Frankfurt Oder";"BB";1997;"in Betrieb";48;"Nein";48;"Nein";48;"Nein";48;"Nein";48
+"BNA0615";"Kraftwerk Süd";"GUD C 200
+GT 1, GT 2, DT 1";"Erdgas";"Ja";"67056";"Ludwigshafen";"RP";1997;"in Betrieb";410;"Nein";410;"Nein";410;"Nein";410;"Nein";410
+"BNA0688";"GuD-HKW Neubrandenburg";;"Erdgas";"Ja";"17034";"Neubranden-
+burg";"MV";1997;"in Betrieb";75;"Nein";75;"Nein";75;"Nein";75;"Nein";75
+"BNA1074";"Spitzenlastkraftwerk Wolfen";;"Erdgas";"Nein";"06766";"Wolfen";"ST";1997;"in Betrieb";40;"Nein";40;"Nein";40;"Nein";40;"Nein";40
+"BNA0073";"Mitte";"GuD Mitte";"Erdgas";"Ja";"10179";"Berlin";"BE";1996;"in Betrieb";444;"Nein";444;"Nein";444;"Nein";444;"Nein";444
+"BNA0156b";"Egger Kraftwerk Brilon";"Gasturbinen -
+KWK - Anlage";"Erdgas";"Ja";"59929";"Brilon";"NW";1996;"in Betrieb";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5
+"BNA0194";"Kraftwerk Dessau";;"Erdgas";"Ja";"06842";"Dessau-
+Roßlau";"ST";1996;"in Betrieb";39;"Nein";39;"Nein";39;"Nein";39;"Nein";39
+"BNA0360";"HKW ""Helmshäger Berg""";"Gasturbine";"Erdgas";"Ja";"17489";"Greifswald";"MV";1996;"in Betrieb";14,7;"Nein";14,7;"Nein";14,7;"Nein";14,7;"Nein";14,7
+"BNA0504";"HKW Jena";"HKW Jena";"Erdgas";"Ja";"07749";"Jena";"TH";1996;"in Betrieb";182;"Nein";182;"Nein";182;"Nein";182;"Nein";182
+"BNA0588";"Heizkraftwerk Leipzig-Nord";;"Erdgas";"Ja";"04105";"Leipzig";"SN";1996;"in Betrieb";167;"Nein";167;"Nein";167;"Nein";167;"Nein";167
+"BNA0702";"Cogeneration";;"Erdgas";"Ja";"93328";"Neustadt";"BY";1996;"in Betrieb";25,4;"Nein";25,4;"Nein";25,4;"Nein";25,4;"Nein";25,4
+"BNA0814";"HKW Potsdam-Süd";"Gesamtanlage";"Erdgas";"Ja";"14478";"Potsdam";"BB";1996;"in Betrieb";81,8;"Nein";81,8;"Nein";81,8;"Nein";81,8;"Nein";81,8
+"BNA0848";"GuD Marienehe";;"Erdgas";"Ja";"18069";"Rostock";"MV";1996;"in Betrieb";108;"Nein";108;"Nein";108;"Nein";108;"Nein";108
+"BNA0922";"GuD-Ikw Staßfurt";;"Erdgas";"Ja";"39418";"Staßfurt";"ST";1996;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA1089";"Zielitz";"Zielitz";"Erdgas";"Ja";"39326";"Zielitz";"ST";1996;"in Betrieb";27;"Nein";27;"Nein";27;"Nein";27;"Nein";27
+"BNA1279";"Gasturbine";"D290";"Erdgas";"Ja";"50389";"Wesseling";"NW";1996;"in Betrieb";51,9;"Nein";51,9;"Nein";51,9;"Nein";51,9;"Nein";51,9
+"BNA1509";"BP Werk Lingen";;"Erdgas";"Ja";"49808";"Lingen";"NI";1996;"in Betrieb";66;"Nein";66;"Nein";66;"Nein";66;"Nein";66
+"BNA0207";"HKW Dresden-Nossener
+Brücke";"HKW Dresden-
+Nossener Brücke
+(3 GT + 1 DT,
+Sammelschiene)";"Erdgas";"Ja";"01169";"Dresden";"SN";1995;"in Betrieb";260;"Nein";260;"Nein";260;"Nein";260;"Nein";260
+"BNA0556b";"KWK-Anlage Krefeld VM";"Gasmotor
+(Dieselgenerator)";"Erdgas";"Ja";"47809";"Krefeld";"NW";1995;"in Betrieb";14;"Nein";14;"Nein";14;"Nein";14;"Nein";14
+"BNA0755b";"Obernburg";1;"Erdgas";"Ja";"63784";"Obernburg";"BY";1995;"in Betrieb";60;"Nein";60;"Nein";60;"Nein";60;"Nein";60
+"BNA1264";"HKW Bohrhügel";;"Erdgas";"Ja";"98528";"Suhl";"TH";1995;"in Betrieb";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5;"Nein";13,5
+"BNA1293c";"Kraftwerk";"K3+4/TG4";"Erdgas";"Ja";"50127";"Bergheim";"NW";1995;"in Betrieb";3;"Nein";3;"Nein";3;"Nein";3;"Nein";3
+"BNA1332";"INEOS Kraftwerk";"TG7/8";"Erdgas";"Ja";"47443";"Moers";"NW";1995;"in Betrieb";24;"Nein";24;"Nein";24;"Nein";24;"Nein";24
+"BNA1402";"Heizkraftwerk zur Papierfabrik";;"Erdgas";"Ja";"49638";"Nortrup";"NI";1995;"in Betrieb";18,1;"Nein";18,1;"Nein";18,1;"Nein";18,1;"Nein";18,1
+"BNA1444d";"GT4";;"Erdgas";"Ja";"90471";"Nürnberg";"BY";1995;"in Betrieb";5,1;"Nein";5,1;"Nein";5,1;"Nein";5,1;"Nein";5,1
+"BNA0088a";"Industriekraftwerk Bernburg
+(IKB)";;"Erdgas";"Ja";"06406";"Bernburg";"ST";1994;"in Betrieb";140,5;"Nein";140,5;"Nein";140,5;"Nein";140,5;"Nein";140,5
+"BNA0130";"Kirchmöser";;"Erdgas";"Nein";"14774";"Brandenburg";"BB";1994;"in Betrieb";160;"Nein";160;"Nein";160;"Nein";160;"Nein";0
+"BNA0286";"HKW West";"Block 4";"Erdgas";"Ja";"60627";"Frankfurt am
+Main";"HE";1994;"in Betrieb";99;"Nein";99;"Nein";99;"Nein";99;"Nein";99
+"BNA0386";"Energiezentrum Mohn Media";;"Erdgas";"Ja";"33334";"Gütersloh";"NW";1994;"in Betrieb";25;"Nein";25;"Nein";25;"Nein";25;"Nein";25
+"BNA0593";"ILK-GuD";"GT1";"Erdgas";"Ja";"06237";"Leuna";"ST";1994;"in Betrieb";35;"Nein";35;"Nein";35;"Nein";35;"Nein";35
+"BNA0594";"ILK-GuD";"GT2";"Erdgas";"Ja";"06237";"Leuna";"ST";1994;"in Betrieb";35;"Nein";35;"Nein";35;"Nein";35;"Nein";35
+"BNA0595";"ILK-GuD";"GT3";"Erdgas";"Ja";"06237";"Leuna";"ST";1994;"in Betrieb";37;"Nein";37;"Nein";37;"Nein";37;"Nein";37
+"BNA0893";"GuD Schwarzheide";;"Erdgas";"Ja";"01987";"Schwarzheide";"BB";1994;"in Betrieb";122;"Nein";122;"Nein";122;"Nein";122;"Nein";122
+"BNA0896";"HKW Schwerin Süd";;"Erdgas";"Ja";"19061";"Schwerin";"MV";1994;"in Betrieb";44,9;"Nein";44,9;"Nein";44,9;"Nein";44,9;"Nein";44,9
+"BNA0897";"HKW Schwerin Lankow";;"Erdgas";"Ja";"19057";"Schwerin";"MV";1994;"in Betrieb";23;"Nein";23;"Nein";23;"Nein";23;"Nein";23
+"BNA1105";"HKW Bad Salzungen";"HKW Bad
+Salzungen";"Erdgas";"Ja";"36433";"Bad Salzungen";"TH";1994;"in Betrieb";9,7;"Nein";9,7;"Nein";9,7;"Nein";9,7;"Nein";9,7
+"BNA1444c";"GT3";;"Erdgas";"Ja";"90471";"Nürnberg";"BY";1994;"in Betrieb";5,1;"Nein";5,1;"Nein";5,1;"Nein";5,1;"Nein";5,1
+"BNA1489";"Heizkraftwerk Stendal";;"Erdgas";"Ja";"39576";"Stendal";"ST";1994;"in Betrieb";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2
+"BNA1506";"Werk Klein Wanzleben";;"Erdgas";"Nein";"39164";"Klein
+Wanzleben";"ST";1994;"in Betrieb";23,4;"Nein";23,4;"Nein";23,4;"Nein";23,4;"Nein";0
+"BNA0025";"Kesselhaus Zuckerfabrik";;"Erdgas";"Ja";"17389";"Anklam";"MV";1993;"in Betrieb";15,1;"Nein";15,1;"Nein";15,1;"Nein";15,1;"Nein";15,1
+"BNA0233";"Kombikraftwerk";;"Erdgas";"Ja";"04838";"Eilenburg";"SN";1993;"in Betrieb";46,6;"Nein";46,6;"Nein";46,6;"Nein";46,6;"Nein";46,6
+"BNA1086";"Heizkraftwerke an der
+Friedensbrücke";"TSII";"Erdgas";"Ja";"97080";"Würzburg";"BY";1993;"in Betrieb";25;"Nein";25;"Nein";25;"Nein";25;"Nein";25
+"BNA1329";"K&N PFK AG EV";"GT / GDT";"Erdgas";"Ja";"09648";"Kriebstein";"SN";1993;"in Betrieb";13,1;"Nein";13,1;"Nein";13,1;"Nein";13,1;"Nein";13,1
+"BNA1400b";"EZ1";"DTI";"Erdgas";"Nein";"06712";"Zeitz";"ST";1993;"in Betrieb";23,3;"Nein";23,3;"Nein";23,3;"Nein";23,3;"Nein";0
+"BNA1444a";"GT1";;"Erdgas";"Ja";"90471";"Nürnberg";"BY";1993;"in Betrieb";4,2;"Nein";4,2;"Nein";4,2;"Nein";4,2;"Nein";4,2
+"BNA1444b";"GT2";;"Erdgas";"Ja";"90471";"Nürnberg";"BY";1993;"in Betrieb";4,2;"Nein";4,2;"Nein";4,2;"Nein";4,2;"Nein";4,2
+"BNA1505";"HKW Wiesengrund";;"Erdgas";"Ja";"99817";"Eisenach";"TH";1993;"in Betrieb";22,1;"Nein";22,1;"Nein";22,1;"Nein";22,1;"Nein";22,1
+"BNA0401";"Heizkraftwerk";"HKW";"Erdgas";"Ja";"21107";"Hamburg";"HH";1992;"in Betrieb";22,5;"Nein";22,5;"Nein";22,5;"Nein";22,5;"Nein";22,5
+"BNA0614a";"KW Mitte";"GT 1";"Erdgas";"Ja";"67056";"Ludwigshafen";"RP";1992;"in Betrieb";47;"Nein";47;"Nein";47;"Nein";47;"Nein";47
+"BNA1327a";"Energiezentrale 1992";"AGG1 - AGG7";"Erdgas";"Ja";"85326";"München";"BY";1992;"in Betrieb";9,5;"Nein";9,5;"Nein";9,5;"Nein";9,5;"Nein";9,5
+"BNA1406";"FS-Karton";;"Erdgas";"Ja";"41460";"Neuss";"NW";1992;"in Betrieb";18,9;"Nein";18,9;"Nein";18,9;"Nein";18,9;"Nein";18,9
+"BNA1516";"HKW 1 Werk Offstein";;"Erdgas";"Ja";"67283";"Obrigheim";"RP";1992;"in Betrieb";30;"Nein";30;"Nein";30;"Nein";30;"Nein";30
+"BNA1523a";"Gemeinschaftskraftwerk Weig";"Block 1 (Kessel2,
+GT 1, DT 2)";"Erdgas";"Ja";"56727";"Mayen";"RP";1992;"in Betrieb";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4;"Nein";11,4
+"BNA1120";"Energiezentrale";"Gasturbine";"Erdgas";"Ja";"44579";"Castrop-
+Rauxel";"NW";1991;"in Betrieb";10,2;"Nein";10,2;"Nein";10,2;"Nein";10,2;"Nein";10,2
+"BNA1284";"Co-Generation";"-";"Erdgas";"Ja";"67547";"Worms";"RP";1991;"in Betrieb";11,5;"Nein";11,5;"Nein";11,5;"Nein";11,5;"Nein";11,5
+"BNA0005";"Ahrensfelde";"GT A";"Erdgas";"Nein";"16356";"Ahrensfelde";"BB";1990;"Vorläufig
+Stillgelegt *";37,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0006";"Ahrensfelde";"GT B";"Erdgas";"Nein";"16356";"Ahrensfelde";"BB";1990;"Vorläufig
+Stillgelegt *";37,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0007";"Ahrensfelde";"GT C";"Erdgas";"Nein";"16356";"Ahrensfelde";"BB";1990;"Vorläufig
+Stillgelegt *";37,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0008";"Ahrensfelde";"GT D";"Erdgas";"Nein";"16356";"Ahrensfelde";"BB";1990;"Vorläufig
+Stillgelegt *";37,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1492a";"Kraftwerk 3";;"Erdgas";"Ja";"36039";"Fulda";"HE";1990;"in Betrieb";26,2;"Nein";26,2;"Nein";26,2;"Nein";26,2;"Nein";26,2
+"BNA1528";;;"Erdgas";"Ja";"47906";"Kempen";"NW";1990;"in Betrieb";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2
+"BNA0510a";"HKW Karcherstr.";10;"Erdgas";"Ja";"67655";"Kaiserslautern";"RP";1989;"in Betrieb";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6
+"BNA0734";"Thyrow";"GT E";"Erdgas";"Nein";"15806";"Nunsdorf";"BB";1989;"in Betrieb **";37,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1335a";"PKV Kraftwerk";"KWK-Blöcke";"Erdgas";"Ja";"26316";"Varel";"NI";1989;"in Betrieb";58,1;"Nein";58,1;"Nein";58,1;"Nein";58,1;"Nein";58,1
+"BNA1333a";"HKW Pfaffenwald";"Anlage 40";"Erdgas";"Ja";"70569";"Stuttgart";"BW";1988;"in Betrieb";12,2;"Nein";12,2;"Nein";12,2;"Nein";12,2;"Nein";12,2
+"BNA0521";"Kombi-HKW";;"Erdgas";"Ja";"34134";"Kassel";"HE";1987;"in Betrieb";48,3;"Nein";48,3;"Nein";48,3;"Nein";48,3;"Nein";48,3
+"BNA0738";"Thyrow";"GT A";"Erdgas";"Nein";"15806";"Nunsdorf";"BB";1987;"in Betrieb **";36,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0739";"Thyrow";"GT B";"Erdgas";"Nein";"15806";"Nunsdorf";"BB";1987;"in Betrieb **";36,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0740";"Thyrow";"GT C";"Erdgas";"Nein";"15806";"Nunsdorf";"BB";1987;"in Betrieb **";36,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0741";"Thyrow";"GT D";"Erdgas";"Nein";"15806";"Nunsdorf";"BB";1987;"in Betrieb **";36,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0178";"HKW Chemnitz Nord II";"Block A";"Erdgas";"Ja";"09114";"Chemnitz";"SN";1986;"Vorläufig
+Stillgelegt";57,2;"Nein";57,2;"Nein";57,2;"Nein";57,2;"Nein";57,2
+"BNA0515";"Heizkraftwerk West";"T3";"Erdgas";"Ja";"76189";"Karlsruhe";"BW";1984;"in Betrieb";37;"Nein";37;"Nein";37;"Nein";37;"Nein";37
+"BNA1046b";"Gersteinwerk";"K1";"Erdgas";"Nein";"59368";"Werne";"NW";1984;"in Betrieb";112;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0081";"Klingenberg";"Klingenberg";"Erdgas";"Ja";"10317";"Berlin";"BE";1981;"in Betrieb";164;"Nein";164;"Nein";164;"Nein";164;"Nein";164
+"BNA0600a";"X-Kraftwerk";;"Erdgas";"Ja";"51368";"Leverkusen";"NW";1981;"in Betrieb";25;"Nein";25;"Nein";25;"Nein";25;"Nein";25
+"BNA0389";"Heizkraftwerk Hagen-Kabel";"H4/5";"Erdgas";"Nein";"58099";"Hagen";"NW";1980;"Vorläufig
+Stillgelegt";230;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0531";"KW Kirchlengern";;"Erdgas";"Nein";"32278";"Kirchlengern";"NW";1980;"in Betrieb";125;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0683a";"Süd DT1";1;"Erdgas";"Ja";"81371";"München";"BY";1980;"in Betrieb";79,7;"Nein";79,7;"Nein";79,7;"Nein";79,7;"Nein";79,7
+"BNA0683b";"Süd GT3";1;"Erdgas";"Ja";"81371";"München";"BY";1980;"in Betrieb";97,9;"Nein";97,9;"Nein";97,9;"Nein";97,9;"Nein";97,9
+"BNA0683c";"Süd GT2";1;"Erdgas";"Ja";"81371";"München";"BY";1980;"in Betrieb";97,9;"Nein";97,9;"Nein";97,9;"Nein";97,9;"Nein";97,9
+"BNA0800";"Heizkraftwerk Pforzheim
+GmbH";"Kombiblock/GuD";"Erdgas";"Ja";"75175";"Pforzheim";"BW";1980;"in Betrieb";41,2;"Nein";41,2;"Nein";41,2;"Nein";41,2;"Nein";41,2
+"BNA1187";"P&L Werk Lage";"Kessel 1/2/3";"Erdgas";"Ja";"32791";"Lage";"NW";1980;"in Betrieb";10,2;"Nein";10,2;"Nein";10,2;"Nein";10,2;"Nein";10,2
+"BNA1408";"Heizkraftwerk Evonik
+Rheinfelden";;"Erdgas";"Ja";"79618";"Rheinfelden";"BW";1980;"in Betrieb";15,7;"Nein";15,7;"Nein";15,7;"Nein";15,7;"Nein";15,7
+"BNA1658";"HKW-Mitte";;"Erdgas";"Ja";"32657";"Lemgo";"NW";1980;"in Betrieb";10,1;"Nein";10,1;"Nein";10,1;"Nein";10,1;"Nein";10,1
+"BNA0098";"HKW Schildescher Straße";;"Erdgas";"Ja";"33611";"Bielefeld";"NW";1978;"in Betrieb";23;"Nein";23;"Nein";23;"Nein";23;"Nein";23
+"BNA0239";"Huntorf";;"Erdgas";"Nein";"26931";"Elsfleth";"NI";1978;"in Betrieb";321;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1463";;;"Erdgas";"Ja";"37412";"Herzberg";"NI";1978;"in Betrieb";19,5;"Nein";19,5;"Nein";19,5;"Nein";19,5;"Nein";19,5
+"BNA0172b";"Burghausen 01 - DT";;"Erdgas";"Ja";"84489";"Burghausen";"BY";1977;"in Betrieb";50;"Nein";50;"Nein";50;"Nein";50;"Nein";50
+"BNA0374";"Staudinger";4;"Erdgas";"Nein";"63538";"Großkrotzen-
+burg";"HE";1977;"in Betrieb **";572;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0627";"Kraftwerk Mainz";"KW2";"Erdgas";"Ja";"55120";"Mainz";"RP";1977;"in Betrieb **";335;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0232c";"Werkskraftwerk Sappi Ehingen";;"Erdgas";"Ja";"89584";"Ehingen";"BW";1976;"in Betrieb";4;"Nein";4;"Nein";4;"Nein";4;"Nein";4
+"BNA0745";"Franken 1";2;"Erdgas";"Nein";"90449";"Nürnberg";"BY";1976;"saisonale
+Konservie-
+rung";440;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1104";"Heizkraftwerk";"T2";"Erdgas";"Ja";"86152";"Augsburg";"BY";1976;"in Betrieb ***";20,4;"Nein";20,4;"Nein";20,4;"Nein";20,4;"Nein";20,4
+"BNA0018";"Heizkraftwerk Alt-
+bach/Deizisau";"ALT GT C";"Erdgas";"Nein";"73776";"Altbach";"BW";1975;"in Betrieb";81;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0074";"Charlottenburg";"Charlottenburg";"Erdgas";"Ja";"10589";"Berlin";"BE";1975;"in Betrieb";144;"Nein";144;"Nein";144;"Nein";144;"Nein";144
+"BNA0419";"KWH";"B";"Erdgas";"Ja";"30419";"Hannover";"NI";1975;"Vorläufig
+Stillgelegt";102;"Nein";102;"Nein";102;"Nein";102;"Nein";102
+"BNA1458";;;"Erdgas";"Ja";"76855";"Annweiler";"RP";1975;"in Betrieb";28;"Nein";28;"Nein";28;"Nein";28;"Nein";28
+"BNA1465d";"Gaskraftwerk";;"Erdgas";"Ja";"37213";"Witzenhausen";"HE";1975;"in Betrieb";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2;"Nein";13,2
+"BNA0221a";"GT";"Block E GTE2";"Erdgas";"Nein";"40221";"Düsseldorf";"NW";1974;"in Betrieb";64,7;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0221b";"GT";"Block E GTE1";"Erdgas";"Nein";"40221";"Düsseldorf";"NW";1974;"in Betrieb";66,7;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0605";"Emsland";"C2";"Erdgas";"Ja";"49811";"Lingen";"NI";1974;"in Betrieb";359;"Nein";359;"Nein";359;"Nein";359;"Nein";359
+"BNA0659";"Kraftwerk III";"Block 312";"Erdgas";"Ja";"45772";"Marl";"NW";1974;"in Betrieb";77,6;"Nein";77,6;"Nein";77,6;"Nein";77,6;"Nein";77,6
+"BNA1285";"Sigmundshall";"Sigmundshall";"Erdgas";"Ja";"31515";"Wunstorf";"NI";1974;"in Betrieb";11;"Nein";11;"Nein";11;"Nein";11;"Nein";11
+"BNA0017";"Heizkraftwerk Alt-
+bach/Deizisau";"ALT GT B";"Erdgas";"Nein";"73776";"Altbach";"BW";1973;"in Betrieb";57;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0245a";"Emden Gas";"Gasturbine";"Erdgas";"Nein";"26725";"Emden";"NI";1973;"in Betrieb";52;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0245b";"Emden Gas";"Dampfturbine";"Erdgas";"Nein";"26725";"Emden";"NI";1973;"Vorläufig
+Stillgelegt";433;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0574a";"Landesbergen Gas";"Gasturbine";"Erdgas";"Nein";"31628";"Landesbergen";"NI";1973;"in Betrieb";56;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0574b";"Landesbergen Gas";"Dampfturbine";"Erdgas";"Nein";"31628";"Landesbergen";"NI";1973;"Vorläufig
+Stillgelegt";431;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0604";"Emsland";"B2";"Erdgas";"Ja";"49811";"Lingen";"NI";1973;"in Betrieb";359;"Nein";359;"Nein";359;"Nein";359;"Nein";359
+"BNA0658";"Kraftwerk III";"Block 311";"Erdgas";"Ja";"45772";"Marl";"NW";1973;"in Betrieb";61,1;"Nein";61,1;"Nein";61,1;"Nein";61,1;"Nein";61,1
+"BNA0744";"Franken 1";1;"Erdgas";"Nein";"90449";"Nürnberg";"BY";1973;"saisonale
+Konservie-
+rung";383;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1039";"Gersteinwerk";"F1";"Erdgas";"Nein";"59368";"Werne";"NW";1973;"in Betrieb";55;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1040";"Gersteinwerk";"G1";"Erdgas";"Nein";"59368";"Werne";"NW";1973;"in Betrieb";55;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1042";"Gersteinwerk";"I1";"Erdgas";"Nein";"59368";"Werne";"NW";1973;"in Betrieb";55;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1043";"Gersteinwerk";"I2";"Erdgas";"Nein";"59368";"Werne";"NW";1973;"Vorläufig
+Stillgelegt";355;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1044";"Gersteinwerk";"F2";"Erdgas";"Nein";"59368";"Werne";"NW";1973;"in Betrieb";355;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1045";"Gersteinwerk";"G2";"Erdgas";"Nein";"59368";"Werne";"NW";1973;"in Betrieb";355;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0752";"HKW 1";"HKW 1";"Erdgas";"Ja";"46045";"Oberhausen";"NW";1972;"in Betrieb";23,1;"Nein";23,1;"Nein";23,1;"Nein";23,1;"Nein";23,1
+"BNA1821";"Energieversogung Wedding";;"Erdgas";"Ja";"13353";"Berlin";"BE";1972;"in Betrieb";15;"Nein";15;"Nein";15;"Nein";15;"Nein";15
+"BNA0016";"Heizkraftwerk Alt-
+bach/Deizisau";"ALT GT A (Solo)";"Erdgas";"Nein";"73776";"Altbach";"BW";1971;"in Betrieb";50;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0135";"HKW-Mitte";"Block 12";"Erdgas";"Ja";"38106";"Braunschweig";"NI";1971;"in Betrieb";20;"Nein";20;"Nein";20;"Nein";20;"Nein";20
+"BNA1085";"Heizkraftwerke an der
+Friedensbrücke";"TSIII";"Erdgas";"Ja";"97080";"Würzburg";"BY";1971;"in Betrieb";23;"Nein";23;"Nein";23;"Nein";23;"Nein";23
+"BNA1523d";"Gemeinschaftskraftwerk Weig";"Block 4 (Kessel 1,
+DT 2 und 3
+anteilig)";"Erdgas";"Ja";"56727";"Mayen";"RP";1971;"Vorläufig
+Stillgelegt";8,4;"Nein";8,4;"Nein";8,4;"Nein";8,4;"Nein";8,4
+"BNA1248a";"UPM Schongau";"Dampfkraftwerk";"Erdgas";"Ja";"86956";"Schongau";"BY";1969;"in Betrieb ***";64;"Nein";64;"Nein";64;"Nein";64;"Nein";64
+"BNA1333b";"HKW Pfaffenwald";"Block 50";"Erdgas";"Ja";"70569";"Stuttgart";"BW";1969;"in Betrieb";11,3;"Nein";11,3;"Nein";11,3;"Nein";11,3;"Nein";11,3
+"BNA1333c";"HKW Pfaffenwald";"Block 60";"Erdgas";"Ja";"70569";"Stuttgart";"BW";1968;"in Betrieb";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6;"Nein";11,6
+"BNA1335b";"PKV Kraftwerk";"Kondensations-
+turbine";"Erdgas";"Nein";"26316";"Varel";"NI";1968;"in Betrieb";0,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0444";"Wintershall";"Wintershall";"Erdgas";"Ja";"36266";"Heringen";"HE";1967;"in Betrieb";69;"Nein";69;"Nein";69;"Nein";69;"Nein";69
+"BNA0101";"HKW Schildescher Straße";;"Erdgas";"Ja";"33611";"Bielefeld";"NW";1966;"in Betrieb";41;"Nein";41;"Nein";41;"Nein";41;"Nein";41
+"BNA1094";"Gaskraftwerk";"GKW";"Erdgas";"Ja";"53910";"Zülpich";"NW";1966;"in Betrieb";15,1;"Nein";15,1;"Nein";15,1;"Nein";15,1;"Nein";15,1
+"BNA1103";"UPM Augsburg";"Dampfturbine 3";"Erdgas";"Ja";"86153";"Augsburg";"BY";1966;"Vorläufig
+Stillgelegt";29;"Nein";29;"Nein";29;"Nein";29;"Nein";29
+"BNA0137";"HKW-Nord";"GT";"Erdgas";"Ja";"38112";"Braunschweig";"NI";1965;"in Betrieb";25;"Nein";25;"Nein";25;"Nein";25;"Nein";25
+"BNA1182";"HKW Merkenich";"Block 4";"Erdgas";"Ja";"50769";"Köln";"NW";1965;"in Betrieb";15,5;"Nein";15,5;"Nein";15,5;"Nein";15,5;"Nein";15,5
+"BNA1271";"Unterbreizbach";"Unterbreizbach";"Erdgas";"Ja";"36414";"Unterbreiz-
+bach";"TH";1965;"in Betrieb";20;"Nein";20;"Nein";20;"Nein";20;"Nein";20
+"BNA0804";"Hattorf";"Hattorf";"Erdgas";"Ja";"36269";"Philippsthal";"HE";1962;"in Betrieb";52;"Nein";52;"Nein";52;"Nein";52;"Nein";52
+"BNA1938";"KWK-Anlage Neukochen";"Neukochen 10";"Erdgas";"Ja";"73432";"Aalen";"BW";1960;"in Betrieb";15;"Nein";15;"Nein";15;"Nein";15;"Nein";15
+"BNA1498";"Werk Nordstemmen";;"Erdgas";"Ja";"31171";"Nordstemmen";"NI";1953;"in Betrieb";30,6;"Nein";30,6;"Nein";30,6;"Nein";30,6;"Nein";30,6
+"BNA1336";"Holthausen";;"Erdgas";"Ja";"40589";"Düsseldorf";"NW";1948;"in Betrieb";84;"Nein";84;"Nein";84;"Nein";84;"Nein";84
+"BNA0012b";"Werkskraftwerk Sappi Alfeld";"Gaskraftwerk";"Erdgas";"Ja";"31061";"Alfeld";"NI";1947;"in Betrieb";11;"Nein";11;"Nein";11;"Nein";11;"Nein";11
+"BNA0856";"HKW Schwarza";;"Erdgas";"Ja";"07407";"Rudolstadt";"TH";1936;"in Betrieb";26,5;"Nein";26,5;"Nein";26,5;"Nein";26,5;"Nein";26,5
+"BNA0755a";"Obernburg";2;"Erdgas";"Ja";"63784";"Obernburg";"BY";1920;"in Betrieb";40;"Nein";40;"Nein";40;"Nein";40;"Nein";40
+"BNA1524";"Heizkraftwerk Bomlitz";;"Erdgas";"Ja";"29699";"Bomlitz";"NI";1912;"in Betrieb";12,8;"Nein";12,8;"Nein";12,8;"Nein";12,8;"Nein";12,8
+"BNAP092";"Rheinhafendampfkraftwerk
+Block 6";"RDK 6";"Erdgas";"Nein";"76189";"Karlsruhe";"BW";;"In Planung";465;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP135";"Altbach";"GT X";"Erdgas";"Ja";"73776";"Altbach";"BW";;"In Planung";600;"Nein";600;"Nein";600;"Nein";600;"Nein";600
+"BNAP137";"Heilbronn";"GT X";"Erdgas";"Ja";"74076";"Heilbronn";"BW";;"In Planung";600;"Nein";600;"Nein";600;"Nein";600;"Nein";600
+"BNAP231";"Marbach";"GT Y";"Erdgas";"Nein";"71672";"Marbach";"BW";;"In Planung";300;"Nein";300;"Nein";300;"Nein";300;"Nein";300
+"n. v.";"GuD Kraftwerk Walsum";;"Erdgas";;;"Duisburg";"NW";;"In Planung";640;"Nein";640;"Nein";640;"Nein";640;"Nein";640
+"n. v.";"KWK Anlage Audi AG Werk
+Neckarsulm";;"Erdgas";;;"Neckarsulm";"BW";;"In Planung";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"n. v.";"Kraftwerk Biblis";;"Erdgas";;;"Biblis";"HE";;"In Planung";300;"Nein";300;"Nein";300;"Nein";300;"Nein";300
+"n. v.";"Kraftwerk Staudinger";;"Erdgas";;;"Großkrotzen-
+burg";"HE";;"In Planung";300;"Nein";300;"Nein";300;"Nein";300;"Nein";300
+"n. v.";"Kraftwerk Heyden";;"Erdgas";;;"Heyden";"NW";;"In Planung";300;"Nein";300;"Nein";300;"Nein";300;"Nein";300
+"n. v.";"GuD Anlage Aalen";;"Erdgas";;;"Aalen";"BW";;"In Planung";85;"Nein";85;"Nein";85;"Nein";85;"Nein";85
+"n. v.";"GHKW VW2";;"Erdgas";;;"Wolfsburg";"NIW";;"In Planung";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Erdgas";"Ja";;"ohne
+Zuordnung";;;"in Betrieb";3569,6;"Nein";3569,6;"Nein";3569,6;"Nein";3569,6;"Nein";3569,6
+"BNA0686";"Gemeinschaftskernkraftwerk
+Neckarwestheim II";"GKN II";"Kernenergie";"Nein";"74382";"Neckarwest-
+heim";"BW";1989;"in Betrieb";1310;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0263";"Isar 2";"KKI 2";"Kernenergie";"Nein";"84051";"Essenbach";"BY";1988;"in Betrieb";1410;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0607";"Kernkraftwerk Emsland";"KKE";"Kernenergie";"Nein";"49811";"Lingen";"NI";1988;"in Betrieb";1336;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0157";"Brokdorf";"KBR";"Kernenergie";"Nein";"25576";"Brokdorf";"SH";1986;"in Betrieb";1410;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0251";"Grohnde";"KWG";"Kernenergie";"Nein";"31857";"Emmerthal";"NI";1985;"in Betrieb";1360;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0382";"Kernkraft Gundremmingen";"C";"Kernenergie";"Nein";"89355";"Gundremmin-
+gen";"BY";1984;"in Betrieb";1288;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP034";"GKB";"GKB";"Kuppelgase";"Ja";"46238";"Bottrop";"NW";2023;"In Planung";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNAP187";"Kraftwerk Salzgitter";"Maschine 4";"Kuppelgase";"Ja";"38239";"Salzgitter";"NI";2020;"In Planung";35;"Nein";35;"Nein";35;"Nein";35;"Nein";35
+"BNA0238b";"IKW";"Block 7";"Kuppelgase";"Ja";"15890";"Eisenhütten-
+stadt";"BB";2013;"in Betrieb";56;"Nein";56;"Nein";56;"Nein";56;"Nein";56
+"BNA0864";"Kraftwerk Salzgitter";"Block 1";"Kuppelgase";"Ja";"38239";"Salzgitter";"NI";2010;"in Betrieb";97;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0865b";"Kraftwerk Salzgitter";"Block 2";"Kuppelgase";"Ja";"38239";"Salzgitter";"NI";2010;"in Betrieb";97;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1115";"Gichtgaskraftwerk Dillingen";;"Kuppelgase";"Ja";"66763";"Dillingen/Saar";"SL";2010;"in Betrieb";85;"Nein";85;"Nein";85;"Nein";85;"Nein";85
+"BNA1409";"DK Kraftwerk";;"Kuppelgase";"Ja";"47053";"Duisburg";"NW";2010;"saisonale
+Konservie-
+rung";21;"Nein";21;"Nein";21;"Nein";21;"Nein";21
+"BNA0397";"Duisburg Hamborn 5";"Block 5";"Kuppelgase";"Ja";"47166";"Hamborn";"NW";2003;"in Betrieb";225;"Nein";225;"Nein";225;"Nein";225;"Nein";225
+"BNA0396";"Duisburg Hamborn 4";"Block 4";"Kuppelgase";"Ja";"47166";"Hamborn";"NW";1976;"in Betrieb";101;"Nein";101;"Nein";101;"Nein";101;"Nein";101
+"BNA0486";"Huckingen";"B";"Kuppelgase";"Ja";"47259";"Duisburg-
+Huckingen";"NW";1976;"in Betrieb";303;"Nein";303;"Nein";303;"Nein";303;"Nein";303
+"BNA0142";"KW Mittelsbüren";"Block 4";"Kuppelgase";"Nein";"28237";"Bremen";"HB";1975;"in Betrieb";160;"Nein";160;"Nein";160;"Nein";160;"Nein";160
+"BNA0485";"Huckingen";"A";"Kuppelgase";"Ja";"47259";"Duisburg-
+Huckingen";"NW";1975;"in Betrieb";303;"Nein";303;"Nein";303;"Nein";303;"Nein";303
+"BNA0219";"Duisburg Ruhrort 4";"Block 4";"Kuppelgase";"Ja";"47166";"Duisburg -
+Ruhrort";"NW";1968;"in Betrieb";170;"Nein";170;"Nein";170;"Nein";170;"Nein";170
+"BNA0218";"Duisburg Ruhrort 3";"Block 3";"Kuppelgase";"Ja";"47166";"Duisburg -
+Ruhrort";"NW";1963;"in Betrieb";95;"Nein";95;"Nein";95;"Nein";95;"Nein";95
+"BNA0395";"Duisburg Hamborn 3";"Block 3";"Kuppelgase";"Ja";"47166";"Hamborn";"NW";1958;"in Betrieb";59;"Nein";59;"Nein";59;"Nein";59;"Nein";59
+"BNA0217";"Duisburg Ruhrort 2";"Block 2";"Kuppelgase";"Ja";"47166";"Duisburg -
+Ruhrort";"NW";1955;"in Betrieb";60;"Nein";60;"Nein";60;"Nein";60;"Nein";60
+"BNA0238a";"IKW";;"Kuppelgase";"Ja";"15890";"Eisenhütten-
+stadt";"BB";1953;"in Betrieb";45;"Nein";45;"Nein";45;"Nein";45;"Nein";45
+"BNA0863";"Kraftwerk Salzgitter";"AB";"Kuppelgase";"Ja";"38239";"Salzgitter";"NI";1939;"in Betrieb";94,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0318";"Kraftwerk Fulda";;"Mineralöl-
+produkte";"Nein";"36043";"Fulda";"HE";2011;"in Betrieb";24,8;"Nein";24,8;"Nein";24,8;"Nein";24,8;"Nein";24,8
+"BNA0894e";"IKS PCK Schwedt";"SE 4";"Mineralöl-
+produkte";"Nein";"16303";"PCK Schwedt";"BB";2011;"in Betrieb";59;"Nein";59;"Nein";59;"Nein";59;"Nein";59
+"BNA1083";"Spitzenlastanlage Barmen";"Block 2";"Mineralöl-
+produkte";"Nein";"42275";"Wuppertal";"NW";2008;"in Betrieb";60;"Nein";60;"Nein";60;"Nein";60;"Nein";60
+"BNA0547";"Shell Deutschland Oil GmbH";;"Mineralöl-
+produkte";"Ja";"50997";"Köln";"NW";2004;"in Betrieb";97,1;"Nein";97,1;"Nein";97,1;"Nein";97,1;"Nein";97,1
+"BNA0894d";"IKS PCK Schwedt";"Block 2 SE 2";"Mineralöl-
+produkte";"Ja";"16303";"PCK Schwedt";"BB";1998;"in Betrieb";106;"Nein";106;"Nein";106;"Nein";106;"Nein";106
+"BNA0596";"Raffineriekraftwerk";;"Mineralöl-
+produkte";"Ja";"06237";"Leuna";"ST";1997;"in Betrieb";92,5;"Nein";92,5;"Nein";92,5;"Nein";92,5;"Nein";92,5
+"BNA0894c";"IKS PCK Schwedt";"Block 1 SE 1";"Mineralöl-
+produkte";"Ja";"16303";"PCK Schwedt";"BB";1997;"in Betrieb";106;"Nein";106;"Nein";106;"Nein";106;"Nein";106
+"BNA1166";"Abfallentsorgungszentrum
+Asdonkshof";"Notstromdiesel";"Mineralöl-
+produkte";"Nein";"47475";"Kamp-Lintfort";"NW";1997;"in Betrieb";4,8;"Nein";4,8;"Nein";4,8;"Nein";4,8;"Nein";4,8
+"BNA0369";"Spitzenlastkraftwerk Sermuth";;"Mineralöl-
+produkte";"Nein";"04668";"Großbothen";"SN";1995;"in Betrieb";17;"Nein";17;"Nein";17;"Nein";17;"Nein";0
+"BNA0516";"MiRO";"Kesselhaus Werk 1";"Mineralöl-
+produkte";"Ja";"76187";"Karlsruhe";"BW";1995;"in Betrieb";45;"Nein";45;"Nein";45;"Nein";45;"Ja";22,5
+"BNA0517";"MiRO";"Kesselhaus Werk 2";"Mineralöl-
+produkte";"Ja";"76187";"Karlsruhe";"BW";1995;"in Betrieb";25;"Nein";25;"Nein";25;"Nein";25;"Ja";12,5
+"BNA1293d";"Kraftwerk";"Diesel/G5";"Mineralöl-
+produkte";"Nein";"50127";"Bergheim";"NW";1995;"in Betrieb";0,8;"Nein";0,8;"Nein";0,8;"Nein";0,8;"Nein";0,8
+"BNA0373";"Spitzenlastkraftwerk
+Großkayna";;"Mineralöl-
+produkte";"Nein";"06242";"Großkayna";"ST";1994;"in Betrieb";120;"Nein";120;"Nein";120;"Nein";120;"Nein";0
+"BNA0894b";"IKS PCK Schwedt";"Block 6 SE 6";"Mineralöl-
+produkte";"Nein";"16303";"PCK Schwedt";"BB";1994;"in Betrieb";34,5;"Nein";34,5;"Nein";34,5;"Nein";34,5;"Nein";0
+"BNA1337d";"Notstromdiesel";"Notstromdiesel";"Mineralöl-
+produkte";;"63741";"Aschaffenburg";"BY";1991;"in Betrieb";0,5;"Nein";0,5;"Nein";0,5;"Nein";0,5;"Nein";0,5
+"BNA1007a";"SKW Gasturbine";"SKW Gasturbine";"Mineralöl-
+produkte";"Nein";"87448";"Waltenhofen-
+Veits";"BY";1988;"in Betrieb";24;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1212";"DKW Nord";;"Mineralöl-
+Produkte";"Nein";"87719";"Mindelheim";"BY";1988;"in Betrieb";11,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1227";"DKW Leinau";;"Mineralöl-
+produkte";"Nein";"87666";"Pforzen";"BY";1983;"in Betrieb";11,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0427";"Kraftwerk Hausham";"GT 1";"Mineralöl-
+produkte";"Nein";"83734";"Hausham";"BY";1982;"in Betrieb";23,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0428";"Kraftwerk Hausham";"GT 2";"Mineralöl-
+produkte";"Nein";"83734";"Hausham";"BY";1982;"in Betrieb";23,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0429";"Kraftwerk Hausham";"GT 3";"Mineralöl-
+produkte";"Nein";"83734";"Hausham";"BY";1982;"in Betrieb";23,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0430";"Kraftwerk Hausham";"GT 4";"Mineralöl-
+produkte";"Nein";"83734";"Hausham";"BY";1982;"in Betrieb";23,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1004";"Kraftwerk Walheim";"WAL GT D";"Mineralöl-
+produkte";"Nein";"74399";"Walheim";"BW";1981;"in Betrieb";136;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1007b";"SKW Diesel";"SKW Diesel";"Mineralöl-
+produkte";"Nein";"87448";"Waltenhofen-
+Veits";"BY";1978;"in Betrieb";10,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0083";"Wilmersdorf";"Wilmersdorf GT2
+und GT3";"Mineralöl-
+produkte";"Ja";"14199";"Berlin";"BE";1977;"in Betrieb *";184;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0222";"GT";"GTKW";"Mineralöl-
+produkte";"Nein";"40233";"Düsseldorf";"NW";1977;"in Betrieb";86,2;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1092";"Zolling";"GT1 & GT2";"Mineralöl-
+produkte";"Nein";"85406";"Zolling";"BY";1976;"in Betrieb";50;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0648";"Dampfkraftwerk Marbach am
+Neckar";"Marbach III GT
+(solo)";"Mineralöl-
+produkte";"Nein";"71672";"Marbach";"BW";1975;"in Betrieb **";85;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0649";"Dampfkraftwerk Marbach am
+Neckar";"MAR III DT";"Mineralöl-
+produkte";"Nein";"71672";"Marbach";"BW";1975;"in Betrieb **";263,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1036";"Kraftwerk Werdohl-
+Elverlingsen";"E 1/2";"Mineralöl-
+produkte";"Nein";"58791";"Werdohl";"NW";1975;"Vorläufig
+Stillgelegt";206;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0141";"KW Mittelsbüren";"GT 3";"Mineralöl-
+produkte";"Nein";"28237";"Bremen";"HB";1974;"in Betrieb";86;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0379";"Ingolstadt";4;"Mineralöl-
+produkte";"Nein";"85098";"Großmehring";"BY";1974;"in Betrieb **";386;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0937";"Restmüll-Heizkraftwerk
+Stuttgart-Münster";"MÜN GT16";"Mineralöl-
+produkte";"Nein";"70376";"Stuttgart";"BW";1974;"in Betrieb";23,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0938";"Restmüll-Heizkraftwerk
+Stuttgart-Münster";"MÜN GT17";"Mineralöl-
+produkte";"Nein";"70376";"Stuttgart";"BW";1974;"in Betrieb";23,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0939b";"Restmüll-Heizkraftwerk
+Stuttgart-Münster";"MÜN GT18";"Mineralöl-
+produkte";"Nein";"70376";"Stuttgart";"BW";1974;"in Betrieb";23,3;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0993";"Irsching";3;"Mineralöl-
+produkte";"Nein";"85088";"Vohburg";"BY";1974;"in Betrieb **";415;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0378";"Ingolstadt";3;"Mineralöl-
+produkte";"Nein";"85098";"Großmehring";"BY";1973;"in Betrieb **";386;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0766";"Audorf";;"Mineralöl-
+produkte";"Nein";"24783";"Osterrönfeld";"SH";1973;"in Betrieb";87;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1060";"Wilhelmshaven";"GT";"Mineralöl-
+produkte";"Nein";"26386";"Wilhelms-
+haven";"NI";1973;"in Betrieb";56;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0759";"Itzehoe";;"Mineralöl-
+produkte";"Nein";"25588";"Oldendorf";"SH";1972;"in Betrieb";88;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0894a";"IKS PCK Schwedt";"Block 5 SE 5";"Mineralöl-
+produkte";"Ja";"16303";"PCK Schwedt";"BB";1972;"in Betrieb";28;"Ja";7;"Ja";14;"Ja";21;"Ja";14
+"BNA1015";"Wedel";"GT A";"Mineralöl-
+produkte";"Nein";"22880";"Wedel";"SH";1972;"in Betrieb";50,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1016";"Wedel";"GT B";"Mineralöl-
+produkte";"Nein";"22880";"Wedel";"SH";1972;"in Betrieb";50,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0085b";"Moabit";"Moabit GT 7";"Mineralöl-
+produkte";"Nein";"13353";"Berlin";"BE";1971;"in Betrieb";34;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0647";"Dampfkraftwerk Marbach am
+Neckar";"Marbach II GT";"Mineralöl-
+produkte";"Nein";"71672";"Marbach";"BW";1971;"in Betrieb **";77,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1280";"Kraftwerk";"D210";"Mineralöl-
+produkte";"Ja";"50389";"Wesseling";"NW";1962;"in Betrieb";90;"Ja";22,5;"Ja";45;"Ja";67,5;"Ja";45
+"BNAP230";"Marbach";"GT X";"Mineralöl-
+produkte";"Nein";"71672";"Marbach";"BW";;"In Planung";300;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Mineralöl-
+produkte";"Ja";;"ohne
+Zuordnung";;;"in Betrieb";502,3;"Nein";502,3;"Nein";502,3;"Nein";502,3;"Nein";502,3
+"BNAP088";"KW Versetz";"KW Versetz";"Pumpspeicher";"Nein";"AT";"Kaunertal";"AT";2030;"In Planung";400;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP077";"SKW Kühtai";"SKW Kühtai";"Pumpspeicher";"Nein";"AT-
+6183";"Kühtai";"AT";2026;"In Planung";130;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP099";"PSW Leutenberg";;"Pumpspeicher";"Nein";"07338";"Leutenberg";"TH";2026;"In Planung";402;"Nein";402;"Nein";402;"Nein";402;"Nein";402
+"BNAP075";"Einöden";;"Pumpspeicher";"Nein";"83126";"Flintsbach am
+Inn";"BY";2023;"In Planung";150;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP235";"Gaildorf";;"Pumpspeicher";;"74405";"Gaildorf";"BW";2020;"In Bau";16;"Nein";16;"Nein";16;"Nein";16;"Nein";16
+"BNA1910";"Vorarlberger Illwerke AG
+""Obervermuntwerk II""";"OVW II";"Pumpspeicher";"Nein";"AT-
+6794";"Partenen";"AT";2018;"in Betrieb";360;"Nein";360;"Nein";360;"Nein";360;"Nein";360
+"BNA1869";"Vorarlberger Illwerke AG
+""Rellswerk""";"REW";"Pumpspeicher";"Nein";"AT-
+6773";"Vandans";"AT";2017;"in Betrieb";12;"Nein";12;"Nein";12;"Nein";12;"Nein";12
+"BNA1675";"PSW Vianden";"Maschine 11";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";2015;"in Betrieb";195;"Nein";195;"Nein";195;"Nein";195;"Nein";195
+"BNA0975";"Rodundwerk II";"Masch. 1";"Pumpspeicher";"Nein";"AT-
+6773";"Vandans";"AT";2011;"in Betrieb";295;"Nein";295;"Nein";295;"Nein";295;"Nein";295
+"BNA0778";"Kopswerk II";"Masch. 1 bis 3";"Pumpspeicher";"Nein";"AT-
+6794";"Partenen";"AT";2008;"in Betrieb";525;"Nein";525;"Nein";525;"Nein";525;"Nein";525
+"BNA0350";"Goldisthal";"PSS A";"Pumpspeicher";"Nein";"98746";"Goldisthal";"TH";2004;"in Betrieb";1052;"Nein";1052;"Nein";1052;"Nein";1052;"Nein";1052
+"BNA0352";"Goldisthal";"PSS C";"Pumpspeicher";"Nein";"98746";"Goldisthal";"TH";2004;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0353";"Goldisthal";"PSS D";"Pumpspeicher";"Nein";"98746";"Goldisthal";"TH";2004;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0351";"Goldisthal";"PSS B";"Pumpspeicher";"Nein";"98746";"Goldisthal";"TH";2003;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0443";"Koepchenwerk";"Koepchenwerk";"Pumpspeicher";"Nein";"58313";"Herdecke";"NW";1989;"in Betrieb";165;"Nein";165;"Nein";165;"Nein";165;"Nein";165
+"BNA0972";"Leitzach 1";1;"Pumpspeicher";"Nein";"83620";"Vagen";"BY";1983;"in Betrieb";48;"Nein";48;"Nein";48;"Nein";48;"Nein";48
+"BNA0567a";"KW Kühtai";"Kühtai Ma1";"Pumpspeicher";"Nein";"AT-
+6183";"Kühtai";"AT";1981;"in Betrieb";144,5;"Nein";144,5;"Nein";144,5;"Nein";144,5;"Nein";144,5
+"BNA0567b";"KW Kühtai";"Kühtai Ma 2";"Pumpspeicher";"Nein";"AT-
+6183";"Kühtai";"AT";1981;"in Betrieb";144,5;"Nein";144,5;"Nein";144,5;"Nein";144,5;"Nein";144,5
+"BNA0652";"Markersbach";"PSS A";"Pumpspeicher";"Nein";"08352";"Markersbach";"SN";1980;"in Betrieb";1045,2;"Nein";1045,2;"Nein";1045,2;"Nein";1045,2;"Nein";1045,2
+"BNA0653";"Markersbach";"PSS B";"Pumpspeicher";"Nein";"08352";"Markersbach";"SN";1980;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0654";"Markersbach";"PSS C";"Pumpspeicher";"Nein";"08352";"Markersbach";"SN";1980;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0655";"Markersbach";"PSS D";"Pumpspeicher";"Nein";"08352";"Markersbach";"SN";1980;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0656";"Markersbach";"PSS E";"Pumpspeicher";"Nein";"08352";"Markersbach";"SN";1980;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0657";"Markersbach";"PSS F";"Pumpspeicher";"Nein";"08352";"Markersbach";"SN";1980;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0987";"PSW Vianden";"Maschine 10";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1975;"in Betrieb";196;"Nein";196;"Nein";196;"Nein";196;"Nein";196
+"BNA1019";"Wehr";"Wehr";"Pumpspeicher";"Nein";"79664";"Wehr";"BW";1975;"in Betrieb";910;"Nein";910;"Nein";910;"Nein";910;"Nein";910
+"BNA0229";"Waldeck 2";"Waldeck 2";"Pumpspeicher";"Nein";"34549";"Edertal
+Hemfurth-
+Edersee";"HE";1974;"in Betrieb";480;"Nein";480;"Nein";480;"Nein";480;"Nein";480
+"BNA0337";"PSW Langenprozelten";"entfällt";"Pumpspeicher";"Nein";"97737";"Gemünden";"BY";1974;"in Betrieb";164;"Nein";164;"Nein";164;"Nein";164;"Nein";164
+"BNA0268";"Pumpspeicherwerk Rönkhau-
+sen";"PSW";"Pumpspeicher";"Nein";"57413";"Finnentrop";"NW";1969;"in Betrieb";138;"Nein";138;"Nein";138;"Nein";138;"Nein";138
+"BNA0777";"Kopswerk I";"Masch. 1 bis 3";"Pumpspeicher";"Nein";"AT-
+6794";"Partenen";"AT";1968;"in Betrieb";247;"Nein";247;"Nein";247;"Nein";247;"Nein";247
+"BNA1032";"Wendefurth";"PSS B";"Pumpspeicher";"Nein";"38889";"Wendefurth";"ST";1968;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1031";"Wendefurth";"PSS A";"Pumpspeicher";"Nein";"38889";"Wendefurth";"ST";1967;"in Betrieb";79,7;"Nein";79,7;"Nein";79,7;"Nein";79,7;"Nein";79,7
+"BNA0046";"Säckingen";"Säckingen";"Pumpspeicher";"Nein";"79713";"Bad Säckingen";"BW";1966;"in Betrieb";360;"Nein";360;"Nein";360;"Nein";360;"Nein";360
+"BNA0467";"Hohenwarte 2";"PSS A";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";317,8;"Nein";317,8;"Nein";317,8;"Nein";317,8;"Nein";317,8
+"BNA0468";"Hohenwarte 2";"PSS B";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0469";"Hohenwarte 2";"PSS C";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0470";"Hohenwarte 2";"PSS D";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0471";"Hohenwarte 2";"PSS E";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0472";"Hohenwarte 2";"PSS F";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0473";"Hohenwarte 2";"PSS G";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0474";"Hohenwarte 2";"PSS H";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1966;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0558";"Erzhausen";;"Pumpspeicher";"Nein";"37547";"Kreiensen";"NI";1964;"in Betrieb";220;"Nein";220;"Nein";220;"Nein";220;"Nein";220
+"BNA0669";"Pumpspeicherkraftwerk Glems";"Pumpspeicher-
+kraftwerk Glems";"Pumpspeicher";"Nein";"72555";"Metzingen-
+Glems";"BW";1964;"in Betrieb";90;"Nein";90;"Nein";90;"Nein";90;"Nein";90
+"BNA0978";"PSW Vianden";"Maschine 6";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1964;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0979";"PSW Vianden";"Maschine 7";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1964;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0981";"PSW Vianden";"Maschine 9";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1964;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0980";"PSW Vianden";"Maschine 8";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1963;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0984";"PSW Vianden";"Maschine 3";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1963;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0985";"PSW Vianden";"Maschine 4";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1963;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0986";"PSW Vianden";"Maschine 5";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1963;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0982";"PSW Vianden";"Maschine 1";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1962;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0983";"PSW Vianden";"Maschine 2";"Pumpspeicher";"Nein";"L-9401";"Vianden";"LU";1962;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0973";"Leitzach 2";2;"Pumpspeicher";"Nein";"83620";"Vagen";"BY";1960;"in Betrieb";44;"Nein";44;"Nein";44;"Nein";44;"Nein";44
+"BNA0465";"Hohenwarte 1";"PSS A";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1959;"in Betrieb";59,8;"Nein";59,8;"Nein";59,8;"Nein";59,8;"Nein";59,8
+"BNA0466";"Hohenwarte 1";"PSS B";"Pumpspeicher";"Nein";"07338";"Hohenwarte";"TH";1959;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0946a";"Kraftwerksgruppe Pfreimd";"PSKW Tanzmühle";"Pumpspeicher";"Nein";"92555";"Trausnitz";"BY";1959;"in Betrieb";28;"Nein";28;"Nein";28;"Nein";28;"Nein";28
+"BNA0327";"Geesthacht";"PSS A";"Pumpspeicher";"Nein";"21502";"Geesthacht";"SH";1958;"in Betrieb";119,1;"Nein";119,1;"Nein";119,1;"Nein";119,1;"Nein";119,1
+"BNA0328";"Geesthacht";"PSS B";"Pumpspeicher";"Nein";"21502";"Geesthacht";"SH";1958;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0329";"Geesthacht";"PSS C";"Pumpspeicher";"Nein";"21502";"Geesthacht";"SH";1958;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0422";"Happurg";"Happurg";"Pumpspeicher";"Nein";"91230";"Happurg";"BY";1958;"in Betrieb";160;"Nein";160;"Nein";160;"Nein";160;"Nein";160
+"BNA0721";"Niederwartha";"PSS C";"Pumpspeicher";"Nein";"01462";"Niederwartha";"SN";1957;"in Betrieb";39,8;"Nein";39,8;"Nein";39,8;"Nein";39,8;"Nein";39,8
+"BNA0722";"Niederwartha";"PSS D";"Pumpspeicher";"Nein";"01462";"Niederwartha";"SN";1957;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0954";"Lünerseewerk";"Masch. 1 bis 5";"Pumpspeicher";"Nein";"AT-
+6774";"Tschagguns";"AT";1957;"in Betrieb";238;"Nein";238;"Nein";238;"Nein";238;"Nein";238
+"BNA0953";"Kraftwerksgruppe Pfreimd";"PSKW Reisach";"Pumpspeicher";"Nein";"92555";"Trausnitz";"BY";1955;"in Betrieb";99;"Nein";99;"Nein";99;"Nein";99;"Nein";99
+"BNA1003";"Kraftwerk Waldshut";"Waldshut";"Pumpspeicher";"Nein";"79761";"Waldshut-
+Tiengen";"BW";1951;"in Betrieb";150;"Nein";150;"Nein";150;"Nein";150;"Nein";150
+"BNA0974";"Rodundwerk I";"Masch. 1 bis 4";"Pumpspeicher";"Nein";"AT-
+6773";"Vandans";"AT";1943;"in Betrieb";198;"Nein";198;"Nein";198;"Nein";198;"Nein";198
+"BNA1071";"Witznau";"Witznau";"Pumpspeicher";"Nein";"79777";"Witznau";"BW";1943;"in Betrieb";220;"Nein";220;"Nein";220;"Nein";220;"Nein";220
+"BNA0882";"Bleiloch";"PSS A";"Pumpspeicher";"Nein";"07907";"Schleiz";"TH";1932;"in Betrieb";79,8;"Nein";79,8;"Nein";79,8;"Nein";79,8;"Nein";79,8
+"BNA0883";"Bleiloch";"PSS B";"Pumpspeicher";"Nein";"07907";"Schleiz";"TH";1932;"in Betrieb";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0228";"Waldeck1/Bringhausen";"Wal-
+deck1/Bringhause
+n";"Pumpspeicher";"Nein";"34549";"Edertal
+Hemfurth-
+Edersee";"HE";1931;"in Betrieb";145;"Nein";145;"Nein";145;"Nein";145;"Nein";145
+"BNA0426";"Häusern";"Häusern";"Pumpspeicher";"Nein";"79837";"Häusern";"BW";1931;"in Betrieb";100;"Nein";100;"Nein";100;"Nein";100;"Nein";100
+"BNA0279";"Rudolf-Fettweis-Werk";"Pumpspeicher-
+kraftwerk
+Schwarzenbach-
+werk";"Pumpspeicher";"Nein";"76596";"Forbach";"BW";1926;"in Betrieb";43;"Nein";43;"Nein";43;"Nein";43;"Nein";43
+"BNAP068";"Rudolf-Fettweis-Werk
+""Oberstufe""";"RFW-Oberstufe";"Pumpspeicher";"Nein";"76596";"Forbach";"BW";;"In Planung";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP069";"Rudolf-Fettweis-Werk
+""Unterstufe""";"RFW-Unterstufe";"Pumpspeicher";"Nein";"76596";"Forbach";"BW";;"In Planung";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP098";"Riedl";;"Pumpspeicher";"Nein";"94107";"Untergries-
+bach";"BY";;"In Planung";300;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Pumpspeicher";;;"ohne
+Zuordnung";;;"in Betrieb";1,7;"Nein";1,7;"Nein";1,7;"Nein";1,7;"Nein";1,7
+"BNAP131";"Kessel 7";;"Sonstige
+Energieträger";"Ja";"50769";"Köln";"NW";2021;"In Bau";57,6;"Nein";57,6;"Nein";57,6;"Nein";57,6;"Nein";57,6
+"n. v.";"Papierfabrik Palm";;"Sonstige
+Energieträger";;;"Aalen";"BW";2021;"In Planung";80;"Nein";80;"Nein";80;"Nein";80;"Nein";80
+"BNA0693";"Heizkraftwerk NMS";;"Sonstige
+Energieträger";"Ja";"24534";"Neumünster";"SH";2014;"in Betrieb";53,6;"Nein";53,6;"Nein";53,6;"Nein";53,6;"Nein";53,6
+"BNA0237";"EBS-Heizkraftwerk";;"Sonstige
+Energieträger";"Ja";"15890";"Eisenhütten-
+stadt";"BB";2011;"in Betrieb";23,5;"Nein";23,5;"Nein";23,5;"Nein";23,5;"Nein";23,5
+"BNA0598b";"ILK-GuD";"KT1";"Sonstige
+Energieträger";"Nein";"06237";"Leuna";"ST";2010;"in Betrieb";20;"Nein";20;"Nein";20;"Nein";20;"Nein";20
+"BNA1465a";"EBS-Kraftwerk Witzenhausen";;"Sonstige
+Energieträger";"Ja";"37213";"Witzenhausen";"HE";2009;"in Betrieb";28;"Nein";28;"Nein";28;"Nein";28;"Nein";28
+"BNA1894";;;"Sonstige
+Energieträger";"Nein";"72359";"Dotternhausen";"BW";2007;"in Betrieb";10,1;"Nein";10,1;"Nein";10,1;"Nein";10,1;"Nein";10,1
+"BNA0997";"HKW Fenne, Grubengaskraft-
+werk";"Gasmotorenanla-
+ge Fenne";"Sonstige
+Energieträger";"Ja";"66333";"Völklingen-
+Fenne";"SL";2003;"in Betrieb";42;"Nein";42;"Nein";42;"Nein";42;"Nein";42
+"BNA0598a";"ILK-EKT";"EKT";"Sonstige
+Energieträger";"Ja";"06237";"Leuna";"ST";2000;"in Betrieb";14;"Nein";14;"Nein";14;"Nein";14;"Nein";14
+"BNA0597";"ILK-GuD";"DT1";"Sonstige
+Energieträger";"Ja";"06237";"Leuna";"ST";1994;"in Betrieb";8,7;"Nein";8,7;"Nein";8,7;"Nein";8,7;"Ja";4,4
+"BNA1523c";"Gemeinschaftskraftwerk Weig";"Block 3 (Kessel 3
+und 4, DT 2 und 3
+anteilig)";"Sonstige
+Energieträger";"Ja";"56727";"Mayen";"RP";1992;"in Betrieb";10,3;"Nein";10,3;"Nein";10,3;"Nein";10,3;"Ja";5,2
+"BNA1249";"UPM Schongau";"Heizkraftwerk 2";"Sonstige
+Energieträger";"Ja";"86956";"Schongau";"BY";1989;"in Betrieb";6;"Ja";1,5;"Ja";3;"Ja";4,5;"Ja";3
+"BNA1488";;;"Sonstige
+Energieträger";"Ja";"44147";"Dortmund";"NW";1989;"in Betrieb";16;"Ja";4;"Ja";8;"Ja";12;"Ja";8
+"BNA0492";"RAG Anthrazit Ibbenbüren
+GmbH";"EVA";"Sonstige
+Energieträger";"Nein";"49477";"Ibbenbüren";"NW";1985;"in Betrieb";33,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1865";"Turbine 5";;"Sonstige
+Energieträger";"Ja";"49084";"Osnabrück";"NI";1972;"in Betrieb";9,8;"Ja";2,5;"Ja";4,9;"Ja";7,4;"Ja";4,9
+"BNA1397e";"O10";"T31";"Sonstige
+Energieträger";"Ja";"50769";"Köln";"NW";1967;"in Betrieb";33,6;"Ja";8,4;"Ja";16,8;"Ja";25,2;"Ja";16,8
+"BNA1870";"Werk Kalscheuren";;"Sonstige
+Energieträger";"Nein";"50997";"Köln";"NW";1967;"in Betrieb";26,5;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1397d";"O10";"T24";"Sonstige
+Energieträger";"Nein";"50769";"Köln";"NW";1966;"in Betrieb";10,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0616b";"Kraftwerk Nord";"S 300
+VT 1, VT 2, NT 7";"Sonstige
+Energieträger";"Ja";"67056";"Ludwigshafen";"RP";1964;"in Betrieb";87,5;"Ja";21,9;"Ja";43,8;"Ja";65,6;"Ja";43,8
+"BNA1553";;;"Sonstige
+Energieträger";"Ja";"85092";"Kösching";"BY";1964;"in Betrieb";23,3;"Ja";5,8;"Ja";11,7;"Ja";17,5;"Ja";11,7
+"BNA1397a";"O10";"T21";"Sonstige
+Energieträger";"Ja";"50769";"Köln";"NW";1963;"in Betrieb";15,5;"Ja";3,9;"Ja";7,8;"Ja";11,6;"Ja";7,8
+"BNA1397b";"O10";"T22";"Sonstige
+Energieträger";"Ja";"50769";"Köln";"NW";1963;"in Betrieb";19,2;"Ja";4,8;"Ja";9,6;"Ja";14,4;"Ja";9,6
+"BNA1397c";"O10";"T23";"Sonstige
+Energieträger";"Ja";"50769";"Köln";"NW";1963;"in Betrieb";15,5;"Ja";3,9;"Ja";7,8;"Ja";11,6;"Ja";7,8
+"BNA1864";"Turbine 4";;"Sonstige
+Energieträger";"Ja";"49084";"Osnabrück";"NI";1962;"in Betrieb";9,5;"Ja";2,4;"Ja";4,8;"Ja";7,1;"Ja";4,8
+"BNA1526";"Kraftwerk Raffinerie Heide";;"Sonstige
+Energieträger";"Ja";"25770";"Hemminstedt";"SH";1961;"in Betrieb";44,5;"Ja";11,1;"Ja";22,3;"Ja";33,4;"Ja";22,3
+"BNA0662b";"Kraftwerk I";"Dampfwirtschaft
+(6 Einzelturbinen)";"Sonstige
+Energieträger";"Ja";"45772";"Marl";"NW";1939;"in Betrieb";169,3;"Ja";42,3;"Ja";84,7;"Ja";127;"Ja";84,7
+"BNA1399";"Oxea GmbH";;"Sonstige
+Energieträger";"Ja";"46147";"Oberhausen";"NW";1929;"in Betrieb";38;"Ja";9,5;"Ja";19;"Ja";28,5;"Ja";19
+"BNAP238";"Kessel 9,10,11";"Kessel 9,10,11";"Sonstige
+Energieträger";"Ja";"50997";"Köln";"NW";;"In Planung";0;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"KW<10 MW";;;"Sonstige
+Energieträger";"Ja";;"ohne
+Zuordnung";;;"in Betrieb";672,1;"Nein";672,1;"Nein";672,1;"Nein";672,1;"Nein";672,1
+"BNAP062";"KW Lünen";"Lünen 8";"Steinkohle";"Nein";"44536";"Lünen";"NW";2022;"In Planung";735;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNAP029";"Datteln";"Datteln 4";"Steinkohle";"Ja";"45711";"Datteln";"NW";2020;"In Bau";1052;"Ja";263;"Ja";526;"Ja";789;"Ja";526
+"BNA0646b";"GKM";"Block 9";"Steinkohle";"Ja";"68199";"Mannheim";"BW";2015;"in Betrieb";843;"Ja";210,8;"Ja";421,5;"Ja";632,3;"Ja";421,5
+"BNA1558";"Moorburg B";"B";"Steinkohle";"Ja";"21079";"Hamburg";"HH";2015;"in Betrieb";800;"Ja";200;"Ja";400;"Ja";600;"Ja";400
+"BNA1673";"Moorburg A";"A";"Steinkohle";"Ja";"21079";"Hamburg";"HH";2015;"in Betrieb";800;"Ja";200;"Ja";400;"Ja";600;"Ja";400
+"BNA1674";"Kraftwerk Wilhelmshaven";"Kraftwerk
+Wilhelmshaven";"Steinkohle";"Nein";"26386";"Wilhelms-
+haven";"NI";2015;"in Betrieb";731;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0413c";"Westfalen";"E";"Steinkohle";"Nein";"59071";"Hamm-
+Uentrop";"NW";2014;"in Betrieb";763,7;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0518b";"Rheinhafen-Dampfkraftwerk";"RDK 8";"Steinkohle";"Ja";"76189";"Karlsruhe";"BW";2014;"in Betrieb";834;"Ja";208,5;"Ja";417;"Ja";625,5;"Ja";417
+"BNA0216b";"KW Walsum";"Walsum 10";"Steinkohle";"Ja";"47180";"Duisburg";"NW";2013;"in Betrieb";725;"Ja";181,3;"Ja";362,5;"Ja";543,8;"Ja";362,5
+"BNA1508";"Trianel Kohlekraftwerk Lünen";;"Steinkohle";"Ja";"44536";"Lünen";"NW";2013;"in Betrieb";735;"Ja";183,8;"Ja";367,5;"Ja";551,3;"Ja";367,5
+"BNA0644";"GKM";"Block 6";"Steinkohle";"Ja";"68199";"Mannheim";"BW";2005;"in Betrieb";255;"Ja";63,8;"Ja";127,5;"Ja";191,3;"Ja";127,5
+"BNA1075a";"HKW Nord";"Generator A";"Steinkohle";"Ja";"38436";"Wolfsburg";"NI";2000;"in Betrieb";61,5;"Ja";15,4;"Ja";30,8;"Ja";46,1;"Ja";30,8
+"BNA1075b";"HKW Nord";"Generator B";"Steinkohle";"Ja";"38436";"Wolfsburg";"NI";2000;"in Betrieb";61,5;"Ja";15,4;"Ja";30,8;"Ja";46,1;"Ja";30,8
+"BNA0019";"Heizkraftwerk Alt-
+bach/Deizisau";"ALT HKW 2 (DT
+Solobetrieb)";"Steinkohle";"Ja";"73776";"Altbach";"BW";1997;"in Betrieb";336;"Ja";84;"Ja";168;"Ja";252;"Ja";168
+"BNA0510b";"HKW Karcherstr.";20;"Steinkohle";"Ja";"67655";"Kaiserslautern";"RP";1996;"in Betrieb";13,4;"Ja";3,4;"Ja";6,7;"Ja";10,1;"Ja";6,7
+"BNA0849";"KNG Kraftwerk Rostock";"Rostock";"Steinkohle";"Ja";"18147";"Rostock";"MV";1994;"in Betrieb";514;"Ja";128,5;"Ja";257;"Ja";385,5;"Ja";257
+"BNA0402";"Tiefstack";"Tiefstack";"Steinkohle";"Ja";"22113";"Hamburg";"HH";1993;"in Betrieb";194;"Ja";48,5;"Ja";97;"Ja";145,5;"Ja";97
+"BNA0646a";"GKM";"Block 8";"Steinkohle";"Ja";"68199";"Mannheim";"BW";1993;"in Betrieb";435;"Ja";108,8;"Ja";217,5;"Ja";326,3;"Ja";217,5
+"BNA0270";"Heizkraftwerk FL";"Block 11";"Steinkohle";"Ja";"24939";"Flensburg";"SH";1992;"in Betrieb";31;"Ja";7,8;"Ja";15,5;"Ja";23,3;"Ja";15,5
+"BNA0377";"Staudinger";5;"Steinkohle";"Ja";"63538";"Großkrotzen-
+burg";"HE";1992;"in Betrieb";510;"Ja";127,5;"Ja";255;"Ja";382,5;"Ja";255
+"BNA0969b";"Nord 2";2;"Steinkohle";"Ja";"85774";"Unterföhring";"BY";1991;"in Betrieb *";332,7;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0085a";"Moabit";"Moabit A";"Steinkohle";"Ja";"13353";"Berlin";"BE";1990;"in Betrieb";89;"Ja";22,3;"Ja";44,5;"Ja";66,8;"Ja";44,5
+"BNA0758";"Heizkraftwerk Offenbach";;"Steinkohle";"Ja";"63067";"Offenbach";"HE";1990;"in Betrieb";54;"Ja";13,5;"Ja";27;"Ja";40,5;"Ja";27
+"BNA0801";"Heizkraftwerk Pforzheim
+GmbH";"Wirbelschicht-
+block";"Steinkohle";"Ja";"75175";"Pforzheim";"BW";1990;"in Betrieb";26,9;"Ja";6,7;"Ja";13,5;"Ja";20,2;"Ja";13,5
+"BNA1500";"Werk Uelzen";;"Steinkohle";"Ja";"29525";"Uelzen";"NI";1990;"in Betrieb";40;"Ja";10;"Ja";20;"Ja";30;"Ja";20
+"BNA0144";"KW Hastedt";"Block 15";"Steinkohle";"Ja";"28207";"Bremen";"HB";1989;"in Betrieb";119;"Ja";29,8;"Ja";59,5;"Ja";89,3;"Ja";59,5
+"BNA0289b";"HKW West";"Block 2";"Steinkohle";"Ja";"60627";"Frankfurt am
+Main";"HE";1989;"in Betrieb";61,5;"Ja";15,4;"Ja";30,8;"Ja";46,1;"Ja";30,8
+"BNA0290";"HKW West";"Block 3";"Steinkohle";"Ja";"60627";"Frankfurt am
+Main";"HE";1989;"in Betrieb";61,5;"Ja";15,4;"Ja";30,8;"Ja";46,1;"Ja";30,8
+"BNA0420";"GKH";"Block1";"Steinkohle";"Ja";"30419";"Hannover";"NI";1989;"in Betrieb";136;"Ja";34;"Ja";68;"Ja";102;"Ja";68
+"BNA0421";"GKH";"Block2";"Steinkohle";"Ja";"30419";"Hannover";"NI";1989;"in Betrieb";136;"Ja";34;"Ja";68;"Ja";102;"Ja";68
+"BNA0450";"KW Herne";"Herne 4";"Steinkohle";"Ja";"44655";"Herne";"NW";1989;"in Betrieb";449;"Ja";112,3;"Ja";224,5;"Ja";336,8;"Ja";224,5
+"BNA0498";"Heizkraftwerk";"Block B";"Steinkohle";"Ja";"65926";"Industriepark
+Höchst";"HE";1989;"in Betrieb";66;"Ja";16,5;"Ja";33;"Ja";49,5;"Ja";33
+"BNA0999";"Heizkraftwerk";"HKV";"Steinkohle";"Ja";"66333";"Völklingen-
+Fenne";"SL";1989;"in Betrieb";211;"Ja";52,8;"Ja";105,5;"Ja";158,3;"Ja";105,5
+"BNA0087";"Reuter West";"Reuter West E";"Steinkohle";"Ja";"13599";"Berlin";"BE";1988;"in Betrieb";282;"Ja";70,5;"Ja";141;"Ja";211,5;"Ja";141
+"BNA0216a";"KW Walsum";"Walsum 9";"Steinkohle";"Ja";"47180";"Duisburg";"NW";1988;"in Betrieb";370;"Ja";92,5;"Ja";185;"Ja";277,5;"Ja";185
+"BNA0271";"Heizkraftwerk FL";"Block 10";"Steinkohle";"Ja";"24939";"Flensburg";"SH";1988;"in Betrieb";33;"Ja";8,3;"Ja";16,5;"Ja";24,8;"Ja";16,5
+"BNA0861b";"HKW Römerbrücke";"Kohleanlage";"Steinkohle";"Ja";"66121";"Saarbrücken";"SL";1988;"saisonale
+Konservie-
+rung";50;"Ja";12,5;"Ja";25;"Ja";37,5;"Ja";25
+"BNA0086";"Reuter West";"Reuter West D";"Steinkohle";"Ja";"13599";"Berlin";"BE";1987;"in Betrieb";282;"Ja";70,5;"Ja";141;"Ja";211,5;"Ja";141
+"BNA0793";"Heyden";4;"Steinkohle";"Nein";"32469";"Petershagen";"NW";1987;"in Betrieb";875;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1093";"Zolling";"Zolling Block 5";"Steinkohle";"Ja";"85406";"Zolling";"BY";1986;"in Betrieb";472;"Ja";118;"Ja";236;"Ja";354;"Ja";236
+"BNA1467";;;"Steinkohle";"Ja";"77704";"Oberkirch";"BW";1986;"in Betrieb";18,5;"Ja";4,6;"Ja";9,3;"Ja";13,9;"Ja";9,3
+"BNA0020";"Heizkraftwerk Alt-
+bach/Deizisau";"ALT HKW 1";"Steinkohle";"Ja";"73776";"Altbach";"BW";1985;"in Betrieb **";433;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0272";"Heizkraftwerk FL";"Block 9";"Steinkohle";"Ja";"24939";"Flensburg";"SH";1985;"in Betrieb";33;"Ja";8,3;"Ja";16,5;"Ja";24,8;"Ja";16,5
+"BNA0336";"FWK Buer";;"Steinkohle";"Ja";"45896";"Gelsenkirchen";"NW";1985;"in Betrieb";70;"Ja";17,5;"Ja";35;"Ja";52,5;"Ja";35
+"BNA0434";"Heizkraftwerk Heilbronn";"HLB 7";"Steinkohle";"Ja";"74076";"Heilbronn";"BW";1985;"in Betrieb";778;"Ja";194,5;"Ja";389;"Ja";583,5;"Ja";389
+"BNA0493";"Ibbenbüren";"B";"Steinkohle";"Ja";"49479";"Ibbenbüren";"NW";1985;"saisonale
+Konservie-
+rung";794;"Ja";198,5;"Ja";397;"Ja";595,5;"Ja";397
+"BNA0518a";"Rheinhafen-Dampfkraftwerk";"RDK 7";"Steinkohle";"Ja";"76189";"Karlsruhe";"BW";1985;"in Betrieb";517;"Ja";129,3;"Ja";258,5;"Ja";387,8;"Ja";258,5
+"BNA1076a";"HKW West";"Block 1";"Steinkohle";"Ja";"38436";"Wolfsburg";"NI";1985;"in Betrieb";138,5;"Ja";34,6;"Ja";69,3;"Ja";103,9;"Ja";69,3
+"BNA1076b";"HKW West";"Block 2";"Steinkohle";"Ja";"38436";"Wolfsburg";"NI";1985;"in Betrieb";138,5;"Ja";34,6;"Ja";69,3;"Ja";103,9;"Ja";69,3
+"BNA0138";"HKW-Mitte";"Block 1";"Steinkohle";"Ja";"38106";"Braunschweig";"NI";1984;"in Betrieb";43,3;"Ja";10,8;"Ja";21,7;"Ja";32,5;"Ja";21,7
+"BNA0936";"Restmüll-Heizkraftwerk
+Stuttgart-Münster";"MÜN DT15";"Steinkohle";"Ja";"70376";"Stuttgart";"BW";1984;"in Betrieb";45;"Ja";11,3;"Ja";22,5;"Ja";33,8;"Ja";22,5
+"BNA0093";"Kraftwerk Bexbach";"BEX";"Steinkohle";"Nein";"66450";"Bexbach";"SL";1983;"in Betrieb ***";726;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0662a";"Kraftwerk I";"Block 5";"Steinkohle";"Ja";"45772";"Marl";"NW";1983;"in Betrieb";68,4;"Ja";17,1;"Ja";34,2;"Ja";51,3;"Ja";34,2
+"BNA0645";"GKM";"Block 7";"Steinkohle";"Ja";"68199";"Mannheim";"BW";1982;"saisonale
+Konservie-
+rung";425;"Ja";106,3;"Ja";212,5;"Ja";318,8;"Ja";212,5
+"BNA0935";"Restmüll-Heizkraftwerk
+Stuttgart-Münster";"MÜN DT12";"Steinkohle";"Ja";"70376";"Stuttgart";"BW";1982;"in Betrieb";45;"Ja";11,3;"Ja";22,5;"Ja";33,8;"Ja";22,5
+"BNA0998";"Modellkraftwerk";"MKV";"Steinkohle";"Ja";"66333";"Völklingen-
+Fenne";"SL";1982;"saisonale
+Konservie-
+rung";179;"Ja";44,8;"Ja";89,5;"Ja";134,3;"Ja";89,5
+"BNA0067";"Bergkamen";"A";"Steinkohle";"Nein";"59192";"Bergkamen";"NW";1981;"saisonale
+Konservie-
+rung";717;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0261b";"HKW Erlangen";"K6 DT2";"Steinkohle";"Ja";"91052";"Erlangen";"BY";1980;"in Betrieb *";17,4;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0146";"KW Hafen";"Block 6";"Steinkohle";"Ja";"28237";"Bremen";"HB";1979;"in Betrieb";303;"Ja";75,8;"Ja";151,5;"Ja";227,3;"Ja";151,5
+"BNA0464";"KWM";"Block3";"Steinkohle";"Nein";"31249";"Hohenhameln
+OT Mehrum";"NI";1979;"in Betrieb";690;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1405a";"Heizkraftwerk Magirusstraße";;"Steinkohle";"Ja";"89077";"Ulm";"BW";1978;"in Betrieb";20,7;"Ja";5,2;"Ja";10,4;"Ja";15,5;"Ja";10,4
+"BNA0820";"Weiher";"Weiher III";"Steinkohle";"Ja";"66287";"Quierschied";"SL";1976;"in Betrieb ***";655,6;"Ja";163,9;"Ja";327,8;"Ja";491,7;"Ja";327,8
+"BNA1061";"Wilhelmshaven";1;"Steinkohle";"Nein";"26386";"Wilhelms-
+haven";"NI";1976;"in Betrieb";757;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0834";"Solvay Kraftwerk Rheinberg";;"Steinkohle";"Ja";"47495";"Rheinberg";"NW";1975;"in Betrieb";79;"Ja";19,8;"Ja";39,5;"Ja";59,3;"Ja";39,5
+"BNA0557b";"Kraftwerk N 230";;"Steinkohle";"Ja";"47812";"Krefeld-
+Uerdingen";"NW";1971;"in Betrieb";110;"Ja";27,5;"Ja";55;"Ja";82,5;"Ja";55
+"BNA0660";"Kraftwerk I";"Block 4";"Steinkohle";"Ja";"45772";"Marl";"NW";1971;"in Betrieb";55,6;"Ja";13,9;"Ja";27,8;"Ja";41,7;"Ja";27,8
+"BNA0147";"Farge";"Farge";"Steinkohle";"Nein";"28777";"Bremen";"HB";1969;"in Betrieb";350;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0331";"Scholven";"C";"Steinkohle";"Ja";"45896";"Gelsenkirchen";"NW";1969;"in Betrieb";345;"Ja";86,3;"Ja";172,5;"Ja";258,8;"Ja";172,5
+"BNA0926b";"Heizkraftwerk der Sappi
+Stockstadt GmbH";"Konventionelles
+Sammelschienen-
+kraftwerk Turbine
+7";"Steinkohle";"Ja";"63811";"Stockstadt";"BY";1969;"in Betrieb";24,8;"Ja";6,2;"Ja";12,4;"Ja";18,6;"Ja";12,4
+"BNA0332";"Scholven";"B";"Steinkohle";"Ja";"45896";"Gelsenkirchen";"NW";1968;"in Betrieb";345;"Ja";86,3;"Ja";172,5;"Ja";258,8;"Ja";172,5
+"BNA1006";"Kraftwerk Walheim";"WAL 2";"Steinkohle";"Nein";"74399";"Walheim";"BW";1967;"in Betrieb **";148;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0433";"Heizkraftwerk Heilbronn";"HLB 6";"Steinkohle";"Nein";"74076";"Heilbronn";"BW";1966;"in Betrieb **";125;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0432";"Heizkraftwerk Heilbronn";"HLB 5";"Steinkohle";"Nein";"74076";"Heilbronn";"BW";1965;"in Betrieb **";125;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA1005";"Kraftwerk Walheim";"WAL 1";"Steinkohle";"Nein";"74399";"Walheim";"BW";1964;"in Betrieb **";96;"Nein";0;"Nein";0;"Nein";0;"Nein";0
+"BNA0403";"Wedel";"Wedel 2";"Steinkohle";"Ja";"22880";"Wedel";"SH";1962;"in Betrieb";123;"Ja";30,8;"Ja";61,5;"Ja";92,3;"Ja";61,5
+"BNA0600b";"G-Kraftwerk";;"Steinkohle";"Ja";"51368";"Leverkusen";"NW";1962;"in Betrieb";103;"Ja";25,8;"Ja";51,5;"Ja";77,3;"Ja";51,5
+"BNA0404";"Wedel";"Wedel 1";"Steinkohle";"Ja";"22880";"Wedel";"SH";1961;"in Betrieb";137;"Ja";34,3;"Ja";68,5;"Ja";102,8;"Ja";68,5
+"BNA0557a";"Kraftwerk L 57";;"Steinkohle";"Ja";"47812";"Krefeld-
+Uerdingen";"NW";1957;"in Betrieb";26;"Ja";6,5;"Ja";13;"Ja";19,5;"Ja";13
+"BNA1331";"Reno De Medici";"HD - Kraftwerk";"Steinkohle";"Ja";"59821";"Arnsberg";"NW";1923;"in Betrieb";19;"Ja";4,7;"Ja";9,5;"Ja";14,2;"Ja";9,5
+"KW<10 MW";;;"Steinkohle";"Ja";;"ohne
+Zuordnung";;;"in Betrieb";19,7;"Nein";0;"Nein";0;"Nein";0;"Nein";0

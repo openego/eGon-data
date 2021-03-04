@@ -13,6 +13,9 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.power_plants as power_plants
+import egon.data.importing.nep_input_data as nep_input
+import egon.data.importing.etrago as etrago
 import egon.data.processing.substation as substation
 
 # Prepare connection to db for operators
@@ -109,6 +112,33 @@ with airflow.DAG(
         python_callable=import_dr.insert_data,
     )
     vg250_clean_and_prepare >> demandregio_import
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+    setup >> power_plant_tables
+
+    # NEP data import
+    create_tables = PythonOperator(
+        task_id="create-scenario-tables",
+        python_callable=nep_input.create_scenario_input_tables)
+
+    nep_insert_data = PythonOperator(
+        task_id="insert-nep-data",
+        python_callable=nep_input.insert_data_nep)
+
+    setup >> create_tables >> nep_insert_data
+    vg250_clean_and_prepare >> nep_insert_data
+
+
+    # setting etrago input tables
+    etrago_input_data = PythonOperator(
+        task_id = "setting-etrago-input-tables",
+        python_callable = etrago.create_tables
+    )
+    setup >> etrago_input_data
 
     # Substation extraction
     substation_tables = PythonOperator(

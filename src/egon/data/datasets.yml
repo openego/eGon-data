@@ -99,3 +99,8 @@ ehv_substation:
 
 
 
+scenario_input:
+  eGon2035:
+    paths:
+      "capacities": "NEP2035_V2021_scnC2035.xlsx"
+      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
