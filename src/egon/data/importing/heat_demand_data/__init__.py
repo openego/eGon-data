@@ -497,27 +497,31 @@ def heat_demand_to_db_table():
     The final demands are stored in "demand.heat_demands".
     Note that the table "demand.heat_demands" is dropped prior to the import,
     so make sure you're not loosing valuable data.
-    
-    
+
+
     Parameters
     ----------
         None
-    
+
     Returns
     -------
         None
 
     Notes
     -----
-        
+
     TODO
     ----
         make it work
-    
+
     """
-    sources = ["scenario_raster/"]
-    sources = ["*.tif"] if not sources else sources
-    sources = [path for pattern in sources for path in Path(".").glob(pattern)]
+
+
+    # sources = ["scenario_raster/"]
+    sources = ["*.tif"] # if not sources else sources
+    sources = [path for pattern in sources for path in
+               Path(os.path.join(os.path.dirname(__file__),'scenario_raster')
+                    ).glob(pattern)]
 
     rasters = "heat_demand_rasters"
     engine = db.engine()

@@ -106,6 +106,10 @@ packages are required too. Right now these are:
   On recent Ubuntu version you can install it via
   :code:`sudo apt install osm2pgsql`.
 
+* `postgis <https://postgis.net/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install postgis`.
+
 
 Installation
 ============

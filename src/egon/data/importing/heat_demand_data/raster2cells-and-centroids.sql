@@ -18,7 +18,7 @@ INSERT INTO demand.heat (
 ) SELECT
   (demands.centroid).val AS demand,
   sector,
-  scenario,
+  (regexp_matches(filename, '(ser|res)_hd_([^.]*).*', 'i'))[2] AS scenario,
   (demands.centroid).geom AS centroid,
   (demands.polygon).geom AS polygon,
   population.gid as population_gid
@@ -28,7 +28,7 @@ FROM (
     ST_PixelAsPolygons(rast, 1) AS polygon,
     '{"res": "residential", "ser": "service"}'::json
     ->> substring(filename, 1, 3) AS sector,
-    (regexp_matches(filename, '(ser|res)_hd_([^.]*).*', 'i'))[2] AS scenario
+    filename
   FROM heat_demand_rasters
 ) AS demands
 LEFT JOIN (
