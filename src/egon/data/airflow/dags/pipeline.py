@@ -115,7 +115,12 @@ with airflow.DAG(
         task_id="create-power-plant-tables",
         python_callable=power_plants.create_tables
     )
-    setup >> power_plant_tables
+
+    power_plant_import = PythonOperator(
+        task_id="import-power-plants",
+        python_callable=power_plants.insert_power_plants()
+    )
+    setup >> power_plant_tables >> power_plant_import
 
 
     # NEP data import

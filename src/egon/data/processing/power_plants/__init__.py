@@ -15,15 +15,15 @@ class EgonPowerPlants(Base):
     __tablename__ = 'egon_power_plants'
     __table_args__ = {'schema': 'supply'}
     id = Column(Integer, Sequence('pp_seq'), primary_key=True)
-    sources = Column(JSONB)     # source of data (MaStr/NEP/...)
-    source_id = Column(JSONB)  # id used in original source
+    sources = Column(JSONB)
+    source_id = Column(JSONB)
     carrier = Column(String)
     chp = Column(Boolean)
     el_capacity = Column(Float)
     th_capacity = Column(Float)
     subst_id = Column(Integer)
     voltage_level = Column(Integer)
-    w_id = Column(Integer)      # id of corresponding weather grid cell
+    w_id = Column(Integer)
     scenario = Column(String)
     geom = Column(Geometry('POINT', 4326))
 
@@ -38,8 +38,24 @@ def create_tables():
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 def scale_prox2now(df, target, level='federal_state'):
+    """ Scale installed capacities linear to status quo power plants
 
-    # TODO: check if Bruttoleistung or Nettonennleistung is needed
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Status Quo power plants
+    target : pandas.Series
+        Target values for future sceanrio
+    level : str, optional
+        Scale per 'federal_state' or 'country'. The default is 'federal_state'.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Future power plants
+
+    """
+
     if level=='federal_state':
         df.loc[:,'Nettonennleistung'] = df.groupby(
             df.Bundesland).Nettonennleistung.apply(
@@ -51,11 +67,24 @@ def scale_prox2now(df, target, level='federal_state'):
 
     return df
 
+def select_target(carrier, scenario):
+    """ Select installed capacity per scenario and carrier
 
-def insert_power_plants(carrier = 'biomass', scenario='eGon2035'):
+    Parameters
+    ----------
+    carrier : str
+        Name of energy carrier
+    scenario : str
+        Name of scenario
 
-    # import target values from NEP 2021, scneario C 2035
-    target = pd.read_sql(f"""SELECT DISTINCT ON (b.gen)
+    Returns
+    -------
+    pandas.Series
+        Target values for carrier and scenario
+
+    """
+
+    return pd.read_sql(f"""SELECT DISTINCT ON (b.gen)
                          REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
                          a.capacity
                          FROM supply.egon_scenario_capacities a,
@@ -67,20 +96,20 @@ def insert_power_plants(carrier = 'biomass', scenario='eGon2035'):
                                            'Bayern (Bodensee)')""",
                          con=db.engine()).set_index('state').capacity
 
-    # temporary use local data for MaStR
-    path ='/home/clara/GitHub/eGon-data/src/egon/data/importing/'
-    mastr = pd.read_csv(path+f'bnetza_mastr_{carrier}_cleaned.csv')
+def filter_mastr_geometry(mastr):
+    """ Filter data from MaStR by geometry
 
-    # Drop entries without federal state or 'AusschließlichWirtschaftszone'
-    mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
-        """SELECT DISTINCT ON (gen)
-        REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-        FROM boundaries.vg250_lan""",
-        con=db.engine()).states.values)]
+    Parameters
+    ----------
+    mastr : pandas.DataFrame
+        All power plants listed in MaStR
 
-    # Scale capacities to meet target values
-    mastr = scale_prox2now(mastr, target, level='federal_state')
+    Returns
+    -------
+    mastr_loc : pandas.DataFrame
+        Power plants listed in MaStR with valid geometry
 
+    """
 
     # Drop entries without geometry for insert
     mastr_loc = mastr[
@@ -98,6 +127,44 @@ def insert_power_plants(carrier = 'biomass', scenario='eGon2035'):
              con = db.engine()).to_crs(4326),
         mastr_loc, how='right').drop('index_left', axis=1)
 
+    return mastr_loc
+
+
+def insert_biomass_plants(scenario='eGon2035'):
+    """ Insert biomass power plants of future scenario
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of scenario. The default is 'eGon2035'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # import target values from NEP 2021, scneario C 2035
+    target = select_target('biomass', scenario)
+
+    # temporary use local data for MaStR
+    path ='/home/clara/GitHub/eGon-data/src/egon/data/importing/'
+    mastr = pd.read_csv(path+'bnetza_mastr_biomass_cleaned.csv')
+
+    # Drop entries without federal state or 'AusschließlichWirtschaftszone'
+    mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
+        """SELECT DISTINCT ON (gen)
+        REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
+        FROM boundaries.vg250_lan""",
+        con=db.engine()).states.values)]
+
+    # Scale capacities to meet target values
+    mastr = scale_prox2now(mastr, target, level='federal_state')
+
+    # Choose only entries with valid geometries
+    mastr_loc = filter_mastr_geometry(mastr)
+    # TODO: Deal with power plants without geometry
+
     # Insert entries with location
     # TODO: change to gdf.to_postgis and update for sources to avoid loop?
     session = sessionmaker(bind=db.engine())()
@@ -107,7 +174,7 @@ def insert_power_plants(carrier = 'biomass', scenario='eGon2035'):
                           'el_capacity': 'MaStR scaled with NEP 2021',
                           'th_capacity': 'MaStR'},
             source_id = {'MastrNummer': row.EinheitMastrNummer},
-            carrier = carrier,
+            carrier = 'biomass',
             chp = type(row.KwkMastrNummer)!=float,
             el_capacity = row.Nettonennleistung,
             th_capacity = row.ThermischeNutzleistung/1000,
@@ -118,3 +185,80 @@ def insert_power_plants(carrier = 'biomass', scenario='eGon2035'):
 
     session.commit()
 
+def insert_hydro_plants(scenario='eGon2035'):
+    """ Insert hydro power plants of future scenario
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of scenario. The default is 'eGon2035'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Map MaStR carriers to eGon carriers
+    map_carrier = {
+        'run_of_river': ['Laufwasseranlage',
+                         'WasserkraftanlageInTrinkwassersystem',
+                         'WasserkraftanlageInBrauchwassersystem'],
+         'reservoir': ['Speicherwasseranlage']}
+
+    for carrier in map_carrier.keys():
+        # import target values from NEP 2021, scneario C 2035
+        target = select_target(carrier, scenario)
+
+        # temporary use local data for MaStR
+        path ='/home/clara/GitHub/eGon-data/src/egon/data/importing/'
+        mastr = pd.read_csv(path+'bnetza_mastr_hydro_cleaned.csv')
+
+        # Choose only plants with specific carriers
+        mastr = mastr[mastr.ArtDerWasserkraftanlage.isin(map_carrier[carrier])]
+
+        # Drop entries without federal state or 'AusschließlichWirtschaftszone'
+        mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
+            """SELECT DISTINCT ON (gen)
+            REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
+            FROM boundaries.vg250_lan""",
+            con=db.engine()).states.values)]
+
+        # Scale capacities to meet target values
+        mastr = scale_prox2now(mastr, target, level='federal_state')
+
+        # Choose only entries with valid geometries
+        mastr_loc = filter_mastr_geometry(mastr)
+        # TODO: Deal with power plants without geometry
+
+        # Insert entries with location
+        # TODO: change to gdf.to_postgis and update for sources to avoid loop?
+        session = sessionmaker(bind=db.engine())()
+        for i, row in mastr_loc.iterrows():
+            entry = EgonPowerPlants(
+                sources ={'chp': 'MaStR',
+                              'el_capacity': 'MaStR scaled with NEP 2021'},
+                source_id = {'MastrNummer': row.EinheitMastrNummer},
+                carrier = carrier,
+                chp = type(row.KwkMastrNummer)!=float,
+                el_capacity = row.Nettonennleistung,
+                scenario = scenario,
+                geom = f'SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})'
+                )
+            session.add(entry)
+
+        session.commit()
+
+
+def insert_power_plants():
+    """ Insert power plants in database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    for scenario in ['eGon2035']:
+        insert_biomass_plants(scenario)
+        insert_hydro_plants(scenario)
