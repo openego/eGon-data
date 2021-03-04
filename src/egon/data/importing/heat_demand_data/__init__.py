@@ -14,6 +14,8 @@ from urllib.request import urlretrieve
 import os
 import zipfile
 
+from jinja2 import Template
+
 from egon.data import db, subprocess
 import egon.data.config
 
@@ -535,7 +537,9 @@ def heat_demand_to_db_table():
         connection.execute(import_rasters)
         connection.execute(f'ANALYZE "{rasters}"')
         with open("raster2cells-and-centroids.sql") as convert:
-            connection.execute(convert.read())
+            connection.execute(
+                Template(convert.read()).render(version="0.0.0")
+            )
               
 # if __name__ == "__main__":
 #     main()
