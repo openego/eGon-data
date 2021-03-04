@@ -35,6 +35,8 @@ Added
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
 * DemandRegio data import for annual electricity demands
   `#5 <https://github.com/openego/eGon-data/issues/5>`_
+* Download cleaned open-MaStR data from Zenodo
+  `#14 <https://github.com/openego/eGon-data/issues/14>`_
 
 Changed
 -------
