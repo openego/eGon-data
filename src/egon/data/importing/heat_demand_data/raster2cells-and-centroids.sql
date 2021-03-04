@@ -21,7 +21,7 @@ INSERT INTO demand.heat (
   scenario,
   (demands.centroid).geom AS centroid,
   (demands.polygon).geom AS polygon,
-  population.gid as population_gid
+  population.gid AS population_gid
 FROM (
   SELECT
     ST_PixelAsCentroids(rast, 1) AS centroid,
