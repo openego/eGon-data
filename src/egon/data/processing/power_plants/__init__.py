@@ -68,6 +68,8 @@ def scale_prox2now(df, target, level='federal_state'):
         df.loc[:,'Nettonennleistung'] = df.Nettonennleistung.apply(
             lambda x: x/x.sum()).mul(target.values)
 
+    df = df[df.Nettonennleistung>0]
+
     return df
 
 def select_target(carrier, scenario):
@@ -130,7 +132,8 @@ def filter_mastr_geometry(mastr):
         gpd.read_postgis(
             f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}",
              con = db.engine()).to_crs(4326),
-        mastr_loc, how='right').drop('index_left', axis=1)
+        mastr_loc,
+        how='right').query("index_left==0").drop('index_left', axis=1)
 
     return mastr_loc
 
