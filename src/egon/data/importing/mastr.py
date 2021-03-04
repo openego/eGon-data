@@ -4,7 +4,7 @@ import os
 import egon.data.config
 
 
-def download_mastr_data(data_stages=["cleaned"]):
+def download_mastr_data(data_stages=None):
     """
     Download MaStR data from Zenodo
 
@@ -12,8 +12,11 @@ def download_mastr_data(data_stages=["cleaned"]):
     ----------
     data_stages: list
         Select data stages you want to download data for. Possible values:
-        'raw', 'cleaned'
+        'raw', 'cleaned'. Defaults to 'cleaned' if omitted.
     """
+    # Process inputs
+    if not data_stages:
+        data_stages = ["cleaned"]
 
     # Get parameters from config and set download URL
     data_config = egon.data.config.datasets()["mastr"]
