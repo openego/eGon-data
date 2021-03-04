@@ -4,6 +4,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
+import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
@@ -122,14 +123,14 @@ with airflow.DAG(
 
     hvmv_substation_extraction = PostgresOperator(
         task_id="hvmv_substation_extraction",
-        sql="hvmv_substation.sql",
+        sql=resources.read_text(substation, "hvmv_substation.sql"),
         postgres_conn_id="egon_data",
         autocommit=True,
     )
 
     ehv_substation_extraction = PostgresOperator(
         task_id="ehv_substation_extraction",
-        sql="ehv_substation.sql",
+        sql=resources.read_text(substation, "ehv_substation.sql"),
         postgres_conn_id="egon_data",
         autocommit=True,
     )
