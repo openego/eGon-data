@@ -381,10 +381,9 @@ def future_heat_demand_germany(scenario_name):
     
     
     # Define the directory where the created rasters will be saved
-    os.chdir(os.path.dirname(__file__))
-    if not os.path.exists('scenario_raster'):
-        os.mkdir('scenario_raster')
-    os.chdir("./scenario_raster")
+    if not os.path.exists(os.path.join(os.path.dirname(__file__),
+                                       'scenario_raster')):
+        os.mkdir(os.path.join(os.path.dirname(__file__), 'scenario_raster'))
 
     # Open, read and adjust the cutout heat demand distributions for Germany
     # https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -409,7 +408,9 @@ def future_heat_demand_germany(scenario_name):
         )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
-    res_result_filename = 'res_HD_' + scenario_name + '.tif'
+    res_result_filename = os.path.join(os.path.dirname(__file__),
+                                       'scenario_raster/res_HD_' +
+                                       scenario_name + '.tif')
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(res_result_filename, 'w', **res_profile) as dst:
         dst.write(res_scenario_raster.astype(rasterio.uint16), 1)   
@@ -431,7 +432,9 @@ def future_heat_demand_germany(scenario_name):
         )   
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
-    ser_result_filename = 'ser_HD_' + scenario_name + '.tif'
+    ser_result_filename = os.path.join(os.path.dirname(__file__),
+                                       'scenario_raster/ser_HD_' +
+                                       scenario_name + '.tif')
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(ser_result_filename, 'w', **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)   
