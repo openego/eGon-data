@@ -142,7 +142,7 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_sta_union AS
 		'Bundesrepublik' ::text AS bez,
 		ST_AREA(un.geometry) / 10000 ::double precision AS area_ha,
 		un.geometry ::geometry(MultiPolygon,3035) AS geometry
-	FROM	(SELECT	ST_MakeValid(ST_UNION(ST_TRANSFORM(vg.geometry,3035))) ::geometry(MultiPolygon,3035) AS geometry
+	FROM	(SELECT	ST_MULTI(ST_MakeValid(ST_UNION(ST_TRANSFORM(vg.geometry,3035)))) ::geometry(MultiPolygon,3035) AS geometry
 		FROM	boundaries.vg250_sta AS vg
 		WHERE	vg.bez = 'Bundesrepublik'
 		) AS un;

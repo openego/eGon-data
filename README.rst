@@ -175,12 +175,12 @@ Test mode
 ---------
 
 The workflow can be tested on a smaller subset of data on example of the
-federal state of Bremen.
+federal state of Schleswig-Holstein.
+Data is reduced during execution of the workflow to represent only this area.
 
 .. warning::
 
-   Right now, only OSM data for Bremen get's imported. This is hard-wired in
-   `egon.data/data_sets.yml`.
+   Right now, the test mode is set in `egon.data/airflow/pipeline.py`.
 
 
 .. end-getting-started-information
