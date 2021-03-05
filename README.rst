@@ -176,6 +176,7 @@ Test mode
 
 The workflow can be tested on a smaller subset of data on example of the
 federal state of Schleswig-Holstein.
+Data is reduced during execution of the workflow to represent only this area.
 
 .. warning::
 

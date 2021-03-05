@@ -5,6 +5,20 @@ Contributing
 Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given.
 
+
+Extending the data workflow
+===========================
+
+
+Adjusting test mode data
+------------------------
+
+When integrating new data or data processing scripts, make sure the
+:ref:`Test mode` still work correctly on a limited subset of data.
+In particular, if a new external data sources gets integrated make sure the
+data gets cut to the region of the test mode.
+
+
 Bug reports
 ===========
 
