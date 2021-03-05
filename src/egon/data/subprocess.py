@@ -56,8 +56,9 @@ def run(*args, **kwargs):
     kwargs["check"] = kwargs.get("check", True)
     kwargs["capture_output"] = kwargs.get("capture_output", True)
     try:
-        subprocess.run(*args, **kwargs)
+        result = subprocess.run(*args, **kwargs)
     except subprocess.CalledProcessError as cpe:
         raise CalledProcessError(
             cpe.returncode, cpe.cmd, output=cpe.output, stderr=cpe.stderr
         ) from None
+    return result

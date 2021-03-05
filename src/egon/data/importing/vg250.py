@@ -9,8 +9,8 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
-import json
 from urllib.request import urlretrieve
+import json
 import os
 
 from geoalchemy2 import Geometry
@@ -33,7 +33,7 @@ def download_vg250_files():
         urlretrieve(vg250_config["source"]["url"], target_file)
 
 
-def to_postgres():
+def to_postgres(dataset='main'):
 
     # Get information from data configuraiton file
     data_config = egon.data.config.datasets()
@@ -55,6 +55,23 @@ def to_postgres():
             f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
             f"vg250_ebenen_0101/{filename}"
         )
+
+        if dataset != 'main':
+            # read-in borders of federal state Schleswig-Holstein
+            data_sta = gpd.read_file(
+                    f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+                    f"vg250_ebenen_0101/VG250_LAN.shp"
+                    ).query(f"GEN == '{dataset}'")
+            data_sta.BEZ = 'Bundesrepublik'
+            data_sta.NUTS = 'DE'
+            # import borders of Schleswig-Holstein as borders of state
+            if table == 'vg250_sta':
+                data = data_sta
+            # choose only areas in Schleswig-Holstein
+            else:
+                data = data[data.within(
+                    data_sta.dissolve(by='GEN').geometry.values[0])]
+
 
         # Set index column and format column headings
         data.index.set_names("gid", inplace=True)
@@ -86,6 +103,7 @@ def to_postgres():
             f"CREATE INDEX {table}_geometry_idx ON "
             f"{vg250_processed['schema']}.{table} USING gist (geometry);"
         )
+
 
 
 def add_metadata():
