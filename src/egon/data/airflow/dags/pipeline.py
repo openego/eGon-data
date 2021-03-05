@@ -141,7 +141,8 @@ with airflow.DAG(
 
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",
-        python_callable=nep_input.insert_data_nep)
+        python_callable=nep_input.insert_data_nep,
+        op_args={dataset})
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
