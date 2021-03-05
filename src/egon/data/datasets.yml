@@ -106,3 +106,16 @@ scenario_input:
     paths:
       "capacities": "NEP2035_V2021_scnC2035.xlsx"
       "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
+
+mastr:
+  technologies:
+    - "wind"
+    - "hydro"
+    - "solar"
+    - "biomass"
+    - "combustion"
+    - "nuclear"
+    - "gsgk"
+    - "storage"
+  file_basename: "bnetza_mastr"
+  deposit_id: 740153
