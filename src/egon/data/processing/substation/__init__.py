@@ -10,14 +10,11 @@ from geoalchemy2.types import Geometry
 
 Base = declarative_base()
 
-ehv_id_seq = Sequence('ehv_id_seq')
-hvmv_id_seq = Sequence('hvmv_id_seq')
-
 class EgonEhvSubstation(Base):
     __tablename__ = 'egon_ehv_substation'
     __table_args__ = {'schema': 'grid'}
-    subst_id = Column(Integer, ehv_id_seq,
-        server_default=ehv_id_seq.next_value(), primary_key=True)
+    subst_id = Column(Integer, Sequence('ehv_id_seq'),
+        server_default=Sequence('ehv_id_seq').next_value(), primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
     point = Column(Geometry('POINT', 4326), index=True)
@@ -38,8 +35,8 @@ class EgonEhvSubstation(Base):
 class EgonHvmvSubstation(Base):
     __tablename__ = 'egon_hvmv_substation'
     __table_args__ = {'schema': 'grid'}
-    subst_id = Column(Integer, hvmv_id_seq,
-        server_default=hvmv_id_seq.next_value(), primary_key=True)
+    subst_id = Column(Integer, Sequence('hvmv_id_seq'),
+        server_default=Sequence('hvmv_id_seq').next_value(), primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
     point = Column(Geometry('POINT', 4326), index=True)
@@ -165,5 +162,3 @@ def create_sql_functions():
         COST 100;
         """
         )
-
-
