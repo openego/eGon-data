@@ -64,9 +64,7 @@ def download_peta5_0_1_heat_demands():
     peta5_resheatdemands_config = (data_config["peta5_0_1_res_heat_demands"]
                                    ["original_data"])
 
-    target_file_res = os.path.join(os.path.dirname(__file__),
-                                   peta5_resheatdemands_config["target"]
-                                   ["path"])
+    target_file_res = peta5_resheatdemands_config["target"]["path"]
 
     if not os.path.isfile(target_file_res):
         urlretrieve(peta5_resheatdemands_config["source"]["url"],
@@ -76,9 +74,7 @@ def download_peta5_0_1_heat_demands():
     peta5_serheatdemands_config = (data_config["peta5_0_1_ser_heat_demands"]
                                    ["original_data"])
 
-    target_file_ser = os.path.join(os.path.dirname(__file__),
-                                   peta5_serheatdemands_config["target"]
-                                   ["path"])
+    target_file_ser = peta5_serheatdemands_config["target"]["path"]
 
     if not os.path.isfile(target_file_ser):
         urlretrieve(peta5_serheatdemands_config["source"]["url"],
@@ -113,24 +109,18 @@ def unzip_peta5_0_1_heat_demands():
     peta5_res_heatdemands_orig = (data_config["peta5_0_1_res_heat_demands"]
                                   ["original_data"])
     # path to the downloaded residential heat demand 2015 data
-    filepath_zip_res = os.path.join(os.path.dirname(__file__),
-                                    peta5_res_heatdemands_orig["target"]
-                                    ["path"])
+    filepath_zip_res = peta5_res_heatdemands_orig["target"]["path"]
 
     peta5_ser_heatdemands_orig = (data_config["peta5_0_1_ser_heat_demands"]
                                   ["original_data"])
     # path to the downloaded service-sector heat demand 2015 data
-    filepath_zip_ser = os.path.join(os.path.dirname(__file__),
-                                    peta5_ser_heatdemands_orig["target"]
-                                    ["path"])
+    filepath_zip_ser = peta5_ser_heatdemands_orig["target"]["path"]
 
     # Create a folder, if it does not exists already
-    if not os.path.exists(os.path.join(os.path.dirname(__file__),
-                                       'Peta_5_0_1')):
-        os.mkdir(os.path.join(os.path.dirname(__file__), 'Peta_5_0_1'))
+    if not os.path.exists('Peta_5_0_1'):
+        os.mkdir('Peta_5_0_1')
 
-    directory_to_extract_to = os.path.join(os.path.dirname(__file__),
-                                           "Peta_5_0_1")
+    directory_to_extract_to = "Peta_5_0_1"
 
     # Unzip the tiffs
     with zipfile.ZipFile(filepath_zip_res, 'r') as zf:
@@ -265,14 +255,10 @@ def cutout_heat_demand_germany():
     # Load the unzipped heat demand data and cutout Germany
 
     # path to the downloaded and unzipped rediential heat demand 2015 data
-    res_hd_2015 = os.path.join(
-        os.path.dirname(__file__), "Peta_5_0_1/HD_2015_res_Peta5_0_1_GJ.tif"
-    )
+    res_hd_2015 = "Peta_5_0_1/HD_2015_res_Peta5_0_1_GJ.tif"
 
     # path to the downloaded and unzipped service-sector heat demand 2015 data
-    ser_hd_2015 = os.path.join(
-        os.path.dirname(__file__), "Peta_5_0_1/HD_2015_ser_Peta5_0_1_GJ.tif"
-    )
+    ser_hd_2015 = "Peta_5_0_1/HD_2015_ser_Peta5_0_1_GJ.tif"
 
     with rasterio.open(res_hd_2015) as dataset:
         # https://rasterio.readthedocs.io/en/latest/topics/masking-by-shapefile.html
@@ -377,9 +363,8 @@ def future_heat_demand_germany(scenario_name):
             # print(ser_hd_reduction)
 
     # Define the directory where the created rasters will be saved
-    if not os.path.exists(os.path.join(os.path.dirname(__file__),
-                                       'scenario_raster')):
-        os.mkdir(os.path.join(os.path.dirname(__file__), 'scenario_raster'))
+    if not os.path.exists('scenario_raster'):
+        os.mkdir('scenario_raster')
 
     # Open, read and adjust the cutout heat demand distributions for Germany
     # https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -388,8 +373,7 @@ def future_heat_demand_germany(scenario_name):
     # the new file's profile, the profile of the source is adjusted.
     # Residential heat demands first
 
-    res_cutout = os.path.join(os.path.dirname(__file__),
-                              "Peta_5_0_1/res_hd_2015_GER.tif")
+    res_cutout = "Peta_5_0_1/res_hd_2015_GER.tif"
 
     with rasterio.open(res_cutout) as src:  # open raster dataset
         res_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
@@ -404,16 +388,13 @@ def future_heat_demand_germany(scenario_name):
         )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
-    res_result_filename = os.path.join(os.path.dirname(__file__),
-                                       'scenario_raster/res_HD_' +
-                                       scenario_name + '.tif')
+    res_result_filename = ('scenario_raster/res_HD_' + scenario_name + '.tif')
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(res_result_filename, 'w', **res_profile) as dst:
         dst.write(res_scenario_raster.astype(rasterio.uint16), 1)
 
     # Do the same for the service-sector
-    ser_cutout = os.path.join(os.path.dirname(__file__),
-                              "Peta_5_0_1/ser_hd_2015_GER.tif")
+    ser_cutout = "Peta_5_0_1/ser_hd_2015_GER.tif"
 
     with rasterio.open(ser_cutout) as src:  # open raster dataset
         ser_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
@@ -428,9 +409,7 @@ def future_heat_demand_germany(scenario_name):
         )
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
-    ser_result_filename = os.path.join(os.path.dirname(__file__),
-                                       'scenario_raster/ser_HD_' +
-                                       scenario_name + '.tif')
+    ser_result_filename = ('scenario_raster/ser_HD_' + scenario_name + '.tif')
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(ser_result_filename, 'w', **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)
@@ -486,12 +465,13 @@ def heat_demand_to_db_table():
     # Define the directory from with all raster files having the defined type
     # will be imported
     sources = [path for pattern in sources for path in
-               Path(os.path.join(os.path.dirname(__file__), 'scenario_raster')
-                    ).glob(pattern)]
+               Path('scenario_raster').glob(pattern)]
 
     # Create the schema for the final table, if needed
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
+    sql_script = os.path.join(os.path.dirname(__file__),
+                              "raster2cells-and-centroids.sql")
     # Create a temporary table and fill the final table using the sql script
     rasters = "heat_demand_rasters"
     import_rasters = subprocess.run(
@@ -507,7 +487,7 @@ def heat_demand_to_db_table():
         )
         connection.execute(import_rasters)
         connection.execute(f'ANALYZE "{rasters}"')
-        with open("raster2cells-and-centroids.sql") as convert:
+        with open(sql_script) as convert:
             connection.execute(convert.read())
 
     return None
