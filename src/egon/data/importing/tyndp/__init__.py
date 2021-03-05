@@ -85,49 +85,22 @@ def map_carriers_tyndp():
 
 }
 
+def insert_buses(map_buses):
 
-def insert_typnd_capacities():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
-
-    Returns
-    -------
-    None.
-
-    """
-    # Delete rows if already exist
-    db.execute_sql("DELETE FROM model_draft.egon_scenario_capacities "
-                   "WHERE scenario_name = 'eGon2035' "
-                   "AND country != 'Deutschland'")
-
-    config = egon.data.config.datasets()["scenario_input"]['eGon2035']['tyndp']
+    cfg = egon.data.config.datasets()["scenario_input"]['eGon2035']['tyndp']
 
     # insert installed capacities
     file = zipfile.ZipFile(os.path.join(
-        os.path.dirname(__file__), config['capacities']['target_path']))
+        os.path.dirname(__file__), cfg['capacities']['target_path']))
 
     # Select buses in neighbouring countries
     buses = pd.read_excel(
         file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
         sheet_name='Nodes - Dict')
-    buses = buses[buses.country.isin(config['countries'])]
-
-    map_buses = {
-        'DK00': 'DKW1',
-        'DKKF': 'DKE1',
-        'FR15': 'FR00',
-        'NON1': 'NOM1',
-        'NOS0': 'NOM1',
-        'NOS1': 'NOM1',
-        'PLE0': 'PL00',
-        'PLI0': 'PL00',
-        'SE00': 'SE02',
-        'SE01': 'SE02',
-        'SE03': 'SE02',
-        'SE04': 'SE02'
-        }
+    buses = buses[buses.country.isin(cfg['countries'])]
 
     buses = buses[~buses.node_id.isin(map_buses.keys())]
+
     # Connect to database
     engine = db.engine()
     session = sessionmaker(bind=engine)()
@@ -147,6 +120,39 @@ def insert_typnd_capacities():
 
     session.commit()
 
+    return buses
+
+def get_foreign_bus_id():
+
+    bus_id = gpd.read_postgis(
+        """SELECT bus_id, geom
+        FROM grid.egon_pf_hv_bus
+        WHERE version = '0.0.0'""",
+        con=db.engine())
+
+    cfg = egon.data.config.datasets()["scenario_input"]['eGon2035']['tyndp']
+
+    # insert installed capacities
+    file = zipfile.ZipFile(os.path.join(
+        os.path.dirname(__file__), cfg['capacities']['target_path']))
+
+    # Select buses in neighbouring countries
+    buses = pd.read_excel(
+        file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
+        sheet_name='Nodes - Dict').query("longitude==longitude")
+
+    buses = gpd.GeoDataFrame(buses, crs = 4326,
+                       geometry=gpd.points_from_xy(buses.longitude,
+                                                   buses.latitude))
+
+    return gpd.sjoin(buses, bus_id).set_index('node_id').bus_id
+
+def calc_capacities():
+    config = egon.data.config.datasets()["scenario_input"]['eGon2035']['tyndp']
+
+    # insert installed capacities
+    file = zipfile.ZipFile(os.path.join(
+         '/home/clara/GitHub/eGon-data/src/egon/data/importing/tyndp/', config['capacities']['target_path']))
 
     df = pd.read_excel(
         file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
@@ -175,90 +181,139 @@ def insert_typnd_capacities():
         df_2035['cap_2040']-df_2035['cap_2030'])/2
     df_2035 = df_2035.reset_index()
     df_2035['carrier'] = df_2035.Generator_ID.map(map_carriers_tyndp())
-
     # group capacities by new carriers
     grouped_capacities = df_2035.groupby(
         ['carrier', 'Node/Line']).cap_2035.sum().reset_index()
 
     # choose capacities for considered countries
-    grouped_capacities = grouped_capacities[
+    return grouped_capacities[
         grouped_capacities['Node/Line'].str[:2].isin(config['countries'])]
 
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
+
+def insert_generators(capacities, map_buses):
+
+    gen = capacities[capacities.carrier.isin([
+        'other_non_renewable', 'wind_offshore',
+       'wind_onshore', 'solar', 'other_renewable', 'reservoir',
+       'run_of_river', 'lignite', 'coal',
+       'oil', 'nuclear'])]
+
+    # Set bus_id
+    gen['bus'] = 0
+    gen.loc[:, 'bus'] = gen.loc[:,'Node/Line'].map(get_foreign_bus_id())
+    gen.loc[gen[gen.bus.isnull()].index, 'bus'] = (
+        gen.loc[gen[gen.bus.isnull()].index,'Node/Line']
+        .map(map_buses).map(get_foreign_bus_id()))
+    gen.loc[:, 'bus'] = gen.bus.astype(int)
 
     # insert data
-    # for i in grouped_capacities.index:
-    #     if grouped_capacities['carrier'][i] in [
-    #             'battery', 'pumped_hydro', 'demand_side_response']:
+    session = sessionmaker(bind=db.engine())()
+    for i, row in gen.iterrows():
+        entry = etrago.EgonPfHvGenerator(
+            version = '0.0.0',
+            scn_name = 'eGon2035',
+            generator_id = i,
+            bus = row.bus,
+            p_nom = row.cap_2035)
 
-    #         comp = 'storage_unit'
-    #     elif grouped_capacities['carrier'][i] == 'power_to_gas':
-    #         comp = 'link'
-    #     else:
-    #         comp = 'generator'
-    #     entry = EgonScenarioCapacities(
-    #         component = comp,
-    #         scenario_name = 'eGon2035',
-    #         country = grouped_capacities['Node/Line'][i], # not country but node (DK/UK)
-    #         carrier = grouped_capacities['carrier'][i],
-    #         capacity = grouped_capacities['cap_2035'][i])
+        session.add(entry)
+    session.commit()
 
-    #     session.add(entry)
+def insert_stores(capacities, map_buses):
 
-    # session.commit()
+    store = capacities[capacities.carrier.isin([
+        'battery', 'pumped_hydro'])]
 
 
 
-def insert_tyndp_timeseries():
-    """Copy load timeseries data from TYNDP 2020.
-    According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
+def insert_links(capacities, map_buses):
+
+    link = capacities[capacities.carrier.isin([
+        'power_to_gas', 'gas', 'biogas'])]
+
+
+def insert_tyndp():
+    """Insert data from TYNDP 2020 accordning to NEP 2021
+    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
 
     Returns
     -------
     None.
 
     """
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
+    map_buses = {
+        'DK00': 'DKW1',
+        'DKKF': 'DKE1',
+        'FR15': 'FR00',
+        'NON1': 'NOM1',
+        'NOS0': 'NOM1',
+        'NOS1': 'NOM1',
+        'PLE0': 'PL00',
+        'PLI0': 'PL00',
+        'SE00': 'SE02',
+        'SE01': 'SE02',
+        'SE03': 'SE02',
+        'SE04': 'SE02'
+        }
 
-    config = scenario_config('eGon2035')['tyndp']
-    data_config = egon.data.config.datasets()
+    insert_buses(map_buses)
 
-    nodes = ['AT00', 'BE00', 'CH00', 'CZ00', 'DKE1', 'DKW1', 'FR00', 'NL00',
-             'LUB1', 'LUF1', 'LUG1', 'NOM1', 'NON1', 'NOS0', 'SE01', 'SE02',
-             'SE03', 'SE04', 'PL00', 'UK00', 'UKNI']
+    capacities = calc_capacities()
 
-    dataset_2030 = pd.read_excel(
-        os.path.join(os.path.dirname(__file__),
-                     config['demand_2030']['target_path']),
-        sheet_name=nodes, skiprows=10)
+    insert_generators(capacities, map_buses)
 
-    dataset_2040 = pd.read_excel(
-        os.path.join(os.path.dirname(__file__),
-                     config['demand_2040']['target_path']),
-        sheet_name=None, skiprows=10)
+    insert_stores(capacities, map_buses)
 
-    for node in nodes:
+    insert_links(capacities, map_buses)
 
-        data_2030 = dataset_2030[node][data_config['weather']['year']]
+# def insert_tyndp_timeseries():
+#     """Copy load timeseries data from TYNDP 2020.
+#     According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
 
-        try:
-            data_2040 = dataset_2040[node][data_config['weather']['year']]
-        except:
-            data_2040 = data_2030
+#     Returns
+#     -------
+#     None.
 
-        data_2035 = ((data_2030+data_2040)/2)[:8760]*1e-3
+#     """
+#     # Connect to database
+#     engine = db.engine()
+#     session = sessionmaker(bind=engine)()
 
-        entry = EgonScenarioTimeseries(
-            component = 'load',
-            scenario_name = 'eGon2035',
-            node = node,
-            carrier = 'all',
-            data = list(data_2035.values))
+#     config = egon.data.config.datasets()["scenario_input"]['eGon2035']['tyndp']
+#     data_config = egon.data.config.datasets()
 
-        session.add(entry)
+#     nodes = ['AT00', 'BE00', 'CH00', 'CZ00', 'DKE1', 'DKW1', 'FR00', 'NL00',
+#              'LUB1', 'LUF1', 'LUG1', 'NOM1', 'NON1', 'NOS0', 'SE01', 'SE02',
+#              'SE03', 'SE04', 'PL00', 'UK00', 'UKNI']
 
-    session.commit()
+#     dataset_2030 = pd.read_excel(
+#         os.path.join(os.path.dirname(__file__),
+#                      config['demand_2030']['target_path']),
+#         sheet_name=nodes, skiprows=10)
+
+#     dataset_2040 = pd.read_excel(
+#         os.path.join(os.path.dirname(__file__),
+#                      config['demand_2040']['target_path']),
+#         sheet_name=None, skiprows=10)
+
+#     for node in nodes:
+
+#         data_2030 = dataset_2030[node][data_config['weather']['year']]
+
+#         try:
+#             data_2040 = dataset_2040[node][data_config['weather']['year']]
+#         except:
+#             data_2040 = data_2030
+
+#         data_2035 = ((data_2030+data_2040)/2)[:8760]*1e-3
+
+#         entry = EgonScenarioTimeseries(
+#             component = 'load',
+#             scenario_name = 'eGon2035',
+#             node = node,
+#             carrier = 'all',
+#             data = list(data_2035.values))
+
+#         session.add(entry)
+
+#     session.commit()
