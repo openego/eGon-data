@@ -54,8 +54,8 @@ def map_zensus_nuts3():
         f"{cfg['vg250']['processed']['schema']}."
         f"{cfg['vg250']['processed']['file_table_map']['VG250_KRS.shp']}")
 
-    target_table = "map_zensus_nuts3"
-    target_schema = "society"
+    target_table = cfg['society_prognosis']['target']['map_nuts3']
+    target_schema =  cfg['society_prognosis']['target']['schema']
 
     local_engine = db.engine()
 
@@ -104,14 +104,15 @@ def map_zensus_nuts3():
 def population_prognosis_to_zensus():
     """Bring population prognosis from DemandRegio to Zensus grid"""
 
+    cfg = egon.data.config.datasets()
     # Define in- and output tables
-    source_dr =  "egon_demandregio_population"
-    source_zensus =  "destatis_zensus_population_per_ha"
-    source_map = "map_zensus_nuts3"
-    source_schema = "society"
+    source_dr = cfg['demandregio']['society_data']['table_names']['population']
+    source_zensus =  cfg['zensus_population']['processed']['table']
+    source_map = cfg['society_prognosis']['target']['map_nuts3']
+    source_schema = cfg['demandregio']['society_data']['schema']
 
-    target_table = "egon_population_prognosis"
-    target_schema = "society"
+    target_table = cfg['society_prognosis']['target']['population_prognosis']
+    target_schema = cfg['society_prognosis']['target']['schema']
 
     local_engine = db.engine()
 
@@ -186,15 +187,16 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
 def household_prognosis_to_zensus():
     """Bring household prognosis from DemandRegio to Zensus grid"""
-
+    cfg = egon.data.config.datasets()
     # Define in- and output tables
-    source_dr =  "egon_demandregio_household"
-    source_zensus =  "destatis_zensus_household_per_ha"
-    source_map = "map_zensus_nuts3"
-    source_schema = "society"
+    source_dr = cfg['demandregio']['society_data']['table_names']['household']
+    source_zensus = cfg['zensus_misc']['processed'][
+        'path_table_map']['csv_Haushalte_100m_Gitter.zip']
+    source_map = cfg['society_prognosis']['target']['map_nuts3']
+    source_schema = cfg['demandregio']['society_data']['schema']
 
-    target_table = "egon_household_prognosis"
-    target_schema = "society"
+    target_table = cfg['society_prognosis']['target']['household_prognosis']
+    target_schema = cfg['society_prognosis']['target']['schema']
 
     local_engine = db.engine()
 

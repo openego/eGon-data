@@ -81,6 +81,12 @@ demandregio:
       - 2035
       - 2050
 
+society_prognosis:
+  target:
+    schema: "society"
+    map_nuts3: "map_zensus_nuts3"
+    population_prognosis: "map_zensus_nuts3"
+    household_prognosis: "map_zensus_nuts3"
 scenario_input:
   eGon2035:
     paths:
