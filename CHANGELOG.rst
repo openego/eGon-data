@@ -41,6 +41,8 @@ Added
   `#45 <https://github.com/openego/eGon-data/issues/45>`_
 * Option for running workflow in test mode
   `#112 <https://github.com/openego/eGon-data/issues/112>`_
+* Abstraction of hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
 
 Changed
 -------

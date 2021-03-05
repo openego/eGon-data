@@ -4,6 +4,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
+import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
@@ -16,6 +17,7 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
+import egon.data.processing.substation as substation
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -133,7 +135,6 @@ with airflow.DAG(
     )
     setup >> power_plant_tables
 
-
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
@@ -161,3 +162,32 @@ with airflow.DAG(
         python_callable=mastr.download_mastr_data
     )
     setup >> retrieve_mastr_data
+
+
+    # Substation extraction
+    substation_tables = PythonOperator(
+        task_id="create_substation_tables",
+        python_callable=substation.create_tables
+    )
+
+    substation_functions = PythonOperator(
+        task_id="substation_functions",
+        python_callable=substation.create_sql_functions
+    )
+
+    hvmv_substation_extraction = PostgresOperator(
+        task_id="hvmv_substation_extraction",
+        sql=resources.read_text(substation, "hvmv_substation.sql"),
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
+
+    ehv_substation_extraction = PostgresOperator(
+        task_id="ehv_substation_extraction",
+        sql=resources.read_text(substation, "ehv_substation.sql"),
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
+    osm_add_metadata  >> substation_tables >> substation_functions
+    substation_functions >> hvmv_substation_extraction
+    substation_functions >> ehv_substation_extraction
