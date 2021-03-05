@@ -29,6 +29,10 @@ from rasterio.mask import mask
 
 from pathlib import Path  # for database import
 
+# for metadata creation
+import json
+# import time
+
 
 def download_peta5_0_1_heat_demands():
     """
@@ -475,8 +479,6 @@ def heat_demand_to_db_table():
 
         Add a column with version number for versioning!
 
-        Add the meta data!!!
-
     """
 
     # Define the raster file type to be imported
@@ -509,6 +511,192 @@ def heat_demand_to_db_table():
             connection.execute(convert.read())
 
     return None
+
+
+def add_metadata():
+    """
+    Writes metadata JSON string into table comment.
+
+    TODO
+    ----
+        Meta data must be check and adjusted to the egon_data standard.
+
+        Meta data for Census Population Table must be added.
+    """
+
+    # Prepare variables
+    license_peta5_0_1 = [
+        {
+            "name": "Creative Commons Attribution 4.0 International",
+            "title": "CC BY 4.0",
+            "path": "https://creativecommons.org/licenses/by/4.0/",
+            "instruction": (
+                "You are free: To Share, To Adapt;"
+                " As long as you: Attribute!"
+            ),
+            "attribution": "© Flensburg, Halmstad and Aalborg universities",
+        }
+    ]
+    url_peta = ("https://s-eenergies-open-data-euf.hub.arcgis.com/search?"
+                "categories=seenergies_buildings")
+
+    url_geodatenzentrum = ("https://daten.gdz.bkg.bund.de/produkte/vg/"
+                           "vg250_ebenen_0101/2020/vg250_01-01.geo84.shape."
+                           "ebenen.zip")
+    license_heat = [
+        {
+            # this could be the license of "heat"
+            "name": "Creative Commons Attribution 4.0 International",
+            "title": "CC BY 4.0",
+            "path": "https://creativecommons.org/licenses/by/4.0/",
+            "instruction": (
+                "You are free: To Share, To Adapt;"
+                " As long as you: Attribute!"
+            ),
+            "attribution": "© Europa-Universität Flensburg",  # if all agree
+        }
+    ]
+    license_BKG = [
+        {
+            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
+            "path": "www.govdata.de/dl-de/by-2-0",
+            "instruction": (
+                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
+                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
+                "bereitgestellten Daten und Metadaten dürfen für die "
+                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
+                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
+                "bearbeitet sowie an Dritte übermittelt werden;\n "
+                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
+                "zu selbständigen neuen Datensätzen verbunden werden;\n "
+                "(3) in interne und externe Geschäftsprozesse, Produkte und "
+                "Anwendungen in öffentlichen und nicht öffentlichen "
+                "elektronischen Netzwerken eingebunden werden."
+            ),
+            "attribution": "© Bundesamt für Kartographie und Geodäsie",
+        }
+    ]
+
+    # Metadata creation
+    meta = {
+        "name": "heat",
+        "title": "eGo_n scenario-specific future heat demand data",
+        "description": "Future heat demands per hectare grid cell of "
+        "the residential and service sector",
+        "language": ["EN"],
+        "spatial": {
+            "location": "",
+            "extent": "Germany",
+            "resolution": "100x100m",
+            },
+        "temporal": {
+            "referenceDate": "scenario-specific",
+            "timeseries": {
+                "start": "",
+                "end": "",
+                "resolution": "",
+                "alignment": "",
+                "aggregationType": "",
+                },
+            },
+        "sources": [
+            {
+                # for Peta5_0_1
+                "title": "Peta5_0_1_HD_res and Peta5 0 1 HD ser",
+                "description": "Der Datenbestand umfasst sämtliche "
+                "Verwaltungseinheiten aller hierarchischen "
+                "Verwaltungsebenen vom Staat bis zu den "
+                "Gemeinden mit ihren Verwaltungsgrenzen, "
+                "statistischen Schlüsselzahlen und dem "
+                "Namen der Verwaltungseinheit sowie der "
+                "spezifischen Bezeichnung der "
+                "Verwaltungsebene des jeweiligen "
+                "Bundeslandes.",
+                "path": url_peta,
+                "licenses": license_peta5_0_1,
+            },
+            {
+                # for the vg250_sta_union used - Please check!
+                "title": "Dienstleistungszentrum des Bundes für "
+                "Geoinformation und Geodäsie - Open Data",
+                "description": "Dieser Datenbestand steht über "
+                "Geodatendienste gemäß "
+                "Geodatenzugangsgesetz (GeoZG) "
+                "(http://www.geodatenzentrum.de/auftrag/pdf"
+                "/geodatenzugangsgesetz.pdf) für die "
+                "kommerzielle und nicht kommerzielle "
+                "Nutzung geldleistungsfrei zum Download "
+                "und zur Online-Nutzung zur Verfügung. Die "
+                "Nutzung der Geodaten und Geodatendienste "
+                "wird durch die Verordnung zur Festlegung "
+                "der Nutzungsbestimmungen für die "
+                "Bereitstellung von Geodaten des Bundes "
+                "(GeoNutzV) (http://www.geodatenzentrum.de"
+                "/auftrag/pdf/geonutz.pdf) geregelt. "
+                "Insbesondere hat jeder Nutzer den "
+                "Quellenvermerk zu allen Geodaten, "
+                "Metadaten und Geodatendiensten erkennbar "
+                "und in optischem Zusammenhang zu "
+                "platzieren. Veränderungen, Bearbeitungen, "
+                "neue Gestaltungen oder sonstige "
+                "Abwandlungen sind mit einem "
+                "Veränderungshinweis im Quellenvermerk zu "
+                "versehen. Quellenvermerk und "
+                "Veränderungshinweis sind wie folgt zu "
+                "gestalten. Bei der Darstellung auf einer "
+                "Webseite ist der Quellenvermerk mit der "
+                "URL http://www.bkg.bund.de zu verlinken. "
+                "© GeoBasis-DE / BKG <Jahr des letzten "
+                "Datenbezugs> © GeoBasis-DE / BKG "
+                "<Jahr des letzten Datenbezugs> "
+                "(Daten verändert) Beispiel: "
+                "© GeoBasis-DE / BKG 2013",
+                "path": url_geodatenzentrum,
+                "licenses": "Geodatenzugangsgesetz (GeoZG)",
+                "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
+            },
+            {
+                # for the vg250_sta_union used, too - Please check!
+                "title": "BKG - Verwaltungsgebiete 1:250.000 (vg250)",
+                "description": "Der Datenbestand umfasst sämtliche "
+                "Verwaltungseinheiten aller hierarchischen "
+                "Verwaltungsebenen vom Staat bis zu den "
+                "Gemeinden mit ihren Verwaltungsgrenzen, "
+                "statistischen Schlüsselzahlen und dem "
+                "Namen der Verwaltungseinheit sowie der "
+                "spezifischen Bezeichnung der "
+                "Verwaltungsebene des jeweiligen "
+                "Bundeslandes.",
+                "path": "http://www.bkg.bund.de",
+                "licenses": license_BKG,
+            },
+            ],
+        "licenses": license_heat,
+        "contributors": [
+            {
+                "title": "Eva, Günni, Clara",
+                "email": "",
+                "date": "2021-03-04",
+                "object": "",
+                "comment": "Processed data",
+            }
+        ],
+        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
+            "metadataVersion": "OEP-1.4.0",
+            "metadataLicense": {
+                "name": "CC0-1.0",
+                "title": "Creative Commons Zero v1.0 Universal",
+                "path": (
+                    "https://creativecommons.org/publicdomain/zero/1.0/"
+                ),
+            },
+        },
+    }
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    db.submit_comment(
+        meta_json, "demand", "heat"
+        )
 
 
 def future_heat_demand_data_import():
@@ -544,5 +732,6 @@ def future_heat_demand_data_import():
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
     heat_demand_to_db_table()
+    add_metadata()
 
     return None
