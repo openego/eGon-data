@@ -73,8 +73,9 @@ For merging, you should:
 3. Add a note to ``CHANGELOG.rst`` about the changes.
 4. Add yourself to ``AUTHORS.rst``.
 
-.. [1] If you don't have all the necessary python versions available locally you can rely on Travis - it will
-       `run the tests <https://travis-ci.org/openego/eGon-data/pull_requests>`_ for each change you add in the pull request.
+.. [1] If you don't have all the necessary python versions available locally you can rely on
+       `CI on GitHub actions <https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22>`_
+       - it will run the tests for each change you add in the pull request.
 
        It will be slower though ...
 

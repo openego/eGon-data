@@ -35,12 +35,16 @@ Added
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
 * DemandRegio data import for annual electricity demands
   `#5 <https://github.com/openego/eGon-data/issues/5>`_
+* Download cleaned open-MaStR data from Zenodo
+  `#14 <https://github.com/openego/eGon-data/issues/14>`_
 
 Changed
 -------
 
 * Adapt structure of the documentation to project specific requirements
   `#20 <https://github.com/openego/eGon-data/issues/20>`_
+* Switch from Travis to GitHub actions for CI jobs
+  `#92 <https://github.com/openego/eGon-data/issues/92>`_
 
 Bug fixes
 ---------

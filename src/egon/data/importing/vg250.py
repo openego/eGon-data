@@ -9,8 +9,8 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
-import json
 from urllib.request import urlretrieve
+import json
 import os
 
 from geoalchemy2 import Geometry
