@@ -144,7 +144,7 @@ def select_geom():
         ]
         + [
             "-sql",
-            "SELECT ST_Union(geometry)" " FROM boundaries.vg250_lan",
+            "SELECT ST_Union(geometry) FROM boundaries.vg250_lan",
         ],
         text=True,
     )
