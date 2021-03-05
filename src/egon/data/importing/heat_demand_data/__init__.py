@@ -13,16 +13,17 @@ database with assigned census cell IDs.
 
 """
 
+
+from egon.data import db, subprocess
+import egon.data.config
 from urllib.request import urlretrieve
 import os
 import zipfile
 
-from egon.data import db, subprocess
-import egon.data.config
-
 import pandas as pd
 import geopandas as gpd
 
+# for raster operations
 import rasterio
 from rasterio.mask import mask
 # import matplotlib.pyplot as plt
@@ -235,7 +236,7 @@ def cutout_heat_demand_germany():
     gdf_boundaries = gpd.read_postgis(
                     (f"SELECT (ST_Dump(geometry)).geom As geometry"
                      f" FROM {schema}.{table_name}"),
-                    local_engine, geom_col = "geometry")
+                    local_engine, geom_col="geometry")
 
     # rasterio wants the mask to be a GeoJSON-like dict or an object that
     # implements the Python geo interface protocol (such as a Shapely Polygon)
@@ -502,6 +503,8 @@ def add_metadata():
         Meta data must be check and adjusted to the egon_data standard.
 
         Meta data for Census Population Table must be added.
+
+        Check how to reference the heat demand adjustment factors
     """
 
     # Prepare variables
