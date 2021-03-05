@@ -61,12 +61,9 @@ def map_zensus_nuts3():
 
     db.execute_sql(f"DELETE FROM {target_schema}.{target_table}")
     # Assign nuts3 code to zensus grid cells
-    # TODO: remove ST_WIthin
+
     gdf = gpd.read_postgis(
-        f"""SELECT * FROM {source_zensus}
-        WHERE ST_Within(geom_point, (
-            SELECT ST_Transform(geometry, 3035) FROM boundaries.vg250_lan
-            WHERE gid = 0))""",
+        f"""SELECT * FROM {source_zensus}""",
         local_engine, geom_col='geom_point')
 
     gdf_boundaries = gpd.read_postgis(f"SELECT * FROM {source_boundaries}",
@@ -124,13 +121,9 @@ def population_prognosis_to_zensus():
         FROM {source_schema}.{source_map}""",
         local_engine).set_index('grid_id')
 
-    # TODO: remove St_Within
     zensus = pd.read_sql(
         f"""SELECT grid_id, population
-        FROM {source_schema}.{source_zensus}
-        WHERE ST_Within(geom_point, (
-            SELECT ST_Transform(geometry, 3035) FROM boundaries.vg250_lan
-            WHERE gid = 0))""",
+        FROM {source_schema}.{source_zensus}""",
         local_engine).set_index('grid_id')
 
     zensus['nuts3'] = zensus_district.nuts3
@@ -211,20 +204,16 @@ def household_prognosis_to_zensus():
         FROM {source_schema}.{source_map}""",
         local_engine).set_index('grid_id')
 
-    # TODO: remove St_Within
     zensus = pd.read_sql(
         f"""SELECT grid_id, quantity
-        FROM {source_schema}.{source_zensus}
-        WHERE grid_id in (
-            SELECT grid_id FROM {source_schema}.{source_map})
-        AND attribute = 'INSGESAMT'""",
+        FROM {source_schema}.{source_zensus}""",
         local_engine).set_index('grid_id')
 
     zensus['nuts3'] = district.nuts3
 
     # Calculate share of households per nuts3 region in each zensus cell
     zensus['share'] = zensus.groupby(zensus.nuts3).quantity.apply(
-        lambda grp: grp/grp.sum()).fillna(0)
+        lambda grp: grp/grp.sum()).fillna(0).values
 
     db.execute_sql(f"DELETE FROM {target_schema}.{target_table}")
     # Apply prognosis function
