@@ -193,11 +193,10 @@ with airflow.DAG(
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
 
-# Future heat demand calculation based on Peta5_0_1 data
+    # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
         task_id="import-heat-demand",
         python_callable=import_hd.future_heat_demand_data_import
     )
     vg250_clean_and_prepare >> heat_demand_import
     population_import >> heat_demand_import
-
