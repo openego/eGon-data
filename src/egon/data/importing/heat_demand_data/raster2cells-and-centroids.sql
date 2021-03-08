@@ -7,15 +7,15 @@ CREATE TABLE demand.heat (
   centroid GEOMETRY,
   polygon GEOMETRY,
   version TEXT,
-  population_gid INTEGER
-    REFERENCES society.destatis_zensus_population_per_ha (gid)
+  zensus_population_id INTEGER
+    REFERENCES society.destatis_zensus_population_per_ha (id)
 );
 
 CREATE INDEX ON demand.heat USING gist (centroid);
 CREATE INDEX ON demand.heat USING gist (polygon);
 
 INSERT INTO demand.heat (
-  demand, sector, scenario, centroid, polygon, version, population_gid
+  demand, sector, scenario, centroid, polygon, version, zensus_population_id
 ) SELECT
   (demands.centroid).val AS demand,
   sector,
@@ -23,7 +23,7 @@ INSERT INTO demand.heat (
   (demands.centroid).geom AS centroid,
   (demands.polygon).geom AS polygon,
   '{{ version }}' AS version,
-  population.gid AS population_gid
+  population.id AS zensus_population_id
 FROM (
   SELECT
     ST_PixelAsCentroids(rast, 1) AS centroid,
