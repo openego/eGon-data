@@ -10,9 +10,9 @@ Central module containing all code dealing with the future heat demand import.
 This module obtains the residential and service-sector heat demand data for
 2015 from Peta5.0.1, calculates future heat demands and saves them in the
 database with assigned census cell IDs.
-
 """
 
+from jinja2 import Template
 
 from egon.data import db, subprocess
 import egon.data.config
@@ -405,7 +405,6 @@ def heat_demand_to_db_table():
     by the provided sql script (raster2cells-and-centroids.sql) and
     are stored in the table "demand.heat_demands".
 
-
     Parameters
     ----------
         None
@@ -457,7 +456,9 @@ def heat_demand_to_db_table():
         connection.execute(import_rasters)
         connection.execute(f'ANALYZE "{rasters}"')
         with open(sql_script) as convert:
-            connection.execute(convert.read())
+            connection.execute(
+                Template(convert.read()).render(version="0.0.0")
+            )
 
     return None
 
@@ -686,3 +687,4 @@ def future_heat_demand_data_import():
     add_metadata()
 
     return None
+
