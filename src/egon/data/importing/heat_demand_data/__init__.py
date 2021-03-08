@@ -422,6 +422,8 @@ def heat_demand_to_db_table():
     ----
         Check if data already exists in database and the function does not need
         to be executed again
+
+        Define version number correctly
     """
 
     # Define the raster file type to be imported
@@ -687,4 +689,3 @@ def future_heat_demand_data_import():
     add_metadata()
 
     return None
-
