@@ -109,14 +109,3 @@ def insert_data():
             if_exists="append",
             dtype={"geom": Geometry()},
         )
-
-        # db.execute_sql(
-        #     f"ALTER TABLE {schema}.{table} "
-        #     f"ADD PRIMARY KEY (id);"
-        # )
-        #
-        # # Add index on geometry column
-        # db.execute_sql(
-        #     f"CREATE INDEX {table}_geom_idx ON "
-        #     f"{schema}.{table} USING gist (geom);"
-        # )
