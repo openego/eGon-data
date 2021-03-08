@@ -80,6 +80,26 @@ demandregio:
       - 2018
       - 2035
       - 2050
+hvmv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_hvmv_substation"
+ehv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_ehv_substation"
+
+
 
 society_prognosis:
   target:
