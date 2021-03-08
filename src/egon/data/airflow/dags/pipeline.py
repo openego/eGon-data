@@ -130,11 +130,17 @@ with airflow.DAG(
     vg250_clean_and_prepare >> demandregio_import
 
     # Society prognosis
+    prognosis_tables = PythonOperator(
+        task_id="create-prognosis-tables",
+        python_callable=process_zs.create_tables
+    )
+
     map_zensus_nuts3 = PythonOperator(
         task_id="map-zensus-to-nuts3",
         python_callable=process_zs.map_zensus_nuts3
     )
 
+    setup >> prognosis_tables >> map_zensus_nuts3
     vg250_clean_and_prepare >> map_zensus_nuts3
     population_import >> map_zensus_nuts3
 
