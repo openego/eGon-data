@@ -51,6 +51,8 @@ Changed
   `#20 <https://github.com/openego/eGon-data/issues/20>`_
 * Switch from Travis to GitHub actions for CI jobs
   `#92 <https://github.com/openego/eGon-data/issues/92>`_
+  * Rename columns to id and zensus_population_id in zensus tables
+  `#140 <https://github.com/openego/eGon-data/issues/140>`_
 
 Bug fixes
 ---------
