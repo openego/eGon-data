@@ -26,7 +26,6 @@ import geopandas as gpd
 # for raster operations
 import rasterio
 from rasterio.mask import mask
-# import matplotlib.pyplot as plt
 
 from pathlib import Path  # for database import
 
@@ -52,11 +51,11 @@ def download_peta5_0_1_heat_demands():
 
     Notes
     -----
-        None
+        The heat demand data in the Peta5.0.1 dataset are assumed not change.
+        An upgrade to a higher Peta version is currently not foreseen.
+        Therefore, for the version management we can assume that the dataset
+        will not change, unless the code is changed.
 
-    TODO
-    ----
-        Check if downloaded data already exists
     """
 
     data_config = egon.data.config.datasets()
@@ -102,11 +101,9 @@ def unzip_peta5_0_1_heat_demands():
 
     Notes
     -----
-        None
+        It is assumed that the Peta5.0.1 dataset does not change and that the
+        version number does not need to be checked.
 
-    TODO
-    ----
-        Check if unzipped data already exists
     """
 
     # Get information from data configuration file
@@ -123,18 +120,20 @@ def unzip_peta5_0_1_heat_demands():
     # path to the downloaded service-sector heat demand 2015 data
     filepath_zip_ser = peta5_ser_heatdemands_orig["target"]["path"]
 
-    # Create a folder, if it does not exists already
-    if not os.path.exists("Peta_5_0_1"):
-        os.mkdir("Peta_5_0_1")
-
     directory_to_extract_to = "Peta_5_0_1"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(directory_to_extract_to):
+        os.mkdir(directory_to_extract_to)
 
-    # Unzip the tiffs
-    with zipfile.ZipFile(filepath_zip_res, "r") as zf:
-        zf.extractall(directory_to_extract_to)
-
-    with zipfile.ZipFile(filepath_zip_ser, "r") as zf:
-        zf.extractall(directory_to_extract_to)
+    # Unzip the tiffs, if they do not exist
+    if not os.path.isfile(
+            directory_to_extract_to + "/HD_2015_res_Peta5_0_1_GJ.tif"):
+        with zipfile.ZipFile(filepath_zip_res, "r") as zf:
+            zf.extractall(directory_to_extract_to)
+    if not os.path.isfile(
+            directory_to_extract_to + "/HD_2015_ser_Peta5_0_1_GJ.tif"):
+        with zipfile.ZipFile(filepath_zip_ser, "r") as zf:
+            zf.extractall(directory_to_extract_to)
 
     return None
 
@@ -146,7 +145,7 @@ def cutout_heat_demand_germany():
     1. Get the German state boundaries
     2. Load the unzip 2015 heat demand data (Peta5_0_1) and
     3. Cutout Germany's residential and service-sector heat demand densities
-    4. Save the cutouts as tifs
+    4. Save the cutouts as tiffs
 
     Parameters
     ----------
@@ -177,9 +176,11 @@ def cutout_heat_demand_germany():
 
         Specify the crs of the created heat demand tiffs: EPSG 3035
 
-        Check if cutcut already exists
+        Check if cutcuts already exists, according to version number and
+        selected boundaries (test mode or not).
 
-    """
+        Check if we want to delete (some of) the tiff files after use.
+        """
 
     # Load the German boundaries from the local database using a dissolved
     # dataset which provides one multipolygon
@@ -298,10 +299,7 @@ def future_heat_demand_germany(scenario_name):
 
     TODO
     ----
-        Error messeage for the case that the specified scenario name is not in
-        the file with the scenario data.
-
-        Check if future heat demands already exists
+        Check if future heat demands already exists: data version management.
 
         Specify the crs of the created heat demand tiffs: EPSG 3035
 
@@ -322,24 +320,28 @@ def future_heat_demand_germany(scenario_name):
 
     """
     # Load the csv file with the sceanario data for raster adjustment
-
     csvfilename = os.path.join(
         os.path.dirname(__file__), "scenarios_HD_raster_adjustments.csv"
     )
     df_reductions = pd.read_csv(csvfilename)
 
-    for index, row in df_reductions.iterrows():
-        if scenario_name == df_reductions.loc[index, "scenario"]:
-            res_hd_reduction = df_reductions.loc[
-                index, "HD_reduction_residential"
-            ]
-            ser_hd_reduction = df_reductions.loc[
-                index, "HD_reduction_service_sector"
-            ]
+    # Load the values, if scenario name is found in the file
+    if scenario_name in df_reductions.scenario.values:
+        for index, row in df_reductions.iterrows():
+            if scenario_name == df_reductions.loc[index, "scenario"]:
+                res_hd_reduction = df_reductions.loc[
+                    index, "HD_reduction_residential"
+                ]
+                ser_hd_reduction = df_reductions.loc[
+                    index, "HD_reduction_service_sector"
+                ]
+    else:
+        print(f"Scenario {scenario_name} not defined.")
 
     # Define the directory where the created rasters will be saved
-    if not os.path.exists("scenario_raster"):
-        os.mkdir("scenario_raster")
+    scenario_raster_directory = "heat_scenario_raster"
+    if not os.path.exists(scenario_raster_directory):
+        os.mkdir(scenario_raster_directory)
 
     # Open, read and adjust the cutout heat demand distributions for Germany
     # https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -348,7 +350,6 @@ def future_heat_demand_germany(scenario_name):
     # the new file's profile, the profile of the source is adjusted.
 
     # Residential heat demands first
-
     res_cutout = "Peta_5_0_1/res_hd_2015_GER.tif"
 
     with rasterio.open(res_cutout) as src:  # open raster dataset
@@ -364,7 +365,8 @@ def future_heat_demand_germany(scenario_name):
     )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
-    res_result_filename = "scenario_raster/res_HD_" + scenario_name + ".tif"
+    res_result_filename = (scenario_raster_directory +
+                           "/res_HD_" + scenario_name + ".tif")
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(res_result_filename, "w", **res_profile) as dst:
         dst.write(res_scenario_raster.astype(rasterio.uint16), 1)
@@ -385,7 +387,8 @@ def future_heat_demand_germany(scenario_name):
     )
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
-    ser_result_filename = "scenario_raster/ser_HD_" + scenario_name + ".tif"
+    ser_result_filename = (scenario_raster_directory +
+                           "/ser_HD_" + scenario_name + ".tif")
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(ser_result_filename, "w", **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)
@@ -420,8 +423,8 @@ def heat_demand_to_db_table():
 
     TODO
     ----
-        Check if data already exists in database and the function does not need
-        to be executed again
+        Check if data already exists in database or if the function needs
+        to be executed: data version management.
 
         Define version number correctly
     """
@@ -433,7 +436,7 @@ def heat_demand_to_db_table():
     sources = [
         path
         for pattern in sources
-        for path in Path("scenario_raster").glob(pattern)
+        for path in Path("heat_scenario_raster").glob(pattern)
     ]
 
     # Create the schema for the final table, if needed
