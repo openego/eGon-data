@@ -159,7 +159,11 @@ def cutout_heat_demand_germany():
         It would be better to cutout Germany from the pan-European raster
         based on German census cells, instead of using state boundaries with
         low resolution, to avoid inaccuracies. All attempts to read, (union)
-        and load cells from the local database failed, but are documented here.
+        and load cells from the local database failed, but were documented
+        as commented code within this function and afterwards removed. If you
+        want to have a look at the comments, please check out commit
+        ec3391e182215b32cd8b741557a747118ab61664, which is the last commit
+        still containing them.
 
         Depending on the process afterwards also a buffer around the boundaries
         could be used, but then it must be ensured that later only heat demands
@@ -170,52 +174,6 @@ def cutout_heat_demand_germany():
         Check if cutcut already exists
 
     """
-
-    # Load the census cells from the local database for mask definition
-    # This approach could not be implemented for operation on a laptop.
-
-    # table_name = "destatis_zensus_population_per_ha"
-    # schema = "society"
-
-    # local_engine = db.engine()
-
-    # get the entire table for Germany - very large dataset
-    # df_census = pd.read_sql_table(table_name, local_engine, schema=schema)
-
-    # get a test dataset
-    # df_census = pd.read_sql(f"SELECT * FROM {schema}.{table_name} WHERE gid<200",
-    #             local_engine)
-
-    # get only the geometries
-    # df_census = pd.read_sql(f"SELECT DISTINCT tabelle.geom FROM"
-    #                         f" {schema}.{table_name} AS tabelle WHERE gid<200",
-    #                       local_engine)
-
-    # get only the geometries, but already dissolved to one polygon
-    # df_census = pd.read_sql(f"SELECT ST_MemUnion(T.geom) FROM"
-    #                        f" {schema}.{table_name} AS T", local_engine)
-
-    # better / alternative form to write it, easier to handle
-    # does not work
-    # test = db.execute_sql(f"SELECT * FROM {schema}.{table_name} WHERE gid<200;")
-    # does not work
-    # test2 = db.execute_sql("SELECT ST_Union(T.geom) FROM"
-    #                       f" {schema}.{table_name} AS T")
-
-    # loading the unioned census cells from the local database - with condition
-    # does not work
-    # mask = db.execute_sql(
-    #    f"""SELECT ST_Union(inner_results.geom) FROM(
-    #                SELECT T.geom
-    #                FROM {schema}.{table_name} AS T
-    #                WHERE T.gid<200) AS inner_results"""
-    #)
-    # with a buffer, but without where condition
-    # does not work on a laptop
-    # mask_all = db.execute_sql(
-    #    f"SELECT ST_Union(ST_Buffer(T.geom,1)) FROM {schema}.{table_name} AS T")
-
-
 
     # Load the German boundaries from the local database using a dissolved
     # dataset which provides one multipolygon
@@ -228,11 +186,6 @@ def cutout_heat_demand_germany():
     # multipolygon can be converted into polygons for outcut function
     # using ST_Dump: https://postgis.net/docs/ST_Dump.html
 
-    # gdf_boundaries_multi = gpd.read_postgis(
-    #                 (f"SELECT geometry"
-    #                  f" FROM {schema}.{table_name}"),
-    #                 local_engine, geom_col = "geometry")
-
     gdf_boundaries = gpd.read_postgis(
                     (f"SELECT (ST_Dump(geometry)).geom As geometry"
                      f" FROM {schema}.{table_name}"),
@@ -243,12 +196,9 @@ def cutout_heat_demand_germany():
 
     # look at the data, to understanding it
     # gdf_boundaries.head
-    # gdf_boundaries_multi.head
     # len(gdf_boundaries)
     # type(gdf_boundaries)
     # gdf_boundaries.crs
-
-    # type(gdf_boundaries_multi.iloc[0,0])
     # gdf_boundaries.iloc[:,0]
     # gdf_boundaries.iloc[0,:]
     # gdf_boundaries.plot()
@@ -339,16 +289,17 @@ def future_heat_demand_germany(scenario_name):
 
         Check, if there are unpoplated cells with residential heat demands.
 
+        Option: Load the adjustment factors from an excel files, and not from
+        a csv: That might be implemented later for better documentation of the
+        development of the adjustment factors.
+        pip install xlrd to make it work
+        xlsfilename = ""
+        df_reductions = pd.read_excel(xlsfilename,
+                                      sheet_name =
+                                      "scenarios_for_raster_adjustment")
+
     """
-
-    # Load the adjustment factors from an excel files, and not from a csv
-    # might be implemented later
-    # pip install xlrd to make it work
-    # xlsfilename = ""
-    # df_reductions = pd.read_excel(xlsfilename,sheet_name="scenarios_for_raster_adjustment")
-
     # Load the csv file with the sceanario data for raster adjustment
-    # to be adjusted
 
     csvfilename = os.path.join(os.path.dirname(__file__),
                                "scenarios_HD_raster_adjustments.csv")
@@ -358,10 +309,8 @@ def future_heat_demand_germany(scenario_name):
         if scenario_name == df_reductions.loc[index, "scenario"]:
             res_hd_reduction = df_reductions.loc[index,
                                                  "HD_reduction_residential"]
-            # print(res_hd_reduction)
             ser_hd_reduction = df_reductions.loc[index,
                                                  "HD_reduction_service_sector"]
-            # print(ser_hd_reduction)
 
     # Define the directory where the created rasters will be saved
     if not os.path.exists('scenario_raster'):
@@ -372,6 +321,7 @@ def future_heat_demand_germany(scenario_name):
     # https://gis.stackexchange.com/questions/338282/applying-equation-to-a-numpy-array-while-preserving-tiff-metadata-coordinates
     # Write an array as a raster band to a new 16-bit file. For
     # the new file's profile, the profile of the source is adjusted.
+
     # Residential heat demands first
 
     res_cutout = "Peta_5_0_1/res_hd_2015_GER.tif"
@@ -415,15 +365,6 @@ def future_heat_demand_germany(scenario_name):
     with rasterio.open(ser_result_filename, 'w', **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)
 
-    # Make some images
-    # show(res_scenario_raster)
-
-    # %matplotlib inline
-    # Plot the raster
-    # plt.imshow(res_scenario_raster, cmap='terrain_r')
-    # Add colorbar to show the index
-    # plt.colorbar()
-
     return None
 
 
@@ -434,7 +375,8 @@ def heat_demand_to_db_table():
     Specify the rasters to import as raster file patterns (file type and
     directory containing raster files, which all will be imported).
     The rasters are stored in a temporary table called "heat_demand_rasters".
-    The final demand data, having the census IDs as foreign key, are genetated
+    The final demand data, having the census IDs as foreign key (from the
+    census population table), are genetated
     by the provided sql script (raster2cells-and-centroids.sql) and
     are stored in the table "demand.heat_demands".
 
@@ -456,9 +398,6 @@ def heat_demand_to_db_table():
     ----
         Check if data already exists in database and the function does not need
         to be executed again
-
-        Add a column with version number for versioning!
-
     """
 
     # Define the raster file type to be imported
