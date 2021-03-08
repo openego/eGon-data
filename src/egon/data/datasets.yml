@@ -128,6 +128,10 @@ re_potential_areas:
         - "https://sandbox.zenodo.org/record/743243/files/potentialarea_pv_agriculture.gpkg?download=1"
         - "https://sandbox.zenodo.org/record/743243/files/potentialarea_pv_road_railway.gpkg?download=1"
         - "https://sandbox.zenodo.org/record/743243/files/potentialarea_wind.gpkg?download=1"
+      url_testmode:
+        - "https://sandbox.zenodo.org/record/743243/files/potentialarea_pv_agriculture_SH.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/743243/files/potentialarea_pv_road_railway_SH.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/743243/files/potentialarea_wind_SH.gpkg?download=1"
     target:
       schema: "supply"
       path_table_map:

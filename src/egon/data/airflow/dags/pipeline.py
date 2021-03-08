@@ -197,7 +197,8 @@ with airflow.DAG(
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
         task_id="download_re_potential_area_data",
-        python_callable=re_potential_areas.download_datasets
+        python_callable=re_potential_areas.download_datasets,
+        op_args={dataset}
     )
     create_re_potential_areas_tables = PythonOperator(
         task_id="create_re_potential_areas_tables",
