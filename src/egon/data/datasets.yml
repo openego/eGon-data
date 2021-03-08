@@ -85,8 +85,9 @@ society_prognosis:
   target:
     schema: "society"
     map_nuts3: "map_zensus_nuts3"
-    population_prognosis: "map_zensus_nuts3"
-    household_prognosis: "map_zensus_nuts3"
+    population_prognosis: "egon_population_prognosis"
+    household_prognosis: "egon_household_prognosis"
+
 scenario_input:
   eGon2035:
     paths:

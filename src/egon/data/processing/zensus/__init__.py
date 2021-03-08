@@ -116,7 +116,7 @@ def population_prognosis_to_zensus():
 
     local_engine = db.engine()
 
-    # Input: Zensus2011 population data including the NUTS3-Code for the district
+    # Input: Zensus2011 population data including the NUTS3-Code
     zensus_district = pd.read_sql(
         f"""SELECT grid_id, nuts3
         FROM {source_schema}.{source_map}""",
@@ -200,7 +200,7 @@ def household_prognosis_to_zensus():
 
     local_engine = db.engine()
 
-    # Input: Zensus2011 household data including the NUTS3-Code for the district
+    # Input: Zensus2011 household data including the NUTS3-Code
     district = pd.read_sql(
         f"""SELECT grid_id, nuts3
         FROM {source_schema}.{source_map}""",
