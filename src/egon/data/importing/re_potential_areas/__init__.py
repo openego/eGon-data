@@ -105,8 +105,8 @@ def insert_data():
             table,
             engine_local_db,
             schema=schema,
-            index=True,
-            if_exists="replace",
+            index=False,
+            if_exists="append",
             dtype={"geom": Geometry()},
         )
 
