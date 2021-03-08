@@ -218,6 +218,9 @@ def household_prognosis_to_zensus():
         FROM {source_schema}.{source_zensus}""",
         local_engine).set_index('zensus_population_id')
 
+    # Group all household types
+    zensus = zensus.groupby(zensus.index).sum()
+
     zensus['nuts3'] = district.nuts3
 
     # Calculate share of households per nuts3 region in each zensus cell
