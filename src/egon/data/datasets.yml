@@ -125,9 +125,9 @@ re_potential_areas:
     source:
       url:
         #TODO: finally replace sandbox
-        - "https://sandbox.zenodo.org/record/742932/files/potentialarea_pv_agriculture.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/742932/files/potentialarea_pv_road_railway.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/742932/files/potentialarea_wind.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/743243/files/potentialarea_pv_agriculture.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/743243/files/potentialarea_pv_road_railway.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/743243/files/potentialarea_wind.gpkg?download=1"
     target:
       schema: "supply"
       path_table_map:
