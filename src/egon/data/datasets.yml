@@ -1,11 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
+      url: "http://download.geofabrik.de/europe/germany-200101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      path: "bremen-200101.osm.pbf"
+      path: "germany-200101.osm.pbf"
+      path_testmode: "schleswig-holstein-200101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -31,7 +33,7 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
-zensus_population: 
+zensus_population:
   original_data:
     source:
       url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
@@ -53,6 +55,7 @@ zensus_misc:
       "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
       "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
       "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
+
 demandregio:
   demand_data:
     schema: "demand"
@@ -77,6 +80,47 @@ demandregio:
       - 2018
       - 2035
       - 2050
+
+hvmv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_hvmv_substation"
+ehv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_ehv_substation"
+
+
+
+scenario_input:
+  eGon2035:
+    paths:
+      "capacities": "NEP2035_V2021_scnC2035.xlsx"
+      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
+
+mastr:
+  technologies:
+    - "wind"
+    - "hydro"
+    - "solar"
+    - "biomass"
+    - "combustion"
+    - "nuclear"
+    - "gsgk"
+    - "storage"
+  file_basename: "bnetza_mastr"
+  deposit_id: 740153
+
 peta5_0_1_res_heat_demands:
   original_data:
     source:

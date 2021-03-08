@@ -35,6 +35,14 @@ Added
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
 * DemandRegio data import for annual electricity demands
   `#5 <https://github.com/openego/eGon-data/issues/5>`_
+* Download cleaned open-MaStR data from Zenodo
+  `#14 <https://github.com/openego/eGon-data/issues/14>`_
+* NEP 2021 input data import
+  `#45 <https://github.com/openego/eGon-data/issues/45>`_
+* Option for running workflow in test mode
+  `#112 <https://github.com/openego/eGon-data/issues/112>`_
+* Abstraction of hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
 
 Changed
 -------

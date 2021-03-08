@@ -76,6 +76,25 @@ def create_tables():
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
 
+def data_in_boundaries(df):
+    """ Select rows with nuts3 code within boundaries, used for testmode
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data for all nuts3 regions
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data for nuts3 regions within boundaries
+
+    """
+    engine = db.engine()
+
+    return df[df.index.isin(pd.read_sql(
+        "SELECT DISTINCT ON (nuts) nuts FROM boundaries.vg250_krs",
+        engine).nuts)]
 
 def insert_cts_ind_wz_definitions():
     """ Insert demandregio's definitions of CTS and industrial branches
@@ -250,6 +269,9 @@ def insert_hh_demand(scenario, year, engine, cfg):
     # get demands of private households per nuts and size from demandregio
     ec_hh = disagg_households_power(scenario, year)
 
+    # Select demands for nuts3-regions in boundaries (needed for testmode)
+    ec_hh = data_in_boundaries(ec_hh)
+
     # insert into database
     for hh_size in ec_hh.columns:
         df = pd.DataFrame(ec_hh[hh_size])
@@ -302,6 +324,9 @@ def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
         # include new largescale consumers according to NEP 2021
         if scenario == 'eGon2035':
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector, cfg)
+
+        # Select demands for nuts3-regions in boundaries (needed for testmode)
+        ec_cts_ind = data_in_boundaries(ec_cts_ind)
 
         # insert into database
         for wz in ec_cts_ind.columns:
@@ -382,12 +407,15 @@ def insert_society_data():
         df_pop = pd.DataFrame(data.population(year=year))
         df_pop['year'] = year
         df_pop = df_pop.rename({'value': 'population'}, axis='columns')
+        # Select data for nuts3-regions in boundaries (needed for testmode)
+        df_pop = data_in_boundaries(df_pop)
         df_pop.to_sql(cfg['table_names']['population'],
                       engine,
                       schema=cfg['schema'],
                       if_exists='append')
         df_hh = pd.DataFrame(data.households_per_size(year=year))
-
+        # Select data for nuts3-regions in boundaries (needed for testmode)
+        df_hh = data_in_boundaries(df_hh)
         for hh_size in df_hh.columns:
             df = pd.DataFrame(df_hh[hh_size])
             df['year'] = year
