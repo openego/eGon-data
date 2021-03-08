@@ -28,7 +28,7 @@ FROM (
 ) AS demands
 LEFT JOIN (
   SELECT
-    gid,
+    id,
     geom_point AS point
   FROM society.destatis_zensus_population_per_ha
 ) AS population
