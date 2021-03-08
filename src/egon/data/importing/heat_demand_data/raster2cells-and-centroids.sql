@@ -4,24 +4,17 @@ CREATE TABLE demand.heat (
   demand DOUBLE PRECISION,
   sector TEXT,
   scenario TEXT,
-  centroid GEOMETRY,
-  polygon GEOMETRY,
   version TEXT,
   zensus_population_id INTEGER
     REFERENCES society.destatis_zensus_population_per_ha (id)
 );
 
-CREATE INDEX ON demand.heat USING gist (centroid);
-CREATE INDEX ON demand.heat USING gist (polygon);
-
 INSERT INTO demand.heat (
-  demand, sector, scenario, centroid, polygon, version, zensus_population_id
+  demand, sector, scenario, version, zensus_population_id
 ) SELECT
   (demands.centroid).val AS demand,
   sector,
   (regexp_matches(filename, '(ser|res)_hd_([^.]*).*', 'i'))[2] AS scenario,
-  (demands.centroid).geom AS centroid,
-  (demands.polygon).geom AS polygon,
   '{{ version }}' AS version,
   population.id AS zensus_population_id
 FROM (
