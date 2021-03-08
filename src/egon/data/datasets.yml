@@ -119,3 +119,18 @@ mastr:
     - "storage"
   file_basename: "bnetza_mastr"
   deposit_id: 740153
+
+re_potential_areas:
+  original_data:
+    source:
+      url:
+        #TODO: finally replace sandbox
+        - "https://sandbox.zenodo.org/record/742932/files/potentialarea_pv_agriculture.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/742932/files/potentialarea_pv_road_railway.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/742932/files/potentialarea_wind.gpkg?download=1"
+    target:
+      schema: "supply"
+      path_table_map:
+        "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
+        "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
+        "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
