@@ -64,6 +64,13 @@ def create_tables():
 
     db.execute_sql(f'CREATE SCHEMA IF NOT EXISTS {schema};')
     engine = db.engine()
+
+    # drop tables
+    EgonRePotentialAreaPvAgriculture.__table__.drop(engine, checkfirst=True)
+    EgonRePotentialAreaPvRoadRailway.__table__.drop(engine, checkfirst=True)
+    EgonRePotentialAreaWind.__table__.drop(engine, checkfirst=True)
+
+    # create tables
     EgonRePotentialAreaPvAgriculture.__table__.create(bind=engine,
                                                       checkfirst=True)
     EgonRePotentialAreaPvRoadRailway.__table__.create(bind=engine,
