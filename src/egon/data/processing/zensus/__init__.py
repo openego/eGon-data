@@ -16,21 +16,21 @@ Base = declarative_base()
 class MapZensusNuts3(Base):
     __tablename__ = 'map_zensus_nuts3'
     __table_args__ = {'schema': 'society'}
-    grid_id = Column(String(25), primary_key=True)
+    zensus_population_id = Column(Integer, primary_key=True)
     zensus_geom = Column(Geometry('POINT', 3035))
     nuts3 = Column(String(5))
 
 class EgonPopulationPrognosis(Base):
     __tablename__ = 'egon_population_prognosis'
     __table_args__ = {'schema': 'society'}
-    grid_id = Column(String(25), primary_key=True)
+    zensus_population_id = Column(Integer, primary_key=True)
     year = Column(Integer, primary_key=True)
     population = Column(Float)
 
 class EgonHouseholdPrognosis(Base):
     __tablename__ = 'egon_household_prognosis'
     __table_args__ = {'schema': 'society'}
-    grid_id = Column(String(25), primary_key=True)
+    zensus_population_id = Column(Integer, primary_key=True)
     year = Column(Integer, primary_key=True)
     households = Column(Float)
 
@@ -73,7 +73,7 @@ def map_zensus_nuts3():
     join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op='intersects')
 
     # Deal with cells that don't interect with boundaries (e.g. at borders)
-    missing_cells = gdf[~gdf.gid.isin(join.gid_left)]
+    missing_cells = gdf[~gdf.id.isin(join.id)]
 
     # start with buffer of 100m
     buffer = 100
@@ -86,16 +86,18 @@ def map_zensus_nuts3():
             missing_cells,boundaries_buffer, how="inner", op='intersects')
         buffer += 100
         join = join.append(join_missing)
-        missing_cells = gdf[~gdf.gid.isin(join.gid_left)]
+        missing_cells = gdf[~gdf.id.isin(join.id)]
     print(f"Maximal buffer to match zensus points to nuts3: {buffer}m")
 
     # drop duplicates
-    join = join.drop_duplicates(subset=['gid_left'])
+    join = join.drop_duplicates(subset=['id'])
 
     # Insert results to database
-    join.rename({'geom_point': 'zensus_geom',
+    join.rename({'id': 'zensus_population_id',
+                 'geom_point': 'zensus_geom',
                  'nuts': 'nuts3'}, axis = 1
-                )[['grid_id','zensus_geom', 'nuts3']].set_geometry(
+                )[['zensus_population_id',
+                   'zensus_geom', 'nuts3']].set_geometry(
                     'zensus_geom').to_postgis(
                          f' {target_schema}.{target_table}',
                          local_engine, if_exists = 'replace')
@@ -118,16 +120,19 @@ def population_prognosis_to_zensus():
 
     # Input: Zensus2011 population data including the NUTS3-Code
     zensus_district = pd.read_sql(
-        f"""SELECT grid_id, nuts3
+        f"""SELECT zensus_population_id, nuts3
         FROM {source_schema}.{source_map}""",
-        local_engine).set_index('grid_id')
+        local_engine).set_index('zensus_population_id')
 
     zensus = pd.read_sql(
-        f"""SELECT grid_id, population
+        f"""SELECT id, population
         FROM {source_schema}.{source_zensus}""",
-        local_engine).set_index('grid_id')
+        local_engine).set_index('id')
 
     zensus['nuts3'] = zensus_district.nuts3
+
+    # Rename index
+    zensus.index = zensus.index.rename('zensus_population_id')
 
     # Replace population value of uninhabited cells for calculation
     zensus.population = zensus.population.replace(-1, 0)
@@ -149,9 +154,11 @@ def population_prognosis_to_zensus():
             prognosis.population[zensus['nuts3']].values
             ).replace(0,-1)).rename({'share': 'population'}, axis = 1)
         df['year'] = year
+
         # Insert to database
-        df.to_sql(target_table, schema=target_schema, con=local_engine,
-                  if_exists='append')
+        df.to_sql(
+                target_table, schema=target_schema, con=local_engine,
+                if_exists='append')
 
 
 def household_prognosis_per_year(prognosis_nuts3, zensus, year):
@@ -202,14 +209,14 @@ def household_prognosis_to_zensus():
 
     # Input: Zensus2011 household data including the NUTS3-Code
     district = pd.read_sql(
-        f"""SELECT grid_id, nuts3
+        f"""SELECT zensus_population_id, nuts3
         FROM {source_schema}.{source_map}""",
-        local_engine).set_index('grid_id')
+        local_engine).set_index('zensus_population_id')
 
     zensus = pd.read_sql(
-        f"""SELECT grid_id, quantity
+        f"""SELECT zensus_population_id, quantity
         FROM {source_schema}.{source_zensus}""",
-        local_engine).set_index('grid_id')
+        local_engine).set_index('zensus_population_id')
 
     zensus['nuts3'] = district.nuts3
 
