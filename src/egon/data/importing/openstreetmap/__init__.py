@@ -14,12 +14,13 @@ import json
 import os
 import time
 
+from importlib_resources import files
+
 from egon.data import db
 import egon.data.config
 import egon.data.subprocess as subprocess
-
 import egon.data.importing.openstreetmap as import_openstreetmap
-from importlib_resources import files
+
 
 
 def download_pbf_file():

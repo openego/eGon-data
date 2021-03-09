@@ -1,10 +1,10 @@
 import os
 
 import yaml
+from importlib_resources import files
 
 import egon
 
-from importlib_resources import files
 
 
 def datasets(config_file=None):

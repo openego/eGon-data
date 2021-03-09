@@ -20,14 +20,11 @@ import os.path
 import subprocess
 
 from importlib_resources import files
-
 import click
 import yaml
 
 import egon.data
 import egon.data.airflow
-
-from importlib_resources import files
 
 @click.command(
     add_help_option=False,

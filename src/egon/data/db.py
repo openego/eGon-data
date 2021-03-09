@@ -3,10 +3,11 @@ import os
 
 from sqlalchemy import create_engine, text
 import yaml
+from importlib_resources import files
 
 import egon
 
-from importlib_resources import files
+
 
 def credentials():
     """Return local database connection parameters.

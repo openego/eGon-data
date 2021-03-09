@@ -15,11 +15,12 @@ import os
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
+from importlib_resources import files
 
 from egon.data import db
 import egon.data.config
 
-from importlib_resources import files
+
 
 def download_vg250_files():
     """Download VG250 (Verwaltungsgebiete) shape files."""

@@ -4,6 +4,8 @@ from airflow.utils.dates import days_ago
 import airflow
 import os
 
+from importlib_resources import files
+
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
 import egon.data.importing.openstreetmap as import_osm
@@ -12,7 +14,6 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
 
-from importlib_resources import files
 
 # Prepare connection to db for operators
 airflow_db_connection()

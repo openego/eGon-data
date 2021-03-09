@@ -5,11 +5,12 @@ from urllib.request import urlretrieve
 import os
 import zipfile
 
+from importlib_resources import files
+
 from egon.data import db, subprocess
 import egon.data.config
-
 import egon.data.importing.zensus as import_zensus
-from importlib_resources import files
+
 
 def download_zensus_pop():
     """Download Zensus csv file on population per hectar grid cell."""

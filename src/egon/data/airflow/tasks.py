@@ -1,10 +1,10 @@
 import os.path
 import socket
 
+from importlib_resources import files
+
 from egon.data.db import credentials
 import egon.data.subprocess as subprocess
-
-from importlib_resources import files
 
 def initdb():
     """ Initialize the local database used for data processing. """
