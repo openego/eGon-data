@@ -58,9 +58,15 @@ def serve(context):
 
 @click.group()
 @click.option(
+    "--database-name",
     "--database",
     metavar="DB",
-    help=("Specify the name of the local database."),
+    help=(
+        "Specify the name of the local database.\n\n\b"
+        ' Note: "--database" is deprecated and will be removed in the'
+        " future. Please use the longer but consistent"
+        ' "--database-name".'
+    ),
 )
 @click.option(
     "--database-host",
@@ -87,7 +93,7 @@ def serve(context):
 def main(context, **kwargs):
     os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
     translations = {
-        "database": "POSTGRES_DB",
+        "database_name": "POSTGRES_DB",
         "database_password": "POSTGRES_PASSWORD",
         "database_host": "HOST",
         "database_port": "PORT",
