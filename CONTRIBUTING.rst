@@ -9,8 +9,8 @@ little bit helps, and credit will always be given.
 Development
 ===========
 
-To set up `eGon-data` for local development (point (1) and (2) are only
-relevant for people not in the organization
+To set up `eGon-data` for local development (points (1) and (2) are only
+relevant for people who are not members of the organization
 `openego <https://github.com/openego>`_):
 
 1. Fork `eGon-data <https://github.com/openego/eGon-data>`_
