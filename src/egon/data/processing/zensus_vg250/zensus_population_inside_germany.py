@@ -1,7 +1,6 @@
 from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Integer, SmallInteger, String, func
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 from egon.data import db
 
@@ -71,46 +70,48 @@ def filter_data():
     Filter zensus data by data inside Germany and population > 0
     """
 
-    # Get database engine and create session
+    # Get database engine
     engine_local_db = db.engine()
-    s = sessionmaker(bind=engine_local_db)()
 
     # Create new table
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
         bind=engine_local_db, checkfirst=True
     )
 
-    # Query relevant data from zensus population table
-    q = (
-        s.query(
-            DestatisZensusPopulationPerHa.gid,
-            DestatisZensusPopulationPerHa.grid_id,
-            DestatisZensusPopulationPerHa.population,
-            DestatisZensusPopulationPerHa.geom_point,
-            DestatisZensusPopulationPerHa.geom,
-        )
-        .filter(DestatisZensusPopulationPerHa.population > 0)
-        .filter(
-            func.ST_Contains(
-                func.ST_Transform(Vg250Sta.geometry, 3035),
+    with db.session_scope() as s:
+        # Query relevant data from zensus population table
+        q = (
+            s.query(
+                DestatisZensusPopulationPerHa.gid,
+                DestatisZensusPopulationPerHa.grid_id,
+                DestatisZensusPopulationPerHa.population,
                 DestatisZensusPopulationPerHa.geom_point,
+                DestatisZensusPopulationPerHa.geom,
+            )
+            .filter(DestatisZensusPopulationPerHa.population > 0)
+            .filter(
+                func.ST_Contains(
+                    func.ST_Transform(Vg250Sta.geometry, 3035),
+                    DestatisZensusPopulationPerHa.geom_point,
+                )
             )
         )
-    )
 
-    # Insert above queried data into new table
-    insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(
-        (
-            DestatisZensusPopulationPerHaInsideGermany.gid,
-            DestatisZensusPopulationPerHaInsideGermany.grid_id,
-            DestatisZensusPopulationPerHaInsideGermany.population,
-            DestatisZensusPopulationPerHaInsideGermany.geom_point,
-            DestatisZensusPopulationPerHaInsideGermany.geom,
-        ),
-        q,
-    )
+        # Insert above queried data into new table
+        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert(
+        ).from_select(
+            (
+                DestatisZensusPopulationPerHaInsideGermany.gid,
+                DestatisZensusPopulationPerHaInsideGermany.grid_id,
+                DestatisZensusPopulationPerHaInsideGermany.population,
+                DestatisZensusPopulationPerHaInsideGermany.geom_point,
+                DestatisZensusPopulationPerHaInsideGermany.geom,
+            ),
+            q,
+        )
 
-    # Execute and commit (trigger transactions in database)
-    s.execute(insert)
-    s.commit()
+        # Execute and commit (trigger transactions in database)
+        s.execute(insert)
+        s.commit()
+
 
