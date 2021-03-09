@@ -1,5 +1,13 @@
 from geoalchemy2 import Geometry
-from sqlalchemy import BigInteger, Column, Integer, SmallInteger, String, func
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Integer,
+    SmallInteger,
+    String,
+    Float,
+    func,
+)
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
@@ -63,6 +71,27 @@ class DestatisZensusPopulationPerHaInsideGermany(Base):
     population = Column(SmallInteger)
     geom_point = Column(Geometry("POINT", 3035), index=True)
     geom = Column(Geometry("POLYGON", 3035), index=True)
+
+
+class BkgVg250GemPopulation(Base):
+    __tablename__ = "bkg_vg250_6_gem_mview"
+    __table_args__ = {"schema": "boundaries"}
+
+    gid = Column(Integer, primary_key=True)
+    reference_date = Column(String)
+    gen = Column(String)
+    bez = Column(String)
+    bem = Column(String)
+    nuts = Column(String)
+    ags_0 = Column(String)
+    rs_0 = Column(String)
+    area_ha = Column(Float)
+    area_km2 = Column(Float)
+    census_sum = Column(Integer)
+    census_count = Column(Integer)
+    census_density = Column(Integer)
+    pd = (Column(Float),)
+    geom = Column(Geometry("MULTIPOLYGON", 3035), index=True)
 
 
 def filter_data():
