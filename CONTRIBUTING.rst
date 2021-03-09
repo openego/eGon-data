@@ -59,7 +59,7 @@ Pull Request Guidelines
 
 We use pull requests (PR) to integrate code changes from branches.
 PRs always need to be reviewed (exception proves the rule!). Therefore, ask
-one of the other developers for reviewing your changes. Once, approved the PR
+one of the other developers for reviewing your changes. Once approved, the PR
 can be merged. Please delete the branch after merging.
 
 Before requesting a review, please
@@ -77,9 +77,9 @@ as low as possible. Therefore,
 
 * asking for reviewing specific aspects helps reviewers a lot to focus on the
   relevant parts
-* when multiple people are asked for a review it should avoided that they
+* when multiple people are asked for a review it should be avoided that they
   check/test the same things. Be even more specific what you expect from
-  someone in particular
+  someone in particular.
 
 
 What needs to be reviewed?
@@ -128,9 +128,9 @@ Bug reports and feature requests
 
 When `reporting a bug <https://github.com/openego/eGon-data/issues>`_ please include:
 
-    * Your operating system name and version.
-    * Any details about your local setup that might be helpful in troubleshooting.
-    * Detailed steps to reproduce the bug.
+* Your operating system name and version.
+* Any details about your local setup that might be helpful in troubleshooting.
+* Detailed steps to reproduce the bug.
 
 If you are proposing a feature:
 
