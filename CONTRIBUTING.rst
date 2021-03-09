@@ -62,12 +62,46 @@ PRs always need to be reviewed (exception proves the rule!). Therefore, ask
 one of the other developers for reviewing your changes. Once, approved the PR
 can be merged. Please delete the branch after merging.
 
-For merging, you should:
+Before requesting a review, please
 
 1. Include passing tests (run ``tox``) [1]_.
-2. Update documentation when there's new API, functionality etc.
-3. Add a note to ``CHANGELOG.rst`` about the changes.
-4. Add yourself to ``AUTHORS.rst``.
+2. Let the workflow run in :ref:`Test mode` once from scratch to verify
+   successful execution
+3. Update documentation when there's new API, functionality etc.
+4. Add a note to ``CHANGELOG.rst`` about the changes.
+5. Add yourself to ``AUTHORS.rst``.
+
+When requesting reviews, please keep in mind it might be a significant effort
+to review the PR. Try to make it easier for them and keep the overall effort
+as low as possible. Therefore,
+
+* asking for reviewing specific aspects helps reviewers a lot to focus on the
+  relevant parts
+* when multiple people are asked for a review it should avoided that they
+  check/test the same things. Be even more specific what you expect from
+  someone in particular
+
+
+What needs to be reviewed?
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Things that definitely should be checked during a review of a PR:
+
+* *Is the code working?* The contributor should already have made sure that
+  this is the case. Either by automated test or manual execution.
+* *Is the data correct?* Verifying that newly integrated and processed data
+  is correct is usually not possible during reviewing a PR. If it is necessary,
+  please ask the reviewer specifically for this.
+* *Do tests pass?* See automatic checks.
+* *Is the documentation up-to-date?* Please check this.
+* *Was* ``CHANGELOG.rst`` *updated accordingly?* Should be the case, please
+  verify.
+* *Is metadata complete and correct (in case of data integration)?* Please
+  verify.
+
+Additional case-dependent aspects make sense.
+
+
 
 .. [1] If you don't have all the necessary python versions available locally you can rely on
        `CI on GitHub actions <https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22>`_
