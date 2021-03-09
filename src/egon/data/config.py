@@ -6,7 +6,6 @@ from importlib_resources import files
 import egon
 
 
-
 def datasets(config_file=None):
     """Return dataset configuration.
 
@@ -26,7 +25,6 @@ def datasets(config_file=None):
 
     """
     if not config_file:
-        #package_path = egon.data.__path__[0]
         package_path = files('egon.data')
         config_file = os.path.join(package_path, "datasets.yml")
 

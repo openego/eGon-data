@@ -28,7 +28,6 @@ def download_vg250_files():
     vg250_config = data_config["vg250"]["original_data"]
 
     target_file = os.path.join(
-        #os.path.dirname(__file__), vg250_config["target"]["path"]
         files(egon.data.importing), vg250_config["target"]["path"]
     )
 
@@ -47,7 +46,6 @@ def to_postgres():
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {vg250_processed['schema']};")
 
     zip_file = os.path.join(
-        #os.path.dirname(__file__), vg250_orig["target"]["path"]
         files(egon.data.importing), vg250_orig["target"]["path"]
     )
     engine_local_db = db.engine()

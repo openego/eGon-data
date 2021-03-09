@@ -85,9 +85,7 @@ def serve(context):
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def main(context, **kwargs):
-    #os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
-    os.environ["AIRFLOW_HOME"] = os.path.dirname(files(egon.data.airflow).joinpath('__init__.py'))
-    #os.environ["AIRFLOW_HOME"] = files('egon.data.airflow')
+    os.environ["AIRFLOW_HOME"] = str(files(egon.data.airflow))
     translations = {
         "database": "POSTGRES_DB",
         "database_password": "POSTGRES_PASSWORD",

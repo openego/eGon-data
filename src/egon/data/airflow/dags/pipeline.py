@@ -23,10 +23,7 @@ with airflow.DAG(
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
-        #os.path.abspath(os.path.join(os.path.dirname(
-        #    __file__ ), '..', '..', 'processing', 'vg250'))
         files('egon.data.processing').joinpath('vg250')
-
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
