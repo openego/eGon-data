@@ -1,11 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
+      url: "http://download.geofabrik.de/europe/germany-200101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      path: "bremen-200101.osm.pbf"
+      path: "germany-200101.osm.pbf"
+      path_testmode: "schleswig-holstein-200101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -78,6 +80,26 @@ demandregio:
       - 2018
       - 2035
       - 2050
+hvmv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_hvmv_substation"
+ehv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_ehv_substation"
+
+
 
 scenario_input:
   eGon2035:

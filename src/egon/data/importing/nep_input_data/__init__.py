@@ -5,6 +5,7 @@ Netzentwicklungsplan 2035, Version 2031, Szenario C
 import os
 import egon.data.config
 import pandas as pd
+import numpy as np
 from egon.data import db
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
@@ -80,7 +81,7 @@ def create_scenario_input_tables():
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
-def insert_capacities_per_federal_state_nep():
+def insert_capacities_per_federal_state_nep(dataset):
     """Inserts installed capacities per federal state accordning to
     NEP 2035 (version 2021), scenario 2035 C
 
@@ -188,9 +189,24 @@ def insert_capacities_per_federal_state_nep():
 
 
     # Add district heating data accordning to energy and full load hours
-    district_heating_input()
+    district_heating_input(dataset)
 
-def insert_nep_list_powerplants():
+def population_share():
+    """ Calulate share of population in testmode
+
+    Returns
+    -------
+    float
+        Share of population in testmode
+
+    """
+
+    return pd.read_sql(
+    """SELECT SUM(population)
+    FROM society.destatis_zensus_population_per_ha
+    WHERE population>0""", con=db.engine())['sum'][0]/80324282
+
+def insert_nep_list_powerplants(dataset):
     """Insert list of conventional powerplants attachd to the approval
     of the scenario report by BNetzA
 
@@ -230,13 +246,32 @@ def insert_nep_list_powerplants():
                                  'B 2040:\nKWK-Ersatz': 'b2040_chp',
                                  'B 2040:\nLeistung': 'b2040_capacity'})
 
+    # Cut data to federal state if in testmode
+    if dataset != 'main':
+        map_states = {'Baden-Württemberg':'BW', 'Nordrhein-Westfalen': 'NW',
+               'Hessen': 'HE', 'Brandenburg': 'BB', 'Bremen':'HB',
+               'Rheinland-Pfalz': 'RP', 'Sachsen-Anhalt': 'ST',
+               'Schleswig-Holstein':'SH', 'Mecklenburg-Vorpommern': 'MV',
+               'Thüringen': 'TH', 'Niedersachsen': 'NI',
+               'Sachsen': 'SN', 'Hamburg': 'HH', 'Saarland': 'SL',
+               'Berlin': 'BE', 'Bayern': 'BY'}
+
+        kw_liste_nep = kw_liste_nep[
+            kw_liste_nep.federal_state.isin([map_states[dataset], np.nan])]
+
+        for col in ['capacity', 'a2035_capacity', 'b2035_capacity',
+                    'c2035_capacity', 'b2040_capacity']:
+            kw_liste_nep.loc[
+                kw_liste_nep[kw_liste_nep.federal_state.isnull()].index,
+                col] *= population_share()
+
     # Insert data to db
     kw_liste_nep.to_sql('nep_2021_conv_powerplants',
                        engine,
                        schema='supply',
                        if_exists='replace')
 
-def district_heating_input():
+def district_heating_input(dataset):
     """Imports data for district heating networks in Germany
 
     Returns
@@ -250,6 +285,12 @@ def district_heating_input():
         scenario_config('eGon2035')['paths']['capacities'])
     df = pd.read_excel(file, sheet_name='Kurzstudie_KWK', dtype={'Wert':float})
     df.set_index(['Energietraeger', 'Name'], inplace=True)
+
+    # Scale values to population share in testmode
+    if dataset != 'main':
+        df.loc[
+            pd.IndexSlice[:, 'Fernwaermeerzeugung'],
+            'Wert'] *= population_share()
 
     # Connect to database
     engine = db.engine()
@@ -285,7 +326,7 @@ def district_heating_input():
 
     session.commit()
 
-def insert_data_nep():
+def insert_data_nep(dataset):
     """Overall function for importing scenario input data for eGon2035 scenario
 
     Returns
@@ -294,6 +335,6 @@ def insert_data_nep():
 
     """
 
-    insert_capacities_per_federal_state_nep()
+    insert_capacities_per_federal_state_nep(dataset)
 
-    insert_nep_list_powerplants()
+    insert_nep_list_powerplants(dataset)
