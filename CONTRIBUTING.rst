@@ -40,6 +40,24 @@ Documentation improvements
 eGo^N Data could always use more documentation, whether as part of the
 official eGo^N Data docs, in docstrings, or even on the web in blog posts,
 articles, and such.
+Please make sure you change the documentation along with code changes.
+
+The changes of the documentation in a feature branch get visible once a pull
+request is opened.
+
+You can build the documentation locally with (executed in the repos root
+directory)
+
+.. code-block:: bash
+
+   sphinx-build -E -a docs docs/_build/
+
+Eventually, you might need to install additional dependencies for building the
+documenmtation:
+
+.. code-block:: bash
+
+   pip install -r docs/requirements.txt
 
 
 Development
