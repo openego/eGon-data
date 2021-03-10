@@ -98,7 +98,24 @@ ehv_substation:
   processed:
     schema: "grid"
     table: "egon_ehv_substation"
-
+hvmv_substation_voronoi:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_hvmv_substation_voronoi"
+ehv_substation_voronoi:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_ehv_substation_voronoi"
 
 
 scenario_input:
