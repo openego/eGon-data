@@ -277,7 +277,6 @@ def cutout_heat_demand_germany():
 
     return None
 
-
 def future_heat_demand_germany(scenario_name):
     """
     Calculate the future residential and service-sector heat demand per ha.
@@ -325,18 +324,16 @@ def future_heat_demand_germany(scenario_name):
     csvfilename = os.path.join(
         os.path.dirname(__file__), "scenarios_HD_raster_adjustments.csv"
     )
-    df_reductions = pd.read_csv(csvfilename)
+    df_reductions = pd.read_csv(csvfilename).set_index('scenario')
 
     # Load the values, if scenario name is found in the file
-    if scenario_name in df_reductions.scenario.values:
-        for index, row in df_reductions.iterrows():
-            if scenario_name == df_reductions.loc[index, "scenario"]:
-                res_hd_reduction = df_reductions.loc[
-                    index, "HD_reduction_residential"
-                ]
-                ser_hd_reduction = df_reductions.loc[
-                    index, "HD_reduction_service_sector"
-                ]
+    if scenario_name in df_reductions.index:
+        res_hd_reduction = df_reductions.loc[
+            scenario_name, "HD_reduction_residential"
+            ]
+        ser_hd_reduction = df_reductions.loc[
+            scenario_name, "HD_reduction_service_sector"
+            ]
     else:
         print(f"Scenario {scenario_name} not defined.")
 
