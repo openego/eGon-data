@@ -45,6 +45,8 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * RE potential areas data import
   `#124 <https://github.com/openego/eGon-data/issues/124>`_
+* Heat demand data import
+  `#101 <https://github.com/openego/eGon-data/issues/101>`_
 
 Changed
 -------

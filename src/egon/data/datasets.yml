@@ -80,6 +80,7 @@ demandregio:
       - 2018
       - 2035
       - 2050
+
 hvmv_substation:
   original_data:
     source:
@@ -138,3 +139,32 @@ re_potential_areas:
         "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
         "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
         "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
+
+peta5_0_1_res_heat_demands:
+  original_data:
+    source:
+    # In case the link breaks (hopefully it does not), you are able to download
+    # the data manually. Here you also find background information:
+    # https://s-eenergies-open-data-euf.hub.arcgis.com/search?categories=seenergies_buildings
+    # https://www.arcgis.com/home/item.html?id=d7d18b63250240a49eb81db972aa573e
+      url: "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data"
+    target:
+      path: "Peta5_0_1_HD_res.zip"
+  processed:
+    schema: "demand"
+    file_table_map:
+    table: # 2015 heat demand data not stored in database
+peta5_0_1_ser_heat_demands:
+  original_data:
+    source:
+    # In case the link breaks (hopefully it does not), you are able to download
+    # the data manually. Here you also find background information:
+    # https://s-eenergies-open-data-euf.hub.arcgis.com/search?categories=seenergies_buildings
+    # https://www.arcgis.com/home/item.html?id=52ff5e02111142459ed5c2fe3d80b3a0
+      url: "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data"
+    target:
+      path: "Peta5_0_1_HD_ser.zip"
+  processed:
+    schema: "demand"
+    file_table_map:
+    table: # 2015 heat demand data not stored in database
