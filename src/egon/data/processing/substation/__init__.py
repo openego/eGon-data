@@ -53,6 +53,25 @@ class EgonHvmvSubstation(Base):
     dbahn = Column(Text)
     status = Column(Integer)
 
+class EgonHvmvSubstationVoronoi(Base):
+    __tablename__ = 'egon_hvmv_substation_voronoi'
+    __table_args__ = {'schema': 'grid'}
+    id = Column(Integer, Sequence('hvmv_voronoi_id_seq'),
+        server_default=Sequence('hvmv_voronoi_id_seq').next_value(),
+        primary_key=True)
+    subst_id = Column(Integer)
+    geom = Column(Geometry('Multipolygon', 4326), index=True)
+
+
+class EgonEhvSubstationVoronoi(Base):
+    __tablename__ = 'egon_ehv_substation_voronoi'
+    __table_args__ = {'schema': 'grid'}
+    id = Column(Integer, Sequence('ehv_voronoi_id_seq'),
+        server_default=Sequence('ehv_voronoi_id_seq').next_value(),
+        primary_key=True)
+    subst_id = Column(Integer)
+    geom = Column(Geometry('Multipolygon', 4326), index=True)
+
 def create_tables():
     """Create tables for substation data
     Returns
@@ -61,18 +80,31 @@ def create_tables():
     """
     cfg_ehv = egon.data.config.datasets()['ehv_substation']
     cfg_hvmv = egon.data.config.datasets()['hvmv_substation']
+    cfg_ehv_voronoi = egon.data.config.datasets()['ehv_substation_voronoi']
+    cfg_hvmv_voronoi = egon.data.config.datasets()['hvmv_substation_voronoi']
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS {cfg_ehv['processed']['schema']};")
 
     db.execute_sql(f"""DROP TABLE IF EXISTS {cfg_ehv['processed']['schema']}.
-                   {cfg_ehv['processed']['table']} CASCADE;""")
+                    {cfg_ehv['processed']['table']} CASCADE;""")
 
     db.execute_sql(f"""DROP TABLE IF EXISTS {cfg_hvmv['processed']['schema']}.
-                   {cfg_hvmv['processed']['table']} CASCADE;""")
+                    {cfg_hvmv['processed']['table']} CASCADE;""")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+                   {cfg_ehv_voronoi['processed']['schema']}.
+                   {cfg_ehv_voronoi['processed']['table']} CASCADE;""")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+                   {cfg_hvmv_voronoi['processed']['schema']}.
+                   {cfg_hvmv_voronoi['processed']['table']} CASCADE;""")
 
     engine = db.engine()
     EgonEhvSubstation.__table__.create(bind=engine, checkfirst=True)
     EgonHvmvSubstation.__table__.create(bind=engine, checkfirst=True)
+    EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
+    EgonHvmvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
+
 
 def create_sql_functions():
     """Defines Postgresql functions needed to extract substation from osm
@@ -160,5 +192,36 @@ def create_sql_functions():
         END;
         $BODY$ LANGUAGE 'plpgsql' IMMUTABLE
         COST 100;
+        """
+        )
+
+def create_voronoi():
+    '''
+    Creates voronoi polygons for hvmv and ehv substations
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    db.execute_sql("DROP VIEW IF EXISTS grid.egon_voronoi_no_borders CASCADE;")
+
+    db.execute_sql(
+        """
+        CREATE VIEW grid.egon_voronoi_no_borders AS
+        SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom AS geom
+        FROM grid.egon_hvmv_substation a;
+        """
+        )
+
+    db.execute_sql(
+        """
+        INSERT INTO grid.egon_hvmv_substation_voronoi (geom)
+            VALUES
+            (SELECT ST_Intersection(
+                ST_Transform(a.geometry, 4326), b.geom) AS geom
+             FROM boundaries.vg250_sta_union a
+             CROSS JOIN grid.egon_hvmv_voronoi_no_borders b);
         """
         )
