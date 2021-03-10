@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS demand.heat;
-CREATE TABLE demand.heat (
+DROP TABLE IF EXISTS demand.egon_peta_heat;
+CREATE TABLE demand.egon_peta_heat (
   id SERIAL PRIMARY KEY,
   demand DOUBLE PRECISION,
   sector TEXT,
@@ -9,7 +9,7 @@ CREATE TABLE demand.heat (
     REFERENCES society.destatis_zensus_population_per_ha (id)
 );
 
-INSERT INTO demand.heat (
+INSERT INTO demand.egon_peta_heat (
   demand, sector, scenario, version, zensus_population_id
 ) SELECT
   (demands.centroid).val AS demand,

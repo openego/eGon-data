@@ -412,7 +412,7 @@ def heat_demand_to_db_table():
     The final demand data, having the census IDs as foreign key (from the
     census population table), are genetated
     by the provided sql script (raster2cells-and-centroids.sql) and
-    are stored in the table "demand.heat_demands".
+    are stored in the table "demand.egon_peta_heat".
 
     Parameters
     ----------
@@ -424,7 +424,7 @@ def heat_demand_to_db_table():
 
     Notes
     -----
-        Please note that the table "demand.heat_demands" is dropped prior to
+        Please note that the table "demand.egon_peta_heat" is dropped prior to
         the import, so make sure you're not loosing valuable data.
 
     TODO
@@ -642,7 +642,7 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "demand.heat",
+                "name": "egon_peta_heat",
                 "path": "",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
