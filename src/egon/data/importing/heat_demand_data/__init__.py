@@ -480,7 +480,8 @@ def add_metadata():
 
     TODO
     ----
-        Meta data must be check and adjusted to the egon_data standard.
+        Meta data must be check and adjusted to the egon_data standard:
+            - Add context
 
         Meta data for Census Population Table must be added.
 
@@ -637,6 +638,66 @@ def add_metadata():
                 "path": "http://www.bkg.bund.de",
                 "licenses": license_BKG,
             },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "demand.heat",
+                "path": "",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "id",
+                            "description": "Unique identifier",
+                            "type": "serial",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "demand",
+                            "description": "annual heat demand",
+                            "type": "double precision",
+                            "unit": "MWh",
+                        },
+                        {
+                            "name": "sector",
+                            "description": "sector e.g. residential",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "scenario",
+                            "description": "scenario name",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "version",
+                            "description": "data version number",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "zensus_population_id",
+                            "description": "census cell id",
+                            "type": "integer",
+                            "unit": "none",
+                        },
+                    ],
+                    "primaryKey": ["id"],
+                    "foreignKeys": [
+                        {
+                            "fields": ["zensus_population_id"],
+                            "reference": {
+                                "resource": "society.destatis_zensus_population_per_ha",
+                                "fields": ["id"],
+                            },
+                        }
+                    ],
+                },
+                "dialect": {"delimiter": "none", "decimalSeparator": "."},
+            }
         ],
         "licenses": license_heat,
         "contributors": [
