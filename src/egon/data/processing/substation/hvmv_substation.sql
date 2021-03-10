@@ -11,27 +11,6 @@ __author__      = "lukasol, C. Matke, Ludee, ilkacu"
 */
 
 
--- hvmv substations
-DROP TABLE IF EXISTS 	grid.egon_hvmv_substation CASCADE;
-CREATE TABLE 		grid.egon_hvmv_substation (
-	subst_id       	serial NOT NULL,
-	lon            	float NOT NULL,
-	lat            	float NOT NULL,
-	point	   	geometry(Point,4326) NOT NULL,
-	polygon	   	geometry NOT NULL,	
-	voltage        	text,
-	power_type     	text,
-	substation     	text,
-	osm_id         	text PRIMARY KEY,
-	osm_www        	text NOT NULL,
-	frequency      	text,
-	subst_name     	text,
-	ref            	text,
-	operator       	text,
-	dbahn          	text,
-	status		smallint NOT NULL);
-
-
 --> WAY: create view of way substations:
 DROP VIEW IF EXISTS 	grid.egon_way_substations CASCADE;
 CREATE VIEW 		grid.egon_way_substations AS
@@ -66,12 +45,12 @@ CREATE VIEW 		grid.egon_way_substations_without_110kV AS
 --> NODE: create view of 110kV node substations:
 DROP VIEW IF EXISTS 	grid.egon_node_substations_with_110kV CASCADE;
 CREATE VIEW 		grid.egon_node_substations_with_110kV AS
-	SELECT 	openstreetmap.osm_nodes.id, openstreetmap.osm_nodes.tags, openstreetmap.osm_point.geom
+	SELECT 	openstreetmap.osm_nodes.id, openstreetmap.osm_point.tags, openstreetmap.osm_point.geom
 	FROM 	openstreetmap.osm_nodes JOIN openstreetmap.osm_point ON openstreetmap.osm_nodes.id = openstreetmap.osm_point.osm_id
-	WHERE 	'110000' = ANY( string_to_array(hstore(openstreetmap.osm_nodes.tags)->'voltage',';')) 
-		and hstore(openstreetmap.osm_nodes.tags)->'power' in ('substation','sub_station','station') 
-		OR '60000' = ANY( string_to_array(hstore(openstreetmap.osm_nodes.tags)->'voltage',';')) 
-		and hstore(openstreetmap.osm_nodes.tags)->'power' in ('substation','sub_station','station');
+	WHERE 	'110000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';')) 
+		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station') 
+		OR '60000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';')) 
+		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station');
 
 
 --> LINES 110kV: create view of 110kV lines
@@ -109,11 +88,12 @@ CREATE VIEW 		grid.egon_substation_110kV AS
 		'2'::smallint as status
 	FROM grid.egon_way_substations_without_110kV_intersected_by_110kV_line
 	UNION 
-	SELECT *,
+	SELECT id, hstore_to_array(tags), geom,
 		'http://www.osm.org/node/'|| grid.egon_node_substations_with_110kV.id as osm_www,
 		'n'|| grid.egon_node_substations_with_110kV.id as osm_id,
 		'3'::smallint as status
-	FROM grid.egon_node_substations_with_110kV;
+	FROM grid.egon_node_substations_with_110kV
+	;
 
 
 -- create view summary_total that contains substations without any filter
@@ -159,8 +139,8 @@ DROP VIEW IF EXISTS 	grid.egon_summary_de CASCADE;
 CREATE VIEW 		grid.egon_summary_de AS
 	SELECT 	*
 	FROM	grid.egon_summary, boundaries.vg250_sta_union as vg
-	WHERE 	ST_Transform(vg.geom,4326) && grid.egon_summary.polygon 
-	AND 	ST_CONTAINS(ST_Transform(vg.geom,4326),grid.egon_summary.polygon);
+	WHERE 	ST_Transform(vg.geometry,4326) && grid.egon_summary.polygon 
+	AND 	ST_CONTAINS(ST_Transform(vg.geometry,4326),grid.egon_summary.polygon);
 
 
 -- create view with buffer of 75m around polygons
@@ -218,4 +198,3 @@ DROP VIEW IF EXISTS grid.egon_node_substations_with_110kV CASCADE;
 DROP VIEW IF EXISTS grid.egon_way_substations_without_110kV CASCADE;
 DROP VIEW IF EXISTS grid.egon_way_substations_with_110kV CASCADE;
 DROP VIEW IF EXISTS grid.egon_way_substations CASCADE;
-

@@ -35,6 +35,16 @@ Added
   `#91 <https://github.com/openego/eGon-data/issues/91>`_
 * DemandRegio data import for annual electricity demands
   `#5 <https://github.com/openego/eGon-data/issues/5>`_
+* Download cleaned open-MaStR data from Zenodo
+  `#14 <https://github.com/openego/eGon-data/issues/14>`_
+* NEP 2021 input data import
+  `#45 <https://github.com/openego/eGon-data/issues/45>`_
+* Option for running workflow in test mode
+  `#112 <https://github.com/openego/eGon-data/issues/112>`_
+* Abstraction of hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
+* RE potential areas data import
+  `#124 <https://github.com/openego/eGon-data/issues/124>`_
 
 Changed
 -------
@@ -43,6 +53,8 @@ Changed
   `#20 <https://github.com/openego/eGon-data/issues/20>`_
 * Switch from Travis to GitHub actions for CI jobs
   `#92 <https://github.com/openego/eGon-data/issues/92>`_
+  * Rename columns to id and zensus_population_id in zensus tables
+  `#140 <https://github.com/openego/eGon-data/issues/140>`_
 
 Bug fixes
 ---------
