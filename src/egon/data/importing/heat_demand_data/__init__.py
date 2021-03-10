@@ -127,11 +127,13 @@ def unzip_peta5_0_1_heat_demands():
 
     # Unzip the tiffs, if they do not exist
     if not os.path.isfile(
-            directory_to_extract_to + "/HD_2015_res_Peta5_0_1_GJ.tif"):
+        directory_to_extract_to + "/HD_2015_res_Peta5_0_1_GJ.tif"
+    ):
         with zipfile.ZipFile(filepath_zip_res, "r") as zf:
             zf.extractall(directory_to_extract_to)
     if not os.path.isfile(
-            directory_to_extract_to + "/HD_2015_ser_Peta5_0_1_GJ.tif"):
+        directory_to_extract_to + "/HD_2015_ser_Peta5_0_1_GJ.tif"
+    ):
         with zipfile.ZipFile(filepath_zip_ser, "r") as zf:
             zf.extractall(directory_to_extract_to)
 
@@ -180,7 +182,7 @@ def cutout_heat_demand_germany():
         selected boundaries (test mode or not).
 
         Check if we want to delete (some of) the tiff files after use.
-        """
+    """
 
     # Load the German boundaries from the local database using a dissolved
     # dataset which provides one multipolygon
@@ -362,12 +364,13 @@ def future_heat_demand_germany(scenario_name):
     res_profile.update(
         dtype=rasterio.uint16,  # set the dtype to uint16
         count=1,  # change the band count to 1
-        compress="lzw"  # specify LZW compression
+        compress="lzw",  # specify LZW compression
     )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
-    res_result_filename = (scenario_raster_directory +
-                           "/res_HD_" + scenario_name + ".tif")
+    res_result_filename = (
+        scenario_raster_directory + "/res_HD_" + scenario_name + ".tif"
+    )
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(res_result_filename, "w", **res_profile) as dst:
         dst.write(res_scenario_raster.astype(rasterio.uint16), 1)
@@ -389,8 +392,9 @@ def future_heat_demand_germany(scenario_name):
     )
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
-    ser_result_filename = (scenario_raster_directory +
-                           "/ser_HD_" + scenario_name + ".tif")
+    ser_result_filename = (
+        scenario_raster_directory + "/ser_HD_" + scenario_name + ".tif"
+    )
     # Open raster dataset in 'w' write mode using the adjuste meta data
     with rasterio.open(ser_result_filename, "w", **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)
