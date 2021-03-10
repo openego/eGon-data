@@ -90,8 +90,9 @@ setup(
         "psycopg2",
         "sqlalchemy",
         "geopandas",
-        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install"
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install",
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
+        "rasterio"
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
