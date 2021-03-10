@@ -176,12 +176,14 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
     # Rounding process to meet exact values from demandregio on nuts3-level
     for name, group in prognosis.groupby(prognosis.nuts3):
+        print(f"start progosis nuts3 {name}")
         while prognosis_total[name] > group['rounded'].sum():
             index=np.random.choice(
                     group['rest'].index.values[
                         group['rest']==max(group['rest'])])
             group.at[index, 'rounded'] += 1
             group.at[index, 'rest'] = 0
+        print(f"finished progosis nuts3 {name}")
         prognosis[prognosis.index.isin(group.index)] = group
 
     prognosis = prognosis.drop(
@@ -230,6 +232,7 @@ def household_prognosis_to_zensus():
     db.execute_sql(f"DELETE FROM {target_schema}.{target_table}")
     # Apply prognosis function
     for year in [2035, 2050]:
+        print(f"start prognosis for year {year}")
         # Input: dataset on household prognosis on district-level (NUTS3)
         prognosis_nuts3 = pd.read_sql(
             f"""SELECT nuts3, hh_size, households
@@ -240,3 +243,4 @@ def household_prognosis_to_zensus():
         household_prognosis_per_year(prognosis_nuts3, zensus, year).to_sql(
             target_table, schema=target_schema,
             con = local_engine, if_exists = 'append')
+        print(f"finished prognosis for year {year}")
