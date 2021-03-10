@@ -99,8 +99,8 @@ def map_zensus_nuts3():
                 )[['zensus_population_id',
                    'zensus_geom', 'nuts3']].set_geometry(
                     'zensus_geom').to_postgis(
-                         f' {target_schema}.{target_table}',
-                         local_engine, if_exists = 'replace')
+                         target_table, schema=target_schema,
+                         con=local_engine, if_exists = 'replace')
 
 
 def population_prognosis_to_zensus():
