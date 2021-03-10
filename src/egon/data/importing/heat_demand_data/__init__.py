@@ -356,7 +356,8 @@ def future_heat_demand_germany(scenario_name):
         res_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
         res_profile = src.profile
 
-    res_scenario_raster = res_hd_reduction * res_hd_2015  # adjusting
+    # adjusting and connversion to MWh
+    res_scenario_raster = res_hd_reduction * res_hd_2015 * 3.6
 
     res_profile.update(
         dtype=rasterio.uint16,  # set the dtype to uint16
@@ -378,7 +379,8 @@ def future_heat_demand_germany(scenario_name):
         ser_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
         ser_profile = src.profile
 
-    ser_scenario_raster = ser_hd_reduction * ser_hd_2015  # adjusting
+    # adjusting and connversion to MWh
+    ser_scenario_raster = ser_hd_reduction * ser_hd_2015 / 3.6
 
     ser_profile.update(
         dtype=rasterio.uint16,
