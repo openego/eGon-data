@@ -60,6 +60,8 @@ Changed
   `#92 <https://github.com/openego/eGon-data/issues/92>`_
   * Rename columns to id and zensus_population_id in zensus tables
   `#140 <https://github.com/openego/eGon-data/issues/140>`_
+* Improve selection of zensus data in test mode
+  `#151 <https://github.com/openego/eGon-data/issues/151>`_
 
 Bug fixes
 ---------
