@@ -1,3 +1,4 @@
+import json
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
@@ -11,6 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
+import egon.data.config
 
 Base = declarative_base()
 
@@ -236,3 +238,117 @@ def population_in_municipalities():
         # Execute and commit (trigger transactions in database)
         session.execute(insert)
         session.commit()
+
+def add_metadata():
+    vg250_config = egon.data.config.datasets()["vg250"]
+
+    licenses = [
+        {
+            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
+            "path": "www.govdata.de/dl-de/by-2-0",
+            "instruction": (
+                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
+                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
+                "bereitgestellten Daten und Metadaten dürfen für die "
+                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
+                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
+                "bearbeitet sowie an Dritte übermittelt werden;\n "
+                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
+                "zu selbständigen neuen Datensätzen verbunden werden;\n "
+                "(3) in interne und externe Geschäftsprozesse, Produkte und "
+                "Anwendungen in öffentlichen und nicht öffentlichen "
+                "elektronischen Netzwerken eingebunden werden."
+            ),
+            "attribution": "© Bundesamt für Kartographie und Geodäsie",
+        }
+    ]
+
+
+    metadata = {
+            "title": "Municipalities (BKG Verwaltungsgebiete 250) and population (Destatis Zensus)",
+            "description": "Municipality data enriched by population data",
+            "language": ["DE"],
+            "spatial": {
+                "location": "",
+                "extent": "Germany",
+                "resolution": "vector",
+            },
+            "temporal": {
+                "referenceDate": "2020-01-01",
+                "timeseries": {
+                    "start": "",
+                    "end": "",
+                    "resolution": "",
+                    "alignment": "",
+                    "aggregationType": "",
+                },
+            },
+            "sources": [
+                {
+                    "title": "Dienstleistungszentrum des Bundes für "
+                    "Geoinformation und Geodäsie - Open Data",
+                    "description": "Dieser Datenbestand steht über "
+                    "Geodatendienste gemäß "
+                    "Geodatenzugangsgesetz (GeoZG) "
+                    "(http://www.geodatenzentrum.de/auftrag/pdf"
+                    "/geodatenzugangsgesetz.pdf) für die "
+                    "kommerzielle und nicht kommerzielle "
+                    "Nutzung geldleistungsfrei zum Download "
+                    "und zur Online-Nutzung zur Verfügung. Die "
+                    "Nutzung der Geodaten und Geodatendienste "
+                    "wird durch die Verordnung zur Festlegung "
+                    "der Nutzungsbestimmungen für die "
+                    "Bereitstellung von Geodaten des Bundes "
+                    "(GeoNutzV) (http://www.geodatenzentrum.de"
+                    "/auftrag/pdf/geonutz.pdf) geregelt. "
+                    "Insbesondere hat jeder Nutzer den "
+                    "Quellenvermerk zu allen Geodaten, "
+                    "Metadaten und Geodatendiensten erkennbar "
+                    "und in optischem Zusammenhang zu "
+                    "platzieren. Veränderungen, Bearbeitungen, "
+                    "neue Gestaltungen oder sonstige "
+                    "Abwandlungen sind mit einem "
+                    "Veränderungshinweis im Quellenvermerk zu "
+                    "versehen. Quellenvermerk und "
+                    "Veränderungshinweis sind wie folgt zu "
+                    "gestalten. Bei der Darstellung auf einer "
+                    "Webseite ist der Quellenvermerk mit der "
+                    "URL http://www.bkg.bund.de zu verlinken. "
+                    "© GeoBasis-DE / BKG <Jahr des letzten "
+                    "Datenbezugs> © GeoBasis-DE / BKG "
+                    "<Jahr des letzten Datenbezugs> "
+                    "(Daten verändert) Beispiel: "
+                    "© GeoBasis-DE / BKG 2013",
+                    "path": vg250_config["original_data"]["source"]["url"],
+                    "licenses": licenses,
+                    "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
+                },
+            ],
+            "licenses": licenses,
+            "contributors": [
+                {
+                    "title": "Guido Pleßmann",
+                    "email": "http://github.com/gplssm",
+                    "date": "2021-03-11",
+                    "object": "",
+                    "comment": "Imported data",
+                }
+            ],
+            "metaMetadata": {
+                "metadataVersion": "OEP-1.4.0",
+                "metadataLicense": {
+                    "name": "CC0-1.0",
+                    "title": "Creative Commons Zero v1.0 Universal",
+                    "path": (
+                        "https://creativecommons.org/publicdomain/zero/1.0/"
+                    ),
+                },
+            },
+        }
+
+    meta_json = "'" + json.dumps(metadata) + "'"
+
+    db.submit_comment(
+        meta_json, Vg250GemPopulation.__table__.schema,
+        Vg250GemPopulation.__table__.name
+    )
