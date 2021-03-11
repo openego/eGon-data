@@ -47,6 +47,9 @@ Added
   `#124 <https://github.com/openego/eGon-data/issues/124>`_
 * Heat demand data import
   `#101 <https://github.com/openego/eGon-data/issues/101>`_
+* Demographic change integration
+  `#47 <https://github.com/openego/eGon-data/issues/47>`_
+
 
 Changed
 -------

@@ -92,6 +92,7 @@ setup(
         "pyaml",
         "psycopg2",
         "rasterio",
+        "rtree",
         "sqlalchemy"
     ],
     extras_require={
