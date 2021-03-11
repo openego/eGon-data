@@ -65,6 +65,8 @@ Changed
   `#145 <https://github.com/openego/eGon-data/issues/145>`_
 * Drop support for Python3.6
   `#148 <https://github.com/openego/eGon-data/issues/148>`_
+* Port of default database egon-data-local-database
+  `#137 <https://github.com/openego/eGon-data/issues/137>`_
 
 Bug fixes
 ---------
