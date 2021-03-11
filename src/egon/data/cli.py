@@ -18,6 +18,7 @@ from multiprocessing import Process
 import os
 import os.path
 import subprocess
+import sys
 
 import click
 import yaml
@@ -56,7 +57,7 @@ def serve(context):
     subprocess.run(["airflow", "webserver"])
 
 
-@click.group()
+@click.group(name="egon-data")
 @click.option(
     "--database-name",
     "--database",
@@ -90,7 +91,7 @@ def serve(context):
 )
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
-def main(context, **kwargs):
+def egon_data(context, **kwargs):
     os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
     translations = {
         "database_name": "POSTGRES_DB",
@@ -110,6 +111,7 @@ def main(context, **kwargs):
             configuration.write(yaml.safe_dump(database_configuration))
 
 
-main.name = "egon-data"
-main.add_command(airflow)
-main.add_command(serve)
+def main():
+    egon_data.add_command(airflow)
+    egon_data.add_command(serve)
+    egon_data.main(sys.argv[1:])
