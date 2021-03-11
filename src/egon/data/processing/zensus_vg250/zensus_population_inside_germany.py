@@ -107,12 +107,11 @@ class DestatisZensusPopulationPerHaInsideGermany(Base):
     geom = Column(Geometry("POLYGON", 3035), index=True)
 
 
-class BkgVg250GemPopulation(Base):
-    __tablename__ = "bkg_vg250_6_gem_mview"
+class Vg250GemPopulation(Base):
+    __tablename__ = "vg250_gem_population"
     __table_args__ = {"schema": "boundaries"}
 
-    gid = Column(Integer, primary_key=True)
-    reference_date = Column(String)
+    gid = Column(Integer, primary_key=True, index=True)
     gen = Column(String)
     bez = Column(String)
     bem = Column(String)
@@ -121,11 +120,10 @@ class BkgVg250GemPopulation(Base):
     rs_0 = Column(String)
     area_ha = Column(Float)
     area_km2 = Column(Float)
-    census_sum = Column(Integer)
-    census_count = Column(Integer)
-    census_density = Column(Integer)
-    pd = (Column(Float),)
-    geom = Column(Geometry("MULTIPOLYGON", 3035), index=True)
+    population_total = Column(Integer)
+    cell_count = Column(Integer)
+    population_density = Column(Integer)
+    geom = Column(Geometry(srid=3035))
 
 
 def filter_data():
