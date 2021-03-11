@@ -63,6 +63,8 @@ Changed
 * Revise docs CONTRIBUTING section and in particular PR guidelines
   `#88 <https://github.com/openego/eGon-data/issues/88>`_ and
   `#145 <https://github.com/openego/eGon-data/issues/145>`_
+* Drop support for Python3.6
+  `#148 <https://github.com/openego/eGon-data/issues/148>`_
 
 Bug fixes
 ---------
