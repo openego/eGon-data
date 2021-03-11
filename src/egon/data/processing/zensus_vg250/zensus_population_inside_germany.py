@@ -1,12 +1,13 @@
 import json
+
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
     Column,
+    Float,
     Integer,
     SmallInteger,
     String,
-    Float,
     func,
 )
 from sqlalchemy.ext.declarative import declarative_base
@@ -52,9 +53,9 @@ class Vg250Sta(Base):
 
 
 class Vg250Gem(Base):
-    __tablename__ = 'vg250_gem'
-    __table_args__ = {'schema': 'boundaries'}
-    
+    __tablename__ = "vg250_gem"
+    __table_args__ = {"schema": "boundaries"}
+
     gid = Column(BigInteger, primary_key=True, index=True)
     ade = Column(BigInteger)
     gf = Column(BigInteger)
@@ -161,8 +162,7 @@ def filter_data():
         )
 
         # Insert above queried data into new table
-        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert(
-        ).from_select(
+        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(
             (
                 DestatisZensusPopulationPerHaInsideGermany.gid,
                 DestatisZensusPopulationPerHaInsideGermany.grid_id,
@@ -184,60 +184,92 @@ def population_in_municipalities():
     """
 
     engine_local_db = db.engine()
-    Vg250GemPopulation.__table__.create(
-        bind=engine_local_db, checkfirst=True
-    )
+    Vg250GemPopulation.__table__.create(bind=engine_local_db, checkfirst=True)
 
     srid = 3035
 
     # Prepare query from vg250 and zensus data
     with db.session_scope() as session:
-        q = session.query(
-            Vg250Gem.gid.label("gid"),
-            Vg250Gem.gen.label("gen"),
-            Vg250Gem.bez,
-            Vg250Gem.bem,
-            Vg250Gem.nuts,
-            Vg250Gem.rs_0,
-            Vg250Gem.ags_0,
-            (func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid)) / 10000).label("area_ha"), #ha
-            (func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid)) / 1000000).label("area_km2"), #km
-            func.sum(func.coalesce(
-                DestatisZensusPopulationPerHaInsideGermany.population,
-                0)).label("population_total"),
-            func.count(DestatisZensusPopulationPerHaInsideGermany.geom).label(
-                "cell_count"),
-            func.coalesce(func.sum(func.coalesce(
-                DestatisZensusPopulationPerHaInsideGermany.population, 0)) /
-                          (func.ST_Area(func.ST_Transform(Vg250Gem.geometry,
-                                                          srid)) / 1000000),
-                          0).label(
-                "population_density"),
-            func.ST_Transform(Vg250Gem.geometry, srid).label("geom")
-        ).filter(
-            func.ST_Contains(
-                func.ST_Transform(Vg250Gem.geometry, srid),
-                DestatisZensusPopulationPerHaInsideGermany.geom_point,
+        q = (
+            session.query(
+                Vg250Gem.gid.label("gid"),
+                Vg250Gem.gen.label("gen"),
+                Vg250Gem.bez,
+                Vg250Gem.bem,
+                Vg250Gem.nuts,
+                Vg250Gem.rs_0,
+                Vg250Gem.ags_0,
+                (
+                    func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid))
+                    / 10000
+                ).label(
+                    "area_ha"
+                ),  # ha
+                (
+                    func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid))
+                    / 1000000
+                ).label(
+                    "area_km2"
+                ),  # km
+                func.sum(
+                    func.coalesce(
+                        DestatisZensusPopulationPerHaInsideGermany.population,
+                        0,
+                    )
+                ).label("population_total"),
+                func.count(
+                    DestatisZensusPopulationPerHaInsideGermany.geom
+                ).label("cell_count"),
+                func.coalesce(
+                    func.sum(
+                        func.coalesce(
+                            DestatisZensusPopulationPerHaInsideGermany.population,
+                            0,
+                        )
+                    )
+                    / (
+                        func.ST_Area(
+                            func.ST_Transform(Vg250Gem.geometry, srid)
+                        )
+                        / 1000000
+                    ),
+                    0,
+                ).label("population_density"),
+                func.ST_Transform(Vg250Gem.geometry, srid).label("geom"),
             )
-        ).group_by(Vg250Gem.gid)
-
+            .filter(
+                func.ST_Contains(
+                    func.ST_Transform(Vg250Gem.geometry, srid),
+                    DestatisZensusPopulationPerHaInsideGermany.geom_point,
+                )
+            )
+            .group_by(Vg250Gem.gid)
+        )
 
         # Insert spatially joined data
-        insert = Vg250GemPopulation.__table__.insert(
-        ).from_select(
-            [Vg250GemPopulation.gid, Vg250GemPopulation.gen,
-             Vg250GemPopulation.bez, Vg250GemPopulation.bem,
-             Vg250GemPopulation.nuts, Vg250GemPopulation.ags_0,
-             Vg250GemPopulation.rs_0, Vg250GemPopulation.area_ha,
-             Vg250GemPopulation.area_km2, Vg250GemPopulation.population_total,
-             Vg250GemPopulation.cell_count,
-             Vg250GemPopulation.population_density, Vg250GemPopulation.geom],
+        insert = Vg250GemPopulation.__table__.insert().from_select(
+            [
+                Vg250GemPopulation.gid,
+                Vg250GemPopulation.gen,
+                Vg250GemPopulation.bez,
+                Vg250GemPopulation.bem,
+                Vg250GemPopulation.nuts,
+                Vg250GemPopulation.ags_0,
+                Vg250GemPopulation.rs_0,
+                Vg250GemPopulation.area_ha,
+                Vg250GemPopulation.area_km2,
+                Vg250GemPopulation.population_total,
+                Vg250GemPopulation.cell_count,
+                Vg250GemPopulation.population_density,
+                Vg250GemPopulation.geom,
+            ],
             q,
         )
 
         # Execute and commit (trigger transactions in database)
         session.execute(insert)
         session.commit()
+
 
 def add_metadata():
     vg250_config = egon.data.config.datasets()["vg250"]
@@ -263,92 +295,90 @@ def add_metadata():
         }
     ]
 
-
     metadata = {
-            "title": "Municipalities (BKG Verwaltungsgebiete 250) and population (Destatis Zensus)",
-            "description": "Municipality data enriched by population data",
-            "language": ["DE"],
-            "spatial": {
-                "location": "",
-                "extent": "Germany",
-                "resolution": "vector",
+        "title": "Municipalities (BKG Verwaltungsgebiete 250) and population (Destatis Zensus)",
+        "description": "Municipality data enriched by population data",
+        "language": ["DE"],
+        "spatial": {
+            "location": "",
+            "extent": "Germany",
+            "resolution": "vector",
+        },
+        "temporal": {
+            "referenceDate": "2020-01-01",
+            "timeseries": {
+                "start": "",
+                "end": "",
+                "resolution": "",
+                "alignment": "",
+                "aggregationType": "",
             },
-            "temporal": {
-                "referenceDate": "2020-01-01",
-                "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
-                },
+        },
+        "sources": [
+            {
+                "title": "Dienstleistungszentrum des Bundes für "
+                "Geoinformation und Geodäsie - Open Data",
+                "description": "Dieser Datenbestand steht über "
+                "Geodatendienste gemäß "
+                "Geodatenzugangsgesetz (GeoZG) "
+                "(http://www.geodatenzentrum.de/auftrag/pdf"
+                "/geodatenzugangsgesetz.pdf) für die "
+                "kommerzielle und nicht kommerzielle "
+                "Nutzung geldleistungsfrei zum Download "
+                "und zur Online-Nutzung zur Verfügung. Die "
+                "Nutzung der Geodaten und Geodatendienste "
+                "wird durch die Verordnung zur Festlegung "
+                "der Nutzungsbestimmungen für die "
+                "Bereitstellung von Geodaten des Bundes "
+                "(GeoNutzV) (http://www.geodatenzentrum.de"
+                "/auftrag/pdf/geonutz.pdf) geregelt. "
+                "Insbesondere hat jeder Nutzer den "
+                "Quellenvermerk zu allen Geodaten, "
+                "Metadaten und Geodatendiensten erkennbar "
+                "und in optischem Zusammenhang zu "
+                "platzieren. Veränderungen, Bearbeitungen, "
+                "neue Gestaltungen oder sonstige "
+                "Abwandlungen sind mit einem "
+                "Veränderungshinweis im Quellenvermerk zu "
+                "versehen. Quellenvermerk und "
+                "Veränderungshinweis sind wie folgt zu "
+                "gestalten. Bei der Darstellung auf einer "
+                "Webseite ist der Quellenvermerk mit der "
+                "URL http://www.bkg.bund.de zu verlinken. "
+                "© GeoBasis-DE / BKG <Jahr des letzten "
+                "Datenbezugs> © GeoBasis-DE / BKG "
+                "<Jahr des letzten Datenbezugs> "
+                "(Daten verändert) Beispiel: "
+                "© GeoBasis-DE / BKG 2013",
+                "path": vg250_config["original_data"]["source"]["url"],
+                "licenses": licenses,
+                "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
             },
-            "sources": [
-                {
-                    "title": "Dienstleistungszentrum des Bundes für "
-                    "Geoinformation und Geodäsie - Open Data",
-                    "description": "Dieser Datenbestand steht über "
-                    "Geodatendienste gemäß "
-                    "Geodatenzugangsgesetz (GeoZG) "
-                    "(http://www.geodatenzentrum.de/auftrag/pdf"
-                    "/geodatenzugangsgesetz.pdf) für die "
-                    "kommerzielle und nicht kommerzielle "
-                    "Nutzung geldleistungsfrei zum Download "
-                    "und zur Online-Nutzung zur Verfügung. Die "
-                    "Nutzung der Geodaten und Geodatendienste "
-                    "wird durch die Verordnung zur Festlegung "
-                    "der Nutzungsbestimmungen für die "
-                    "Bereitstellung von Geodaten des Bundes "
-                    "(GeoNutzV) (http://www.geodatenzentrum.de"
-                    "/auftrag/pdf/geonutz.pdf) geregelt. "
-                    "Insbesondere hat jeder Nutzer den "
-                    "Quellenvermerk zu allen Geodaten, "
-                    "Metadaten und Geodatendiensten erkennbar "
-                    "und in optischem Zusammenhang zu "
-                    "platzieren. Veränderungen, Bearbeitungen, "
-                    "neue Gestaltungen oder sonstige "
-                    "Abwandlungen sind mit einem "
-                    "Veränderungshinweis im Quellenvermerk zu "
-                    "versehen. Quellenvermerk und "
-                    "Veränderungshinweis sind wie folgt zu "
-                    "gestalten. Bei der Darstellung auf einer "
-                    "Webseite ist der Quellenvermerk mit der "
-                    "URL http://www.bkg.bund.de zu verlinken. "
-                    "© GeoBasis-DE / BKG <Jahr des letzten "
-                    "Datenbezugs> © GeoBasis-DE / BKG "
-                    "<Jahr des letzten Datenbezugs> "
-                    "(Daten verändert) Beispiel: "
-                    "© GeoBasis-DE / BKG 2013",
-                    "path": vg250_config["original_data"]["source"]["url"],
-                    "licenses": licenses,
-                    "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
-                },
-            ],
-            "licenses": licenses,
-            "contributors": [
-                {
-                    "title": "Guido Pleßmann",
-                    "email": "http://github.com/gplssm",
-                    "date": "2021-03-11",
-                    "object": "",
-                    "comment": "Imported data",
-                }
-            ],
-            "metaMetadata": {
-                "metadataVersion": "OEP-1.4.0",
-                "metadataLicense": {
-                    "name": "CC0-1.0",
-                    "title": "Creative Commons Zero v1.0 Universal",
-                    "path": (
-                        "https://creativecommons.org/publicdomain/zero/1.0/"
-                    ),
-                },
+        ],
+        "licenses": licenses,
+        "contributors": [
+            {
+                "title": "Guido Pleßmann",
+                "email": "http://github.com/gplssm",
+                "date": "2021-03-11",
+                "object": "",
+                "comment": "Imported data",
+            }
+        ],
+        "metaMetadata": {
+            "metadataVersion": "OEP-1.4.0",
+            "metadataLicense": {
+                "name": "CC0-1.0",
+                "title": "Creative Commons Zero v1.0 Universal",
+                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
             },
-        }
+        },
+    }
 
     meta_json = "'" + json.dumps(metadata) + "'"
 
     db.submit_comment(
-        meta_json, Vg250GemPopulation.__table__.schema,
-        Vg250GemPopulation.__table__.name
+        meta_json,
+        Vg250GemPopulation.__table__.schema,
+        Vg250GemPopulation.__table__.name,
     )
