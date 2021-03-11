@@ -53,7 +53,7 @@ class DestatisZensusPopulationPerHa(Base):
     __tablename__ = "destatis_zensus_population_per_ha"
     __table_args__ = {"schema": "society"}
 
-    gid = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     grid_id = Column(String(254), nullable=False)
     x_mp = Column(Integer)
     y_mp = Column(Integer)
@@ -66,7 +66,7 @@ class DestatisZensusPopulationPerHaInsideGermany(Base):
     __tablename__ = "destatis_zensus_population_per_ha_inside_germany"
     __table_args__ = {"schema": "society"}
 
-    gid = Column(Integer, primary_key=True)
+    gid = Column(Integer, primary_key=True, index=True)
     grid_id = Column(String(254), nullable=False)
     population = Column(SmallInteger)
     geom_point = Column(Geometry("POINT", 3035), index=True)
@@ -111,7 +111,7 @@ def filter_data():
         # Query relevant data from zensus population table
         q = (
             s.query(
-                DestatisZensusPopulationPerHa.gid,
+                DestatisZensusPopulationPerHa.id,
                 DestatisZensusPopulationPerHa.grid_id,
                 DestatisZensusPopulationPerHa.population,
                 DestatisZensusPopulationPerHa.geom_point,
