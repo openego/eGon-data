@@ -272,6 +272,7 @@ def population_in_municipalities():
 
 
 def add_metadata():
+def add_metadata_vg250_gem_pop():
     vg250_config = egon.data.config.datasets()["vg250"]
 
     licenses = [
