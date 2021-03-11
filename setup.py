@@ -93,6 +93,7 @@ setup(
         "psycopg2",
         "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install",
         "rasterio",
+        "rtree",
         "sqlalchemy"
     ],
     extras_require={
