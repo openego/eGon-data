@@ -15,6 +15,7 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 from multiprocessing import Process
+from textwrap import wrap
 import os
 import os.path
 import subprocess
@@ -25,6 +26,7 @@ import yaml
 
 import egon.data
 import egon.data.airflow
+import egon.data.config as config
 
 
 @click.command(
@@ -61,6 +63,7 @@ def serve(context):
 @click.option(
     "--database-name",
     "--database",
+    default="egon-data",
     metavar="DB",
     help=(
         "Specify the name of the local database.\n\n\b"
@@ -68,30 +71,105 @@ def serve(context):
         " future. Please use the longer but consistent"
         ' "--database-name".'
     ),
+    show_default=True,
 )
 @click.option(
     "--database-host",
+    default="127.0.0.1",
     metavar="HOST",
     help=("Specify the host on which the local database is running."),
+    show_default=True,
 )
 @click.option(
     "--database-password",
+    default="data",
     metavar="PW",
     help=("Specify the password used to access the local database."),
+    show_default=True,
 )
 @click.option(
     "--database-port",
+    default="54321",
     metavar="PORT",
     help=("Specify the port on which the local DBMS is listening."),
+    show_default=True,
 )
 @click.option(
     "--database-user",
+    default="egon",
     metavar="USERNAME",
     help=("Specify the user used to access the local database."),
+    show_default=True,
 )
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
+    """Run and control the eGo^n data processing pipeline.
+
+    It is recommended to create a dedicated working directory in which
+    to run `egon-data` because `egon-data` because `egon-data` will use
+    it's working directory to store configuration files and other data
+    generated during a workflow run.
+
+    You can configure `egon-data` by putting a file named
+    "egon-data.configuration.yaml" into the directory from which you are
+    running `egon-data`. If that file doesn't exist, `egon-data` will
+    create one, containing the command line parameters supplied, as well
+    as the defaults for those switches for which no value was supplied.
+
+    """
+    options = {
+        "cli": {
+            "egon-data": {
+                option.opts[0]: kwargs[option.name]
+                for option in egon_data.params
+                if option.name in kwargs
+            }
+        },
+        "defaults": {
+            "egon-data": {
+                option.opts[0]: option.default
+                for option in egon_data.params
+                if option.default
+            }
+        },
+    }
+
+    if not config.paths()[0].exists():
+        with open(config.paths()[0], "w") as f:
+            f.write(yaml.safe_dump(options["defaults"]))
+
+    if len(config.paths(pid="*")) > 1:
+        message = (
+            "Found more than one configuration file belonging to a"
+            " specific `egon-data` process. Unable to decide which one"
+            " to use.\nExiting."
+        )
+        click.echo(
+            "\n".join(wrap(message, click.get_terminal_size()[0])),
+            err=True,
+        )
+        sys.exit(1)
+
+    if len(config.paths(pid="*")) == 1:
+        message = (
+            "Ignoring supplied options. Found a configuration file"
+            " belonging to a different `egon-data` process. Using that"
+            " one."
+        )
+        click.echo(
+            "\n".join(wrap(message, click.get_terminal_size()[0])),
+            err=True,
+        )
+        with open(config.paths(pid="*")[0]) as f:
+            options = yaml.load(f, Loader=yaml.SafeLoader)
+    else:  # len(config.paths(pid="*")) == 0, so need to create one.
+        with open(config.paths()[0]) as f:
+            options["file"] = yaml.load(f, Loader=yaml.SafeLoader)
+        options = dict(options.get("file", {}), **options["cli"])
+        with open(config.paths(pid="current")[0], "w") as f:
+            f.write(yaml.safe_dump(options))
+
     os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
     translations = {
         "database_name": "POSTGRES_DB",
@@ -114,4 +192,7 @@ def egon_data(context, **kwargs):
 def main():
     egon_data.add_command(airflow)
     egon_data.add_command(serve)
-    egon_data.main(sys.argv[1:])
+    try:
+        egon_data.main(sys.argv[1:])
+    finally:
+        config.paths(pid="current")[0].unlink(missing_ok=True)

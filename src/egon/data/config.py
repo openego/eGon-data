@@ -1,8 +1,32 @@
+from pathlib import Path
 import os
 
 import yaml
 
 import egon
+
+
+def paths(pid=None):
+    """Obtain configuration file paths.
+
+    If no `pid` is supplied, return the location of the standard
+    configuration file. If `pid` is the string `"current"`, the
+    path to the configuration file containing the configuration specific
+    to the currently running process, i.e. the configuration obtained by
+    overriding the values from the standard configuration file with the
+    values explicitly supplied when the currently running process was
+    invoked, is returned. If `pid` is the string `"*"` a list of all
+    configuration belonging to currently running `egon-data` processes
+    is returned. This can be used for error checking, because there
+    should only ever be one such file.
+    """
+    pid = os.getpid() if pid == "current" else pid
+    insert = f".pid-{pid}" if pid is not None else ""
+    filename = f"egon-data{insert}.configuration.yaml"
+    if pid == "*":
+        return [p.absolute() for p in Path(".").glob(filename)]
+    else:
+        return [(Path(".") / filename).absolute()]
 
 
 def datasets(config_file=None):

@@ -25,6 +25,13 @@ Added
 * Docker will not be used if there is already a service listening on the
   HOST:PORT combination configured for the database.
 
+* You can now supply values for the command line arguments for
+  ``egon-data`` using a configuration file. If the configuration file
+  doesn't exist, it will be created by ``egon-data`` on it's first run.
+  Note that the configuration file is read from and writte to the
+  directtory in which ``egon-data`` is started, so it's probably best to
+  run ``egon-data`` in a dedicated directory.
+
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
 * Verwaltungsgebiete data import (vg250) more or less done as in open_ego
