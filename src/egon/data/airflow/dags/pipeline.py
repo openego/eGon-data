@@ -18,6 +18,7 @@ import egon.data.importing.zensus as import_zs
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.substation as substation
+import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -124,6 +125,32 @@ with airflow.DAG(
     zensus_download_misc >> zensus_tables >> population_import
     vg250_clean_and_prepare >> population_import
     population_import >> zensus_misc_import
+
+    # Combine Zensus and VG250 data
+    zensus_inside_ger = PythonOperator(
+        task_id="zensus-inside-germany",
+        python_callable=zensus_vg250.inside_germany,
+    )
+
+    zensus_inside_ger_metadata = PythonOperator(
+        task_id="zensus-inside-germany-metadata",
+        python_callable=zensus_vg250.add_metadata_zensus_inside_ger,
+    )
+
+    vg250_population = PythonOperator(
+        task_id="population-in-municipalities",
+        python_callable=zensus_vg250.population_in_municipalities,
+    )
+
+    vg250_population_metadata = PythonOperator(
+        task_id="population-in-municipalities-metadata",
+        python_callable=zensus_vg250.add_metadata_vg250_gem_pop,
+    )
+    [
+        vg250_import,
+        population_import,
+    ] >> zensus_inside_ger >> zensus_inside_ger_metadata
+    zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
     demandregio_import = PythonOperator(

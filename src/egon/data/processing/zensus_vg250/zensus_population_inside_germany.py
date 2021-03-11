@@ -129,7 +129,7 @@ class Vg250GemPopulation(Base):
     geom = Column(Geometry(srid=3035))
 
 
-def filter_data():
+def inside_germany():
     """
     Filter zensus data by data inside Germany and population > 0
     """
