@@ -14,8 +14,8 @@ from geoalchemy2 import Geometry
 Base = declarative_base()
 
 class MapZensusNuts3(Base):
-    __tablename__ = 'map_zensus_nuts3'
-    __table_args__ = {'schema': 'society'}
+    __tablename__ = 'egon_map_zensus_nuts3'
+    __table_args__ = {'schema': 'boundaries'}
     zensus_population_id = Column(Integer, primary_key=True)
     zensus_geom = Column(Geometry('POINT', 3035))
     nuts3 = Column(String(5))
@@ -55,7 +55,7 @@ def map_zensus_nuts3():
         f"{cfg['vg250']['processed']['file_table_map']['VG250_KRS.shp']}")
 
     target_table = cfg['society_prognosis']['target']['map_nuts3']
-    target_schema =  cfg['society_prognosis']['target']['schema']
+    target_schema =  'boundaries'
 
     local_engine = db.engine()
 
@@ -121,7 +121,7 @@ def population_prognosis_to_zensus():
     # Input: Zensus2011 population data including the NUTS3-Code
     zensus_district = pd.read_sql(
         f"""SELECT zensus_population_id, nuts3
-        FROM {source_schema}.{source_map}""",
+        FROM boundaries.{source_map}""",
         local_engine).set_index('zensus_population_id')
 
     zensus = pd.read_sql(
@@ -212,7 +212,7 @@ def household_prognosis_to_zensus():
     # Input: Zensus2011 household data including the NUTS3-Code
     district = pd.read_sql(
         f"""SELECT zensus_population_id, nuts3
-        FROM {source_schema}.{source_map}""",
+        FROM boundaries.{source_map}""",
         local_engine).set_index('zensus_population_id')
 
     zensus = pd.read_sql(

@@ -105,7 +105,7 @@ ehv_substation:
 society_prognosis:
   target:
     schema: "society"
-    map_nuts3: "map_zensus_nuts3"
+    map_nuts3: "egon_map_zensus_nuts3"
     population_prognosis: "egon_population_prognosis"
     household_prognosis: "egon_household_prognosis"
 
