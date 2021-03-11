@@ -8,30 +8,33 @@ import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
 from egon.data.db import airflow_db_connection
-import egon.data.importing.openstreetmap as import_osm
-import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.demandregio as import_dr
-import egon.data.processing.openstreetmap as process_osm
-import egon.data.importing.zensus as import_zs
-import egon.data.processing.power_plants as power_plants
-import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
+import egon.data.importing.nep_input_data as nep_input
+import egon.data.importing.openstreetmap as import_osm
+import egon.data.importing.vg250 as import_vg250
+import egon.data.importing.zensus as import_zs
+import egon.data.processing.openstreetmap as process_osm
+import egon.data.processing.power_plants as power_plants
 import egon.data.processing.substation as substation
 
 # Prepare connection to db for operators
 airflow_db_connection()
 
 # Temporary set dataset variable here
-dataset = 'Schleswig-Holstein'
+dataset = "Schleswig-Holstein"
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
-        os.path.abspath(os.path.join(os.path.dirname(
-            __file__), '..', '..', 'processing', 'vg250'))
+        os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__), "..", "..", "processing", "vg250"
+            )
+        )
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
@@ -66,8 +69,9 @@ with airflow.DAG(
         python_callable=import_vg250.download_vg250_files,
     )
     vg250_import = PythonOperator(
-        task_id="import-vg250", python_callable=import_vg250.to_postgres,
-        op_args={dataset}
+        task_id="import-vg250",
+        python_callable=import_vg250.to_postgres,
+        op_args={dataset},
     )
 
     vg250_nuts_mview = PostgresOperator(
@@ -92,29 +96,29 @@ with airflow.DAG(
     # Zensus import
     zensus_download_population = PythonOperator(
         task_id="download-zensus-population",
-        python_callable=import_zs.download_zensus_pop
+        python_callable=import_zs.download_zensus_pop,
     )
 
     zensus_download_misc = PythonOperator(
         task_id="download-zensus-misc",
-        python_callable=import_zs.download_zensus_misc
+        python_callable=import_zs.download_zensus_misc,
     )
 
     zensus_tables = PythonOperator(
         task_id="create-zensus-tables",
-        python_callable=import_zs.create_zensus_tables
+        python_callable=import_zs.create_zensus_tables,
     )
 
     population_import = PythonOperator(
         task_id="import-zensus-population",
         python_callable=import_zs.population_to_postgres,
-        op_args={dataset}
+        op_args={dataset},
     )
 
     zensus_misc_import = PythonOperator(
         task_id="import-zensus-misc",
         python_callable=import_zs.zensus_misc_to_postgres,
-        op_args={dataset}
+        op_args={dataset},
     )
     setup >> zensus_download_population >> zensus_download_misc
     zensus_download_misc >> zensus_tables >> population_import
@@ -131,48 +135,48 @@ with airflow.DAG(
     # Power plant setup
     power_plant_tables = PythonOperator(
         task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables
+        python_callable=power_plants.create_tables,
     )
     setup >> power_plant_tables
 
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
-        python_callable=nep_input.create_scenario_input_tables)
+        python_callable=nep_input.create_scenario_input_tables,
+    )
 
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",
         python_callable=nep_input.insert_data_nep,
-        op_args={dataset})
+        op_args={dataset},
+    )
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
 
-
     # setting etrago input tables
     etrago_input_data = PythonOperator(
-        task_id = "setting-etrago-input-tables",
-        python_callable = etrago.create_tables
+        task_id="setting-etrago-input-tables",
+        python_callable=etrago.create_tables,
     )
     setup >> etrago_input_data
 
     # Retrieve MaStR data
     retrieve_mastr_data = PythonOperator(
         task_id="retrieve_mastr_data",
-        python_callable=mastr.download_mastr_data
+        python_callable=mastr.download_mastr_data,
     )
     setup >> retrieve_mastr_data
-
 
     # Substation extraction
     substation_tables = PythonOperator(
         task_id="create_substation_tables",
-        python_callable=substation.create_tables
+        python_callable=substation.create_tables,
     )
 
     substation_functions = PythonOperator(
         task_id="substation_functions",
-        python_callable=substation.create_sql_functions
+        python_callable=substation.create_sql_functions,
     )
 
     hvmv_substation_extraction = PostgresOperator(
@@ -188,6 +192,6 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-    osm_add_metadata  >> substation_tables >> substation_functions
+    osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
