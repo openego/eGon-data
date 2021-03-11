@@ -271,7 +271,101 @@ def population_in_municipalities():
         session.commit()
 
 
-def add_metadata():
+def add_metadata_zensus_inside_ger():
+    """
+    Create metadata JSON for DestatisZensusPopulationPerHaInsideGermany
+
+    Creates a metdadata JSON string and writes it to the database table comment
+    """
+    metadata = {
+        "title": "DESTATIS - Zensus 2011 - Population per hectar",
+        "description": "National census in Germany in 2011 with the bounds on Germanys boarders.",
+        "language": ["eng", "ger"],
+        "spatial": {
+            "location": "none",
+            "extent": "Germany",
+            "resolution": "1 ha",
+        },
+        "temporal": {
+            "reference_date": "2011",
+            "start": "none",
+            "end": "none",
+            "resolution": "none",
+        },
+        "sources": [
+            {
+                "name": "Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download",
+                "description": "Als Download bieten wir Ihnen auf dieser Seite zusätzlich zur Zensusdatenbank CSV- und teilweise Excel-Tabellen mit umfassenden Personen-, Haushalts- und Familien- sowie Gebäude- und Wohnungs­merkmalen. Die Ergebnisse liegen auf Bundes-, Länder-, Kreis- und Gemeinde­ebene vor. Außerdem sind einzelne Ergebnisse für Gitterzellen verfügbar.",
+                "url": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnisse/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380?nn=3065474",
+                "license": "",
+                "copyright": "© Statistische Ämter des Bundes und der Länder 2014",
+            },
+            {
+                "name": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
+                "description": "Diese Publikation beschreibt ausführlich die Methoden und Verfahren des registergestützten Zensus 2011; von der Datengewinnung und -aufbereitung bis hin zur Ergebniserstellung und Geheimhaltung. Der vorliegende Band wurde von den Statistischen Ämtern des Bundes und der Länder im Juni 2015 veröffentlicht.",
+                "url": "https://www.destatis.de/DE/Publikationen/Thematisch/Bevoelkerung/Zensus/ZensusBuLaMethodenVerfahren5121105119004.pdf?__blob=publicationFile",
+                "license": "Vervielfältigung und Verbreitung, auch auszugsweise, mit Quellenangabe gestattet.",
+                "copyright": "© Statistisches Bundesamt, Wiesbaden, 2015 (im Auftrag der Herausgebergemeinschaft)",
+            },
+        ],
+        "license": {
+            "id": "dl-de/by-2-0",
+            "name": "Datenlizenz by-2-0",
+            "version": "2.0",
+            "url": "www.govdata.de/dl-de/by-2-0",
+            "instruction": "Empfohlene Zitierweise des Quellennachweises: Datenquelle: Statistisches Bundesamt, Wiesbaden, Genesis-Online, <optional> Abrufdatum; Datenlizenz by-2-0. Quellenvermerk bei eigener Berechnung / Darstellung: Datenquelle: Statistisches Bundesamt, Wiesbaden, Genesis-Online, <optional> Abrufdatum; Datenlizenz by-2-0; eigene Berechnung/eigene Darstellung. In elektronischen Werken ist im Quellenverweis dem Begriff (Datenlizenz by-2-0) der Link www.govdata.de/dl-de/by-2-0 als Verknüpfung zu hinterlegen.",
+            "copyright": "Statistisches Bundesamt, Wiesbaden, Genesis-Online; Datenlizenz by-2-0; eigene Berechnung",
+        },
+        "contributors": [
+            {
+                "title": "Guido Pleßmann",
+                "email": "http://github.com/gplssm",
+                "date": "2021-03-11",
+                "object": "",
+                "comment": "Created processing ",
+            }
+        ],
+        "resources": [
+            {
+                "name": "society.destatis_zensus_population_per_ha",
+                "format": "PostgreSQL",
+                "fields": [
+                    {
+                        "name": "gid",
+                        "description": "Unique identifier",
+                        "unit": "none",
+                    },
+                    {
+                        "name": "grid_id",
+                        "description": "Grid number of source",
+                        "unit": "none",
+                    },
+                    {
+                        "name": "population",
+                        "description": "Number of registred residents",
+                        "unit": "resident",
+                    },
+                    {
+                        "name": "geom_point",
+                        "description": "Geometry centroid",
+                        "unit": "none",
+                    },
+                    {"name": "geom", "description": "Geometry", "unit": ""},
+                ],
+            }
+        ],
+        "metadata_version": "1.3",
+    }
+
+    meta_json = "'" + json.dumps(metadata) + "'"
+
+    db.submit_comment(
+        meta_json,
+        DestatisZensusPopulationPerHaInsideGermany.__table__.schema,
+        DestatisZensusPopulationPerHaInsideGermany.__table__.name,
+    )
+
+
 def add_metadata_vg250_gem_pop():
     """
     Create metadata JSON for Vg250GemPopulation
