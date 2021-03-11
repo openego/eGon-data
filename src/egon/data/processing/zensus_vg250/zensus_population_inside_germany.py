@@ -294,18 +294,38 @@ def add_metadata_zensus_inside_ger():
         },
         "sources": [
             {
-                "name": "Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download",
-                "description": "Als Download bieten wir Ihnen auf dieser Seite zusätzlich zur Zensusdatenbank CSV- und teilweise Excel-Tabellen mit umfassenden Personen-, Haushalts- und Familien- sowie Gebäude- und Wohnungs­merkmalen. Die Ergebnisse liegen auf Bundes-, Länder-, Kreis- und Gemeinde­ebene vor. Außerdem sind einzelne Ergebnisse für Gitterzellen verfügbar.",
-                "url": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnisse/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380?nn=3065474",
+                "name": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
+                        "Zensus 2011 zum Download",
+                "description": "Als Download bieten wir Ihnen auf dieser Seite "
+                               "zusätzlich zur Zensusdatenbank CSV- und "
+                               "teilweise Excel-Tabellen mit umfassenden "
+                               "Personen-, Haushalts- und Familien- sowie "
+                               "Gebäude- und Wohnungs­merkmalen. Die "
+                               "Ergebnisse liegen auf Bundes-, Länder-, Kreis- "
+                               "und Gemeinde­ebene vor. Außerdem sind einzelne "
+                               "Ergebnisse für Gitterzellen verfügbar.",
+                "url": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnis"
+                       "se/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B2"
+                       "58A3B22D20448F2E4A91.2_cid380?nn=3065474",
                 "license": "",
                 "copyright": "© Statistische Ämter des Bundes und der Länder 2014",
             },
             {
                 "name": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
-                "description": "Diese Publikation beschreibt ausführlich die Methoden und Verfahren des registergestützten Zensus 2011; von der Datengewinnung und -aufbereitung bis hin zur Ergebniserstellung und Geheimhaltung. Der vorliegende Band wurde von den Statistischen Ämtern des Bundes und der Länder im Juni 2015 veröffentlicht.",
-                "url": "https://www.destatis.de/DE/Publikationen/Thematisch/Bevoelkerung/Zensus/ZensusBuLaMethodenVerfahren5121105119004.pdf?__blob=publicationFile",
-                "license": "Vervielfältigung und Verbreitung, auch auszugsweise, mit Quellenangabe gestattet.",
-                "copyright": "© Statistisches Bundesamt, Wiesbaden, 2015 (im Auftrag der Herausgebergemeinschaft)",
+                "description": "Diese Publikation beschreibt ausführlich die "
+                               "Methoden und Verfahren des registergestützten "
+                               "Zensus 2011; von der Datengewinnung und "
+                               "-aufbereitung bis hin zur Ergebniserstellung"
+                               " und Geheimhaltung. Der vorliegende Band wurde "
+                               "von den Statistischen Ämtern des Bundes und "
+                               "der Länder im Juni 2015 veröffentlicht.",
+                "url": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
+                       "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
+                       "19004.pdf?__blob=publicationFile",
+                "license": "Vervielfältigung und Verbreitung, auch "
+                           "auszugsweise, mit Quellenangabe gestattet.",
+                "copyright": "© Statistisches Bundesamt, Wiesbaden, 2015 "
+                             "(im Auftrag der Herausgebergemeinschaft)",
             },
         ],
         "license": {
@@ -313,8 +333,19 @@ def add_metadata_zensus_inside_ger():
             "name": "Datenlizenz by-2-0",
             "version": "2.0",
             "url": "www.govdata.de/dl-de/by-2-0",
-            "instruction": "Empfohlene Zitierweise des Quellennachweises: Datenquelle: Statistisches Bundesamt, Wiesbaden, Genesis-Online, <optional> Abrufdatum; Datenlizenz by-2-0. Quellenvermerk bei eigener Berechnung / Darstellung: Datenquelle: Statistisches Bundesamt, Wiesbaden, Genesis-Online, <optional> Abrufdatum; Datenlizenz by-2-0; eigene Berechnung/eigene Darstellung. In elektronischen Werken ist im Quellenverweis dem Begriff (Datenlizenz by-2-0) der Link www.govdata.de/dl-de/by-2-0 als Verknüpfung zu hinterlegen.",
-            "copyright": "Statistisches Bundesamt, Wiesbaden, Genesis-Online; Datenlizenz by-2-0; eigene Berechnung",
+            "instruction": "Empfohlene Zitierweise des Quellennachweises: "
+                           "Datenquelle: Statistisches Bundesamt, Wiesbaden, "
+                           "Genesis-Online, <optional> Abrufdatum; Datenlizenz "
+                           "by-2-0. Quellenvermerk bei eigener Berechnung / "
+                           "Darstellung: Datenquelle: Statistisches Bundesamt, "
+                           "Wiesbaden, Genesis-Online, <optional> Abrufdatum; "
+                           "Datenlizenz by-2-0; eigene Berechnung/eigene "
+                           "Darstellung. In elektronischen Werken ist im "
+                           "Quellenverweis dem Begriff (Datenlizenz by-2-0) "
+                           "der Link www.govdata.de/dl-de/by-2-0 als "
+                           "Verknüpfung zu hinterlegen.",
+            "copyright": "Statistisches Bundesamt, Wiesbaden, Genesis-Online; "
+                         "Datenlizenz by-2-0; eigene Berechnung",
         },
         "contributors": [
             {
@@ -396,7 +427,8 @@ def add_metadata_vg250_gem_pop():
     ]
 
     metadata = {
-        "title": "Municipalities (BKG Verwaltungsgebiete 250) and population (Destatis Zensus)",
+        "title": "Municipalities (BKG Verwaltungsgebiete 250) and population "
+                 "(Destatis Zensus)",
         "description": "Municipality data enriched by population data",
         "language": ["DE"],
         "spatial": {
