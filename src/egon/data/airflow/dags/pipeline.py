@@ -16,9 +16,12 @@ import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.openstreetmap as process_osm
+import egon.data.processing.zensus as process_zs
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
+import egon.data.importing.re_potential_areas as re_potential_areas
+import egon.data.importing.heat_demand_data as import_hd
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -159,6 +162,38 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_import
 
+    # Society prognosis
+    prognosis_tables = PythonOperator(
+        task_id="create-prognosis-tables",
+        python_callable=process_zs.create_tables
+    )
+
+    map_zensus_nuts3 = PythonOperator(
+        task_id="map-zensus-to-nuts3",
+        python_callable=process_zs.map_zensus_nuts3
+    )
+
+    setup >> prognosis_tables >> map_zensus_nuts3
+    vg250_clean_and_prepare >> map_zensus_nuts3
+    population_import >> map_zensus_nuts3
+
+    population_prognosis = PythonOperator(
+        task_id="zensus-population-prognosis",
+        python_callable=process_zs.population_prognosis_to_zensus
+    )
+
+    map_zensus_nuts3 >> population_prognosis
+    demandregio_import >> population_prognosis
+
+    household_prognosis = PythonOperator(
+        task_id="zensus-household-prognosis",
+        python_callable=process_zs.household_prognosis_to_zensus
+    )
+
+    map_zensus_nuts3 >> household_prognosis
+    demandregio_import >> household_prognosis
+    zensus_misc_import >> household_prognosis
+
     # Power plant setup
     power_plant_tables = PythonOperator(
         task_id="create-power-plant-tables",
@@ -222,3 +257,28 @@ with airflow.DAG(
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
+
+    # Import potential areas for wind onshore and ground-mounted PV
+    download_re_potential_areas = PythonOperator(
+        task_id="download_re_potential_area_data",
+        python_callable=re_potential_areas.download_datasets,
+        op_args={dataset}
+    )
+    create_re_potential_areas_tables = PythonOperator(
+        task_id="create_re_potential_areas_tables",
+        python_callable=re_potential_areas.create_tables
+    )
+    insert_re_potential_areas = PythonOperator(
+        task_id="insert_re_potential_areas",
+        python_callable=re_potential_areas.insert_data
+    )
+    setup >> download_re_potential_areas >> create_re_potential_areas_tables
+    create_re_potential_areas_tables >> insert_re_potential_areas
+
+    # Future heat demand calculation based on Peta5_0_1 data
+    heat_demand_import = PythonOperator(
+        task_id="import-heat-demand",
+        python_callable=import_hd.future_heat_demand_data_import
+    )
+    vg250_clean_and_prepare >> heat_demand_import
+    population_import >> heat_demand_import
