@@ -176,3 +176,63 @@ def filter_data():
         s.commit()
 
 
+def population_in_municipalities():
+    """
+    Create table of municipalities with information about population
+    """
+
+    engine_local_db = db.engine()
+    Vg250GemPopulation.__table__.create(
+        bind=engine_local_db, checkfirst=True
+    )
+
+    srid = 3035
+
+    # Prepare query from vg250 and zensus data
+    with db.session_scope() as session:
+        q = session.query(
+            Vg250Gem.gid.label("gid"),
+            Vg250Gem.gen.label("gen"),
+            Vg250Gem.bez,
+            Vg250Gem.bem,
+            Vg250Gem.nuts,
+            Vg250Gem.rs_0,
+            Vg250Gem.ags_0,
+            (func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid)) / 10000).label("area_ha"), #ha
+            (func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid)) / 1000000).label("area_km2"), #km
+            func.sum(func.coalesce(
+                DestatisZensusPopulationPerHaInsideGermany.population,
+                0)).label("population_total"),
+            func.count(DestatisZensusPopulationPerHaInsideGermany.geom).label(
+                "cell_count"),
+            func.coalesce(func.sum(func.coalesce(
+                DestatisZensusPopulationPerHaInsideGermany.population, 0)) /
+                          (func.ST_Area(func.ST_Transform(Vg250Gem.geometry,
+                                                          srid)) / 1000000),
+                          0).label(
+                "population_density"),
+            func.ST_Transform(Vg250Gem.geometry, srid).label("geom")
+        ).filter(
+            func.ST_Contains(
+                func.ST_Transform(Vg250Gem.geometry, srid),
+                DestatisZensusPopulationPerHaInsideGermany.geom_point,
+            )
+        ).group_by(Vg250Gem.gid)
+
+
+        # Insert spatially joined data
+        insert = Vg250GemPopulation.__table__.insert(
+        ).from_select(
+            [Vg250GemPopulation.gid, Vg250GemPopulation.gen,
+             Vg250GemPopulation.bez, Vg250GemPopulation.bem,
+             Vg250GemPopulation.nuts, Vg250GemPopulation.ags_0,
+             Vg250GemPopulation.rs_0, Vg250GemPopulation.area_ha,
+             Vg250GemPopulation.area_km2, Vg250GemPopulation.population_total,
+             Vg250GemPopulation.cell_count,
+             Vg250GemPopulation.population_density, Vg250GemPopulation.geom],
+            q,
+        )
+
+        # Execute and commit (trigger transactions in database)
+        session.execute(insert)
+        session.commit()
