@@ -43,6 +43,8 @@ Added
   `#112 <https://github.com/openego/eGon-data/issues/112>`_
 * Abstraction of hvmv and ehv substations
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
+* Filter zensus being inside Germany and assign population to municipalities
+  `#7 <https://github.com/openego/eGon-data/issues/7>`_
 
 Changed
 -------
