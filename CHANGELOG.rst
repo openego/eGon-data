@@ -45,6 +45,11 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * RE potential areas data import
   `#124 <https://github.com/openego/eGon-data/issues/124>`_
+* Heat demand data import
+  `#101 <https://github.com/openego/eGon-data/issues/101>`_
+* Demographic change integration
+  `#47 <https://github.com/openego/eGon-data/issues/47>`_
+
 
 Changed
 -------
@@ -53,8 +58,11 @@ Changed
   `#20 <https://github.com/openego/eGon-data/issues/20>`_
 * Switch from Travis to GitHub actions for CI jobs
   `#92 <https://github.com/openego/eGon-data/issues/92>`_
-  * Rename columns to id and zensus_population_id in zensus tables
+* Rename columns to id and zensus_population_id in zensus tables
   `#140 <https://github.com/openego/eGon-data/issues/140>`_
+* Revise docs CONTRIBUTING section and in particular PR guidelines
+  `#88 <https://github.com/openego/eGon-data/issues/88>`_ and
+  `#145 <https://github.com/openego/eGon-data/issues/145>`_
 
 Bug fixes
 ---------
