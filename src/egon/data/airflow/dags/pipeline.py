@@ -19,6 +19,8 @@ import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
 import egon.data.processing.substation as substation
+import egon.data.importing.re_potential_areas as re_potential_areas
+import egon.data.importing.heat_demand_data as import_hd
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -224,3 +226,28 @@ with airflow.DAG(
     osm_add_metadata  >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
+
+    # Import potential areas for wind onshore and ground-mounted PV
+    download_re_potential_areas = PythonOperator(
+        task_id="download_re_potential_area_data",
+        python_callable=re_potential_areas.download_datasets,
+        op_args={dataset}
+    )
+    create_re_potential_areas_tables = PythonOperator(
+        task_id="create_re_potential_areas_tables",
+        python_callable=re_potential_areas.create_tables
+    )
+    insert_re_potential_areas = PythonOperator(
+        task_id="insert_re_potential_areas",
+        python_callable=re_potential_areas.insert_data
+    )
+    setup >> download_re_potential_areas >> create_re_potential_areas_tables
+    create_re_potential_areas_tables >> insert_re_potential_areas
+
+    # Future heat demand calculation based on Peta5_0_1 data
+    heat_demand_import = PythonOperator(
+        task_id="import-heat-demand",
+        python_callable=import_hd.future_heat_demand_data_import
+    )
+    vg250_clean_and_prepare >> heat_demand_import
+    population_import >> heat_demand_import
