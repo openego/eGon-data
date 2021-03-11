@@ -273,6 +273,11 @@ def population_in_municipalities():
 
 def add_metadata():
 def add_metadata_vg250_gem_pop():
+    """
+    Create metadata JSON for Vg250GemPopulation
+
+    Creates a metdadata JSON string and writes it to the database table comment
+    """
     vg250_config = egon.data.config.datasets()["vg250"]
 
     licenses = [
