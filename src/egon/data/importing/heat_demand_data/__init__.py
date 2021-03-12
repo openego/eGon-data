@@ -717,7 +717,7 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "heat")
+    db.submit_comment(meta_json, "demand", "egon_peta_heat")
 
 
 def future_heat_demand_data_import():
