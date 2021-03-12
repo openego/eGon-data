@@ -68,3 +68,5 @@ Changed
 
 Bug fixes
 ---------
+* Heat demand data import
+  `#157 <https://github.com/openego/eGon-data/issues/157>`_
