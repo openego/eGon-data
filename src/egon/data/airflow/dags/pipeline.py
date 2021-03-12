@@ -226,6 +226,8 @@ with airflow.DAG(
     osm_add_metadata  >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
+    vg250_clean_and_prepare >> hvmv_substation_extraction
+    vg250_clean_and_prepare >> ehv_substation_extraction
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
