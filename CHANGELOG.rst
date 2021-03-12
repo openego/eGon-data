@@ -65,6 +65,8 @@ Changed
   `#145 <https://github.com/openego/eGon-data/issues/145>`_
 * Drop support for Python3.6
   `#148 <https://github.com/openego/eGon-data/issues/148>`_
+* Improve selection of zensus data in test mode
+  `#151 <https://github.com/openego/eGon-data/issues/151>`_
 
 Bug fixes
 ---------
