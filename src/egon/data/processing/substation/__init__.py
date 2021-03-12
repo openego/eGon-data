@@ -60,7 +60,7 @@ class EgonHvmvSubstationVoronoi(Base):
         server_default=Sequence('hvmv_voronoi_id_seq').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
-    geom = Column(Geometry('Multipolygon', 4326), index=True)
+    geom = Column(Geometry('Multipolygon', 4326))
 
 
 class EgonEhvSubstationVoronoi(Base):
@@ -70,7 +70,7 @@ class EgonEhvSubstationVoronoi(Base):
         server_default=Sequence('ehv_voronoi_id_seq').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
-    geom = Column(Geometry('Multipolygon', 4326), index=True)
+    geom = Column(Geometry('Multipolygon', 4326))
 
 def create_tables():
     """Create tables for substation data
@@ -105,6 +105,7 @@ def create_tables():
     EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
     EgonHvmvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
 
+create_tables()
 
 def create_sql_functions():
     """Defines Postgresql functions needed to extract substation from osm
@@ -205,23 +206,53 @@ def create_voronoi():
 
     '''
 
-    db.execute_sql("DROP VIEW IF EXISTS grid.egon_voronoi_no_borders CASCADE;")
+    list = ['hvmv_substation', 'ehv_substation']
 
-    db.execute_sql(
-        """
-        CREATE VIEW grid.egon_voronoi_no_borders AS
-        SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom AS geom
-        FROM grid.egon_hvmv_substation a;
-        """
-        )
+    for substation in list:
+        schema = egon.data.config.datasets()[substation]['processed']['schema']
+        substation_table = egon.data.config.datasets()[substation]['processed']['table']
+        voronoi_table = egon.data.config.datasets()[substation + '_voronoi']['processed']['table']
 
-    db.execute_sql(
-        """
-        INSERT INTO grid.egon_hvmv_substation_voronoi (geom)
-            VALUES
-            (SELECT ST_Intersection(
-                ST_Transform(a.geometry, 4326), b.geom) AS geom
+        # Create view for Voronoi polygons without taking borders into account
+        db.execute_sql(
+            f"DROP VIEW IF EXISTS {schema}.egon_voronoi_no_borders CASCADE;"
+                       )
+
+        db.execute_sql(
+            f"""
+            CREATE VIEW {schema}.egon_voronoi_no_borders AS
+               SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom
+               FROM {schema}.{substation_table} a;
+            """
+            )
+        # Clip Voronoi with boundaries
+        db.execute_sql(
+            f"""
+            INSERT INTO {schema}.{voronoi_table} (geom)
+            (SELECT ST_Multi(ST_Intersection(
+                ST_Transform(a.geometry, 4326), b.geom)) AS geom
              FROM boundaries.vg250_sta_union a
-             CROSS JOIN grid.egon_hvmv_voronoi_no_borders b);
-        """
-        )
+             CROSS JOIN grid.egon_voronoi_no_borders b);
+            """
+            )
+
+        # Assign substation id as foreign key
+        db.execute_sql(
+            f"""
+            UPDATE {schema}.{voronoi_table} AS t1
+                SET  	subst_id = t2.subst_id
+	            FROM	(SELECT	voi.id AS id,
+			                sub.subst_id ::integer AS subst_id
+		            FROM	{schema}.{voronoi_table} AS voi,
+			                {schema}.{substation_table} AS sub
+		            WHERE  	voi.geom && sub.point AND
+			                ST_CONTAINS(voi.geom,sub.point)
+		           GROUP BY voi.id,sub.subst_id
+		           )AS t2
+	            WHERE  	t1.id = t2.id;
+            """
+            )
+
+        db.execute_sql(f"""DROP VIEW IF EXISTS
+                      {schema}.egon_hvmv_voronoi_no_borders CASCADE;""")
+
