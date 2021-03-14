@@ -1,9 +1,9 @@
-from pathlib import Path
 import os
 
 from sqlalchemy import create_engine, text
 import yaml
 
+from egon.data import config
 import egon
 
 
@@ -37,18 +37,22 @@ def credentials():
     docker_db_config["PORT"] = docker_db_config_additional[1]
 
     translated = {
-        "database_name": "POSTGRES_DB",
-        "database_password": "POSTGRES_PASSWORD",
-        "database_host": "HOST",
-        "database_port": "PORT",
-        "database_user": "POSTGRES_USER",
+        "--database-name": "POSTGRES_DB",
+        "--database-password": "POSTGRES_PASSWORD",
+        "--database-host": "HOST",
+        "--database-port": "PORT",
+        "--database-user": "POSTGRES_USER",
     }
-    custom = Path("local-database.yaml")
+    custom = config.paths(pid="*")[0]
     if custom.is_file():
         with open(custom) as f:
-            configuration = yaml.safe_load(f)
+            configuration = yaml.safe_load(f)["egon-data"]
         docker_db_config.update(
-            {translated[k]: configuration[k] for k in configuration}
+            {
+                translated[flag]: configuration[flag]
+                for flag in configuration
+                if flag in translated
+            }
         )
     return docker_db_config
 

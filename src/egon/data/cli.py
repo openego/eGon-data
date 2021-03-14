@@ -171,15 +171,6 @@ def egon_data(context, **kwargs):
             f.write(yaml.safe_dump(options))
 
     os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
-    database_configuration = {
-        k: kwargs[k]
-        for k in kwargs
-        if "database" in k
-        if kwargs[k] is not None
-    }
-    if database_configuration:
-        with open("local-database.yaml", "w") as configuration:
-            configuration.write(yaml.safe_dump(database_configuration))
 
 
 def main():

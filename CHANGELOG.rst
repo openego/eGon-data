@@ -16,11 +16,9 @@ Added
   displays better error messages than Python's built-in function. Use
   this wrapper wenn calling other programs in Airflow tasks.
 
-* You can now override the default database configuration by putting a
-  "local-database.yaml" into the current working directory. Values read
-  from this file will override the default values. You can also generate
-  this file by specifying command line switches to ``egon-data``. Look
-  for the switches starting with ``--database`` in ``egon-data --help``.
+* You can now override the default database configuration using command
+  line arguments. Look for the switches starting with ``--database`` in
+  ``egon-data --help``.
   Note that this is currently only useful if you are using your own
   database and want ``egon-data`` to use that one, because the
   "Docker"ed database's configuration is not affected by these options.
