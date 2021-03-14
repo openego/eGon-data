@@ -14,6 +14,8 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+from __future__ import annotations
+
 from multiprocessing import Process
 import os
 import os.path
@@ -24,6 +26,44 @@ import yaml
 
 import egon.data
 import egon.data.airflow
+
+
+# TODO: Convert these two functions to an `Enum`, because `Enum`s already
+#       implement bidirectional lookup.
+def names2flags(command: click.Command) -> dict[str, str]:
+    """
+    Returns a dictionary with option names as keys and flags as values.
+
+    The flag representing a command line option is usually a string
+    starting with hyphens, i.e. it is not a legal Python identifier. In
+    order to use the option as a regular argument in a Python function,
+    these flags are converted to legal Python identifiers by `Click`.
+
+    Given a `click.Command` this funtion returns a dictionary containing
+    option names as keys and flags as values. Note that, while there can
+    be multiple flags acting as synonyms for the same option, this
+    implementation treats the first option name it finds for a flag as
+    the "canonical" flag and thus contains only a single option name for
+    each flag.
+    """
+    return {p.name: p.opts[0] for p in command.params}
+
+
+def flags2names(command: click.Command) -> dict[str, str]:
+    """
+    Returns a dictionary with option flags as keys and names as values.
+
+    The `name` of an option flag is the result of converting the command
+    line flag, i.e. the string starting with hyphens, to a legal Python
+    identifier, which is what appears in the actual argument list of the
+    function implementing a command.
+
+    This mapping returned by this function is essentially the result of
+    reversing the roles of keys and values in `names2flags(command)`
+    except that multiple command line flags can map to the same option
+    name, whereas the `flags2names` is injective by construction.
+    """
+    return {flag: p.name for p in command.params for flag in p.opts}
 
 
 @click.command(
