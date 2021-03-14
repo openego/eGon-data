@@ -171,15 +171,8 @@ def egon_data(context, **kwargs):
             f.write(yaml.safe_dump(options))
 
     os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
-    translations = {
-        "database_name": "POSTGRES_DB",
-        "database_password": "POSTGRES_PASSWORD",
-        "database_host": "HOST",
-        "database_port": "PORT",
-        "database_user": "POSTGRES_USER",
-    }
     database_configuration = {
-        translations[k]: kwargs[k]
+        k: kwargs[k]
         for k in kwargs
         if "database" in k
         if kwargs[k] is not None

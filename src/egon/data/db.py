@@ -36,10 +36,20 @@ def credentials():
     docker_db_config["HOST"] = docker_db_config_additional[0]
     docker_db_config["PORT"] = docker_db_config_additional[1]
 
+    translated = {
+        "database_name": "POSTGRES_DB",
+        "database_password": "POSTGRES_PASSWORD",
+        "database_host": "HOST",
+        "database_port": "PORT",
+        "database_user": "POSTGRES_USER",
+    }
     custom = Path("local-database.yaml")
     if custom.is_file():
         with open(custom) as f:
-            docker_db_config.update(yaml.safe_load(f))
+            configuration = yaml.safe_load(f)
+        docker_db_config.update(
+            {translated[k]: configuration[k] for k in configuration}
+        )
     return docker_db_config
 
 
