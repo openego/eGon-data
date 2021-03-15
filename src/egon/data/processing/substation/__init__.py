@@ -255,5 +255,12 @@ def create_voronoi():
             """
             )
 
+        db.execute_sql(
+            f"""
+            CREATE INDEX  	{voronoi_table}_idx
+                ON          {schema}.{voronoi_table} USING gist (geom);
+            """
+            )
+
         db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")
 
