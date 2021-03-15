@@ -43,6 +43,8 @@ Added
   `#112 <https://github.com/openego/eGon-data/issues/112>`_
 * Abstraction of hvmv and ehv substations
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
+* Creation of voronoi polygons for hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
 
 Changed
 -------
