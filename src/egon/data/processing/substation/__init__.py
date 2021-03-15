@@ -105,7 +105,6 @@ def create_tables():
     EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
     EgonHvmvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
 
-create_tables()
 
 def create_sql_functions():
     """Defines Postgresql functions needed to extract substation from osm
@@ -212,6 +211,9 @@ def create_voronoi():
         schema = egon.data.config.datasets()[substation]['processed']['schema']
         substation_table = egon.data.config.datasets()[substation]['processed']['table']
         voronoi_table = egon.data.config.datasets()[substation + '_voronoi']['processed']['table']
+        view = 'grid.egon_voronoi_no_borders'
+        boundary = 'boundaries.vg250_sta_union'
+
 
         # Create view for Voronoi polygons without taking borders into account
         db.execute_sql(
@@ -220,7 +222,7 @@ def create_voronoi():
 
         db.execute_sql(
             f"""
-            CREATE VIEW {schema}.egon_voronoi_no_borders AS
+            CREATE VIEW {view} AS
                SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom
                FROM {schema}.{substation_table} a;
             """
@@ -231,8 +233,8 @@ def create_voronoi():
             INSERT INTO {schema}.{voronoi_table} (geom)
             (SELECT ST_Multi(ST_Intersection(
                 ST_Transform(a.geometry, 4326), b.geom)) AS geom
-             FROM boundaries.vg250_sta_union a
-             CROSS JOIN grid.egon_voronoi_no_borders b);
+             FROM {boundary} a
+             CROSS JOIN {view} b);
             """
             )
 
@@ -253,6 +255,5 @@ def create_voronoi():
             """
             )
 
-        db.execute_sql(f"""DROP VIEW IF EXISTS
-                      {schema}.egon_hvmv_voronoi_no_borders CASCADE;""")
+        db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")
 
