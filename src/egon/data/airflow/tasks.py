@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 import socket
 
 from egon.data.db import credentials
@@ -13,5 +13,5 @@ def initdb():
     if code != 0:
         subprocess.run(
             ["docker-compose", "up", "-d", "--build"],
-            cwd=os.path.dirname(__file__),
+            cwd=str((Path(".") / "docker").absolute()),
         )

@@ -6,13 +6,13 @@ services:
     restart: unless-stopped
     build:
       context: .
-      dockerfile: Dockerfile.postgis
+      dockerfile: {airflow}/Dockerfile.postgis
     ports:
-    - "127.0.0.1:54321:5432"
+    - "{--database-host}:{--database-port}:5432"
     environment:
-      POSTGRES_DB: egon-data
-      POSTGRES_USER: egon
-      POSTGRES_PASSWORD: data
+      POSTGRES_DB: {--database-name}
+      POSTGRES_USER: {--database-user}
+      POSTGRES_PASSWORD: {--database-password}
     volumes:
-    - $HOME/docker/volumes/postgres/egon-data:/var/lib/postgresql/data
-    - ./entrypoints:/docker-entrypoint-initdb.d/
+    - ./var/lib/postgresql/data:/var/lib/postgresql/data
+    - {airflow}/entrypoints:/docker-entrypoint-initdb.d/

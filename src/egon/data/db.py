@@ -4,7 +4,6 @@ from sqlalchemy import create_engine, text
 import yaml
 
 from egon.data import config
-import egon
 
 
 def credentials():
@@ -15,27 +14,6 @@ def credentials():
     dict
         Complete DB connection information
     """
-    # Read database configuration from docker-compose.yml
-    package_path = egon.data.__path__[0]
-    docker_compose_file = os.path.join(
-        package_path, "airflow", "docker-compose.yml"
-    )
-    docker_compose = yaml.load(
-        open(docker_compose_file), Loader=yaml.SafeLoader
-    )
-
-    # Select basic connection details
-    docker_db_config = docker_compose["services"]["egon-data-local-database"][
-        "environment"
-    ]
-
-    # Add HOST and PORT
-    docker_db_config_additional = docker_compose["services"][
-        "egon-data-local-database"
-    ]["ports"][0].split(":")
-    docker_db_config["HOST"] = docker_db_config_additional[0]
-    docker_db_config["PORT"] = docker_db_config_additional[1]
-
     translated = {
         "--database-name": "POSTGRES_DB",
         "--database-password": "POSTGRES_PASSWORD",
@@ -47,7 +25,7 @@ def credentials():
     if custom.is_file():
         with open(custom) as f:
             configuration = yaml.safe_load(f)["egon-data"]
-        docker_db_config.update(
+        docker_db_config = (
             {
                 translated[flag]: configuration[flag]
                 for flag in configuration

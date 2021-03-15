@@ -19,9 +19,6 @@ Added
 * You can now override the default database configuration using command
   line arguments. Look for the switches starting with ``--database`` in
   ``egon-data --help``.
-  Note that this is currently only useful if you are using your own
-  database and want ``egon-data`` to use that one, because the
-  "Docker"ed database's configuration is not affected by these options.
 
 * Docker will not be used if there is already a service listening on the
   HOST:PORT combination configured for the database.

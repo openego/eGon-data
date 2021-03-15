@@ -15,6 +15,7 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 from multiprocessing import Process
+from pathlib import Path
 from textwrap import wrap
 import os
 import subprocess
@@ -116,6 +117,10 @@ def egon_data(context, **kwargs):
     running `egon-data`. If that file doesn't exist, `egon-data` will
     create one, containing the command line parameters supplied, as well
     as the defaults for those switches for which no value was supplied.
+    Last but not least, if you're using the default behaviour of setting
+    up the database in a Docker container, the working directory will
+    also contain a directory called "docker", containing the database
+    data as well as other volumes used by the dockered database.
 
     """
     options = {
@@ -171,6 +176,17 @@ def egon_data(context, **kwargs):
             f.write(yaml.safe_dump(options))
 
     os.environ["AIRFLOW_HOME"] = str(resources.files(egon.data.airflow))
+
+    os.makedirs(Path(".") / "docker", exist_ok=True)
+    template = "docker-compose.yml"
+    target = Path(".") / "docker" / template
+    if not target.exists():
+        with open(target, "w") as compose_file:
+            compose_file.write(
+                resources.read_text(egon.data.airflow, template).format(
+                    **options["egon-data"], airflow=os.environ["AIRFLOW_HOME"]
+                )
+            )
 
 
 def main():
