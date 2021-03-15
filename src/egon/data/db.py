@@ -25,14 +25,12 @@ def credentials():
     if custom.is_file():
         with open(custom) as f:
             configuration = yaml.safe_load(f)["egon-data"]
-        docker_db_config = (
-            {
-                translated[flag]: configuration[flag]
-                for flag in configuration
-                if flag in translated
-            }
-        )
-    return docker_db_config
+        configuration = {
+            translated[flag]: configuration[flag]
+            for flag in configuration
+            if flag in translated
+        }
+    return configuration
 
 
 def engine():
