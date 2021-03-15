@@ -115,6 +115,17 @@ def serve(context):
     help=("Specify the password used to access the local database."),
     show_default=True,
 )
+@click.option(
+    "--jobs",
+    default=16,
+    metavar="N",
+    help=(
+        "Spawn at maximum N tasks in parallel. Remember that in addition"
+        " to that, there's always the scheduler and probably the server"
+        " running."
+    ),
+    show_default=True,
+)
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
