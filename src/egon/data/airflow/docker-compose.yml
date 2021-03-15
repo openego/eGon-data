@@ -10,9 +10,8 @@ services:
     ports:
     - "{--database-host}:{--database-port}:5432"
     environment:
-      POSTGRES_DB: {--database-name}
+      POSTGRES_DB: {--airflow-database-name}
       POSTGRES_USER: {--database-user}
       POSTGRES_PASSWORD: {--database-password}
     volumes:
     - ./var/lib/postgresql/data:/var/lib/postgresql/data
-    - {airflow}/entrypoints:/docker-entrypoint-initdb.d/

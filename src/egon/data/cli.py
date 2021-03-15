@@ -18,9 +18,14 @@ from multiprocessing import Process
 from pathlib import Path
 from textwrap import wrap
 import os
+import socket
 import subprocess
 import sys
+import time
 
+from psycopg2 import OperationalError as PSPGOE
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError as SQLAOE
 import click
 import importlib_resources as resources
 import yaml
@@ -62,12 +67,20 @@ def serve(context):
 
 @click.group(name="egon-data")
 @click.option(
+    "--airflow-database-name",
+    default="airflow",
+    metavar="DB",
+    help=("Specify the name of the airflow metadata database."),
+    show_default=True,
+)
+@click.option(
     "--database-name",
     "--database",
     default="egon-data",
     metavar="DB",
     help=(
-        "Specify the name of the local database.\n\n\b"
+        "Specify the name of the local database. The database will be"
+        " created if it doesn't already exist.\n\n\b"
         ' Note: "--database" is deprecated and will be removed in the'
         " future. Please use the longer but consistent"
         ' "--database-name".'
@@ -184,7 +197,24 @@ def egon_data(context, **kwargs):
         with open(config.paths(pid="current")[0], "w") as f:
             f.write(yaml.safe_dump(options))
 
-    os.environ["AIRFLOW_HOME"] = str(resources.files(egon.data.airflow))
+    os.environ["AIRFLOW_HOME"] = str((Path(".") / "airflow").absolute())
+    os.makedirs(Path(".") / "airflow", exist_ok=True)
+    template = "airflow.cfg"
+    target = Path(".") / "airflow" / template
+    options = options["egon-data"]
+    rendered = resources.read_text(egon.data.airflow, template).format(
+        **options,
+        dags=str(resources.files(egon.data.airflow).absolute()),
+    )
+    if not target.exists():
+        with open(target, "w") as airflow_cfg:
+            airflow_cfg.write(rendered)
+    else:
+        with open(target, "r") as airflow_cfg:
+            airflow_cfg_contents = airflow_cfg.read()
+        if airflow_cfg_contents != rendered:
+            with open(target, "w") as airflow_cfg:
+                airflow_cfg.write(rendered)
 
     os.makedirs(Path(".") / "docker", exist_ok=True)
     template = "docker-compose.yml"
@@ -193,8 +223,47 @@ def egon_data(context, **kwargs):
         with open(target, "w") as compose_file:
             compose_file.write(
                 resources.read_text(egon.data.airflow, template).format(
-                    **options["egon-data"], airflow=os.environ["AIRFLOW_HOME"]
+                    **options, airflow=resources.files(egon.data.airflow)
                 )
+            )
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        code = s.connect_ex(
+            (options["--database-host"], int(options["--database-port"]))
+        )
+    if code != 0:
+        subprocess.run(
+            ["docker-compose", "up", "-d", "--build"],
+            cwd=str((Path(".") / "docker").absolute()),
+        )
+        time.sleep(1.5)  # Give the container time to boot.
+
+    engine = create_engine(
+        (
+            "postgresql+psycopg2://{--database-user}:{--database-password}"
+            "@{--database-host}:{--database-port}"
+            "/{--airflow-database-name}"
+        ).format(**options),
+        echo=False,
+    )
+    while True:  # Might still not be done booting. Poke it it's up.
+        try:
+            connection = engine.connect()
+            break
+        except PSPGOE:
+            pass
+        except SQLAOE:
+            pass
+    with connection.execution_options(
+        isolation_level="AUTOCOMMIT"
+    ) as connection:
+        databases = [
+            row[0]
+            for row in connection.execute("SELECT datname FROM pg_database;")
+        ]
+        if not options["--database-name"] in databases:
+            connection.execute(
+                f'CREATE DATABASE "{options["--database-name"]}";'
             )
 
 
