@@ -43,6 +43,13 @@ Added
   `#112 <https://github.com/openego/eGon-data/issues/112>`_
 * Abstraction of hvmv and ehv substations
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
+* RE potential areas data import
+  `#124 <https://github.com/openego/eGon-data/issues/124>`_
+* Heat demand data import
+  `#101 <https://github.com/openego/eGon-data/issues/101>`_
+* Demographic change integration
+  `#47 <https://github.com/openego/eGon-data/issues/47>`_
+
 
 Changed
 -------
@@ -51,6 +58,17 @@ Changed
   `#20 <https://github.com/openego/eGon-data/issues/20>`_
 * Switch from Travis to GitHub actions for CI jobs
   `#92 <https://github.com/openego/eGon-data/issues/92>`_
+* Rename columns to id and zensus_population_id in zensus tables
+  `#140 <https://github.com/openego/eGon-data/issues/140>`_
+* Revise docs CONTRIBUTING section and in particular PR guidelines
+  `#88 <https://github.com/openego/eGon-data/issues/88>`_ and
+  `#145 <https://github.com/openego/eGon-data/issues/145>`_
+* Drop support for Python3.6
+  `#148 <https://github.com/openego/eGon-data/issues/148>`_
+* Improve selection of zensus data in test mode
+  `#151 <https://github.com/openego/eGon-data/issues/151>`_
 
 Bug fixes
 ---------
+* Heat demand data import
+  `#157 <https://github.com/openego/eGon-data/issues/157>`_
