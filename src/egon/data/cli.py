@@ -90,7 +90,7 @@ def serve(context):
 )
 @click.option(
     "--database-port",
-    default="54321",
+    default="59734",
     metavar="PORT",
     help=("Specify the port on which the local DBMS is listening."),
     show_default=True,
