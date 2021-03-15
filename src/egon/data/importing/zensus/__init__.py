@@ -75,7 +75,7 @@ def create_zensus_tables():
 
     db.execute_sql(
         f"CREATE TABLE {population_table}"
-        f""" (id        SERIAL NOT NULL,
+        f""" (gid        SERIAL NOT NULL,
               grid_id    character varying(254) NOT NULL,
               x_mp       int,
               y_mp       int,
@@ -83,7 +83,7 @@ def create_zensus_tables():
               geom_point geometry(Point,3035),
               geom geometry (Polygon, 3035),
               CONSTRAINT {zensus_population_processed['table']}_pkey
-              PRIMARY KEY (id)
+              PRIMARY KEY (gid)
         );
         """
     )
@@ -103,7 +103,7 @@ def create_zensus_tables():
                   characteristics_text text,
                   quantity           smallint,
                   quantity_q         smallint,
-                  zensus_population_id int,
+                  gid_ha             int,
                   CONSTRAINT {table}_pkey PRIMARY KEY (id)
             );
             """
@@ -381,7 +381,7 @@ def zensus_misc_to_postgres(dataset="main"):
 
         db.execute_sql(
             f"""UPDATE {zensus_population_processed['schema']}.{table} as b
-                    SET zensus_population_id = zs.id
+                    SET gid_ha = zs.gid
                     FROM {population_table} zs
                     WHERE b.grid_id = zs.grid_id;"""
         )
@@ -389,6 +389,6 @@ def zensus_misc_to_postgres(dataset="main"):
         db.execute_sql(
             f"""ALTER TABLE {zensus_population_processed['schema']}.{table}
                     ADD CONSTRAINT {table}_fkey
-                    FOREIGN KEY (zensus_population_id)
-                    REFERENCES {population_table}(id);"""
+                    FOREIGN KEY (gid_ha)
+                    REFERENCES {population_table}(gid);"""
         )
