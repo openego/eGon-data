@@ -284,4 +284,7 @@ def main():
     try:
         egon_data.main(sys.argv[1:])
     finally:
-        config.paths(pid="current")[0].unlink(missing_ok=True)
+        try:
+            config.paths(pid="current")[0].unlink()
+        except FileNotFoundError:
+            pass
