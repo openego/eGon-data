@@ -142,7 +142,9 @@ def egon_data(context, **kwargs):
 
     if not config.paths()[0].exists():
         with open(config.paths()[0], "w") as f:
-            f.write(yaml.safe_dump(options["defaults"]))
+            f.write(
+                yaml.safe_dump(dict(options["defaults"], **options["cli"]))
+            )
 
     if len(config.paths(pid="*")) > 1:
         message = (
