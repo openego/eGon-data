@@ -75,17 +75,17 @@ def serve(context):
     show_default=True,
 )
 @click.option(
+    "--database-user",
+    default="egon",
+    metavar="USERNAME",
+    help=("Specify the user used to access the local database."),
+    show_default=True,
+)
+@click.option(
     "--database-host",
     default="127.0.0.1",
     metavar="HOST",
     help=("Specify the host on which the local database is running."),
-    show_default=True,
-)
-@click.option(
-    "--database-password",
-    default="data",
-    metavar="PW",
-    help=("Specify the password used to access the local database."),
     show_default=True,
 )
 @click.option(
@@ -96,10 +96,10 @@ def serve(context):
     show_default=True,
 )
 @click.option(
-    "--database-user",
-    default="egon",
-    metavar="USERNAME",
-    help=("Specify the user used to access the local database."),
+    "--database-password",
+    default="data",
+    metavar="PW",
+    help=("Specify the password used to access the local database."),
     show_default=True,
 )
 @click.version_option(version=egon.data.__version__)
