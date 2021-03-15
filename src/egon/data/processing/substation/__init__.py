@@ -205,9 +205,9 @@ def create_voronoi():
 
     '''
 
-    list = ['hvmv_substation', 'ehv_substation']
+    substation_list = ['hvmv_substation', 'ehv_substation']
 
-    for substation in list:
+    for substation in substation_list:
         schema = egon.data.config.datasets()[substation]['processed']['schema']
         substation_table = egon.data.config.datasets()[substation]['processed']['table']
         voronoi_table = egon.data.config.datasets()[substation + '_voronoi']['processed']['table']
@@ -227,6 +227,7 @@ def create_voronoi():
                FROM {schema}.{substation_table} a;
             """
             )
+
         # Clip Voronoi with boundaries
         db.execute_sql(
             f"""
@@ -263,4 +264,3 @@ def create_voronoi():
             )
 
         db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")
-
