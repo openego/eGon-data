@@ -84,6 +84,7 @@ setup(
     install_requires=[
         "apache-airflow<2.0",
         "click",
+        "importlib_resources",
         "oedialect==0.0.8",
         "pyaml",
         "psycopg2",

@@ -17,11 +17,11 @@ Why does this file exist, and why not put this in __main__?
 from multiprocessing import Process
 from textwrap import wrap
 import os
-import os.path
 import subprocess
 import sys
 
 import click
+import importlib_resources as resources
 import yaml
 
 import egon.data
@@ -170,7 +170,7 @@ def egon_data(context, **kwargs):
         with open(config.paths(pid="current")[0], "w") as f:
             f.write(yaml.safe_dump(options))
 
-    os.environ["AIRFLOW_HOME"] = os.path.dirname(egon.data.airflow.__file__)
+    os.environ["AIRFLOW_HOME"] = str(resources.files(egon.data.airflow))
 
 
 def main():
