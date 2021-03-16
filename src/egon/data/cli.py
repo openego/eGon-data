@@ -170,6 +170,9 @@ def egon_data(context, **kwargs):
                 yaml.safe_dump(dict(options["defaults"], **options["cli"]))
             )
 
+    # Alternatively:
+    #   `if config.paths(pid="*") != [config.paths(pid="current")]:`
+    #   or compare file contents.
     if len(config.paths(pid="*")) > 1:
         logger.error(
             "Found more than one configuration file belonging to a"
