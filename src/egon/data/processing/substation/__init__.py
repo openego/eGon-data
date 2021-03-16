@@ -85,6 +85,7 @@ def create_tables():
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS {cfg_ehv['processed']['schema']};")
 
+    # Drop tables
     db.execute_sql(f"""DROP TABLE IF EXISTS {cfg_ehv['processed']['schema']}.
                     {cfg_ehv['processed']['table']} CASCADE;""")
 
@@ -98,6 +99,12 @@ def create_tables():
     db.execute_sql(f"""DROP TABLE IF EXISTS
                    {cfg_hvmv_voronoi['processed']['schema']}.
                    {cfg_hvmv_voronoi['processed']['table']} CASCADE;""")
+
+    # Drop sequences
+    db.execute_sql("DROP SEQUENCE IF EXISTS ehv_id_seq CASCADE;")
+    db.execute_sql("DROP SEQUENCE IF EXISTS hvmv_id_seq CASCADE;")
+    db.execute_sql("DROP SEQUENCE IF EXISTS ehv_voronoi_id_seq CASCADE;")
+    db.execute_sql("DROP SEQUENCE IF EXISTS hvmv_voronoi_id_seq CASCADE;")
 
     engine = db.engine()
     EgonEhvSubstation.__table__.create(bind=engine, checkfirst=True)
