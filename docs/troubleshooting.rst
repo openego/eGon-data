@@ -72,6 +72,24 @@ Once you got this, run :code:`kill -s INT NUMBER`, substituting
 :code:`egon-data serve` should run without errors again.
 
 
+Other runtime errors
+====================
+
+If you trigger the DAG run in the webinterface you may encounter the error
+``ERROR - [0 / 0] Some workers seem to have died ...``. This was observed in
+connection with the scheduler message
+``sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) database is locked``.
+
+If this error persists, it may help to build the database from scratch by
+deleting the docker container using
+
+.. code-block:: bash
+
+   docker stop egon-data-local-database
+   docker rm egon-data-local-database
+
+and re-trigger the DAG.
+
 Other import or incompatible package version errors
 ===================================================
 
