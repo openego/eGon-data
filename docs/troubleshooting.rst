@@ -88,14 +88,14 @@ encounter an error like
 
 If you're ok with deleting the data, stop and remove the container by
 
-.. code-block::
+.. code-block:: none
 
   docker stop egon-data-local-database
   docker rm -v egon-data-local-database
 
 The container and its data can be kept by renaming the docker container.
 
-.. code-block::
+.. code-block:: none
 
   docker rename egon-data-local-database NEW_CONTAINER_NAME
 
