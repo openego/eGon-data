@@ -194,6 +194,16 @@ with airflow.DAG(
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
 
+    # osmTGmod ehv/hv grid model generation
+    osmtgmod = PythonOperator(
+        task_id= "osmtgmod",
+        python_callable= osmtgmod.run_osmtgmod,
+        op_args={dataset},
+    )
+    
+    ehv_substation_extraction >> osmtgmod
+    hvmv_substation_extraction >> osmtgmod
+
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
@@ -213,9 +223,4 @@ with airflow.DAG(
     create_re_potential_areas_tables >> insert_re_potential_areas
 
     
-    # osmTGmod ehv/hv grid model generation
-    osmtgmod = PythonOperator(
-        task_id= "osmtgmod",
-        python_callable= osmtgmod.run_osmtgmod)
-    
-    ehv_substation_extraction >> osmtgmod
+
