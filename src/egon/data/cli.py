@@ -176,7 +176,7 @@ def egon_data(context, **kwargs):
     Last but not least, if you're using the default behaviour of setting
     up the database in a Docker container, the working directory will
     also contain a directory called "docker", containing the database
-    data as well as other volumes used by the dockered database.
+    data as well as other volumes used by the "Docker"ed database.
 
     """
 
