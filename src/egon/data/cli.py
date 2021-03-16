@@ -181,6 +181,22 @@ def egon_data(context, **kwargs):
 
     """
 
+    # Adapted from the `merge_copy` implementation at:
+    #
+    #   https://stackoverflow.com/questions/29847098/the-best-way-to-merge-multi-nested-dictionaries-in-python-2-7
+    #
+    def merge(d1, d2):
+        return {
+            k: d1[k]
+            if k in d1 and k not in d2
+            else d2[k]
+            if k not in d1 and k in d2
+            else merge(d1[k], d2[k])
+            if isinstance(d1[k], dict) and isinstance(d2[k], dict)
+            else d2[k]
+            for k in set(d1).union(d2)
+        }
+
     def options(value, check=None):
         check = value if check is None else check
         flags = {p.opts[0]: value(p) for p in egon_data.params if check(p)}
@@ -191,11 +207,10 @@ def egon_data(context, **kwargs):
         "defaults": options(lambda o: o.default),
     }
 
+    combined = merge(options["defaults"], options["cli"])
     if not config.paths()[0].exists():
         with open(config.paths()[0], "w") as f:
-            f.write(
-                yaml.safe_dump(dict(options["defaults"], **options["cli"]))
-            )
+            f.write(yaml.safe_dump(combined))
 
     # Alternatively:
     #   `if config.paths(pid="*") != [config.paths(pid="current")]:`
