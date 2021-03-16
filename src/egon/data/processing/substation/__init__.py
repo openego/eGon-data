@@ -13,8 +13,11 @@ Base = declarative_base()
 class EgonEhvSubstation(Base):
     __tablename__ = 'egon_ehv_substation'
     __table_args__ = {'schema': 'grid'}
-    subst_id = Column(Integer, Sequence('ehv_id_seq'),
-        server_default=Sequence('ehv_id_seq').next_value(), primary_key=True)
+    subst_id = Column(Integer,
+        Sequence('grid.egon_ehv_substation_subst_id_seq'),
+        server_default=
+            Sequence('grid.egon_ehv_substation_subst_id_seq').next_value(),
+        primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
     point = Column(Geometry('POINT', 4326), index=True)
@@ -35,8 +38,11 @@ class EgonEhvSubstation(Base):
 class EgonHvmvSubstation(Base):
     __tablename__ = 'egon_hvmv_substation'
     __table_args__ = {'schema': 'grid'}
-    subst_id = Column(Integer, Sequence('hvmv_id_seq'),
-        server_default=Sequence('hvmv_id_seq').next_value(), primary_key=True)
+    subst_id = Column(Integer,
+        Sequence('grid.egon_hvmv_substation_subst_id_seq'),
+        server_default=
+            Sequence('grid.egon_hvmv_substation_subst_id_seq').next_value(),
+        primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
     point = Column(Geometry('POINT', 4326), index=True)
@@ -56,8 +62,10 @@ class EgonHvmvSubstation(Base):
 class EgonHvmvSubstationVoronoi(Base):
     __tablename__ = 'egon_hvmv_substation_voronoi'
     __table_args__ = {'schema': 'grid'}
-    id = Column(Integer, Sequence('hvmv_voronoi_id_seq'),
-        server_default=Sequence('hvmv_voronoi_id_seq').next_value(),
+    id = Column(Integer,
+        Sequence('grid.egon_hvmv_substation_voronoi_id_seq'),
+        server_default=
+            Sequence('grid.egon_hvmv_substation_voronoi_id_seq').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
@@ -66,8 +74,10 @@ class EgonHvmvSubstationVoronoi(Base):
 class EgonEhvSubstationVoronoi(Base):
     __tablename__ = 'egon_ehv_substation_voronoi'
     __table_args__ = {'schema': 'grid'}
-    id = Column(Integer, Sequence('ehv_voronoi_id_seq'),
-        server_default=Sequence('ehv_voronoi_id_seq').next_value(),
+    id = Column(Integer,
+        Sequence('grid.egon_ehv_substation_voronoi_id_seq'),
+        server_default=
+            Sequence('grid.egon_ehv_substation_voronoi_id_seq').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
@@ -86,25 +96,54 @@ def create_tables():
         f"CREATE SCHEMA IF NOT EXISTS {cfg_ehv['processed']['schema']};")
 
     # Drop tables
-    db.execute_sql(f"""DROP TABLE IF EXISTS {cfg_ehv['processed']['schema']}.
-                    {cfg_ehv['processed']['table']} CASCADE;""")
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {cfg_ehv['processed']['schema']}.
+            {cfg_ehv['processed']['table']} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {cfg_hvmv['processed']['schema']}.
-                    {cfg_hvmv['processed']['table']} CASCADE;""")
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {cfg_hvmv['processed']['schema']}.
+            {cfg_hvmv['processed']['table']} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS
-                   {cfg_ehv_voronoi['processed']['schema']}.
-                   {cfg_ehv_voronoi['processed']['table']} CASCADE;""")
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {cfg_ehv_voronoi['processed']['schema']}.
+            {cfg_ehv_voronoi['processed']['table']} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS
-                   {cfg_hvmv_voronoi['processed']['schema']}.
-                   {cfg_hvmv_voronoi['processed']['table']} CASCADE;""")
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {cfg_hvmv_voronoi['processed']['schema']}.
+            {cfg_hvmv_voronoi['processed']['table']} CASCADE;"""
+    )
 
     # Drop sequences
-    db.execute_sql("DROP SEQUENCE IF EXISTS ehv_id_seq CASCADE;")
-    db.execute_sql("DROP SEQUENCE IF EXISTS hvmv_id_seq CASCADE;")
-    db.execute_sql("DROP SEQUENCE IF EXISTS ehv_voronoi_id_seq CASCADE;")
-    db.execute_sql("DROP SEQUENCE IF EXISTS hvmv_voronoi_id_seq CASCADE;")
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            {cfg_ehv_voronoi['processed']['schema']}.
+            {cfg_ehv_voronoi['processed']['table']}_id_seq CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            {cfg_hvmv_voronoi['processed']['schema']}.
+            {cfg_hvmv_voronoi['processed']['table']}_id_seq CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            {cfg_hvmv['processed']['schema']}.
+            {cfg_hvmv['processed']['table']}_subst_id_seq CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            {cfg_ehv['processed']['schema']}.
+            {cfg_ehv['processed']['table']}_subst_id_seq CASCADE;"""
+    )
 
     engine = db.engine()
     EgonEhvSubstation.__table__.create(bind=engine, checkfirst=True)
