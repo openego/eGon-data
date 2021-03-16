@@ -85,6 +85,7 @@ setup(
         "apache-airflow<2.0",
         "click",
         "importlib_resources",
+        "loguru",
         "oedialect==0.0.8",
         "pyaml",
         "psycopg2",

@@ -16,7 +16,6 @@ Why does this file exist, and why not put this in __main__?
 """
 from multiprocessing import Process
 from pathlib import Path
-from textwrap import wrap
 import os
 import socket
 import subprocess
@@ -30,6 +29,7 @@ import click
 import importlib_resources as resources
 import yaml
 
+from egon.data import logger
 import egon.data
 import egon.data.airflow
 import egon.data.config as config
@@ -171,26 +171,18 @@ def egon_data(context, **kwargs):
             )
 
     if len(config.paths(pid="*")) > 1:
-        message = (
+        logger.error(
             "Found more than one configuration file belonging to a"
             " specific `egon-data` process. Unable to decide which one"
             " to use.\nExiting."
         )
-        click.echo(
-            "\n".join(wrap(message, click.get_terminal_size()[0])),
-            err=True,
-        )
         sys.exit(1)
 
     if len(config.paths(pid="*")) == 1:
-        message = (
+        logger.info(
             "Ignoring supplied options. Found a configuration file"
             " belonging to a different `egon-data` process. Using that"
             " one."
-        )
-        click.echo(
-            "\n".join(wrap(message, click.get_terminal_size()[0])),
-            err=True,
         )
         with open(config.paths(pid="*")[0]) as f:
             options = yaml.load(f, Loader=yaml.SafeLoader)
