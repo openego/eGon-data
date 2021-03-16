@@ -211,6 +211,11 @@ def egon_data(context, **kwargs):
     if not config.paths()[0].exists():
         with open(config.paths()[0], "w") as f:
             f.write(yaml.safe_dump(combined))
+    else:
+        with open(config.paths()[0], "r") as f:
+            stored = yaml.safe_load(f)
+        with open(config.paths()[0], "w") as f:
+            f.write(yaml.safe_dump(merge(combined, stored)))
 
     # Alternatively:
     #   `if config.paths(pid="*") != [config.paths(pid="current")]:`
