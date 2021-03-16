@@ -147,6 +147,9 @@ def egon_data(context, **kwargs):
 
     `egon-data --database-name 'test-egon-data' serve`
 
+    It is important that options (e.g. `--database-name`) are placed before
+    commands (e.g. `serve`).
+
     Whenever `egon-data` is executed, it searches for the configuration file
     "egon-data.configuration.yaml" in PWD. If that file doesn't exist,
     `egon-data` will create one, containing the command line parameters
