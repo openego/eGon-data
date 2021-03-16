@@ -62,12 +62,12 @@ def map_zensus_nuts3():
     db.execute_sql(f"DELETE FROM {target_schema}.{target_table}")
     # Assign nuts3 code to zensus grid cells
 
-    gdf = gpd.read_postgis(
+    gdf = db.select_geodataframe(
         f"""SELECT * FROM {source_zensus}""",
-        local_engine, geom_col='geom_point')
+        geom_col='geom_point')
 
-    gdf_boundaries = gpd.read_postgis(f"SELECT * FROM {source_boundaries}",
-                 local_engine, geom_col='geometry').to_crs(epsg=3035)
+    gdf_boundaries = db.select_geodataframe(
+        f"SELECT * FROM {source_boundaries}", geom_col='geometry', epsg=3035)
 
     # Join nuts3 with zensus cells
     join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op='intersects')
@@ -119,15 +119,15 @@ def population_prognosis_to_zensus():
     local_engine = db.engine()
 
     # Input: Zensus2011 population data including the NUTS3-Code
-    zensus_district = pd.read_sql(
+    zensus_district = db.select_dataframe(
         f"""SELECT zensus_population_id, nuts3
         FROM boundaries.{source_map}""",
-        local_engine).set_index('zensus_population_id')
+        index_col='zensus_population_id')
 
-    zensus = pd.read_sql(
+    zensus = db.select_dataframe(
         f"""SELECT id, population
         FROM {source_schema}.{source_zensus}""",
-        local_engine).set_index('id')
+        index_col='id')
 
     zensus['nuts3'] = zensus_district.nuts3
 
@@ -145,10 +145,10 @@ def population_prognosis_to_zensus():
     # Scale to pogosis values from demandregio
     for year in [2035, 2050]:
         # Input: dataset on population prognosis on district-level (NUTS3)
-        prognosis = pd.read_sql(
+        prognosis = db.select_dataframe(
             f"""SELECT nuts3, population
             FROM {source_schema}.{source_dr} WHERE year={year}""",
-            local_engine).set_index('nuts3')
+            index_col = 'nuts3')
 
         df = pd.DataFrame(zensus['share'].mul(
             prognosis.population[zensus['nuts3']].values
@@ -210,15 +210,15 @@ def household_prognosis_to_zensus():
     local_engine = db.engine()
 
     # Input: Zensus2011 household data including the NUTS3-Code
-    district = pd.read_sql(
+    district = db.select_dataframe(
         f"""SELECT zensus_population_id, nuts3
         FROM boundaries.{source_map}""",
-        local_engine).set_index('zensus_population_id')
+        index_col='zensus_population_id')
 
-    zensus = pd.read_sql(
+    zensus = db.select_dataframe(
         f"""SELECT zensus_population_id, quantity
         FROM {source_schema}.{source_zensus}""",
-        local_engine).set_index('zensus_population_id')
+        index_col='zensus_population_id')
 
     # Group all household types
     zensus = zensus.groupby(zensus.index).sum()
@@ -234,10 +234,10 @@ def household_prognosis_to_zensus():
     for year in [2035, 2050]:
         print(f"start prognosis for year {year}")
         # Input: dataset on household prognosis on district-level (NUTS3)
-        prognosis_nuts3 = pd.read_sql(
+        prognosis_nuts3 = db.select_dataframe(
             f"""SELECT nuts3, hh_size, households
             FROM {source_schema}.{source_dr} WHERE year={year}""",
-            local_engine).set_index('nuts3')
+            index_col='nuts3')
 
         # Insert into database
         household_prognosis_per_year(prognosis_nuts3, zensus, year).to_sql(

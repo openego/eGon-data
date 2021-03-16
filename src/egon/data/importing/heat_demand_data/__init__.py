@@ -356,7 +356,7 @@ def future_heat_demand_germany(scenario_name):
         res_profile = src.profile
 
     # adjusting and connversion to MWh
-    res_scenario_raster = res_hd_reduction * res_hd_2015 * 3.6
+    res_scenario_raster = res_hd_reduction * res_hd_2015 / 3.6
 
     res_profile.update(
         dtype=rasterio.uint16,  # set the dtype to uint16
@@ -717,7 +717,7 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "heat")
+    db.submit_comment(meta_json, "demand", "egon_peta_heat")
 
 
 def future_heat_demand_data_import():
