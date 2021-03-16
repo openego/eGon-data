@@ -135,18 +135,29 @@ def egon_data(context, **kwargs):
     to run `egon-data` because `egon-data` will use
     it's working directory to store configuration files and other data
     generated during a workflow run.
+    Goto to a location where you want to store eGon-data project data and
+    create a new directy by (feel free to choose a different directory name):
 
-    It is also recommended to use seperate directories for production
+    `mkdir egon-data-production && cd egon-data-production`
+
+    It is also recommended to use separate directories for production
     and test mode. 
     In test mode, you should also use a different database.
     This will be created and used by typing e.g.
+
     `egon-data --database-name 'test-egon-data' serve`
 
-    You can configure `egon-data` by putting a file named
-    "egon-data.configuration.yaml" into the directory from which you are
-    running `egon-data`. If that file doesn't exist, `egon-data` will
-    create one, containing the command line parameters supplied, as well
-    as the defaults for those switches for which no value was supplied.
+    Whenever `egon-data` is executed, it searches for the configuration file
+    "egon-data.configuration.yaml" in PWD. If that file doesn't exist,
+    `egon-data` will create one, containing the command line parameters
+    supplied, as well as the defaults for those switches for which no value
+    was supplied.
+    This means, run the above command that specifies a custom database once.
+    Afterwards, it's sufficient to execute `egon-data serve` in the same
+    directory and the same configuration will be used.
+    You can also edit the configuration the file
+    "egon-data.configuration.yaml" manually.
+
     Last but not least, if you're using the default behaviour of setting
     up the database in a Docker container, the working directory will
     also contain a directory called "docker", containing the database
