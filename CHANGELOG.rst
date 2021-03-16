@@ -29,6 +29,8 @@ Added
   Note that the configuration file is read from and writte to the
   directtory in which ``egon-data`` is started, so it's probably best to
   run ``egon-data`` in a dedicated directory.
+  There's also the new function `egon.data.config.settings` which
+  returns the current configuration settings.
 
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_

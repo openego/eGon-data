@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 import os
 
@@ -27,6 +29,29 @@ def paths(pid=None):
         return [p.absolute() for p in Path(".").glob(filename)]
     else:
         return [(Path(".") / filename).absolute()]
+
+
+# TODO: Add a command for this, so it's easy to double check the
+#       configuration.
+def settings() -> dict[str, dict[str, str]]:
+    """Return a nested dictionary containing the configuration settings.
+
+    It's a nested dictionary because the top level has command names as keys
+    and dictionaries as values where the second level dictionary has command
+    line switches applicable to the command as keys and the supplied values
+    as values.
+
+    So you would obtain the ``--database-name`` configuration setting used
+    by the current invocation of of ``egon-data`` via
+
+    .. code-block:: python
+
+        settings()["egon-data"]["--database-name"]
+
+    """
+    files = paths(pid="*") + paths()
+    with open(files[0]) as f:
+        return yaml.safe_load(f)
 
 
 def datasets(config_file=None):
