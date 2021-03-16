@@ -147,21 +147,15 @@ def egon_data(context, **kwargs):
     data as well as other volumes used by the dockered database.
 
     """
+
+    def options(value, check=None):
+        check = value if check is None else check
+        flags = {p.opts[0]: value(p) for p in egon_data.params if check(p)}
+        return {"egon-data": flags}
+
     options = {
-        "cli": {
-            "egon-data": {
-                option.opts[0]: kwargs[option.name]
-                for option in egon_data.params
-                if option.name in kwargs
-            }
-        },
-        "defaults": {
-            "egon-data": {
-                option.opts[0]: option.default
-                for option in egon_data.params
-                if option.default
-            }
-        },
+        "cli": options(lambda o: kwargs[o.name], lambda o: o.name in kwargs),
+        "defaults": options(lambda o: o.default),
     }
 
     if not config.paths()[0].exists():
