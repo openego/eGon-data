@@ -144,21 +144,19 @@ def serve(context):
 def egon_data(context, **kwargs):
     """Run and control the eGo^n data processing pipeline.
 
-    It is recommended to create a dedicated working directory in which
-    to run `egon-data` because `egon-data` will use
-    it's working directory to store configuration files and other data
-    generated during a workflow run.
-    Go to to a location where you want to store eGon-data project data and
-    create a new directory via:
+    It is recommended to create a dedicated working directory in which to
+    run `egon-data` because `egon-data` will use it's working directory to
+    store configuration files and other data generated during a workflow
+    run. Go to to a location where you want to store eGon-data project data
+    and create a new directory via:
 
         `mkdir egon-data-production && cd egon-data-production`
 
     Of course you are free to choose a different directory name.
 
-    It is also recommended to use separate directories for production
-    and test mode.
-    In test mode, you should also use a different database.
-    This will be created and used by typing e.g.
+    It is also recommended to use separate directories for production and
+    test mode. In test mode, you should also use a different database. This
+    will be created and used by typing e.g.:
 
         `egon-data --database-name 'test-egon-data' serve`
 
@@ -172,9 +170,8 @@ def egon_data(context, **kwargs):
     was supplied.
     This means, run the above command that specifies a custom database once.
     Afterwards, it's sufficient to execute `egon-data serve` in the same
-    directory and the same configuration will be used.
-    You can also edit the configuration the file
-    "egon-data.configuration.yaml" manually.
+    directory and the same configuration will be used. You can also edit the
+    configuration the file "egon-data.configuration.yaml" manually.
 
     Last but not least, if you're using the default behaviour of setting
     up the database in a Docker container, the working directory will
