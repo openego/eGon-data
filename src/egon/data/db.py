@@ -1,7 +1,9 @@
+from contextlib import contextmanager
 from pathlib import Path
 import os
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 import yaml
 import pandas as pd
 import geopandas as gpd
@@ -119,6 +121,22 @@ def airflow_db_connection():
         f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']}"
         f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"
     )
+
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    Session = sessionmaker(bind=engine())
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 
 def select_dataframe(sql, index_col=None):
     """ Select data from local database as pandas.DataFrame
