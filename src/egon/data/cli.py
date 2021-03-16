@@ -117,7 +117,7 @@ def serve(context):
 )
 @click.option(
     "--jobs",
-    default=16,
+    default=1,
     metavar="N",
     help=(
         "Spawn at maximum N tasks in parallel. Remember that in addition"
