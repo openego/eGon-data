@@ -26,7 +26,7 @@ Added
 * You can now supply values for the command line arguments for
   ``egon-data`` using a configuration file. If the configuration file
   doesn't exist, it will be created by ``egon-data`` on it's first run.
-  Note that the configuration file is read from and writte to the
+  Note that the configuration file is read from and written to the
   directtory in which ``egon-data`` is started, so it's probably best to
   run ``egon-data`` in a dedicated directory.
   There's also the new function `egon.data.config.settings` which
