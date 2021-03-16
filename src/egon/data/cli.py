@@ -151,7 +151,7 @@ def egon_data(context, **kwargs):
     Goto to a location where you want to store eGon-data project data and
     create a new directory via:
 
-    `mkdir egon-data-production && cd egon-data-production`
+        `mkdir egon-data-production && cd egon-data-production`
 
     Of course you are free to choose a different directory name.
 
@@ -160,7 +160,7 @@ def egon_data(context, **kwargs):
     In test mode, you should also use a different database.
     This will be created and used by typing e.g.
 
-    `egon-data --database-name 'test-egon-data' serve`
+        `egon-data --database-name 'test-egon-data' serve`
 
     It is important that options (e.g. `--database-name`) are placed before
     commands (e.g. `serve`).
