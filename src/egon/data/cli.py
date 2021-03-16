@@ -132,9 +132,15 @@ def egon_data(context, **kwargs):
     """Run and control the eGo^n data processing pipeline.
 
     It is recommended to create a dedicated working directory in which
-    to run `egon-data` because `egon-data` because `egon-data` will use
+    to run `egon-data` because `egon-data` will use
     it's working directory to store configuration files and other data
     generated during a workflow run.
+
+    It is also recommended to use seperate directories for production
+    and test mode. 
+    In test mode, you should also use a different database.
+    This will be created and used by typing e.g.
+    `egon-data --database-name 'test-egon-data' serve`
 
     You can configure `egon-data` by putting a file named
     "egon-data.configuration.yaml" into the directory from which you are
