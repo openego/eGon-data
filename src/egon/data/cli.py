@@ -118,6 +118,17 @@ def serve(context):
     show_default=True,
 )
 @click.option(
+    "--dataset-boundary",
+    "--clip-datasets-to",
+    type=click.Choice(["Everything", "Schleswig-Holstein"]),
+    default="Everything",
+    help=(
+        "Choose to limit the processed data to one of the available"
+        " built-in boundaries."
+    ),
+    show_default=True,
+)
+@click.option(
     "--jobs",
     default=1,
     metavar="N",
