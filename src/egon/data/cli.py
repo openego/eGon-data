@@ -143,7 +143,7 @@ def egon_data(context, **kwargs):
     `mkdir egon-data-production && cd egon-data-production`
 
     It is also recommended to use separate directories for production
-    and test mode. 
+    and test mode.
     In test mode, you should also use a different database.
     This will be created and used by typing e.g.
 
