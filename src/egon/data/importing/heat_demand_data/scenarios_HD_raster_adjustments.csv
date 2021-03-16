@@ -1,0 +1,5 @@
+scenario,country,HD_reduction_residential,HD_reduction_service_sector
+eGon2035,DE,0.854314018923104,0.498286864771128
+eGon100RE,DE,0.640720648501849,0.390895195300713
+eGon100RE_more_DH,DE,,
+eGon100RE_less_DH,DE,,

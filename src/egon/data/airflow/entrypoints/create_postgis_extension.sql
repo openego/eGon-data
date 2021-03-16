@@ -1,3 +1,4 @@
 CREATE EXTENSION hstore;
 CREATE EXTENSION postgis;
 CREATE EXTENSION pgrouting;
+CREATE EXTENSION postgis_raster;
