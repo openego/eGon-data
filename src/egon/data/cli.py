@@ -197,35 +197,37 @@ def egon_data(context, **kwargs):
         with open(config.paths(pid="current")[0], "w") as f:
             f.write(yaml.safe_dump(options))
 
+    def render(template, target, update=True, inserts={}, **more_inserts):
+        os.makedirs(target.parent, exist_ok=True)
+        rendered = resources.read_text(egon.data.airflow, template).format(
+            **dict(inserts, **more_inserts)
+        )
+        if not target.exists():
+            with open(target, "w") as f:
+                f.write(rendered)
+        elif update:
+            with open(target, "r") as f:
+                old = f.read()
+            if old != rendered:
+                with open(target, "w") as f:
+                    f.write(rendered)
+
     os.environ["AIRFLOW_HOME"] = str((Path(".") / "airflow").absolute())
-    os.makedirs(Path(".") / "airflow", exist_ok=True)
-    template = "airflow.cfg"
-    target = Path(".") / "airflow" / template
     options = options["egon-data"]
-    rendered = resources.read_text(egon.data.airflow, template).format(
-        **options,
+
+    render(
+        "airflow.cfg",
+        Path(".") / "airflow" / "airflow.cfg",
+        inserts=options,
         dags=str(resources.files(egon.data.airflow).absolute()),
     )
-    if not target.exists():
-        with open(target, "w") as airflow_cfg:
-            airflow_cfg.write(rendered)
-    else:
-        with open(target, "r") as airflow_cfg:
-            airflow_cfg_contents = airflow_cfg.read()
-        if airflow_cfg_contents != rendered:
-            with open(target, "w") as airflow_cfg:
-                airflow_cfg.write(rendered)
-
-    os.makedirs(Path(".") / "docker", exist_ok=True)
-    template = "docker-compose.yml"
-    target = Path(".") / "docker" / template
-    if not target.exists():
-        with open(target, "w") as compose_file:
-            compose_file.write(
-                resources.read_text(egon.data.airflow, template).format(
-                    **options, airflow=resources.files(egon.data.airflow)
-                )
-            )
+    render(
+        "docker-compose.yml",
+        Path(".") / "docker" / "docker-compose.yml",
+        update=False,
+        inserts=options,
+        airflow=resources.files(egon.data.airflow),
+    )
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
