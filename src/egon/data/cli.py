@@ -149,7 +149,7 @@ def egon_data(context, **kwargs):
     it's working directory to store configuration files and other data
     generated during a workflow run.
     Goto to a location where you want to store eGon-data project data and
-    create a new directy by (feel free to choose a different directory name):
+    create a new directory by (feel free to choose a different directory name):
 
     `mkdir egon-data-production && cd egon-data-production`
 
