@@ -44,7 +44,7 @@ def airflow(context):
     subprocess.run(["airflow"] + context.args)
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.pass_context
 def serve(context):
     """Start the airflow webapp controlling the egon-data pipeline.
@@ -65,7 +65,9 @@ def serve(context):
     subprocess.run(["airflow", "webserver"])
 
 
-@click.group(name="egon-data")
+@click.group(
+    name="egon-data", context_settings={"help_option_names": ["-h", "--help"]}
+)
 @click.option(
     "--airflow-database-name",
     default="airflow",
