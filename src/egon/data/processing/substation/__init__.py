@@ -14,9 +14,9 @@ class EgonEhvSubstation(Base):
     __tablename__ = 'egon_ehv_substation'
     __table_args__ = {'schema': 'grid'}
     subst_id = Column(Integer,
-        Sequence('grid.egon_ehv_substation_subst_id_seq'),
+        Sequence('egon_ehv_substation_subst_id_seq'),
         server_default=
-            Sequence('grid.egon_ehv_substation_subst_id_seq').next_value(),
+            Sequence('egon_ehv_substation_subst_id_seq').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
@@ -39,9 +39,9 @@ class EgonHvmvSubstation(Base):
     __tablename__ = 'egon_hvmv_substation'
     __table_args__ = {'schema': 'grid'}
     subst_id = Column(Integer,
-        Sequence('grid.egon_hvmv_substation_subst_id_seq'),
+        Sequence('egon_hvmv_substation_subst_id_seq'),
         server_default=
-            Sequence('grid.egon_hvmv_substation_subst_id_seq').next_value(),
+            Sequence('egon_hvmv_substation_subst_id_seq').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
@@ -63,7 +63,7 @@ class EgonHvmvSubstationVoronoi(Base):
     __tablename__ = 'egon_hvmv_substation_voronoi'
     __table_args__ = {'schema': 'grid'}
     id = Column(Integer,
-        Sequence('grid.egon_hvmv_substation_voronoi_id_seq'),
+        Sequence('egon_hvmv_substation_voronoi_id_seq'),
         server_default=
             Sequence('grid.egon_hvmv_substation_voronoi_id_seq').next_value(),
         primary_key=True)
@@ -75,9 +75,9 @@ class EgonEhvSubstationVoronoi(Base):
     __tablename__ = 'egon_ehv_substation_voronoi'
     __table_args__ = {'schema': 'grid'}
     id = Column(Integer,
-        Sequence('grid.egon_ehv_substation_voronoi_id_seq'),
+        Sequence('egon_ehv_substation_voronoi_id_seq'),
         server_default=
-            Sequence('grid.egon_ehv_substation_voronoi_id_seq').next_value(),
+            Sequence('egon_ehv_substation_voronoi_id_seq').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
@@ -123,25 +123,21 @@ def create_tables():
     # Drop sequences
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
-            {cfg_ehv_voronoi['processed']['schema']}.
             {cfg_ehv_voronoi['processed']['table']}_id_seq CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
-            {cfg_hvmv_voronoi['processed']['schema']}.
             {cfg_hvmv_voronoi['processed']['table']}_id_seq CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
-            {cfg_hvmv['processed']['schema']}.
             {cfg_hvmv['processed']['table']}_subst_id_seq CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
-            {cfg_ehv['processed']['schema']}.
             {cfg_ehv['processed']['table']}_subst_id_seq CASCADE;"""
     )
 
