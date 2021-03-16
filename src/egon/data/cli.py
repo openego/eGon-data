@@ -148,7 +148,7 @@ def egon_data(context, **kwargs):
     to run `egon-data` because `egon-data` will use
     it's working directory to store configuration files and other data
     generated during a workflow run.
-    Goto to a location where you want to store eGon-data project data and
+    Go to to a location where you want to store eGon-data project data and
     create a new directory via:
 
         `mkdir egon-data-production && cd egon-data-production`
