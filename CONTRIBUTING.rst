@@ -9,6 +9,20 @@ little bit helps, and credit will always be given.
 Extending the data workflow
 ===========================
 
+Where to save (downloaded) data?
+--------------------------------
+
+If a task requires to retrieve some data from external sources which needs to
+be saved locally, please use `CWD` to store the data. This is achieved by using
+
+.. code-block:: python
+
+  from pathlib import Path
+  from urllib.request import urlretrieve
+
+  filepath = Path(".") / "filename.csv"
+  urlretrieve("https://url/to/file", filepath)
+
 
 Adjusting test mode data
 ------------------------
