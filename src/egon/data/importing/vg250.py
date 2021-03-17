@@ -33,7 +33,7 @@ def download_vg250_files():
         urlretrieve(vg250_config["source"]["url"], target_file)
 
 
-def to_postgres(dataset='main'):
+def to_postgres():
 
     # Get information from data configuraiton file
     data_config = egon.data.config.datasets()
@@ -56,12 +56,13 @@ def to_postgres(dataset='main'):
             f"vg250_ebenen_0101/{filename}"
         )
 
-        if dataset != 'main':
+        if egon.data.config.dataset_boundaries() != 'Everything':
             # read-in borders of federal state Schleswig-Holstein
             data_sta = gpd.read_file(
                     f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
                     f"vg250_ebenen_0101/VG250_LAN.shp"
-                    ).query(f"GEN == '{dataset}'")
+                    ).query(
+                        f"GEN == '{egon.data.config.dataset_boundaries()}'")
             data_sta.BEZ = 'Bundesrepublik'
             data_sta.NUTS = 'DE'
             # import borders of Schleswig-Holstein as borders of state

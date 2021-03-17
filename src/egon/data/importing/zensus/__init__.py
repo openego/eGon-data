@@ -111,7 +111,22 @@ def create_zensus_tables():
 
 
 def target(source, dataset):
-    """Generate the target path corresponding to a source path."""
+    """Generate the target path corresponding to a source path.
+
+    Parameters
+    ----------
+    dataset: str
+        Toggles between production (`dataset='Everything'`) and test mode e.g.
+        (`dataset='Schleswig-Holstein'`).
+        In production mode, data covering entire Germany
+        is used. In the test mode a subset of this data is used for testing the
+        workflow.
+    Returns
+    -------
+    Path
+        Path to target csv-file
+
+    """
     return Path(
         os.path.join(os.path.dirname(__file__), source.stem)
         + "."
@@ -166,7 +181,7 @@ def filter_zensus_population(filename, dataset):
     filename : str
         Path to input csv-file
     dataset: str, optional
-        Toggles between production (`dataset='main'`) and test mode e.g.
+        Toggles between production (`dataset='Everything'`) and test mode e.g.
         (`dataset='Schleswig-Holstein'`).
         In production mode, data covering entire Germany
         is used. In the test mode a subset of this data is used for testing the
@@ -214,7 +229,7 @@ def filter_zensus_misc(filename, dataset):
     filename : str
         Path to input csv-file
     dataset: str, optional
-        Toggles between production (`dataset='main'`) and test mode e.g.
+        Toggles between production (`dataset='Everything'`) and test mode e.g.
         (`dataset='Schleswig-Holstein'`).
         In production mode, data covering entire Germany
         is used. In the test mode a subset of this data is used for testing the
@@ -255,7 +270,7 @@ def filter_zensus_misc(filename, dataset):
     return target(csv_file, dataset)
 
 
-def population_to_postgres(dataset="main"):
+def population_to_postgres():
     """Import Zensus population data to postgres database"""
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
@@ -264,6 +279,7 @@ def population_to_postgres(dataset="main"):
     input_file = os.path.join(
         os.path.dirname(__file__), zensus_population_orig["target"]["path"]
     )
+    dataset = egon.data.config.dataset_boundaries()
 
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
@@ -278,7 +294,7 @@ def population_to_postgres(dataset="main"):
 
             zf.extract(filename)
 
-            if dataset == "main":
+            if dataset == "Everything":
                 filename_insert = filename
             else:
                 filename_insert = filter_zensus_population(filename, dataset)
@@ -325,13 +341,14 @@ def population_to_postgres(dataset="main"):
     )
 
 
-def zensus_misc_to_postgres(dataset="main"):
+def zensus_misc_to_postgres():
     """Import data on buildings, households and apartments to postgres db"""
 
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
     zensus_misc_processed = data_config["zensus_misc"]["processed"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
+    dataset = egon.data.config.dataset_boundaries()
 
     population_table = (
         f"{zensus_population_processed['schema']}"
@@ -349,7 +366,7 @@ def zensus_misc_to_postgres(dataset="main"):
             for filename in csvfiles:
                 zf.extract(filename)
 
-                if dataset == "main":
+                if dataset == "Everything":
                     filename_insert = filename
                 else:
                     filename_insert = filter_zensus_misc(filename, dataset)

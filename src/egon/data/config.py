@@ -53,6 +53,15 @@ def settings() -> dict[str, dict[str, str]]:
     with open(files[0]) as f:
         return yaml.safe_load(f)
 
+def dataset_boundaries():
+    """Return dataset boundaries from configuration settings"""
+
+    if '--dataset-boundary' in settings()['egon-data']:
+        dataset = settings()['egon-data']['--dataset-boundary']
+    elif '--clip-datasets-to' in settings()['egon-data']:
+        dataset = settings()['egon-data']['--clip-datasets-to']
+
+    return dataset
 
 def datasets(config_file=None):
     """Return dataset configuration.
