@@ -164,7 +164,7 @@ def egon_data(context, **kwargs):
     commands (e.g. `serve`).
 
     Whenever `egon-data` is executed, it searches for the configuration file
-    "egon-data.configuration.yaml" in PWD. If that file doesn't exist,
+    "egon-data.configuration.yaml" in CWD. If that file doesn't exist,
     `egon-data` will create one, containing the command line parameters
     supplied, as well as the defaults for those switches for which no value
     was supplied.
