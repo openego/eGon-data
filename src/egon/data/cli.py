@@ -163,6 +163,13 @@ def egon_data(context, **kwargs):
     It is important that options (e.g. `--database-name`) are placed before
     commands (e.g. `serve`).
 
+    For using a smaller dataset in the test mode, use the option
+    `--dataset-boundary`. The complete command for starting Aiflow in test
+    mode with using a separate database is
+
+        `egon-data --database-name 'test-egon-data' --dataset-boundary
+        'Schleswig-Holstein' serve`
+
     Whenever `egon-data` is executed, it searches for the configuration file
     "egon-data.configuration.yaml" in CWD. If that file doesn't exist,
     `egon-data` will create one, containing the command line parameters
