@@ -18,7 +18,7 @@ Added
 
 * You can now override the default database configuration using command
   line arguments. Look for the switches starting with ``--database`` in
-  ``egon-data --help``.
+  ``egon-data --help``. See :pr:`159`
 
 * Docker will not be used if there is already a service listening on the
   HOST:PORT combination configured for the database.
@@ -30,7 +30,7 @@ Added
   directtory in which ``egon-data`` is started, so it's probably best to
   run ``egon-data`` in a dedicated directory.
   There's also the new function `egon.data.config.settings` which
-  returns the current configuration settings.
+  returns the current configuration settings. See :pr:`159`
 
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
