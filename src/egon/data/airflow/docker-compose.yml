@@ -2,7 +2,7 @@ version: '3'
 services:
   egon-data-local-database-service:
     image: postgres:12-postgis
-    container_name: egon-data-local-database-container
+    container_name: {--docker-container-name}
     restart: unless-stopped
     build:
       context: .

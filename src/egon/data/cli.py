@@ -139,6 +139,18 @@ def serve(context):
     ),
     show_default=True,
 )
+@click.option(
+    "--docker-container-name",
+    default="egon-data-local-database-container",
+    metavar="NAME",
+    help=(
+        "The name of the Docker container containing the local database."
+        " You usually can stick to the default, unless you run into errors"
+        " due to clashing names and don't want to delete or rename your old"
+        " containers."
+    ),
+    show_default=True,
+)
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
