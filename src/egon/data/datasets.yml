@@ -1,11 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany/bremen-200101.osm.pbf"
+      url: "http://download.geofabrik.de/europe/germany-200101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      path: "bremen-200101.osm.pbf"
+      path: "germany-200101.osm.pbf"
+      path_testmode: "schleswig-holstein-200101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -79,6 +81,34 @@ demandregio:
       - 2035
       - 2050
 
+hvmv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_hvmv_substation"
+ehv_substation:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "grid"
+    table: "egon_ehv_substation"
+
+
+
+society_prognosis:
+  target:
+    schema: "society"
+    map_nuts3: "egon_map_zensus_nuts3"
+    population_prognosis: "egon_population_prognosis"
+    household_prognosis: "egon_household_prognosis"
+
 scenario_input:
   eGon2035:
     paths:
@@ -97,6 +127,54 @@ mastr:
     - "storage"
   file_basename: "bnetza_mastr"
   deposit_id: 740153
+
+re_potential_areas:
+  original_data:
+    source:
+      url:
+        #TODO: finally replace sandbox
+        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_agriculture.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_road_railway.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_wind.gpkg?download=1"
+      url_testmode:
+        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_agriculture_SH.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_road_railway_SH.gpkg?download=1"
+        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_wind_SH.gpkg?download=1"
+    target:
+      schema: "supply"
+      path_table_map:
+        "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
+        "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
+        "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
+
+peta5_0_1_res_heat_demands:
+  original_data:
+    source:
+    # In case the link breaks (hopefully it does not), you are able to download
+    # the data manually. Here you also find background information:
+    # https://s-eenergies-open-data-euf.hub.arcgis.com/search?categories=seenergies_buildings
+    # https://www.arcgis.com/home/item.html?id=d7d18b63250240a49eb81db972aa573e
+      url: "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data"
+    target:
+      path: "Peta5_0_1_HD_res.zip"
+  processed:
+    schema: "demand"
+    file_table_map:
+    table: # 2015 heat demand data not stored in database
+peta5_0_1_ser_heat_demands:
+  original_data:
+    source:
+    # In case the link breaks (hopefully it does not), you are able to download
+    # the data manually. Here you also find background information:
+    # https://s-eenergies-open-data-euf.hub.arcgis.com/search?categories=seenergies_buildings
+    # https://www.arcgis.com/home/item.html?id=52ff5e02111142459ed5c2fe3d80b3a0
+      url: "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data"
+    target:
+      path: "Peta5_0_1_HD_ser.zip"
+  processed:
+    schema: "demand"
+    file_table_map:
+    table: # 2015 heat demand data not stored in database
 
 power_plants:
   sources:

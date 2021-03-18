@@ -106,6 +106,10 @@ packages are required too. Right now these are:
   On recent Ubuntu version you can install it via
   :code:`sudo apt install osm2pgsql`.
 
+* `postgis <https://postgis.net/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install postgis`.
+
 
 Installation
 ============
@@ -175,12 +179,12 @@ Test mode
 ---------
 
 The workflow can be tested on a smaller subset of data on example of the
-federal state of Bremen.
+federal state of Schleswig-Holstein.
+Data is reduced during execution of the workflow to represent only this area.
 
 .. warning::
 
-   Right now, only OSM data for Bremen get's imported. This is hard-wired in
-   `egon.data/data_sets.yml`.
+   Right now, the test mode is set in `egon.data/airflow/pipeline.py`.
 
 
 .. end-getting-started-information
