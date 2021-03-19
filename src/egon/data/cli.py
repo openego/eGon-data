@@ -119,7 +119,6 @@ def serve(context):
 )
 @click.option(
     "--dataset-boundary",
-    "--clip-datasets-to",
     type=click.Choice(["Everything", "Schleswig-Holstein"]),
     default="Everything",
     help=(
