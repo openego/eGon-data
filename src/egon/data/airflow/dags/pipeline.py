@@ -25,8 +25,11 @@ with airflow.DAG(
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
     template_searchpath=[
-        os.path.abspath(os.path.join(os.path.dirname(
-            __file__), '..', '..', 'processing', 'vg250'))
+        os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__), "..", "..", "processing", "vg250"
+            )
+        )
     ],
     is_paused_upon_creation=False,
     schedule_interval=None,
@@ -58,7 +61,8 @@ with airflow.DAG(
         python_callable=import_vg250.download_vg250_files,
     )
     vg250_import = PythonOperator(
-        task_id="import-vg250", python_callable=import_vg250.to_postgres,
+        task_id="import-vg250",
+        python_callable=import_vg250.to_postgres,
     )
 
     vg250_nuts_mview = PostgresOperator(
@@ -83,17 +87,17 @@ with airflow.DAG(
     # Zensus import
     zensus_download_population = PythonOperator(
         task_id="download-zensus-population",
-        python_callable=import_zs.download_zensus_pop
+        python_callable=import_zs.download_zensus_pop,
     )
 
     zensus_download_misc = PythonOperator(
         task_id="download-zensus-misc",
-        python_callable=import_zs.download_zensus_misc
+        python_callable=import_zs.download_zensus_misc,
     )
 
     zensus_tables = PythonOperator(
         task_id="create-zensus-tables",
-        python_callable=import_zs.create_zensus_tables
+        python_callable=import_zs.create_zensus_tables,
     )
 
     population_import = PythonOperator(
@@ -120,35 +124,35 @@ with airflow.DAG(
     # Power plant setup
     power_plant_tables = PythonOperator(
         task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables
+        python_callable=power_plants.create_tables,
     )
     setup >> power_plant_tables
-
 
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
-        python_callable=nep_input.create_scenario_input_tables)
+        python_callable=nep_input.create_scenario_input_tables,
+    )
 
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",
-        python_callable=nep_input.insert_data_nep,)
+        python_callable=nep_input.insert_data_nep,
+    )
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
 
-
     # setting etrago input tables
     etrago_input_data = PythonOperator(
-        task_id = "setting-etrago-input-tables",
-        python_callable = etrago.create_tables
+        task_id="setting-etrago-input-tables",
+        python_callable=etrago.create_tables,
     )
     setup >> etrago_input_data
 
     # Retrieve MaStR data
     retrieve_mastr_data = PythonOperator(
         task_id="retrieve_mastr_data",
-        python_callable=mastr.download_mastr_data
+        python_callable=mastr.download_mastr_data,
     )
     setup >> retrieve_mastr_data
