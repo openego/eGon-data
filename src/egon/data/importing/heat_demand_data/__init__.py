@@ -399,6 +399,8 @@ def future_heat_demand_germany(scenario_name):
     return None
 
 
+
+
 def heat_demand_to_db_table():
     """
     Import heat demand rasters and convert them to vector data.
@@ -467,9 +469,51 @@ def heat_demand_to_db_table():
             connection.execute(
                 Template(convert.read()).render(version="0.0.0")
             )
-
     return None
 
+def adjust_residential_heat_to_zensus(scenario):
+    """ Adjust residential heat demand to fit to zensus population.
+    Residential heat demand in cells without zensus population is droped.
+    Residential heat demand in cells with zensus population is scaled to meet
+    the formal overall residential heat demands.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Select overall residential heat demand
+    overall_demand = db.select_dataframe(
+        f"""SELECT SUM(demand) as overall_demand
+        FROM  demand.egon_peta_heat
+        WHERE scenario = {'scenario'} and sector = 'residential'
+        """).overall_demand[0]
+
+    # Select heat demand in populated cells
+    df = db.select_dataframe(
+        f"""SELECT *
+        FROM  demand.egon_peta_heat
+        WHERE scenario = {'scenario'} and sector = 'residential'
+        AND zensus_population_id IN (
+            SELECT gid
+            FROM society.destatis_zensus_population_per_ha_inside_germany
+            )""", index_col='id')
+
+    # Scale heat demands in populated cells
+    df.loc[:, 'demand'] *= overall_demand/df.loc[:, 'demand'].sum()
+
+    # Drop residential heat demands
+    db.execute_sql(f"""DELETE FROM demand.egon_peta_heat
+        WHERE scenario = {'scenario'} and sector = 'residential'""")
+
+    # Insert adjusted heat demands in populated cells
+    df.to_sql('egon_peta_heat', schema='demand',
+              con=db.engine(), if_exists='append')
 
 def add_metadata():
     """
@@ -753,6 +797,8 @@ def future_heat_demand_data_import():
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
     heat_demand_to_db_table()
+    adjust_residential_heat_to_zensus("eGon2035")
+    adjust_residential_heat_to_zensus("eGon100RE")
     add_metadata()
 
     return None

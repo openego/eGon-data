@@ -283,4 +283,4 @@ with airflow.DAG(
         python_callable=import_hd.future_heat_demand_data_import
     )
     vg250_clean_and_prepare >> heat_demand_import
-    population_import >> heat_demand_import
+    zensus_inside_ger_metadata >> heat_demand_import
