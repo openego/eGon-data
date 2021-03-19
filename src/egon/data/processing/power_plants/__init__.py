@@ -4,10 +4,10 @@ from egon.data import db
 from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import sessionmaker
 from geoalchemy2 import Geometry
 import pandas as pd
 import geopandas as gpd
-from sqlalchemy.orm import sessionmaker
 import egon.data.config
 Base = declarative_base()
 
@@ -156,7 +156,7 @@ def insert_biomass_plants(scenario):
     target = select_target('biomass', scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv('bnetza_mastr_hydro_cleaned.csv').query(
+    mastr = pd.read_csv(cfg['sources']['mastr_biomass']).query(
         "EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -229,7 +229,7 @@ def insert_hydro_plants(scenario):
         target = select_target(carrier, scenario)
 
         # import data for MaStR
-        mastr = pd.read_csv('bnetza_mastr_hydro_cleaned.csv').query(
+        mastr = pd.read_csv(cfg['sources']['mastr_hydro']).query(
             "EinheitBetriebsstatus=='InBetrieb'")
 
         # Choose only plants with specific carriers
