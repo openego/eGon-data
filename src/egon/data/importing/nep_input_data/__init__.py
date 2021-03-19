@@ -7,6 +7,7 @@ import egon.data.config
 import pandas as pd
 import numpy as np
 from egon.data import db
+from egon.data.config import settings
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -247,7 +248,8 @@ def insert_nep_list_powerplants():
                                  'B 2040:\nLeistung': 'b2040_capacity'})
 
     # Cut data to federal state if in testmode
-    if egon.data.config.dataset_boundaries() != 'Everything':
+    boundary = settings()['egon-data']['--dataset-boundary']
+    if boundary != 'Everything':
         map_states = {'Baden-Württemberg':'BW', 'Nordrhein-Westfalen': 'NW',
                'Hessen': 'HE', 'Brandenburg': 'BB', 'Bremen':'HB',
                'Rheinland-Pfalz': 'RP', 'Sachsen-Anhalt': 'ST',
@@ -257,8 +259,8 @@ def insert_nep_list_powerplants():
                'Berlin': 'BE', 'Bayern': 'BY'}
 
         kw_liste_nep = kw_liste_nep[
-            kw_liste_nep.federal_state.isin(
-                [map_states[egon.data.config.dataset_boundaries()], np.nan])]
+            kw_liste_nep.federal_state.isin([map_states[boundary], np.nan])
+        ]
 
         for col in ['capacity', 'a2035_capacity', 'b2035_capacity',
                     'c2035_capacity', 'b2040_capacity']:
@@ -288,7 +290,7 @@ def district_heating_input():
     df.set_index(['Energietraeger', 'Name'], inplace=True)
 
     # Scale values to population share in testmode
-    if egon.data.config.dataset_boundaries() != 'Everything':
+    if settings()['egon-data']['--dataset-boundary'] != 'Everything':
         df.loc[
             pd.IndexSlice[:, 'Fernwaermeerzeugung'],
             'Wert'] *= population_share()

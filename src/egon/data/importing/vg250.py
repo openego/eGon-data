@@ -17,6 +17,7 @@ from geoalchemy2 import Geometry
 import geopandas as gpd
 
 from egon.data import db
+from egon.data.config import settings
 import egon.data.config
 
 
@@ -56,12 +57,13 @@ def to_postgres():
             f"vg250_ebenen_0101/{filename}"
         )
 
-        if egon.data.config.dataset_boundaries() != "Everything":
+        boundary = settings()['egon-data']['--dataset-boundary']
+        if boundary != "Everything":
             # read-in borders of federal state Schleswig-Holstein
             data_sta = gpd.read_file(
                 f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
                 f"vg250_ebenen_0101/VG250_LAN.shp"
-            ).query(f"GEN == '{egon.data.config.dataset_boundaries()}'")
+            ).query(f"GEN == '{boundary}'")
             data_sta.BEZ = "Bundesrepublik"
             data_sta.NUTS = "DE"
             # import borders of Schleswig-Holstein as borders of state

@@ -13,6 +13,7 @@ from shapely.prepared import prep
 import pandas as pd
 
 from egon.data import db, subprocess
+from egon.data.config import settings
 import egon.data.config
 
 
@@ -279,7 +280,7 @@ def population_to_postgres():
     input_file = os.path.join(
         os.path.dirname(__file__), zensus_population_orig["target"]["path"]
     )
-    dataset = egon.data.config.dataset_boundaries()
+    dataset = settings()['egon-data']['--dataset-boundary']
 
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
@@ -348,7 +349,7 @@ def zensus_misc_to_postgres():
     data_config = egon.data.config.datasets()
     zensus_misc_processed = data_config["zensus_misc"]["processed"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
-    dataset = egon.data.config.dataset_boundaries()
+    dataset = settings()['egon-data']['--dataset-boundary']
 
     population_table = (
         f"{zensus_population_processed['schema']}"
