@@ -8,7 +8,6 @@ from geoalchemy2 import Geometry
 import pandas as pd
 import geopandas as gpd
 from sqlalchemy.orm import sessionmaker
-from pathlib import Path
 import egon.data.config
 Base = declarative_base()
 
@@ -113,7 +112,7 @@ def filter_mastr_geometry(mastr):
     Returns
     -------
     mastr_loc : pandas.DataFrame
-        Power plants listed in MaStR with valid geometry
+        Power plants listed in MaStR with geometry inside German boundaries
 
     """
     cfg = egon.data.config.datasets()["power_plants"]
@@ -138,13 +137,13 @@ def filter_mastr_geometry(mastr):
     return mastr_loc
 
 
-def insert_biomass_plants(scenario='eGon2035'):
+def insert_biomass_plants(scenario):
     """ Insert biomass power plants of future scenario
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of scenario. The default is 'eGon2035'.
+    scenario : str
+        Name of scenario.
 
     Returns
     -------
@@ -157,8 +156,8 @@ def insert_biomass_plants(scenario='eGon2035'):
     target = select_target('biomass', scenario)
 
     # import data for MaStR
-    path = Path(__file__).parent.parent.parent/'importing/'
-    mastr = pd.read_csv(path/'bnetza_mastr_biomass_cleaned.csv')
+    mastr = pd.read_csv('bnetza_mastr_hydro_cleaned.csv').query(
+        "EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[mastr.Bundesland.isin(pd.read_sql(
@@ -167,15 +166,20 @@ def insert_biomass_plants(scenario='eGon2035'):
         FROM {cfg['sources']['geom_federal_states']}""",
         con=db.engine()).states.values)]
 
-    # Scale capacities to meet target values
-    mastr = scale_prox2now(mastr, target, level='federal_state')
+    # Scaling will be done per federal state in case of eGon2035 scenario.
+    if scenario == 'eGon2035':
+        level = 'federal_state'
+    else:
+        level = 'country'
 
-    # Choose only entries with valid geometries
+    # Scale capacities to meet target values
+    mastr = scale_prox2now(mastr, target, level=level)
+
+    # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr)
     # TODO: Deal with power plants without geometry
 
     # Insert entries with location
-    # TODO: change to gdf.to_postgis and update for sources to avoid loop?
     session = sessionmaker(bind=db.engine())()
     for i, row in mastr_loc.iterrows():
         entry = EgonPowerPlants(
@@ -194,13 +198,18 @@ def insert_biomass_plants(scenario='eGon2035'):
 
     session.commit()
 
-def insert_hydro_plants(scenario='eGon2035'):
-    """ Insert hydro power plants of future scenario
+def insert_hydro_plants(scenario):
+    """ Insert hydro power plants of future scenario.
+
+    Hydro power plants are diveded into run_of_river and reservoir plants
+    according to Marktstammdatenregister.
+    Additional hydro technologies (e.g. turbines inside drinking water
+    systems) are not considered.
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of scenario. The default is 'eGon2035'.
+    scenario : str
+        Name of scenario.
 
     Returns
     -------
@@ -211,18 +220,17 @@ def insert_hydro_plants(scenario='eGon2035'):
 
     # Map MaStR carriers to eGon carriers
     map_carrier = {
-        'run_of_river': ['Laufwasseranlage',
-                         'WasserkraftanlageInTrinkwassersystem',
-                         'WasserkraftanlageInBrauchwassersystem'],
+        'run_of_river': ['Laufwasseranlage'],
          'reservoir': ['Speicherwasseranlage']}
 
     for carrier in map_carrier.keys():
-        # import target values from NEP 2021, scneario C 2035
+
+        # import target values
         target = select_target(carrier, scenario)
 
         # import data for MaStR
-        path = Path(__file__).parent.parent.parent/'importing/'
-        mastr = pd.read_csv(path/'bnetza_mastr_hydro_cleaned.csv')
+        mastr = pd.read_csv('bnetza_mastr_hydro_cleaned.csv').query(
+            "EinheitBetriebsstatus=='InBetrieb'")
 
         # Choose only plants with specific carriers
         mastr = mastr[mastr.ArtDerWasserkraftanlage.isin(map_carrier[carrier])]
@@ -234,15 +242,20 @@ def insert_hydro_plants(scenario='eGon2035'):
             FROM {cfg['sources']['geom_federal_states']}""",
             con=db.engine()).states.values)]
 
-        # Scale capacities to meet target values
-        mastr = scale_prox2now(mastr, target, level='federal_state')
+        # Scaling will be done per federal state in case of eGon2035 scenario.
+        if scenario == 'eGon2035':
+            level = 'federal_state'
+        else:
+            level = 'country'
 
-        # Choose only entries with valid geometries
+        # Scale capacities to meet target values
+        mastr = scale_prox2now(mastr, target, level=level)
+
+        # Choose only entries with valid geometries inside DE/test mode
         mastr_loc = filter_mastr_geometry(mastr)
         # TODO: Deal with power plants without geometry
 
         # Insert entries with location
-        # TODO: change to gdf.to_postgis and update for sources to avoid loop?
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
@@ -271,6 +284,7 @@ def insert_power_plants():
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(
         f"DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}")
+
     for scenario in ['eGon2035']:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
