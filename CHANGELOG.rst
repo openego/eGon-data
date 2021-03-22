@@ -68,6 +68,8 @@ Changed
   `#148 <https://github.com/openego/eGon-data/issues/148>`_
 * Improve selection of zensus data in test mode
   `#151 <https://github.com/openego/eGon-data/issues/151>`_
+* Delete tables before re-creation and data insertation
+  `#166 <https://github.com/openego/eGon-data/issues/166>`_
 
 Bug fixes
 ---------
