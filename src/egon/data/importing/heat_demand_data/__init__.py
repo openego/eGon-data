@@ -378,7 +378,7 @@ def future_heat_demand_germany(scenario_name):
     res_scenario_raster = res_hd_reduction * res_hd_2015 / 3.6
 
     res_profile.update(
-        dtype=rasterio.uint16,  # set the dtype to uint16
+        dtype=rasterio.float32,  # set the dtype to float32
         count=1,  # change the band count to 1
         compress="lzw",  # specify LZW compression
     )
@@ -387,9 +387,9 @@ def future_heat_demand_germany(scenario_name):
     res_result_filename = (
         scenario_raster_directory + "/res_HD_" + scenario_name + ".tif"
     )
-    # Open raster dataset in 'w' write mode using the adjuste meta data
+    # Open raster dataset in 'w' write mode using the adjusted meta data
     with rasterio.open(res_result_filename, "w", **res_profile) as dst:
-        dst.write(res_scenario_raster.astype(rasterio.uint16), 1)
+        dst.write(res_scenario_raster.astype(rasterio.float32), 1)
 
     # Do the same for the service-sector
     ser_cutout = "Peta_5_0_1/ser_hd_2015_GER.tif"
@@ -402,7 +402,7 @@ def future_heat_demand_germany(scenario_name):
     ser_scenario_raster = ser_hd_reduction * ser_hd_2015 / 3.6
 
     ser_profile.update(
-        dtype=rasterio.uint16,
+        dtype=rasterio.float32,
         count=1,
         compress="lzw"
     )
@@ -411,9 +411,9 @@ def future_heat_demand_germany(scenario_name):
     ser_result_filename = (
         scenario_raster_directory + "/ser_HD_" + scenario_name + ".tif"
     )
-    # Open raster dataset in 'w' write mode using the adjuste meta data
+    # Open raster dataset in 'w' write mode using the adjusted meta data
     with rasterio.open(ser_result_filename, "w", **ser_profile) as dst:
-        dst.write(ser_scenario_raster.astype(rasterio.uint16), 1)
+        dst.write(ser_scenario_raster.astype(rasterio.float32), 1)
 
     return None
 
