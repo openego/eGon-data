@@ -75,3 +75,5 @@ Bug fixes
 ---------
 * Heat demand data import
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
+* Substation sequence
+  `#171 <https://github.com/openego/eGon-data/issues/171>`_
