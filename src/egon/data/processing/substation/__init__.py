@@ -16,7 +16,7 @@ class EgonEhvSubstation(Base):
     subst_id = Column(Integer,
         Sequence('egon_ehv_substation_subst_id_seq', schema='grid'),
         server_default=
-            Sequence('grid.egon_ehv_substation_subst_id_seq').next_value(),
+            Sequence('egon_ehv_substation_subst_id_seq', schema='grid').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
@@ -41,7 +41,7 @@ class EgonHvmvSubstation(Base):
     subst_id = Column(Integer,
         Sequence('egon_hvmv_substation_subst_id_seq', schema='grid'),
         server_default=
-            Sequence('grid.egon_hvmv_substation_subst_id_seq').next_value(),
+            Sequence('egon_hvmv_substation_subst_id_seq', schema='grid').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
@@ -65,7 +65,7 @@ class EgonHvmvSubstationVoronoi(Base):
     id = Column(Integer,
         Sequence('egon_hvmv_substation_voronoi_id_seq', schema='grid'),
         server_default=
-            Sequence('grid.egon_hvmv_substation_voronoi_id_seq').next_value(),
+            Sequence('egon_hvmv_substation_voronoi_id_seq', schema='grid').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
@@ -77,7 +77,7 @@ class EgonEhvSubstationVoronoi(Base):
     id = Column(Integer,
         Sequence('egon_ehv_substation_voronoi_id_seq', schema='grid'),
         server_default=
-            Sequence('grid.egon_ehv_substation_voronoi_id_seq').next_value(),
+            Sequence('egon_ehv_substation_voronoi_id_seq', schema='grid').next_value(),
         primary_key=True)
     subst_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
