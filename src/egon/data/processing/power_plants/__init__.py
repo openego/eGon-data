@@ -37,6 +37,9 @@ def create_tables():
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
     engine = db.engine()
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+        {cfg['target']['schema']}.{cfg['target']['table']}""")
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 def scale_prox2now(df, target, level='federal_state'):
