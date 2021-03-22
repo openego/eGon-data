@@ -51,6 +51,8 @@ Added
   `#101 <https://github.com/openego/eGon-data/issues/101>`_
 * Demographic change integration
   `#47 <https://github.com/openego/eGon-data/issues/47>`_
+* Add hydro and biomass power plants eGon2035
+  `#127 <https://github.com/openego/eGon-data/issues/127>`_
 
 Changed
 -------
