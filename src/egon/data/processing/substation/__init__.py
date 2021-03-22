@@ -16,7 +16,7 @@ class EgonEhvSubstation(Base):
     subst_id = Column(Integer,
         Sequence('egon_ehv_substation_subst_id_seq', schema='grid'),
         server_default=
-            Sequence('egon_ehv_substation_subst_id_seq, schema='grid').next_value(),
+            Sequence('egon_ehv_substation_subst_id_seq', schema='grid').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
