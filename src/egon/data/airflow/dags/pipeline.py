@@ -14,10 +14,13 @@ import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.vg250 as import_vg250
-import egon.data.importing.zensus as import_zs
 import egon.data.processing.openstreetmap as process_osm
+import egon.data.importing.zensus as import_zs
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.power_plants as power_plants
+import egon.data.importing.nep_input_data as nep_input
+import egon.data.importing.etrago as etrago
+import egon.data.importing.mastr as mastr
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.re_potential_areas as re_potential_areas
@@ -216,6 +219,7 @@ with airflow.DAG(
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
 
+
     # setting etrago input tables
     etrago_input_data = PythonOperator(
         task_id="setting-etrago-input-tables",
@@ -229,6 +233,7 @@ with airflow.DAG(
         python_callable=mastr.download_mastr_data,
     )
     setup >> retrieve_mastr_data
+
 
     # Substation extraction
     substation_tables = PythonOperator(
@@ -254,11 +259,17 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-    osm_add_metadata >> substation_tables >> substation_functions
-    substation_functions >> hvmv_substation_extraction
-    substation_functions >> ehv_substation_extraction
+
+    create_voronoi = PythonOperator(
+        task_id="create_voronoi",
+        python_callable=substation.create_voronoi
+    )
+    osm_add_metadata  >> substation_tables >> substation_functions
+    substation_functions >> hvmv_substation_extraction >> create_voronoi
+    substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
+
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
