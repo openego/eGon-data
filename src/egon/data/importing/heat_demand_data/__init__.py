@@ -33,6 +33,25 @@ from pathlib import Path  # for database import
 import json
 # import time
 
+# packages for ORM class definition
+from sqlalchemy import Column, String, Float, Integer, Sequence
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class EgonPetaHeat(Base):
+    __tablename__ = 'egon_peta_heat'
+    __table_args__ = {'schema': 'demand'}
+    id = Column(Integer,
+                Sequence('egon_peta_heat_seq', schema='demand'),
+                server_default=Sequence(
+                    'egon_peta_heat_seq', schema='demand').next_value(),
+                primary_key=True)
+    demand = Column(Float)
+    sector = Column(String)
+    scenario = Column(String)
+    version = Column(String)
+    zensus_population_id = Column(Integer)
 
 def download_peta5_0_1_heat_demands():
     """
@@ -423,8 +442,8 @@ def heat_demand_to_db_table():
 
     Notes
     -----
-        Please note that the table "demand.egon_peta_heat" is dropped prior to
-        the import, so make sure you're not loosing valuable data.
+        Please note that the data from "demand.egon_peta_heat" is deleted
+        prior to the import, so make sure you're not loosing valuable data.
 
     TODO
     ----
@@ -789,6 +808,12 @@ def future_heat_demand_data_import():
     ----
         check which tasks need to run (according to version number)
     """
+    # drop table if exists
+    # can be removed when table structure doesn't change anymore
+    db.execute_sql("DROP TABLE IF EXISTS demand.egon_peta_heat CASCADE")
+    db.execute_sql("DROP SEQUENCE IF EXISTS demand.egon_peta_heat_seq CASCADE")
+    # create table
+    EgonPetaHeat.__table__.create(bind=db.engine(), checkfirst=True)
 
     download_peta5_0_1_heat_demands()
     unzip_peta5_0_1_heat_demands()
