@@ -68,6 +68,8 @@ Changed
   `#148 <https://github.com/openego/eGon-data/issues/148>`_
 * Improve selection of zensus data in test mode
   `#151 <https://github.com/openego/eGon-data/issues/151>`_
+* Adjust residential heat demand in unpopulated zenus cells
+  `#167 <https://github.com/openego/eGon-data/issues/167>`_
 
 Bug fixes
 ---------
