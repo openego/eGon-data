@@ -10,6 +10,7 @@ isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from urllib.request import urlretrieve
+import datetime
 import json
 import os
 
@@ -72,7 +73,6 @@ def to_postgres(dataset='main'):
                 data = data[data.within(
                     data_sta.dissolve(by='GEN').geometry.values[0])]
 
-
         # Set index column and format column headings
         data.index.set_names("gid", inplace=True)
         data.columns = [x.lower() for x in data.columns]
@@ -103,7 +103,6 @@ def to_postgres(dataset='main'):
             f"CREATE INDEX {table}_geometry_idx ON "
             f"{vg250_processed['schema']}.{table} USING gist (geometry);"
         )
-
 
 
 def add_metadata():
@@ -150,6 +149,7 @@ def add_metadata():
     # Insert metadata for each table
     licenses = [
         {
+            "name": "dl-by-de/2.0",
             "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
             "path": "www.govdata.de/dl-de/by-2-0",
             "instruction": (
@@ -163,86 +163,76 @@ def add_metadata():
                 "zu selbständigen neuen Datensätzen verbunden werden;\n "
                 "(3) in interne und externe Geschäftsprozesse, Produkte und "
                 "Anwendungen in öffentlichen und nicht öffentlichen "
-                "elektronischen Netzwerken eingebunden werden."
+                "elektronischen Netzwerken eingebunden werden.\n"
+                "Bei der Nutzung ist sicherzustellen, dass folgende Angaben "
+                "als Quellenvermerk enthalten sind:\n"
+                "(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n"
+                "(2) der Vermerk Datenlizenz Deutschland – Namensnennung – "
+                "Version 2.0 oder dl-de/by-2-0 mit Verweis auf den Lizenztext "
+                "unter www.govdata.de/dl-de/by-2-0 sowie\n"
+                "(3) einen Verweis auf den Datensatz (URI)."
+
+                "Dies gilt nur soweit die datenhaltende Stelle die Angaben"
+                "(1) bis (3) zum Quellenvermerk bereitstellt.\n"                
+                "Veränderungen, Bearbeitungen, neue Gestaltungen oder "
+                "sonstige Abwandlungen sind im Quellenvermerk mit dem Hinweis "
+                "zu versehen, dass die Daten geändert wurden."
             ),
-            "attribution": "© Bundesamt für Kartographie und Geodäsie",
+            "attribution":
+                f"© GeoBasis-DE / BKG ({datetime.date.today().year})",
         }
     ]
+
+    vg250_source = {
+        "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
+        "description":
+            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+            "Verwaltungsebene des jeweiligen Landes.",
+        "path": url,
+        "licenses": licenses
+    }
+
     for table in vg250_config["processed"]["file_table_map"].values():
         meta = {
+            "name": ".".join([vg250_config["processed"]["schema"], table]),
             "title": title_and_description[table]["title"],
             "description": title_and_description[table]["title"],
-            "language": ["DE"],
+            "language": ["de-DE"],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": {
+                "homepage": "https://ego-n.org/",
+                "documentation": "https://egon-data.readthedocs.io/en/latest/",
+                "sourceCode": "https://github.com/openego/eGon-data",
+                "contact": "https://ego-n.org/partners/",
+                "grantNo": "03EI1002",
+                "fundingAgency": "Bundesministerium für Wirtschaft und "
+                                 "Energie",
+                "fundingAgencyLogo": "https://www.innovation-beratung-"
+                                     "foerderung.de/INNO/Redaktion/DE/Bilder/"
+                                     "Titelbilder/titel_foerderlogo_bmwi.jpg?"
+                                     "__blob=normal&v=3",
+                "publisherLogo": "https://ego-n.org/images/eGon_logo_"
+                                 "noborder_transbg.svg"
+            },
             "spatial": {
-                "location": "",
+                "location": None,
                 "extent": "Germany",
-                "resolution": "vector",
+                "resolution": "1:250000",
             },
             "temporal": {
                 "referenceDate": "2020-01-01",
                 "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
+                    "start": None,
+                    "end": None,
+                    "resolution": None,
+                    "alignment": None,
+                    "aggregationType": None,
                 },
             },
-            "sources": [
-                {
-                    "title": "Dienstleistungszentrum des Bundes für "
-                    "Geoinformation und Geodäsie - Open Data",
-                    "description": "Dieser Datenbestand steht über "
-                    "Geodatendienste gemäß "
-                    "Geodatenzugangsgesetz (GeoZG) "
-                    "(http://www.geodatenzentrum.de/auftrag/pdf"
-                    "/geodatenzugangsgesetz.pdf) für die "
-                    "kommerzielle und nicht kommerzielle "
-                    "Nutzung geldleistungsfrei zum Download "
-                    "und zur Online-Nutzung zur Verfügung. Die "
-                    "Nutzung der Geodaten und Geodatendienste "
-                    "wird durch die Verordnung zur Festlegung "
-                    "der Nutzungsbestimmungen für die "
-                    "Bereitstellung von Geodaten des Bundes "
-                    "(GeoNutzV) (http://www.geodatenzentrum.de"
-                    "/auftrag/pdf/geonutz.pdf) geregelt. "
-                    "Insbesondere hat jeder Nutzer den "
-                    "Quellenvermerk zu allen Geodaten, "
-                    "Metadaten und Geodatendiensten erkennbar "
-                    "und in optischem Zusammenhang zu "
-                    "platzieren. Veränderungen, Bearbeitungen, "
-                    "neue Gestaltungen oder sonstige "
-                    "Abwandlungen sind mit einem "
-                    "Veränderungshinweis im Quellenvermerk zu "
-                    "versehen. Quellenvermerk und "
-                    "Veränderungshinweis sind wie folgt zu "
-                    "gestalten. Bei der Darstellung auf einer "
-                    "Webseite ist der Quellenvermerk mit der "
-                    "URL http://www.bkg.bund.de zu verlinken. "
-                    "© GeoBasis-DE / BKG <Jahr des letzten "
-                    "Datenbezugs> © GeoBasis-DE / BKG "
-                    "<Jahr des letzten Datenbezugs> "
-                    "(Daten verändert) Beispiel: "
-                    "© GeoBasis-DE / BKG 2013",
-                    "path": url,
-                    "licenses": "Geodatenzugangsgesetz (GeoZG)",
-                    "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
-                },
-                {
-                    "title": "BKG - Verwaltungsgebiete 1:250.000 (vg250)",
-                    "description": "Der Datenbestand umfasst sämtliche "
-                    "Verwaltungseinheiten aller hierarchischen "
-                    "Verwaltungsebenen vom Staat bis zu den "
-                    "Gemeinden mit ihren Verwaltungsgrenzen, "
-                    "statistischen Schlüsselzahlen und dem "
-                    "Namen der Verwaltungseinheit sowie der "
-                    "spezifischen Bezeichnung der "
-                    "Verwaltungsebene des jeweiligen "
-                    "Bundeslandes.",
-                    "path": "http://www.bkg.bund.de",
-                    "licenses": licenses,
-                },
-            ],
+            "sources": [vg250_source],
             "licenses": licenses,
             "contributors": [
                 {
@@ -254,7 +244,7 @@ def add_metadata():
                 }
             ],
             "metaMetadata": {
-                "metadataVersion": "OEP-1.4.0",
+                "metadataVersion": "OEP-1.4.1",
                 "metadataLicense": {
                     "name": "CC0-1.0",
                     "title": "Creative Commons Zero v1.0 Universal",
