@@ -195,9 +195,44 @@ def add_metadata():
         "licenses": licenses
     }
 
+    resource_fields = [
+        {'description': 'Index', 'name': 'gid', 'type': 'integer', 'unit': None},
+        {'description': 'Administrative level', 'name': 'ade', 'type': 'integer', 'unit': None},
+        {'description': 'Geofactor', 'name': 'gf', 'type': 'integer', 'unit': None},
+        {'description': 'Particular areas', 'name': 'bsg', 'type': 'integer', 'unit': None},
+        {'description': 'Territorial code', 'name': 'ars', 'type': 'string', 'unit': None},
+        {'description': 'Official Municipality Key', 'name': 'ags', 'type': 'string', 'unit': None},
+        {'description': 'Seat of the administration (territorial code)', 'name': 'sdv_ars', 'type': 'string', 'unit': None},
+        {'description': 'Geographical name', 'name': 'gen', 'type': 'string', 'unit': None},
+        {'description': 'Designation of the administrative unit', 'name': 'bez', 'type': 'string', 'unit': None},
+        {'description': 'Identifier', 'name': 'ibz', 'type': 'integer', 'unit': None},
+        {'description': 'Note', 'name': 'bem', 'type': 'string', 'unit': None},
+        {'description': 'Name generation', 'name': 'nbd', 'type': 'string', 'unit': None},
+        {'description': 'Land (state)', 'name': 'sn_l', 'type': 'string', 'unit': None},
+        {'description': 'Administrative district', 'name': 'sn_r', 'type': 'string', 'unit': None},
+        {'description': 'District', 'name': 'sn_k', 'type': 'string', 'unit': None},
+        {'description': 'Administrative association – front part', 'name': 'sn_v1', 'type': 'string', 'unit': None},
+        {'description': 'Administrative association – rear part', 'name': 'sn_v2', 'type': 'string', 'unit': None},
+        {'description': 'Municipality', 'name': 'sn_g', 'type': 'string', 'unit': None},
+        {'description': 'Function of the 3rd key digit', 'name': 'fk_s3', 'type': 'string', 'unit': None},
+        {'description': 'European statistics key', 'name': 'nuts', 'type': 'string', 'unit': None},
+        {'description': 'Filled territorial code', 'name': 'ars_0', 'type': 'string', 'unit': None},
+        {'description': 'Filled Official Municipality Key', 'name': 'ags_0', 'type': 'string', 'unit': None},
+        {'description': 'Effectiveness', 'name': 'wsk', 'type': 'string', 'unit': None},
+        {'description': 'DLM identifier', 'name': 'debkg_id', 'type': 'string',
+         'unit': None},
+        {'description': 'Territorial code (deprecated column)', 'name': 'rs', 'type': 'string', 'unit': None},
+        {'description': 'Seat of the administration (territorial code, deprecated column)', 'name': 'sdv_rs', 'type': 'string', 'unit': None},
+        {'description': 'Filled territorial code (deprecated column)', 'name': 'rs_0', 'type': 'string', 'unit': None},
+        {'description': 'Geometry of areas as WKB',
+         'name': 'geometry',
+         'type': "Geometry(Polygon, srid=4326)",
+         'unit': None}]
+
     for table in vg250_config["processed"]["file_table_map"].values():
+        schema_table = ".".join([vg250_config["processed"]["schema"], table])
         meta = {
-            "name": ".".join([vg250_config["processed"]["schema"], table]),
+            "name": schema_table,
             "title": title_and_description[table]["title"],
             "description": title_and_description[table]["title"],
             "language": ["de-DE"],
@@ -241,6 +276,24 @@ def add_metadata():
                     "date": "2020-12-04",
                     "object": "",
                     "comment": "Imported data",
+                }
+            ],
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": schema_table,
+                    "path": None,
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": resource_fields,
+                        "primaryKey": ["gid"],
+                        "foreignKeys": None
+                    },
+                    "dialect": {
+                        "delimiter": None,
+                        "decimalSeparator": "."
+                    }
                 }
             ],
             "metaMetadata": {
