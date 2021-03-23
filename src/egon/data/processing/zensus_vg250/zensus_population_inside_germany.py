@@ -11,6 +11,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
 
 from egon.data import db
 import egon.data.config
@@ -128,6 +129,57 @@ class Vg250GemPopulation(Base):
     population_density = Column(Integer)
     geom = Column(Geometry(srid=3035))
 
+class MapZensusVg250(Base):
+    __tablename__ = "egon_map_zensus_vg250"
+    __table_args__ = {"schema": "boundaries", 'extend_existing': True}
+
+    zensus_population_id = Column(Integer, primary_key=True, index=True)
+    zensus_geom = Column(Geometry('POINT', 3035))
+    rs_municipality = Column(String)
+    nuts3 = Column(String)
+
+
+def map_zensus_vg250():
+    """Perform mapping between municipalities and zensus grid"""
+
+
+    MapZensusVg250.__table__.drop(bind=db.engine())
+    MapZensusVg250.__table__.create(bind=db.engine(), checkfirst=True)
+
+    # Get information from data configuration file
+    cfg = egon.data.config.datasets()
+
+    # Define in- and output tables
+    source_zensus = "society.destatis_zensus_population_per_ha"
+    source_boundaries = "boundaries.vg250_gem_clean"
+
+    target_table = "egon_map_zensus_vg250"
+    target_schema =  'boundaries'
+
+    local_engine = db.engine()
+
+    db.execute_sql(f"DELETE FROM {target_schema}.{target_table}")
+
+    gdf = db.select_geodataframe(
+        f"""SELECT * FROM {source_zensus}""",
+        geom_col='geom_point')
+
+    gdf_boundaries = db.select_geodataframe(
+        f"SELECT * FROM {source_boundaries}", geom_col='geometry', epsg=3035)
+
+    # Join nuts3 with zensus cells
+    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op='intersects')
+
+    # Insert results to database
+    join.rename({'id_left': 'zensus_population_id',
+                 'geom_point': 'zensus_geom',
+                 'nuts': 'nuts3',
+                 'rs_0': 'rs_municipality'}, axis = 1
+                )[['zensus_population_id',
+                   'zensus_geom', 'rs_municipality', 'nuts3']].set_geometry(
+                    'zensus_geom').to_postgis(
+                         target_table, schema=target_schema,
+                         con=local_engine, if_exists = 'replace')
 
 def inside_germany():
     """
