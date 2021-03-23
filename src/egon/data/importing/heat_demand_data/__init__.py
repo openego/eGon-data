@@ -39,19 +39,24 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class EgonPetaHeat(Base):
-    __tablename__ = 'egon_peta_heat'
-    __table_args__ = {'schema': 'demand'}
-    id = Column(Integer,
-                Sequence('egon_peta_heat_seq', schema='demand'),
-                server_default=Sequence(
-                    'egon_peta_heat_seq', schema='demand').next_value(),
-                primary_key=True)
+    __tablename__ = "egon_peta_heat"
+    __table_args__ = {"schema": "demand"}
+    id = Column(
+        Integer,
+        Sequence("egon_peta_heat_seq", schema="demand"),
+        server_default=Sequence(
+            "egon_peta_heat_seq", schema="demand"
+        ).next_value(),
+        primary_key=True,
+    )
     demand = Column(Float)
     sector = Column(String)
     scenario = Column(String)
     version = Column(String)
     zensus_population_id = Column(Integer)
+
 
 def download_peta5_0_1_heat_demands():
     """
@@ -296,6 +301,7 @@ def cutout_heat_demand_germany():
 
     return None
 
+
 def future_heat_demand_germany(scenario_name):
     """
     Calculate the future residential and service-sector heat demand per ha.
@@ -337,22 +343,22 @@ def future_heat_demand_germany(scenario_name):
         df_reductions = pd.read_excel(xlsfilename,
                                       sheet_name =
                                       "scenarios_for_raster_adjustment")
-
     """
+
     # Load the csv file with the sceanario data for raster adjustment
     csvfilename = os.path.join(
         os.path.dirname(__file__), "scenarios_HD_raster_adjustments.csv"
     )
-    df_reductions = pd.read_csv(csvfilename).set_index('scenario')
+    df_reductions = pd.read_csv(csvfilename).set_index("scenario")
 
     # Load the values, if scenario name is found in the file
     if scenario_name in df_reductions.index:
         res_hd_reduction = df_reductions.loc[
             scenario_name, "HD_reduction_residential"
-            ]
+        ]
         ser_hd_reduction = df_reductions.loc[
             scenario_name, "HD_reduction_service_sector"
-            ]
+        ]
     else:
         print(f"Scenario {scenario_name} not defined.")
 
@@ -416,8 +422,6 @@ def future_heat_demand_germany(scenario_name):
         dst.write(ser_scenario_raster.astype(rasterio.float32), 1)
 
     return None
-
-
 
 
 def heat_demand_to_db_table():
@@ -490,9 +494,12 @@ def heat_demand_to_db_table():
             )
     return None
 
+
 def adjust_residential_heat_to_zensus(scenario):
-    """ Adjust residential heat demand to fit to zensus population.
-    Residential heat demand in cells without zensus population is droped.
+    """
+    Adjust residential heat demands to fit to zensus population.
+
+    Residential heat demand in cells without zensus population is dropped.
     Residential heat demand in cells with zensus population is scaled to meet
     the formal overall residential heat demands.
 
@@ -503,15 +510,16 @@ def adjust_residential_heat_to_zensus(scenario):
 
     Returns
     -------
-    None.
-
+        None
     """
+
     # Select overall residential heat demand
     overall_demand = db.select_dataframe(
         f"""SELECT SUM(demand) as overall_demand
         FROM  demand.egon_peta_heat
         WHERE scenario = {'scenario'} and sector = 'residential'
-        """).overall_demand[0]
+        """
+    ).overall_demand[0]
 
     # Select heat demand in populated cells
     df = db.select_dataframe(
@@ -521,18 +529,26 @@ def adjust_residential_heat_to_zensus(scenario):
         AND zensus_population_id IN (
             SELECT gid
             FROM society.destatis_zensus_population_per_ha_inside_germany
-            )""", index_col='id')
+            )""",
+        index_col="id",
+    )
 
     # Scale heat demands in populated cells
-    df.loc[:, 'demand'] *= overall_demand/df.loc[:, 'demand'].sum()
+    df.loc[:, "demand"] *= overall_demand / df.loc[:, "demand"].sum()
 
     # Drop residential heat demands
-    db.execute_sql(f"""DELETE FROM demand.egon_peta_heat
-        WHERE scenario = {'scenario'} and sector = 'residential'""")
+    db.execute_sql(
+        f"""DELETE FROM demand.egon_peta_heat
+        WHERE scenario = {'scenario'} and sector = 'residential'"""
+    )
 
     # Insert adjusted heat demands in populated cells
-    df.to_sql('egon_peta_heat', schema='demand',
-              con=db.engine(), if_exists='append')
+    df.to_sql(
+        "egon_peta_heat", schema="demand", con=db.engine(), if_exists="append"
+    )
+
+    return None
+
 
 def add_metadata():
     """
