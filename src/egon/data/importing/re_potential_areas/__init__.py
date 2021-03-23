@@ -36,24 +36,20 @@ class EgonRePotentialAreaWind(Base):
     geom = Column(Geometry('MULTIPOLYGON', 3035))
 
 
-def download_datasets(dataset='main'):
-    """Download geopackages from Zenodo
-
-    Parameters
-    ----------
-    dataset: str, optional
-        Toggles between production (`dataset='main'`) and test mode e.g.
-        (`dataset='Schleswig-Holstein'`).
-        In production mode, data covering entire Germany is used. In the test
-        mode a subset of this data is used for testing the workflow.
-        When test mode is activated, data for a federal state instead of
-        Germany gets downloaded.
-    """
+def download_datasets():
+    """Download geopackages from Zenodo."""
 
     data_config = egon.data.config.datasets()
     pa_config = data_config['re_potential_areas']
 
-    url_section = 'url' if dataset == 'main' else 'url_testmode'
+    dataset = egon.data.config.settings()['egon-data']['--dataset-boundary']
+    url_section = (
+        'url'
+        if dataset == 'Everything'
+        else 'url_testmode'
+        if dataset == 'Schleswig-Holstein'
+        else raise ValueError(f"'{dataset}' is not a valid dataset boundary.")
+    )
 
     url_target_file_map = zip(
         pa_config['original_data']['source'][url_section],
