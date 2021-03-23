@@ -51,6 +51,8 @@ Added
   `#101 <https://github.com/openego/eGon-data/issues/101>`_
 * Demographic change integration
   `#47 <https://github.com/openego/eGon-data/issues/47>`_
+  * Creation of voronoi polygons for hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
 
 Changed
 -------
@@ -68,6 +70,8 @@ Changed
   `#148 <https://github.com/openego/eGon-data/issues/148>`_
 * Improve selection of zensus data in test mode
   `#151 <https://github.com/openego/eGon-data/issues/151>`_
+* Delete tables before re-creation and data insertation
+  `#166 <https://github.com/openego/eGon-data/issues/166>`
 * Adjust residential heat demand in unpopulated zenus cells
   `#167 <https://github.com/openego/eGon-data/issues/167>`_
 
@@ -75,3 +79,5 @@ Bug fixes
 ---------
 * Heat demand data import
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
+* Substation sequence
+  `#171 <https://github.com/openego/eGon-data/issues/171>`_
