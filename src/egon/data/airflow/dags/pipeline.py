@@ -167,19 +167,23 @@ with airflow.DAG(
         python_callable=process_zs.create_tables
     )
 
+    setup >> prognosis_tables
+
     population_prognosis = PythonOperator(
         task_id="zensus-population-prognosis",
         python_callable=process_zs.population_prognosis_to_zensus
     )
 
+    prognosis_tables >> population_prognosis
     map_zensus_vg250 >> population_prognosis
     demandregio_import >> population_prognosis
+    population_import >> population_prognosis
 
     household_prognosis = PythonOperator(
         task_id="zensus-household-prognosis",
         python_callable=process_zs.household_prognosis_to_zensus
     )
-
+    prognosis_tables >> household_prognosis
     map_zensus_vg250 >> household_prognosis
     demandregio_import >> household_prognosis
     zensus_misc_import >> household_prognosis
@@ -220,7 +224,6 @@ with airflow.DAG(
     )
     setup >> retrieve_mastr_data
 
-
     # Substation extraction
     substation_tables = PythonOperator(
         task_id="create_substation_tables",
@@ -255,7 +258,6 @@ with airflow.DAG(
     substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
-
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(

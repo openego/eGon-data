@@ -130,12 +130,13 @@ class Vg250GemPopulation(Base):
     population_density = Column(Integer)
     geom = Column(Geometry(srid=3035))
 
+
 class MapZensusVg250(Base):
     __tablename__ = "egon_map_zensus_vg250"
-    __table_args__ = {"schema": "boundaries", 'extend_existing': True}
+    __table_args__ = {"schema": "boundaries"}
 
     zensus_population_id = Column(Integer, primary_key=True, index=True)
-    zensus_geom = Column(Geometry('POINT', 3035))
+    zensus_geom = Column(Geometry("POINT", 3035))
     rs_municipality = Column(String)
     nuts3 = Column(String)
 
@@ -143,43 +144,77 @@ class MapZensusVg250(Base):
 def map_zensus_vg250():
     """Perform mapping between municipalities and zensus grid"""
 
-    MapZensusVg250.__table__.drop(bind=db.engine())
+    MapZensusVg250.__table__.drop(bind=db.engine(), checkfirst=True)
     MapZensusVg250.__table__.create(bind=db.engine(), checkfirst=True)
 
     # Get information from data configuration file
-    cfg = egon.data.config.datasets()['map_zensus_vg250']
+    cfg = egon.data.config.datasets()["map_zensus_vg250"]
 
     local_engine = db.engine()
 
     db.execute_sql(
         f"""DELETE FROM
-        {cfg['targets']['map']['schema']}.{cfg['targets']['map']['table']}""")
+        {cfg['targets']['map']['schema']}.{cfg['targets']['map']['table']}"""
+    )
 
     gdf = db.select_geodataframe(
         f"""SELECT * FROM
         {cfg['sources']['zensus_population']['schema']}.
         {cfg['sources']['zensus_population']['table']}""",
-        geom_col='geom_point')
+        geom_col="geom_point",
+    )
 
     gdf_boundaries = db.select_geodataframe(
         f"""SELECT * FROM  {cfg['sources']['vg250_municipalities']['schema']}.
-        {cfg['sources']['vg250_municipalities']['table']}"""
-        , geom_col='geometry', epsg=3035)
+        {cfg['sources']['vg250_municipalities']['table']}""",
+        geom_col="geometry",
+        epsg=3035,
+    )
 
-    # Join nuts3 with zensus cells
-    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op='intersects')
+    # Join vg250 with zensus cells
+    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op="intersects")
+
+    # Deal with cells that don't interect with boundaries (e.g. at borders)
+    missing_cells = gdf[(~gdf.id.isin(join.id)) & (gdf.population > 0)]
+
+    # start with buffer
+    buffer = 0
+
+    # increase buffer until every zensus cell is matched to a nuts3 region
+    while len(missing_cells) > 0:
+        buffer += 100
+        boundaries_buffer = gdf_boundaries.copy()
+        boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
+        join_missing = gpd.sjoin(
+            missing_cells, boundaries_buffer, how="inner", op="intersects"
+        )
+        join = join.append(join_missing)
+        missing_cells = gdf[(~gdf.id.isin(join.id)) & (gdf.population > 0)]
+    print(f"Maximal buffer to match zensus points to vg250: {buffer}m")
+
+    # drop duplicates
+    join = join.drop_duplicates(subset=["id"])
 
     # Insert results to database
-    join.rename({'id_left': 'zensus_population_id',
-                 'geom_point': 'zensus_geom',
-                 'nuts': 'nuts3',
-                 'rs_0': 'rs_municipality'}, axis = 1
-                )[['zensus_population_id',
-                   'zensus_geom', 'rs_municipality', 'nuts3']].set_geometry(
-                    'zensus_geom').to_postgis(
-                         cfg['targets']['map']['table'],
-                         schema=cfg['targets']['map']['schema'],
-                         con=local_engine, if_exists = 'replace')
+    join.rename(
+        {
+            "id": "zensus_population_id",
+            "geom_point": "zensus_geom",
+            "nuts": "nuts3",
+            "rs_0": "rs_municipality",
+        },
+        axis=1,
+    )[
+        ["zensus_population_id", "zensus_geom", "rs_municipality", "nuts3"]
+    ].set_geometry(
+        "zensus_geom"
+    ).to_postgis(
+        cfg["targets"]["map"]["table"],
+        schema=cfg["targets"]["map"]["schema"],
+        con=local_engine,
+        if_exists="replace",
+    )
+
 
 def inside_germany():
     """
@@ -191,7 +226,7 @@ def inside_germany():
 
     # Create new table
     DestatisZensusPopulationPerHaInsideGermany.__table__.drop(
-        bind=engine_local_db
+        bind=engine_local_db, checkfirst=True
     )
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
         bind=engine_local_db, checkfirst=True
@@ -201,7 +236,7 @@ def inside_germany():
     cells_in_germany = db.select_dataframe(
         """SELECT zensus_population_id
         FROM boundaries.egon_map_zensus_vg250"""
-        ).zensus_population_id.values.tolist()
+    ).zensus_population_id.values.tolist()
 
     with db.session_scope() as s:
         # Query relevant data from zensus population table
@@ -214,8 +249,7 @@ def inside_germany():
                 DestatisZensusPopulationPerHa.geom,
             )
             .filter(DestatisZensusPopulationPerHa.population > 0)
-            .filter(DestatisZensusPopulationPerHa.id.in_(cells_in_germany)
-            )
+            .filter(DestatisZensusPopulationPerHa.id.in_(cells_in_germany))
         )
 
         # Insert above queried data into new table
@@ -241,28 +275,32 @@ def population_in_municipalities():
     """
 
     engine_local_db = db.engine()
-    Vg250GemPopulation.__table__.drop(bind=engine_local_db)
+    Vg250GemPopulation.__table__.drop(bind=engine_local_db, checkfirst=True)
     Vg250GemPopulation.__table__.create(bind=engine_local_db, checkfirst=True)
 
     srid = 3035
 
     gem = db.select_geodataframe(
-        "SELECT * FROM boundaries.vg250_gem_clean", geom_col='geometry', epsg=srid)
+        "SELECT * FROM boundaries.vg250_gem_clean",
+        geom_col="geometry",
+        epsg=srid,
+    )
 
-    gem['area_ha'] = gem.area/10000
+    gem["area_ha"] = gem.area / 10000
 
-    gem['area_km2'] = gem.area/1000000
+    gem["area_km2"] = gem.area / 1000000
 
     population = db.select_dataframe(
         """SELECT id, population, rs_municipality
         FROM society.destatis_zensus_population_per_ha
         INNER JOIN boundaries.egon_map_zensus_vg250 ON (
              society.destatis_zensus_population_per_ha.id = boundaries.egon_map_zensus_vg250.zensus_population_id)
-        WHERE population > 0""")
+        WHERE population > 0"""
+    )
 
-    gem['area_km2']
+    gem["area_km2"]
 
-# DOPPELTE REGIONALSCHLÜSSEL?? gem_clean???
+    # DOPPELTE REGIONALSCHLÜSSEL?? gem_clean???
     # Prepare query from vg250 and zensus data
     with db.session_scope() as session:
         q = (
@@ -370,37 +408,37 @@ def add_metadata_zensus_inside_ger():
         "sources": [
             {
                 "name": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
-                        "Zensus 2011 zum Download",
+                "Zensus 2011 zum Download",
                 "description": "Als Download bieten wir Ihnen auf dieser Seite "
-                               "zusätzlich zur Zensusdatenbank CSV- und "
-                               "teilweise Excel-Tabellen mit umfassenden "
-                               "Personen-, Haushalts- und Familien- sowie "
-                               "Gebäude- und Wohnungs­merkmalen. Die "
-                               "Ergebnisse liegen auf Bundes-, Länder-, Kreis- "
-                               "und Gemeinde­ebene vor. Außerdem sind einzelne "
-                               "Ergebnisse für Gitterzellen verfügbar.",
+                "zusätzlich zur Zensusdatenbank CSV- und "
+                "teilweise Excel-Tabellen mit umfassenden "
+                "Personen-, Haushalts- und Familien- sowie "
+                "Gebäude- und Wohnungs­merkmalen. Die "
+                "Ergebnisse liegen auf Bundes-, Länder-, Kreis- "
+                "und Gemeinde­ebene vor. Außerdem sind einzelne "
+                "Ergebnisse für Gitterzellen verfügbar.",
                 "url": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnis"
-                       "se/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B2"
-                       "58A3B22D20448F2E4A91.2_cid380?nn=3065474",
+                "se/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B2"
+                "58A3B22D20448F2E4A91.2_cid380?nn=3065474",
                 "license": "",
                 "copyright": "© Statistische Ämter des Bundes und der Länder 2014",
             },
             {
                 "name": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
                 "description": "Diese Publikation beschreibt ausführlich die "
-                               "Methoden und Verfahren des registergestützten "
-                               "Zensus 2011; von der Datengewinnung und "
-                               "-aufbereitung bis hin zur Ergebniserstellung"
-                               " und Geheimhaltung. Der vorliegende Band wurde "
-                               "von den Statistischen Ämtern des Bundes und "
-                               "der Länder im Juni 2015 veröffentlicht.",
+                "Methoden und Verfahren des registergestützten "
+                "Zensus 2011; von der Datengewinnung und "
+                "-aufbereitung bis hin zur Ergebniserstellung"
+                " und Geheimhaltung. Der vorliegende Band wurde "
+                "von den Statistischen Ämtern des Bundes und "
+                "der Länder im Juni 2015 veröffentlicht.",
                 "url": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
-                       "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
-                       "19004.pdf?__blob=publicationFile",
+                "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
+                "19004.pdf?__blob=publicationFile",
                 "license": "Vervielfältigung und Verbreitung, auch "
-                           "auszugsweise, mit Quellenangabe gestattet.",
+                "auszugsweise, mit Quellenangabe gestattet.",
                 "copyright": "© Statistisches Bundesamt, Wiesbaden, 2015 "
-                             "(im Auftrag der Herausgebergemeinschaft)",
+                "(im Auftrag der Herausgebergemeinschaft)",
             },
         ],
         "license": {
@@ -409,18 +447,18 @@ def add_metadata_zensus_inside_ger():
             "version": "2.0",
             "url": "www.govdata.de/dl-de/by-2-0",
             "instruction": "Empfohlene Zitierweise des Quellennachweises: "
-                           "Datenquelle: Statistisches Bundesamt, Wiesbaden, "
-                           "Genesis-Online, <optional> Abrufdatum; Datenlizenz "
-                           "by-2-0. Quellenvermerk bei eigener Berechnung / "
-                           "Darstellung: Datenquelle: Statistisches Bundesamt, "
-                           "Wiesbaden, Genesis-Online, <optional> Abrufdatum; "
-                           "Datenlizenz by-2-0; eigene Berechnung/eigene "
-                           "Darstellung. In elektronischen Werken ist im "
-                           "Quellenverweis dem Begriff (Datenlizenz by-2-0) "
-                           "der Link www.govdata.de/dl-de/by-2-0 als "
-                           "Verknüpfung zu hinterlegen.",
+            "Datenquelle: Statistisches Bundesamt, Wiesbaden, "
+            "Genesis-Online, <optional> Abrufdatum; Datenlizenz "
+            "by-2-0. Quellenvermerk bei eigener Berechnung / "
+            "Darstellung: Datenquelle: Statistisches Bundesamt, "
+            "Wiesbaden, Genesis-Online, <optional> Abrufdatum; "
+            "Datenlizenz by-2-0; eigene Berechnung/eigene "
+            "Darstellung. In elektronischen Werken ist im "
+            "Quellenverweis dem Begriff (Datenlizenz by-2-0) "
+            "der Link www.govdata.de/dl-de/by-2-0 als "
+            "Verknüpfung zu hinterlegen.",
             "copyright": "Statistisches Bundesamt, Wiesbaden, Genesis-Online; "
-                         "Datenlizenz by-2-0; eigene Berechnung",
+            "Datenlizenz by-2-0; eigene Berechnung",
         },
         "contributors": [
             {
@@ -503,7 +541,7 @@ def add_metadata_vg250_gem_pop():
 
     metadata = {
         "title": "Municipalities (BKG Verwaltungsgebiete 250) and population "
-                 "(Destatis Zensus)",
+        "(Destatis Zensus)",
         "description": "Municipality data enriched by population data",
         "language": ["DE"],
         "spatial": {
