@@ -282,9 +282,10 @@ def population_in_municipalities():
     srid = 3035
 
     gem = db.select_geodataframe(
-        "SELECT * FROM boundaries.vg250_gem_clean",
+        "SELECT * FROM boundaries.vg250_gem",
         geom_col="geometry",
         epsg=srid,
+        index_col='gid'
     )
 
     gem["area_ha"] = gem.area / 10000
@@ -292,97 +293,24 @@ def population_in_municipalities():
     gem["area_km2"] = gem.area / 1000000
 
     population = db.select_dataframe(
-        """SELECT id, population, rs_municipality
+        """SELECT id, population, vg250_municipality_id
         FROM society.destatis_zensus_population_per_ha
         INNER JOIN boundaries.egon_map_zensus_vg250 ON (
-             society.destatis_zensus_population_per_ha.id = boundaries.egon_map_zensus_vg250.zensus_population_id)
+             society.destatis_zensus_population_per_ha.id =
+             boundaries.egon_map_zensus_vg250.zensus_population_id)
         WHERE population > 0"""
     )
 
-    gem["area_km2"]
+    gem["population_total"] = population.groupby(
+        'vg250_municipality_id').population.sum().fillna(0)
 
-    # DOPPELTE REGIONALSCHLÜSSEL?? gem_clean???
-    # Prepare query from vg250 and zensus data
-    with db.session_scope() as session:
-        q = (
-            session.query(
-                Vg250Gem.gid.label("gid"),
-                Vg250Gem.gen.label("gen"),
-                Vg250Gem.bez,
-                Vg250Gem.bem,
-                Vg250Gem.nuts,
-                Vg250Gem.rs_0,
-                Vg250Gem.ags_0,
-                (
-                    func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid))
-                    / 10000
-                ).label(
-                    "area_ha"
-                ),  # ha
-                (
-                    func.ST_Area(func.ST_Transform(Vg250Gem.geometry, srid))
-                    / 1000000
-                ).label(
-                    "area_km2"
-                ),  # km
-                func.sum(
-                    func.coalesce(
-                        DestatisZensusPopulationPerHaInsideGermany.population,
-                        0,
-                    )
-                ).label("population_total"),
-                func.count(
-                    DestatisZensusPopulationPerHaInsideGermany.geom
-                ).label("cell_count"),
-                func.coalesce(
-                    func.sum(
-                        func.coalesce(
-                            DestatisZensusPopulationPerHaInsideGermany.population,
-                            0,
-                        )
-                    )
-                    / (
-                        func.ST_Area(
-                            func.ST_Transform(Vg250Gem.geometry, srid)
-                        )
-                        / 1000000
-                    ),
-                    0,
-                ).label("population_density"),
-                func.ST_Transform(Vg250Gem.geometry, srid).label("geom"),
-            )
-            .filter(
-                func.ST_Contains(
-                    func.ST_Transform(Vg250Gem.geometry, srid),
-                    DestatisZensusPopulationPerHaInsideGermany.geom_point,
-                )
-            )
-            .group_by(Vg250Gem.gid)
-        )
+    gem["cell_count"] = population.groupby(
+        'vg250_municipality_id').population.count()
 
-        # Insert spatially joined data
-        insert = Vg250GemPopulation.__table__.insert().from_select(
-            [
-                Vg250GemPopulation.gid,
-                Vg250GemPopulation.gen,
-                Vg250GemPopulation.bez,
-                Vg250GemPopulation.bem,
-                Vg250GemPopulation.nuts,
-                Vg250GemPopulation.ags_0,
-                Vg250GemPopulation.rs_0,
-                Vg250GemPopulation.area_ha,
-                Vg250GemPopulation.area_km2,
-                Vg250GemPopulation.population_total,
-                Vg250GemPopulation.cell_count,
-                Vg250GemPopulation.population_density,
-                Vg250GemPopulation.geom,
-            ],
-            q,
-        )
+    gem["population_density"] = gem["population_total"]/gem["area_km2"]
 
-        # Execute and commit (trigger transactions in database)
-        session.execute(insert)
-        session.commit()
+    gem.reset_index().to_postgis("vg250_gem_population", schema= "boundaries",
+                   con=db.engine(), if_exists='replace')
 
 
 def add_metadata_zensus_inside_ger():
