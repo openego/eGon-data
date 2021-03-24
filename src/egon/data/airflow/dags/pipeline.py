@@ -133,6 +133,11 @@ with airflow.DAG(
     population_import >> zensus_misc_import
 
     # Combine Zensus and VG250 data
+    map_zensus_vg250 = PythonOperator(
+        task_id="map_zensus_vg250",
+        python_callable=zensus_vg250.map_zensus_vg250,
+    )
+
     zensus_inside_ger = PythonOperator(
         task_id="zensus-inside-germany",
         python_callable=zensus_vg250.inside_germany,
@@ -153,9 +158,9 @@ with airflow.DAG(
         python_callable=zensus_vg250.add_metadata_vg250_gem_pop,
     )
     [
-        vg250_import,
+        vg250_clean_and_prepare,
         population_import,
-    ] >> zensus_inside_ger >> zensus_inside_ger_metadata
+    ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
@@ -171,21 +176,12 @@ with airflow.DAG(
         python_callable=process_zs.create_tables
     )
 
-    map_zensus_nuts3 = PythonOperator(
-        task_id="map-zensus-to-nuts3",
-        python_callable=process_zs.map_zensus_nuts3
-    )
-
-    setup >> prognosis_tables >> map_zensus_nuts3
-    vg250_clean_and_prepare >> map_zensus_nuts3
-    population_import >> map_zensus_nuts3
-
     population_prognosis = PythonOperator(
         task_id="zensus-population-prognosis",
         python_callable=process_zs.population_prognosis_to_zensus
     )
 
-    map_zensus_nuts3 >> population_prognosis
+    map_zensus_vg250 >> population_prognosis
     demandregio_import >> population_prognosis
 
     household_prognosis = PythonOperator(
@@ -193,7 +189,7 @@ with airflow.DAG(
         python_callable=process_zs.household_prognosis_to_zensus
     )
 
-    map_zensus_nuts3 >> household_prognosis
+    map_zensus_vg250 >> household_prognosis
     demandregio_import >> household_prognosis
     zensus_misc_import >> household_prognosis
 

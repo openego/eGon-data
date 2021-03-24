@@ -9,6 +9,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     func,
+    select,
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -142,30 +143,28 @@ class MapZensusVg250(Base):
 def map_zensus_vg250():
     """Perform mapping between municipalities and zensus grid"""
 
-
     MapZensusVg250.__table__.drop(bind=db.engine())
     MapZensusVg250.__table__.create(bind=db.engine(), checkfirst=True)
 
     # Get information from data configuration file
-    cfg = egon.data.config.datasets()
-
-    # Define in- and output tables
-    source_zensus = "society.destatis_zensus_population_per_ha"
-    source_boundaries = "boundaries.vg250_gem_clean"
-
-    target_table = "egon_map_zensus_vg250"
-    target_schema =  'boundaries'
+    cfg = egon.data.config.datasets()['map_zensus_vg250']
 
     local_engine = db.engine()
 
-    db.execute_sql(f"DELETE FROM {target_schema}.{target_table}")
+    db.execute_sql(
+        f"""DELETE FROM
+        {cfg['targets']['map']['schema']}.{cfg['targets']['map']['table']}""")
 
     gdf = db.select_geodataframe(
-        f"""SELECT * FROM {source_zensus}""",
+        f"""SELECT * FROM
+        {cfg['sources']['zensus_population']['schema']}.
+        {cfg['sources']['zensus_population']['table']}""",
         geom_col='geom_point')
 
     gdf_boundaries = db.select_geodataframe(
-        f"SELECT * FROM {source_boundaries}", geom_col='geometry', epsg=3035)
+        f"""SELECT * FROM  {cfg['sources']['vg250_municipalities']['schema']}.
+        {cfg['sources']['vg250_municipalities']['table']}"""
+        , geom_col='geometry', epsg=3035)
 
     # Join nuts3 with zensus cells
     join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op='intersects')
@@ -178,7 +177,8 @@ def map_zensus_vg250():
                 )[['zensus_population_id',
                    'zensus_geom', 'rs_municipality', 'nuts3']].set_geometry(
                     'zensus_geom').to_postgis(
-                         target_table, schema=target_schema,
+                         cfg['targets']['map']['table'],
+                         schema=cfg['targets']['map']['schema'],
                          con=local_engine, if_exists = 'replace')
 
 def inside_germany():
@@ -197,6 +197,12 @@ def inside_germany():
         bind=engine_local_db, checkfirst=True
     )
 
+    # Selects zensus cells in German boundaries from vg250
+    cells_in_germany = db.select_dataframe(
+        """SELECT zensus_population_id
+        FROM boundaries.egon_map_zensus_vg250"""
+        ).zensus_population_id.values.tolist()
+
     with db.session_scope() as s:
         # Query relevant data from zensus population table
         q = (
@@ -208,11 +214,7 @@ def inside_germany():
                 DestatisZensusPopulationPerHa.geom,
             )
             .filter(DestatisZensusPopulationPerHa.population > 0)
-            .filter(
-                func.ST_Contains(
-                    func.ST_Transform(Vg250Sta.geometry, 3035),
-                    DestatisZensusPopulationPerHa.geom_point,
-                )
+            .filter(DestatisZensusPopulationPerHa.id.in_(cells_in_germany)
             )
         )
 
@@ -244,6 +246,23 @@ def population_in_municipalities():
 
     srid = 3035
 
+    gem = db.select_geodataframe(
+        "SELECT * FROM boundaries.vg250_gem_clean", geom_col='geometry', epsg=srid)
+
+    gem['area_ha'] = gem.area/10000
+
+    gem['area_km2'] = gem.area/1000000
+
+    population = db.select_dataframe(
+        """SELECT id, population, rs_municipality
+        FROM society.destatis_zensus_population_per_ha
+        INNER JOIN boundaries.egon_map_zensus_vg250 ON (
+             society.destatis_zensus_population_per_ha.id = boundaries.egon_map_zensus_vg250.zensus_population_id)
+        WHERE population > 0""")
+
+    gem['area_km2']
+
+# DOPPELTE REGIONALSCHLÜSSEL?? gem_clean???
     # Prepare query from vg250 and zensus data
     with db.session_scope() as session:
         q = (
