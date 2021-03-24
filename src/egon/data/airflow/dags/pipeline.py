@@ -29,9 +29,6 @@ import egon.data.importing.heat_demand_data as import_hd
 # Prepare connection to db for operators
 airflow_db_connection()
 
-# Temporary set dataset variable here
-dataset = "Schleswig-Holstein"
-
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
@@ -52,12 +49,10 @@ with airflow.DAG(
     osm_download = PythonOperator(
         task_id="download-osm",
         python_callable=import_osm.download_pbf_file,
-        op_args={dataset},
     )
     osm_import = PythonOperator(
         task_id="import-osm",
         python_callable=import_osm.to_postgres,
-        op_args={dataset},
     )
     osm_migrate = PythonOperator(
         task_id="migrate-osm",
@@ -66,7 +61,6 @@ with airflow.DAG(
     osm_add_metadata = PythonOperator(
         task_id="add-osm-metadata",
         python_callable=import_osm.add_metadata,
-        op_args={dataset},
     )
     setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
 
@@ -78,7 +72,6 @@ with airflow.DAG(
     vg250_import = PythonOperator(
         task_id="import-vg250",
         python_callable=import_vg250.to_postgres,
-        op_args={dataset},
     )
 
     vg250_nuts_mview = PostgresOperator(
@@ -119,13 +112,11 @@ with airflow.DAG(
     population_import = PythonOperator(
         task_id="import-zensus-population",
         python_callable=import_zs.population_to_postgres,
-        op_args={dataset},
     )
 
     zensus_misc_import = PythonOperator(
         task_id="import-zensus-misc",
         python_callable=import_zs.zensus_misc_to_postgres,
-        op_args={dataset},
     )
     setup >> zensus_download_population >> zensus_download_misc
     zensus_download_misc >> zensus_tables >> population_import
@@ -209,12 +200,11 @@ with airflow.DAG(
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",
         python_callable=nep_input.insert_data_nep,
-        op_args={dataset},
     )
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
-
+    population_import >> nep_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
@@ -271,7 +261,6 @@ with airflow.DAG(
     download_re_potential_areas = PythonOperator(
         task_id="download_re_potential_area_data",
         python_callable=re_potential_areas.download_datasets,
-        op_args={dataset}
     )
     create_re_potential_areas_tables = PythonOperator(
         task_id="create_re_potential_areas_tables",
@@ -290,4 +279,4 @@ with airflow.DAG(
         python_callable=import_hd.future_heat_demand_data_import
     )
     vg250_clean_and_prepare >> heat_demand_import
-    population_import >> heat_demand_import
+    zensus_inside_ger_metadata >> heat_demand_import

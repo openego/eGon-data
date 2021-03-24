@@ -7,6 +7,7 @@ import egon.data.config
 import pandas as pd
 import numpy as np
 from egon.data import db
+from egon.data.config import settings
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -81,7 +82,7 @@ def create_scenario_input_tables():
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
-def insert_capacities_per_federal_state_nep(dataset):
+def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state accordning to
     NEP 2035 (version 2021), scenario 2035 C
 
@@ -189,7 +190,7 @@ def insert_capacities_per_federal_state_nep(dataset):
 
 
     # Add district heating data accordning to energy and full load hours
-    district_heating_input(dataset)
+    district_heating_input()
 
 def population_share():
     """ Calulate share of population in testmode
@@ -206,7 +207,7 @@ def population_share():
     FROM society.destatis_zensus_population_per_ha
     WHERE population>0""", con=db.engine())['sum'][0]/80324282
 
-def insert_nep_list_powerplants(dataset):
+def insert_nep_list_powerplants():
     """Insert list of conventional powerplants attachd to the approval
     of the scenario report by BNetzA
 
@@ -247,7 +248,8 @@ def insert_nep_list_powerplants(dataset):
                                  'B 2040:\nLeistung': 'b2040_capacity'})
 
     # Cut data to federal state if in testmode
-    if dataset != 'main':
+    boundary = settings()['egon-data']['--dataset-boundary']
+    if boundary != 'Everything':
         map_states = {'Baden-Württemberg':'BW', 'Nordrhein-Westfalen': 'NW',
                'Hessen': 'HE', 'Brandenburg': 'BB', 'Bremen':'HB',
                'Rheinland-Pfalz': 'RP', 'Sachsen-Anhalt': 'ST',
@@ -257,7 +259,8 @@ def insert_nep_list_powerplants(dataset):
                'Berlin': 'BE', 'Bayern': 'BY'}
 
         kw_liste_nep = kw_liste_nep[
-            kw_liste_nep.federal_state.isin([map_states[dataset], np.nan])]
+            kw_liste_nep.federal_state.isin([map_states[boundary], np.nan])
+        ]
 
         for col in ['capacity', 'a2035_capacity', 'b2035_capacity',
                     'c2035_capacity', 'b2040_capacity']:
@@ -271,7 +274,7 @@ def insert_nep_list_powerplants(dataset):
                        schema='supply',
                        if_exists='replace')
 
-def district_heating_input(dataset):
+def district_heating_input():
     """Imports data for district heating networks in Germany
 
     Returns
@@ -287,7 +290,7 @@ def district_heating_input(dataset):
     df.set_index(['Energietraeger', 'Name'], inplace=True)
 
     # Scale values to population share in testmode
-    if dataset != 'main':
+    if settings()['egon-data']['--dataset-boundary'] != 'Everything':
         df.loc[
             pd.IndexSlice[:, 'Fernwaermeerzeugung'],
             'Wert'] *= population_share()
@@ -326,7 +329,7 @@ def district_heating_input(dataset):
 
     session.commit()
 
-def insert_data_nep(dataset):
+def insert_data_nep():
     """Overall function for importing scenario input data for eGon2035 scenario
 
     Returns
@@ -335,6 +338,6 @@ def insert_data_nep(dataset):
 
     """
 
-    insert_capacities_per_federal_state_nep(dataset)
+    insert_capacities_per_federal_state_nep()
 
-    insert_nep_list_powerplants(dataset)
+    insert_nep_list_powerplants()

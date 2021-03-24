@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from pathlib import Path
 import os
 
 from sqlalchemy import create_engine, text
@@ -8,7 +7,7 @@ import yaml
 import pandas as pd
 import geopandas as gpd
 
-import egon
+from egon.data import config
 
 
 def credentials():
@@ -19,32 +18,23 @@ def credentials():
     dict
         Complete DB connection information
     """
-    # Read database configuration from docker-compose.yml
-    package_path = egon.data.__path__[0]
-    docker_compose_file = os.path.join(
-        package_path, "airflow", "docker-compose.yml"
-    )
-    docker_compose = yaml.load(
-        open(docker_compose_file), Loader=yaml.SafeLoader
-    )
-
-    # Select basic connection details
-    docker_db_config = docker_compose["services"]["egon-data-local-database"][
-        "environment"
-    ]
-
-    # Add HOST and PORT
-    docker_db_config_additional = docker_compose["services"][
-        "egon-data-local-database"
-    ]["ports"][0].split(":")
-    docker_db_config["HOST"] = docker_db_config_additional[0]
-    docker_db_config["PORT"] = docker_db_config_additional[1]
-
-    custom = Path("local-database.yaml")
+    translated = {
+        "--database-name": "POSTGRES_DB",
+        "--database-password": "POSTGRES_PASSWORD",
+        "--database-host": "HOST",
+        "--database-port": "PORT",
+        "--database-user": "POSTGRES_USER",
+    }
+    custom = config.paths(pid="*")[0]
     if custom.is_file():
         with open(custom) as f:
-            docker_db_config.update(yaml.safe_load(f))
-    return docker_db_config
+            configuration = yaml.safe_load(f)["egon-data"]
+        configuration = {
+            translated[flag]: configuration[flag]
+            for flag in configuration
+            if flag in translated
+        }
+    return configuration
 
 
 def engine():
