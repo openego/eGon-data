@@ -45,7 +45,7 @@ def population_prognosis_to_zensus():
 
     # Input: Zensus2011 population data including the NUTS3-Code
     zensus_district = db.select_dataframe(
-        f"""SELECT zensus_population_id, nuts3
+        f"""SELECT zensus_population_id, vg250_nuts3
         FROM {cfg['soucres']['map_zensus_vg250']['schema']}.
         {cfg['soucres']['map_zensus_vg250']['table']}
         WHERE zensus_population_id IN (
@@ -63,7 +63,7 @@ def population_prognosis_to_zensus():
         index_col="id",
     )
 
-    zensus["nuts3"] = zensus_district.nuts3
+    zensus["nuts3"] = zensus_district.vg250_nuts3
 
     # Rename index
     zensus.index = zensus.index.rename("zensus_population_id")
@@ -153,7 +153,7 @@ def household_prognosis_to_zensus():
 
     # Input: Zensus2011 household data including the NUTS3-Code
     district = db.select_dataframe(
-        f"""SELECT zensus_population_id, nuts3
+        f"""SELECT zensus_population_id, vg250_nuts3
         FROM {cfg['soucres']['map_zensus_vg250']['schema']}.
         {cfg['soucres']['map_zensus_vg250']['table']}""",
         index_col="zensus_population_id",
@@ -169,7 +169,7 @@ def household_prognosis_to_zensus():
     # Group all household types
     zensus = zensus.groupby(zensus.index).sum()
 
-    zensus["nuts3"] = district.loc[zensus.index, "nuts3"]
+    zensus["nuts3"] = district.loc[zensus.index, "vg250_nuts3"]
 
     # Calculate share of households per nuts3 region in each zensus cell
     zensus["share"] = (

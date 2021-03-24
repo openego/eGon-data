@@ -137,8 +137,8 @@ class MapZensusVg250(Base):
 
     zensus_population_id = Column(Integer, primary_key=True, index=True)
     zensus_geom = Column(Geometry("POINT", 3035))
-    rs_municipality = Column(String)
-    nuts3 = Column(String)
+    vg250_municipality_id = Column(Integer)
+    vg250_nuts3 = Column(String)
 
 
 def map_zensus_vg250():
@@ -200,12 +200,13 @@ def map_zensus_vg250():
         {
             "id": "zensus_population_id",
             "geom_point": "zensus_geom",
-            "nuts": "nuts3",
-            "rs_0": "rs_municipality",
+            "nuts": "vg250_nuts3",
+            "gid": "vg250_municipality_id",
         },
         axis=1,
     )[
-        ["zensus_population_id", "zensus_geom", "rs_municipality", "nuts3"]
+        ["zensus_population_id", "zensus_geom",
+         "vg250_municipality_id", "vg250_nuts3"]
     ].set_geometry(
         "zensus_geom"
     ).to_postgis(
