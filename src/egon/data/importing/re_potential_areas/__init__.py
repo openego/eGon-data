@@ -42,13 +42,16 @@ def download_datasets():
     data_config = egon.data.config.datasets()
     pa_config = data_config['re_potential_areas']
 
+    def ve(s):
+        raise (ValueError(s))
+
     dataset = egon.data.config.settings()['egon-data']['--dataset-boundary']
     url_section = (
         'url'
         if dataset == 'Everything'
         else 'url_testmode'
         if dataset == 'Schleswig-Holstein'
-        else raise ValueError(f"'{dataset}' is not a valid dataset boundary.")
+        else ve(f"'{dataset}' is not a valid dataset boundary.")
     )
 
     url_target_file_map = zip(
