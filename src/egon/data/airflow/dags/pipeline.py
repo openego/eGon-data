@@ -150,11 +150,26 @@ with airflow.DAG(
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
-    demandregio_import = PythonOperator(
-        task_id="import-demandregio",
-        python_callable=import_dr.insert_data,
+    demandregio_tables = PythonOperator(
+        task_id="demandregio-tables",
+        python_callable=import_dr.create_tables,
     )
-    vg250_clean_and_prepare >> demandregio_import
+
+    setup >> demandregio_tables
+
+    demandregio_society = PythonOperator(
+        task_id="import-demandregio-society",
+        python_callable=import_dr.insert_society_data,
+    )
+    vg250_clean_and_prepare >> demandregio_society
+    demandregio_tables >> demandregio_society
+
+    demandregio_demand = PythonOperator(
+        task_id="import-demandregio-demand",
+        python_callable=import_dr.insert_demands,
+    )
+    vg250_clean_and_prepare >> demandregio_demand
+    demandregio_tables >> demandregio_demand
 
     # Society prognosis
     prognosis_tables = PythonOperator(
@@ -177,7 +192,7 @@ with airflow.DAG(
     )
 
     map_zensus_nuts3 >> population_prognosis
-    demandregio_import >> population_prognosis
+    demandregio_society >> population_prognosis
 
     household_prognosis = PythonOperator(
         task_id="zensus-household-prognosis",
@@ -185,7 +200,7 @@ with airflow.DAG(
     )
 
     map_zensus_nuts3 >> household_prognosis
-    demandregio_import >> household_prognosis
+    demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
     # Power plant setup

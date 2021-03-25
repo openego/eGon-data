@@ -355,6 +355,8 @@ def insert_demands():
     cfg = egon.data.config.datasets()['demandregio']['demand_data']
     engine = db.engine()
 
+    insert_cts_ind_wz_definitions()
+
     for table in cfg['table_names']:
         db.execute_sql(
             f"DELETE FROM {cfg['schema']}.{cfg['table_names'][table]};")
@@ -385,6 +387,7 @@ def insert_demands():
                 'CTS': (1-(5.96+6.13)/154.64)*125183.403}}
 
         insert_cts_ind_demand(scenario, year, engine, target_values, cfg)
+
 
 
 def insert_society_data():
@@ -425,18 +428,3 @@ def insert_society_data():
                       engine,
                       schema=cfg['schema'],
                       if_exists='append')
-
-
-def insert_data():
-    """ Overall function for importing data from demandregio
-
-    Returns
-    -------
-    None.
-
-    """
-
-    create_tables()
-    insert_demands()
-    insert_cts_ind_wz_definitions()
-    insert_society_data()
