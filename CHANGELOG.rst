@@ -85,6 +85,8 @@ Changed
   `#166 <https://github.com/openego/eGon-data/issues/166>`_
 * Adjust residential heat demand in unpopulated zenus cells
   `#167 <https://github.com/openego/eGon-data/issues/167>`_
+* Delete tables if they exist before re-creation and data insertation
+  `#166 <https://github.com/openego/eGon-data/issues/166>`_
 
 Bug fixes
 ---------
