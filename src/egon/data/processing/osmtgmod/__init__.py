@@ -8,11 +8,12 @@ import logging
 import codecs
 import subprocess
 import egon.data.config
+from egon.data.config import settings
 import egon.data.subprocess as subproc
 from egon.data import db
 
 
-def run_osmtgmod(dataset='main'):
+def run_osmtgmod():
 
        ### execute osmTGmod
        # todo git clone in den subprocess
@@ -27,7 +28,7 @@ def run_osmtgmod(dataset='main'):
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
     
-    if dataset == 'main':
+    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
         target_path = osm_config["target"]["path"]
     else:
         target_path = osm_config["target"]["path_testmode"]
