@@ -108,10 +108,11 @@ def population_prognosis_to_zensus():
 
     cfg = egon.data.config.datasets()
     # Define in- and output tables
-    source_dr = cfg['demandregio']['society_data']['table_names']['population']
+    source_dr = cfg['demandregio_society']['targets']['population']['table']
     source_zensus =  cfg['zensus_population']['processed']['table']
     source_map = cfg['society_prognosis']['target']['map_nuts3']
-    source_schema = cfg['demandregio']['society_data']['schema']
+    source_schema = (cfg['demandregio_society']['targets']
+                     ['population']['schema'])
 
     target_table = cfg['society_prognosis']['target']['population_prognosis']
     target_schema = cfg['society_prognosis']['target']['schema']
@@ -198,11 +199,11 @@ def household_prognosis_to_zensus():
     """Bring household prognosis from DemandRegio to Zensus grid"""
     cfg = egon.data.config.datasets()
     # Define in- and output tables
-    source_dr = cfg['demandregio']['society_data']['table_names']['household']
+    source_dr = cfg['demandregio_society']['targets']['household']['table']
     source_zensus = cfg['zensus_misc']['processed'][
         'path_table_map']['csv_Haushalte_100m_Gitter.zip']
     source_map = cfg['society_prognosis']['target']['map_nuts3']
-    source_schema = cfg['demandregio']['society_data']['schema']
+    source_schema = cfg['demandregio_society']['targets']['household']['schema']
 
     target_table = cfg['society_prognosis']['target']['household_prognosis']
     target_schema = cfg['society_prognosis']['target']['schema']
