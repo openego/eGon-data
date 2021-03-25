@@ -59,8 +59,11 @@ Added
   `#101 <https://github.com/openego/eGon-data/issues/101>`_
 * Demographic change integration
   `#47 <https://github.com/openego/eGon-data/issues/47>`_
-  * Creation of voronoi polygons for hvmv and ehv substations
+* Creation of voronoi polygons for hvmv and ehv substations
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
+* Creation of the ehv/hv grid model with osmTGmod, see 
+  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
+  `PR #164 <https://github.com/openego/eGon-data/pull/164>`_  
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
