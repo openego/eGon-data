@@ -9,14 +9,15 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
-import json
 from urllib.request import urlretrieve
+import json
 import os
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
 
 from egon.data import db
+from egon.data.config import settings
 import egon.data.config
 
 
@@ -55,6 +56,24 @@ def to_postgres():
             f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
             f"vg250_ebenen_0101/{filename}"
         )
+
+        boundary = settings()['egon-data']['--dataset-boundary']
+        if boundary != "Everything":
+            # read-in borders of federal state Schleswig-Holstein
+            data_sta = gpd.read_file(
+                f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+                f"vg250_ebenen_0101/VG250_LAN.shp"
+            ).query(f"GEN == '{boundary}'")
+            data_sta.BEZ = "Bundesrepublik"
+            data_sta.NUTS = "DE"
+            # import borders of Schleswig-Holstein as borders of state
+            if table == "vg250_sta":
+                data = data_sta
+            # choose only areas in Schleswig-Holstein
+            else:
+                data = data[
+                    data.within(data_sta.dissolve(by="GEN").geometry.values[0])
+                ]
 
         # Set index column and format column headings
         data.index.set_names("gid", inplace=True)

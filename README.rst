@@ -4,7 +4,7 @@ Overview
 
 .. start-badges
 
-|commits-since| |travis| |docs| |requires|
+|commits-since| |tests| |docs| |requires|
 
 |coveralls| |codecov| |scrutinizer| |codacy| |codeclimate|
 
@@ -18,9 +18,9 @@ Overview
     :target: https://egon-data.readthedocs.io
     :alt: Documentation Status
 
-.. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=dev
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/openego/eGon-data
+.. |tests| image:: https://github.com/openego/eGon-data/workflows/Tests,%20code%20style%20&%20coverage/badge.svg
+    :alt: GitHub actions tests status
+    :target: https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/openego/eGon-data?branch=dev&svg=true
     :alt: AppVeyor Build Status
@@ -106,6 +106,10 @@ packages are required too. Right now these are:
   On recent Ubuntu version you can install it via
   :code:`sudo apt install osm2pgsql`.
 
+* `postgis <https://postgis.net/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install postgis`.
+
 
 Installation
 ============
@@ -175,12 +179,12 @@ Test mode
 ---------
 
 The workflow can be tested on a smaller subset of data on example of the
-federal state of Bremen.
+federal state of Schleswig-Holstein.
+Data is reduced during execution of the workflow to represent only this area.
 
 .. warning::
 
-   Right now, only OSM data for Bremen get's imported. This is hard-wired in
-   `egon.data/data_sets.yml`.
+   Right now, the test mode is set in `egon.data/airflow/pipeline.py`.
 
 
 .. end-getting-started-information
