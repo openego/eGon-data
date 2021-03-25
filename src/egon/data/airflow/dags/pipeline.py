@@ -158,18 +158,25 @@ with airflow.DAG(
     setup >> demandregio_tables
 
     demandregio_society = PythonOperator(
-        task_id="import-demandregio-society",
+        task_id="demandregio-society",
         python_callable=import_dr.insert_society_data,
     )
     vg250_clean_and_prepare >> demandregio_society
     demandregio_tables >> demandregio_society
 
     demandregio_demand = PythonOperator(
-        task_id="import-demandregio-demand",
-        python_callable=import_dr.insert_demands,
+        task_id="demandregio-household-demands",
+        python_callable=import_dr.insert_household_demand,
     )
     vg250_clean_and_prepare >> demandregio_demand
     demandregio_tables >> demandregio_demand
+
+    demandregio_demand_cts = PythonOperator(
+        task_id="demandregio-cts-industry-demands",
+        python_callable=import_dr.insert_cts_ind_demands,
+    )
+    vg250_clean_and_prepare >> demandregio_demand_cts
+    demandregio_tables >> demandregio_demand_cts
 
     # Society prognosis
     prognosis_tables = PythonOperator(
