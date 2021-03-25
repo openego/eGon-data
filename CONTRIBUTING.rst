@@ -6,6 +6,60 @@ Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given.
 
 
+Extending the data workflow
+===========================
+
+Where to save (downloaded) data?
+--------------------------------
+
+If a task requires to retrieve some data from external sources which needs to
+be saved locally, please use `CWD` to store the data. This is achieved by using
+
+.. code-block:: python
+
+  from pathlib import Path
+  from urllib.request import urlretrieve
+
+  filepath = Path(".") / "filename.csv"
+  urlretrieve("https://url/to/file", filepath)
+
+
+Adjusting test mode data
+------------------------
+
+When integrating new data or data processing scripts, make sure the
+:ref:`Test mode` still works correctly on a limited subset of data.
+In particular, if a new external data sources gets integrated make sure the
+data gets cut to the region of the test mode.
+
+
+Bug reports
+===========
+
+When `reporting a bug <https://github.com/openego/eGon-data/issues>`_ please include:
+
+    * Your operating system name and version.
+    * Any details about your local setup that might be helpful in troubleshooting.
+    * Detailed steps to reproduce the bug.
+
+Documentation improvements
+==========================
+
+eGo^N Data could always use more documentation, whether as part of the
+official eGo^N Data docs, in docstrings, or even on the web in blog posts,
+articles, and such.
+
+Feature requests and feedback
+=============================
+
+The best way to send feedback is to file an issue at https://github.com/openego/eGon-data/issues.
+
+If you are proposing a feature:
+
+* Explain in detail how it would work.
+* Keep the scope as narrow as possible, to make it easier to implement.
+* Remember that this is a volunteer-driven project, and that code contributions are welcome :)
+
 Development
 ===========
 

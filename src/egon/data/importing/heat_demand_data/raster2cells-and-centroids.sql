@@ -1,13 +1,4 @@
-DROP TABLE IF EXISTS demand.egon_peta_heat;
-CREATE TABLE demand.egon_peta_heat (
-  id SERIAL PRIMARY KEY,
-  demand DOUBLE PRECISION,
-  sector TEXT,
-  scenario TEXT,
-  version TEXT,
-  zensus_population_id INTEGER
-    REFERENCES society.destatis_zensus_population_per_ha (id)
-);
+DELETE FROM demand.egon_peta_heat;
 
 INSERT INTO demand.egon_peta_heat (
   demand, sector, scenario, version, zensus_population_id
