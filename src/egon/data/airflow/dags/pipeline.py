@@ -25,6 +25,7 @@ import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
+import egon.data.processing.demandregio as process_dr
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -209,6 +210,23 @@ with airflow.DAG(
     map_zensus_nuts3 >> household_prognosis
     demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
+
+
+    # Distribute electrical demands to zensus cells
+    processed_dr_tables = PythonOperator(
+        task_id="create-demand-tables",
+        python_callable=process_dr.create_tables
+    )
+
+    elec_household_demands_zensus = PythonOperator(
+        task_id="electrical-demands-zensus",
+        python_callable=process_dr.distribute_demands
+    )
+
+    setup >> processed_dr_tables >> elec_household_demands_zensus
+    population_prognosis >> elec_household_demands_zensus
+    demandregio_demand >> elec_household_demands_zensus
+    map_zensus_nuts3 >> elec_household_demands_zensus
 
     # Power plant setup
     power_plant_tables = PythonOperator(
