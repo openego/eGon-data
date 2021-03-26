@@ -16,14 +16,22 @@ Added
   displays better error messages than Python's built-in function. Use
   this wrapper wenn calling other programs in Airflow tasks.
 
-* You can now override the default database configuration by putting a
-  "local-database.yaml" into the current working directory. Values read
-  from this file will override the default values. You can also generate
-  this file by specifying command line switches to ``egon-data``. Look
-  for the switches starting with ``--database`` in ``egon-data --help``.
+* You can now override the default database configuration using command
+  line arguments. Look for the switches starting with ``--database`` in
+  ``egon-data --help``. See `PR #159`_ for more details.
 
 * Docker will not be used if there is already a service listening on the
   HOST:PORT combination configured for the database.
+
+* You can now supply values for the command line arguments for
+  ``egon-data`` using a configuration file. If the configuration file
+  doesn't exist, it will be created by ``egon-data`` on it's first run.
+  Note that the configuration file is read from and written to the
+  directtory in which ``egon-data`` is started, so it's probably best to
+  run ``egon-data`` in a dedicated directory.
+  There's also the new function `egon.data.config.settings` which
+  returns the current configuration settings. See `PR #159`_ for more
+  details.
 
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
@@ -51,8 +59,13 @@ Added
   `#101 <https://github.com/openego/eGon-data/issues/101>`_
 * Demographic change integration
   `#47 <https://github.com/openego/eGon-data/issues/47>`_
+* Creation of voronoi polygons for hvmv and ehv substations
+  `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * Add hydro and biomass power plants eGon2035
   `#127 <https://github.com/openego/eGon-data/issues/127>`_
+
+.. _PR #159: https://github.com/openego/eGon-data/pull/159
+
 
 Changed
 -------
@@ -70,8 +83,18 @@ Changed
   `#148 <https://github.com/openego/eGon-data/issues/148>`_
 * Improve selection of zensus data in test mode
   `#151 <https://github.com/openego/eGon-data/issues/151>`_
+* Delete tables before re-creation and data insertation
+  `#166 <https://github.com/openego/eGon-data/issues/166>`_
+* Adjust residential heat demand in unpopulated zenus cells
+  `#167 <https://github.com/openego/eGon-data/issues/167>`_
+* Delete tables if they exist before re-creation and data insertation
+  `#166 <https://github.com/openego/eGon-data/issues/166>`_
+* Add gdal to pre-requisites
+  `#185 <https://github.com/openego/eGon-data/issues/185>`_
 
 Bug fixes
 ---------
 * Heat demand data import
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
+* Substation sequence
+  `#171 <https://github.com/openego/eGon-data/issues/171>`_
