@@ -127,16 +127,14 @@ def population_prognosis_to_zensus():
 
     zensus = db.select_dataframe(
         f"""SELECT id, population
-        FROM {source_schema}.{source_zensus}""",
+        FROM {source_schema}.{source_zensus}
+        WHERE population > 0""",
         index_col='id')
 
     zensus['nuts3'] = zensus_district.nuts3
 
     # Rename index
     zensus.index = zensus.index.rename('zensus_population_id')
-
-    # Replace population value of uninhabited cells for calculation
-    zensus.population = zensus.population.replace(-1, 0)
 
     # Calculate share of population per cell in nuts3-region
     zensus['share'] = zensus.groupby(zensus.nuts3).population.apply(
@@ -153,7 +151,7 @@ def population_prognosis_to_zensus():
 
         df = pd.DataFrame(zensus['share'].mul(
             prognosis.population[zensus['nuts3']].values
-            ).replace(0,-1)).rename({'share': 'population'}, axis = 1)
+            )).rename({'share': 'population'}, axis = 1)
         df['year'] = year
 
         # Insert to database
