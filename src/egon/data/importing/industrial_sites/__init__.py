@@ -138,9 +138,9 @@ def download_hotmaps():
          )
 
     if not os.path.isfile(target_file):
-        subprocess.run(["curl"]
-        + [hotmaps_config["source"]["url"], " > "]
-        + [hotmaps_config["target"]["path"]])
+        subprocess.run(
+            f"curl {hotmaps_config['source']['url']} > {target_file}",
+            shell=True)
 
 def download_seenergies():
     """Download csv file on s-eenergies' industrial sites."""
