@@ -87,6 +87,8 @@ Changed
   `#167 <https://github.com/openego/eGon-data/issues/167>`_
 * Delete tables if they exist before re-creation and data insertation
   `#166 <https://github.com/openego/eGon-data/issues/166>`_
+* Add gdal to pre-requisites
+  `#185 <https://github.com/openego/eGon-data/issues/185>`_
 
 Bug fixes
 ---------
