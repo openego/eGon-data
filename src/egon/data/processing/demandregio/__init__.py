@@ -10,12 +10,13 @@ from egon.data.processing.zensus_vg250.zensus_population_inside_germany import D
 # will be later imported from another file ###
 Base = declarative_base()
 
-class EgonDemandRegioHouseholdElectricity(Base):
-    __tablename__ = 'egon_demandregio_household_electricity'
+class EgonDemandRegioZensusElectricity(Base):
+    __tablename__ = 'egon_demandregio_zensus_electricity'
     __table_args__ = {'schema': 'demand', 'extend_existing':True}
     zensus_population_id =Column(Integer, ForeignKey(
         DestatisZensusPopulationPerHa.id), primary_key=True)
     scenario = Column(String(50), primary_key=True)
+    sector = Column(String, primary_key=True)
     demand = Column(Float)
 
 
@@ -30,9 +31,9 @@ def create_tables():
     db.execute_sql(
         "CREATE SCHEMA IF NOT EXISTS society;")
     engine = db.engine()
-    EgonDemandRegioHouseholdElectricity.__table__.drop(
+    EgonDemandRegioZensusElectricity.__table__.drop(
         bind=engine, checkfirst=True)
-    EgonDemandRegioHouseholdElectricity.__table__.create(
+    EgonDemandRegioZensusElectricity.__table__.create(
         bind=engine, checkfirst=True)
 
 
@@ -103,16 +104,16 @@ def distribute_demands():
         zensus['demand'] = zensus['population_share'].mul(
             demand_nuts3.demand[zensus['nuts3']].values)
 
-        # Set scenario name
+        # Set scenario name and sector
         zensus['scenario'] = scn
+        zensus['sector'] = 'residential'
 
         # Rename index
         zensus.index = zensus.index.rename('zensus_population_id')
 
         # Insert data to target table
-        zensus[['scenario', 'demand']].to_sql(target['table'],
-                                              schema=target['schema'],
-                                              con=db.engine(),
-                                              if_exists='append')
-
-
+        zensus[['scenario', 'demand', 'sector']].to_sql(
+            target['table'],
+            schema=target['schema'],
+            con=db.engine(),
+            if_exists='append')

@@ -121,7 +121,7 @@ electrical_demands_households:
   targets:
     household_demands_zensus:
       schema: 'demand'
-      table: 'egon_demandregio_household_electricity'
+      table: 'egon_demandregio_zensus_electricity'
 
 hvmv_substation:
   original_data:
