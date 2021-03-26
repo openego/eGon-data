@@ -80,16 +80,16 @@ demandregio:
       - 2018
       - 2035
       - 2050
-hotmaps: 
+hotmaps:
   original_data:
     source:
-      url: "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database/-/blob/388278c6df35889b1447a959fc3759e3d78bf659/data/Industrial_Database.csv"
+      url: "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database/-/raw/388278c6df35889b1447a959fc3759e3d78bf659/data/Industrial_Database.csv?inline=false"
     target:
       path: "data_Industrial_Database.csv"
   processed:
     schema: "demand"
     table: "hotmaps_industrial_sites"
-seenergies: 
+seenergies:
   original_data:
     source:
       url: "https://opendata.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0.csv"
@@ -98,7 +98,7 @@ seenergies:
   processed:
     schema: "demand"
     table: "seenergies_industrial_sites"
-schmidt: 
+schmidt:
   original_data:
     source:
       url:
@@ -115,7 +115,7 @@ industrial_sites:
       path:
   processed:
     schema: "demand"
-    table: "industrial_sites" 
+    table: "industrial_sites"
 
 hvmv_substation:
   original_data:
