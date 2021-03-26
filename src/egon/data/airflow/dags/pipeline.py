@@ -165,19 +165,19 @@ with airflow.DAG(
     vg250_clean_and_prepare >> demandregio_society
     demandregio_tables >> demandregio_society
 
-    demandregio_demand = PythonOperator(
+    demandregio_demand_households = PythonOperator(
         task_id="demandregio-household-demands",
         python_callable=import_dr.insert_household_demand,
     )
-    vg250_clean_and_prepare >> demandregio_demand
-    demandregio_tables >> demandregio_demand
+    vg250_clean_and_prepare >> demandregio_demand_households
+    demandregio_tables >> demandregio_demand_households
 
-    demandregio_demand_cts = PythonOperator(
+    demandregio_demand_cts_ind = PythonOperator(
         task_id="demandregio-cts-industry-demands",
         python_callable=import_dr.insert_cts_ind_demands,
     )
-    vg250_clean_and_prepare >> demandregio_demand_cts
-    demandregio_tables >> demandregio_demand_cts
+    vg250_clean_and_prepare >> demandregio_demand_cts_ind
+    demandregio_tables >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(
@@ -225,7 +225,7 @@ with airflow.DAG(
 
     setup >> processed_dr_tables >> elec_household_demands_zensus
     population_prognosis >> elec_household_demands_zensus
-    demandregio_demand >> elec_household_demands_zensus
+    demandregio_demand_households >> elec_household_demands_zensus
     map_zensus_nuts3 >> elec_household_demands_zensus
 
     # Power plant setup
