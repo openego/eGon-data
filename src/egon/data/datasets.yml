@@ -98,7 +98,7 @@ demandregio_cts_ind_demand:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
   targets:
-    cts_ind_demand_demand:
+    cts_ind_demand:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
       scenarios: ["eGon2035", "eGon100RE"]

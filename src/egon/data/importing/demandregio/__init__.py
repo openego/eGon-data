@@ -351,9 +351,9 @@ def insert_cts_ind(scenario, year, engine, target_values):
             df = df.rename({wz: 'demand'}, axis='columns')
             df.index = df.index.rename('nuts3')
             df.to_sql(
-               targets['cts_ind_demand_demand']['table'],
+               targets['cts_ind_demand']['table'],
                 engine,
-                targets['cts_ind_demand_demand']['schema'],
+                targets['cts_ind_demand']['schema'],
                 if_exists='append')
 
 
@@ -406,7 +406,7 @@ def insert_cts_ind_demands():
         db.execute_sql(
                 f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};")
 
-    for scn in targets['cts_ind_demand_demand']['scenarios']:
+    for scn in targets['cts_ind_demand']['scenarios']:
 
         if scn == 'eGon2035':
             year = 2035
