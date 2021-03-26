@@ -139,7 +139,7 @@ def inside_germany():
 
     # Create new table
     DestatisZensusPopulationPerHaInsideGermany.__table__.drop(
-        bind=engine_local_db
+        bind=engine_local_db, checkfirst=True
     )
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
         bind=engine_local_db, checkfirst=True
@@ -187,7 +187,7 @@ def population_in_municipalities():
     """
 
     engine_local_db = db.engine()
-    Vg250GemPopulation.__table__.drop(bind=engine_local_db)
+    Vg250GemPopulation.__table__.drop(bind=engine_local_db, checkfirst=True)
     Vg250GemPopulation.__table__.create(bind=engine_local_db, checkfirst=True)
 
     srid = 3035
