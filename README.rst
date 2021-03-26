@@ -110,6 +110,9 @@ packages are required too. Right now these are:
   On recent Ubuntu version you can install it via
   :code:`sudo apt install postgis`.
 
+* `gdal <https://gdal.org/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install gdal-bin`.
 
 Installation
 ============
