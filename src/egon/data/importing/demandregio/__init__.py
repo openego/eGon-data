@@ -123,7 +123,7 @@ def insert_cts_ind_wz_definitions():
         df.to_sql(target['table'],
                   engine,
                   schema=target['schema'],
-                  if_exists='replace')
+                  if_exists='append')
 
 
 def match_nuts3_bl():
@@ -314,8 +314,6 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     """
 
-
-
     targets = (egon.data.config.datasets()
                ['demandregio_cts_ind_demand']['targets'])
 
@@ -400,11 +398,11 @@ def insert_cts_ind_demands():
                ['demandregio_cts_ind_demand']['targets'])
     engine = db.engine()
 
-    insert_cts_ind_wz_definitions()
-
     for t in targets:
         db.execute_sql(
                 f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};")
+
+    insert_cts_ind_wz_definitions()
 
     for scn in targets['cts_ind_demand']['scenarios']:
 
