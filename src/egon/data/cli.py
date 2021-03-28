@@ -283,8 +283,8 @@ def egon_data(context, **kwargs):
                     f.write(rendered)
 
     os.environ["AIRFLOW_HOME"] = str((Path(".") / "airflow").absolute())
-    options = options["egon-data"]
 
+    options = options["egon-data"]
     render(
         "airflow.cfg",
         Path(".") / "airflow" / "airflow.cfg",
