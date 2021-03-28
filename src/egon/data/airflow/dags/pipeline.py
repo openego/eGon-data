@@ -7,7 +7,6 @@ import airflow
 import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
-from egon.data.db import airflow_db_connection
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
@@ -25,9 +24,6 @@ import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
-
-# Prepare connection to db for operators
-airflow_db_connection()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",

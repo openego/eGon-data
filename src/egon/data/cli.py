@@ -299,6 +299,13 @@ def egon_data(context, **kwargs):
         airflow=resources.files(egon.data.airflow),
     )
 
+    os.environ["AIRFLOW_CONN_EGON_DATA"] = (
+        f'postgresql://{options["--database-user"]}'
+        f':{options["--database-password"]}'
+        f'@{options["--database-host"]}:{options["--database-port"]}'
+        f'/{options["--database-name"]}'
+    )
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
             (options["--database-host"], int(options["--database-port"]))
