@@ -83,7 +83,8 @@ def osmtgmod(
     )
     if config_continue_run:
         logging.info(
-            "Continuing abstraction at: {} (database will not be emptied)".format(
+            "Continuing abstraction at: {} \
+                (database will not be emptied)".format(
                 config_continue_run_at
             )
         )
@@ -95,7 +96,8 @@ def osmtgmod(
     # ==============================================================
     if docker_db_config is not None:
         logging.info(
-            "Taking db connection credentials from eGon-data workflow with respect to the given docker_db_config variable"
+            "Taking db connection credentials from eGon-data \
+                with respect to the given docker_db_config variable"
         )
         config = configparser.ConfigParser()
         config.read(config_basepath + ".cfg")
@@ -114,7 +116,8 @@ def osmtgmod(
         if config.get("postgres_server", "host").lower() == "<ask>":
             config["postgres_server"]["host"] = (
                 input(
-                    "Postgres server (host) to connect to? (default: localhost)  "
+                    "Postgres server (host) to connect to? \
+                        (default: localhost)  "
                 )
                 or "localhost"
             )
@@ -126,7 +129,8 @@ def osmtgmod(
         if config.get("postgres_server", "user").lower() == "<ask>":
             config["postgres_server"]["user"] = (
                 input(
-                    "Postgres username on server {0}? (default: postgres)  ".format(
+                    "Postgres username on server {0}? \
+                        (default: postgres)  ".format(
                         config["postgres_server"]["host"]
                     )
                 )
@@ -135,7 +139,8 @@ def osmtgmod(
         if config.get("postgres_server", "password").lower() == "<ask>":
             config["postgres_server"]["password"] = (
                 input(
-                    "Passwort for user {0} on {1}? (default: postgres)  ".format(
+                    "Passwort for user {0} on {1}?\
+                        (default: postgres)  ".format(
                         config["postgres_server"]["user"],
                         config["postgres_server"]["host"],
                     )
@@ -227,7 +232,9 @@ def osmtgmod(
         except:
             # Get the most recent exception
             logging.exception(
-                "Connection failed, unable to continue abstraction process! You might want to start from scratch by dropping second command line argument."
+                "Connection failed, unable to continue abstraction process!\
+                    You might want to start from scratch by dropping\
+                        second command line argument."
             )
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             sys.exit(exceptionValue)
@@ -270,7 +277,8 @@ def osmtgmod(
             conn.commit()
             logging.info("Done.")
         cur.execute(
-            """UPDATE _db_status SET status = TRUE WHERE module = 'grid_model'; """
+            """UPDATE _db_status SET status = TRUE 
+            WHERE module = 'grid_model'; """
         )
         conn.commit()
         logging.info("osmTGmod-database successfully built up!")
@@ -286,16 +294,17 @@ def osmtgmod(
         logging.info(
             "Using pdf file: {}".format(filtered_osm_pbf_path_to_file)
         )
-        # logging.info("Download date (according to config file): {}".format(config["osm_data"]["date_download"]))
         logging.info(
             "Assuming osmosis is avaliable at: {}".format(
                 config["osm_data"]["osmosis_path_to_binary"]
             )
         )
 
-        # BUG: Python continues (and sets osm_metadata) even in case osmosis fails!!!
+        # BUG: Python continues (and sets osm_metadata) 
+        # even in case osmosis fails!!!
         proc = subprocess.Popen(
-            "%s --read-pbf %s --write-pgsql database=%s host=%s user=%s password=%s"
+            "%s --read-pbf %s --write-pgsql \
+                database=%s host=%s user=%s password=%s"
             % (
                 config["osm_data"]["osmosis_path_to_binary"],
                 filtered_osm_pbf_path_to_file,
@@ -311,7 +320,8 @@ def osmtgmod(
         logging.info("Importing OSM-Data...")
         proc.wait()
 
-        # After updating OSM-Data, power_tables (for editing) have to be updated as well
+        # After updating OSM-Data, power_tables (for editing) 
+        # have to be updated as well
         logging.info("Creating power-tables...")
         cur.execute("SELECT otg_create_power_tables ();")
         conn.commit()
@@ -404,7 +414,9 @@ def osmtgmod(
         CREATE TABLE transfer_busses_complete as
         SELECT DISTINCT ON (osm_id) * FROM 
         (SELECT * FROM grid.egon_ehv_substation 
-        UNION SELECT subst_id, lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status 
+        UNION SELECT subst_id, lon, lat, point, polygon, voltage, power_type, 
+        substation, osm_id, osm_www, frequency, subst_name, ref, operator, 
+        dbahn, status 
         FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;
     
     										
@@ -445,7 +457,8 @@ def osmtgmod(
 
     # Execute power_script
     logging.info(
-        "Preparing execution of abstraction script 'sql-scripts/power_script.sql' ..."
+        "Preparing execution of abstraction script\
+            'sql-scripts/power_script.sql' ..."
     )
     with codecs.open("sql-scripts/power_script.sql", "r", "utf-8-sig") as fd:
         sqlfile = fd.read()
@@ -472,11 +485,16 @@ def osmtgmod(
 
     if not config_continue_run:  ##debugging - to be removed
         cur.execute(
-            "drop table if exists debug;create table debug (step_before int,max_bus_id int, num_bus int,max_branch_id int, num_branch int, num_110_bus int, num_220_bus int, num_380_bus int)"
+            """drop table if exists debug;create table debug
+            (step_before int,max_bus_id int, num_bus int,max_branch_id int, 
+            num_branch int, num_110_bus int, num_220_bus int, 
+            num_380_bus int)"""
         )
         conn.commit()
 
-    # split sqlfile in commands seperated by ";", while not considering symbols for splitting if "escaped" by single quoted strings. Drop everything after last semicolon.
+    # split sqlfile in commands seperated by ";", while not considering 
+    # symbols for splitting if "escaped" by single quoted strings. 
+    # Drop everything after last semicolon.
     for i, command in enumerate(
         "'".join(
             [
@@ -496,16 +514,23 @@ def osmtgmod(
                 conn.commit()
             except:
                 logging.exception(
-                    "Exception raised with command {0}. Check data and code and restart with 'python ego_otg.py {1} {0}'.".format(
+                    "Exception raised with command {0}. Check data and code \
+                        and restart with 'python ego_otg.py {1} {0}'.".format(
                         i, config_database
                     )
                 )
                 sys.exit()
             if i > 16:  ##debugging - to be removed
                 cur.execute(
-                    "insert into debug values ({0},(select max(id) from bus_data),(select count(*) from bus_data),(select max(branch_id) from branch_data),(select count(*) from branch_data),(select count(*) from bus_data where voltage = 110000), (select count (*) from bus_data where voltage = 220000), (select count (*) from bus_data where voltage = 380000))".format(
-                        i
-                    )
+                    """insert into debug values ({0},
+                    (select max(id) from bus_data),(select count(*) 
+                    from bus_data),(select max(branch_id) 
+                    from branch_data),(select count(*) 
+                    from branch_data),(select count(*) 
+                    from bus_data where voltage = 110000), 
+                    (select count (*) from bus_data where voltage = 220000), 
+                    (select count (*) 
+                    from bus_data where voltage = 380000))""".format(i)
                 )
                 conn.commit()
 
@@ -530,7 +555,8 @@ def osmtgmod(
             "Writing contents of table {0} to {1}...".format(table, filename)
         )
         query = "SELECT * FROM results.%s " % (table,)
-        outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER ',' CSV HEADER".format(
+        outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER \
+            ',' CSV HEADER".format(
             query
         )
         with open(filename, encoding="utf-8", mode="w") as fh:
