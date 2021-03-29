@@ -59,8 +59,10 @@ Added
   `#101 <https://github.com/openego/eGon-data/issues/101>`_
 * Demographic change integration
   `#47 <https://github.com/openego/eGon-data/issues/47>`_
-  * Creation of voronoi polygons for hvmv and ehv substations
+* Creation of voronoi polygons for hvmv and ehv substations
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
+* Add hydro and biomass power plants eGon2035
+  `#127 <https://github.com/openego/eGon-data/issues/127>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -87,6 +89,10 @@ Changed
   `#167 <https://github.com/openego/eGon-data/issues/167>`_
 * Introduce mapping between VG250 municipalities and census cells
   `#165 <https://github.com/openego/eGon-data/issues/165>`_
+* Delete tables if they exist before re-creation and data insertation
+  `#166 <https://github.com/openego/eGon-data/issues/166>`_
+* Add gdal to pre-requisites
+  `#185 <https://github.com/openego/eGon-data/issues/185>`_
 
 Bug fixes
 ---------

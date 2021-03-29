@@ -224,3 +224,14 @@ peta5_0_1_ser_heat_demands:
     schema: "demand"
     file_table_map:
     table: # 2015 heat demand data not stored in database
+
+power_plants:
+  sources:
+      mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
+      mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
+      capacities: "supply.egon_scenario_capacities"
+      geom_germany: "boundaries.vg250_sta_union"
+      geom_federal_states: "boundaries.vg250_lan"
+  target:
+      table: 'egon_power_plants'
+      schema: 'supply'

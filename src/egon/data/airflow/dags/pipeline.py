@@ -188,12 +188,6 @@ with airflow.DAG(
     demandregio_import >> household_prognosis
     zensus_misc_import >> household_prognosis
 
-    # Power plant setup
-    power_plant_tables = PythonOperator(
-        task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables,
-    )
-    setup >> power_plant_tables
 
     # NEP data import
     create_tables = PythonOperator(
@@ -282,3 +276,17 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> heat_demand_import
     zensus_inside_ger_metadata >> heat_demand_import
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+
+    power_plant_import = PythonOperator(
+        task_id="import-power-plants",
+        python_callable=power_plants.insert_power_plants
+    )
+    setup >> power_plant_tables >> power_plant_import
+    nep_insert_data >> power_plant_import
+    retrieve_mastr_data >> power_plant_import
