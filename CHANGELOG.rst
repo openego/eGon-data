@@ -87,6 +87,8 @@ Changed
   `#166 <https://github.com/openego/eGon-data/issues/166>`_
 * Adjust residential heat demand in unpopulated zenus cells
   `#167 <https://github.com/openego/eGon-data/issues/167>`_
+* Introduce mapping between VG250 municipalities and census cells
+  `#165 <https://github.com/openego/eGon-data/issues/165>`_
 * Delete tables if they exist before re-creation and data insertation
   `#166 <https://github.com/openego/eGon-data/issues/166>`_
 * Add gdal to pre-requisites
