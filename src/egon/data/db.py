@@ -2,7 +2,6 @@ from contextlib import contextmanager
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import yaml
 import pandas as pd
 import geopandas as gpd
 
