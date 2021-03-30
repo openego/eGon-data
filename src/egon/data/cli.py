@@ -36,36 +36,6 @@ import egon.data.airflow
 import egon.data.config as config
 
 
-@click.command(
-    add_help_option=False,
-    context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
-)
-@click.pass_context
-def airflow(context):
-    subprocess.run(["airflow"] + context.args)
-
-
-@click.command(context_settings={"help_option_names": ["-h", "--help"]})
-@click.pass_context
-def serve(context):
-    """Start the airflow webapp controlling the egon-data pipeline.
-
-    Airflow needs, among other things, a metadata database and a running
-    scheduler. This command acts as a shortcut, creating the database if it
-    doesn't exist and starting the scheduler in the background before starting
-    the webserver.
-
-    """
-    subprocess.run(["airflow", "initdb"])
-    scheduler = Process(
-        target=subprocess.run,
-        args=(["airflow", "scheduler"],),
-        kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
-    )
-    scheduler.start()
-    subprocess.run(["airflow", "webserver"])
-
-
 @click.group(
     name="egon-data", context_settings={"help_option_names": ["-h", "--help"]}
 )
@@ -369,9 +339,37 @@ def egon_data(context, **kwargs):
             )
 
 
+@egon_data.command(
+    add_help_option=False,
+    context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
+)
+@click.pass_context
+def airflow(context):
+    subprocess.run(["airflow"] + context.args)
+
+
+@egon_data.command(context_settings={"help_option_names": ["-h", "--help"]})
+@click.pass_context
+def serve(context):
+    """Start the airflow webapp controlling the egon-data pipeline.
+
+    Airflow needs, among other things, a metadata database and a running
+    scheduler. This command acts as a shortcut, creating the database if it
+    doesn't exist and starting the scheduler in the background before starting
+    the webserver.
+
+    """
+    subprocess.run(["airflow", "initdb"])
+    scheduler = Process(
+        target=subprocess.run,
+        args=(["airflow", "scheduler"],),
+        kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
+    )
+    scheduler.start()
+    subprocess.run(["airflow", "webserver"])
+
+
 def main():
-    egon_data.add_command(airflow)
-    egon_data.add_command(serve)
     try:
         egon_data.main(sys.argv[1:])
     finally:
