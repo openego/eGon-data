@@ -25,10 +25,7 @@ def credentials():
         "--database-port": "PORT",
         "--database-user": "POSTGRES_USER",
     }
-    custom = config.paths(pid="*")[0]
-    if custom.is_file():
-        with open(custom) as f:
-            configuration = yaml.safe_load(f)["egon-data"]
+    configuration = config.settings()["egon-data"]
     configuration = {
         translated[flag]: configuration[flag]
         for flag in configuration
