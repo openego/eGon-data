@@ -118,14 +118,14 @@ can be merged. Please delete the branch after merging.
 
 Before requesting a review, please
 
-1. Include passing tests (run ``tox``) [1]_.
+1. Include passing tests (run ``tox``). [#tox-note]_
 2. Let the workflow run in :ref:`Test mode` once from scratch to verify
    successful execution
 3. Update documentation when there's new API, functionality etc.
 4. Add a note to ``CHANGELOG.rst`` about the changes.
 5. Add yourself to ``AUTHORS.rst``.
 
-.. [1] If you don't have all the necessary python versions available locally you can rely on
+.. [#tox-note] If you don't have all the necessary python versions available locally you can rely on
        `CI on GitHub actions <https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22>`_
        - it will run the tests for each change you add in the pull request.
 
