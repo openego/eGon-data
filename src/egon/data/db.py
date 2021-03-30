@@ -26,11 +26,12 @@ def credentials():
         "--database-user": "POSTGRES_USER",
     }
     configuration = config.settings()["egon-data"]
-    configuration = {
+    update = {
         translated[flag]: configuration[flag]
         for flag in configuration
         if flag in translated
     }
+    configuration.update(update)
     return configuration
 
 
