@@ -289,7 +289,7 @@ def egon_data(context, **kwargs):
     connection = (
         airflow.query(Connection).filter_by(conn_id="egon_data").one_or_none()
     )
-    connection = connection if connection else Connection(conn_id="egon_data",)
+    connection = connection if connection else Connection(conn_id="egon_data")
     connection.uri = (
         f'postgresql://{options["--database-user"]}'
         f':{options["--database-password"]}'
