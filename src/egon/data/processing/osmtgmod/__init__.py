@@ -96,8 +96,8 @@ def osmtgmod(
     # ==============================================================
     if docker_db_config is not None:
         logging.info(
-            "Taking db connection credentials from eGon-data \
-                with respect to the given docker_db_config variable"
+            ("Taking db connection credentials from eGon-data " 
+             "with respect to the given docker_db_config variable")
         )
         config = configparser.ConfigParser()
         config.read(config_basepath + ".cfg")
@@ -232,9 +232,9 @@ def osmtgmod(
         except:
             # Get the most recent exception
             logging.exception(
-                "Connection failed, unable to continue abstraction process!\
-                    You might want to start from scratch by dropping\
-                        second command line argument."
+                ("Connection failed, unable to continue abstraction process! "
+                "You might want to start from scratch by dropping "
+                "second command line argument.")
             )
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             sys.exit(exceptionValue)
@@ -261,6 +261,15 @@ def osmtgmod(
         )
         conn.commit()
         logging.info("Status table created.")
+        
+        # egon-specific, in order to not fill up the results schema,
+        # it is dropped before creation
+        logging.info("Dropping osmtgmod_results schema if exists")
+        cur.execute(
+        "DROP SCHEMA IF EXISTS osmtgmod_results CASCADE;"
+        )
+        conn.commit()       
+        
         logging.info("Loading functions and result schema ...")
         scripts = [
             "sql-scripts/extensions.sql",
@@ -417,14 +426,11 @@ def osmtgmod(
         UNION SELECT subst_id, lon, lat, point, polygon, voltage, power_type, 
         substation, osm_id, osm_www, frequency, subst_name, ref, operator, 
         dbahn, status 
-        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;
-    
-    										
-    	
+        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;						
         """
         )
         conn.commit()
-        ## todo: make path to transfer_busses.csv generic!
+
         with open(path_for_transfer_busses, "w") as this_file:
             cur.copy_expert(
                 """COPY transfer_busses_complete to STDOUT WITH CSV HEADER""",
@@ -457,8 +463,8 @@ def osmtgmod(
 
     # Execute power_script
     logging.info(
-        "Preparing execution of abstraction script\
-            'sql-scripts/power_script.sql' ..."
+        ("Preparing execution of abstraction script "
+            "'sql-scripts/power_script.sql' ...")
     )
     with codecs.open("sql-scripts/power_script.sql", "r", "utf-8-sig") as fd:
         sqlfile = fd.read()
@@ -514,8 +520,8 @@ def osmtgmod(
                 conn.commit()
             except:
                 logging.exception(
-                    "Exception raised with command {0}. Check data and code \
-                        and restart with 'python ego_otg.py {1} {0}'.".format(
+                    ("Exception raised with command {0}. Check data and code "
+                     "and restart with 'python ego_otg.py {1} {0}'.").format(
                         i, config_database
                     )
                 )
