@@ -151,7 +151,7 @@ Things that definitely should be checked during a review of a PR:
 * *Was* ``CHANGELOG.rst`` *updated accordingly?* Should be the case, please
   verify.
 * *Is metadata complete and correct (in case of data integration)?* Please
-  verify. In case of a pending metadata creation make sure an appropriate issue is filed. 
+  verify. In case of a pending metadata creation make sure an appropriate issue is filed.
 
 
 Additional case-dependent aspects make sense.
