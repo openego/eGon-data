@@ -132,14 +132,15 @@ probably be grouped into separate commits.
     style fixes separated from your actually meaningful changes, which
     makes the reviewers job a lot easier.
 
-How to handle Pull Requests
----------------------------
+Pull Request Guidelines
+-----------------------
 
-All changes or additions in the code need to be reviewed by a fellow
-developer before merging your changes to the dev-branch. To trigger this
-review you should submit a pull request through the Github website.
+We use pull requests (PR) to integrate code changes from branches.
+PRs always need to be reviewed (exception proves the rule!). Therefore, ask
+one of the other developers for reviewing your changes. Once approved, the PR
+can be merged. Please delete the branch after merging.
 
-For merging, you should:
+Before requesting a review, please
 
 1. Include passing tests (run ``tox``). [#tox-note]_
 2. Update documentation when there are new functionalities etc.
