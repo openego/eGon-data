@@ -217,4 +217,3 @@ documenmtation:
 .. code-block:: bash
 
    pip install -r docs/requirements.txt
-
