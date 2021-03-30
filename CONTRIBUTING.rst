@@ -122,7 +122,8 @@ Before requesting a review, please
 2. Let the workflow run in :ref:`Test mode` once from scratch to verify
    successful execution
 3. Update documentation when there's new API, functionality etc.
-4. Add a note to ``CHANGELOG.rst`` about the changes.
+4. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
+   corresponding Github issue.
 5. Add yourself to ``AUTHORS.rst``.
 
 .. [#tox-note]
