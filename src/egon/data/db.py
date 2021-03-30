@@ -29,11 +29,11 @@ def credentials():
     if custom.is_file():
         with open(custom) as f:
             configuration = yaml.safe_load(f)["egon-data"]
-        configuration = {
-            translated[flag]: configuration[flag]
-            for flag in configuration
-            if flag in translated
-        }
+    configuration = {
+        translated[flag]: configuration[flag]
+        for flag in configuration
+        if flag in translated
+    }
     return configuration
 
 
