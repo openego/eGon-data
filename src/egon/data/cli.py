@@ -290,7 +290,6 @@ def egon_data(context, **kwargs):
         Path(".") / "airflow" / "airflow.cfg",
         inserts=options,
         dags=str(resources.files(egon.data.airflow).absolute()),
-        update=False,
     )
     render(
         "docker-compose.yml",
