@@ -125,6 +125,13 @@ Before requesting a review, please
 4. Add a note to ``CHANGELOG.rst`` about the changes.
 5. Add yourself to ``AUTHORS.rst``.
 
+.. [1] If you don't have all the necessary python versions available locally you can rely on
+       `CI on GitHub actions <https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22>`_
+       - it will run the tests for each change you add in the pull request.
+
+       It will be slower though ...
+
+
 When requesting reviews, please keep in mind it might be a significant effort
 to review the PR. Try to make it easier for them and keep the overall effort
 as low as possible. Therefore,
@@ -155,14 +162,6 @@ Things that definitely should be checked during a review of a PR:
 
 
 Additional case-dependent aspects make sense.
-
-
-
-.. [1] If you don't have all the necessary python versions available locally you can rely on
-       `CI on GitHub actions <https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22>`_
-       - it will run the tests for each change you add in the pull request.
-
-       It will be slower though ...
 
 
 Extending the data workflow
