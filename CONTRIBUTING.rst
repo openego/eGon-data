@@ -125,11 +125,14 @@ Before requesting a review, please
 4. Add a note to ``CHANGELOG.rst`` about the changes.
 5. Add yourself to ``AUTHORS.rst``.
 
-.. [#tox-note] If you don't have all the necessary python versions available locally you can rely on
-       `CI on GitHub actions <https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22>`_
-       - it will run the tests for each change you add in the pull request.
+.. [#tox-note]
+    If you don't have all the necessary Python versions available locally
+    you can rely on CI via GitHub actions -
+    it will `run the tests`_ for each change you add in the pull request.
 
-       It will be slower though ...
+    It will be slower though ...
+
+.. _run the tests: https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22
 
 
 When requesting reviews, please keep in mind it might be a significant effort
