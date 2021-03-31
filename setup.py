@@ -95,7 +95,7 @@ setup(
         "pyaml",
         "rasterio",
         "rtree",
-        "sqlalchemy",
+        "sqlalchemy>=1.4",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
