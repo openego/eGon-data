@@ -1,6 +1,5 @@
 import os
 
-from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
@@ -258,30 +257,23 @@ with airflow.DAG(
     vg250_clean_and_prepare >> ehv_substation_extraction
 
     # osmTGmod ehv/hv grid model generation
-    osmtgmod = PythonOperator(
-        task_id= "osmtgmod",
+    run_osmtgmod = PythonOperator(
+        task_id= "run_osmtgmod",
         python_callable= osmtgmod.run_osmtgmod,
     )
     
-    # osmtgmod_pypsa = PythonOperator(task_id="osmtgmod_pypsa", 
-    #                                 python_callable= lambda: None)
-    
-    # osmtgmod_pypsa = PostgresOperator(
-    #     task_id="osmtgmod_pypsa",
-    #     sql=resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),
-    #     postgres_conn_id="egon_data",
-    #     autocommit=True,
-    # )
-    
-    osmtgmod_pypsa = PythonOperator(
+
+    osmtgmod_pypsa = PostgresOperator(
         task_id="osmtgmod_pypsa",
-        python_callable=lambda: db.execute_sql(resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),)
+        sql=resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),
+        postgres_conn_id="egon_data",
+        autocommit=True,
     )
-    
-    ehv_substation_extraction >> osmtgmod
-    hvmv_substation_extraction >> osmtgmod
+
+    ehv_substation_extraction >> run_osmtgmod
+    hvmv_substation_extraction >> run_osmtgmod
     #osmtgmod >> osmtgmod_pypsa
-    osmtgmod >> osmtgmod_pypsa
+    run_osmtgmod >> osmtgmod_pypsa
 
 
     # Import potential areas for wind onshore and ground-mounted PV
