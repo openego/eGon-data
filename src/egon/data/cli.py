@@ -316,6 +316,8 @@ def egon_data(context, **kwargs):
                 f'CREATE DATABASE "{options["--database-name"]}";'
             )
 
+    subprocess.run(["airflow", "db", "init"])
+
     # TODO: Constrain SQLAlchemy's lower version to 1.4 and use a `with` block
     #       like the one in the last commented line to avoid an explicit
     #       `commit`. This can then also be used to get rid of the
@@ -359,7 +361,6 @@ def serve(context):
     the webserver.
 
     """
-    subprocess.run(["airflow", "initdb"])
     scheduler = Process(
         target=subprocess.run,
         args=(["airflow", "scheduler"],),
