@@ -259,8 +259,8 @@ def egon_data(context, **kwargs):
     #       import can only be done inside this function, which is generally
     #       frowned upon, instead of at the module level. Maybe there's a
     #       better way to encapsulate this?
-    from airflow.configuration import conf as airflow_cfg
-    from airflow.models import Connection
+    from airflow.configuration import conf as airflow_cfg  # noqa
+    from airflow.models import Connection  # noqa
 
     options = options["egon-data"]
     render(
