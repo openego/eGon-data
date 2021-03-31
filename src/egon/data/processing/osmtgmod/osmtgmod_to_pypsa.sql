@@ -12,24 +12,22 @@ __author__ 	= "ulfmueller, IlkaCu, mariusves"
 -- osmTGmod2pyPSA
 
 -- CLEAN UP OF TABLES
-TRUNCATE model_draft.ego_grid_pf_hv_bus CASCADE;
-TRUNCATE model_draft.ego_grid_pf_hv_line CASCADE;
-TRUNCATE model_draft.ego_grid_pf_hv_transformer CASCADE;
+TRUNCATE grid.egon_pf_hv_bus CASCADE;
+TRUNCATE grid.egon_pf_hv_line CASCADE;
+TRUNCATE grid.egon_pf_hv_transformer CASCADE;
 
 -- BUS DATA
-INSERT INTO model_draft.ego_grid_pf_hv_bus (bus_id, v_nom, geom)
+INSERT INTO grid.egon_pf_hv_bus (bus_id, v_nom, geom)
 SELECT 
   bus_i AS bus_id,
   base_kv AS v_nom,
   geom
-  FROM grid.otg_ehvhv_bus_data
+  FROM osmtgmod_results.bus_data
   WHERE result_id = 1;
-  
--- scenario log (project,version,io,schema_name,table_name,script_name,comment)
-SELECT scenario_log('eGo_DP', 'v0.4.5','output','model_draft','ego_grid_pf_hv_bus','ego_dp_powerflow_osmtgmod_to_pypsa.sql',' ');
+
 
 -- BRANCH DATA
-INSERT INTO model_draft.ego_grid_pf_hv_line (line_id, bus0, bus1, x, r, b, s_nom, cables, frequency, geom, topo)
+INSERT INTO grid.egon_pf_hv_line (line_id, bus0, bus1, x, r, b, s_nom, cables, frequency, geom, topo)
 SELECT 
   branch_id AS line_id,
   f_bus AS bus0,
@@ -39,17 +37,14 @@ SELECT
   br_b as b,
   rate_a as s_nom,
   cables,
-  frequency,
   geom,
   topo
-  FROM grid.otg_ehvhv_branch_data
+  FROM osmtgmod_results.branch_data
   WHERE result_id = 1 and (link_type = 'line' or link_type = 'cable');
 
--- scenario log (project,version,io,schema_name,table_name,script_name,comment)
-SELECT scenario_log('eGo_DP', 'v0.4.5','output','model_draft','ego_grid_pf_hv_line','ego_dp_powerflow_osmtgmod_to_pypsa.sql',' ');
 
 -- TRANSFORMER DATA
-INSERT INTO model_draft.ego_grid_pf_hv_transformer (trafo_id, bus0, bus1, x, s_nom, tap_ratio, phase_shift, geom, topo)
+INSERT INTO grid.egon_pf_hv_transformer (trafo_id, bus0, bus1, x, s_nom, tap_ratio, phase_shift, geom, topo)
 SELECT 
   branch_id AS trafo_id,
   f_bus AS bus0,
@@ -60,53 +55,54 @@ SELECT
   shift AS phase_shift,
   geom,
   topo
-  FROM grid.otg_ehvhv_branch_data
+  FROM osmtgmod_results.branch_data
   WHERE result_id = 1 and link_type = 'transformer';
 
--- scenario log (project,version,io,schema_name,table_name,script_name,comment)
-SELECT scenario_log('eGo_DP', 'v0.4.5','output','model_draft','ego_grid_pf_hv_transformer','ego_dp_powerflow_osmtgmod_to_pypsa.sql',' ');
 
 -- per unit to absolute values
 
-UPDATE model_draft.ego_grid_pf_hv_line a
+UPDATE grid.egon_pf_hv_line a
 	SET 
 		r = r * (((SELECT v_nom 
-				FROM model_draft.ego_grid_pf_hv_bus 
+				FROM grid.egon_pf_hv_bus 
 				WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
 		x = x * (((SELECT v_nom 
-				FROM model_draft.ego_grid_pf_hv_bus
+				FROM grid.egon_pf_hv_bus
 				WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
 		b = b * (((SELECT v_nom 
-				FROM model_draft.ego_grid_pf_hv_bus
+				FROM grid.egon_pf_hv_bus
 				WHERE bus_id=bus1)*1000)^2 / (100 * 10^6));
 
 -- calculate line length (in km) from geoms
 
-UPDATE model_draft.ego_grid_pf_hv_line a
+UPDATE grid.egon_pf_hv_line a
 	SET 
 		length = result.length
 		FROM 
 		(SELECT b.line_id, st_length(b.geom,false)/1000 as length 
-		from model_draft.ego_grid_pf_hv_line b)
+		from grid.egon_pf_hv_line b)
 		as result
 WHERE a.line_id = result.line_id;
 
 -- delete buses without connection to AC grid and generation or load assigned
+-- TODO: get rid of hard coded scn_name
 
-DELETE FROM model_draft.ego_grid_pf_hv_bus WHERE scn_name='Status Quo' 
+/*
+DELETE FROM grid.egon_pf_hv_bus WHERE scn_name='Status Quo' 
 AND bus_id NOT IN 
-	(SELECT bus0 FROM model_draft.ego_grid_pf_hv_line WHERE scn_name='Status Quo')
+	(SELECT bus0 FROM grid.egon_pf_hv_line WHERE scn_name='Status Quo')
 AND bus_id NOT IN 
-	(SELECT bus1 FROM model_draft.ego_grid_pf_hv_line WHERE scn_name='Status Quo')
+	(SELECT bus1 FROM grid.egon_pf_hv_line WHERE scn_name='Status Quo')
 AND bus_id NOT IN 
-	(SELECT bus0 FROM model_draft.ego_grid_pf_hv_transformer WHERE scn_name='Status Quo')
+	(SELECT bus0 FROM grid.egon_pf_hv_transformer WHERE scn_name='Status Quo')
 AND bus_id NOT IN 
-	(SELECT bus1 FROM model_draft.ego_grid_pf_hv_transformer WHERE scn_name='Status Quo'); 
+	(SELECT bus1 FROM grid.egon_pf_hv_transformer WHERE scn_name='Status Quo'); 
+*/
 
 /*
 -- order bus0 and bus1 IDs for easier grouping of parallel lines
 
-UPDATE model_draft.ego_grid_pf_hv_line b
+UPDATE grid.egon_pf_hv_line b
 SET 
 bus0 = a.bus0,
 bus1 = a.bus1
@@ -123,7 +119,7 @@ FROM
 	THEN bus1 
 	ELSE bus0 
 	END as bus1
-FROM  model_draft.ego_grid_pf_hv_line
+FROM  grid.egon_pf_hv_line
 WHERE scn_name = 'Status Quo'
 ORDER BY line_id) as a
 WHERE b.line_id = a.line_id AND
@@ -131,7 +127,7 @@ scn_name = 'Status Quo';
 
 -- same for transformers:
 
-UPDATE model_draft.ego_grid_pf_hv_transformer b
+UPDATE grid.egon_pf_hv_transformer b
 SET 
 bus0 = a.bus0,
 bus1 = a.bus1
@@ -148,7 +144,7 @@ FROM
 	THEN bus1 
 	ELSE bus0 
 	END as bus1
-FROM  model_draft.ego_grid_pf_hv_transformer
+FROM  grid.egon_pf_hv_transformer
 WHERE scn_name = 'Status Quo'
 ORDER BY trafo_id) as a
 WHERE b.trafo_id = a.trafo_id AND
@@ -156,15 +152,15 @@ scn_name = 'Status Quo';
 
 -- duplicate 'status quo' model with parallel lines merged to a single line
 
-INSERT INTO model_draft.ego_grid_pf_hv_line (
+INSERT INTO grid.egon_pf_hv_line (
 scn_name, line_id, bus0, bus1, x, r, b, s_nom, length, cables, frequency, geom, topo)
 SELECT 
 	'Status Quo grouped' as scn_name, min(line_id), bus0, bus1, sum(x^(-1))^(-1) as x, sum(r^(-1))^(-1) as r, sum(b) as b, 
 	sum(s_nom) as s_nom, avg(length) as length, sum(cables) as cables, 50 as frequency,min(geom) as geom, min(topo) as topo
-FROM model_draft.ego_grid_pf_hv_line
+FROM grid.egon_pf_hv_line
 WHERE scn_name = 'Status Quo'
 GROUP BY bus0,bus1;
 
-DELETE FROM  model_draft.ego_grid_pf_hv_line WHERE scn_name = 'Status Quo';
-UPDATE model_draft.ego_grid_pf_hv_line SET scn_name = 'Status Quo' WHERE scn_name = 'Status Quo grouped';
+DELETE FROM  grid.egon_pf_hv_line WHERE scn_name = 'Status Quo';
+UPDATE grid.egon_pf_hv_line SET scn_name = 'Status Quo' WHERE scn_name = 'Status Quo grouped';
 */

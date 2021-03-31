@@ -1,5 +1,6 @@
 import os
 
+from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
@@ -26,6 +27,8 @@ import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zen
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
+from egon.data import db
+
 
 # Prepare connection to db for operators
 airflow_db_connection()
@@ -260,15 +263,26 @@ with airflow.DAG(
         python_callable= osmtgmod.run_osmtgmod,
     )
     
-    osmtgmod_pypsa = PostgresOperator(
+    # osmtgmod_pypsa = PythonOperator(task_id="osmtgmod_pypsa", 
+    #                                 python_callable= lambda: None)
+    
+    # osmtgmod_pypsa = PostgresOperator(
+    #     task_id="osmtgmod_pypsa",
+    #     sql=resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),
+    #     postgres_conn_id="egon_data",
+    #     autocommit=True,
+    # )
+    
+    osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
-        sql=resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
+        python_callable=lambda: db.execute_sql(resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),)
     )
     
     ehv_substation_extraction >> osmtgmod
     hvmv_substation_extraction >> osmtgmod
+    #osmtgmod >> osmtgmod_pypsa
+    osmtgmod >> osmtgmod_pypsa
+
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
