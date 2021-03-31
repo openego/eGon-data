@@ -255,13 +255,6 @@ def egon_data(context, **kwargs):
 
     os.environ["AIRFLOW_HOME"] = str((Path(".") / "airflow").absolute())
 
-    # TODO: Since "AIRFLOW_HOME" needs to be set before importing `conf`, the
-    #       import can only be done inside this function, which is generally
-    #       frowned upon, instead of at the module level. Maybe there's a
-    #       better way to encapsulate this?
-    from airflow.configuration import conf as airflow_cfg
-    from airflow.models import Connection
-
     options = options["egon-data"]
     render(
         "airflow.cfg",
@@ -287,6 +280,13 @@ def egon_data(context, **kwargs):
             cwd=str((Path(".") / "docker").absolute()),
         )
         time.sleep(1.5)  # Give the container time to boot.
+
+    # TODO: Since "AIRFLOW_HOME" needs to be set before importing `conf`, the
+    #       import can only be done inside this function, which is generally
+    #       frowned upon, instead of at the module level. Maybe there's a
+    #       better way to encapsulate this?
+    from airflow.configuration import conf as airflow_cfg
+    from airflow.models import Connection
 
     engine = create_engine(
         (
