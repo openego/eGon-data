@@ -277,28 +277,6 @@ def egon_data(context, **kwargs):
         airflow=resources.files(egon.data.airflow),
     )
 
-    # TODO: Constrain SQLAlchemy's lower version to 1.4 and use a `with` block
-    #       like the one in the last commented line to avoid an explicit
-    #       `commit`. This can then also be used to get rid of the
-    #       `egon.data.db.session_scope` context manager and use the new
-    #       buil-in one instead. And we can migrate to the SQLA 2.0 query
-    #       API.
-    # with Session(engine) as airflow, airflow.begin():
-    engine = create_engine(airflow_cfg.get("core", "SQL_ALCHEMY_CONN"))
-    airflow = Session(engine)
-    connection = (
-        airflow.query(Connection).filter_by(conn_id="egon_data").one_or_none()
-    )
-    connection = connection if connection else Connection(conn_id="egon_data")
-    connection.uri = (
-        f'postgresql://{options["--database-user"]}'
-        f':{options["--database-password"]}'
-        f'@{options["--database-host"]}:{options["--database-port"]}'
-        f'/{options["--database-name"]}'
-    )
-    airflow.add(connection)
-    airflow.commit()
-
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
             (options["--database-host"], int(options["--database-port"]))
@@ -337,6 +315,28 @@ def egon_data(context, **kwargs):
             connection.execute(
                 f'CREATE DATABASE "{options["--database-name"]}";'
             )
+
+    # TODO: Constrain SQLAlchemy's lower version to 1.4 and use a `with` block
+    #       like the one in the last commented line to avoid an explicit
+    #       `commit`. This can then also be used to get rid of the
+    #       `egon.data.db.session_scope` context manager and use the new
+    #       buil-in one instead. And we can migrate to the SQLA 2.0 query
+    #       API.
+    # with Session(engine) as airflow, airflow.begin():
+    engine = create_engine(airflow_cfg.get("core", "SQL_ALCHEMY_CONN"))
+    airflow = Session(engine)
+    connection = (
+        airflow.query(Connection).filter_by(conn_id="egon_data").one_or_none()
+    )
+    connection = connection if connection else Connection(conn_id="egon_data")
+    connection.uri = (
+        f'postgresql://{options["--database-user"]}'
+        f':{options["--database-password"]}'
+        f'@{options["--database-host"]}:{options["--database-port"]}'
+        f'/{options["--database-name"]}'
+    )
+    airflow.add(connection)
+    airflow.commit()
 
 
 @egon_data.command(
