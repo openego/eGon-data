@@ -560,7 +560,7 @@ def osmtgmod(
         logging.info(
             "Writing contents of table {0} to {1}...".format(table, filename)
         )
-        query = "SELECT * FROM results.%s " % (table,)
+        query = "SELECT * FROM osmtgmod_results.%s " % (table,)
         outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER \
             ',' CSV HEADER".format(
             query
