@@ -25,6 +25,7 @@ import time
 from psycopg2 import OperationalError as PSPGOE
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError as SQLAOE
+from sqlalchemy.orm import Session
 import click
 import importlib_resources as resources
 import yaml
@@ -33,36 +34,6 @@ from egon.data import logger
 import egon.data
 import egon.data.airflow
 import egon.data.config as config
-
-
-@click.command(
-    add_help_option=False,
-    context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
-)
-@click.pass_context
-def airflow(context):
-    subprocess.run(["airflow"] + context.args)
-
-
-@click.command(context_settings={"help_option_names": ["-h", "--help"]})
-@click.pass_context
-def serve(context):
-    """Start the airflow webapp controlling the egon-data pipeline.
-
-    Airflow needs, among other things, a metadata database and a running
-    scheduler. This command acts as a shortcut, creating the database if it
-    doesn't exist and starting the scheduler in the background before starting
-    the webserver.
-
-    """
-    subprocess.run(["airflow", "initdb"])
-    scheduler = Process(
-        target=subprocess.run,
-        args=(["airflow", "scheduler"],),
-        kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
-    )
-    scheduler.start()
-    subprocess.run(["airflow", "webserver"])
 
 
 @click.group(
@@ -283,8 +254,15 @@ def egon_data(context, **kwargs):
                     f.write(rendered)
 
     os.environ["AIRFLOW_HOME"] = str((Path(".") / "airflow").absolute())
-    options = options["egon-data"]
 
+    # TODO: Since "AIRFLOW_HOME" needs to be set before importing `conf`, the
+    #       import can only be done inside this function, which is generally
+    #       frowned upon, instead of at the module level. Maybe there's a
+    #       better way to encapsulate this?
+    from airflow.configuration import conf as airflow_cfg
+    from airflow.models import Connection
+
+    options = options["egon-data"]
     render(
         "airflow.cfg",
         Path(".") / "airflow" / "airflow.cfg",
@@ -298,6 +276,28 @@ def egon_data(context, **kwargs):
         inserts=options,
         airflow=resources.files(egon.data.airflow),
     )
+
+    # TODO: Constrain SQLAlchemy's lower version to 1.4 and use a `with` block
+    #       like the one in the last commented line to avoid an explicit
+    #       `commit`. This can then also be used to get rid of the
+    #       `egon.data.db.session_scope` context manager and use the new
+    #       buil-in one instead. And we can migrate to the SQLA 2.0 query
+    #       API.
+    # with Session(engine) as airflow, airflow.begin():
+    engine = create_engine(airflow_cfg.get("core", "SQL_ALCHEMY_CONN"))
+    airflow = Session(engine)
+    connection = (
+        airflow.query(Connection).filter_by(conn_id="egon_data").one_or_none()
+    )
+    connection = connection if connection else Connection(conn_id="egon_data")
+    connection.uri = (
+        f'postgresql://{options["--database-user"]}'
+        f':{options["--database-password"]}'
+        f'@{options["--database-host"]}:{options["--database-port"]}'
+        f'/{options["--database-name"]}'
+    )
+    airflow.add(connection)
+    airflow.commit()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
@@ -339,9 +339,37 @@ def egon_data(context, **kwargs):
             )
 
 
+@egon_data.command(
+    add_help_option=False,
+    context_settings=dict(allow_extra_args=True, ignore_unknown_options=True),
+)
+@click.pass_context
+def airflow(context):
+    subprocess.run(["airflow"] + context.args)
+
+
+@egon_data.command(context_settings={"help_option_names": ["-h", "--help"]})
+@click.pass_context
+def serve(context):
+    """Start the airflow webapp controlling the egon-data pipeline.
+
+    Airflow needs, among other things, a metadata database and a running
+    scheduler. This command acts as a shortcut, creating the database if it
+    doesn't exist and starting the scheduler in the background before starting
+    the webserver.
+
+    """
+    subprocess.run(["airflow", "initdb"])
+    scheduler = Process(
+        target=subprocess.run,
+        args=(["airflow", "scheduler"],),
+        kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
+    )
+    scheduler.start()
+    subprocess.run(["airflow", "webserver"])
+
+
 def main():
-    egon_data.add_command(airflow)
-    egon_data.add_command(serve)
     try:
         egon_data.main(sys.argv[1:])
     finally:
