@@ -82,7 +82,7 @@ setup(
     python_requires=">=3.7.*",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "apache-airflow<2.0",
+        "apache-airflow>=1.10.14,<2.0",
         "click",
         "disaggregator"
         "@git+https://github.com/openego/disaggregator.git"
