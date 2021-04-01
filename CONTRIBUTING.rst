@@ -96,17 +96,6 @@ relevant for people who are not members of the organization
 
 6. Submit a pull request through the GitHub website.
 
-Tips
-^^^^
-
-To run a subset of tests::
-
-    tox -e envname -- pytest -k test_myfeature
-
-To run all the test environments in *parallel*::
-
-    tox -p auto
-
 
 Pull Request Guidelines
 -----------------------
@@ -220,3 +209,15 @@ documenmtation:
 .. code-block:: bash
 
    pip install -r docs/requirements.txt
+
+
+Tips
+----
+
+To run a subset of tests::
+
+    tox -e envname -- pytest -k test_myfeature
+
+To run all the test environments in *parallel*::
+
+    tox -p auto
