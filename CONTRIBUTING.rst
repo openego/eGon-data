@@ -151,7 +151,7 @@ of things you have to keep track of manually:
     like comments and docstrings. This also extends to the documentation
     in reStructuredText files.
 
-Last but not least, commit message are a kind of documentation, too,
+Last but not least, commit messages are a kind of documentation, too,
 which should adhere to a certain style. There are quite a few documents
 detailing this style, but the shortest and easiest to find is probably
 https://commit.style. Try to to commit small, related changes. If you
