@@ -188,11 +188,33 @@ Before requesting a review, please
 .. _run the tests: https://travis-ci.org/openego/eGon-data/pull_requests
 
 
+When requesting reviews, please keep in mind it might be a significant effort
+to review the PR. Try to make it easier for them and keep the overall effort
+as low as possible. Therefore,
+
+* asking for reviewing specific aspects helps reviewers a lot to focus on the
+  relevant parts
+* when multiple people are asked for a review it should be avoided that they
+  check/test the same things. Be even more specific what you expect from
+  someone in particular.
 
 
+What needs to be reviewed?
+--------------------------
 
+Things that definitely should be checked during a review of a PR:
 
-
+* *Is the code working?* The contributor should already have made sure that
+  this is the case. Either by automated test or manual execution.
+* *Is the data correct?* Verifying that newly integrated and processed data
+  is correct is usually not possible during reviewing a PR. If it is necessary,
+  please ask the reviewer specifically for this.
+* *Do tests pass?* See automatic checks.
+* *Is the documentation up-to-date?* Please check this.
+* *Was* ``CHANGELOG.rst`` *updated accordingly?* Should be the case, please
+  verify.
+* *Is metadata complete and correct (in case of data integration)?* Please
+  verify. In case of a pending metadata creation make sure an appropriate issue is filed.
 
 
 Extending the data workflow
