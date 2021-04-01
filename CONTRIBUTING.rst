@@ -6,6 +6,26 @@ Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given.
 
 
+Bug reports and feature requests
+================================
+
+The best way to send feedback
+is to file an issue at
+https://github.com/openego/eGon-data/issues.
+
+When reporting a bug please include:
+
+* Your operating system name and version.
+* Any details about your local setup that might be helpful in troubleshooting.
+* Detailed steps to reproduce the bug.
+
+If you are proposing a feature:
+
+* Explain in detail how it would work.
+* Keep the scope as narrow as possible, to make it easier to implement.
+* Remember that this is a volunteer-driven project, and that code contributions are welcome :)
+
+
 Development
 ===========
 
@@ -129,25 +149,6 @@ When integrating new data or data processing scripts, make sure the
 In particular, if a new external data sources gets integrated make sure the
 data gets cut to the region of the test mode.
 
-
-Bug reports and feature requests
-================================
-
-The best way to send feedback
-is to file an issue at
-https://github.com/openego/eGon-data/issues.
-
-When reporting a bug please include:
-
-* Your operating system name and version.
-* Any details about your local setup that might be helpful in troubleshooting.
-* Detailed steps to reproduce the bug.
-
-If you are proposing a feature:
-
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
-* Remember that this is a volunteer-driven project, and that code contributions are welcome :)
 
 Documentation
 =============
