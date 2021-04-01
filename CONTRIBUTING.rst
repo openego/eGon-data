@@ -239,6 +239,30 @@ steps listed:
 4. The workflow can now be triggered via Apache Airflow
 
 
+Where to save (downloaded) data?
+--------------------------------
+
+If a task requires to retrieve some data from external sources which needs to
+be saved locally, please use `CWD` to store the data. This is achieved by using
+
+.. code-block:: python
+
+  from pathlib import Path
+  from urllib.request import urlretrieve
+
+  filepath = Path(".") / "filename.csv"
+  urlretrieve("https://url/to/file", filepath)
+
+
+Adjusting test mode data
+------------------------
+
+When integrating new data or data processing scripts, make sure the
+:ref:`Test mode` still works correctly on a limited subset of data.
+In particular, if a new external data sources gets integrated make sure the
+data gets cut to the region of the test mode.
+
+
 Documentation
 =============
 
