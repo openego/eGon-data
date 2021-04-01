@@ -69,6 +69,9 @@ Adding changes to the egon-data repository should follow some guidelines:
    branch in your local repository, in which you can now make your
    changes. Be sure to check out our `style conventions`_ so that your
    code is in line with them.
+   If you don't have push rights to our `repository`_, you need to fork
+   it via the "Fork" button in the upper right of the `repository`_
+   page and work on the fork.
 
    .. _style conventions: `Code and Commit Style`_
 
