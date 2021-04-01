@@ -154,7 +154,7 @@ of things you have to keep track of manually:
 Last but not least, commit messages are a kind of documentation, too,
 which should adhere to a certain style. There are quite a few documents
 detailing this style, but the shortest and easiest to find is probably
-https://commit.style. Try to to commit small, related changes. If you
+https://commit.style. Try to only commit small, related changes. If you
 have to use an "and" when trying to summarize your changes, they should
 probably be grouped into separate commits.
 
