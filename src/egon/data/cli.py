@@ -331,12 +331,11 @@ def egon_data(context, **kwargs):
         airflow.query(Connection).filter_by(conn_id="egon_data").one_or_none()
     )
     connection = connection if connection else Connection(conn_id="egon_data")
-    connection.uri = (
-        f'postgresql://{options["--database-user"]}'
-        f':{options["--database-password"]}'
-        f'@{options["--database-host"]}:{options["--database-port"]}'
-        f'/{options["--database-name"]}'
-    )
+    connection.login = options["--database-user"]
+    connection.password = options["--database-password"]
+    connection.host = options["--database-host"]
+    connection.port = options["--database-port"]
+    connection.schema = options["--database-name"]
     airflow.add(connection)
     airflow.commit()
 
