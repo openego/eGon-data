@@ -10,6 +10,36 @@ Any external contributions are welcome as well, and they are greatly
 appreciated! Every little bit helps, and credit will always be given.
 
 
+Bug reports and feature requests
+================================
+
+The best way to report bugs, inform about intended developments, send
+feedback or propose a feature
+is to file an issue at
+https://github.com/openego/eGon-data/issues.
+
+Please tag your issue with one of the predefined labels as it helps
+others to keep track of unsolved bugs, open tasks and questions.
+
+To inform others about intended developments please include:
+* a describtion of the purpose and the value it adds
+* outline the required steps for implementation
+* list open questions
+
+When reporting a bug please include all information needed to reproduce
+the bug you found.
+This may include information on
+
+* Your operating system name and version.
+* Any details about your local setup that might be helpful in troubleshooting.
+* Detailed steps to reproduce the bug.
+
+If you are proposing a feature:
+
+* Explain in detail how it would work.
+* Keep the scope as narrow as possible, to make it easier to implement.
+
+
 Contribution guidelines
 =======================
 
@@ -158,34 +188,11 @@ Before requesting a review, please
 .. _run the tests: https://travis-ci.org/openego/eGon-data/pull_requests
 
 
-Bug reports and feature requests
-================================
 
-The best way to report bugs, inform about intended developments, send
-feedback or propose a feature
-is to file an issue at
-https://github.com/openego/eGon-data/issues.
 
-Please tag your issue with one of the predefined labels as it helps
-others to keep track of unsolved bugs, open tasks and questions.
 
-To inform others about intended developments please include:
-* a describtion of the purpose and the value it adds
-* outline the required steps for implementation
-* list open questions
 
-When reporting a bug please include all information needed to reproduce
-the bug you found.
-This may include information on
 
-* Your operating system name and version.
-* Any details about your local setup that might be helpful in troubleshooting.
-* Detailed steps to reproduce the bug.
-
-If you are proposing a feature:
-
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
 
 
 Integration of new scripts
