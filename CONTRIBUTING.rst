@@ -48,9 +48,11 @@ Development
 
 Adding changes to the egon-data repository should follow some guidelines:
 
-1. Create an issue in our `repository
-   <https://github.com/openego/eGon-data/issues>`_ to describe the
-   intended developments briefly
+1. Create an `issue`_ in our `repository`_ to describe the intended
+   developments briefly
+
+   .. _issue: https://github.com/openego/eGon-data/issues
+   .. _repository: https://github.com/openego/eGon-data
 
 2. Create a branch for your issue related development from the
    dev-branch following our branch naming convention::
