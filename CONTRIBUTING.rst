@@ -195,8 +195,8 @@ Before requesting a review, please
 
 
 
-Integration of new scripts
-==========================
+Extending the data workflow
+===========================
 
 The egon-data workflow uses Apache Airflow which organizes the order of
 different processing steps and their execution.
