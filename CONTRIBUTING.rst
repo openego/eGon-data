@@ -137,7 +137,7 @@ as low as possible. Therefore,
 
 
 What needs to be reviewed?
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------
 
 Things that definitely should be checked during a review of a PR:
 
@@ -158,11 +158,11 @@ Additional case-dependent aspects make sense.
 
 
 Extending the data workflow
----------------------------
+===========================
 
 
 Adjusting test mode data
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 When integrating new data or data processing scripts, make sure the
 :ref:`Test mode` still works correctly on a limited subset of data.
