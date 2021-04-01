@@ -272,7 +272,6 @@ with airflow.DAG(
 
     ehv_substation_extraction >> run_osmtgmod
     hvmv_substation_extraction >> run_osmtgmod
-    #osmtgmod >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_pypsa
 
 
