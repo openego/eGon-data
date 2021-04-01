@@ -158,11 +158,12 @@ Before requesting a review, please
 .. _run the tests: https://travis-ci.org/openego/eGon-data/pull_requests
 
 
-How to file a good issue
-------------------------
+Bug reports and feature requests
+================================
 
 The best way to report bugs, inform about intended developments, send
-feedback or propose a feature is to file an issue at
+feedback or propose a feature
+is to file an issue at
 https://github.com/openego/eGon-data/issues.
 
 Please tag your issue with one of the predefined labels as it helps
@@ -178,8 +179,7 @@ the bug you found.
 This may include information on
 
 * Your operating system name and version.
-* Any details about your local setup that might be helpful in
-  troubleshooting.
+* Any details about your local setup that might be helpful in troubleshooting.
 * Detailed steps to reproduce the bug.
 
 If you are proposing a feature:
@@ -214,9 +214,9 @@ Documentation
 =============
 
 eGon-data could always use more documentation, whether as part of the
-official eGon-data docs, in docstrings, or even in articles, and such.
-Always keep in mind to update the documentation along with your code
-changes.
+official eGon-data docs, in docstrings, or even in articles, blog posts
+or similar resources. Always keep in mind to update the documentation
+along with your code changes though.
 
 
 How to document Python scripts
