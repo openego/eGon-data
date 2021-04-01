@@ -89,6 +89,56 @@ class HvmvSubstPerMunicipality(Base):
     subst_count = Column(Integer)
 
 
+class EgonHvmvSubstationVoronoiMunicipalityCutsBase(object):
+
+    subst_id = Column(Integer)
+    municipality_id = Column(Integer)
+    voronoi_id = Column(Integer)
+    ags_0 = Column(String)
+    subst_count = Column(Integer)
+    geom = Column(Geometry("Polygon", 3035))
+    geom_sub = Column(Geometry("Point", 3035))
+
+
+class EgonHvmvSubstationVoronoiMunicipalityCuts(
+    EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
+):
+    __tablename__ = "egon_hvmv_substation_voronoi_municipality_cuts"
+    __table_args__ = {"schema": "grid"}
+
+    id = Column(
+        Integer,
+        Sequence(f"{__tablename__}_id_seq", schema="grid"),
+        primary_key=True,
+    )
+
+
+class EgonHvmvSubstationVoronoiMunicipalityCuts1Subst(
+    EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
+):
+    __tablename__ = "egon_hvmv_substation_voronoi_municipality_cuts_1subst"
+    __table_args__ = {"schema": "grid"}
+
+    id = Column(
+        Integer,
+        Sequence(f"{__tablename__}_id_seq", schema="grid"),
+        primary_key=True,
+    )
+
+
+class EgonHvmvSubstationVoronoiMunicipalityCuts0Subst(
+    EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
+):
+    __tablename__ = "egon_hvmv_substation_voronoi_municipality_cuts_0subst"
+    __table_args__ = {"schema": "grid"}
+
+    id = Column(Integer)
+    temp_id = Column(
+        Integer,
+        Sequence(f"{__tablename__}_id_seq", schema="grid"),
+        primary_key=True,
+    )
+
 
 def substations_in_municipalities():
     """
@@ -157,3 +207,161 @@ def substations_in_municipalities():
         )
         session.commit()
 
+
+def split_multi_substation_municipalities():
+    engine = db.engine()
+    EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.create(bind=engine)
+    EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.create(
+        bind=engine
+    )
+    EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.create(
+        bind=engine
+    )
+
+    with session_scope() as session:
+        # Cut municipalities with voronoi polygons
+        q = (
+            session.query(
+                HvmvSubstPerMunicipality.id.label("municipality_id"),
+                HvmvSubstPerMunicipality.ags_0,
+                func.ST_Dump(
+                    func.ST_Intersection(
+                        HvmvSubstPerMunicipality.geometry,
+                        func.ST_Transform(
+                            EgonHvmvSubstationVoronoi.geom, 3035
+                        ),
+                    )
+                ).geom.label("geom"),
+                EgonHvmvSubstationVoronoi.subst_id,
+                EgonHvmvSubstationVoronoi.id.label("voronoi_id"),
+            )
+            .filter(HvmvSubstPerMunicipality.subst_count > 1)
+            .filter(
+                HvmvSubstPerMunicipality.geometry.intersects(
+                    func.ST_Transform(EgonHvmvSubstationVoronoi.geom, 3035)
+                )
+            )
+            .subquery()
+        )
+
+        voronoi_cuts = EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.insert().from_select(
+            [
+                EgonHvmvSubstationVoronoiMunicipalityCuts.municipality_id,
+                EgonHvmvSubstationVoronoiMunicipalityCuts.ags_0,
+                EgonHvmvSubstationVoronoiMunicipalityCuts.geom,
+                EgonHvmvSubstationVoronoiMunicipalityCuts.subst_id,
+                EgonHvmvSubstationVoronoiMunicipalityCuts.voronoi_id,
+            ],
+            q,
+        )
+        session.execute(voronoi_cuts)
+        session.commit()
+
+        # Determine number of substations inside cut polygons
+        cuts_substation_subquery = (
+            session.query(
+                EgonHvmvSubstationVoronoiMunicipalityCuts.id,
+                EgonHvmvSubstation.subst_id,
+                func.ST_Transform(EgonHvmvSubstation.point, 3035).label(
+                    "geom_sub"
+                ),
+                func.count(EgonHvmvSubstation.point).label("subst_count"),
+            )
+            .filter(
+                func.ST_Contains(
+                    EgonHvmvSubstationVoronoiMunicipalityCuts.geom,
+                    func.ST_Transform(EgonHvmvSubstation.point, 3035),
+                )
+            )
+            .group_by(
+                EgonHvmvSubstationVoronoiMunicipalityCuts.id,
+                EgonHvmvSubstation.subst_id,
+                EgonHvmvSubstation.point,
+            )
+            .subquery()
+        )
+        session.query(EgonHvmvSubstationVoronoiMunicipalityCuts).filter(
+            EgonHvmvSubstationVoronoiMunicipalityCuts.id
+            == cuts_substation_subquery.c.id
+        ).update(
+            {
+                "subst_count": cuts_substation_subquery.c.subst_count,
+                "subst_id": cuts_substation_subquery.c.subst_id,
+                "geom_sub": cuts_substation_subquery.c.geom_sub,
+            },
+            synchronize_session="fetch",
+        )
+        session.commit()
+
+        # Persist separate tables for polygons with and without substation
+        # inside
+        cut_1subst = (
+            session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
+            .filter(EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == 1)
+            .subquery()
+        )
+
+        cut_1subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.insert().from_select(
+            EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.columns,
+            cut_1subst,
+        )
+        session.execute(cut_1subst_insert)
+        session.commit()
+
+        cut_0subst = (
+            session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
+            .filter(
+                EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == None
+            )
+            .subquery()
+        )
+        # TODO: D_Within currently uses two polygons for comparison. It might
+        #  make more sense to use the point of the targeted substation
+        columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
+        cut_0subst_nearest_neighbor_sub = (
+            session.query(
+                cut_1subst.c.subst_id,
+                cut_1subst.c.subst_count,
+                cut_1subst.c.geom_sub,
+                *[
+                    c
+                    for c in cut_0subst.columns
+                    if c.name not in columns_from_cut1_subst
+                ],
+            )
+            .order_by(
+                func.ST_DWithin(cut_0subst.c.geom, cut_1subst.c.geom, 50000),
+                cut_1subst.c.voronoi_id,
+            )
+            .subquery()
+        )
+        cut_0subst_nearest_neighbor = (
+            session.query(cut_0subst_nearest_neighbor_sub)
+            .distinct(cut_0subst_nearest_neighbor_sub.c.subst_id)
+            .subquery()
+        )
+        cut_0subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
+            [
+                c
+                for c in cut_0subst_nearest_neighbor.columns
+                if c.name != "temp_id"
+            ],
+            cut_0subst_nearest_neighbor,
+        )
+        session.execute(cut_0subst_insert)
+        session.commit()
+
+        # TODO: Re-write nearest neighbor (NN) search for cut municipalities without substation inside (cut fragments)
+        # TODO 3: join cut_1subst and cut_0subst and union/collect geom (polygon)
+        # TODO 4: write the joined data to persistent table
+# TODO: in the original script municipality geometries (i.e. model_draft.ego_grid_mv_griddistrict_type1) are casted into MultiPolyon. Maybe this is required later
+# TODO: later, when grid districts are collected from different processing parts, ST_Multi(ST_Union(geometry)) is called. If geometry is of mixed type (Poylgon and MultiPolygon) results might be unexpected
