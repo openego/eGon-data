@@ -6,13 +6,6 @@ Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given.
 
 
-Documentation improvements
-==========================
-
-eGo^N Data could always use more documentation, whether as part of the
-official eGo^N Data docs, in docstrings, or even on the web in blog posts,
-articles, and such.
-
 Development
 ===========
 
@@ -156,13 +149,13 @@ If you are proposing a feature:
 * Keep the scope as narrow as possible, to make it easier to implement.
 * Remember that this is a volunteer-driven project, and that code contributions are welcome :)
 
-Documentation improvements
-==========================
+Documentation
+=============
 
-eGo^N Data could always use more documentation, whether as part of the
-official eGo^N Data docs, in docstrings, or even on the web in blog posts,
-articles, and such.
-Please make sure you change the documentation along with code changes.
+eGon-data could always use more documentation, whether as part of the
+official eGon-data docs, in docstrings, or even in articles, blog posts
+or similar resources. Always keep in mind to update the documentation
+along with your code changes though.
 
 The changes of the documentation in a feature branch get visible once a pull
 request is opened.
