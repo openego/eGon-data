@@ -324,6 +324,20 @@ works.
    */
 
 
+You can build the documentation locally with (executed in the repos root
+directory)
+
+.. code-block:: bash
+
+   sphinx-build -E -a docs docs/_build/
+
+Eventually, you might need to install additional dependencies for building the
+documenmtation:
+
+.. code-block:: bash
+
+   pip install -r docs/requirements.txt
+
 
 Tips
 ----
