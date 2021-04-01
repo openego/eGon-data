@@ -17,8 +17,10 @@ TRUNCATE grid.egon_pf_hv_line CASCADE;
 TRUNCATE grid.egon_pf_hv_transformer CASCADE;
 
 -- BUS DATA
-INSERT INTO grid.egon_pf_hv_bus (bus_id, v_nom, geom)
+INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom, geom)
 SELECT 
+  '0.0.0',
+  'Status Quo',
   bus_i AS bus_id,
   base_kv AS v_nom,
   geom
@@ -27,8 +29,10 @@ SELECT
 
 
 -- BRANCH DATA
-INSERT INTO grid.egon_pf_hv_line (line_id, bus0, bus1, x, r, b, s_nom, cables, frequency, geom, topo)
+INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0, bus1, x, r, b, s_nom, cables, geom, topo)
 SELECT 
+  '0.0.0',
+  'Status Quo',
   branch_id AS line_id,
   f_bus AS bus0,
   t_bus AS bus1,
@@ -44,8 +48,10 @@ SELECT
 
 
 -- TRANSFORMER DATA
-INSERT INTO grid.egon_pf_hv_transformer (trafo_id, bus0, bus1, x, s_nom, tap_ratio, phase_shift, geom, topo)
+INSERT INTO grid.egon_pf_hv_transformer (version, scn_name, trafo_id, bus0, bus1, x, s_nom, tap_ratio, phase_shift, geom, topo)
 SELECT 
+  '0.0.0',
+  'Status Quo',
   branch_id AS trafo_id,
   f_bus AS bus0,
   t_bus AS bus1,
@@ -87,7 +93,7 @@ WHERE a.line_id = result.line_id;
 -- delete buses without connection to AC grid and generation or load assigned
 -- TODO: get rid of hard coded scn_name
 
-/*
+
 DELETE FROM grid.egon_pf_hv_bus WHERE scn_name='Status Quo' 
 AND bus_id NOT IN 
 	(SELECT bus0 FROM grid.egon_pf_hv_line WHERE scn_name='Status Quo')
@@ -97,7 +103,7 @@ AND bus_id NOT IN
 	(SELECT bus0 FROM grid.egon_pf_hv_transformer WHERE scn_name='Status Quo')
 AND bus_id NOT IN 
 	(SELECT bus1 FROM grid.egon_pf_hv_transformer WHERE scn_name='Status Quo'); 
-*/
+	
 
 /*
 -- order bus0 and bus1 IDs for easier grouping of parallel lines
