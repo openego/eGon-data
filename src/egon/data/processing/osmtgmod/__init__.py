@@ -571,3 +571,104 @@ def osmtgmod(
     logging.info("All tables written!")
 
     logging.info("EXECUTION FINISHED SUCCESSFULLY!")
+    
+    
+def osmtgmmod_to_pypsa(version="'0.0.0'", scenario_name="'Status Quo'"):
+    
+    
+     db.execute_sql(
+          f"""   
+            -- CLEAN UP OF TABLES
+        TRUNCATE grid.egon_pf_hv_bus CASCADE;
+        TRUNCATE grid.egon_pf_hv_line CASCADE;
+        TRUNCATE grid.egon_pf_hv_transformer CASCADE;
+
+
+        -- BUS DATA
+        INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom, geom)
+        SELECT 
+          {version},
+          {scenario_name},
+          bus_i AS bus_id,
+          base_kv AS v_nom,
+          geom
+          FROM osmtgmod_results.bus_data
+          WHERE result_id = 1;
+
+
+        -- BRANCH DATA
+        INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0, bus1, x, r, b, s_nom, cables, geom, topo)
+        SELECT 
+          {version},
+          {scenario_name},
+          branch_id AS line_id,
+          f_bus AS bus0,
+          t_bus AS bus1,
+          br_x AS x,
+          br_r AS r,
+          br_b as b,
+          rate_a as s_nom,
+          cables,
+          geom,
+          topo
+          FROM osmtgmod_results.branch_data
+          WHERE result_id = 1 and (link_type = 'line' or link_type = 'cable');
+        
+        
+        -- TRANSFORMER DATA
+        INSERT INTO grid.egon_pf_hv_transformer (version, scn_name, trafo_id, bus0, bus1, x, s_nom, tap_ratio, phase_shift, geom, topo)
+        SELECT 
+          {version},
+          {scenario_name},
+          branch_id AS trafo_id,
+          f_bus AS bus0,
+          t_bus AS bus1,
+          br_x/100 AS x,
+          rate_a as s_nom,
+          tap AS tap_ratio,
+          shift AS phase_shift,
+          geom,
+          topo
+          FROM osmtgmod_results.branch_data
+          WHERE result_id = 1 and link_type = 'transformer';
+        
+        
+        -- per unit to absolute values
+        
+        UPDATE grid.egon_pf_hv_line a
+         	SET 
+        		r = r * (((SELECT v_nom 
+        				FROM grid.egon_pf_hv_bus 
+        				WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
+        		x = x * (((SELECT v_nom 
+        				FROM grid.egon_pf_hv_bus
+        				WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
+        		b = b * (((SELECT v_nom 
+        				FROM grid.egon_pf_hv_bus
+        				WHERE bus_id=bus1)*1000)^2 / (100 * 10^6));
+        
+        -- calculate line length (in km) from geoms
+        
+        UPDATE grid.egon_pf_hv_line a
+         	SET 
+        		length = result.length
+        		FROM 
+        		(SELECT b.line_id, st_length(b.geom,false)/1000 as length 
+        		from grid.egon_pf_hv_line b)
+        		as result
+        WHERE a.line_id = result.line_id;
+        
+        -- delete buses without connection to AC grid and generation or load assigned
+        -- TODO: get rid of hard coded scn_name
+        
+        
+        DELETE FROM grid.egon_pf_hv_bus WHERE scn_name={scenario_name}
+        AND bus_id NOT IN 
+         	(SELECT bus0 FROM grid.egon_pf_hv_line WHERE scn_name={scenario_name})
+        AND bus_id NOT IN 
+         	(SELECT bus1 FROM grid.egon_pf_hv_line WHERE scn_name={scenario_name})
+        AND bus_id NOT IN 
+         	(SELECT bus0 FROM grid.egon_pf_hv_transformer WHERE scn_name={scenario_name})
+        AND bus_id NOT IN 
+         	(SELECT bus1 FROM grid.egon_pf_hv_transformer WHERE scn_name={scenario_name});         	
+            """)

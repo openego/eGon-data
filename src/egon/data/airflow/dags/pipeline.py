@@ -259,11 +259,9 @@ with airflow.DAG(
     )
     
 
-    osmtgmod_pypsa = PostgresOperator(
+    osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
-        sql=resources.read_text(osmtgmod, "osmtgmod_to_pypsa.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
+        python_callable = osmtgmod.osmtgmmod_to_pypsa,
     )
 
     ehv_substation_extraction >> run_osmtgmod
