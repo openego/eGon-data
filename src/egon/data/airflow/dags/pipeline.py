@@ -25,6 +25,8 @@ import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zen
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
+from egon.data import db
+
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -251,13 +253,21 @@ with airflow.DAG(
     vg250_clean_and_prepare >> ehv_substation_extraction
 
     # osmTGmod ehv/hv grid model generation
-    osmtgmod = PythonOperator(
-        task_id= "osmtgmod",
+    run_osmtgmod = PythonOperator(
+        task_id= "run_osmtgmod",
         python_callable= osmtgmod.run_osmtgmod,
     )
     
-    ehv_substation_extraction >> osmtgmod
-    hvmv_substation_extraction >> osmtgmod
+
+    osmtgmod_pypsa = PythonOperator(
+        task_id="osmtgmod_pypsa",
+        python_callable = osmtgmod.osmtgmmod_to_pypsa,
+    )
+
+    ehv_substation_extraction >> run_osmtgmod
+    hvmv_substation_extraction >> run_osmtgmod
+    run_osmtgmod >> osmtgmod_pypsa
+
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
