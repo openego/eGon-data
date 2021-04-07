@@ -19,6 +19,7 @@ import geopandas as gpd
 
 from egon.data import db
 import egon.data.config
+from egon.data.metadata import context
 
 
 def download_vg250_files():
@@ -237,21 +238,7 @@ def add_metadata():
             "description": title_and_description[table]["title"],
             "language": ["de-DE"],
             "publicationDate": datetime.date.today().isoformat(),
-            "context": {
-                "homepage": "https://ego-n.org/",
-                "documentation": "https://egon-data.readthedocs.io/en/latest/",
-                "sourceCode": "https://github.com/openego/eGon-data",
-                "contact": "https://ego-n.org/partners/",
-                "grantNo": "03EI1002",
-                "fundingAgency": "Bundesministerium für Wirtschaft und "
-                                 "Energie",
-                "fundingAgencyLogo": "https://www.innovation-beratung-"
-                                     "foerderung.de/INNO/Redaktion/DE/Bilder/"
-                                     "Titelbilder/titel_foerderlogo_bmwi.jpg?"
-                                     "__blob=normal&v=3",
-                "publisherLogo": "https://ego-n.org/images/eGon_logo_"
-                                 "noborder_transbg.svg"
-            },
+            "context": context(),
             "spatial": {
                 "location": None,
                 "extent": "Germany",
