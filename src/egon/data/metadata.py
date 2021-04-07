@@ -1,3 +1,6 @@
+import datetime
+
+
 def context():
     """
     Project context information for metadata
@@ -23,3 +26,45 @@ def context():
         "noborder_transbg.svg",
     }
 
+
+def licenses_datenlizenz_deutschland():
+    """
+    License information for Datenlizenz Deutschland
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+
+    return {
+        "name": "dl-by-de/2.0",
+        "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
+        "path": "www.govdata.de/dl-de/by-2-0",
+        "instruction": (
+            "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
+            "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
+            "bereitgestellten Daten und Metadaten dürfen für die "
+            "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
+            "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
+            "bearbeitet sowie an Dritte übermittelt werden;\n "
+            "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
+            "zu selbständigen neuen Datensätzen verbunden werden;\n "
+            "(3) in interne und externe Geschäftsprozesse, Produkte und "
+            "Anwendungen in öffentlichen und nicht öffentlichen "
+            "elektronischen Netzwerken eingebunden werden.\n"
+            "Bei der Nutzung ist sicherzustellen, dass folgende Angaben "
+            "als Quellenvermerk enthalten sind:\n"
+            "(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n"
+            "(2) der Vermerk Datenlizenz Deutschland – Namensnennung – "
+            "Version 2.0 oder dl-de/by-2-0 mit Verweis auf den Lizenztext "
+            "unter www.govdata.de/dl-de/by-2-0 sowie\n"
+            "(3) einen Verweis auf den Datensatz (URI)."
+            "Dies gilt nur soweit die datenhaltende Stelle die Angaben"
+            "(1) bis (3) zum Quellenvermerk bereitstellt.\n"
+            "Veränderungen, Bearbeitungen, neue Gestaltungen oder "
+            "sonstige Abwandlungen sind im Quellenvermerk mit dem Hinweis "
+            "zu versehen, dass die Daten geändert wurden."
+        ),
+        "attribution": f"© GeoBasis-DE / BKG ({datetime.date.today().year})",
+    }
