@@ -7,7 +7,6 @@ import airflow
 import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
-from egon.data.db import airflow_db_connection
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
@@ -25,10 +24,10 @@ import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
+import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.demandregio as process_dr
+from egon.data import db
 
-# Prepare connection to db for operators
-airflow_db_connection()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -125,6 +124,11 @@ with airflow.DAG(
     population_import >> zensus_misc_import
 
     # Combine Zensus and VG250 data
+    map_zensus_vg250 = PythonOperator(
+        task_id="map_zensus_vg250",
+        python_callable=zensus_vg250.map_zensus_vg250,
+    )
+
     zensus_inside_ger = PythonOperator(
         task_id="zensus-inside-germany",
         python_callable=zensus_vg250.inside_germany,
@@ -145,9 +149,9 @@ with airflow.DAG(
         python_callable=zensus_vg250.add_metadata_vg250_gem_pop,
     )
     [
-        vg250_import,
+        vg250_clean_and_prepare,
         population_import,
-    ] >> zensus_inside_ger >> zensus_inside_ger_metadata
+    ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
@@ -185,29 +189,24 @@ with airflow.DAG(
         python_callable=process_zs.create_tables
     )
 
-    map_zensus_nuts3 = PythonOperator(
-        task_id="map-zensus-to-nuts3",
-        python_callable=process_zs.map_zensus_nuts3
-    )
-
-    setup >> prognosis_tables >> map_zensus_nuts3
-    vg250_clean_and_prepare >> map_zensus_nuts3
-    population_import >> map_zensus_nuts3
+    setup >> prognosis_tables
 
     population_prognosis = PythonOperator(
         task_id="zensus-population-prognosis",
         python_callable=process_zs.population_prognosis_to_zensus
     )
 
-    map_zensus_nuts3 >> population_prognosis
+    prognosis_tables >> population_prognosis
+    map_zensus_vg250 >> population_prognosis
     demandregio_society >> population_prognosis
+    population_import >> population_prognosis
 
     household_prognosis = PythonOperator(
         task_id="zensus-household-prognosis",
         python_callable=process_zs.household_prognosis_to_zensus
     )
-
-    map_zensus_nuts3 >> household_prognosis
+    prognosis_tables >> household_prognosis
+    map_zensus_vg250 >> household_prognosis
     demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
@@ -226,7 +225,7 @@ with airflow.DAG(
     setup >> processed_dr_tables >> elec_household_demands_zensus
     population_prognosis >> elec_household_demands_zensus
     demandregio_demand_households >> elec_household_demands_zensus
-    map_zensus_nuts3 >> elec_household_demands_zensus
+    map_zensus_vg250 >> elec_household_demands_zensus
 
     # Power plant setup
     power_plant_tables = PythonOperator(
@@ -264,7 +263,6 @@ with airflow.DAG(
     )
     setup >> retrieve_mastr_data
 
-
     # Substation extraction
     substation_tables = PythonOperator(
         task_id="create_substation_tables",
@@ -299,6 +297,22 @@ with airflow.DAG(
     substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
+
+    # osmTGmod ehv/hv grid model generation
+    run_osmtgmod = PythonOperator(
+        task_id= "run_osmtgmod",
+        python_callable= osmtgmod.run_osmtgmod,
+    )
+    
+
+    osmtgmod_pypsa = PythonOperator(
+        task_id="osmtgmod_pypsa",
+        python_callable = osmtgmod.osmtgmmod_to_pypsa,
+    )
+
+    ehv_substation_extraction >> run_osmtgmod
+    hvmv_substation_extraction >> run_osmtgmod
+    run_osmtgmod >> osmtgmod_pypsa
 
 
     # Import potential areas for wind onshore and ground-mounted PV
