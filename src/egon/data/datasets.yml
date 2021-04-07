@@ -56,6 +56,19 @@ zensus_misc:
       "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
       "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
 
+map_zensus_vg250:
+  sources:
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+    vg250_municipalities:
+      schema: 'boundaries'
+      table: 'vg250_gem'
+  targets:
+    map:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+
 demandregio:
   demand_data:
     schema: "demand"
@@ -120,11 +133,30 @@ ehv_substation_voronoi:
 
 
 society_prognosis:
+  soucres:
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+    zensus_households:
+      schema: 'society'
+      table: 'destatis_zensus_household_per_ha'
+    demandregio_population:
+      schema: 'society'
+      table: 'egon_demandregio_population'
+    demandregio_households:
+      schema: 'society'
+      table: 'egon_demandregio_household'
+    map_zensus_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+
   target:
-    schema: "society"
-    map_nuts3: "egon_map_zensus_nuts3"
-    population_prognosis: "egon_population_prognosis"
-    household_prognosis: "egon_household_prognosis"
+    population_prognosis:
+      schema: 'society'
+      table: 'egon_population_prognosis'
+    household_prognosis:
+      schema: 'society'
+      table: 'egon_household_prognosis'
 
 scenario_input:
   eGon2035:
@@ -192,3 +224,14 @@ peta5_0_1_ser_heat_demands:
     schema: "demand"
     file_table_map:
     table: # 2015 heat demand data not stored in database
+
+power_plants:
+  sources:
+      mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
+      mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
+      capacities: "supply.egon_scenario_capacities"
+      geom_germany: "boundaries.vg250_sta_union"
+      geom_federal_states: "boundaries.vg250_lan"
+  target:
+      table: 'egon_power_plants'
+      schema: 'supply'

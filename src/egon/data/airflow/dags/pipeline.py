@@ -7,7 +7,6 @@ import airflow
 import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
-from egon.data.db import airflow_db_connection
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
@@ -25,12 +24,9 @@ import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
+import egon.data.processing.osmtgmod as osmtgmod
+from egon.data import db
 
-# Prepare connection to db for operators
-airflow_db_connection()
-
-# Temporary set dataset variable here
-dataset = "Schleswig-Holstein"
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -52,12 +48,10 @@ with airflow.DAG(
     osm_download = PythonOperator(
         task_id="download-osm",
         python_callable=import_osm.download_pbf_file,
-        op_args={dataset},
     )
     osm_import = PythonOperator(
         task_id="import-osm",
         python_callable=import_osm.to_postgres,
-        op_args={dataset},
     )
     osm_migrate = PythonOperator(
         task_id="migrate-osm",
@@ -66,7 +60,6 @@ with airflow.DAG(
     osm_add_metadata = PythonOperator(
         task_id="add-osm-metadata",
         python_callable=import_osm.add_metadata,
-        op_args={dataset},
     )
     setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
 
@@ -78,7 +71,6 @@ with airflow.DAG(
     vg250_import = PythonOperator(
         task_id="import-vg250",
         python_callable=import_vg250.to_postgres,
-        op_args={dataset},
     )
 
     vg250_nuts_mview = PostgresOperator(
@@ -119,13 +111,11 @@ with airflow.DAG(
     population_import = PythonOperator(
         task_id="import-zensus-population",
         python_callable=import_zs.population_to_postgres,
-        op_args={dataset},
     )
 
     zensus_misc_import = PythonOperator(
         task_id="import-zensus-misc",
         python_callable=import_zs.zensus_misc_to_postgres,
-        op_args={dataset},
     )
     setup >> zensus_download_population >> zensus_download_misc
     zensus_download_misc >> zensus_tables >> population_import
@@ -133,6 +123,11 @@ with airflow.DAG(
     population_import >> zensus_misc_import
 
     # Combine Zensus and VG250 data
+    map_zensus_vg250 = PythonOperator(
+        task_id="map_zensus_vg250",
+        python_callable=zensus_vg250.map_zensus_vg250,
+    )
+
     zensus_inside_ger = PythonOperator(
         task_id="zensus-inside-germany",
         python_callable=zensus_vg250.inside_germany,
@@ -153,9 +148,9 @@ with airflow.DAG(
         python_callable=zensus_vg250.add_metadata_vg250_gem_pop,
     )
     [
-        vg250_import,
+        vg250_clean_and_prepare,
         population_import,
-    ] >> zensus_inside_ger >> zensus_inside_ger_metadata
+    ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
@@ -171,38 +166,27 @@ with airflow.DAG(
         python_callable=process_zs.create_tables
     )
 
-    map_zensus_nuts3 = PythonOperator(
-        task_id="map-zensus-to-nuts3",
-        python_callable=process_zs.map_zensus_nuts3
-    )
-
-    setup >> prognosis_tables >> map_zensus_nuts3
-    vg250_clean_and_prepare >> map_zensus_nuts3
-    population_import >> map_zensus_nuts3
+    setup >> prognosis_tables
 
     population_prognosis = PythonOperator(
         task_id="zensus-population-prognosis",
         python_callable=process_zs.population_prognosis_to_zensus
     )
 
-    map_zensus_nuts3 >> population_prognosis
+    prognosis_tables >> population_prognosis
+    map_zensus_vg250 >> population_prognosis
     demandregio_import >> population_prognosis
+    population_import >> population_prognosis
 
     household_prognosis = PythonOperator(
         task_id="zensus-household-prognosis",
         python_callable=process_zs.household_prognosis_to_zensus
     )
-
-    map_zensus_nuts3 >> household_prognosis
+    prognosis_tables >> household_prognosis
+    map_zensus_vg250 >> household_prognosis
     demandregio_import >> household_prognosis
     zensus_misc_import >> household_prognosis
 
-    # Power plant setup
-    power_plant_tables = PythonOperator(
-        task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables,
-    )
-    setup >> power_plant_tables
 
     # NEP data import
     create_tables = PythonOperator(
@@ -213,12 +197,11 @@ with airflow.DAG(
     nep_insert_data = PythonOperator(
         task_id="insert-nep-data",
         python_callable=nep_input.insert_data_nep,
-        op_args={dataset},
     )
 
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
-
+    population_import >> nep_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
@@ -233,7 +216,6 @@ with airflow.DAG(
         python_callable=mastr.download_mastr_data,
     )
     setup >> retrieve_mastr_data
-
 
     # Substation extraction
     substation_tables = PythonOperator(
@@ -270,12 +252,27 @@ with airflow.DAG(
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
 
+    # osmTGmod ehv/hv grid model generation
+    run_osmtgmod = PythonOperator(
+        task_id= "run_osmtgmod",
+        python_callable= osmtgmod.run_osmtgmod,
+    )
+    
+
+    osmtgmod_pypsa = PythonOperator(
+        task_id="osmtgmod_pypsa",
+        python_callable = osmtgmod.osmtgmmod_to_pypsa,
+    )
+
+    ehv_substation_extraction >> run_osmtgmod
+    hvmv_substation_extraction >> run_osmtgmod
+    run_osmtgmod >> osmtgmod_pypsa
+
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
         task_id="download_re_potential_area_data",
         python_callable=re_potential_areas.download_datasets,
-        op_args={dataset}
     )
     create_re_potential_areas_tables = PythonOperator(
         task_id="create_re_potential_areas_tables",
@@ -294,4 +291,18 @@ with airflow.DAG(
         python_callable=import_hd.future_heat_demand_data_import
     )
     vg250_clean_and_prepare >> heat_demand_import
-    population_import >> heat_demand_import
+    zensus_inside_ger_metadata >> heat_demand_import
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables
+    )
+
+    power_plant_import = PythonOperator(
+        task_id="import-power-plants",
+        python_callable=power_plants.insert_power_plants
+    )
+    setup >> power_plant_tables >> power_plant_import
+    nep_insert_data >> power_plant_import
+    retrieve_mastr_data >> power_plant_import

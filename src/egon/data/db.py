@@ -1,14 +1,11 @@
 from contextlib import contextmanager
-from pathlib import Path
-import os
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import yaml
 import pandas as pd
 import geopandas as gpd
 
-import egon
+from egon.data import config
 
 
 def credentials():
@@ -19,32 +16,21 @@ def credentials():
     dict
         Complete DB connection information
     """
-    # Read database configuration from docker-compose.yml
-    package_path = egon.data.__path__[0]
-    docker_compose_file = os.path.join(
-        package_path, "airflow", "docker-compose.yml"
-    )
-    docker_compose = yaml.load(
-        open(docker_compose_file), Loader=yaml.SafeLoader
-    )
-
-    # Select basic connection details
-    docker_db_config = docker_compose["services"]["egon-data-local-database"][
-        "environment"
-    ]
-
-    # Add HOST and PORT
-    docker_db_config_additional = docker_compose["services"][
-        "egon-data-local-database"
-    ]["ports"][0].split(":")
-    docker_db_config["HOST"] = docker_db_config_additional[0]
-    docker_db_config["PORT"] = docker_db_config_additional[1]
-
-    custom = Path("local-database.yaml")
-    if custom.is_file():
-        with open(custom) as f:
-            docker_db_config.update(yaml.safe_load(f))
-    return docker_db_config
+    translated = {
+        "--database-name": "POSTGRES_DB",
+        "--database-password": "POSTGRES_PASSWORD",
+        "--database-host": "HOST",
+        "--database-port": "PORT",
+        "--database-user": "POSTGRES_USER",
+    }
+    configuration = config.settings()["egon-data"]
+    update = {
+        translated[flag]: configuration[flag]
+        for flag in configuration
+        if flag in translated
+    }
+    configuration.update(update)
+    return configuration
 
 
 def engine():
@@ -106,21 +92,6 @@ def submit_comment(json, schema, table):
     # Query table comment and cast it into JSON
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
-
-
-def airflow_db_connection():
-    """Define connection to egon data db via env variable.
-
-    This connection can be accessed by Operators and Hooks using
-    :code:`postgres_conn_id='egon_data'`.
-    """
-
-    cred = credentials()
-
-    os.environ["AIRFLOW_CONN_EGON_DATA"] = (
-        f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']}"
-        f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"
-    )
 
 
 @contextmanager

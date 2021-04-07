@@ -72,6 +72,33 @@ Once you got this, run :code:`kill -s INT NUMBER`, substituting
 :code:`egon-data serve` should run without errors again.
 
 
+``[ERROR] Cannot create container for service egon-data-local-database ...``
+----------------------------------------------------------------------------
+
+During building the docker container for the Postgres database, you might
+encounter an error like
+
+.. code-block:: none
+
+  ERROR: for egon-data-local-database  Cannot create container for service
+  egon-data-local-database: Conflict. The container name
+  "/egon-data-local-database" is already in use by container
+  "1ff9aadef273a76a0acbf850c0da794d0fb28a30e9840f818cca1a47d1181b00".
+  You have to remove (or rename) that container to be able to reuse that name.
+
+If you're ok with deleting the data, stop and remove the container by
+
+.. code-block:: none
+
+  docker stop egon-data-local-database
+  docker rm -v egon-data-local-database
+
+The container and its data can be kept by renaming the docker container.
+
+.. code-block:: none
+
+  docker rename egon-data-local-database NEW_CONTAINER_NAME
+
 Other import or incompatible package version errors
 ===================================================
 

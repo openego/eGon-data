@@ -15,29 +15,19 @@ import os
 import time
 
 from egon.data import db
+from egon.data.config import settings
 import egon.data.config
 import egon.data.subprocess as subprocess
 
 
-def download_pbf_file(dataset='main'):
+def download_pbf_file():
     """Download OpenStreetMap `.pbf` file.
 
-    Parameters
-    ----------
-    dataset: str, optional
-        Toggles between production (`dataset='main'`) and test mode e.g.
-        (`dataset='Schleswig-Holstein'`).
-        In production mode, data covering entire Germany
-        is used. In the test mode a subset of this data is used for testing the
-        workflow.
-        When test mode is activated, data for a federal state instead of
-        Germany gets downloaded.
     """
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
-
-    if dataset == 'main':
+    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
         source_url =osm_config["source"]["url"]
         target_path = osm_config["target"]["path"]
     else:
@@ -52,17 +42,11 @@ def download_pbf_file(dataset='main'):
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(dataset='main', num_processes=4, cache_size=4096):
+def to_postgres(num_processes=4, cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
     ----------
-    dataset: str, optional
-        Toggles between production (`dataset='main'`) and test mode e.g.
-        (`dataset='Schleswig-Holstein'`).
-        In production mode, data covering entire Germany
-        is used. In the test mode a subset of this data is used for testing the
-        workflow.
     num_processes : int, optional
         Number of parallel processes used for processing during data import
     cache_size: int, optional
@@ -76,7 +60,7 @@ def to_postgres(dataset='main', num_processes=4, cache_size=4096):
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
-    if dataset=='main':
+    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
         target_path = osm_config["target"]["path"]
     else:
         target_path = osm_config["target"]["path_testmode"]
@@ -110,21 +94,14 @@ def to_postgres(dataset='main', num_processes=4, cache_size=4096):
     )
 
 
-def add_metadata(dataset='main'):
+def add_metadata():
     """Writes metadata JSON string into table comment.
 
-    Parameters
-    ----------
-    dataset: str, optional
-        Toggles between production (`testmode=False`) and test mode
-        (`testmode=False`). In production mode, data covering entire Germany
-        is used. In the test mode a subset of this data is used for testing the
-        workflow.
     """
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]
 
-    if dataset=='main':
+    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
         osm_url = osm_config["original_data"]["source"]["url"]
         target_path = osm_config["original_data"]["target"]["path"]
     else:

@@ -82,17 +82,20 @@ setup(
     python_requires=">=3.7.*",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "apache-airflow<2.0",
+        "apache-airflow>=1.10.14,<2.0",
         "click",
-        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install",
+        "disaggregator"
+        "@git+https://github.com/openego/disaggregator.git"
+        "@features/pip_install",
         "geopandas",
         "importlib-resources",
+        "loguru",
         "oedialect==0.0.8",
-        "pyaml",
         "psycopg2",
+        "pyaml",
         "rasterio",
         "rtree",
-        "sqlalchemy"
+        "sqlalchemy<1.4",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
