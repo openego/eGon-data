@@ -229,9 +229,9 @@ def add_metadata():
                 {
                     "title": "Guido Pleßmann",
                     "email": "http://github.com/gplssm",
-                    "date": "2020-12-04",
+                    "date": "",
                     "object": "",
-                    "comment": "Imported data",
+                    "comment": "",
                 }
             ],
             "resources": [
