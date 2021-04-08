@@ -328,22 +328,22 @@ def split_multi_substation_municipalities():
         columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
         cut_0subst_nearest_neighbor_sub = (
             session.query(
-                # TODO: iterate over columns_from_cut1_subst to make sure that same columns are used
-                cut_1subst.c.subst_id,
-                cut_1subst.c.subst_count,
-                cut_1subst.c.geom_sub,
+                *[
+                    c
+                    for c in cut_1subst.columns
+                    if c.name in columns_from_cut1_subst
+                ],
                 *[
                     c
                     for c in cut_0subst.columns
                     if c.name not in columns_from_cut1_subst
                 ]
             )
-            .filter(
+                .filter(
                 cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
                 func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom), func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
             )
             .order_by(
-                # TODO: order by ST_Touches first
                 func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom), func.ST_ExteriorRing(cut_1subst.c.geom)),
             )
             .subquery()
