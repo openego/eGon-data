@@ -96,6 +96,8 @@ Changed
   `#166 <https://github.com/openego/eGon-data/issues/166>`_
 * Add gdal to pre-requisites
   `#185 <https://github.com/openego/eGon-data/issues/185>`_
+* Update task zensus-inside-germany
+  `#196 <https://github.com/openego/eGon-data/issues/196>`_
 
 Bug fixes
 ---------
