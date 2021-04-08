@@ -233,13 +233,11 @@ def inside_germany():
         bind=engine_local_db, checkfirst=True
     )
 
-    # Selects zensus cells in German boundaries from vg250
-    cells_in_germany = db.select_dataframe(
-        """SELECT zensus_population_id
-        FROM boundaries.egon_map_zensus_vg250"""
-    ).zensus_population_id.values.tolist()
-
     with db.session_scope() as s:
+
+        # Query zensus cells in German boundaries from vg250
+        cells_in_germany = s.query(MapZensusVg250.zensus_population_id)
+
         # Query relevant data from zensus population table
         q = (
             s.query(
