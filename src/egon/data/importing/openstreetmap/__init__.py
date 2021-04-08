@@ -21,14 +21,12 @@ import egon.data.subprocess as subprocess
 
 
 def download_pbf_file():
-    """Download OpenStreetMap `.pbf` file.
-
-    """
+    """Download OpenStreetMap `.pbf` file."""
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
-    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
-        source_url =osm_config["source"]["url"]
+    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        source_url = osm_config["source"]["url"]
         target_path = osm_config["target"]["path"]
     else:
         source_url = osm_config["source"]["url_testmode"]
@@ -60,7 +58,7 @@ def to_postgres(num_processes=4, cache_size=4096):
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
-    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
+    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         target_path = osm_config["target"]["path"]
     else:
         target_path = osm_config["target"]["path_testmode"]
@@ -95,13 +93,11 @@ def to_postgres(num_processes=4, cache_size=4096):
 
 
 def add_metadata():
-    """Writes metadata JSON string into table comment.
-
-    """
+    """Writes metadata JSON string into table comment."""
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]
 
-    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
+    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         osm_url = osm_config["original_data"]["source"]["url"]
         target_path = osm_config["original_data"]["target"]["path"]
     else:
