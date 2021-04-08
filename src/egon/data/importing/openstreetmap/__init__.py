@@ -32,9 +32,10 @@ def download_pbf_file():
         source_url = osm_config["source"]["url_testmode"]
         target_path = osm_config["target"]["path_testmode"]
 
-    target_file = Path(__file__).parent / target_path
+    target_file = Path(".") / "openstreetmap" / target_path
 
     if not target_file.exists():
+        target_file.parent.mkdir(parents=True, exist_ok=True)
         urlretrieve(source_url, target_file)
 
 
@@ -61,7 +62,7 @@ def to_postgres(num_processes=1, cache_size=4096):
     else:
         target_path = osm_config["target"]["path_testmode"]
 
-    input_file = Path(__file__).parent / target_path
+    input_file = Path(".") / "openstreetmap" / target_path
 
     # Prepare osm2pgsql command
     cmd = [
@@ -85,7 +86,7 @@ def to_postgres(num_processes=1, cache_size=4096):
         f"{osm_config['target']['table_prefix']}",
         "-S",
         f"{osm_config['source']['stylefile']}",
-        f"{input_file}",
+        f"{input_file.absolute()}",
     ]
 
     # Execute osm2pgsql for import OSM data
