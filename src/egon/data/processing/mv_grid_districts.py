@@ -324,11 +324,11 @@ def split_multi_substation_municipalities():
             )
             .subquery()
         )
-        # TODO: D_Within currently uses two polygons for comparison. It might
-        #  make more sense to use the point of the targeted substation
+
         columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
         cut_0subst_nearest_neighbor_sub = (
             session.query(
+                # TODO: iterate over columns_from_cut1_subst to make sure that same columns are used
                 cut_1subst.c.subst_id,
                 cut_1subst.c.subst_count,
                 cut_1subst.c.geom_sub,
@@ -336,31 +336,41 @@ def split_multi_substation_municipalities():
                     c
                     for c in cut_0subst.columns
                     if c.name not in columns_from_cut1_subst
-                ],
+                ]
+            )
+            .filter(
+                cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
+                func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom), func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
             )
             .order_by(
-                func.ST_DWithin(cut_0subst.c.geom, cut_1subst.c.geom, 50000),
-                cut_1subst.c.voronoi_id,
+                # TODO: order by ST_Touches first
+                func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom), func.ST_ExteriorRing(cut_1subst.c.geom)),
             )
             .subquery()
+
         )
+
         cut_0subst_nearest_neighbor = (
-            session.query(cut_0subst_nearest_neighbor_sub)
-            .distinct(cut_0subst_nearest_neighbor_sub.c.subst_id)
+            session.query(cut_0subst_nearest_neighbor_sub.c.id)
+            .group_by(cut_0subst_nearest_neighbor_sub.c.id)
             .subquery()
         )
+        cut_0subst_nearest_neighbor1 = session.query(
+            cut_0subst_nearest_neighbor_sub).filter(
+            cut_0subst_nearest_neighbor_sub.c.id == cut_0subst_nearest_neighbor.c.id
+        ).distinct(cut_0subst_nearest_neighbor_sub.c.id).subquery()
+
         cut_0subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
             [
                 c
-                for c in cut_0subst_nearest_neighbor.columns
-                if c.name != "temp_id"
+                for c in cut_0subst_nearest_neighbor1.columns
+                if c.name not in ["temp_id"]
             ],
-            cut_0subst_nearest_neighbor,
+            cut_0subst_nearest_neighbor1,
         )
         session.execute(cut_0subst_insert)
         session.commit()
 
-        # TODO: Re-write nearest neighbor (NN) search for cut municipalities without substation inside (cut fragments)
         # TODO 3: join cut_1subst and cut_0subst and union/collect geom (polygon)
         # TODO 4: write the joined data to persistent table
 # TODO: in the original script municipality geometries (i.e. model_draft.ego_grid_mv_griddistrict_type1) are casted into MultiPolyon. Maybe this is required later
