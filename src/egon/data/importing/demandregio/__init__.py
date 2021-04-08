@@ -92,6 +92,17 @@ def data_in_boundaries(df):
     """
     engine = db.engine()
 
+    df = df.reset_index()
+
+    # Change nuts3 region names to 2016 version
+    nuts_names = {
+        'DEB16': 'DEB1C',
+        'DEB19': 'DEB1D'}
+    df.loc[df.nuts3.isin(nuts_names), 'nuts3'] = df.loc[
+        df.nuts3.isin(nuts_names), 'nuts3'].map(nuts_names)
+
+    df = df.set_index('nuts3')
+
     return df[df.index.isin(pd.read_sql(
         "SELECT DISTINCT ON (nuts) nuts FROM boundaries.vg250_krs",
         engine).nuts)]
@@ -312,6 +323,8 @@ def insert_cts_ind_demand(scenario, year, engine, target_values, cfg):
                     source='power',
                     sector=sector,
                     year=year).transpose()
+
+        ec_cts_ind.index = ec_cts_ind.index.rename('nuts3')
 
         # exclude mobility sector from GHD
         ec_cts_ind = ec_cts_ind.drop(columns=49, errors='ignore')
