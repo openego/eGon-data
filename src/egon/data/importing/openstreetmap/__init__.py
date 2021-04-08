@@ -9,9 +9,9 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
+from pathlib import Path
 from urllib.request import urlretrieve
 import json
-import os
 import time
 
 from egon.data import db
@@ -32,11 +32,9 @@ def download_pbf_file():
         source_url = osm_config["source"]["url_testmode"]
         target_path = osm_config["target"]["path_testmode"]
 
-    target_file = os.path.join(
-        os.path.dirname(__file__), target_path
-    )
+    target_file = Path(__file__).parent / target_path
 
-    if not os.path.isfile(target_file):
+    if not target_file.exists():
         urlretrieve(source_url, target_file)
 
 
@@ -63,9 +61,7 @@ def to_postgres(num_processes=1, cache_size=4096):
     else:
         target_path = osm_config["target"]["path_testmode"]
 
-    input_file = os.path.join(
-        os.path.dirname(__file__), target_path
-    )
+    input_file = Path(__file__).parent / target_path
 
     # Prepare osm2pgsql command
     cmd = [
@@ -88,7 +84,7 @@ def to_postgres(num_processes=1, cache_size=4096):
         " ".join(cmd),
         shell=True,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-        cwd=os.path.dirname(__file__),
+        cwd=Path(__file__).parent,
     )
 
 
@@ -103,9 +99,7 @@ def add_metadata():
     else:
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
         target_path = osm_config["original_data"]["target"]["path_testmode"]
-    spatial_and_date = os.path.basename(
-        target_path
-    ).split("-")
+    spatial_and_date = Path(target_path).name.split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"
