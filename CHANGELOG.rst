@@ -105,3 +105,5 @@ Bug fixes
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
   `#171 <https://github.com/openego/eGon-data/issues/171>`_
+* Adjust names of demandregios nuts3 regions according to nuts version 2016
+  `#201 <https://github.com/openego/eGon-data/issues/201>`_
