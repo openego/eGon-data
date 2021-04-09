@@ -12,7 +12,10 @@ isn't exported from this module, please file a bug, so we can fix this.
 from pathlib import Path
 from urllib.request import urlretrieve
 import json
+import shutil
 import time
+
+import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
@@ -64,6 +67,11 @@ def to_postgres(num_processes=1, cache_size=4096):
 
     input_file = Path(".") / "openstreetmap" / target_path
 
+    with resources.path(
+        "egon.data.importing.openstreetmap", osm_config["source"]["stylefile"]
+    ) as p:
+        stylefile = shutil.copy(p, Path(".") / "openstreetmap")
+
     # Prepare osm2pgsql command
     cmd = [
         "osm2pgsql",
@@ -85,7 +93,7 @@ def to_postgres(num_processes=1, cache_size=4096):
         "-p",
         f"{osm_config['target']['table_prefix']}",
         "-S",
-        f"{osm_config['source']['stylefile']}",
+        stylefile,
         f"{input_file.absolute()}",
     ]
 
@@ -93,7 +101,6 @@ def to_postgres(num_processes=1, cache_size=4096):
     subprocess.run(
         cmd,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-        cwd=Path(__file__).parent,
     )
 
 
