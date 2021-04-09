@@ -69,20 +69,28 @@ def to_postgres(num_processes=1, cache_size=4096):
         "--create",
         "--slim",
         "--hstore-all",
-        f"--number-processes {num_processes}",
-        f"--cache {cache_size}",
-        f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} "
-        f"-d {docker_db_config['POSTGRES_DB']} "
-        f"-U {docker_db_config['POSTGRES_USER']}",
-        f"-p {osm_config['target']['table_prefix']}",
-        f"-S {osm_config['source']['stylefile']}",
+        "--number-processes",
+        f"{num_processes}",
+        "--cache",
+        f"{cache_size}",
+        "-H",
+        f"{docker_db_config['HOST']}",
+        "-P",
+        f"{docker_db_config['PORT']}",
+        "-d",
+        f"{docker_db_config['POSTGRES_DB']}",
+        "-U",
+        f"{docker_db_config['POSTGRES_USER']}",
+        "-p",
+        f"{osm_config['target']['table_prefix']}",
+        "-S",
+        f"{osm_config['source']['stylefile']}",
         f"{input_file}",
     ]
 
     # Execute osm2pgsql for import OSM data
     subprocess.run(
-        " ".join(cmd),
-        shell=True,
+        cmd,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
         cwd=Path(__file__).parent,
     )
