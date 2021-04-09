@@ -410,3 +410,12 @@ def zensus_misc_to_postgres():
                     FOREIGN KEY (zensus_population_id)
                     REFERENCES {population_table}(id);"""
         )
+
+        # Delete rows whithout a population
+        db.execute_sql(
+            f"""
+            DELETE FROM {zensus_population_processed['schema']}.{table} as b
+            WHERE b.zensus_population_id IN (
+                SELECT id FROM {population_table}
+                WHERE population < 0);"""
+        )
