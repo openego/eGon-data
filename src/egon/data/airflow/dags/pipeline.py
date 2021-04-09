@@ -25,6 +25,7 @@ import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zen
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
+import egon.data.processing.demandregio as process_dr
 from egon.data import db
 
 
@@ -154,11 +155,33 @@ with airflow.DAG(
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
-    demandregio_import = PythonOperator(
-        task_id="import-demandregio",
-        python_callable=import_dr.insert_data,
+    demandregio_tables = PythonOperator(
+        task_id="demandregio-tables",
+        python_callable=import_dr.create_tables,
     )
-    vg250_clean_and_prepare >> demandregio_import
+
+    setup >> demandregio_tables
+
+    demandregio_society = PythonOperator(
+        task_id="demandregio-society",
+        python_callable=import_dr.insert_society_data,
+    )
+    vg250_clean_and_prepare >> demandregio_society
+    demandregio_tables >> demandregio_society
+
+    demandregio_demand_households = PythonOperator(
+        task_id="demandregio-household-demands",
+        python_callable=import_dr.insert_household_demand,
+    )
+    vg250_clean_and_prepare >> demandregio_demand_households
+    demandregio_tables >> demandregio_demand_households
+
+    demandregio_demand_cts_ind = PythonOperator(
+        task_id="demandregio-cts-industry-demands",
+        python_callable=import_dr.insert_cts_ind_demands,
+    )
+    vg250_clean_and_prepare >> demandregio_demand_cts_ind
+    demandregio_tables >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(
@@ -175,7 +198,7 @@ with airflow.DAG(
 
     prognosis_tables >> population_prognosis
     map_zensus_vg250 >> population_prognosis
-    demandregio_import >> population_prognosis
+    demandregio_society >> population_prognosis
     population_import >> population_prognosis
 
     household_prognosis = PythonOperator(
@@ -184,9 +207,32 @@ with airflow.DAG(
     )
     prognosis_tables >> household_prognosis
     map_zensus_vg250 >> household_prognosis
-    demandregio_import >> household_prognosis
+    demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
+
+    # Distribute electrical demands to zensus cells
+    processed_dr_tables = PythonOperator(
+        task_id="create-demand-tables",
+        python_callable=process_dr.create_tables
+    )
+
+    elec_household_demands_zensus = PythonOperator(
+        task_id="electrical-demands-zensus",
+        python_callable=process_dr.distribute_demands
+    )
+
+    setup >> processed_dr_tables >> elec_household_demands_zensus
+    population_prognosis >> elec_household_demands_zensus
+    demandregio_demand_households >> elec_household_demands_zensus
+    map_zensus_vg250 >> elec_household_demands_zensus
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables,
+    )
+    setup >> power_plant_tables
 
     # NEP data import
     create_tables = PythonOperator(

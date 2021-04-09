@@ -20,7 +20,6 @@ class EgonPopulationPrognosis(Base):
     year = Column(Integer, primary_key=True)
     population = Column(Float)
 
-
 class EgonHouseholdPrognosis(Base):
     __tablename__ = "egon_household_prognosis"
     __table_args__ = {"schema": "society"}
