@@ -162,10 +162,20 @@ with airflow.DAG(
 
     setup >> demandregio_tables
 
+
+    demandregio_installation = PythonOperator(
+        task_id="demandregio-installation",
+        python_callable=import_dr.clone_and_install,
+    )
+
+    setup >> demandregio_installation
+
     demandregio_society = PythonOperator(
         task_id="demandregio-society",
         python_callable=import_dr.insert_society_data,
     )
+
+    demandregio_installation >> demandregio_society
     vg250_clean_and_prepare >> demandregio_society
     demandregio_tables >> demandregio_society
 
@@ -173,6 +183,8 @@ with airflow.DAG(
         task_id="demandregio-household-demands",
         python_callable=import_dr.insert_household_demand,
     )
+
+    demandregio_installation >> demandregio_demand_households
     vg250_clean_and_prepare >> demandregio_demand_households
     demandregio_tables >> demandregio_demand_households
 
@@ -180,6 +192,8 @@ with airflow.DAG(
         task_id="demandregio-cts-industry-demands",
         python_callable=import_dr.insert_cts_ind_demands,
     )
+
+    demandregio_installation >> demandregio_demand_cts_ind
     vg250_clean_and_prepare >> demandregio_demand_cts_ind
     demandregio_tables >> demandregio_demand_cts_ind
 
@@ -303,7 +317,7 @@ with airflow.DAG(
         task_id= "run_osmtgmod",
         python_callable= osmtgmod.run_osmtgmod,
     )
-    
+
 
     osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
