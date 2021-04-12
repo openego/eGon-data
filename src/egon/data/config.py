@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+import sys
 
 import yaml
 
+from egon.data import logger
 import egon
 
 
@@ -50,6 +52,12 @@ def settings() -> dict[str, dict[str, str]]:
 
     """
     files = paths(pid="*") + paths()
+    if not files[0].exists():
+        logger.error(
+            f"Unable to determine settings.\nConfiguration file:"
+            f"\n\n{files[0]}\n\nnot found.\nExiting."
+        )
+        sys.exit(-1)
     with open(files[0]) as f:
         return yaml.safe_load(f)
 

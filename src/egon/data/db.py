@@ -1,9 +1,7 @@
 from contextlib import contextmanager
-import os
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import yaml
 import pandas as pd
 import geopandas as gpd
 
@@ -25,15 +23,13 @@ def credentials():
         "--database-port": "PORT",
         "--database-user": "POSTGRES_USER",
     }
-    custom = config.paths(pid="*")[0]
-    if custom.is_file():
-        with open(custom) as f:
-            configuration = yaml.safe_load(f)["egon-data"]
-        configuration = {
-            translated[flag]: configuration[flag]
-            for flag in configuration
-            if flag in translated
-        }
+    configuration = config.settings()["egon-data"]
+    update = {
+        translated[flag]: configuration[flag]
+        for flag in configuration
+        if flag in translated
+    }
+    configuration.update(update)
     return configuration
 
 
@@ -96,21 +92,6 @@ def submit_comment(json, schema, table):
     # Query table comment and cast it into JSON
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
-
-
-def airflow_db_connection():
-    """Define connection to egon data db via env variable.
-
-    This connection can be accessed by Operators and Hooks using
-    :code:`postgres_conn_id='egon_data'`.
-    """
-
-    cred = credentials()
-
-    os.environ["AIRFLOW_CONN_EGON_DATA"] = (
-        f"postgresql://{cred['POSTGRES_USER']}:{cred['POSTGRES_PASSWORD']}"
-        f"@{cred['HOST']}:{cred['PORT']}/{cred['POSTGRES_DB']}"
-    )
 
 
 @contextmanager

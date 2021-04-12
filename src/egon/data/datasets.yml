@@ -56,30 +56,85 @@ zensus_misc:
       "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
       "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
 
-demandregio:
-  demand_data:
-    schema: "demand"
-    table_names:
-      "household": "egon_demandregio_hh"
-      "CTS": "egon_demandregio_cts_ind"
-      "industry": "egon_demandregio_cts_ind"
-      "wz_definitions": "egon_demandregio_wz"
-    scenarios:
-      "eGon2035": 2035
-      "eGon100RE": 2050
+map_zensus_vg250:
+  sources:
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+    vg250_municipalities:
+      schema: 'boundaries'
+      table: 'vg250_gem'
+  targets:
+    map:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+
+demandregio_society:
+  sources:
+    disaggregator:
+      git: 'https://github.com/openego/disaggregator/tree/features/pip_install'
+    vg250_krs:
+      schema: 'boundaries'
+      table: 'vg250_krs'
+  targets:
+    population:
+      schema: 'society'
+      table: 'egon_demandregio_population'
+      target_years: [2018, 2035, 2050]
+    household:
+      schema: 'society'
+      table: 'egon_demandregio_household'
+      target_years: [2018, 2035, 2050]
+
+demandregio_household_demand:
+  sources:
+    disaggregator:
+      git: 'https://github.com/openego/disaggregator/tree/features/pip_install'
+    vg250_krs:
+      schema: 'boundaries'
+      table: 'vg250_krs'
+  targets:
+    household_demand:
+      schema: 'demand'
+      table: 'egon_demandregio_hh'
+      scenarios: ["eGon2035", "eGon100RE"]
+
+demandregio_cts_ind_demand:
+  sources:
+    disaggregator:
+      git: 'https://github.com/openego/disaggregator/tree/features/pip_install'
+    vg250_krs:
+      schema: 'boundaries'
+      table: 'vg250_krs'
     new_consumers_2035: 'new_largescale_consumers_nep.csv'
     wz_definitions:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
-  society_data:
-    schema: "society"
-    table_names:
-      "household": "egon_demandregio_household"
-      "population": "egon_demandregio_population"
-    target_years:
-      - 2018
-      - 2035
-      - 2050
+  targets:
+    cts_ind_demand:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+      scenarios: ["eGon2035", "eGon100RE"]
+    wz_definitions:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
+
+electrical_demands_households:
+  sources:
+    demandregio:
+      schema: 'demand'
+      table: 'egon_demandregio_hh'
+      scenarios: ["eGon2035", "eGon100RE"]
+    population_prognosis_zensus:
+      schema: 'society'
+      table: 'egon_population_prognosis'
+    map_zensus_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_nuts3'
+  targets:
+    household_demands_zensus:
+      schema: 'demand'
+      table: 'egon_demandregio_zensus_electricity'
 hotmaps:
   original_data:
     source:
@@ -156,11 +211,30 @@ ehv_substation_voronoi:
 
 
 society_prognosis:
+  soucres:
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+    zensus_households:
+      schema: 'society'
+      table: 'destatis_zensus_household_per_ha'
+    demandregio_population:
+      schema: 'society'
+      table: 'egon_demandregio_population'
+    demandregio_households:
+      schema: 'society'
+      table: 'egon_demandregio_household'
+    map_zensus_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+
   target:
-    schema: "society"
-    map_nuts3: "egon_map_zensus_nuts3"
-    population_prognosis: "egon_population_prognosis"
-    household_prognosis: "egon_household_prognosis"
+    population_prognosis:
+      schema: 'society'
+      table: 'egon_population_prognosis'
+    household_prognosis:
+      schema: 'society'
+      table: 'egon_household_prognosis'
 
 scenario_input:
   eGon2035:
@@ -228,3 +302,14 @@ peta5_0_1_ser_heat_demands:
     schema: "demand"
     file_table_map:
     table: # 2015 heat demand data not stored in database
+
+power_plants:
+  sources:
+      mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
+      mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
+      capacities: "supply.egon_scenario_capacities"
+      geom_germany: "boundaries.vg250_sta_union"
+      geom_federal_states: "boundaries.vg250_lan"
+  target:
+      table: 'egon_power_plants'
+      schema: 'supply'
