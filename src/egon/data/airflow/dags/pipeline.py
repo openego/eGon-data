@@ -17,7 +17,7 @@ import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.power_plants as power_plants
-import egon.data.importing.nep_input_data as nep_input
+import egon.data.importing.pypsaeursec as pypsaeursec
 import egon.data.importing.etrago as etrago
 import egon.data.importing.mastr as mastr
 import egon.data.processing.substation as substation
@@ -202,6 +202,13 @@ with airflow.DAG(
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
+    
+    pypsaeursec_insert_data = PythonOperator(
+        task_id= "pypsaeursec_insert_data",
+        python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,
+        )
+
+    create_tables >> pypsaeursec_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
