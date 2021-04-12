@@ -26,6 +26,7 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.demandregio as process_dr
+import egon.data.importing.demandregio.install_disaggregator as install_dr
 from egon.data import db
 
 
@@ -165,7 +166,7 @@ with airflow.DAG(
 
     demandregio_installation = PythonOperator(
         task_id="demandregio-installation",
-        python_callable=import_dr.clone_and_install,
+        python_callable=install_dr.clone_and_install,
     )
 
     setup >> demandregio_installation

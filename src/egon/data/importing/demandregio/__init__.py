@@ -5,11 +5,16 @@ adjusting data from demandRegio
 import os
 import pandas as pd
 import egon.data.config
-from egon.data import db, subprocess
+from egon.data import db
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from pathlib import Path
 
+try:
+    from disaggregator import data, spatial
+except:
+    print(
+        "Could not import disaggregator. "
+        "Please run task 'demandregio-installation'")
 # will be later imported from another file ###
 Base = declarative_base()
 
@@ -57,29 +62,6 @@ class EgonDemandRegioWz(Base):
     sector = Column(String(50))
     definition = Column(String(150))
 
-
-def clone_and_install():
-
-    source = egon.data.config.datasets()['demandregio_installation']['sources']
-
-    repo_path = Path(".") / (egon.data.config.datasets()
-                   ['demandregio_installation']['targets']["path"])
-
-    if not os.path.exists(repo_path):
-        os.mkdir(repo_path)
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--single-branch",
-                "--branch",
-                source["branch"],
-                source["git-repository"],
-            ],
-            cwd=repo_path
-        )
-
-
 def create_tables():
     """Create tables for demandregio data
     Returns
@@ -96,23 +78,6 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
-
-def import_disaggregator():
-    """ Import functions from demandregios disaggregator
-
-    Returns
-    -------
-    None.
-
-    """
-
-    cwd = os.getcwd()
-    os.chdir(Path(".") / (egon.data.config.datasets()
-                   ['demandregio_installation']['targets']["path"]) / 'disaggregator')
-
-    from disaggregator import data, spatial
-
-    os.chdir(cwd)
 
 def data_in_boundaries(df):
     """ Select rows with nuts3 code within boundaries, used for testmode
@@ -255,17 +220,6 @@ def disagg_households_power(scenario, year, weight_by_income=False,
     pd.DataFrame or pd.Series
     """
 
-    # import disaggregator functions
-    cwd = os.getcwd()
-    os.chdir(Path(".") / (
-        egon.data.config.datasets()
-        ['demandregio_household_demand']['sources']["disaggregator"]["path"]
-        ) / 'disaggregator')
-
-    from disaggregator import data, spatial
-
-    os.chdir(cwd)
-
     # source: survey of energieAgenturNRW
     demand_per_hh_size = pd.DataFrame(index=range(1,7), data = {
         'weighted DWH': [2290, 3202, 4193, 4955, 5928, 5928],
@@ -368,18 +322,6 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     targets = (egon.data.config.datasets()
                ['demandregio_cts_ind_demand']['targets'])
-
-    # import disaggregator functions
-    cwd = os.getcwd()
-    os.chdir(Path(".") / (
-        egon.data.config.datasets()
-        ['demandregio_cts_ind_demand']['sources']["disaggregator"]["path"]
-        ) / 'disaggregator')
-
-    from disaggregator import spatial
-
-    os.chdir(cwd)
-
 
     for sector in ['CTS', 'industry']:
         # get demands per nuts3 and wz of demandregio
@@ -504,17 +446,6 @@ def insert_society_data():
     """
     targets = egon.data.config.datasets()['demandregio_society']['targets']
     engine = db.engine()
-
-    # import disaggregator functions
-    cwd = os.getcwd()
-    os.chdir(Path(".") /
-             (egon.data.config.datasets()
-              ['demandregio_society']['sources']["disaggregator"]["path"]
-              ) / 'disaggregator')
-
-    from disaggregator import data
-
-    os.chdir(cwd)
 
     for t in targets:
         db.execute_sql(
