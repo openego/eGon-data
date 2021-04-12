@@ -304,6 +304,7 @@ def split_multi_substation_municipalities():
 
         # Persist separate tables for polygons with and without substation
         # inside
+        # First, insert all polygons with 1 substation
         cut_1subst = (
             session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
             .filter(EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == 1)
@@ -317,6 +318,7 @@ def split_multi_substation_municipalities():
         session.execute(cut_1subst_insert)
         session.commit()
 
+        # Second, polygons without a substation
         cut_0subst = (
             session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
             .filter(
@@ -325,6 +327,7 @@ def split_multi_substation_municipalities():
             .subquery()
         )
 
+        # Determine nearest neighboring polygon that has a substation
         columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
         cut_0subst_nearest_neighbor_sub = (
             session.query(
@@ -350,23 +353,29 @@ def split_multi_substation_municipalities():
 
         )
 
-        cut_0subst_nearest_neighbor = (
+        # Group by id of cut polygons which is unique. The reason that multiple
+        # rows for each id exist is that assignment to multiple polygon with
+        # a substations would be possible. The are ordered by distance
+        cut_0subst_nearest_neighbor_grouped = (
             session.query(cut_0subst_nearest_neighbor_sub.c.id)
             .group_by(cut_0subst_nearest_neighbor_sub.c.id)
             .subquery()
         )
-        cut_0subst_nearest_neighbor1 = session.query(
+
+        # Select one single assignment polygon (with substation) for each of
+        # the polygons without a substation
+        cut_0subst_nearest_neighbor = session.query(
             cut_0subst_nearest_neighbor_sub).filter(
-            cut_0subst_nearest_neighbor_sub.c.id == cut_0subst_nearest_neighbor.c.id
+            cut_0subst_nearest_neighbor_sub.c.id == cut_0subst_nearest_neighbor_grouped.c.id
         ).distinct(cut_0subst_nearest_neighbor_sub.c.id).subquery()
 
         cut_0subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
             [
                 c
-                for c in cut_0subst_nearest_neighbor1.columns
+                for c in cut_0subst_nearest_neighbor.columns
                 if c.name not in ["temp_id"]
             ],
-            cut_0subst_nearest_neighbor1,
+            cut_0subst_nearest_neighbor,
         )
         session.execute(cut_0subst_insert)
         session.commit()
