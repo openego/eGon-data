@@ -15,7 +15,7 @@ FROM (
     '{"res": "residential", "ser": "service"}'::json
     ->> substring(filename, 1, 3) AS sector,
     filename
-  FROM heat_demand_rasters
+  FROM {{ source }}
 ) AS demands
 LEFT JOIN (
   SELECT
