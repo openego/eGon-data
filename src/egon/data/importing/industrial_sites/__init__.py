@@ -112,10 +112,7 @@ def create_tables():
     -------
     None.
     """
-    data_config = egon.data.config.datasets()
-    hotmaps_config = data_config["hotmaps"][
-        "processed"
-    ]
+
     # Create target schema
     db.execute_sql(
         "CREATE SCHEMA IF NOT EXISTS demand;"
@@ -435,6 +432,30 @@ def schmidt_to_postgres():
                       index=df.index)
 
 
+def download_import_industrial_sites():
+    """
+    Wraps different functions to create tables, download csv files containing
+    information on industrial sites in Germany and write this data to the
+    local postgresql database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    create_tables()
+
+    download_hotmaps()
+
+    download_seenergies()
+
+    hotmaps_to_postgres()
+
+    seenergies_to_postgres()
+
+    schmidt_to_postgres()
+
 def merge_inputs():
     """ Merge and clean data from different sources
     (hotmaps, seenergies, Thesis Schmidt)
@@ -519,4 +540,30 @@ def merge_inputs():
               AND (g.wz = s.wz)
               AND  (LOWER (SUBSTRING(g.plant, 1, 3)) =
                     LOWER (SUBSTRING(s.companyname, 1, 3)));"""
+    )
+
+def map_nuts3():
+    """
+    Match resulting industrial sites with nuts3 codes and fill column 'nuts3'
+
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get information from data configuration file
+    data_config = egon.data.config.datasets()
+
+    sites_table = (
+        f"{data_config['industrial_sites']['processed']['schema']}"
+        f".{data_config['industrial_sites']['processed']['table']}"
+    )
+
+
+    db.execute_sql(
+        f"""UPDATE {sites_table} s
+              SET nuts3 = krs.nuts
+              FROM boundaries.vg250_krs krs
+              WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
     )
