@@ -326,59 +326,64 @@ def split_multi_substation_municipalities():
             )
             .subquery()
         )
+        assign_next_substation(cut_1subst, cut_0subst, session)
 
-        # Determine nearest neighboring polygon that has a substation
-        columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
-        cut_0subst_nearest_neighbor_sub = (
-            session.query(
-                *[
-                    c
-                    for c in cut_1subst.columns
-                    if c.name in columns_from_cut1_subst
-                ],
-                *[
-                    c
-                    for c in cut_0subst.columns
-                    if c.name not in columns_from_cut1_subst
-                ]
-            )
-                .filter(
-                cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
-                func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom), func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
-            )
+
+def assign_next_substation(cut_1subst, cut_0subst, session):
+    # Determine nearest neighboring polygon that has a substation
+    columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
+    cut_0subst_nearest_neighbor_sub = (
+        session.query(
+            *[
+                c
+                for c in cut_1subst.columns
+                if c.name in columns_from_cut1_subst
+            ],
+            *[
+                c
+                for c in cut_0subst.columns
+                if c.name not in columns_from_cut1_subst
+            ]
+        )
+            .filter(
+            cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
+            func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom),
+                            func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
+        )
             .order_by(
-                func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom), func.ST_ExteriorRing(cut_1subst.c.geom)),
-            )
+            func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom),
+                             func.ST_ExteriorRing(cut_1subst.c.geom)),
+        )
             .subquery()
 
-        )
+    )
 
-        # Group by id of cut polygons which is unique. The reason that multiple
-        # rows for each id exist is that assignment to multiple polygon with
-        # a substations would be possible. The are ordered by distance
-        cut_0subst_nearest_neighbor_grouped = (
-            session.query(cut_0subst_nearest_neighbor_sub.c.id)
+    # Group by id of cut polygons which is unique. The reason that multiple
+    # rows for each id exist is that assignment to multiple polygon with
+    # a substations would be possible. The are ordered by distance
+    cut_0subst_nearest_neighbor_grouped = (
+        session.query(cut_0subst_nearest_neighbor_sub.c.id)
             .group_by(cut_0subst_nearest_neighbor_sub.c.id)
             .subquery()
-        )
+    )
 
-        # Select one single assignment polygon (with substation) for each of
-        # the polygons without a substation
-        cut_0subst_nearest_neighbor = session.query(
-            cut_0subst_nearest_neighbor_sub).filter(
-            cut_0subst_nearest_neighbor_sub.c.id == cut_0subst_nearest_neighbor_grouped.c.id
-        ).distinct(cut_0subst_nearest_neighbor_sub.c.id).subquery()
+    # Select one single assignment polygon (with substation) for each of
+    # the polygons without a substation
+    cut_0subst_nearest_neighbor = session.query(
+        cut_0subst_nearest_neighbor_sub).filter(
+        cut_0subst_nearest_neighbor_sub.c.id == cut_0subst_nearest_neighbor_grouped.c.id
+    ).distinct(cut_0subst_nearest_neighbor_sub.c.id).subquery()
 
-        cut_0subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
-            [
-                c
-                for c in cut_0subst_nearest_neighbor.columns
-                if c.name not in ["temp_id"]
-            ],
-            cut_0subst_nearest_neighbor,
-        )
-        session.execute(cut_0subst_insert)
-        session.commit()
+    cut_0subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
+        [
+            c
+            for c in cut_0subst_nearest_neighbor.columns
+            if c.name not in ["temp_id"]
+        ],
+        cut_0subst_nearest_neighbor,
+    )
+    session.execute(cut_0subst_insert)
+    session.commit()
 
         # TODO 3: join cut_1subst and cut_0subst and union/collect geom (polygon)
         # TODO 4: write the joined data to persistent table
