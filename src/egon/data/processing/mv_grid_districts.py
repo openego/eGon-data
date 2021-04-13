@@ -382,5 +382,10 @@ def split_multi_substation_municipalities():
 
         # TODO 3: join cut_1subst and cut_0subst and union/collect geom (polygon)
         # TODO 4: write the joined data to persistent table
+
+
+# substations_in_municipalities()
+split_multi_substation_municipalities()
+
 # TODO: in the original script municipality geometries (i.e. model_draft.ego_grid_mv_griddistrict_type1) are casted into MultiPolyon. Maybe this is required later
 # TODO: later, when grid districts are collected from different processing parts, ST_Multi(ST_Union(geometry)) is called. If geometry is of mixed type (Poylgon and MultiPolygon) results might be unexpected
