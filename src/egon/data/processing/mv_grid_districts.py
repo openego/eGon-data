@@ -319,8 +319,11 @@ def split_multi_substation_municipalities():
 
         # Second, polygons without a substation
 
-        # Initialize list with very large number
+        # Initialize with very large number
         remaining_polygons = [10 ** 10]
+
+        # Assign polygons successively when they touch another polygon with a
+        # substation
         while True:
             already_assigned_polygons_query = session.query(
                 EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.id).all()
@@ -346,15 +349,32 @@ def split_multi_substation_municipalities():
                 polygons_for_assignment = session.query(*relevant_columns).subquery()
 
 
-            if remaining_polygons[-1] < remaining_polygons[-2]:
-                assign_next_substation(polygons_for_assignment, cut_0subst.subquery(), session)
+            if (remaining_polygons[-1]) < remaining_polygons[-2]:
+                assign_next_substation(polygons_for_assignment,
+                                       cut_0subst.subquery(),
+                                       "touches",
+                                       session)
             else:
                 break
 
+        # Assign remaining polygons that couldn't be assigned with touches
+        assign_next_substation(polygons_for_assignment,
+                               cut_0subst.subquery(),
+                               "min_distance",
+                               session)
 
-def assign_next_substation(cut_1subst, cut_0subst, session):
+
+def assign_next_substation(cut_1subst, cut_0subst, strategy, session):
     # Determine nearest neighboring polygon that has a substation
     columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
+
+    if strategy == "touches":
+        neighboring_criterion = func.ST_Touches(cut_0subst.c.geom, cut_1subst.c.geom)
+    elif strategy == "min_distance":
+        neighboring_criterion = func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom),
+                            func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
+    else:
+        raise ValueError(f"Invalid input for 'strategy': {strategy}")
     cut_0subst_nearest_neighbor_sub = (
         session.query(
             *[
@@ -370,9 +390,7 @@ def assign_next_substation(cut_1subst, cut_0subst, session):
         )
             .filter(
             cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
-            # func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom),
-            #                 func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
-            func.ST_Touches(cut_0subst.c.geom, cut_1subst.c.geom)
+            neighboring_criterion
         )
             .order_by(
             func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom),
