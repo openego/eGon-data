@@ -87,7 +87,7 @@ setup(
         "disaggregator"
         "@git+https://github.com/openego/disaggregator.git"
         "@features/pip_install",
-        "geopandas",
+        "geopandas>=0.9.0",
         "importlib-resources",
         "loguru",
         "oedialect==0.0.8",
