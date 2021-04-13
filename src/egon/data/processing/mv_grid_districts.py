@@ -5,7 +5,6 @@ HV-MV substation locations and municipality borders from Hülk et al. (2017)
 https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531
 """
 
-
 from geoalchemy2.types import Geometry
 from sqlalchemy import (
     ARRAY,
@@ -90,7 +89,6 @@ class HvmvSubstPerMunicipality(Base):
 
 
 class EgonHvmvSubstationVoronoiMunicipalityCutsBase(object):
-
     subst_id = Column(Integer)
     municipality_id = Column(Integer)
     voronoi_id = Column(Integer)
@@ -162,13 +160,13 @@ def substations_in_municipalities():
                 Vg250GemClean,
                 func.count(EgonHvmvSubstation.point).label("subst_count"),
             )
-            .filter(
+                .filter(
                 func.ST_Contains(
                     Vg250GemClean.geometry,
                     func.ST_Transform(EgonHvmvSubstation.point, 3035),
                 )
             )
-            .group_by(Vg250GemClean.id)
+                .group_by(Vg250GemClean.id)
         )
 
         muns_with_subst = (
@@ -244,13 +242,13 @@ def split_multi_substation_municipalities():
                 EgonHvmvSubstationVoronoi.subst_id,
                 EgonHvmvSubstationVoronoi.id.label("voronoi_id"),
             )
-            .filter(HvmvSubstPerMunicipality.subst_count > 1)
-            .filter(
+                .filter(HvmvSubstPerMunicipality.subst_count > 1)
+                .filter(
                 HvmvSubstPerMunicipality.geometry.intersects(
                     func.ST_Transform(EgonHvmvSubstationVoronoi.geom, 3035)
                 )
             )
-            .subquery()
+                .subquery()
         )
 
         voronoi_cuts = EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.insert().from_select(
@@ -276,18 +274,18 @@ def split_multi_substation_municipalities():
                 ),
                 func.count(EgonHvmvSubstation.point).label("subst_count"),
             )
-            .filter(
+                .filter(
                 func.ST_Contains(
                     EgonHvmvSubstationVoronoiMunicipalityCuts.geom,
                     func.ST_Transform(EgonHvmvSubstation.point, 3035),
                 )
             )
-            .group_by(
+                .group_by(
                 EgonHvmvSubstationVoronoiMunicipalityCuts.id,
                 EgonHvmvSubstation.subst_id,
                 EgonHvmvSubstation.point,
             )
-            .subquery()
+                .subquery()
         )
         session.query(EgonHvmvSubstationVoronoiMunicipalityCuts).filter(
             EgonHvmvSubstationVoronoiMunicipalityCuts.id
@@ -307,8 +305,9 @@ def split_multi_substation_municipalities():
         # First, insert all polygons with 1 substation
         cut_1subst = (
             session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
-            .filter(EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == 1)
-            .subquery()
+                .filter(
+                EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == 1)
+                .subquery()
         )
 
         cut_1subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.insert().from_select(
@@ -319,14 +318,38 @@ def split_multi_substation_municipalities():
         session.commit()
 
         # Second, polygons without a substation
-        cut_0subst = (
-            session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
-            .filter(
-                EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == None
+
+        # Initialize list with very large number
+        remaining_polygons = [10 ** 10]
+        while True:
+            already_assigned_polygons_query = session.query(
+                EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.id).all()
+            already_assigned_polygons = [p for p, in
+                                         already_assigned_polygons_query]
+            cut_0subst = (
+                session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
+                    .filter(
+                    EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == None
+                )
+                    .filter(EgonHvmvSubstationVoronoiMunicipalityCuts.id.notin_(already_assigned_polygons))
             )
-            .subquery()
-        )
-        assign_next_substation(cut_1subst, cut_0subst, session)
+            remaining_polygons.append(len(cut_0subst.all()))
+
+            # Select polygons for assignment
+            # This has to be done iteratively, because already assigned
+            # polygons that don't have a substation assigned initially, are
+            # considered as assignment target subsequently
+            if not already_assigned_polygons:
+                polygons_for_assignment = cut_1subst
+            else:
+                relevant_columns = [col for col in EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.columns if col.name != "temp_id"]
+                polygons_for_assignment = session.query(*relevant_columns).subquery()
+
+
+            if remaining_polygons[-1] < remaining_polygons[-2]:
+                assign_next_substation(polygons_for_assignment, cut_0subst.subquery(), session)
+            else:
+                break
 
 
 def assign_next_substation(cut_1subst, cut_0subst, session):
@@ -347,8 +370,9 @@ def assign_next_substation(cut_1subst, cut_0subst, session):
         )
             .filter(
             cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
-            func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom),
-                            func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
+            # func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom),
+            #                 func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
+            func.ST_Touches(cut_0subst.c.geom, cut_1subst.c.geom)
         )
             .order_by(
             func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom),
