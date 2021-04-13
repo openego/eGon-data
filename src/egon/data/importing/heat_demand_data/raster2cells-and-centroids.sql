@@ -1,5 +1,3 @@
-DELETE FROM demand.egon_peta_heat;
-
 INSERT INTO demand.egon_peta_heat (
   demand, sector, scenario, version, zensus_population_id
 ) SELECT

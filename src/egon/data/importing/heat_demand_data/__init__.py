@@ -476,6 +476,8 @@ def heat_demand_to_db_table():
     # Create a temporary table and fill the final table using the sql script
    # rasters = "heat_demand_rasters"
 
+    db.execute_sql("DELETE FROM demand.egon_peta_heat;")
+
     for source in sources:
         # Create a temporary table and fill the final table using the sql script
         rasters = f"heat_demand_rasters_{source.stem.lower()}"
