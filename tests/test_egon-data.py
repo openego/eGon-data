@@ -3,15 +3,16 @@ from importlib import import_module
 from click.testing import CliRunner
 
 from egon.data import __version__
-from egon.data.cli import main
+from egon.data.cli import egon_data
 
 
 def test_main():
     runner = CliRunner()
-    result = runner.invoke(main, ["--version"])
+    with runner.isolated_filesystem():
+        result = runner.invoke(egon_data, ["--version"])
 
     assert result.output == "{name}, version {version}\n".format(
-        name=main.name, version=__version__
+        name=egon_data.name, version=__version__
     )
     assert result.exit_code == 0
 
@@ -19,7 +20,8 @@ def test_main():
 def test_airflow():
     """ Test that `egon-data airflow` correctly forwards to airflow. """
     runner = CliRunner()
-    result = runner.invoke(main, ["airflow", "--help"])
+    with runner.isolated_filesystem():
+        result = runner.invoke(egon_data, ["airflow", "--help"])
     assert result.output == ""
 
 

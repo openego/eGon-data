@@ -59,7 +59,6 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
@@ -80,19 +79,26 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires=">=3.6.*",
+    python_requires=">=3.7.*",
     install_requires=[
-        "apache-airflow<2.0",
-        "click",
-        "oedialect==0.0.8",
-        "pyaml",
-        "psycopg2",
-        "sqlalchemy",
-        "geopandas",
-        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pip_install",
-        "windpowerlib @ git+https://github.com/wind-python/windpowerlib.git@dev",
-        "feedinlib @ git+https://github.com/oemof/feedinlib.git@master"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
+        "apache-airflow>=1.10.14,<2.0",
+        "click",
+        "disaggregator"
+        "@git+https://github.com/openego/disaggregator.git"
+        "@features/pip_install",
+        "feedinlib @ git+https://github.com/oemof/feedinlib.git@master"
+        "geopandas",
+        "importlib-resources",
+        "loguru",
+        "oedialect==0.0.8",
+        "psycopg2",
+        "pyaml",
+        "rasterio",
+        "rtree",
+        "sqlalchemy<1.4",
+        "windpowerlib @ git+https://github.com/wind-python/windpowerlib.git@dev",
+
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]

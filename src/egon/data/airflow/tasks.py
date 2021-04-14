@@ -1,17 +1,9 @@
-import os.path
-import socket
-
-from egon.data.db import credentials
-import egon.data.subprocess as subprocess
+from egon.data import db
 
 
 def initdb():
     """ Initialize the local database used for data processing. """
-    db = credentials()
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        code = s.connect_ex((db["HOST"], int(db["PORT"])))
-    if code != 0:
-        subprocess.run(
-            ["docker-compose", "up", "-d", "--build"],
-            cwd=os.path.dirname(__file__),
-        )
+    engine = db.engine()
+    with engine.connect().execution_options(autocommit=True) as connection:
+        for extension in ["hstore", "postgis", "postgis_raster"]:
+            connection.execute(f"CREATE EXTENSION IF NOT EXISTS {extension}")

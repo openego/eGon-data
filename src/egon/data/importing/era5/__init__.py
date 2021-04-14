@@ -48,12 +48,13 @@ def download_weather_data():
         db.engine()).to_crs(4623).geom
     latitude = [geom_de.bounds.miny[0], geom_de.bounds.maxy[0]]
     longitude = [geom_de.bounds.minx[0], geom_de.bounds.maxx[0]]
-    start_date =  f"{cfg['source']['year']}-01-01'"
-    end_date = f"{cfg['source']['year']}-12-31'"
+    start_date =  f"{cfg['source']['year']}-01-01"
+    end_date = f"{cfg['source']['year']}-12-31"
     # set variable set to download
-    target_file = os.path.join(
-        os.path.dirname(__file__),
-        f"{cfg['source']['year']}_{cfg['target']['file']}")
+    dataset_boundary = (egon.data.config.settings()
+                        ['egon-data']['--dataset-boundary'])
+    target_file = (
+        f"{dataset_boundary}_{cfg['source']['year']}_{cfg['target']['file']}")
     # get feedinlin data
     if not os.path.isfile(target_file):
         era5.get_era5_data_from_datespan_and_position(

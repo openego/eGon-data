@@ -1,18 +1,19 @@
 version: '3'
 services:
-  egon-data-local-database:
+  egon-data-local-database-service:
     image: postgres:12-postgis
-    container_name: egon-data-local-database
+    container_name: {--docker-container-name}
     restart: unless-stopped
     build:
       context: .
-      dockerfile: Dockerfile.postgis
+      dockerfile: {airflow}/Dockerfile.postgis
     ports:
-    - "127.0.0.1:54321:5432"
+    - "{--database-host}:{--database-port}:5432"
     environment:
-      POSTGRES_DB: egon-data
-      POSTGRES_USER: egon
-      POSTGRES_PASSWORD: data
+      POSTGRES_DB: {--airflow-database-name}
+      POSTGRES_USER: {--database-user}
+      POSTGRES_PASSWORD: {--database-password}
     volumes:
-    - $HOME/docker/volumes/postgres/egon-data:/var/lib/postgresql/data
-    - ./entrypoints:/docker-entrypoint-initdb.d/
+    - egon-data-local-database-volume:/var/lib/postgresql/data
+volumes:
+  egon-data-local-database-volume:
