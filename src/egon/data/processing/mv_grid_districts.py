@@ -88,7 +88,7 @@ class HvmvSubstPerMunicipality(Base):
     subst_count = Column(Integer)
 
 
-class EgonHvmvSubstationVoronoiMunicipalityCutsBase(object):
+class VoronoiMunicipalityCutsBase(object):
     subst_id = Column(Integer)
     municipality_id = Column(Integer)
     voronoi_id = Column(Integer)
@@ -98,10 +98,10 @@ class EgonHvmvSubstationVoronoiMunicipalityCutsBase(object):
     geom_sub = Column(Geometry("Point", 3035))
 
 
-class EgonHvmvSubstationVoronoiMunicipalityCuts(
-    EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
+class VoronoiMunicipalityCuts(
+    VoronoiMunicipalityCutsBase, Base
 ):
-    __tablename__ = "egon_hvmv_substation_voronoi_municipality_cuts"
+    __tablename__ = "voronoi_municipality_cuts"
     __table_args__ = {"schema": "grid"}
 
     id = Column(
@@ -111,10 +111,10 @@ class EgonHvmvSubstationVoronoiMunicipalityCuts(
     )
 
 
-class EgonHvmvSubstationVoronoiMunicipalityCuts0Subst(
-    EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
+class VoronoiMunicipalityCutsAssigned(
+    VoronoiMunicipalityCutsBase, Base
 ):
-    __tablename__ = "egon_hvmv_substation_voronoi_municipality_cuts_0subst"
+    __tablename__ = "voronoi_municipality_cuts_assigned"
     __table_args__ = {"schema": "grid"}
 
     id = Column(Integer)
@@ -213,18 +213,10 @@ def split_multi_substation_municipalities():
 
     """
     engine = db.engine()
-    EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.create(bind=engine)
-        bind=engine, checkfirst=True
-    )
-    EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.create(
-        bind=engine
-    )
+    VoronoiMunicipalityCuts.__table__.drop(bind=engine, checkfirst=True)
+    VoronoiMunicipalityCuts.__table__.create(bind=engine)
+    VoronoiMunicipalityCutsAssigned.__table__.drop(bind=engine, checkfirst=True)
+    VoronoiMunicipalityCutsAssigned.__table__.create(bind=engine)
 
     with session_scope() as session:
         # Step 1: cut municipalities with voronoi polygons
@@ -252,13 +244,13 @@ def split_multi_substation_municipalities():
                 .subquery()
         )
 
-        voronoi_cuts = EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.insert().from_select(
+        voronoi_cuts = VoronoiMunicipalityCuts.__table__.insert().from_select(
             [
-                EgonHvmvSubstationVoronoiMunicipalityCuts.municipality_id,
-                EgonHvmvSubstationVoronoiMunicipalityCuts.ags_0,
-                EgonHvmvSubstationVoronoiMunicipalityCuts.geom,
-                EgonHvmvSubstationVoronoiMunicipalityCuts.subst_id,
-                EgonHvmvSubstationVoronoiMunicipalityCuts.voronoi_id,
+                VoronoiMunicipalityCuts.municipality_id,
+                VoronoiMunicipalityCuts.ags_0,
+                VoronoiMunicipalityCuts.geom,
+                VoronoiMunicipalityCuts.subst_id,
+                VoronoiMunicipalityCuts.voronoi_id,
             ],
             q,
         )
@@ -268,7 +260,7 @@ def split_multi_substation_municipalities():
         # Step 2: Determine number of substations inside cut polygons
         cuts_substation_subquery = (
             session.query(
-                EgonHvmvSubstationVoronoiMunicipalityCuts.id,
+                VoronoiMunicipalityCuts.id,
                 EgonHvmvSubstation.subst_id,
                 func.ST_Transform(EgonHvmvSubstation.point, 3035).label(
                     "geom_sub"
@@ -277,19 +269,19 @@ def split_multi_substation_municipalities():
             )
                 .filter(
                 func.ST_Contains(
-                    EgonHvmvSubstationVoronoiMunicipalityCuts.geom,
+                    VoronoiMunicipalityCuts.geom,
                     func.ST_Transform(EgonHvmvSubstation.point, 3035),
                 )
             )
                 .group_by(
-                EgonHvmvSubstationVoronoiMunicipalityCuts.id,
+                VoronoiMunicipalityCuts.id,
                 EgonHvmvSubstation.subst_id,
                 EgonHvmvSubstation.point,
             )
                 .subquery()
         )
-        session.query(EgonHvmvSubstationVoronoiMunicipalityCuts).filter(
-            EgonHvmvSubstationVoronoiMunicipalityCuts.id
+        session.query(VoronoiMunicipalityCuts).filter(
+            VoronoiMunicipalityCuts.id
             == cuts_substation_subquery.c.id
         ).update(
             {
@@ -305,17 +297,17 @@ def split_multi_substation_municipalities():
         # These polygons are taken as reference to assign other parts of cut
         # polygons subsequently
         cut_1subst = (
-            session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
+            session.query(VoronoiMunicipalityCuts)
                 .filter(
-                EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == 1)
+                VoronoiMunicipalityCuts.subst_count == 1)
                 .subquery()
         )
 
-        originally_1subst = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
+        originally_1subst = VoronoiMunicipalityCutsAssigned.__table__.insert().from_select(
             [
                 _
                 for _ in
-                EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.columns
+                VoronoiMunicipalityCutsAssigned.__table__.columns
                 if _.name != "temp_id"
             ],
             cut_1subst
@@ -337,15 +329,15 @@ def split_multi_substation_municipalities():
             # The assignment process is performed iteratively. In each
             # iteration, touching polygons are used for assignment
             already_assigned_polygons_query = session.query(
-                EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.id).all()
+                VoronoiMunicipalityCutsAssigned.id).all()
             already_assigned_polygons = [p for p, in
                                          already_assigned_polygons_query]
             cut_0subst = (
-                session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
+                session.query(VoronoiMunicipalityCuts)
                     .filter(
-                    EgonHvmvSubstationVoronoiMunicipalityCuts.subst_count == None
+                    VoronoiMunicipalityCuts.subst_count == None
                 )
-                    .filter(EgonHvmvSubstationVoronoiMunicipalityCuts.id.notin_(already_assigned_polygons))
+                    .filter(VoronoiMunicipalityCuts.id.notin_(already_assigned_polygons))
             )
             remaining_polygons.append(len(cut_0subst.all()))
 
@@ -353,7 +345,7 @@ def split_multi_substation_municipalities():
             # This has to be done iteratively, because already assigned
             # polygons that don't have a substation assigned initially, are
             # considered as assignment target subsequently
-            relevant_columns = [col for col in EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.columns if col.name != "temp_id"]
+            relevant_columns = [col for col in VoronoiMunicipalityCutsAssigned.__table__.columns if col.name != "temp_id"]
             polygons_for_assignment = session.query(*relevant_columns).subquery()
 
 
@@ -428,7 +420,7 @@ def assign_next_substation(cut_1subst, cut_0subst, strategy, session):
         cut_0subst_nearest_neighbor_sub.c.id == cut_0subst_nearest_neighbor_grouped.c.id
     ).distinct(cut_0subst_nearest_neighbor_sub.c.id).subquery()
 
-    cut_0subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
+    cut_0subst_insert = VoronoiMunicipalityCutsAssigned.__table__.insert().from_select(
         [
             c
             for c in cut_0subst_nearest_neighbor.columns
@@ -443,7 +435,7 @@ def assign_next_substation(cut_1subst, cut_0subst, strategy, session):
         # TODO 4: write the joined data to persistent table
 
 
-# substations_in_municipalities()
+substations_in_municipalities()
 split_multi_substation_municipalities()
 
 # TODO: in the original script municipality geometries (i.e. model_draft.ego_grid_mv_griddistrict_type1) are casted into MultiPolyon. Maybe this is required later
