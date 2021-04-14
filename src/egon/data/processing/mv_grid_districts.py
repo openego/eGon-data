@@ -207,6 +207,24 @@ def substations_in_municipalities():
 
 
 def split_multi_substation_municipalities():
+    """
+    Split municipalities that have more than one substation
+
+    Municipalities that contain more than one HV-MV substation in their
+    polygon are cut by HV-MV voronoi polygons. Resulting fragments are then
+    assigned to the next neighboring polygon that has a substation.
+
+    In detail, the following steps are performed:
+
+    * Step 1: cut municipalities with voronoi polygons
+    * Step 2: Determine number of substations inside cut polygons
+    * Step 3: separate cut polygons with exactly one substation inside
+    * Step 4: Assign polygon without a substation to next neighboring
+      polygon with a substation
+    * Step 5: Assign remaining polygons that are non-touching
+
+
+    """
     engine = db.engine()
     EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.drop(
         bind=engine, checkfirst=True
@@ -226,7 +244,7 @@ def split_multi_substation_municipalities():
     )
 
     with session_scope() as session:
-        # Cut municipalities with voronoi polygons
+        # Step 1: cut municipalities with voronoi polygons
         q = (
             session.query(
                 HvmvSubstPerMunicipality.id.label("municipality_id"),
@@ -264,7 +282,7 @@ def split_multi_substation_municipalities():
         session.execute(voronoi_cuts)
         session.commit()
 
-        # Determine number of substations inside cut polygons
+        # Step 2: Determine number of substations inside cut polygons
         cuts_substation_subquery = (
             session.query(
                 EgonHvmvSubstationVoronoiMunicipalityCuts.id,
@@ -300,9 +318,7 @@ def split_multi_substation_municipalities():
         )
         session.commit()
 
-        # Persist separate tables for polygons with and without substation
-        # inside
-        # First, insert all polygons with 1 substation
+        # Step 3: separate cut polygons with exactly one substation inside
         cut_1subst = (
             session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
                 .filter(
@@ -317,14 +333,19 @@ def split_multi_substation_municipalities():
         session.execute(cut_1subst_insert)
         session.commit()
 
-        # Second, polygons without a substation
+        # Step 4: Assign polygon without a substation to next neighboring
+        # polygon with a substation.
+        # This considers only polygons that are directly neighboring poylgons
+        # without any space in between (aka. polygons touch each other)
 
         # Initialize with very large number
         remaining_polygons = [10 ** 10]
 
-        # Assign polygons successively when they touch another polygon with a
-        # substation
         while True:
+            # This loop runs until all polygon that inital haven't had a
+            # substation inside to a next neighboring polygon.
+            # The assignment process is performed iteratively. In each
+            # iteration, touching polygons are used for assignment
             already_assigned_polygons_query = session.query(
                 EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.id).all()
             already_assigned_polygons = [p for p, in
@@ -349,6 +370,10 @@ def split_multi_substation_municipalities():
                 polygons_for_assignment = session.query(*relevant_columns).subquery()
 
 
+            # Check if in the last iteration polygons were assigned. If not,
+            # there are no further polygons without a substation that touch
+            # another polygon that has a substation or that was already
+            # assigned
             if (remaining_polygons[-1]) < remaining_polygons[-2]:
                 assign_next_substation(polygons_for_assignment,
                                        cut_0subst.subquery(),
@@ -357,7 +382,7 @@ def split_multi_substation_municipalities():
             else:
                 break
 
-        # Assign remaining polygons that couldn't be assigned with touches
+        # Step 5: Assign remaining polygons that are non-touching
         assign_next_substation(polygons_for_assignment,
                                cut_0subst.subquery(),
                                "min_distance",
