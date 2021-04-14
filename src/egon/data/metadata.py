@@ -68,3 +68,21 @@ def licenses_datenlizenz_deutschland():
         ),
         "attribution": f"© GeoBasis-DE / BKG ({datetime.date.today().year})",
     }
+
+
+def license_odbl():
+    """
+    License information for Open Data Commons Open Database License (ODbL-1.0)
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+    return {
+        "name": "ODbL-1.0",
+        "title": "Open Data Commons Open Database License 1.0",
+        "path": "https://opendatacommons.org/licenses/odbl/1.0/index.html",
+        "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute, Share-Alike, Keep open!",
+        "attribution": "© OpenStreetMap contributors",
+    }

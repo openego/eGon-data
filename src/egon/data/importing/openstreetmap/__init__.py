@@ -17,6 +17,7 @@ import time
 from egon.data import db
 from egon.data.config import settings
 import egon.data.config
+from egon.data.metadata import license_odbl
 import egon.data.subprocess as subprocess
 
 
@@ -121,18 +122,8 @@ def add_metadata():
     )
 
     # Insert metadata for each table
-    licenses = [
-        {
-            "name": "Open Data Commons Open Database License 1.0",
-            "title": "",
-            "path": "https://opendatacommons.org/licenses/odbl/1.0/",
-            "instruction": (
-                "You are free: To Share, To Create, To Adapt;"
-                " As long as you: Attribute, Share-Alike, Keep open!"
-            ),
-            "attribution": "© Reiner Lemoine Institut",
-        }
-    ]
+    licenses = [license_odbl()]
+
     for table in osm_config["processed"]["tables"]:
         table_suffix = table.split("_")[1]
         meta = {
