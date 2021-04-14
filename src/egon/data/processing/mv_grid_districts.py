@@ -319,6 +319,8 @@ def split_multi_substation_municipalities():
         session.commit()
 
         # Step 3: separate cut polygons with exactly one substation inside
+        # These polygons are taken as reference to assign other parts of cut
+        # polygons subsequently
         cut_1subst = (
             session.query(EgonHvmvSubstationVoronoiMunicipalityCuts)
                 .filter(
@@ -326,11 +328,16 @@ def split_multi_substation_municipalities():
                 .subquery()
         )
 
-        cut_1subst_insert = EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.insert().from_select(
-            EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.columns,
-            cut_1subst,
+        originally_1subst = EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.insert().from_select(
+            [
+                _
+                for _ in
+                EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.columns
+                if _.name != "temp_id"
+            ],
+            cut_1subst
         )
-        session.execute(cut_1subst_insert)
+        session.execute(originally_1subst)
         session.commit()
 
         # Step 4: Assign polygon without a substation to next neighboring
@@ -363,11 +370,8 @@ def split_multi_substation_municipalities():
             # This has to be done iteratively, because already assigned
             # polygons that don't have a substation assigned initially, are
             # considered as assignment target subsequently
-            if not already_assigned_polygons:
-                polygons_for_assignment = cut_1subst
-            else:
-                relevant_columns = [col for col in EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.columns if col.name != "temp_id"]
-                polygons_for_assignment = session.query(*relevant_columns).subquery()
+            relevant_columns = [col for col in EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.columns if col.name != "temp_id"]
+            polygons_for_assignment = session.query(*relevant_columns).subquery()
 
 
             # Check if in the last iteration polygons were assigned. If not,
