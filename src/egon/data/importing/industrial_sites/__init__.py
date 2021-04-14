@@ -55,20 +55,20 @@ class SeenergiesIndustrialSites(Base):
     nuts1 = Column(String(3))
     nuts3 = Column(String(5))
     excess_heat = Column(String(3))
-    level_1_Tj = Column(Float)
-    level_2_Tj = Column(Float)
-    level_3_Tj = Column(Float)
-    level_1_r_Tj = Column(Float)
-    level_2_r_Tj = Column(Float)
-    level_3_r_Tj = Column(Float)
-    level_1_Pj = Column(Float)
-    level_2_Pj = Column(Float)
-    level_3_Pj = Column(Float)
-    level_1_r_Pj = Column(Float)
-    level_2_r_Pj = Column(Float)
-    level_3_r_Pj = Column(Float)
-    electricitydemand_Tj = Column(Float)
-    fueldemand_Tj = Column(Float)
+    level_1_tj = Column(Float)
+    level_2_tj = Column(Float)
+    level_3_tj = Column(Float)
+    level_1_r_tj = Column(Float)
+    level_2_r_tj = Column(Float)
+    level_3_r_tj = Column(Float)
+    level_1_pj = Column(Float)
+    level_2_pj = Column(Float)
+    level_3_pj = Column(Float)
+    level_1_r_pj = Column(Float)
+    level_2_r_pj = Column(Float)
+    level_3_r_pj = Column(Float)
+    electricitydemand_tj = Column(Float)
+    fueldemand_tj = Column(Float)
     globalid = Column(String(50))
     geom = Column(Geometry('POINT', 4326), index=True)
     wz = Column(Integer)
@@ -304,20 +304,20 @@ def seenergies_to_postgres():
         'NUTS1ID' : 'nuts1',
         'NUTS3ID' : 'nuts3',
         'Excess_Heat' : 'excess_heat',
-        'level_1_Tj' : 'level_1_Tj',
-        'level_2_Tj' : 'level_2_Tj',
-        'level_3_Tj' : 'level_3_Tj',
-        'level_1_r_Tj' : 'level_1_r_Tj',
-        'level_2_r_Tj' : 'level_2_r_Tj',
-        'level_3_r_Tj' : 'level_3_r_Tj',
-        'level_1_Pj' : 'level_1_Pj',
-        'level_2_Pj' : 'level_2_Pj',
-        'level_3_Pj' : 'level_3_Pj',
-        'level_1_r_Pj' : 'level_1_r_Pj',
-        'level_2_r_Pj' : 'level_2_r_Pj',
-        'level_3_r_Pj' : 'level_3_r_Pj',
-        'ElectricityDemand_TJ_a' : 'electricitydemand_Tj',
-        'FuelDemand_TJ_a' : 'fueldemand_Tj',
+        'level_1_Tj' : 'level_1_tj',
+        'level_2_Tj' : 'level_2_tj',
+        'level_3_Tj' : 'level_3_tj',
+        'level_1_r_Tj' : 'level_1_r_tj',
+        'level_2_r_Tj' : 'level_2_r_tj',
+        'level_3_r_Tj' : 'level_3_r_tj',
+        'level_1_Pj' : 'level_1_pj',
+        'level_2_Pj' : 'level_2_pj',
+        'level_3_Pj' : 'level_3_pj',
+        'level_1_r_Pj' : 'level_1_r_pj',
+        'level_2_r_Pj' : 'level_2_r_pj',
+        'level_3_r_Pj' : 'level_3_r_pj',
+        'ElectricityDemand_TJ_a' : 'electricitydemand_tj',
+        'FuelDemand_TJ_a' : 'fueldemand_tj',
         'GlobalID' : 'globalid'})
 
     gdf = gpd.GeoDataFrame(df,
@@ -488,30 +488,32 @@ def merge_inputs():
     # Insert data from s-EEnergies
     db.execute_sql(
         f"""INSERT INTO {sites_table}
-              (companyname, address, subsector, wz, geom)
-                SELECT s.companyname, s.address, s.subsector, s.wz, s.geom
+              (companyname, address, subsector, wz, el_demand, geom)
+                SELECT  s.companyname,
+                        s.address,
+                        s.subsector,
+                        s.wz,
+                        s.electricitydemand_tj * 9/2500,
+                        s.geom
                 FROM {seenergies_table} s
                 WHERE   s.country = 'DE'
                 AND     geom IS NOT NULL"""
     )
     # Insert data from Hotmaps
+
     db.execute_sql(
         f"""INSERT INTO {sites_table}
               (companyname, address, subsector, wz, geom)
-                SELECT h.companyname, h.address, h.subsector, h.wz, h.geom
-                FROM {hotmaps_table} h
-                WHERE h.country = 'Germany'
-                AND geom IS NOT NULL
-                AND h.siteid NOT IN
-                    (SELECT h.siteid
-                      FROM  {hotmaps_table} h,
-                            {sites_table} s
-                      WHERE h.address = s.address
-					  AND 	ST_DWithin (h.geom, s.geom, 0.01)
-					  AND	(h.wz = s.wz)
-					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
-                             LOWER (SUBSTRING(s.companyname, 1, 3))));"""
-    )
+                  SELECT h.companyname, h.address, h.subsector, h.wz, h.geom
+                  FROM {hotmaps_table} h
+                  WHERE h.country = 'Germany'
+                  AND h.geom IS NOT NULL
+                  AND h.siteid NOT IN
+                      (SELECT a.siteid
+                          FROM {seenergies_table} a
+                          WHERE   a.country = 'DE'
+                          AND     a.geom IS NOT NULL);"""
+        )
 
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
@@ -525,9 +527,9 @@ def merge_inputs():
                       FROM  {schmidt_table} h,
                             {sites_table} s
                       WHERE ST_DWithin (h.geom, s.geom, 0.01)
-					  AND	(h.wz = s.wz)
-					  AND	(LOWER (SUBSTRING(h.plant, 1, 3)) =
-                             LOWER (SUBSTRING(s.companyname, 1, 3))));"""
+ 					  AND	(h.wz = s.wz)
+ 					  AND	(LOWER (SUBSTRING(h.plant, 1, 3)) =
+                              LOWER (SUBSTRING(s.companyname, 1, 3))));"""
     )
 
     # Replace geometry by spatial information from table 'demand.schmidt_industrial_sites' if possible
@@ -567,3 +569,6 @@ def map_nuts3():
               FROM boundaries.vg250_krs krs
               WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
     )
+
+#download_import_industrial_sites()
+merge_inputs()
