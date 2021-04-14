@@ -111,19 +111,6 @@ class EgonHvmvSubstationVoronoiMunicipalityCuts(
     )
 
 
-class EgonHvmvSubstationVoronoiMunicipalityCuts1Subst(
-    EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
-):
-    __tablename__ = "egon_hvmv_substation_voronoi_municipality_cuts_1subst"
-    __table_args__ = {"schema": "grid"}
-
-    id = Column(
-        Integer,
-        Sequence(f"{__tablename__}_id_seq", schema="grid"),
-        primary_key=True,
-    )
-
-
 class EgonHvmvSubstationVoronoiMunicipalityCuts0Subst(
     EgonHvmvSubstationVoronoiMunicipalityCutsBase, Base
 ):
@@ -230,11 +217,7 @@ def split_multi_substation_municipalities():
         bind=engine, checkfirst=True
     )
     EgonHvmvSubstationVoronoiMunicipalityCuts.__table__.create(bind=engine)
-    EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.drop(
         bind=engine, checkfirst=True
-    )
-    EgonHvmvSubstationVoronoiMunicipalityCuts1Subst.__table__.create(
-        bind=engine
     )
     EgonHvmvSubstationVoronoiMunicipalityCuts0Subst.__table__.drop(
         bind=engine, checkfirst=True
