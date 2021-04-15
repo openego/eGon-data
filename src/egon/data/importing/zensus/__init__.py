@@ -411,11 +411,39 @@ def zensus_misc_to_postgres():
                     REFERENCES {population_table}(id);"""
         )
 
-        # Delete rows whithout a population
+    # Delete entries for unpopulated cells
+    adjust_zensus_misc()
+
+
+def adjust_zensus_misc():
+    """Deletes zensus households, buildings and aparments in unpopulated cells
+
+    Some unpopulated zensus cells are listed in the table of households,
+    buildings and/or aparments. This can be caused by missing population
+    information due to privacy or other special cases (e.g. holiday homes
+    are listed as buildings but are not permanently populated.)
+    In the follwong tasks of egon-data, only data of populated cells is used.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get information from data configuration file
+    data_config = egon.data.config.datasets()
+    zensus_population_processed = data_config["zensus_population"]["processed"]
+    zensus_misc_processed = data_config["zensus_misc"]["processed"]
+
+    population_table = (
+        f"{zensus_population_processed['schema']}"
+        f".{zensus_population_processed['table']}"
+    )
+
+    for input_file, table in zensus_misc_processed["path_table_map"].items():
         db.execute_sql(
-            f"""
-            DELETE FROM {zensus_population_processed['schema']}.{table} as b
-            WHERE b.zensus_population_id IN (
-                SELECT id FROM {population_table}
-                WHERE population < 0);"""
-        )
+             f"""
+             DELETE FROM {zensus_population_processed['schema']}.{table} as b
+             WHERE b.zensus_population_id IN (
+                 SELECT id FROM {population_table}
+                 WHERE population < 0);"""
+            )
