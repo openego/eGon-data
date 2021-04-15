@@ -222,7 +222,7 @@ with airflow.DAG(
         python_callable=process_dr.distribute_household_demands
     )
 
-    setup >> processed_dr_tables >> elec_household_demands_zensus
+    zensus_tables >> processed_dr_tables >> elec_household_demands_zensus
     population_prognosis >> elec_household_demands_zensus
     demandregio_demand_households >> elec_household_demands_zensus
     map_zensus_vg250 >> elec_household_demands_zensus
