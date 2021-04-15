@@ -304,7 +304,7 @@ with airflow.DAG(
         task_id= "run_osmtgmod",
         python_callable= osmtgmod.run_osmtgmod,
     )
-    
+
 
     osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
@@ -354,15 +354,22 @@ with airflow.DAG(
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
-    
-    
-    # Extract landuse areas from osm data set 
+
+
+    # Extract landuse areas from osm data set
+    create_landuse_table = PythonOperator(
+        task_id="create-landuse-table",
+        python_callable=loadarea.create_landuse_table
+    )
+
     landuse_extraction = PostgresOperator(
         task_id="extract-osm_landuse",
         sql=resources.read_text(loadarea, "osm_landuse_extraction.sql"),
         postgres_conn_id="egon_data",
         autocommit=True,
     )
+    setup >> create_landuse_table
+    create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
-    
+

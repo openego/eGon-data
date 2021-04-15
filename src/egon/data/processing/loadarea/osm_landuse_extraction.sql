@@ -18,6 +18,8 @@ __author__      = "Ludee, IlkaCu"
 -- Filter OSM Urban Landuse
 ---------- ---------- ----------
 
+DELETE FROM openstreetmap.osm_polygon_urban; 
+
 -- filter urban
 DROP TABLE IF EXISTS    openstreetmap.osm_polygon_urban CASCADE;
 CREATE TABLE            openstreetmap.osm_polygon_urban AS
@@ -29,6 +31,7 @@ CREATE TABLE            openstreetmap.osm_polygon_urban AS
             osm.name ::text AS name,
             --osm.way_area ::double precision AS way_area,
             '0' ::integer AS sector,
+            'undefined'::text AS sector_name, 
             ST_AREA(ST_TRANSFORM(osm.geom,3035))/10000 ::double precision AS area_ha,
             osm.tags ::hstore AS tags,
             'outside' ::text AS vg250,
@@ -50,10 +53,6 @@ CREATE TABLE            openstreetmap.osm_polygon_urban AS
         tags @> '"landuse"=>"farmyard"'::hstore OR 
         tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
     ORDER BY    osm.gid;
-
--- PK
-ALTER TABLE openstreetmap.osm_polygon_urban
-    ADD PRIMARY KEY (gid);
 
 -- index GIST (geom)
 CREATE INDEX osm_polygon_urban_geom_idx
@@ -124,6 +123,7 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_cut AS
 		cut.name ::text AS name,
 		--cut.way_area ::double precision AS way_area,
 		cut.sector ::integer AS sector,
+		cut.sector_name::text AS sector_name,
 		cut.area_ha ::double precision AS area_ha,
 		cut.tags ::hstore AS tags,
 		cut.vg250 ::text AS vg250,
@@ -156,6 +156,7 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut_multi 
 		--cut.aeroway ::text AS aeroway,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
+		cut.sector_name::text AS sector_name,
 		--cut.way_area ::double precision AS way_area,
 		cut.area_ha ::double precision AS area_ha,
 		cut.tags ::hstore AS tags,
@@ -185,6 +186,7 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut AS
 		--cut.aeroway ::text AS aeroway,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
+		cut.sector_name::text AS sector_name, 
 		--cut.way_area ::double precision AS way_area,
 		cut.area_ha ::double precision AS area_ha,
 		cut.tags ::hstore AS tags,
@@ -220,111 +222,46 @@ INSERT INTO	openstreetmap.osm_polygon_urban
 
 
 ---------- ---------- ----------
--- Filter Sectors
+-- Update Sector Information 
 ---------- ---------- ----------
 
 -- Sector 1. Residential
 -- update sector
 UPDATE 	openstreetmap.osm_polygon_urban
-SET  	sector = '1'
+SET  	sector = '1', 
+	sector_name = 'residential'
 WHERE	tags @> '"landuse"=>"residential"'::hstore;
-
--- filter residential
-DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_sector_1_residential CASCADE;
-CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_sector_1_residential AS
-	SELECT	osm.*
-	FROM	openstreetmap.osm_polygon_urban AS osm
-	WHERE	sector = '1'
-ORDER BY	osm.gid;
-
--- index (id)
-CREATE UNIQUE INDEX  	osm_polygon_urban_sector_1_residential_gid_idx
-		ON	openstreetmap.osm_polygon_urban_sector_1_residential (gid);
-
--- index GIST (geom)
-CREATE INDEX  	osm_polygon_urban_sector_1_residential_geom_idx
-	ON	openstreetmap.osm_polygon_urban_sector_1_residential
-	USING	GIST (geom);
-	
 
 -- Sector 2. Retail
 -- update sector
 UPDATE 	openstreetmap.osm_polygon_urban
-SET  	sector = '2'
+SET  	sector = '2', 
+	sector_name = 'retail'
 WHERE	tags @> '"landuse"=>"commercial"'::hstore OR 
 		tags @> '"landuse"=>"retail"'::hstore OR 
 		tags @> '"landuse"=>"industrial;retail"'::hstore;
-
--- Filter Retail
-DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_sector_2_retail CASCADE;
-CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_sector_2_retail AS
-	SELECT	osm.*
-	FROM	openstreetmap.osm_polygon_urban AS osm
-	WHERE	sector = '2'
-ORDER BY	osm.gid;
-    
--- index (id)
-CREATE UNIQUE INDEX  	osm_polygon_urban_sector_2_retail_gid_idx
-		ON	openstreetmap.osm_polygon_urban_sector_2_retail (gid);
-
--- index GIST (geom)
-CREATE INDEX  	osm_polygon_urban_sector_2_retail_geom_idx
-	ON	openstreetmap.osm_polygon_urban_sector_2_retail
-	USING	GIST (geom);
 	
 -- Sector 3. Industrial
 -- update sector
 UPDATE 	openstreetmap.osm_polygon_urban
-SET  	sector = '3'
+SET  	sector = '3', 
+	sector_name = 'industrial'
 WHERE	tags @> '"landuse"=>"industrial"'::hstore OR 
 		tags @> '"landuse"=>"port"'::hstore OR 
 		tags @> '"man_made"=>"wastewater_plant"'::hstore OR
 		tags @> '"aeroway"=>"terminal"'::hstore OR 
 		tags @> '"aeroway"=>"gate"'::hstore OR 
 		tags @> '"man_made"=>"works"'::hstore;
-
-
--- filter Industrial
-DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_sector_3_industrial CASCADE;
-CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_sector_3_industrial AS
-	SELECT	osm.*
-	FROM	openstreetmap.osm_polygon_urban AS osm
-	WHERE	sector = '3'
-ORDER BY	osm.gid;
-
--- index (id)
-CREATE UNIQUE INDEX  	osm_polygon_urban_sector_3_industrial_gid_idx
-		ON	openstreetmap.osm_polygon_urban_sector_3_industrial (gid);
-
--- index GIST (geom)
-CREATE INDEX  	osm_polygon_urban_sector_3_industrial_geom_idx
-	ON	openstreetmap.osm_polygon_urban_sector_3_industrial
-	USING	GIST (geom);
 	
 -- Sector 4. Agricultural
 -- update sector
 UPDATE 	openstreetmap.osm_polygon_urban
-	SET  	sector = '4'
+	SET  	sector = '4', 
+		sector_name = 'agricultural'
 	WHERE	tags @> '"landuse"=>"farmyard"'::hstore OR 
 		tags @> '"landuse"=>"greenhouse_horticulture"'::hstore;
 
--- filter agricultural
-DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_sector_4_agricultural CASCADE;
-CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_sector_4_agricultural AS
-	SELECT	osm.*
-	FROM	openstreetmap.osm_polygon_urban AS osm
-	WHERE	sector = '4'
-	ORDER BY	osm.gid;
-
--- index (id)
-CREATE UNIQUE INDEX  	osm_polygon_urban_sector_4_agricultural_gid_idx
-		ON	openstreetmap.osm_polygon_urban_sector_4_agricultural (gid);
-
--- index GIST (geom)
-CREATE INDEX  	osm_polygon_urban_sector_4_agricultural_geom_idx
-	ON	openstreetmap.osm_polygon_urban_sector_4_agricultural
-	USING	GIST (geom);
-	
+-- Drop MViews which are not of special interest for downstream tasks 	
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_error_geom_vg250 CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_clean_cut_multi CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_cut CASCADE;
