@@ -479,9 +479,29 @@ def merge_polygons_to_grid_district():
         session.execute(joined_municipality_parts_insert)
         session.commit()
 
-        # TODO 3: join cut_1subst and cut_0subst and union/collect geom (polygon)
-        # TODO 4: write the joined data to persistent table
+        # Step 2: Insert municipality polygons with exactly one substation
+        one_substation = session.query(
+            EgonHvmvSubstation.subst_id,
+            func.ST_Multi(HvmvSubstPerMunicipality.geometry).label("geom"),
+            func.ST_Area(func.ST_Multi(HvmvSubstPerMunicipality.geometry)
+                         ).label("area"),
+        ).filter(
+            HvmvSubstPerMunicipality.subst_count == 1
+        ).filter(
+            func.ST_Contains(
+                HvmvSubstPerMunicipality.geometry,
+                func.ST_Transform(EgonHvmvSubstation.point, 3035)
+            )
+        )
 
+        one_substation_insert = \
+            MvGridDistrictsDissolved.__table__.insert().from_select(
+                [c for c in MvGridDistrictsDissolved.__table__.columns
+                 if c.name != "id"],
+                one_substation.subquery()
+            )
+        session.execute(one_substation_insert)
+        session.commit()
 
 substations_in_municipalities()
 split_multi_substation_municipalities()
