@@ -26,6 +26,7 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.demandregio as process_dr
+import egon.data.processing.loadarea as loadarea
 from egon.data import db
 
 
@@ -349,6 +350,19 @@ with airflow.DAG(
         task_id="import-power-plants",
         python_callable=power_plants.insert_power_plants
     )
+
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
+    
+    
+    # Extract landuse areas from osm data set 
+    landuse_extraction = PostgresOperator(
+        task_id="extract-osm_landuse",
+        sql=resources.read_text(loadarea, "osm_landuse_extraction.sql"),
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
+    osm_add_metadata >> landuse_extraction
+    vg250_clean_and_prepare >> landuse_extraction
+    
