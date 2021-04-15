@@ -125,6 +125,20 @@ class VoronoiMunicipalityCutsAssigned(
     )
 
 
+class MvGridDistrictsDissolved(Base):
+    __tablename__ = "mv_grid_districts_dissolved"
+    __table_args__ = {"schema": "grid"}
+
+    id = Column(
+        Integer,
+        Sequence(f"{__tablename__}_id_seq", schema="grid"),
+        primary_key=True,
+    )
+    subst_id = Column(Integer)
+    geom = Column(Geometry("MultiPolygon", 3035))
+    area = Column(Float)
+
+
 def substations_in_municipalities():
     """
     Create a table that counts number of HV-MV substations in each MV grid
@@ -431,12 +445,47 @@ def assign_next_substation(cut_1subst, cut_0subst, strategy, session):
     session.execute(cut_0subst_insert)
     session.commit()
 
+
+def merge_polygons_to_grid_district():
+    """
+    Merge municipality polygon (parts) to MV grid districts
+
+    Polygons of municipalities and cut parts of such polygons are merged to
+    a single grid district per one HV-MV substation. Prior determined
+    assignment of cut polygons parts is used as well as proximity of entire
+    municipality polygons to polygons with a substation inside.
+    """
+
+    engine = db.engine()
+    MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
+    MvGridDistrictsDissolved.__table__.create(bind=engine)
+
+    with session_scope() as session:
+        # Step 1: Merge municipalitiy parts cut by voronoi polygons according
+        # to prio determined associated substation
+        joined_municipality_parts = session.query(
+            VoronoiMunicipalityCutsAssigned.subst_id,
+        func.ST_Multi(func.ST_Union(VoronoiMunicipalityCutsAssigned.geom)).label("geom"),
+        func.sum(func.ST_Area(VoronoiMunicipalityCutsAssigned.geom)).label("area")
+        ).group_by(
+            VoronoiMunicipalityCutsAssigned.subst_id)
+
+        joined_municipality_parts_insert = \
+            MvGridDistrictsDissolved.__table__.insert().from_select(
+                [c for c in MvGridDistrictsDissolved.__table__.columns
+                 if c.name != "id"],
+                joined_municipality_parts.subquery()
+            )
+        session.execute(joined_municipality_parts_insert)
+        session.commit()
+
         # TODO 3: join cut_1subst and cut_0subst and union/collect geom (polygon)
         # TODO 4: write the joined data to persistent table
 
 
 substations_in_municipalities()
 split_multi_substation_municipalities()
+merge_polygons_to_grid_district()
 
 # TODO: in the original script municipality geometries (i.e. model_draft.ego_grid_mv_griddistrict_type1) are casted into MultiPolyon. Maybe this is required later
 # TODO: later, when grid districts are collected from different processing parts, ST_Multi(ST_Union(geometry)) is called. If geometry is of mixed type (Poylgon and MultiPolygon) results might be unexpected
