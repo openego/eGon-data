@@ -155,6 +155,18 @@ with airflow.DAG(
     ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
+    # Scenario table
+    scenario_input_tables = PythonOperator(
+        task_id="create-scenario-parameters-table",
+        python_callable=import_scenarios.create_table
+    )
+
+    scenario_input_import = PythonOperator(
+        task_id="import-scenario-parameters",
+        python_callable=import_scenarios.insert_scenarios
+    )
+    setup >> scenario_input_tables >> scenario_input_import
+
     # DemandRegio data import
     demandregio_tables = PythonOperator(
         task_id="demandregio-tables",
@@ -169,6 +181,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_society
     demandregio_tables >> demandregio_society
+    scenario_input_import >> demandregio_society
 
     demandregio_demand_households = PythonOperator(
         task_id="demandregio-household-demands",
@@ -176,6 +189,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_demand_households
     demandregio_tables >> demandregio_demand_households
+    scenario_input_import >> demandregio_demand_households
 
     demandregio_demand_cts_ind = PythonOperator(
         task_id="demandregio-cts-industry-demands",
@@ -183,6 +197,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_demand_cts_ind
     demandregio_tables >> demandregio_demand_cts_ind
+    scenario_input_import >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(
@@ -354,15 +369,5 @@ with airflow.DAG(
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
 
-    # Scenario table
-    scenario_input_tables = PythonOperator(
-        task_id="create-scenario-parameters-table",
-        python_callable=import_scenarios.create_table
-    )
 
-    scenario_input_import = PythonOperator(
-        task_id="import-scenario-parameters",
-        python_callable=import_scenarios.insert_scenarios
-    )
-    setup >> scenario_input_tables >> scenario_input_import
 
