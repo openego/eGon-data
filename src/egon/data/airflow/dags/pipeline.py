@@ -26,6 +26,7 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.demandregio as process_dr
+import egon.data.importing.scenarios as import_scenarios
 from egon.data import db
 
 
@@ -303,7 +304,7 @@ with airflow.DAG(
         task_id= "run_osmtgmod",
         python_callable= osmtgmod.run_osmtgmod,
     )
-    
+
 
     osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
@@ -352,3 +353,16 @@ with airflow.DAG(
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
+
+    # Scenario table
+    scenario_input_tables = PythonOperator(
+        task_id="create-scenario-parameters-table",
+        python_callable=import_scenarios.create_table
+    )
+
+    scenario_input_import = PythonOperator(
+        task_id="import-scenario-parameters",
+        python_callable=import_scenarios.insert_scenarios
+    )
+    setup >> scenario_input_tables >> scenario_input_import
+
