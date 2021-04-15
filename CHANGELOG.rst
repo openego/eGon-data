@@ -107,3 +107,5 @@ Bug fixes
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
   `#171 <https://github.com/openego/eGon-data/issues/171>`_
+* Delete zensus buildings, apartments ans households in unpopulated cells
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
