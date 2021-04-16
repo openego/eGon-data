@@ -136,6 +136,26 @@ electrical_demands_households:
       schema: 'demand'
       table: 'egon_demandregio_zensus_electricity'
 
+electrical_demands_cts:
+  sources:
+    demandregio:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+      scenarios: ["eGon2035", "eGon100RE"]
+    demandregio_wz:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
+    heat_demand_cts:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+    map_zensus_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_nuts3'
+  targets:
+    cts_demands_zensus:
+      schema: 'demand'
+      table: 'egon_demandregio_zensus_electricity'
+
 hvmv_substation:
   original_data:
     source:

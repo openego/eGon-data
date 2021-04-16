@@ -68,6 +68,8 @@ Added
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_  
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
+* Distribute electrical demands of cts to zensus cells
+  `#210 <https://github.com/openego/eGon-data/issues/210>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
