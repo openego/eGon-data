@@ -52,9 +52,9 @@ zensus_misc:
   processed:
     schema: "society"
     path_table_map:
-      "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
-      "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
-      "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
+      "csv_Haushalte_100m_Gitter.zip": "egon_destatis_zensus_household_per_ha"
+      "csv_Gebaeude_100m_Gitter.zip": "egon_destatis_zensus_building_per_ha"
+      "csv_Wohnungen_100m_Gitter.zip": "egon_destatis_zensus_apartment_per_ha"
 
 map_zensus_vg250:
   sources:
@@ -181,7 +181,7 @@ society_prognosis:
       table: 'destatis_zensus_population_per_ha'
     zensus_households:
       schema: 'society'
-      table: 'destatis_zensus_household_per_ha'
+      table: 'egon_destatis_zensus_household_per_ha'
     demandregio_population:
       schema: 'society'
       table: 'egon_demandregio_population'

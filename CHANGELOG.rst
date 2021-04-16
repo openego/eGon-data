@@ -109,3 +109,5 @@ Bug fixes
   `#171 <https://github.com/openego/eGon-data/issues/171>`_
 * Adjust names of demandregios nuts3 regions according to nuts version 2016
   `#201 <https://github.com/openego/eGon-data/issues/201>`_
+* Delete zensus buildings, apartments and households in unpopulated cells
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
