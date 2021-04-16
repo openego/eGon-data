@@ -2,6 +2,7 @@ import os
 
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python_operator import PythonVirtualenvOperator
 from airflow.utils.dates import days_ago
 import airflow
 import importlib_resources as resources
@@ -202,6 +203,15 @@ with airflow.DAG(
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
+    
+    run_pypsaeursec = PythonVirtualenvOperator(
+        task_id= "run_pypsaeursec",
+        python_callable=pypsaeursec.run_pypsa_eur_sec,
+        requirements=["-r", "/home/ulf/github/pypsa-eur/requirements_pypsaeursec.txt"],
+        python_version="3.8",
+        )
+    
+    setup >> run_pypsaeursec
     
     pypsaeursec_insert_data = PythonOperator(
         task_id= "pypsaeursec_insert_data",
