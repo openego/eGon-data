@@ -13,11 +13,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from pathlib import Path
 
 from egon.data import db, subprocess
+
 Base = declarative_base()
 
+
 class HotmapsIndustrialSites(Base):
-    __tablename__ = 'hotmaps_industrial_sites'
-    __table_args__ = {'schema': 'demand'}
+    __tablename__ = "hotmaps_industrial_sites"
+    __table_args__ = {"schema": "demand"}
     siteid = Column(Integer, primary_key=True)
     sitename = Column(String)
     companyname = Column(String(200))
@@ -36,13 +38,13 @@ class HotmapsIndustrialSites(Base):
     excess_heat_200_500C = Column(Float)
     excess_heat_500C = Column(Float)
     excess_heat_total = Column(Float)
-    geom = Column(Geometry('POINT', 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True)
     wz = Column(Integer)
 
 
 class SeenergiesIndustrialSites(Base):
-    __tablename__ = 'seenergies_industrial_sites'
-    __table_args__ = {'schema': 'demand'}
+    __tablename__ = "seenergies_industrial_sites"
+    __table_args__ = {"schema": "demand"}
     objectid = Column(Integer, primary_key=True)
     siteid = Column(Integer)
     companyname = Column(String(100))
@@ -70,13 +72,13 @@ class SeenergiesIndustrialSites(Base):
     electricitydemand_tj = Column(Float)
     fueldemand_tj = Column(Float)
     globalid = Column(String(50))
-    geom = Column(Geometry('POINT', 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True)
     wz = Column(Integer)
 
 
 class SchmidtIndustrialSites(Base):
-    __tablename__ = 'schmidt_industrial_sites'
-    __table_args__ = {'schema': 'demand'}
+    __tablename__ = "schmidt_industrial_sites"
+    __table_args__ = {"schema": "demand"}
     id = Column(Integer, primary_key=True)
     application = Column(String(50))
     plant = Column(String(100))
@@ -85,25 +87,28 @@ class SchmidtIndustrialSites(Base):
     capacity_production = Column(String(10))
     lat = Column(Float)
     lon = Column(Float)
-    geom = Column(Geometry('POINT', 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True)
     wz = Column(Integer)
 
 
 class IndustrialSites(Base):
-    __tablename__ = 'industrial_sites'
-    __table_args__ = {'schema': 'demand'}
-    id = Column(Integer,
-        Sequence('industrial_sites_id_seq', schema='demand'),
-        server_default=
-            Sequence('industrial_sites_id_seq', schema='demand').next_value(),
-        primary_key=True)
+    __tablename__ = "industrial_sites"
+    __table_args__ = {"schema": "demand"}
+    id = Column(
+        Integer,
+        Sequence("industrial_sites_id_seq", schema="demand"),
+        server_default=Sequence(
+            "industrial_sites_id_seq", schema="demand"
+        ).next_value(),
+        primary_key=True,
+    )
     companyname = Column(String(100))
     address = Column(String(170))
     subsector = Column(String(100))
     wz = Column(Integer)
     el_demand = Column(Float)
     nuts3 = Column(String(10))
-    geom = Column(Geometry('POINT', 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True)
 
 
 def create_tables():
@@ -114,12 +119,16 @@ def create_tables():
     """
 
     # Create target schema
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
     db.execute_sql(
-        "CREATE SCHEMA IF NOT EXISTS demand;"
+        "DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"
     )
-    db.execute_sql("DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;")
-    db.execute_sql("DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;")
-    db.execute_sql("DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;")
+    db.execute_sql(
+        "DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"
+    )
+    db.execute_sql(
+        "DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"
+    )
     db.execute_sql("DROP TABLE IF EXISTS demand.industrial_sites CASCADE;")
 
     engine = db.engine()
@@ -132,9 +141,7 @@ def create_tables():
 def download_hotmaps():
     """Download csv file on hotmap's industrial sites."""
     data_config = egon.data.config.datasets()
-    hotmaps_config = data_config["hotmaps"][
-        "original_data"
-    ]
+    hotmaps_config = data_config["hotmaps"]["original_data"]
 
     download_directory = "industrial_sites"
     # Create the folder, if it does not exists already
@@ -142,30 +149,27 @@ def download_hotmaps():
         os.mkdir(download_directory)
 
     target_file = (
-        Path(".") / 'industrial_sites' / hotmaps_config["target"]["path"]
-         )
+        Path(".") / "industrial_sites" / hotmaps_config["target"]["path"]
+    )
 
     if not os.path.isfile(target_file):
         subprocess.run(
             f"curl {hotmaps_config['source']['url']} > {target_file}",
-            shell=True)
+            shell=True,
+        )
 
 
 def download_seenergies():
     """Download csv file on s-eenergies' industrial sites."""
     data_config = egon.data.config.datasets()
-    see_config = data_config["seenergies"][
-        "original_data"
-    ]
+    see_config = data_config["seenergies"]["original_data"]
 
     download_directory = "industrial_sites"
     # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = (
-        Path(".") / 'industrial_sites' / see_config["target"]["path"]
-    )
+    target_file = Path(".") / "industrial_sites" / see_config["target"]["path"]
 
     if not os.path.isfile(target_file):
         urlretrieve(see_config["source"]["url"], target_file)
@@ -175,202 +179,214 @@ def hotmaps_to_postgres():
     """Import hotmaps data to postgres database"""
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
-    hotmaps_orig = data_config["hotmaps"][
-        "original_data"
-    ]
-    hotmaps_proc = data_config["hotmaps"][
-        "processed"
-    ]
+    hotmaps_orig = data_config["hotmaps"]["original_data"]
+    hotmaps_proc = data_config["hotmaps"]["processed"]
 
     input_file = (
-        Path(".") / 'industrial_sites' / hotmaps_orig["target"]["path"])
+        Path(".") / "industrial_sites" / hotmaps_orig["target"]["path"]
+    )
 
     engine = db.engine()
 
     db.execute_sql(
-        f"DELETE FROM {hotmaps_proc['schema']}.{hotmaps_proc['table']}")
+        f"DELETE FROM {hotmaps_proc['schema']}.{hotmaps_proc['table']}"
+    )
     # Read csv to dataframe
-    df = pd.read_csv(input_file, delimiter=';')
+    df = pd.read_csv(input_file, delimiter=";")
 
     # Adjust column names
-    df = df.rename(columns={
-        'SiteID' : 'siteid',
-        'CompanyName' : 'companyname',
-        'SiteName' : 'sitename',
-        'Address' : 'address',
-        'CityCode' : 'citycode',
-        'City' : 'city',
-        'Country' : 'country',
-        'geom' : 'geom',
-        'Subsector' : 'subsector',
-        'DataSource' : 'datasource',
-        'Emissions_ETS_2014' : 'emissions_ets_2014',
-        'Emissions_EPRTR_2014' : 'emissions_eprtr_2014',
-        'Production' : 'production',
-        'Fuel_Demand' : 'fuel_demand',
-        'Excess_Heat_100-200C' : 'excess_heat_100_200C',
-        'Excess_Heat_200-500C' : 'excess_heat_200_500C',
-        'Excess_Heat_500C' : 'excess_heat_500C',
-        'Excess_Heat_Total' : 'excess_heat_total'})
+    df = df.rename(
+        columns={
+            "SiteID": "siteid",
+            "CompanyName": "companyname",
+            "SiteName": "sitename",
+            "Address": "address",
+            "CityCode": "citycode",
+            "City": "city",
+            "Country": "country",
+            "geom": "geom",
+            "Subsector": "subsector",
+            "DataSource": "datasource",
+            "Emissions_ETS_2014": "emissions_ets_2014",
+            "Emissions_EPRTR_2014": "emissions_eprtr_2014",
+            "Production": "production",
+            "Fuel_Demand": "fuel_demand",
+            "Excess_Heat_100-200C": "excess_heat_100_200C",
+            "Excess_Heat_200-500C": "excess_heat_200_500C",
+            "Excess_Heat_500C": "excess_heat_500C",
+            "Excess_Heat_Total": "excess_heat_total",
+        }
+    )
 
     # Remove entries without geometry
-    df = df[df.country=='Germany']
+    df = df[df.country == "Germany"]
     df = df[df.geom.notnull()]
 
     # From EWKT to WKT
     for i in df.index:
-        df.loc[i, 'geom'] =df.loc[i, 'geom'].split(";")[1]
+        df.loc[i, "geom"] = df.loc[i, "geom"].split(";")[1]
 
     # Create geometry with shapely
-    geom = gpd.GeoSeries.from_wkt(df['geom'])
+    geom = gpd.GeoSeries.from_wkt(df["geom"])
 
     # Import as geodataframe
-    gdf = gpd.GeoDataFrame(df,
-                            geometry=gpd.points_from_xy(geom.x, geom.y),
-                            crs="EPSG:4326")
+    gdf = gpd.GeoDataFrame(
+        df, geometry=gpd.points_from_xy(geom.x, geom.y), crs="EPSG:4326"
+    )
 
     # Select boundaries
     boundaries = db.select_geodataframe(
         "SELECT * FROM boundaries.vg250_sta_union",
-        geom_col='geometry', epsg=4326)
+        geom_col="geometry",
+        epsg=4326,
+    )
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        ['gid', 'bez', 'area_ha', 'index_right', 'geom'], axis=1)
+        ["gid", "bez", "area_ha", "index_right", "geom"], axis=1
+    )
 
     # Rename geometry column
-    gdf = gdf.rename(columns={'geometry': 'geom'}).set_geometry('geom')
+    gdf = gdf.rename(columns={"geometry": "geom"}).set_geometry("geom")
 
     # Add additional column for sector information (wz)
-    gdf['wz'] = gdf['subsector']
+    gdf["wz"] = gdf["subsector"]
 
     # Map subsector information and WZ definition for hotmaps data
-    wz_definition = pd.Series({
-        'Paper and printing':1718,
-        'Refineries':19,
-        'Cement':23,
-        'Glass':23,
-        'Iron and steel':24,
-        'Non-ferrous metals':24,
-        'Non-metallic mineral products':23,
-        'Chemical industry':20
-        })
+    wz_definition = pd.Series(
+        {
+            "Paper and printing": 1718,
+            "Refineries": 19,
+            "Cement": 23,
+            "Glass": 23,
+            "Iron and steel": 24,
+            "Non-ferrous metals": 24,
+            "Non-metallic mineral products": 23,
+            "Chemical industry": 20,
+        }
+    )
     # Map WZ ids and subsectors from hotmaps
 
-    gdf['wz'] = gdf['wz'].map(wz_definition)
+    gdf["wz"] = gdf["wz"].map(wz_definition)
 
     # Write data to db
-    gdf.to_postgis(hotmaps_proc['table'],
-                      engine,
-                      schema = hotmaps_proc['schema'],
-                      if_exists='append',
-                      index=df.index)
+    gdf.to_postgis(
+        hotmaps_proc["table"],
+        engine,
+        schema=hotmaps_proc["schema"],
+        if_exists="append",
+        index=df.index,
+    )
 
 
 def seenergies_to_postgres():
     """Import seenergies data to postgres database"""
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
-    seenergies_orig = data_config["seenergies"][
-        "original_data"
-    ]
-    seenergies_proc = data_config["seenergies"][
-        "processed"
-    ]
+    seenergies_orig = data_config["seenergies"]["original_data"]
+    seenergies_proc = data_config["seenergies"]["processed"]
 
     input_file = (
-        Path(".") / 'industrial_sites' / seenergies_orig["target"]["path"])
+        Path(".") / "industrial_sites" / seenergies_orig["target"]["path"]
+    )
     engine = db.engine()
 
     db.execute_sql(
-        f"DELETE FROM {seenergies_proc['schema']}.{seenergies_proc['table']}")
+        f"DELETE FROM {seenergies_proc['schema']}.{seenergies_proc['table']}"
+    )
 
     # Read csv to dataframe
-    df = pd.read_csv(input_file, delimiter=',')
-    df = df.drop(['X', 'Y'], axis=1)
+    df = pd.read_csv(input_file, delimiter=",")
+    df = df.drop(["X", "Y"], axis=1)
 
     # Adjust column names
-    df = df.rename(columns={
-        'SiteName' : 'sitename',
-        'OBJECTID' : 'objectid',
-        'SiteId' : 'siteid',
-        'CompanyName' : 'companyname',
-        'StreetNameAndNumber' : 'address',
-        'Country' : 'country',
-        'EU28' : 'eu28',
-        'Eurostat_Name' : 'subsector',
-        'Latitude' : 'lat',
-        'Longitude' : 'lon',
-        'NUTS1ID' : 'nuts1',
-        'NUTS3ID' : 'nuts3',
-        'Excess_Heat' : 'excess_heat',
-        'level_1_Tj' : 'level_1_tj',
-        'level_2_Tj' : 'level_2_tj',
-        'level_3_Tj' : 'level_3_tj',
-        'level_1_r_Tj' : 'level_1_r_tj',
-        'level_2_r_Tj' : 'level_2_r_tj',
-        'level_3_r_Tj' : 'level_3_r_tj',
-        'level_1_Pj' : 'level_1_pj',
-        'level_2_Pj' : 'level_2_pj',
-        'level_3_Pj' : 'level_3_pj',
-        'level_1_r_Pj' : 'level_1_r_pj',
-        'level_2_r_Pj' : 'level_2_r_pj',
-        'level_3_r_Pj' : 'level_3_r_pj',
-        'ElectricityDemand_TJ_a' : 'electricitydemand_tj',
-        'FuelDemand_TJ_a' : 'fueldemand_tj',
-        'GlobalID' : 'globalid'})
+    df = df.rename(
+        columns={
+            "SiteName": "sitename",
+            "OBJECTID": "objectid",
+            "SiteId": "siteid",
+            "CompanyName": "companyname",
+            "StreetNameAndNumber": "address",
+            "Country": "country",
+            "EU28": "eu28",
+            "Eurostat_Name": "subsector",
+            "Latitude": "lat",
+            "Longitude": "lon",
+            "NUTS1ID": "nuts1",
+            "NUTS3ID": "nuts3",
+            "Excess_Heat": "excess_heat",
+            "level_1_Tj": "level_1_tj",
+            "level_2_Tj": "level_2_tj",
+            "level_3_Tj": "level_3_tj",
+            "level_1_r_Tj": "level_1_r_tj",
+            "level_2_r_Tj": "level_2_r_tj",
+            "level_3_r_Tj": "level_3_r_tj",
+            "level_1_Pj": "level_1_pj",
+            "level_2_Pj": "level_2_pj",
+            "level_3_Pj": "level_3_pj",
+            "level_1_r_Pj": "level_1_r_pj",
+            "level_2_r_Pj": "level_2_r_pj",
+            "level_3_r_Pj": "level_3_r_pj",
+            "ElectricityDemand_TJ_a": "electricitydemand_tj",
+            "FuelDemand_TJ_a": "fueldemand_tj",
+            "GlobalID": "globalid",
+        }
+    )
 
-    gdf = gpd.GeoDataFrame(df,
-                            geometry=gpd.points_from_xy(df.lon, df.lat),
-                            crs="EPSG:4326")
+    gdf = gpd.GeoDataFrame(
+        df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326"
+    )
 
-    gdf = gdf.rename({'geometry': 'geom'}, axis=1).set_geometry('geom')
+    gdf = gdf.rename({"geometry": "geom"}, axis=1).set_geometry("geom")
 
     boundaries = db.select_geodataframe(
         "SELECT * FROM boundaries.vg250_sta_union",
-        geom_col='geometry', epsg=4326)
+        geom_col="geometry",
+        epsg=4326,
+    )
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        ['gid', 'bez', 'area_ha', 'index_right'], axis=1)
+        ["gid", "bez", "area_ha", "index_right"], axis=1
+    )
 
     # Add additional column for sector information (wz)
-    gdf['wz'] = gdf['subsector']
+    gdf["wz"] = gdf["subsector"]
 
     # Map subsector information and WZ definition for seenergies data
-    wz_definition = pd.Series({
-        'Paper and printing':1718,
-        'Refineries':19,
-        'Cement':23,
-        'Glass':23,
-        'Iron and steel':24,
-        'Non-ferrous metals':24,
-        'Non-metallic minerals':23,
-        'Chemical industry':20
-        })
+    wz_definition = pd.Series(
+        {
+            "Paper and printing": 1718,
+            "Refineries": 19,
+            "Cement": 23,
+            "Glass": 23,
+            "Iron and steel": 24,
+            "Non-ferrous metals": 24,
+            "Non-metallic minerals": 23,
+            "Chemical industry": 20,
+        }
+    )
 
     # Map WZ ids and subsectors from seenergies
 
-    gdf['wz'] = gdf['wz'].map(wz_definition)
+    gdf["wz"] = gdf["wz"].map(wz_definition)
 
     # Write data to db
-    gdf.to_postgis(seenergies_proc['table'],
-                      engine,
-                      schema = seenergies_proc['schema'],
-                      if_exists='append',
-                      index=df.index)
+    gdf.to_postgis(
+        seenergies_proc["table"],
+        engine,
+        schema=seenergies_proc["schema"],
+        if_exists="append",
+        index=df.index,
+    )
 
 
 def schmidt_to_postgres():
     """Import data from Thesis by Danielle Schmidt to postgres database"""
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
-    schmidt_orig = data_config["schmidt"][
-        "original_data"
-    ]
-    schmidt_proc = data_config["schmidt"][
-        "processed"
-    ]
+    schmidt_orig = data_config["schmidt"]["original_data"]
+    schmidt_proc = data_config["schmidt"]["processed"]
 
     input_file = os.path.join(
         os.path.dirname(__file__), schmidt_orig["target"]["path"]
@@ -378,58 +394,69 @@ def schmidt_to_postgres():
     engine = db.engine()
 
     db.execute_sql(
-        f"DELETE FROM {schmidt_proc['schema']}.{schmidt_proc['table']}")
+        f"DELETE FROM {schmidt_proc['schema']}.{schmidt_proc['table']}"
+    )
 
     # Read csv to dataframe
-    df = pd.read_csv(input_file, delimiter=';')
+    df = pd.read_csv(input_file, delimiter=";")
 
     # Adjust column names
-    df = df.rename(columns={
-        'Application' : 'application',
-        'Plant' : 'plant',
-        'Landkreis Number' : 'landkreis_number',
-        'Annual Tonnes' : 'annual_tonnes',
-        'Capacity or Production' : 'capacity_production',
-        'Latitude' : 'lat',
-        'Longitude' : 'lon'})
+    df = df.rename(
+        columns={
+            "Application": "application",
+            "Plant": "plant",
+            "Landkreis Number": "landkreis_number",
+            "Annual Tonnes": "annual_tonnes",
+            "Capacity or Production": "capacity_production",
+            "Latitude": "lat",
+            "Longitude": "lon",
+        }
+    )
 
-    gdf = gpd.GeoDataFrame(df,
-                            geometry=gpd.points_from_xy(df.lon, df.lat),
-                            crs="EPSG:4326")
+    gdf = gpd.GeoDataFrame(
+        df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326"
+    )
 
-    gdf = gdf.rename({'geometry': 'geom'}, axis=1).set_geometry('geom')
+    gdf = gdf.rename({"geometry": "geom"}, axis=1).set_geometry("geom")
 
     boundaries = db.select_geodataframe(
         "SELECT * FROM boundaries.vg250_sta_union",
-        geom_col='geometry', epsg=4326)
+        geom_col="geometry",
+        epsg=4326,
+    )
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        ['gid', 'bez', 'area_ha', 'index_right'], axis=1)
+        ["gid", "bez", "area_ha", "index_right"], axis=1
+    )
 
     # Add additional column for sector information (wz)
-    gdf['wz'] = gdf['application']
+    gdf["wz"] = gdf["application"]
 
     # Map subsector information and WZ definition for hotmaps data
-    wz_definition = pd.Series({
-        'Mechanical Pulp':1718,
-        'Packing Paper and Board':1718,
-        'Cement Mill':23,
-        'Technical/Special Paper and Board':1718,
-        'Graphic Paper':1718,
-        'Hygiene Paper':1718,
-        'Recycled Paper':1718
-        })
+    wz_definition = pd.Series(
+        {
+            "Mechanical Pulp": 1718,
+            "Packing Paper and Board": 1718,
+            "Cement Mill": 23,
+            "Technical/Special Paper and Board": 1718,
+            "Graphic Paper": 1718,
+            "Hygiene Paper": 1718,
+            "Recycled Paper": 1718,
+        }
+    )
 
     # Map WZ ids and subsectors from hotmaps
-    gdf['wz'] = gdf['wz'].map(wz_definition)
+    gdf["wz"] = gdf["wz"].map(wz_definition)
 
     # Write data to db
-    gdf.to_postgis(schmidt_proc['table'],
-                      engine,
-                      schema = schmidt_proc['schema'],
-                      if_exists='append',
-                      index=df.index)
+    gdf.to_postgis(
+        schmidt_proc["table"],
+        engine,
+        schema=schmidt_proc["schema"],
+        if_exists="append",
+        index=df.index,
+    )
 
 
 def download_import_industrial_sites():
@@ -456,8 +483,9 @@ def download_import_industrial_sites():
 
     schmidt_to_postgres()
 
+
 def merge_inputs():
-    """ Merge and clean data from different sources
+    """Merge and clean data from different sources
     (hotmaps, seenergies, Thesis Schmidt)
     """
 
@@ -483,7 +511,6 @@ def merge_inputs():
         f"{data_config['schmidt']['processed']['schema']}"
         f".{data_config['schmidt']['processed']['table']}"
     )
-
 
     # Insert data from s-EEnergies
     db.execute_sql(
@@ -513,7 +540,7 @@ def merge_inputs():
                           FROM {seenergies_table} a
                           WHERE   a.country = 'DE'
                           AND     a.geom IS NOT NULL);"""
-        )
+    )
 
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
@@ -544,6 +571,7 @@ def merge_inputs():
                     LOWER (SUBSTRING(s.companyname, 1, 3)));"""
     )
 
+
 def map_nuts3():
     """
     Match resulting industrial sites with nuts3 codes and fill column 'nuts3'
@@ -561,7 +589,6 @@ def map_nuts3():
         f"{data_config['industrial_sites']['processed']['schema']}"
         f".{data_config['industrial_sites']['processed']['table']}"
     )
-
 
     db.execute_sql(
         f"""UPDATE {sites_table} s
