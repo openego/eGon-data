@@ -569,6 +569,3 @@ def map_nuts3():
               FROM boundaries.vg250_krs krs
               WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
     )
-
-#download_import_industrial_sites()
-merge_inputs()
