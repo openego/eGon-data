@@ -37,7 +37,7 @@ def create_tables():
         bind=engine, checkfirst=True)
 
 
-def distribute_demands():
+def distribute_household_demands():
     """ Distribute electrical demands for households to zensus cells.
 
     The demands on nuts3-level from demandregio are linear distributed
@@ -117,3 +117,81 @@ def distribute_demands():
             schema=target['schema'],
             con=db.engine(),
             if_exists='append')
+
+
+def distribute_cts_demands():
+    """ Distribute electrical demands for cts to zensus cells.
+
+    The demands on nuts3-level from demandregio are linear distributed
+    to the heat demand of cts in each zensus cell.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = (egon.data.config.datasets()
+               ['electrical_demands_cts']['sources'])
+
+    target = (egon.data.config.datasets()
+              ['electrical_demands_cts']['targets']
+              ['cts_demands_zensus'])
+
+    db.execute_sql(f"""DELETE FROM {target['schema']}.{target['table']}
+                   WHERE sector = 'service'""")
+
+    # Select match between zensus cells and nuts3 regions of vg250
+    map_nuts3 = db.select_dataframe(
+        f"""SELECT zensus_population_id, nuts3 FROM
+        {sources['map_zensus_vg250']['schema']}.
+        {sources['map_zensus_vg250']['table']}""",
+        index_col='zensus_population_id')
+
+    # Insert data per scenario
+    for scn in sources['demandregio']['scenarios']:
+
+        # Select heat_demand per zensus cell
+        peta = db.select_dataframe(
+            f"""SELECT zensus_population_id, demand as heat_demand,
+            sector, scenario FROM
+            {sources['heat_demand_cts']['schema']}.
+            {sources['heat_demand_cts']['table']}
+            WHERE scenario = '{scn}'
+            AND sector = 'service'""", index_col='zensus_population_id')
+
+        # Add nuts3 key to zensus cells
+        peta['nuts3'] = map_nuts3.nuts3
+
+        # Calculate share of nuts3 population per zensus cell
+        peta['share'] = peta.heat_demand.groupby(
+            peta.nuts3).apply(lambda grp: grp/grp.sum())
+
+        # Select forecastet electrical demands from demandregio table
+        demand_nuts3 = db.select_dataframe(
+            f"""SELECT nuts3, SUM(demand) as demand FROM
+            {sources['demandregio']['schema']}.
+            {sources['demandregio']['table']}
+            WHERE scenario = '{scn}'
+            AND wz IN (
+                SELECT wz FROM
+                {sources['demandregio_wz']['schema']}.
+                {sources['demandregio_wz']['table']}
+                WHERE sector = 'CTS')
+            GROUP BY nuts3""",
+            index_col='nuts3')
+
+        # Scale demands on nuts3 level linear to population share
+        peta['demand'] = peta['share'].mul(
+            demand_nuts3.demand[peta['nuts3']].values)
+
+        # Rename index
+        peta.index = peta.index.rename('zensus_population_id')
+
+        # Insert data to target table
+        peta[['scenario', 'demand', 'sector']].to_sql(
+            target['table'],
+            schema=target['schema'],
+            con=db.engine(),
+            if_exists='append')
+

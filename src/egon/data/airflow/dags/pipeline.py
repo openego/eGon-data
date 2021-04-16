@@ -218,11 +218,11 @@ with airflow.DAG(
     )
 
     elec_household_demands_zensus = PythonOperator(
-        task_id="electrical-demands-zensus",
-        python_callable=process_dr.distribute_demands
+        task_id="electrical-household-demands-zensus",
+        python_callable=process_dr.distribute_household_demands
     )
 
-    setup >> processed_dr_tables >> elec_household_demands_zensus
+    zensus_tables >> processed_dr_tables >> elec_household_demands_zensus
     population_prognosis >> elec_household_demands_zensus
     demandregio_demand_households >> elec_household_demands_zensus
     map_zensus_vg250 >> elec_household_demands_zensus
@@ -303,7 +303,7 @@ with airflow.DAG(
         task_id= "run_osmtgmod",
         python_callable= osmtgmod.run_osmtgmod,
     )
-    
+
 
     osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
@@ -352,3 +352,15 @@ with airflow.DAG(
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
+
+    # Districute electrical CTS demands to zensus grid
+
+    elec_cts_demands_zensus = PythonOperator(
+        task_id="electrical-cts-demands-zensus",
+        python_callable=process_dr.distribute_cts_demands
+    )
+
+    processed_dr_tables >> elec_cts_demands_zensus
+    heat_demand_import >> elec_cts_demands_zensus
+    demandregio_demand_cts_ind >> elec_cts_demands_zensus
+    map_zensus_vg250 >> elec_cts_demands_zensus
