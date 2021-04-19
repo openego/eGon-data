@@ -24,7 +24,7 @@ Cement Mill;Holcim (Deutschland) GmbH Werk Laegerdorf ;1061;1463000.00;Productio
 Cement Mill;Holcim (Sueddeutschland) GmbH ;8417;1600000.00;Capacity;48.228187;8.779364
 Cement Mill;Holcim HuettenZement GmbH Werk Dortmund ;5913;700000.00;Production;51.547595;7.506874
 Cement Mill;Holcim WestZement GmbH Werk Beckum-Kollenbach;5570;1204500.00;Capacity;51.764553;8.055599
-Cement Mill;Holcim WestZement GmbH Werk Duisburg-Schwelgern;5112;1000000.00;Production;51.491731;6.742319
+Cement Mill;Holcim WestZement GmbH Werk Duisburg-Schwelgern;5112;1000000.00;Production;51.49325;6.72269
 Cement Mill;Maerker Zement GmbH ;9779;1600000.00;Capacity;48.776795;10.6976
 Cement Mill;Maerker Zement GmbH Werk Lauffen ;8125;200000.00;Capacity;49.077069;9.16051
 Cement Mill;OPTERRA Karsdorf GmbH ;15084;2300000.00;Capacity;51.275472;11.656835
@@ -45,25 +45,25 @@ Cement Mill;Spenner GmbH & Co. KG Werk Erwitte ;5974;1200000.00;Capacity;51.6028
 Cement Mill;Spenner Zementwerk Berlin GmbH & Co. KG ;11000;400000.00;Production;52.48775;13.49588
 Cement Mill;Suedbayer. Portland-Zementwerk Gebr. Wiesboeck & Co. GmbH;9187;2365200.00;Capacity;47.793051;12.182296
 Mechanical Pulp;Baiersbronn Frischfaser Karton GmbH ;8237;65000.00;Capacity;48.497321;8.374771
-Mechanical Pulp;Gebr. Lang GmbH Papierfabrik UPM Ettringen;9778;30000.00;Capacity;48.111844;10.671773
-Mechanical Pulp;Kabel Premium Pulp & Paper GmbH ;5914;195000.00;Capacity;51.406707;7.491211
+Mechanical Pulp;Gebr. Lang GmbH Papierfabrik UPM Ettringen;9778;30000.00;Capacity;48.111801;10.67172
+Mechanical Pulp;Kabel Premium Pulp & Paper GmbH ;5914;195000.00;Capacity;51.406694;7.491126
 Mechanical Pulp;Katz GmbH & Co. KG ;8216;19000.00;Capacity;48.72389;8.355906
-Mechanical Pulp;Stora Enso Maxau GmbH;8212;112000.00;Capacity;49.040047;8.311057
+Mechanical Pulp;Stora Enso Maxau GmbH;8212;112000.00;Capacity;49.040594;8.311107
 Mechanical Pulp;UPM Augsberg GmbH;9761;113000.00;Capacity;48.37893;10.899761
-Mechanical Pulp;UPM GmbH Werk Schongau;9190;132000.00;Capacity;47.808291;10.902307
+Mechanical Pulp;UPM GmbH Werk Schongau;9190;132000.00;Capacity;47.808284;10.902286
 Mechanical Pulp;UPM Plattling MD Papier GmbH;9271;427000.00;Capacity;48.796223;12.861907
 Packing Paper and Board;A. Obenauf GmbH & Co. KG;3153;27710.00;Capacity;51.874569;10.633074
 Technical/Special Paper and Board;Ahlstrom-Munksjoe Dettingen GmbH;8415;60000.00;Capacity;48.515739;9.361846
 Technical/Special Paper and Board;Ahlstrom-Munksjoe Paper GmbH;8136;76000.00;Capacity;48.816117;10.133976
-Packing Paper and Board;Albert Koehler GmbH & Co. KG Koehler Pappen;8317;48000.00;Capacity;48.403807;8.01009
+Packing Paper and Board;Albert Koehler GmbH & Co. KG Koehler Pappen;8317;48000.00;Capacity;48.403814;8.010101
 Packing Paper and Board;Aviretta GmbH;9778;170000.00;Production;48.111047;10.667487
-Packing Paper and Board;Baden Board GmbH;8216;150000.00;Production;48.74402;8.346579
-Packing Paper and Board;Baiersbronn Frischfaser Karton GmbH ;8237;92000.00;Capacity;48.497342;8.374696
+Packing Paper and Board;Baden Board GmbH;8216;150000.00;Production;48.73823;8.34440
+Packing Paper and Board;Baiersbronn Frischfaser Karton GmbH ;8237;92000.00;Capacity;48.497321;8.374771
 Graphic Paper;Buettenpapierfabrik Gmund GmbH &  Co. KG;9182;7000.00;Production;47.753955;11.741688
 Packing Paper and Board;Carl Macher GmbH & Co. KG;9475;170000.00;Production;50.34938;11.865858
-Technical/Special Paper and Board;Cordier Spezialpapier GmbH Illig'sche Papierfabrik;6432;10270.00;Production;49.820127;8.690516
+Technical/Special Paper and Board;Cordier Spezialpapier GmbH Illig'sche Papierfabrik;6432;10270.00;Production;49.451722;8.062667
 Graphic Paper;Cordier Spezialpapier GmbH Papierfabrik Schleipen;7332;36500.00;Production;49.465289;8.109955
-Packing Paper and Board;Delkeskamp Verpackungswerke GmbH;3459;120000.00;Production;52.649379;7.856945
+Packing Paper and Board;Delkeskamp Verpackungswerke GmbH;3459;120000.00;Production;52.61724;7.859373
 Technical/Special Paper and Board;Drewsen Spezialpapiere GmbH & Co. KG;3351;160000.00;Capacity;52.625479;10.246007
 Packing Paper and Board;DS Smith Paper Deutschland GmbH Werk Aschaffenburg;9661;420000.00;Production;49.987393;9.157345
 Packing Paper and Board;DS Smith Paper Deutschland GmbH Werk Witzenhausen ;6636;340000.00;Production;51.317694;9.848293
@@ -91,15 +91,15 @@ Technical/Special Paper and Board;Kaemmerer Spezialpapiere GmbH;3404;140000.00;C
 Technical/Special Paper and Board;KANZAN Spezialpapiere GmbH;5358;60000.00;Production;50.791299;6.484982
 Packing Paper and Board;Karl Kurz GmbH & Co. KG Tullau Pappen;8127;19000.00;Capacity;49.089756;9.736293
 Packing Paper and Board;Kartonfabrik Buchmann GmbH;7337;275000.00;Production;49.2029289;7.936293
-Technical/Special Paper and Board;Katz GmbH & Co. KG ;8216;25000.00;Production;48.723915;8.355916
+Technical/Special Paper and Board;Katz GmbH & Co. KG ;8216;25000.00;Production;48.72389;8.355906
 Hygiene Paper;Kimberly-Clark GmbH Werk Koblenz;7111;65000.00;Production;50.391848;7.585209
 Packing Paper and Board;Klingele Papierwerke GmbH & Co. KG Papierfabrik Weener;3457;270000.00;Capacity;53.16456;7.365058
 Technical/Special Paper and Board;Koehler Greiz GmbH & Co. KG;16076;37500.00;Production;50.638712;12.208929
 Technical/Special Paper and Board;Koehler Kehl GmbH;8317;100000.00;Capacity;48.584517;7.819786
 Technical/Special Paper and Board;Kuebler & Niethammer Papierfabrik Kriebstein AG;14522;100000.00;Capacity;51.051245;13.016569
-Packing Paper and Board;LEIPA Georg Leinfelder GmbH;9185;146000.00;Capacity;53.078156;14.31335
-Packing Paper and Board;LEIPA Georg Leinfelder GmbH;12073;450000.00;Capacity;53.087799;14.311427
-Graphic Paper;LEIPA Georg Leinfelder GmbH;12073;780000.00;Capacity;48.557532;11.264059
+Packing Paper and Board;LEIPA Georg Leinfelder GmbH;9185;146000.00;Capacity;53.08758;14.31137
+Packing Paper and Board;LEIPA Georg Leinfelder GmbH;12073;450000.00;Capacity;53.07818;14.31336
+Graphic Paper;LEIPA Georg Leinfelder GmbH;12073;780000.00;Capacity;48.55691;11.26348
 Technical/Special Paper and Board;Lydall Performance Materials Altenkirchen GmbH;7132;15000.00;Production;50.677118;7.631006
 Packing Paper and Board;Mayr-Melnhof Gernsbach GmbH;8216;275000.00;Capacity;48.743977;8.346557
 Technical/Special Paper and Board;Metsae Tissue GmbH Werk Dueren;5358;36000.00;Capacity;50.815947;6.468794
@@ -134,7 +134,7 @@ Packing Paper and Board;Progroup Paper PM1 GmbH;15086;320000.00;Production;52.25
 Packing Paper and Board;Progroup Paper PM2 GmbH;12067;650000.00;Production;52.171644;14.64056
 Packing Paper and Board;R.D.M. Arnsberg GmbH;5958;220000.00;Capacity;51.392388;8.072591
 Graphic Paper;Reflex GmbH & Co. KG;5358;20000.00;Capacity;50.816001;6.468773
-Technical/Special Paper and Board;Sappi Alfeld GmbH;3254;300000.00;Production;51.98540;9.82227
+Technical/Special Paper and Board;Sappi Alfeld GmbH;3254;300000.00;Production;51.98540;9.82227 
 Graphic Paper;Sappi Ehingen GmbH ;8425;275000.00;Capacity;48.269887;9.727426
 Graphic Paper;Sappi Stockstadt GmbH ;9671;445000.00;Production;49.977482;9.066698
 Technical/Special Paper and Board;Schoeller Technocell GmbH & Co. KG Werk Guenzach;9777;56000.00;Capacity;47.8212;10.433989
@@ -150,16 +150,16 @@ Packing Paper and Board;Smurfit Kappa Herzberg Solid Board GmbH;3159;260000.00;P
 Packing Paper and Board;Smurfit Kappa Hoya Papier und Karton GmbH;3256;425000.00;Production;52.809563;9.155994
 Packing Paper and Board;Smurfit Kappa Wrexen Paper & Board GmbH;6635;320000.00;Production;51.50647;8.9794
 Packing Paper and Board;Smurfit Kappa Zuelpich Papier GmbH;5366;400000.00;Production;50.705862;6.652424
-Packing Paper and Board;Sprick GmbH Bielefelder Papier- und Wellpappenwerke & Co. Hauptverwaltung;5711;35000.00;Capacity;52.025435;8.562412
+Packing Paper and Board;Sprick GmbH Bielefelder Papier- und Wellpappenwerke & Co. Hauptverwaltung;5711;35000.00;Capacity;52.02500;8.56278
 Packing Paper and Board;Sprick GmbH Bielefelder Papier- und Wellpappenwerke & Co. Werk Mitte;6635;70000.00;Capacity;52.039983;8.607516
 Graphic Paper;Steinbeis Papier GmbH;1061;300000.00;Capacity;53.781921;9.425706
 Graphic Paper;Stora Enso Maxau GmbH;8212;530000.00;Capacity;49.040594;8.311107
 Graphic Paper;Stora Enso Sachsen GmbH;14730;310000.00;Capacity;51.465591;12.591755
-Graphic Paper;UMP GmbH Werk Schongau;9190;730000.00;Capacity;47.808284;10.902286
+Graphic Paper;UPM GmbH Werk Schongau;9190;730000.00;Capacity;47.808284;10.902286
 Graphic Paper;UPM Augsberg GmbH;9761;360000.00;Capacity;48.37893;10.899761
 Graphic Paper;UPM Huerth Rhein Papier GmbH;5362;330000.00;Capacity;50.858932;6.836825
 Graphic Paper;UPM Nordland Papier GmbH;3454;1235000.00;Capacity;52.980566;7.361823
-Graphic Paper;UPM Plattling MD Papier GmbH ;9271;785000.00;Capacity;48.79623;12.861993
+Graphic Paper;UPM Plattling MD Papier GmbH ;9271;785000.00;Capacity;48.796223;12.861907
 Packing Paper and Board;W & M Pappen GmbH & Co. KG;5766;9855.00;Production;51.912602;9.252666
 Hygiene Paper;WEPA Hygieneprodukte GmbH Standor Mainz;7315;43077.00;Production;50.028956;8.23207
 Hygiene Paper;WEPA Hygieneprodukte GmbH Standort Giershagen;5958;101539.00;Production;51.419486;8.810109
@@ -167,16 +167,16 @@ Hygiene Paper;WEPA Hygieneprodukte GmbH Werk Arnsberg;5958;114873.00;Production;
 Hygiene Paper;WEPA Leuna GmbH;15088;44103.00;Production;51.288648;11.985719
 Hygiene Paper;WEPA Papierfabrik Sachsen GmbH;14522;43077.00;Production;51.046211;13.017124
 Technical/Special Paper and Board;Wickels Papierveredelungs-Werke Buntpapierfabrik GmbH;9563;3500.00;Production;49.459304;10.988999
-Recycled Paper;A. Obenauf GmbH & Co. KG;3153;17781507.00;Production;51.874595;10.633021
+Recycled Paper;A. Obenauf GmbH & Co. KG;3153;17781507.00;Production;51.874569;10.633074
 Recycled Paper;Albert Koehler GmbH & Co. KG Koehler Pappen;8317;50443.20;Production;48.403814;8.010101
-Recycled Paper;Aviretta GmbH;9778;192100.00;Production;48.111047;10.6767497
-Recycled Paper;Baden Board GmbH;8216;169500.00;Production;48.743984;8.346536
-Recycled Paper;Carl Macher GmbH & Co. KG;9475;192100.00;Production;50.349415;11.865858
+Recycled Paper;Aviretta GmbH;9778;192100.00;Production;48.111047;10.667487
+Recycled Paper;Baden Board GmbH;8216;169500.00;Production;48.73823;8.34440
+Recycled Paper;Carl Macher GmbH & Co. KG;9475;192100.00;Production;50.34938;11.865858
 Recycled Paper;Cordier Spezialpapier GmbH Illig'sche Papierfabrik;6432;4621.50;Production;49.451722;8.062667
 Recycled Paper;DS Smith Paper Deutschland GmbH Werk Aschaffenburg;9661;474600.00;Production;49.987393;9.157345
 Recycled Paper;DS Smith Paper Deutschland GmbH Werk Witzenhausen ;6636;384200.00;Production;51.317694;9.848293
 Recycled Paper;Essity Operations Mainz-Kostheim GmbH Werk Mainz-Kostheim;6414;76000.00;Production;50.005801;8.317639
-Recycled Paper;FS Karton GmbH;5162;367815.00;Production;51.220302;6.6978
+Recycled Paper;FS Karton GmbH;5162;367815.00;Production;51.220207;6.697768
 Recycled Paper;Gebr. Gruenewald GmbH & Co. KG;5966;25221.60;Production;51.073057;8.069731
 Recycled Paper;Gebr. Lang GmbH Papierfabrik UPM Ettringen;9778;267979.50;Production;48.111844;10.671773
 Recycled Paper;Hamburger Rieger Gelsenkirchen GmbH & Co. KG;5513;276850.00;Production;51.539267;7.08303
@@ -189,11 +189,11 @@ Recycled Paper;Julius Schulte Trebsen GmbH & Co. KG;14729;252216.00;Production;5
 Recycled Paper;Karl Kurz GmbH & Co. KG Tullau Pappen;8127;12192.30;Production;49.089756;9.736293
 Recycled Paper;Kartonfabrik Buchmann GmbH;7337;233750.00;Production;49.2029289;7.936293
 Recycled Paper;Kimberly-Clark GmbH Werk Koblenz;7111;59428395.00;Production;50.391848;7.585209
-Recycled Paper;Klingele Papierwerke GmbH & Co. KG Papierfabrik Weener;3457;305100.00;Production;53.16456;7.365058
-Recycled Paper;Kuebler & Niethammer Papierfabrik Kriebstein AG;14522;94581.00;Production;51.051285;13.01659
-Recycled Paper;LEIPA Georg Leinfelder GmbH;9185;153431.40;Production;53.078156;14.31335
-Recycled Paper;LEIPA Georg Leinfelder GmbH;9185;472905.00;Production;53.087799;14.311427
-Recycled Paper;LEIPA Georg Leinfelder GmbH;12073;819702.00;Production;48.557532;11.264059
+Recycled Paper;Klingele Papierwerke GmbH & Co. KG Papierfabrik Weener;3457;305100.00;Production;53.16949;7.36508
+Recycled Paper;Kuebler & Niethammer Papierfabrik Kriebstein AG;14522;94581.00;Production;51.051245;13.016569
+Recycled Paper;LEIPA Georg Leinfelder GmbH;9185;153431.40;Production;53.08758;14.31137
+Recycled Paper;LEIPA Georg Leinfelder GmbH;9185;472905.00;Production;53.07818;14.31336
+Recycled Paper;LEIPA Georg Leinfelder GmbH;12073;819702.00;Production;48.55691;11.26348
 Recycled Paper;Mayr-Melnhof Gernsbach GmbH;8216;245647875.00;Production;48.743977;8.346557
 Recycled Paper;Metsae Tissue GmbH Werk Kreuzau;5358;71145.00;Production;50.726397;6.470003
 Recycled Paper;Metsae Tissue GmbH Werk Raubach;7138;51224.40;Production;50.584734;7.624486
@@ -225,12 +225,12 @@ Recycled Paper;Smurfit Kappa Wrexen Paper & Board GmbH;6635;271200.00;Production
 Recycled Paper;Smurfit Kappa Zuelpich Papier GmbH;5366;339000.00;Production;50.705862;6.652424
 Recycled Paper;Sprick GmbH Bielefelder Papier- und Wellpappenwerke & Co. Werk Mitte;6635;73563.00;Production;52.039983;8.607516
 Recycled Paper;Steinbeis Papier GmbH;1061;315270.00;Production;53.781921;9.425706
-Recycled Paper;Stora Enso Sachsen GmbH;14730;430000.00;Capacity;49.040594;8.311107
-Recycled Paper;Stora Enso Maxau GmbH;8212;295000.00;Capacity;51.465591;12.591755
+Recycled Paper;Stora Enso Sachsen GmbH;14730;430000.00;Capacity;51.465591;12.591755
+Recycled Paper;Stora Enso Maxau GmbH;8212;295000.00;Capacity;49.040594;8.311107
 Recycled Paper;UPM Augsburg GmbH;9761;124846.92;Production;48.37893;10.899761
 Recycled Paper;UPM GmbH Werk Schongau;9190;730000.00;Production;47.808284;10.902286
 Recycled Paper;UPM Huerth Rhein Papier GmbH;5362;400000.00;Capacity;50.858932;6.836825
-Recycled Paper;UPM Plattling Rhein Papier GmbH;9271;272235645.00;Production;48.79623;12.861993
+Recycled Paper;UPM Plattling Rhein Papier GmbH;9271;272235645.00;Production;48.796223;12.861907
 Recycled Paper;W & M Pappen GmbH & Co. KG;5766;11136.15;Production;51.912602;9.252666
 Recycled Paper;WEPA Hygieneprodukte GmbH Standort Mainz;7315;21969.27;Production;50.028956;8.23207
 Recycled Paper;WEPA Hygieneprodukte GmbH Standort Giershagen;5958;51784.89;Production;51.419486;8.810109
