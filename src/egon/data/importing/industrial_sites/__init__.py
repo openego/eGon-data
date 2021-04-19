@@ -249,6 +249,9 @@ def hotmaps_to_postgres():
     # Rename geometry column
     gdf = gdf.rename(columns={"geometry": "geom"}).set_geometry("geom")
 
+    # Remove duplicates on columns 'plant' and 'geom'
+    gdf = gdf.drop_duplicates(subset=['subsector', 'geom'])
+
     # Add additional column for sector information (wz)
     gdf["wz"] = gdf["subsector"]
 
@@ -350,6 +353,9 @@ def seenergies_to_postgres():
         ["gid", "bez", "area_ha", "index_right"], axis=1
     )
 
+    # Remove duplicates on columns 'plant' and 'geom'
+    gdf = gdf.drop_duplicates(subset=['subsector', 'geom'])
+
     # Add additional column for sector information (wz)
     gdf["wz"] = gdf["subsector"]
 
@@ -429,6 +435,9 @@ def schmidt_to_postgres():
     gdf = gpd.sjoin(gdf, boundaries).drop(
         ["gid", "bez", "area_ha", "index_right"], axis=1
     )
+
+    # Remove duplicates on columns 'plant' 'lon' and 'lat'
+    gdf = gdf.drop_duplicates(subset=['plant', 'lat', 'lon'])
 
     # Add additional column for sector information (wz)
     gdf["wz"] = gdf["application"]
@@ -539,6 +548,11 @@ def merge_inputs():
                       (SELECT a.siteid
                           FROM {seenergies_table} a
                           WHERE   a.country = 'DE'
+                          AND     a.geom IS NOT NULL)
+                  AND h.geom NOT IN
+                      (SELECT a.geom
+                          FROM {seenergies_table} a
+                          WHERE   a.country = 'DE'
                           AND     a.geom IS NOT NULL);"""
     )
 
@@ -571,6 +585,16 @@ def merge_inputs():
                     LOWER (SUBSTRING(s.companyname, 1, 3)));"""
     )
 
+    # Delete remaining duplicates
+
+    db.execute_sql(
+        f"""DELETE FROM
+                {sites_table} a
+                    USING {sites_table} b
+            WHERE a.id > b.id
+            AND a.geom = b.geom
+            AND a.wz = b.wz;"""
+    )
 
 def map_nuts3():
     """
@@ -596,3 +620,4 @@ def map_nuts3():
               FROM boundaries.vg250_krs krs
               WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
     )
+
