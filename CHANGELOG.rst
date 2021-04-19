@@ -68,6 +68,8 @@ Added
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_  
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
+* Extract landuse areas from OSM 
+  `#214 <https://github.com/openego/eGon-data/issues/214>`_  
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
