@@ -382,41 +382,40 @@ def split_multi_substation_municipalities():
                                session)
 
 
-def assign_next_substation(cut_1subst, cut_0subst, strategy, session):
+def assign_next_substation(with_substation, without_substation, strategy,
+                           session):
     # Determine nearest neighboring polygon that has a substation
     columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
 
     if strategy == "touches":
-        neighboring_criterion = func.ST_Touches(cut_0subst.c.geom, cut_1subst.c.geom)
+        neighboring_criterion = func.ST_Touches(without_substation.c.geom, with_substation.c.geom)
     elif strategy == "min_distance":
-        neighboring_criterion = func.ST_DWithin(func.ST_ExteriorRing(cut_0subst.c.geom),
-                            func.ST_ExteriorRing(cut_1subst.c.geom), 100000)
+        neighboring_criterion = func.ST_DWithin(
+            without_substation.c.geom,
+            with_substation.c.geom, 100000)
     else:
         raise ValueError(f"Invalid input for 'strategy': {strategy}")
     cut_0subst_nearest_neighbor_sub = (
         session.query(
             *[
                 c
-                for c in cut_1subst.columns
+                for c in with_substation.columns
                 if c.name in columns_from_cut1_subst
             ],
             *[
                 c
-                for c in cut_0subst.columns
+                for c in without_substation.columns
                 if c.name not in columns_from_cut1_subst
-            ]
+            ],
         )
-            .filter(
-            cut_0subst.c.ags_0 == cut_1subst.c.ags_0,
-            neighboring_criterion
-        )
-            .order_by(
-            func.ST_Distance(func.ST_ExteriorRing(cut_0subst.c.geom),
-                             func.ST_ExteriorRing(cut_1subst.c.geom)),
-        )
-            .subquery()
+    ).filter(
+        without_substation.c.ags_0 == with_substation.c.ags_0
+    ).filter(neighboring_criterion).order_by(
+            without_substation.c.id,
+            func.ST_Distance(without_substation.c.geom,
+                             with_substation.c.geom),
+        ).subquery()
 
-    )
 
     # Group by id of cut polygons which is unique. The reason that multiple
     # rows for each id exist is that assignment to multiple polygon with
