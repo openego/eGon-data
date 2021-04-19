@@ -25,7 +25,7 @@ class OsmPolygonUrban(Base):
     area_ha = Column(Float)
     tags = Column(HSTORE)
     vg250 = Column(String(10))
-    geom = Column(Geometry('MultiPolygon', 3035))
+    geom = Column(Geometry("MultiPolygon", 3035))
 
 
 def create_landuse_table():
@@ -34,7 +34,7 @@ def create_landuse_table():
     -------
     None.
     """
-    cfg = egon.data.config.datasets()['landuse']['target']
+    cfg = egon.data.config.datasets()["landuse"]["target"]
 
     # Drop tables
     db.execute_sql(
@@ -44,4 +44,3 @@ def create_landuse_table():
 
     engine = db.engine()
     OsmPolygonUrban.__table__.create(bind=engine, checkfirst=True)
-
