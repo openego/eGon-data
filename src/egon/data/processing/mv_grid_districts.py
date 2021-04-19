@@ -461,7 +461,7 @@ def merge_polygons_to_grid_district():
 
     with session_scope() as session:
         # Step 1: Merge municipalitiy parts cut by voronoi polygons according
-        # to prio determined associated substation
+        # to prior determined associated substation
         joined_municipality_parts = session.query(
             VoronoiMunicipalityCutsAssigned.subst_id,
         func.ST_Multi(func.ST_Union(VoronoiMunicipalityCutsAssigned.geom)).label("geom"),
@@ -502,9 +502,57 @@ def merge_polygons_to_grid_district():
         session.execute(one_substation_insert)
         session.commit()
 
+        # Step 3: Assign municipality polygons without a substation and insert
+        # to table
+        with_substation = session.query(
+            MvGridDistrictsDissolved.subst_id,
+            MvGridDistrictsDissolved.geom
+        ).subquery()
+        without_substation = (
+            session.query(
+                HvmvSubstPerMunicipality.geometry.label("geom"),
+                HvmvSubstPerMunicipality.id)
+                .filter(
+                HvmvSubstPerMunicipality.subst_count == 0)
+                .subquery()
+        )
+
+        # Find nearest neighboring polygon from with_substation for each
+        # polygon from without_substation
+        all_nearest_neighbors = session.query(
+            without_substation.c.id,
+            func.ST_Multi(without_substation.c.geom).label("geom"),
+            with_substation.c.subst_id,
+            func.ST_Area(func.ST_Multi(without_substation.c.geom)).label("area"),
+        ).filter(func.ST_DWithin(
+            without_substation.c.geom,
+            with_substation.c.geom, 100000)
+        ).order_by(
+            without_substation.c.id,
+            func.ST_Distance(without_substation.c.geom,
+                             with_substation.c.geom)
+        ).subquery()
+
+        nearest_neighbors = session.query(
+            all_nearest_neighbors.c.subst_id,
+            all_nearest_neighbors.c.geom,
+            all_nearest_neighbors.c.area
+        ).distinct(
+            all_nearest_neighbors.c.id)
+
+        # Insert polygons with newly assigned substation
+        assigned_polygons_insert = MvGridDistrictsDissolved.__table__.insert().from_select(
+            [
+                c
+                for c in MvGridDistrictsDissolved.__table__.columns
+                if c.name not in ["id"]
+            ],
+            nearest_neighbors,
+        )
+        session.execute(assigned_polygons_insert)
+        session.commit()
+
+
 substations_in_municipalities()
 split_multi_substation_municipalities()
 merge_polygons_to_grid_district()
-
-# TODO: in the original script municipality geometries (i.e. model_draft.ego_grid_mv_griddistrict_type1) are casted into MultiPolyon. Maybe this is required later
-# TODO: later, when grid districts are collected from different processing parts, ST_Multi(ST_Union(geometry)) is called. If geometry is of mixed type (Poylgon and MultiPolygon) results might be unexpected
