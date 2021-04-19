@@ -68,8 +68,10 @@ Added
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_  
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
+* Distribute electrical demands of cts to zensus cells
+  `#210 <https://github.com/openego/eGon-data/issues/210>`_
 * Extract landuse areas from OSM 
-  `#214 <https://github.com/openego/eGon-data/issues/214>`_  
+  `#214 <https://github.com/openego/eGon-data/issues/214>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -111,3 +113,5 @@ Bug fixes
   `#171 <https://github.com/openego/eGon-data/issues/171>`_
 * Adjust names of demandregios nuts3 regions according to nuts version 2016
   `#201 <https://github.com/openego/eGon-data/issues/201>`_
+* Delete zensus buildings, apartments and households in unpopulated cells
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
