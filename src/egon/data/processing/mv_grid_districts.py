@@ -1,8 +1,16 @@
 """
 Implements the methods for creating medium-voltage grid district areas from
-HV-MV substation locations and municipality borders from Hülk et al. (2017)
-(section 2.3)
-https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531
+HV-MV substation locations and municipality borders
+
+Methods are heavily inspired by `Hülk et al. (2017)
+<https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531>`_
+(section 2.3), but differ in detail.
+Direct adjacency is preferred over proximity. For polygons of municipalities
+without a substation inside it is iteratively checked for direct adjacent
+other polygons that have a substation inside. Hence, MV grid districts grow
+around a polygon with a substation inside.
+
+See :func:`define_mv_grid_districts` for more details.
 """
 
 from geoalchemy2.types import Geometry
