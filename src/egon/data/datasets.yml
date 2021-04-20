@@ -130,7 +130,7 @@ electrical_demands_households:
       table: 'egon_population_prognosis'
     map_zensus_vg250:
       schema: 'boundaries'
-      table: 'egon_map_zensus_nuts3'
+      table: 'egon_map_zensus_vg250'
   targets:
     household_demands_zensus:
       schema: 'demand'
@@ -150,7 +150,7 @@ electrical_demands_cts:
       table: 'egon_peta_heat'
     map_zensus_vg250:
       schema: 'boundaries'
-      table: 'egon_map_zensus_nuts3'
+      table: 'egon_map_zensus_vg250'
   targets:
     cts_demands_zensus:
       schema: 'demand'

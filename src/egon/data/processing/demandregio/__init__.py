@@ -60,7 +60,7 @@ def distribute_household_demands():
 
     # Select match between zensus cells and nuts3 regions of vg250
     map_nuts3 = db.select_dataframe(
-        f"""SELECT zensus_population_id, nuts3 FROM
+        f"""SELECT zensus_population_id, vg250_nuts3 as nuts3 FROM
         {sources['map_zensus_vg250']['schema']}.
         {sources['map_zensus_vg250']['table']}""",
         index_col='zensus_population_id')
@@ -91,7 +91,7 @@ def distribute_household_demands():
         zensus['population_share'] = zensus.population.groupby(
             zensus.nuts3).apply(lambda grp: grp/grp.sum())
 
-        # Select forecastet electrical demands from demandregio table
+        # Select forecasted electrical demands from demandregio table
         demand_nuts3 = db.select_dataframe(
             f"""SELECT nuts3, SUM(demand) as demand FROM
             {sources['demandregio']['schema']}.
@@ -143,7 +143,7 @@ def distribute_cts_demands():
 
     # Select match between zensus cells and nuts3 regions of vg250
     map_nuts3 = db.select_dataframe(
-        f"""SELECT zensus_population_id, nuts3 FROM
+        f"""SELECT zensus_population_id, vg250_nuts3 as nuts3 FROM
         {sources['map_zensus_vg250']['schema']}.
         {sources['map_zensus_vg250']['table']}""",
         index_col='zensus_population_id')
@@ -163,11 +163,11 @@ def distribute_cts_demands():
         # Add nuts3 key to zensus cells
         peta['nuts3'] = map_nuts3.nuts3
 
-        # Calculate share of nuts3 population per zensus cell
+        # Calculate share of nuts3 heat demand per zensus cell
         peta['share'] = peta.heat_demand.groupby(
             peta.nuts3).apply(lambda grp: grp/grp.sum())
 
-        # Select forecastet electrical demands from demandregio table
+        # Select forecasted electrical demands from demandregio table
         demand_nuts3 = db.select_dataframe(
             f"""SELECT nuts3, SUM(demand) as demand FROM
             {sources['demandregio']['schema']}.
@@ -181,7 +181,7 @@ def distribute_cts_demands():
             GROUP BY nuts3""",
             index_col='nuts3')
 
-        # Scale demands on nuts3 level linear to population share
+        # Scale demands on nuts3 level linear to heat demand share
         peta['demand'] = peta['share'].mul(
             demand_nuts3.demand[peta['nuts3']].values)
 
