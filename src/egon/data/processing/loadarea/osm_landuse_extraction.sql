@@ -21,8 +21,8 @@ __author__      = "Ludee, IlkaCu"
 DELETE FROM openstreetmap.osm_polygon_urban; 
 
 -- filter urban
-DROP TABLE IF EXISTS    openstreetmap.osm_polygon_urban CASCADE;
-CREATE TABLE            openstreetmap.osm_polygon_urban AS
+
+INSERT INTO            openstreetmap.osm_polygon_urban
     SELECT  osm.gid ::integer AS gid,
             osm.osm_id ::integer AS osm_id,
             --osm.landuse ::text AS landuse,
@@ -53,10 +53,6 @@ CREATE TABLE            openstreetmap.osm_polygon_urban AS
         tags @> '"landuse"=>"farmyard"'::hstore OR 
         tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
     ORDER BY    osm.gid;
-
--- index GIST (geom)
-CREATE INDEX osm_polygon_urban_geom_idx
-    ON openstreetmap.osm_polygon_urban USING GIST (geom);
 
 
 -- OSM Urban Landuse Inside vg250
