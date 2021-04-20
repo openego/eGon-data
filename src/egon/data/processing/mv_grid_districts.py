@@ -546,7 +546,7 @@ def merge_polygons_to_grid_district():
                 nearest_polygon_with_substation(
                     with_substation,
                     without_substation,
-                    "min_distance",
+                    "within",
                     session)
                 break
 
@@ -570,9 +570,40 @@ def merge_polygons_to_grid_district():
 
 def nearest_polygon_with_substation(with_substation, without_substation,
                                     strategy, session):
+    """
+    Assign next neighboring polygon
+
+    For municipalities without a substation inside their polygon the next MV
+    grid district (part) polygon is found and assigned.
+
+    Resulting data including information about the assigned substation is
+    saved to :class:`MvGridDistrictsDissolved`.
+
+    Parameters
+    ----------
+    with_substation: SQLAlchemy subquery
+        Polygons that have a substation inside or are assigned to a substation
+    without_substation: SQLAlchemy subquery
+        Subquery that includes polygons without a substation
+    strategy: str
+        Either
+
+        * "touches": Only polygons that touch another polygon from
+          `with_substation` are considered
+        * "within": Only polygons within a radius of 100 km of polygons
+          without substation are considered for assignment
+    session: SQLAlchemy session
+        SQLAlchemy session obejct
+
+    Returns
+    -------
+    list
+        IDs of polygons that were already assigned to a polygon with a
+        substation
+    """
     if strategy == "touches":
         neighboring_criterion = func.ST_Touches(without_substation.c.geom, with_substation.c.geom)
-    elif strategy == "min_distance":
+    elif strategy == "within":
         neighboring_criterion = func.ST_DWithin(
             without_substation.c.geom,
             with_substation.c.geom, 100000)
