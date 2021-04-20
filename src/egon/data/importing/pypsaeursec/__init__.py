@@ -19,12 +19,13 @@ def run_pypsa_eur_sec():
     # execute pypsa-eur-sec
     import os
     import egon.data.subprocess as subproc
-
-
-    pypsa_eur_repos = os.path.dirname(__file__) + "/pysa-eur"
-    technology_data_repos = os.path.dirname(__file__) + "/technology-data"
-    pypsa_eur_sec_repos = os.path.dirname(__file__) + "/pysa-eur-sec"
-
+    from pathlib import Path
+    
+    filepath = Path(".")
+    pypsa_eur_repos = filepath / "pysa-eur"
+    technology_data_repos = filepath / "technology-data"
+    pypsa_eur_sec_repos = filepath / "pysa-eur-sec"
+    pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data/"
 
     if not os.path.exists(pypsa_eur_repos):
         subproc.run(
@@ -33,7 +34,7 @@ def run_pypsa_eur_sec():
                 "clone",
                 "https://github.com/PyPSA/pypsa-eur.git",
             ],
-            cwd=os.path.dirname(__file__),
+            cwd=filepath,
         )
 
     if not os.path.exists(technology_data_repos):
@@ -43,7 +44,7 @@ def run_pypsa_eur_sec():
                 "clone",
                 "https://github.com/PyPSA/technology-data.git",
             ],
-            cwd=os.path.dirname(__file__),
+            cwd=filepath,
         )
         
 
@@ -54,7 +55,7 @@ def run_pypsa_eur_sec():
                 "clone",
                 "https://github.com/openego/pypsa-eur-sec.git",
             ],
-            cwd=os.path.dirname(__file__),
+            cwd=filepath,
         )
     
     subproc.run(
@@ -62,7 +63,7 @@ def run_pypsa_eur_sec():
             "wget",
             "https://nworbmot.org/pypsa-eur-sec-data-bundle-201012.tar.gz",
         ],
-        cwd=pypsa_eur_sec_repos + "/data",
+        cwd=pypsa_eur_sec_repos_data,
     )
  
     subproc.run(
@@ -71,7 +72,7 @@ def run_pypsa_eur_sec():
              "xvzf",
              "pypsa-eur-sec-data-bundle-201012.tar.gz",
         ],
-        cwd=pypsa_eur_sec_repos+ "/data",
+        cwd=pypsa_eur_sec_repos_data,
     )
  
 
