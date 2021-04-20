@@ -139,6 +139,15 @@ class MvGridDistrictsDissolved(Base):
     area = Column(Float)
 
 
+class MvGridDistricts(Base):
+    __tablename__ = "mv_grid_districts"
+    __table_args__ = {"schema": "grid"}
+
+    subst_id = Column(Integer, primary_key=True)
+    geom = Column(Geometry("MultiPolygon", 3035))
+    area = Column(Float)
+
+
 def substations_in_municipalities():
     """
     Create a table that counts number of HV-MV substations in each MV grid
@@ -458,6 +467,8 @@ def merge_polygons_to_grid_district():
     engine = db.engine()
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
     MvGridDistrictsDissolved.__table__.create(bind=engine)
+    MvGridDistricts.__table__.drop(bind=engine, checkfirst=True)
+    MvGridDistricts.__table__.create(bind=engine)
 
     with session_scope() as session:
         # Step 1: Merge municipalitiy parts cut by voronoi polygons according
@@ -552,6 +563,22 @@ def merge_polygons_to_grid_district():
         session.execute(assigned_polygons_insert)
         session.commit()
 
+        # Step 4: Merge MV grid district parts
+        # Forms one (multi-)polygon for each substation
+        joined_mv_grid_district_parts = session.query(
+            MvGridDistrictsDissolved.subst_id,
+        func.ST_Multi(func.ST_Union(MvGridDistrictsDissolved.geom)).label("geom"),
+        func.sum(MvGridDistrictsDissolved.area).label("area")
+        ).group_by(
+            MvGridDistrictsDissolved.subst_id)
+
+        joined_mv_grid_district_parts_insert = \
+            MvGridDistricts.__table__.insert().from_select(
+                MvGridDistricts.__table__.columns,
+                joined_mv_grid_district_parts.subquery()
+            )
+        session.execute(joined_mv_grid_district_parts_insert)
+        session.commit()
 
 substations_in_municipalities()
 split_multi_substation_municipalities()
