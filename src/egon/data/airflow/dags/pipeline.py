@@ -203,9 +203,9 @@ with airflow.DAG(
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
-    
+
     run_pypsaeursec = PythonVirtualenvOperator(
-        task_id= "run_pypsaeursec",
+        task_id="run_pypsaeursec",
         python_callable=pypsaeursec.run_pypsa_eur_sec,
         requirements=[
             "-r",
@@ -213,11 +213,11 @@ with airflow.DAG(
         ],
         python_version="3.8",
         )
-    
+
     setup >> run_pypsaeursec
-    
+
     pypsaeursec_insert_data = PythonOperator(
-        task_id= "pypsaeursec_insert_data",
+        task_id="pypsaeursec_insert_data",
         python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,
         )
 
