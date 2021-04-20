@@ -209,9 +209,7 @@ with airflow.DAG(
         python_callable=pypsaeursec.run_pypsa_eur_sec,
         requirements=[
             "-r",
-            (
-                resources.files(pypsaeursec) / "requirements_pypsaeursec.txt"
-            ).absolute(),
+            (resources.files(pypsaeursec) / "requirements.txt").absolute(),
         ],
         python_version="3.8",
         )
