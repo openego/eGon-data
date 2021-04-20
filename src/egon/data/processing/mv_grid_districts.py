@@ -493,6 +493,12 @@ def merge_polygons_to_grid_district():
     a single grid district per one HV-MV substation. Prior determined
     assignment of cut polygons parts is used as well as proximity of entire
     municipality polygons to polygons with a substation inside.
+
+    * Step 1: Merge municipality parts that are assigned to the same substation
+    * Step 2: Insert municipality polygons with exactly one substation
+    * Step 3: Assign municipality polygons without a substation and insert
+      to table
+    * Step 4: Merge MV grid district parts
     """
 
     engine = db.engine()
@@ -502,7 +508,7 @@ def merge_polygons_to_grid_district():
     MvGridDistricts.__table__.create(bind=engine)
 
     with session_scope() as session:
-        # Step 1: Merge municipalitiy parts cut by voronoi polygons according
+        # Step 1: Merge municipality parts cut by voronoi polygons according
         # to prior determined associated substation
         joined_municipality_parts = session.query(
             VoronoiMunicipalityCutsAssigned.subst_id,
