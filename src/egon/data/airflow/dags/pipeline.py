@@ -207,9 +207,12 @@ with airflow.DAG(
     run_pypsaeursec = PythonVirtualenvOperator(
         task_id= "run_pypsaeursec",
         python_callable=pypsaeursec.run_pypsa_eur_sec,
-        requirements=["-r", os.path.abspath(os.path.join(
-                os.path.dirname(__file__), "..", "..", "importing", 
-                "pypsaeursec", "requirements_pypsaeursec.txt"))],
+        requirements=[
+            "-r",
+            (
+                resources.files(pypsaeursec) / "requirements_pypsaeursec.txt"
+            ).absolute(),
+        ],
         python_version="3.8",
         )
     
