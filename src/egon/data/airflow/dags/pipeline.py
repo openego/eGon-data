@@ -212,14 +212,14 @@ with airflow.DAG(
             (resources.files(pypsaeursec) / "requirements.txt").absolute(),
         ],
         python_version="3.8",
-        )
+    )
 
     setup >> run_pypsaeursec
 
     pypsaeursec_insert_data = PythonOperator(
         task_id="pypsaeursec_insert_data",
         python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,
-        )
+    )
 
     create_tables >> pypsaeursec_insert_data
 
