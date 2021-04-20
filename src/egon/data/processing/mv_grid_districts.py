@@ -377,7 +377,7 @@ def split_multi_substation_municipalities():
             # another polygon that has a substation or that was already
             # assigned
             if (remaining_polygons[-1]) < remaining_polygons[-2]:
-                assign_next_substation(polygons_for_assignment,
+                assign_substation_municipality_fragments(polygons_for_assignment,
                                        cut_0subst.subquery(),
                                        "touches",
                                        session)
@@ -385,14 +385,45 @@ def split_multi_substation_municipalities():
                 break
 
         # Step 5: Assign remaining polygons that are non-touching
-        assign_next_substation(polygons_for_assignment,
+        assign_substation_municipality_fragments(polygons_for_assignment,
                                cut_0subst.subquery(),
                                "min_distance",
                                session)
 
 
-def assign_next_substation(with_substation, without_substation, strategy,
+def assign_substation_municipality_fragments(with_substation,
+                                             without_substation, strategy,
                            session):
+    """
+    Assign subst_id from next neighboring polygon to municipality fragment
+
+    For parts municipalities without a substation inside their polygon the
+    next municipality polygon part is found and assigned.
+
+    Resulting data including information about the assigned substation is
+    saved to :class:`VoronoiMunicipalityCutsAssigned`.
+
+    Parameters
+    ----------
+    with_substation: SQLAlchemy subquery
+        Polygons that have a substation inside or are assigned to a substation
+    without_substation: SQLAlchemy subquery
+        Subquery that includes polygons without a substation
+    strategy: str
+        Either
+
+        * "touches": Only polygons that touch another polygon from
+          `with_substation` are considered
+        * "within": Only polygons within a radius of 100 km of polygons
+          without substation are considered for assignment
+    session: SQLAlchemy session
+        SQLAlchemy session obejct
+
+    See Also
+    --------
+    The function :func:`nearest_polygon_with_substation` is very similar, but
+    different in detail.
+    """
     # Determine nearest neighboring polygon that has a substation
     columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
 
