@@ -515,26 +515,40 @@ def merge_polygons_to_grid_district():
 
         # Step 3: Assign municipality polygons without a substation and insert
         # to table
-        with_substation = session.query(
-            MvGridDistrictsDissolved.subst_id,
-            MvGridDistrictsDissolved.geom
-        ).subquery()
-        without_substation = (
-            session.query(
-                HvmvSubstPerMunicipality.geometry.label("geom"),
-                HvmvSubstPerMunicipality.id)
-                .filter(
-                HvmvSubstPerMunicipality.subst_count == 0)
-                .subquery()
-        )
+        already_assigned = []
+        while True:
+            previous_ids_length = len(already_assigned)
+            with_substation = session.query(
+                MvGridDistrictsDissolved.subst_id,
+                MvGridDistrictsDissolved.geom
+            ).subquery()
+            without_substation = (
+                session.query(
+                    HvmvSubstPerMunicipality.geometry.label("geom"),
+                    HvmvSubstPerMunicipality.id)
+                    .filter(
+                    HvmvSubstPerMunicipality.subst_count == 0).filter(
+                    HvmvSubstPerMunicipality.id.notin_(already_assigned)
+                )
+                    .subquery()
+            )
 
-        # Find nearest neighboring polygon from with_substation for each
-        # polygon from without_substation
-        nearest_polygon_with_substation(
-            with_substation,
-            without_substation,
-            "touches",
-            session)
+            # Find nearest neighboring polygon from with_substation for each
+            # polygon from without_substation
+            newly_assigned_ids = nearest_polygon_with_substation(
+                with_substation,
+                without_substation,
+                "touches",
+                session)
+            already_assigned.extend(newly_assigned_ids)
+
+            if not len(already_assigned) > previous_ids_length:
+                nearest_polygon_with_substation(
+                    with_substation,
+                    without_substation,
+                    "min_distance",
+                    session)
+                break
 
         # Step 4: Merge MV grid district parts
         # Forms one (multi-)polygon for each substation
@@ -579,6 +593,12 @@ def nearest_polygon_with_substation(with_substation, without_substation,
                          with_substation.c.geom)
     ).subquery()
 
+    # Save list of newly assigned polygons
+    newly_assigned = session.query(all_nearest_neighbors.c.id).distinct(
+        all_nearest_neighbors.c.id).all()
+    newly_assigned_ids = [i for i, in newly_assigned]
+
+    # Take only one candidate polygon for assgning it
     nearest_neighbors = session.query(
         all_nearest_neighbors.c.subst_id,
         all_nearest_neighbors.c.geom,
@@ -597,6 +617,8 @@ def nearest_polygon_with_substation(with_substation, without_substation,
     )
     session.execute(assigned_polygons_insert)
     session.commit()
+
+    return newly_assigned_ids
 
 substations_in_municipalities()
 split_multi_substation_municipalities()
