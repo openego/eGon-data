@@ -530,38 +530,11 @@ def merge_polygons_to_grid_district():
 
         # Find nearest neighboring polygon from with_substation for each
         # polygon from without_substation
-        all_nearest_neighbors = session.query(
-            without_substation.c.id,
-            func.ST_Multi(without_substation.c.geom).label("geom"),
-            with_substation.c.subst_id,
-            func.ST_Area(func.ST_Multi(without_substation.c.geom)).label("area"),
-        ).filter(func.ST_DWithin(
-            without_substation.c.geom,
-            with_substation.c.geom, 100000)
-        ).order_by(
-            without_substation.c.id,
-            func.ST_Distance(without_substation.c.geom,
-                             with_substation.c.geom)
-        ).subquery()
-
-        nearest_neighbors = session.query(
-            all_nearest_neighbors.c.subst_id,
-            all_nearest_neighbors.c.geom,
-            all_nearest_neighbors.c.area
-        ).distinct(
-            all_nearest_neighbors.c.id)
-
-        # Insert polygons with newly assigned substation
-        assigned_polygons_insert = MvGridDistrictsDissolved.__table__.insert().from_select(
-            [
-                c
-                for c in MvGridDistrictsDissolved.__table__.columns
-                if c.name not in ["id"]
-            ],
-            nearest_neighbors,
-        )
-        session.execute(assigned_polygons_insert)
-        session.commit()
+        nearest_polygon_with_substation(
+            with_substation,
+            without_substation,
+            "touches",
+            session)
 
         # Step 4: Merge MV grid district parts
         # Forms one (multi-)polygon for each substation
@@ -579,6 +552,51 @@ def merge_polygons_to_grid_district():
             )
         session.execute(joined_mv_grid_district_parts_insert)
         session.commit()
+
+
+def nearest_polygon_with_substation(with_substation, without_substation,
+                                    strategy, session):
+    if strategy == "touches":
+        neighboring_criterion = func.ST_Touches(without_substation.c.geom, with_substation.c.geom)
+    elif strategy == "min_distance":
+        neighboring_criterion = func.ST_DWithin(
+            without_substation.c.geom,
+            with_substation.c.geom, 100000)
+    else:
+        raise ValueError(f"Invalid input for 'strategy': {strategy}")
+
+    # Find nearest neighboring polygon from with_substation for each
+    # polygon from without_substation
+    all_nearest_neighbors = session.query(
+        without_substation.c.id,
+        func.ST_Multi(without_substation.c.geom).label("geom"),
+        with_substation.c.subst_id,
+        func.ST_Area(func.ST_Multi(without_substation.c.geom)).label("area"),
+    ).filter(neighboring_criterion
+    ).order_by(
+        without_substation.c.id,
+        func.ST_Distance(without_substation.c.geom,
+                         with_substation.c.geom)
+    ).subquery()
+
+    nearest_neighbors = session.query(
+        all_nearest_neighbors.c.subst_id,
+        all_nearest_neighbors.c.geom,
+        all_nearest_neighbors.c.area
+    ).distinct(
+        all_nearest_neighbors.c.id)
+
+    # Insert polygons with newly assigned substation
+    assigned_polygons_insert = MvGridDistrictsDissolved.__table__.insert().from_select(
+        [
+            c
+            for c in MvGridDistrictsDissolved.__table__.columns
+            if c.name not in ["id"]
+        ],
+        nearest_neighbors,
+    )
+    session.execute(assigned_polygons_insert)
+    session.commit()
 
 substations_in_municipalities()
 split_multi_substation_municipalities()
