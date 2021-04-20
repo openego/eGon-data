@@ -554,7 +554,7 @@ def merge_polygons_to_grid_district():
         # Forms one (multi-)polygon for each substation
         joined_mv_grid_district_parts = session.query(
             MvGridDistrictsDissolved.subst_id,
-        func.ST_Multi(func.ST_Union(MvGridDistrictsDissolved.geom)).label("geom"),
+        func.ST_Multi(func.ST_Buffer(func.ST_Buffer(func.ST_Union(MvGridDistrictsDissolved.geom), 0.1), -0.1)).label("geom"),
         func.sum(MvGridDistrictsDissolved.area).label("area")
         ).group_by(
             MvGridDistrictsDissolved.subst_id)
