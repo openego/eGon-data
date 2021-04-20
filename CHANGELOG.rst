@@ -113,3 +113,5 @@ Bug fixes
   `#201 <https://github.com/openego/eGon-data/issues/201>`_
 * Delete zensus buildings, apartments and households in unpopulated cells
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
+* Fix input table of electrical-demands-zensus
+  `#217 <https://github.com/openego/eGon-data/issues/217>`_
