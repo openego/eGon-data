@@ -777,4 +777,3 @@ def define_mv_grid_districts():
         bind=engine, checkfirst=True
     )
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
-
