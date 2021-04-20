@@ -22,9 +22,9 @@ def run_pypsa_eur_sec():
     from pathlib import Path
     
     filepath = Path(".")
-    pypsa_eur_repos = filepath / "pysa-eur"
+    pypsa_eur_repos = filepath / "pypsa-eur"
     technology_data_repos = filepath / "technology-data"
-    pypsa_eur_sec_repos = filepath / "pysa-eur-sec"
+    pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
     pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data/"
 
     if not os.path.exists(pypsa_eur_repos):
