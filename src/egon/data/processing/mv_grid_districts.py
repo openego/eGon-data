@@ -688,6 +688,29 @@ def nearest_polygon_with_substation(with_substation, without_substation,
 
     return newly_assigned_ids
 
-substations_in_municipalities()
-split_multi_substation_municipalities()
-merge_polygons_to_grid_district()
+
+def define_mv_grid_districts():
+    """
+    Define spatial extent of MV grid districts
+
+    The process of identifying the boundary of medium-voltage grid districts
+    is organized in three steps
+
+    1. :func:`substations_in_municipalities`: The number of substations
+      located inside each municipality is calculated
+    2. :func:`split_multi_substation_municipalities`: The municipalities with
+      >1 substation inside are split by Voronoi polygons around substations
+    3. :func:`merge_polygons_to_grid_district`: All polygons are merged such
+      that one polygon has exactly one single substation inside
+
+    Finally, intermediate tables used for storing data temporarily are deleted.
+    """
+    substations_in_municipalities()
+    split_multi_substation_municipalities()
+    merge_polygons_to_grid_district()
+
+    engine = db.engine()
+    HvmvSubstPerMunicipality.__table__.drop(bind=engine, checkfirst=True)
+    VoronoiMunicipalityCuts.__table__.drop(bind=engine, checkfirst=True)
+    VoronoiMunicipalityCutsAssigned.__table__.drop(bind=engine, checkfirst=True)
+    MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
