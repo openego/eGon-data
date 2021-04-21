@@ -2,8 +2,7 @@
 the pysa-eur-sec scenario parameter creation
 """
 
-import os
-
+import importlib_resources as resources
 import pandas as pd
 
 from egon.data import db
@@ -81,9 +80,9 @@ def pypsa_eur_sec_eGon100_capacities():
     )
 
     # read-in installed capacities
-    target_file = os.path.join(
-        os.path.dirname(__file__),
-        scenario_config("eGon100")["paths"]["capacities"],
+    target_file = (
+        resources.files("egon.data.importing.pypsaeursec")
+        / scenario_config("eGon100")["paths"]["capacities"]
     )
 
     df = pd.read_csv(target_file, skiprows=5)
