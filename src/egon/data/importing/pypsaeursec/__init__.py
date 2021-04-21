@@ -3,12 +3,13 @@ the pysa-eur-sec scenario parameter creation
 """
 
 import os
+
+from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
+
 from egon.data import db
 from egon.data.importing.nep_input_data import scenario_config
-from sqlalchemy.ext.declarative import declarative_base
 import egon.data.subprocess as subproc
-
 
 ### will be later imported from another file ###
 Base = declarative_base()
@@ -17,9 +18,10 @@ Base = declarative_base()
 def run_pypsa_eur_sec():
 
     # execute pypsa-eur-sec
-    import os
-    import egon.data.subprocess as subproc
     from pathlib import Path
+    import os
+
+    import egon.data.subprocess as subproc
 
     filepath = Path(".")
     pypsa_eur_repos = filepath / "pypsa-eur"
