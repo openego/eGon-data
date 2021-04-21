@@ -12,7 +12,6 @@ from egon.data.importing.nep_input_data import scenario_config
 def run_pypsa_eur_sec():
 
     from pathlib import Path
-    import os
 
     import egon.data.subprocess as subproc
 
@@ -22,19 +21,19 @@ def run_pypsa_eur_sec():
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
     pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data/"
 
-    if not os.path.exists(pypsa_eur_repos):
+    if not pypsa_eur_repos.exists():
         subproc.run(
             ["git", "clone", "https://github.com/PyPSA/pypsa-eur.git"],
             cwd=filepath,
         )
 
-    if not os.path.exists(technology_data_repos):
+    if not technology_data_repos.exists():
         subproc.run(
             ["git", "clone", "https://github.com/PyPSA/technology-data.git"],
             cwd=filepath,
         )
 
-    if not os.path.exists(pypsa_eur_sec_repos):
+    if not pypsa_eur_sec_repos.exists():
         subproc.run(
             ["git", "clone", "https://github.com/openego/pypsa-eur-sec.git"],
             cwd=filepath,
