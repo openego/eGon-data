@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, VARCHAR
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
-
+import pandas as pd
 import egon.data.importing.scenarios.parameters as parameters
 
 Base = declarative_base()
@@ -93,3 +93,62 @@ def insert_scenarios():
     session.add(egon100re)
 
     session.commit()
+
+def get_sector_parameters(sector, scenario=None):
+    """ Returns parameters for each sector as dictionary.
+
+    If scenario=None data for all scenarios is returned as pandas.DataFrame.
+    Otherwise the parameters of the specific scenario are returned as a dict.
+
+    Parameters
+    ----------
+    sector : str
+        Name of the sector.
+        Options are: ['global', 'electricity', 'heat', 'gas', 'mobility']
+    scenario : str, optional
+        Name of the scenario. The default is None.
+
+    Returns
+    -------
+    values : dict or pandas.DataFrane
+        List or table of parameters for the selected sector
+
+    """
+
+
+    if scenario:
+        if scenario in db.select_dataframe(
+                "SELECT name FROM scenario.egon_scenario_parameters"
+                ).name.values:
+            values = (
+                db.select_dataframe(
+                    f"""
+                    SELECT {sector}_parameters as val
+                    FROM scenario.egon_scenario_parameters
+                    WHERE name = '{scenario}';""").val[0]
+                )
+        else:
+            print(f"Scenario name {scenario} is not valid.")
+    else:
+        values = pd.DataFrame(
+            db.select_dataframe(
+                    f"""
+                    SELECT {sector}_parameters as val
+                    FROM scenario.egon_scenario_parameters
+                    WHERE name='eGon2035'""",
+                    ).val[0],
+                index = ['eGon2035']
+                ).append(
+                    pd.DataFrame(
+                        db.select_dataframe(
+                            f"""
+                            SELECT {sector}_parameters as val
+                            FROM scenario.egon_scenario_parameters
+                            WHERE name='eGon100RE'""",
+                            ).val[0],
+                        index = ['eGon100RE']
+                        )
+                    )
+
+    return values
+

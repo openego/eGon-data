@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import egon.data.config
 from egon.data import db
+from egon.data.importing.scenarios import get_sector_parameters
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from disaggregator import data, spatial
@@ -453,9 +454,8 @@ def insert_society_data():
         db.execute_sql(
                 f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};")
 
-    target_years = np.append(db.select_dataframe(
-        "SELECT global_parameters -> 'population_year' as years "
-        "FROM grid.egon_scenarios").years.values, 2018)
+    target_years = np.append(
+        get_sector_parameters('global').population_year.values, 2018)
 
     for year in target_years:
         df_pop = pd.DataFrame(data.population(year=year))
