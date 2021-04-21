@@ -13,11 +13,12 @@ from urllib.request import urlretrieve
 import json
 import os
 import time
+import datetime
 
 from egon.data import db
 from egon.data.config import settings
 import egon.data.config
-from egon.data.metadata import license_odbl
+from egon.data.metadata import license_odbl, context
 import egon.data.subprocess as subprocess
 
 
@@ -127,39 +128,42 @@ def add_metadata():
     for table in osm_config["processed"]["tables"]:
         table_suffix = table.split("_")[1]
         meta = {
+            "name": ".".join([osm_config["processed"]["tables"], table]),
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
             "description": (
                 "OpenStreetMap is a free, editable map of the"
                 " whole world that is being built by volunteers"
                 " largely from scratch and released with"
-                " an open-content license."
+                " an open-content license.\n\n"
+                "The OpenStreetMap data here is the result of an PostgreSQL "
+                "database import using osm2pgsql with a custom style file."
             ),
-            "language": ["EN", "DE"],
+            "language": ["en-EN", "de-DE"],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": context(),
             "spatial": {
-                "location": "",
+                "location": None,
                 "extent": f"{spatial_extend}",
-                "resolution": "",
+                "resolution": None,
             },
             "temporal": {
                 "referenceDate": f"{osm_data_date}",
                 "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
+                    "start": None,
+                    "end": None,
+                    "resolution": None,
+                    "alignment": None,
+                    "aggregationType": None,
                 },
             },
             "sources": [
                 {
                     "title": (
-                        "Geofabrik - Download - OpenStreetMap Data Extracts"
+                        "OpenStreetMap Data Extracts (Geofabrik)"
                     ),
                     "description": (
-                        'Data dump taken on "referenceDate",'
-                        f" i.e. {osm_data_date}."
-                        " A subset of this is selected using osm2pgsql"
-                        ' using the style file "oedb.style".'
+                        "Full data extract of OpenStreetMap data for defined "
+                        "spatial extent at 'referenceDate'"
                     ),
                     "path": f"{osm_url}",
                     "licenses": licenses,
@@ -170,13 +174,13 @@ def add_metadata():
                 {
                     "title": "Guido Pleßmann",
                     "email": "http://github.com/gplssm",
-                    "date": time.strftime("%Y-%m-%d"),
+                    "date": "",
                     "object": "",
-                    "comment": "Imported data",
+                    "comment": "",
                 }
             ],
             "metaMetadata": {
-                "metadataVersion": "OEP-1.4.0",
+                "metadataVersion": "OEP-1.4.1",
                 "metadataLicense": {
                     "name": "CC0-1.0",
                     "title": "Creative Commons Zero v1.0 Universal",
