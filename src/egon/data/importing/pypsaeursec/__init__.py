@@ -11,7 +11,6 @@ from egon.data.importing.nep_input_data import scenario_config
 
 def run_pypsa_eur_sec():
 
-    # execute pypsa-eur-sec
     from pathlib import Path
     import os
 
