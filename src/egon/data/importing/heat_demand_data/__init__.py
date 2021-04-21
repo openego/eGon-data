@@ -16,12 +16,11 @@ from jinja2 import Template
 
 from egon.data import db, subprocess
 import egon.data.config
-from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
 from urllib.request import urlretrieve
 import os
 import zipfile
 
-import pandas as pd
 import geopandas as gpd
 
 # for raster operations
@@ -35,7 +34,7 @@ import json
 # import time
 
 # packages for ORM class definition
-from sqlalchemy import Column, String, Float, Integer, Sequence
+from sqlalchemy import Column, String, Float, Integer, Sequence, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -54,7 +53,7 @@ class EgonPetaHeat(Base):
     )
     demand = Column(Float)
     sector = Column(String)
-    scenario = Column(String)
+    scenario = Column(String, ForeignKey(EgonScenario.name))
     version = Column(String)
     zensus_population_id = Column(Integer)
 
@@ -754,6 +753,14 @@ def add_metadata():
                             "reference": {
                                 "resource": "society.destatis_zensus_population_per_ha",
                                 "fields": ["id"],
+                            },
+                        },
+
+                        {
+                            "fields": ["scenario"],
+                            "reference": {
+                                "resource": "scenario.egon_scenario_parameters",
+                                "fields": ["name"],
                             },
                         }
                     ],

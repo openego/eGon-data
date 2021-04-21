@@ -170,7 +170,7 @@ with airflow.DAG(
         python_callable=import_dr.create_tables,
     )
 
-    setup >> demandregio_tables
+    scenario_input_tables >> demandregio_tables
 
     demandregio_society = PythonOperator(
         task_id="demandregio-society",

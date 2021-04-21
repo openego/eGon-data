@@ -31,7 +31,8 @@ def create_table():
     """
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS scenario;")
-    EgonScenario.__table__.drop(bind=engine, checkfirst=True)
+    db.execute_sql(
+        "DROP TABLE IF EXISTS scenario.egon_scenario_parameters CASCADE;")
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
 
