@@ -12,6 +12,7 @@ from egon.data.importing.nep_input_data import scenario_config
 def run_pypsa_eur_sec():
 
     from pathlib import Path
+    from urllib.request import urlretrieve
 
     import egon.data.subprocess as subproc
 
@@ -39,13 +40,10 @@ def run_pypsa_eur_sec():
             cwd=filepath,
         )
 
-    subproc.run(
-        [
-            "wget",
-            "https://nworbmot.org/pypsa-eur-sec-data-bundle-201012.tar.gz",
-        ],
-        cwd=pypsa_eur_sec_repos_data,
-    )
+    datafile = "pypsa-eur-sec-data-bundle-201012.tar.gz"
+    datapath = pypsa_eur_sec_repos_data / datafile
+    if not datapath.exists():
+        urlretrieve(f"https://nworbmot.org/{datafile}", datapath)
 
     subproc.run(
         ["tar", "xvzf", "pypsa-eur-sec-data-bundle-201012.tar.gz"],
