@@ -77,8 +77,8 @@ demandregio_society:
       schema: 'boundaries'
       table: 'vg250_krs'
     scenarios:
-      schema: 'grid'
-      table: 'egon_scenarios'
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     population:
       schema: 'society'
@@ -96,8 +96,8 @@ demandregio_household_demand:
       schema: 'boundaries'
       table: 'vg250_krs'
     scenarios:
-      schema: 'grid'
-      table: 'egon_scenarios'
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     household_demand:
       schema: 'demand'
@@ -115,8 +115,8 @@ demandregio_cts_ind_demand:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
     scenarios:
-      schema: 'grid'
-      table: 'egon_scenarios'
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     cts_ind_demand:
       schema: 'demand'
