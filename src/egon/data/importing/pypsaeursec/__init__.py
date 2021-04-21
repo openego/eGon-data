@@ -7,7 +7,6 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.importing.nep_input_data import scenario_config
-import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
