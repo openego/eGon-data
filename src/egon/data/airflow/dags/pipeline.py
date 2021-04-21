@@ -26,7 +26,6 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.demandregio as process_dr
-from egon.data import db
 
 
 with airflow.DAG(
