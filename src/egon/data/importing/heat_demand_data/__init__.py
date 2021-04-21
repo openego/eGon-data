@@ -16,6 +16,7 @@ from jinja2 import Template
 
 from egon.data import db, subprocess
 import egon.data.config
+from egon.data.importing.scenarios import get_sector_parameters
 from urllib.request import urlretrieve
 import os
 import zipfile
@@ -308,7 +309,7 @@ def future_heat_demand_germany(scenario_name):
 
     The calculation is based on Peta5_0_1 heat demand densities, cutcut for
     Germany, for the year 2015. The given scenario name is used to read the
-    adjustment factors for the heat demand rasters from a file.
+    adjustment factors for the heat demand rasters from the scenario table.
 
     Parameters
     ----------
@@ -333,34 +334,14 @@ def future_heat_demand_germany(scenario_name):
 
         Check, if there are populated cells without heat demand.
 
-        Check, if there are unpoplated cells with residential heat demands.
-
-        Option: Load the adjustment factors from an excel files, and not from
-        a csv: That might be implemented later for better documentation of the
-        development of the adjustment factors.
-        pip install xlrd to make it work
-        xlsfilename = ""
-        df_reductions = pd.read_excel(xlsfilename,
-                                      sheet_name =
-                                      "scenarios_for_raster_adjustment")
     """
+    # Load the values
+    heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
 
-    # Load the csv file with the sceanario data for raster adjustment
-    csvfilename = os.path.join(
-        os.path.dirname(__file__), "scenarios_HD_raster_adjustments.csv"
-    )
-    df_reductions = pd.read_csv(csvfilename).set_index("scenario")
+    res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
 
-    # Load the values, if scenario name is found in the file
-    if scenario_name in df_reductions.index:
-        res_hd_reduction = df_reductions.loc[
-            scenario_name, "HD_reduction_residential"
-        ]
-        ser_hd_reduction = df_reductions.loc[
-            scenario_name, "HD_reduction_service_sector"
-        ]
-    else:
-        print(f"Scenario {scenario_name} not defined.")
+    ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
+
 
     # Define the directory where the created rasters will be saved
     scenario_raster_directory = "heat_scenario_raster"

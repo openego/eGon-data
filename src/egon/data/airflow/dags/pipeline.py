@@ -347,6 +347,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> heat_demand_import
     zensus_inside_ger_metadata >> heat_demand_import
+    scenario_input_import >> heat_demand_import
 
     # Power plant setup
     power_plant_tables = PythonOperator(

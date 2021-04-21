@@ -146,11 +146,17 @@ def heat(scenario):
 
     if scenario == 'eGon2035':
         parameters = {
+            'DE_demand_reduction_residential': 0.854314018923104,
+            'DE_demand_reduction_service': 0.498286864771128,
+            'DE_district_heating_share': 0.14
 
             }
 
     elif scenario == 'eGon100RE':
         parameters = {
+            'DE_demand_reduction_residential': 0.640720648501849,
+            'DE_demand_reduction_service': 0.390895195300713,
+            'DE_district_heating_share': 0.19
 
             }
 
