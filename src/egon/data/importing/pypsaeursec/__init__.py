@@ -26,19 +26,16 @@ def run_pypsa_eur_sec():
     if not pypsa_eur_repos.exists():
         subproc.run(
             ["git", "clone", "https://github.com/PyPSA/pypsa-eur.git"],
-            cwd=filepath,
         )
 
     if not technology_data_repos.exists():
         subproc.run(
             ["git", "clone", "https://github.com/PyPSA/technology-data.git"],
-            cwd=filepath,
         )
 
     if not pypsa_eur_sec_repos.exists():
         subproc.run(
             ["git", "clone", "https://github.com/openego/pypsa-eur-sec.git"],
-            cwd=filepath,
         )
 
     datafile = "pypsa-eur-sec-data-bundle-201012.tar.gz"
