@@ -13,6 +13,7 @@ def run_pypsa_eur_sec():
 
     from pathlib import Path
     from urllib.request import urlretrieve
+    import tarfile
 
     import egon.data.subprocess as subproc
 
@@ -44,11 +45,8 @@ def run_pypsa_eur_sec():
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
         urlretrieve(f"https://nworbmot.org/{datafile}", datapath)
-
-    subproc.run(
-        ["tar", "xvzf", "pypsa-eur-sec-data-bundle-201012.tar.gz"],
-        cwd=pypsa_eur_sec_repos_data,
-    )
+        tar = tarfile.open(datapath)
+        tar.extractall(pypsa_eur_sec_repos_data)
 
     subproc.run(
         ["snakemake", "-j1", "prepare_sector_networks"],
