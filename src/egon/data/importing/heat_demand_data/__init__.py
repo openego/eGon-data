@@ -499,9 +499,14 @@ def adjust_residential_heat_to_zensus(scenario):
     """
     Adjust residential heat demands to fit to zensus population.
 
+    In some cases, Peta assigns residential heat demand to unpopulated cells.
+    This can be caused by the different population data used in Peta or
+    buildings in zenus cells without a population
+    (see :func:`egon.data.importing.zensus.adjust_zensus_misc`)
+
     Residential heat demand in cells without zensus population is dropped.
     Residential heat demand in cells with zensus population is scaled to meet
-    the formal overall residential heat demands.
+    the overall residential heat demands.
 
     Parameters
     ----------

@@ -67,7 +67,11 @@ Added
   `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
 * Identification of medium-voltage grid districts
-  `#10 <https://github.com/openego/eGon-data/pull/10>`_
+  `#10 <https://github.com/openego/eGon-data/pull/10>`_  
+* Distribute electrical demands of households to zensus cells
+  `#181 <https://github.com/openego/eGon-data/issues/181>`_
+* Distribute electrical demands of cts to zensus cells
+  `#210 <https://github.com/openego/eGon-data/issues/210>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -98,6 +102,8 @@ Changed
   `#166 <https://github.com/openego/eGon-data/issues/166>`_
 * Add gdal to pre-requisites
   `#185 <https://github.com/openego/eGon-data/issues/185>`_
+* Update task zensus-inside-germany
+  `#196 <https://github.com/openego/eGon-data/issues/196>`_
 
 Bug fixes
 ---------
@@ -105,3 +111,9 @@ Bug fixes
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
   `#171 <https://github.com/openego/eGon-data/issues/171>`_
+* Adjust names of demandregios nuts3 regions according to nuts version 2016
+  `#201 <https://github.com/openego/eGon-data/issues/201>`_
+* Delete zensus buildings, apartments and households in unpopulated cells
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
+* Fix input table of electrical-demands-zensus
+  `#217 <https://github.com/openego/eGon-data/issues/217>`_

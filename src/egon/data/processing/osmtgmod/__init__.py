@@ -15,8 +15,8 @@ from egon.data import db
 
 def run_osmtgmod():
 
-    ### execute osmTGmod
-    # todo git clone in den subprocess
+    # execute osmTGmod
+
     osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
 
     if not os.path.exists(osmtgmod_repos):
@@ -41,7 +41,8 @@ def run_osmtgmod():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/importing" + "/openstreetmap/" + target_path
+        egon.data.__path__[0] + "/importing" + "/openstreetmap/"
+        + target_path
     )
     docker_db_config = db.credentials()
 
@@ -74,12 +75,14 @@ def osmtgmod(
     sh = logging.StreamHandler()
     sh.setFormatter(logformat)
     log.addHandler(sh)
-    logging.info("\n\n======================\nego_otg\n======================")
+    logging.info(
+        "\n\n======================\nego_otg\n======================")
     logging.info("Logging to standard output...")
     # catch up some log messages from evaluation of command line arguments
     logging.info("Database: {}".format(config_database))
     logging.info(
-        "Path for configuration file and results: {}".format(config_basepath)
+        "Path for configuration file and results: {}"
+        .format(config_basepath)
     )
     if config_continue_run:
         logging.info(
@@ -89,24 +92,27 @@ def osmtgmod(
             )
         )
     else:
-        logging.info("Starting from scratch. Will remove database if exists.")
+        logging.info("Starting from scratch. "
+                     "Will remove database if exists.")
 
     # ==============================================================
     # read configuration from file and create folder structure
     # ==============================================================
     if docker_db_config is not None:
         logging.info(
-            ("Taking db connection credentials from eGon-data " 
-             "with respect to the given docker_db_config variable")
+            (
+                "Taking db connection credentials from eGon-data "
+                "with respect to the given docker_db_config variable"
+            )
         )
         config = configparser.ConfigParser()
         config.read(config_basepath + ".cfg")
         config["postgres_server"]["host"] = docker_db_config["HOST"]
         config["postgres_server"]["port"] = docker_db_config["PORT"]
-        config["postgres_server"]["user"] = docker_db_config["POSTGRES_USER"]
+        config["postgres_server"]["user"] = docker_db_config[
+            "POSTGRES_USER"]
         config["postgres_server"]["password"] = docker_db_config[
-            "POSTGRES_PASSWORD"
-        ]
+            "POSTGRES_PASSWORD"]
     else:
         logging.info(
             "Reading configuration from file {}.cfg".format(config_basepath)
@@ -147,11 +153,11 @@ def osmtgmod(
                 )
                 or "postgres"
             )
-    ## Setting osmTGmod folder structure:
+    # Setting osmTGmod folder structure:
     logging.info("Checking/Creating file directories")
     input_data_dir = os.path.join(config_basepath, "input_data")
     result_dir = os.path.join(config_basepath, "results")
-    ## Basic folders are created if not existent
+    # Basic folders are created if not existent
     if not os.path.exists(input_data_dir):
         os.makedirs(input_data_dir)
     if not os.path.exists(result_dir):
@@ -167,7 +173,8 @@ def osmtgmod(
             logfile
         )
     )
-    logging.info("\n\n======================\nego_otg\n======================")
+    logging.info(
+        "\n\n======================\nego_otg\n======================")
     # copy config file
     logging.info(
         "Copying configuration file to '{0}'.".format(
@@ -180,18 +187,18 @@ def osmtgmod(
             os.path.join(config_basepath, config_database + ".cfg"),
         )
     )
-    
+
     # ==============================================================
     # setup database
     # ==============================================================
-    ## Server connection:
+    # Server connection:
     logging.info(
         "Testing connection to server {}".format(
             config["postgres_server"]["host"]
         )
     )
     try:
-        # Standard database "postgres" is used to check out server connection
+        # Standard database "postgres" is used to check server connection
         conn_server = psycopg2.connect(
             host=config["postgres_server"]["host"],
             port=config["postgres_server"]["port"],
@@ -207,7 +214,7 @@ def osmtgmod(
         exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
         sys.exit(exceptionValue)
 
-    ## Database connection
+    # Database connection
     if config_continue_run:
         logging.info(
             "Testing connection to database {}".format(config_database)
@@ -232,15 +239,19 @@ def osmtgmod(
         except:
             # Get the most recent exception
             logging.exception(
-                ("Connection failed, unable to continue abstraction process! "
-                "You might want to start from scratch by dropping "
-                "second command line argument.")
+                (
+                    "Connection failed, "
+                    "unable to continue abstraction process! "
+                    "You might want to start from scratch by dropping "
+                    "second command line argument."
+                )
             )
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             sys.exit(exceptionValue)
     else:
         # Connects to new Database
-        logging.info("Connecting to database {} ...".format(config_database))
+        logging.info("Connecting to database {} ..."
+                     .format(config_database))
         conn = psycopg2.connect(
             host=config["postgres_server"]["host"],
             port=config["postgres_server"]["port"],
@@ -261,15 +272,13 @@ def osmtgmod(
         )
         conn.commit()
         logging.info("Status table created.")
-        
+
         # egon-specific, in order to not fill up the results schema,
         # it is dropped before creation
         logging.info("Dropping osmtgmod_results schema if exists")
-        cur.execute(
-        "DROP SCHEMA IF EXISTS osmtgmod_results CASCADE;"
-        )
-        conn.commit()       
-        
+        cur.execute("DROP SCHEMA IF EXISTS osmtgmod_results CASCADE;")
+        conn.commit()
+
         logging.info("Loading functions and result schema ...")
         scripts = [
             "sql-scripts/extensions.sql",
@@ -286,7 +295,7 @@ def osmtgmod(
             conn.commit()
             logging.info("Done.")
         cur.execute(
-            """UPDATE _db_status SET status = TRUE 
+            """UPDATE _db_status SET status = TRUE
             WHERE module = 'grid_model'; """
         )
         conn.commit()
@@ -309,7 +318,7 @@ def osmtgmod(
             )
         )
 
-        # BUG: Python continues (and sets osm_metadata) 
+        # BUG: Python continues (and sets osm_metadata)
         # even in case osmosis fails!!!
         proc = subprocess.Popen(
             "%s --read-pbf %s --write-pgsql \
@@ -329,7 +338,7 @@ def osmtgmod(
         logging.info("Importing OSM-Data...")
         proc.wait()
 
-        # After updating OSM-Data, power_tables (for editing) 
+        # After updating OSM-Data, power_tables (for editing)
         # have to be updated as well
         logging.info("Creating power-tables...")
         cur.execute("SELECT otg_create_power_tables ();")
@@ -413,27 +422,25 @@ def osmtgmod(
         )
         conn.commit()
 
-        ### new
-
         # using the base egon database for transfer bus creation.
-        # import pdb; pdb.set_trace()
         cur.execute(
             """
         DROP TABLE if exists transfer_busses_complete;
         CREATE TABLE transfer_busses_complete as
-        SELECT DISTINCT ON (osm_id) * FROM 
-        (SELECT * FROM grid.egon_ehv_substation 
-        UNION SELECT subst_id, lon, lat, point, polygon, voltage, power_type, 
-        substation, osm_id, osm_www, frequency, subst_name, ref, operator, 
-        dbahn, status 
-        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;						
+        SELECT DISTINCT ON (osm_id) * FROM
+        (SELECT * FROM grid.egon_ehv_substation
+        UNION SELECT subst_id, lon, lat, point, polygon, voltage,
+        power_type, substation, osm_id, osm_www, frequency, subst_name,
+        ref, operator, dbahn, status
+        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;
         """
         )
         conn.commit()
 
         with open(path_for_transfer_busses, "w") as this_file:
             cur.copy_expert(
-                """COPY transfer_busses_complete to STDOUT WITH CSV HEADER""",
+                """COPY transfer_busses_complete to
+                STDOUT WITH CSV HEADER""",
                 this_file,
             )
             conn.commit()
@@ -453,8 +460,9 @@ def osmtgmod(
             center_geom = str(row[3])
             cur.execute(
                 """
-                INSERT INTO transfer_busses (osm_id, object_type, center_geom) 
-                VALUES (%s, %s, %s); 
+                INSERT INTO transfer_busses (osm_id, object_type,
+                                             center_geom)
+                VALUES (%s, %s, %s);
                 """,
                 (osm_id_int, object_type, center_geom),
             )
@@ -463,13 +471,16 @@ def osmtgmod(
 
     # Execute power_script
     logging.info(
-        ("Preparing execution of abstraction script "
-            "'sql-scripts/power_script.sql' ...")
+        (
+            "Preparing execution of abstraction script "
+            "'sql-scripts/power_script.sql' ..."
+        )
     )
-    with codecs.open("sql-scripts/power_script.sql", "r", "utf-8-sig") as fd:
+    with codecs.open("sql-scripts/power_script.sql", "r",
+                     "utf-8-sig") as fd:
         sqlfile = fd.read()
     # remove lines starting with "--" (comments), tabulators and empty line
-    # beware: comments in C-like style (such as /* comment */) are not parsed!
+    # beware: comments in C-like style (such as /* comment */) arn't parsed!
     sqlfile_without_comments = "".join(
         [
             line.lstrip().split("--")[0] + "\n"
@@ -489,17 +500,17 @@ def osmtgmod(
         logging.info("Stating execution of  power script...")
         config_continue_run_at = -1
 
-    if not config_continue_run:  ##debugging - to be removed
+    if not config_continue_run:  # debugging - to be removed
         cur.execute(
             """drop table if exists debug;create table debug
-            (step_before int,max_bus_id int, num_bus int,max_branch_id int, 
-            num_branch int, num_110_bus int, num_220_bus int, 
+            (step_before int,max_bus_id int, num_bus int,max_branch_id int,
+            num_branch int, num_110_bus int, num_220_bus int,
             num_380_bus int)"""
         )
         conn.commit()
 
-    # split sqlfile in commands seperated by ";", while not considering 
-    # symbols for splitting if "escaped" by single quoted strings. 
+    # split sqlfile in commands seperated by ";", while not considering
+    # symbols for splitting if "escaped" by single quoted strings.
     # Drop everything after last semicolon.
     for i, command in enumerate(
         "'".join(
@@ -520,23 +531,26 @@ def osmtgmod(
                 conn.commit()
             except:
                 logging.exception(
-                    ("Exception raised with command {0}. Check data and code "
-                     "and restart with 'python ego_otg.py {1} {0}'.").format(
-                        i, config_database
-                    )
+                    (
+                        "Exception raised with command {0}. "
+                        "Check data and code "
+                        "and restart with 'python ego_otg.py {1} {0}'."
+                    ).format(i, config_database)
                 )
                 sys.exit()
-            if i > 16:  ##debugging - to be removed
+            if i > 16:  # debugging - to be removed
                 cur.execute(
                     """insert into debug values ({0},
-                    (select max(id) from bus_data),(select count(*) 
-                    from bus_data),(select max(branch_id) 
-                    from branch_data),(select count(*) 
-                    from branch_data),(select count(*) 
-                    from bus_data where voltage = 110000), 
-                    (select count (*) from bus_data where voltage = 220000), 
-                    (select count (*) 
-                    from bus_data where voltage = 380000))""".format(i)
+                    (select max(id) from bus_data),(select count(*)
+                    from bus_data),(select max(branch_id)
+                    from branch_data),(select count(*)
+                    from branch_data),(select count(*)
+                    from bus_data where voltage = 110000),
+                    (select count (*) from bus_data where voltage = 220000),
+                    (select count (*)
+                    from bus_data where voltage = 380000))""".format(
+                        i
+                    )
                 )
                 conn.commit()
 
@@ -558,7 +572,8 @@ def osmtgmod(
         logging.info("writing %s..." % table)
         filename = os.path.join(result_dir, table + ".csv")
         logging.info(
-            "Writing contents of table {0} to {1}...".format(table, filename)
+            "Writing contents of table {0} to {1}...".format(table,
+                                                             filename)
         )
         query = "SELECT * FROM osmtgmod_results.%s " % (table,)
         outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER \
@@ -571,3 +586,115 @@ def osmtgmod(
     logging.info("All tables written!")
 
     logging.info("EXECUTION FINISHED SUCCESSFULLY!")
+
+
+def osmtgmmod_to_pypsa(version="'0.0.0'", scenario_name="'Status Quo'"):
+
+    db.execute_sql(
+        f"""
+            -- CLEAN UP OF TABLES
+        TRUNCATE grid.egon_pf_hv_bus CASCADE;
+        TRUNCATE grid.egon_pf_hv_line CASCADE;
+        TRUNCATE grid.egon_pf_hv_transformer CASCADE;
+
+
+        -- BUS DATA
+        INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
+                                         geom)
+        SELECT
+          {version},
+          {scenario_name},
+          bus_i AS bus_id,
+          base_kv AS v_nom,
+          geom
+          FROM osmtgmod_results.bus_data
+          WHERE result_id = 1;
+
+
+        -- BRANCH DATA
+        INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0,
+                                          bus1, x, r, b, s_nom, cables,
+                                          geom, topo)
+        SELECT
+          {version},
+          {scenario_name},
+          branch_id AS line_id,
+          f_bus AS bus0,
+          t_bus AS bus1,
+          br_x AS x,
+          br_r AS r,
+          br_b as b,
+          rate_a as s_nom,
+          cables,
+          geom,
+          topo
+          FROM osmtgmod_results.branch_data
+          WHERE result_id = 1 and (link_type = 'line' or
+                                   link_type = 'cable');
+
+
+        -- TRANSFORMER DATA
+        INSERT INTO grid.egon_pf_hv_transformer (version, scn_name,
+                                                 trafo_id, bus0, bus1, x,
+                                                 s_nom, tap_ratio,
+                                                 phase_shift, geom, topo)
+        SELECT
+          {version},
+          {scenario_name},
+          branch_id AS trafo_id,
+          f_bus AS bus0,
+          t_bus AS bus1,
+          br_x/100 AS x,
+          rate_a as s_nom,
+          tap AS tap_ratio,
+          shift AS phase_shift,
+          geom,
+          topo
+          FROM osmtgmod_results.branch_data
+          WHERE result_id = 1 and link_type = 'transformer';
+
+
+        -- per unit to absolute values
+
+        UPDATE grid.egon_pf_hv_line a
+        SET
+             r = r * (((SELECT v_nom
+                        FROM grid.egon_pf_hv_bus
+                        WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
+             x = x * (((SELECT v_nom
+                        FROM grid.egon_pf_hv_bus
+                        WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
+             b = b * (((SELECT v_nom
+                        FROM grid.egon_pf_hv_bus
+                        WHERE bus_id=bus1)*1000)^2 / (100 * 10^6));
+
+        -- calculate line length (in km) from geoms
+
+        UPDATE grid.egon_pf_hv_line a
+        SET
+             length = result.length
+             FROM
+             (SELECT b.line_id, st_length(b.geom,false)/1000 as length
+              from grid.egon_pf_hv_line b)
+             as result
+        WHERE a.line_id = result.line_id;
+
+
+        -- delete buses without connection to AC grid and generation or
+        -- load assigned
+
+        DELETE FROM grid.egon_pf_hv_bus WHERE scn_name={scenario_name}
+        AND bus_id NOT IN
+        (SELECT bus0 FROM grid.egon_pf_hv_line WHERE
+         scn_name={scenario_name})
+        AND bus_id NOT IN
+        (SELECT bus1 FROM grid.egon_pf_hv_line WHERE
+         scn_name={scenario_name})
+        AND bus_id NOT IN
+        (SELECT bus0 FROM grid.egon_pf_hv_transformer
+         WHERE scn_name={scenario_name})
+        AND bus_id NOT IN
+        (SELECT bus1 FROM grid.egon_pf_hv_transformer
+         WHERE scn_name={scenario_name});
+            """
+    )

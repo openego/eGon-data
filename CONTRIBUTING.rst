@@ -151,14 +151,20 @@ of things you have to keep track of manually:
     like comments and docstrings. This also extends to the documentation
     in reStructuredText files.
 
-Last but not least, commit message are a kind of documentation, too,
+Last but not least, commit messages are a kind of documentation, too,
 which should adhere to a certain style. There are quite a few documents
 detailing this style, but the shortest and easiest to find is probably
-https://commit.style. Try to to commit small, related changes. If you
+https://commit.style. If you have 15 minutes instead of only five to
+spare, there's also a very good and only `slightly longer article`_ on
+this subject, containing references to other style guides, and also
+explaining why commit messages are important.
+
+At the very least, try to only commit small, related changes. If you
 have to use an "and" when trying to summarize your changes, they should
 probably be grouped into separate commits.
 
 .. _a code formatter: https://pypi.org/project/black/
+.. _slightly longer article: https://chris.beams.io/posts/git-commit/
 .. _isort: https://pypi.org/project/isort/
 .. _pre-commit: https://pre-commit.com
 .. _readable names: https://chrisdone.com/posts/german-naming-convention/

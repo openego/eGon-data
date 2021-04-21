@@ -3,29 +3,29 @@ import os
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
-import airflow
 import importlib_resources as resources
 
 from egon.data.airflow.tasks import initdb
+from egon.data.processing.zensus_vg250 import (
+    zensus_population_inside_germany as zensus_vg250,
+)
+import airflow
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.etrago as etrago
+import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
-import egon.data.importing.vg250 as import_vg250
-import egon.data.processing.openstreetmap as process_osm
-import egon.data.importing.zensus as import_zs
-import egon.data.processing.zensus as process_zs
-import egon.data.processing.power_plants as power_plants
-import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.etrago as etrago
-import egon.data.importing.mastr as mastr
-import egon.data.processing.substation as substation
-import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.re_potential_areas as re_potential_areas
-import egon.data.importing.heat_demand_data as import_hd
+import egon.data.importing.vg250 as import_vg250
+import egon.data.importing.zensus as import_zs
+import egon.data.processing.demandregio as process_dr
+import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.osmtgmod as osmtgmod
+import egon.data.processing.power_plants as power_plants
+import egon.data.processing.substation as substation
 import egon.data.processing.mv_grid_districts as mvgd
+import egon.data.processing.zensus as process_zs
 
 
 with airflow.DAG(
@@ -154,39 +154,83 @@ with airflow.DAG(
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
     # DemandRegio data import
-    demandregio_import = PythonOperator(
-        task_id="import-demandregio",
-        python_callable=import_dr.insert_data,
+    demandregio_tables = PythonOperator(
+        task_id="demandregio-tables",
+        python_callable=import_dr.create_tables,
     )
-    vg250_clean_and_prepare >> demandregio_import
+
+    setup >> demandregio_tables
+
+    demandregio_society = PythonOperator(
+        task_id="demandregio-society",
+        python_callable=import_dr.insert_society_data,
+    )
+    vg250_clean_and_prepare >> demandregio_society
+    demandregio_tables >> demandregio_society
+
+    demandregio_demand_households = PythonOperator(
+        task_id="demandregio-household-demands",
+        python_callable=import_dr.insert_household_demand,
+    )
+    vg250_clean_and_prepare >> demandregio_demand_households
+    demandregio_tables >> demandregio_demand_households
+
+    demandregio_demand_cts_ind = PythonOperator(
+        task_id="demandregio-cts-industry-demands",
+        python_callable=import_dr.insert_cts_ind_demands,
+    )
+    vg250_clean_and_prepare >> demandregio_demand_cts_ind
+    demandregio_tables >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(
         task_id="create-prognosis-tables",
-        python_callable=process_zs.create_tables
+        python_callable=process_zs.create_tables,
     )
 
     setup >> prognosis_tables
 
     population_prognosis = PythonOperator(
         task_id="zensus-population-prognosis",
-        python_callable=process_zs.population_prognosis_to_zensus
+        python_callable=process_zs.population_prognosis_to_zensus,
     )
 
     prognosis_tables >> population_prognosis
     map_zensus_vg250 >> population_prognosis
-    demandregio_import >> population_prognosis
+    demandregio_society >> population_prognosis
     population_import >> population_prognosis
 
     household_prognosis = PythonOperator(
         task_id="zensus-household-prognosis",
-        python_callable=process_zs.household_prognosis_to_zensus
+        python_callable=process_zs.household_prognosis_to_zensus,
     )
     prognosis_tables >> household_prognosis
     map_zensus_vg250 >> household_prognosis
-    demandregio_import >> household_prognosis
+    demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
+    # Distribute electrical demands to zensus cells
+    processed_dr_tables = PythonOperator(
+        task_id="create-demand-tables",
+        python_callable=process_dr.create_tables,
+    )
+
+    elec_household_demands_zensus = PythonOperator(
+        task_id="electrical-household-demands-zensus",
+        python_callable=process_dr.distribute_household_demands,
+    )
+
+    zensus_tables >> processed_dr_tables >> elec_household_demands_zensus
+    population_prognosis >> elec_household_demands_zensus
+    demandregio_demand_households >> elec_household_demands_zensus
+    map_zensus_vg250 >> elec_household_demands_zensus
+
+    # Power plant setup
+    power_plant_tables = PythonOperator(
+        task_id="create-power-plant-tables",
+        python_callable=power_plants.create_tables,
+    )
+    setup >> power_plant_tables
 
     # NEP data import
     create_tables = PythonOperator(
@@ -243,10 +287,9 @@ with airflow.DAG(
     )
 
     create_voronoi = PythonOperator(
-        task_id="create_voronoi",
-        python_callable=substation.create_voronoi
+        task_id="create_voronoi", python_callable=substation.create_voronoi
     )
-    osm_add_metadata  >> substation_tables >> substation_functions
+    osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction >> create_voronoi
     substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
@@ -260,13 +303,19 @@ with airflow.DAG(
     create_voronoi >> define_mv_grid_districts
 
     # osmTGmod ehv/hv grid model generation
-    osmtgmod = PythonOperator(
-        task_id= "osmtgmod",
-        python_callable= osmtgmod.run_osmtgmod,
+    run_osmtgmod = PythonOperator(
+        task_id="run_osmtgmod",
+        python_callable=osmtgmod.run_osmtgmod,
     )
-    
-    ehv_substation_extraction >> osmtgmod
-    hvmv_substation_extraction >> osmtgmod
+
+    osmtgmod_pypsa = PythonOperator(
+        task_id="osmtgmod_pypsa",
+        python_callable=osmtgmod.osmtgmmod_to_pypsa,
+    )
+
+    ehv_substation_extraction >> run_osmtgmod
+    hvmv_substation_extraction >> run_osmtgmod
+    run_osmtgmod >> osmtgmod_pypsa
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
@@ -275,11 +324,11 @@ with airflow.DAG(
     )
     create_re_potential_areas_tables = PythonOperator(
         task_id="create_re_potential_areas_tables",
-        python_callable=re_potential_areas.create_tables
+        python_callable=re_potential_areas.create_tables,
     )
     insert_re_potential_areas = PythonOperator(
         task_id="insert_re_potential_areas",
-        python_callable=re_potential_areas.insert_data
+        python_callable=re_potential_areas.insert_data,
     )
     setup >> download_re_potential_areas >> create_re_potential_areas_tables
     create_re_potential_areas_tables >> insert_re_potential_areas
@@ -287,7 +336,7 @@ with airflow.DAG(
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
         task_id="import-heat-demand",
-        python_callable=import_hd.future_heat_demand_data_import
+        python_callable=import_hd.future_heat_demand_data_import,
     )
     vg250_clean_and_prepare >> heat_demand_import
     zensus_inside_ger_metadata >> heat_demand_import
@@ -295,13 +344,25 @@ with airflow.DAG(
     # Power plant setup
     power_plant_tables = PythonOperator(
         task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables
+        python_callable=power_plants.create_tables,
     )
 
     power_plant_import = PythonOperator(
         task_id="import-power-plants",
-        python_callable=power_plants.insert_power_plants
+        python_callable=power_plants.insert_power_plants,
     )
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
+
+    # Districute electrical CTS demands to zensus grid
+
+    elec_cts_demands_zensus = PythonOperator(
+        task_id="electrical-cts-demands-zensus",
+        python_callable=process_dr.distribute_cts_demands,
+    )
+
+    processed_dr_tables >> elec_cts_demands_zensus
+    heat_demand_import >> elec_cts_demands_zensus
+    demandregio_demand_cts_ind >> elec_cts_demands_zensus
+    map_zensus_vg250 >> elec_cts_demands_zensus
