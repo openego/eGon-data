@@ -12,8 +12,8 @@ Base = declarative_base()
 
 
 class EgonScenario(Base):
-    __tablename__ = "egon_scenarios"
-    __table_args__ = {"schema": "grid"}
+    __tablename__ = "egon_scenario_parameters"
+    __table_args__ = {"schema": "scenario"}
     name = Column(String,  primary_key=True)
     global_parameters = Column(JSONB)
     electricity_parameters = Column(JSONB)
@@ -30,7 +30,8 @@ def create_table():
     None.
     """
     engine = db.engine()
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS grid;")
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS scenario;")
+    EgonScenario.__table__.drop(bind=engine, checkfirst=True)
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
 
@@ -43,7 +44,7 @@ def insert_scenarios():
 
     """
 
-    db.execute_sql("DELETE FROM grid.egon_scenarios")
+    db.execute_sql("DELETE FROM scenario.egon_scenario_parameters")
 
     session = sessionmaker(bind=db.engine())()
 
