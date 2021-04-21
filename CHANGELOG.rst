@@ -115,3 +115,5 @@ Bug fixes
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Fix input table of electrical-demands-zensus
   `#217 <https://github.com/openego/eGon-data/issues/217>`_
+* Import heat demand raster files successively to fix import for dataset==Everything
+  `#204 <https://github.com/openego/eGon-data/issues/204>`_
