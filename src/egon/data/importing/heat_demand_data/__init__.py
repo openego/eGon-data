@@ -473,8 +473,6 @@ def heat_demand_to_db_table():
     sql_script = os.path.join(
         os.path.dirname(__file__), "raster2cells-and-centroids.sql"
     )
-    # Create a temporary table and fill the final table using the sql script
-   # rasters = "heat_demand_rasters"
 
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
