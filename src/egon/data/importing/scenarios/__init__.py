@@ -138,18 +138,17 @@ def get_sector_parameters(sector, scenario=None):
                     FROM scenario.egon_scenario_parameters
                     WHERE name='eGon2035'""",
                     ).val[0],
-                index = ['eGon2035']
-                ).append(
-                    pd.DataFrame(
-                        db.select_dataframe(
-                            f"""
-                            SELECT {sector}_parameters as val
-                            FROM scenario.egon_scenario_parameters
-                            WHERE name='eGon100RE'""",
-                            ).val[0],
-                        index = ['eGon100RE']
-                        )
+            index = ['eGon2035']
+            ).append(
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
+                        SELECT {sector}_parameters as val
+                        FROM scenario.egon_scenario_parameters
+                        WHERE name='eGon100RE'""",
+                        ).val[0],
+                    index = ['eGon100RE']
                     )
+                )
 
     return values
-
