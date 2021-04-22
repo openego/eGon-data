@@ -26,6 +26,7 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus as process_zs
 import egon.data.importing.era5 as import_era5
+import egon.data.processing.renewable_feedin as import_feedin
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -360,21 +361,29 @@ with airflow.DAG(
     map_zensus_vg250 >> elec_cts_demands_zensus
 
     # Import weather data
-    download_era5 =  PythonOperator(
+    download_era5 = PythonOperator(
         task_id="download-weather-data",
         python_callable=import_era5.download_era5,
     )
     setup >> download_era5
 
-    create_weather_tables =  PythonOperator(
+    create_weather_tables = PythonOperator(
         task_id="create-weather-tables",
         python_callable=import_era5.create_tables,
     )
     setup >> create_weather_tables
 
-    import_weather_cells =  PythonOperator(
+    import_weather_cells = PythonOperator(
         task_id="insert-weather-cells",
         python_callable=import_era5.insert_weather_cells,
     )
     create_weather_tables >> import_weather_cells
     download_era5 >> import_weather_cells
+
+    feedin_wind_onshore = PythonOperator(
+        task_id="insert-feedin-wind",
+        python_callable=import_feedin.wind_feedin_per_weather_cell,
+    )
+
+    import_weather_cells >> feedin_wind_onshore
+    vg250_clean_and_prepare >> feedin_wind_onshore

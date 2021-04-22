@@ -307,9 +307,15 @@ era5_weather_data:
       table: 'egon_era5_weather_cells'
 
 renewable_feedin:
-  soucres:
+  sources:
     era5_weather_data:
       path: 'cutouts'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    vg250_lan_union:
+      schema: 'boundaries'
+      table: 'vg250_lan_union'
   targets:
     feedin_table:
       schema: 'supply'
