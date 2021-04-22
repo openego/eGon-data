@@ -47,6 +47,13 @@ INSERT INTO            openstreetmap.osm_polygon_urban
         tags @> '"landuse"=>"farmyard"'::hstore OR 
         tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
     ORDER BY    osm.gid;
+    
+-- index GIST (geom)
+
+DROP INDEX IF EXISTS osm_deu_polygon_urban_geom_idx; 
+
+CREATE INDEX osm_deu_polygon_urban_geom_idx
+    ON openstreetmap.osm_deu_polygon_urban USING GIST (geom);
 
 
 -- OSM Urban Landuse Inside vg250

@@ -25,7 +25,7 @@ class OsmPolygonUrban(Base):
     area_ha = Column(Float)
     tags = Column(HSTORE)
     vg250 = Column(String(10))
-    geom = Column(Geometry("MultiPolygon", 3035), index=True)
+    geom = Column(Geometry("MultiPolygon", 3035))
 
 
 def create_landuse_table():
