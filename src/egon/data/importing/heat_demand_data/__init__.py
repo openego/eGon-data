@@ -453,25 +453,32 @@ def heat_demand_to_db_table():
     sql_script = os.path.join(
         os.path.dirname(__file__), "raster2cells-and-centroids.sql"
     )
-    # Create a temporary table and fill the final table using the sql script
-    rasters = "heat_demand_rasters"
-    import_rasters = subprocess.run(
-        ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
-        + sources
-        + [f"{rasters}"],
-        text=True,
-    ).stdout
-    with engine.begin() as connection:
-        connection.execute(
-            f'CREATE TEMPORARY TABLE "{rasters}"'
-            ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
-        )
-        connection.execute(import_rasters)
-        connection.execute(f'ANALYZE "{rasters}"')
-        with open(sql_script) as convert:
+
+    db.execute_sql("DELETE FROM demand.egon_peta_heat;")
+
+    for source in sources:
+        # Create a temporary table and fill the final table using the sql script
+        rasters = f"heat_demand_rasters_{source.stem.lower()}"
+        import_rasters = subprocess.run(
+            ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
+            + [source]
+            + [f"{rasters}"],
+            text=True,
+        ).stdout
+        with engine.begin() as connection:
+            print(f'CREATE TEMPORARY TABLE "{rasters}"'
+                ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);')
             connection.execute(
-                Template(convert.read()).render(version="0.0.0")
+                f'CREATE TEMPORARY TABLE "{rasters}"'
+                ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
             )
+            connection.execute(import_rasters)
+            connection.execute(f'ANALYZE "{rasters}"')
+            with open(sql_script) as convert:
+                connection.execute(
+                    Template(convert.read()).render(version="0.0.0",
+                                                    source=rasters)
+                )
     return None
 
 

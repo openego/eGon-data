@@ -14,18 +14,28 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.mastr as mastr
-import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.vg250 as import_vg250
-import egon.data.importing.zensus as import_zs
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.openstreetmap as process_osm
+import egon.data.importing.zensus as import_zs
+import egon.data.processing.zensus as process_zs
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
+import egon.data.importing.nep_input_data as nep_input
+import egon.data.importing.etrago as etrago
+import egon.data.importing.mastr as mastr
 import egon.data.processing.substation as substation
-import egon.data.processing.zensus as process_zs
+import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
+import egon.data.importing.re_potential_areas as re_potential_areas
+import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.scenarios as import_scenarios
+
+
+import egon.data.importing.industrial_sites as industrial_sites
+from egon.data import db
+
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -363,7 +373,26 @@ with airflow.DAG(
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
 
-    # Districute electrical CTS demands to zensus grid
+    # Import and merge data on industrial sites from different sources
+
+    industrial_sites_import = PythonOperator(
+        task_id="download-import-industrial-sites",
+        python_callable=industrial_sites.download_import_industrial_sites
+    )
+
+    industrial_sites_merge = PythonOperator(
+        task_id="merge-industrial-sites",
+        python_callable=industrial_sites.merge_inputs
+    )
+
+    industrial_sites_nuts = PythonOperator(
+        task_id="map-industrial-sites-nuts3",
+        python_callable=industrial_sites.map_nuts3
+    )
+    vg250_clean_and_prepare >> industrial_sites_import
+    industrial_sites_import >> industrial_sites_merge >> industrial_sites_nuts
+
+    # Distribute electrical CTS demands to zensus grid
 
     elec_cts_demands_zensus = PythonOperator(
         task_id="electrical-cts-demands-zensus",
