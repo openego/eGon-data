@@ -18,6 +18,8 @@ __author__      = "Ludee, IlkaCu"
 -- Filter OSM Urban Landuse
 ---------- ---------- ----------
 
+-- Polygons with tags related to settlements are extracted from the original OSM data set and stored in table 'openstreetmap.osm_polygon_urban. 
+
 DELETE FROM openstreetmap.osm_polygon_urban; 
 
 -- filter urban
@@ -48,17 +50,18 @@ INSERT INTO            openstreetmap.osm_polygon_urban
         tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
     ORDER BY    osm.gid;
     
--- index GIST (geom)
+-- Create index using GIST (geom)
 
-DROP INDEX IF EXISTS osm_deu_polygon_urban_geom_idx; 
+DROP INDEX IF EXISTS osm_polygon_urban_geom_idx; 
 
-CREATE INDEX osm_deu_polygon_urban_geom_idx
-    ON openstreetmap.osm_deu_polygon_urban USING GIST (geom);
+CREATE INDEX osm_polygon_urban_geom_idx
+    ON openstreetmap.osm_polygon_urban USING GIST (geom);
 
+-------------------------------------------------------------------------------------------------------------------------------
+-- Identify the intersection between OSM polygons and the (German) external borders as defined in 'boundaries.vg250_sta_union'.
+-------------------------------------------------------------------------------------------------------------------------------
 
--- OSM Urban Landuse Inside vg250
-
--- Calculate 'inside' vg250
+-- Identify polygons which are completely inside the defined boundaries
 UPDATE 	openstreetmap.osm_polygon_urban AS t1
 	SET  	vg250 = t2.vg250
 	FROM    (
@@ -71,7 +74,7 @@ UPDATE 	openstreetmap.osm_polygon_urban AS t1
 		) AS t2
 	WHERE  	t1.gid = t2.gid;
 
--- Calculate 'crossing' vg250
+-- Identify polygons which are spatially overlapping with the defined boundaries 
 UPDATE 	openstreetmap.osm_polygon_urban AS t1
 	SET  	vg250 = t2.vg250
 	FROM    (
@@ -85,17 +88,15 @@ UPDATE 	openstreetmap.osm_polygon_urban AS t1
 		) AS t2
 	WHERE  	t1.gid = t2.gid;
 
+-- Move all polygons which are overlapping the external borders or lying outside of these to a materialized view
 
--- OSM outside of vg250
-
--- OSM error vg250
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_error_geom_vg250 CASCADE;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_error_geom_vg250 AS
 	SELECT	osm.*
 	FROM	openstreetmap.osm_polygon_urban AS osm
 	WHERE	osm.vg250 = 'outside' OR osm.vg250 = 'crossing';
 
--- index (id)
+-- Create index
 CREATE UNIQUE INDEX  	osm_polygon_urban_error_geom_vg250_gid_idx
 		ON	openstreetmap.osm_polygon_urban_error_geom_vg250 (gid);
 
@@ -108,7 +109,8 @@ CREATE INDEX  	osm_polygon_urban_error_geom_vg250_geom_idx
 DROP SEQUENCE IF EXISTS 	openstreetmap.osm_polygon_urban_vg250_cut_id CASCADE;
 CREATE SEQUENCE 		openstreetmap.osm_polygon_urban_vg250_cut_id;
 
--- Cutting 'crossing' with vg250
+
+-- Create materialized views to identify and store intersecting parts of polygons overlapping the external borders 
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_cut;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_cut AS
 	SELECT	nextval('openstreetmap.osm_polygon_urban_vg250_cut_id') ::integer AS id,
@@ -139,7 +141,7 @@ CREATE INDEX  	osm_polygon_urban_vg250_cut_geom_idx
 	ON	openstreetmap.osm_polygon_urban_vg250_cut
 	USING	GIST (geom);
 
--- 'crossing' Polygon to MultiPolygon
+-- Store polygons in a materialized view
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_clean_cut_multi;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut_multi AS
 	SELECT	nextval('openstreetmap.osm_polygon_gid_seq'::regclass) ::integer AS gid,
@@ -152,7 +154,7 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut_multi 
 		cut.vg250 ::text AS vg250,
 		ST_MULTI(cut.geom) ::geometry(MultiPolygon,3035) AS geom
 	FROM	openstreetmap.osm_polygon_urban_vg250_cut AS cut
-	WHERE	cut.geom_type = 'POLYGON';
+	WHERE	cut.geom_type = 'MULTIPOLYGON';
 
 -- index (id)
 CREATE UNIQUE INDEX  	osm_polygon_urban_vg250_clean_cut_multi_gid_idx
@@ -163,9 +165,7 @@ CREATE INDEX  	osm_polygon_urban_vg250_clean_cut_multi_geom_idx
 	ON	openstreetmap.osm_polygon_urban_vg250_clean_cut_multi
 	USING	GIST (geom);
 
----------- ---------- ----------
-
--- clean cut
+-- Store multipolygons in a materialized view
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_clean_cut;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut AS
 	SELECT	nextval('openstreetmap.osm_polygon_gid_seq'::regclass) ::integer AS gid,
@@ -178,28 +178,32 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut AS
 		cut.vg250 ::text AS vg250,
 		cut.geom ::geometry(MultiPolygon,3035) AS geom
 	FROM	openstreetmap.osm_polygon_urban_vg250_cut AS cut
-	WHERE	cut.geom_type = 'MULTIPOLYGON';
+	WHERE	cut.geom_type = 'POLYGON';
 
 -- index (id)
 CREATE UNIQUE INDEX  	osm_polygon_urban_vg250_clean_cut_gid_idx
 		ON	openstreetmap.osm_polygon_urban_vg250_clean_cut (gid);
+		
+----------------------------------------------------------------------------
+-- Remove all faulty entries from table openstreetmap.osm_polygon_urban 
+-- and insert those parts of the polygons lying within the (German) borders
+----------------------------------------------------------------------------
 
-
--- remove 'outside' vg250
+-- Remove polygons 'outside' vg250 boundaries
 DELETE FROM	openstreetmap.osm_polygon_urban AS osm
 	WHERE	osm.vg250 = 'outside';
 
--- remove 'outside' vg250
+-- Remove polygons overlapping with vg250 boundaries
 DELETE FROM	openstreetmap.osm_polygon_urban AS osm
 	WHERE	osm.vg250 = 'crossing';
 
--- insert cut
+-- Insert polygon fragments lying inside vg250 boundaries
 INSERT INTO	openstreetmap.osm_polygon_urban
 	SELECT	clean.*
 	FROM	openstreetmap.osm_polygon_urban_vg250_clean_cut AS clean
 	ORDER BY 	clean.gid;
 
--- insert cut multi
+-- Insert multi polygon fragments lying inside vg250 boundaries
 INSERT INTO	openstreetmap.osm_polygon_urban
 	SELECT	clean.*
 	FROM	openstreetmap.osm_polygon_urban_vg250_clean_cut_multi AS clean
