@@ -25,11 +25,7 @@ DELETE FROM openstreetmap.osm_polygon_urban;
 INSERT INTO            openstreetmap.osm_polygon_urban
     SELECT  osm.gid ::integer AS gid,
             osm.osm_id ::integer AS osm_id,
-            --osm.landuse ::text AS landuse,
-            --osm.man_made ::text AS man_made,
-            --osm.aeroway ::text AS aeroway,
             osm.name ::text AS name,
-            --osm.way_area ::double precision AS way_area,
             '0' ::integer AS sector,
             'undefined'::text AS sector_name, 
             ST_AREA(ST_TRANSFORM(osm.geom,3035))/10000 ::double precision AS area_ha,
@@ -42,14 +38,12 @@ INSERT INTO            openstreetmap.osm_polygon_urban
         tags @> '"landuse"=>"commercial"'::hstore OR 
         tags @> '"landuse"=>"retail"'::hstore OR 
         tags @> '"landuse"=>"industrial;retail"'::hstore OR 
-
         tags @> '"landuse"=>"industrial"'::hstore OR 
         tags @> '"landuse"=>"port"'::hstore OR 
         tags @> '"man_made"=>"wastewater_plant"'::hstore OR
         tags @> '"aeroway"=>"terminal"'::hstore OR 
         tags @> '"aeroway"=>"gate"'::hstore OR 
         tags @> '"man_made"=>"works"'::hstore OR 
-
         tags @> '"landuse"=>"farmyard"'::hstore OR 
         tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
     ORDER BY    osm.gid;
@@ -113,11 +107,7 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_cut AS
 	SELECT	nextval('openstreetmap.osm_polygon_urban_vg250_cut_id') ::integer AS id,
 		cut.gid ::integer AS gid,
 		cut.osm_id ::integer AS osm_id,
-		--cut.landuse ::text AS landuse,
-		--cut.man_made ::text AS man_made,
-		--cut.aeroway ::text AS aeroway,
 		cut.name ::text AS name,
-		--cut.way_area ::double precision AS way_area,
 		cut.sector ::integer AS sector,
 		cut.sector_name::text AS sector_name,
 		cut.area_ha ::double precision AS area_ha,
@@ -147,13 +137,9 @@ DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_clean_cut
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut_multi AS
 	SELECT	nextval('openstreetmap.osm_polygon_gid_seq'::regclass) ::integer AS gid,
 		cut.osm_id ::integer AS osm_id,
-		--cut.landuse ::text AS landuse,
-		--cut.man_made ::text AS man_made,
-		--cut.aeroway ::text AS aeroway,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
 		cut.sector_name::text AS sector_name,
-		--cut.way_area ::double precision AS way_area,
 		cut.area_ha ::double precision AS area_ha,
 		cut.tags ::hstore AS tags,
 		cut.vg250 ::text AS vg250,
@@ -177,13 +163,9 @@ DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_vg250_clean_cut
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_vg250_clean_cut AS
 	SELECT	nextval('openstreetmap.osm_polygon_gid_seq'::regclass) ::integer AS gid,
 		cut.osm_id ::integer AS osm_id,
-		--cut.landuse ::text AS landuse,
-		--cut.man_made ::text AS man_made,
-		--cut.aeroway ::text AS aeroway,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
 		cut.sector_name::text AS sector_name, 
-		--cut.way_area ::double precision AS way_area,
 		cut.area_ha ::double precision AS area_ha,
 		cut.tags ::hstore AS tags,
 		cut.vg250 ::text AS vg250,
