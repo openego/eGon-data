@@ -41,7 +41,7 @@ def create_tables():
     EgonRenewableFeedIn.__table__.drop(bind=engine, checkfirst=True)
     EgonRenewableFeedIn.__table__.create(bind=engine, checkfirst=True)
 
-def import_cutout():
+def import_cutout(boundary='Europe'):
     """ Import weather data from cutout
 
     Returns
@@ -50,6 +50,22 @@ def import_cutout():
         Weather data stored in cutout
 
     """
+
+    if boundary == 'Europe':
+        xs = slice(-12., 35.1)
+        ys = slice(72., 33.)
+
+    elif boundary == 'Germany':
+        geom_de = gpd.read_postgis(
+            "SELECT geometry as geom FROM boundaries.vg250_sta_bbox",
+            db.engine()).to_crs(4623).geom
+        xs = slice(geom_de.bounds.minx[0], geom_de.bounds.maxx[0])
+        ys = slice(geom_de.bounds.maxy[0], geom_de.bounds.miny[0])
+
+    else:
+        print(
+            f"Boundary {boundary} not defined. "
+            "Choose either 'Europe' or 'Germany'")
 
     directory = Path(".") / (
         egon.data.config.datasets()
@@ -62,9 +78,9 @@ def import_cutout():
             f"europe-{str(weather_year)}-era5",
             cutout_dir = directory.absolute(),
             module="era5",
-            xs= slice(7.5, 12),
-            ys=slice(55., 53.),
-            years= slice(weather_year, weather_year)
+            xs=xs,
+            ys=ys,
+            years=slice(weather_year, weather_year)
             )
 
     return cutout
