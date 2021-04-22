@@ -297,3 +297,20 @@ power_plants:
   target:
       table: 'egon_power_plants'
       schema: 'supply'
+
+era5_weather_data:
+  targets:
+    weather_data:
+      path: 'cutouts'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+
+renewable_feedin:
+  soucres:
+    era5_weather_data:
+      path: 'cutouts'
+  targets:
+    feedin_table:
+      schema: 'supply'
+      table: 'egon_renewable_feed_in'

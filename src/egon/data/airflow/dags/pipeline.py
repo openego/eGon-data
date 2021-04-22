@@ -25,6 +25,7 @@ import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus as process_zs
+import egon.data.importing.era5 as import_era5
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -357,3 +358,23 @@ with airflow.DAG(
     heat_demand_import >> elec_cts_demands_zensus
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
+
+    # Import weather data
+    download_era5 =  PythonOperator(
+        task_id="download-weather-data",
+        python_callable=import_era5.download_era5,
+    )
+    setup >> download_era5
+
+    create_weather_tables =  PythonOperator(
+        task_id="create-weather-tables",
+        python_callable=import_era5.create_tables,
+    )
+    setup >> create_weather_tables
+
+    import_weather_cells =  PythonOperator(
+        task_id="insert-weather-cells",
+        python_callable=import_era5.insert_weather_cells,
+    )
+    create_weather_tables >> import_weather_cells
+    download_era5 >> import_weather_cells
