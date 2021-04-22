@@ -76,15 +76,17 @@ demandregio_society:
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
+    scenarios:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     population:
       schema: 'society'
       table: 'egon_demandregio_population'
-      target_years: [2018, 2035, 2050]
     household:
       schema: 'society'
       table: 'egon_demandregio_household'
-      target_years: [2018, 2035, 2050]
+
 
 demandregio_household_demand:
   sources:
@@ -93,11 +95,13 @@ demandregio_household_demand:
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
+    scenarios:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     household_demand:
       schema: 'demand'
       table: 'egon_demandregio_hh'
-      scenarios: ["eGon2035", "eGon100RE"]
 
 demandregio_cts_ind_demand:
   sources:
@@ -110,11 +114,13 @@ demandregio_cts_ind_demand:
     wz_definitions:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
+    scenarios:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     cts_ind_demand:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
     wz_definitions:
       schema: 'demand'
       table: 'egon_demandregio_wz'
