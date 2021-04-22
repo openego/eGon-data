@@ -118,18 +118,44 @@ def create_tables():
     None.
     """
 
+    # Get data config
+    data_config = egon.data.config.datasets()
+
+    cfg_sites = data_config["industrial_sites"]["processed"]
+    cfg_schmidt = data_config["schmidt"]["processed"]
+    cfg_seenergies = data_config["seenergies"]["processed"]
+    cfg_hotmaps = data_config["hotmaps"]["processed"]
+
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
-    db.execute_sql(
-        "DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"
+
+    # Drop tables and sequences before recreating them
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+                   {cfg_hotmaps['schema']}.
+                   {cfg_hotmaps['table']} CASCADE;"""
     )
-    db.execute_sql(
-        "DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+                   {cfg_seenergies['schema']}.
+                   {cfg_seenergies['table']} CASCADE;"""
     )
-    db.execute_sql(
-        "DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+                   {cfg_schmidt['schema']}.
+                   {cfg_schmidt['table']} CASCADE;"""
     )
-    db.execute_sql("DROP TABLE IF EXISTS demand.industrial_sites CASCADE;")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+                   {cfg_sites['schema']}.
+                   {cfg_sites['table']} CASCADE;"""
+    )
+
+    # Drop sequence
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            {cfg_sites['schema']}.
+            {cfg_sites['table']}_id_seq CASCADE;"""
+    )
 
     engine = db.engine()
     HotmapsIndustrialSites.__table__.create(bind=engine, checkfirst=True)
