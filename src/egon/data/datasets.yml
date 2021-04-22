@@ -52,9 +52,9 @@ zensus_misc:
   processed:
     schema: "society"
     path_table_map:
-      "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
-      "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
-      "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
+      "csv_Haushalte_100m_Gitter.zip": "egon_destatis_zensus_household_per_ha"
+      "csv_Gebaeude_100m_Gitter.zip": "egon_destatis_zensus_building_per_ha"
+      "csv_Wohnungen_100m_Gitter.zip": "egon_destatis_zensus_apartment_per_ha"
 
 map_zensus_vg250:
   sources:
@@ -130,7 +130,7 @@ electrical_demands_households:
       table: 'egon_population_prognosis'
     map_zensus_vg250:
       schema: 'boundaries'
-      table: 'egon_map_zensus_nuts3'
+      table: 'egon_map_zensus_vg250'
   targets:
     household_demands_zensus:
       schema: 'demand'
@@ -171,6 +171,26 @@ industrial_sites:
   processed:
     schema: "demand"
     table: "industrial_sites"
+
+electrical_demands_cts:
+  sources:
+    demandregio:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+      scenarios: ["eGon2035", "eGon100RE"]
+    demandregio_wz:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
+    heat_demand_cts:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+    map_zensus_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+  targets:
+    cts_demands_zensus:
+      schema: 'demand'
+      table: 'egon_demandregio_zensus_electricity'
 
 hvmv_substation:
   original_data:
@@ -217,7 +237,7 @@ society_prognosis:
       table: 'destatis_zensus_population_per_ha'
     zensus_households:
       schema: 'society'
-      table: 'destatis_zensus_household_per_ha'
+      table: 'egon_destatis_zensus_household_per_ha'
     demandregio_population:
       schema: 'society'
       table: 'egon_demandregio_population'

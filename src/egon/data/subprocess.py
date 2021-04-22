@@ -7,7 +7,6 @@ with additional output information and makes it slightly more readable when
 encountered in a stack trace.
 """
 
-from locale import getpreferredencoding
 from textwrap import indent, wrap
 import itertools
 import subprocess
@@ -22,8 +21,8 @@ class CalledProcessError(subprocess.CalledProcessError):
     """
 
     def __str__(self):
-        errors = self.stderr.decode(getpreferredencoding()).split("\n")
-        outputs = self.stdout.decode(getpreferredencoding()).split("\n")
+        errors = self.stderr.split("\n")
+        outputs = self.stdout.split("\n")
 
         lines = itertools.chain(
             wrap(f"{super().__str__()}"),
@@ -53,8 +52,8 @@ def run(*args, **kwargs):
     Other than that, the function accepts the same parameters as
     :py:func:`subprocess.run`.
     """
-    kwargs["check"] = kwargs.get("check", True)
-    kwargs["capture_output"] = kwargs.get("capture_output", True)
+    for default in ["capture_output", "check", "text"]:
+        kwargs[default] = kwargs.get(default, True)
     try:
         result = subprocess.run(*args, **kwargs)
     except subprocess.CalledProcessError as cpe:

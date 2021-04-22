@@ -68,6 +68,8 @@ Added
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
+* Distribute electrical demands of cts to zensus cells
+  `#210 <https://github.com/openego/eGon-data/issues/210>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -110,3 +112,11 @@ Bug fixes
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
   `#171 <https://github.com/openego/eGon-data/issues/171>`_
+* Adjust names of demandregios nuts3 regions according to nuts version 2016
+  `#201 <https://github.com/openego/eGon-data/issues/201>`_
+* Delete zensus buildings, apartments and households in unpopulated cells
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
+* Fix input table of electrical-demands-zensus
+  `#217 <https://github.com/openego/eGon-data/issues/217>`_
+* Import heat demand raster files successively to fix import for dataset==Everything
+  `#204 <https://github.com/openego/eGon-data/issues/204>`_
