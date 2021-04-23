@@ -197,7 +197,8 @@ def wind_feedin_per_weather_cell():
 
     # Insert feedin for selected turbine per weather cell
     for turbine in ['E-126', 'E-141']:
-        idx = weather_cells.index[weather_cells.wind_turbine==turbine]
+        idx = weather_cells.index[(weather_cells.wind_turbine==turbine) &
+                                  (weather_cells.index.isin(timeseries.index))]
         df.loc[idx, 'feedin'] = timeseries.loc[idx, turbine].values
 
     # Insert values into database
