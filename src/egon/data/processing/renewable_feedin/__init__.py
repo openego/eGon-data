@@ -9,6 +9,76 @@ import egon.data.config
 from egon.data import db
 from egon.data.importing.era5 import import_cutout
 
+def weather_cells_in_germany():
+    """ Get weather cells which intersect with Germany
+
+    Returns
+    -------
+    GeoPandas.GeoDataFrame
+        Index and points of weather cells inside Germany
+
+    """
+
+    cfg = egon.data.config.datasets()['renewable_feedin']['sources']
+
+    return db.select_geodataframe(
+        f"""SELECT a.w_id, a.geom_point
+        FROM {cfg['weather_cells']['schema']}.
+        {cfg['weather_cells']['table']} a,
+        {cfg['vg250_sta_union']['schema']}.
+        {cfg['vg250_sta_union']['table']} b
+        WHERE ST_Intersects(ST_Transform(b.geometry, 4326), a.geom)""",
+        geom_col='geom_point', index_col='w_id')
+
+def federal_states_per_weather_cell():
+    """ Assings a federal state to each weather cell in Germany.
+
+    Sets the federal state to the weather celss using the centroid.
+    Weather cells at the borders whoes centroid is not inside Germany
+    are assinged to the closest federal state.
+
+    Returns
+    -------
+    GeoPandas.GeoDataFrame
+        Index, points and federal state of weather cells inside Germany
+
+    """
+
+    cfg = egon.data.config.datasets()['renewable_feedin']['sources']
+
+    # Select weather cells and ferear states from database
+    weather_cells = weather_cells_in_germany()
+
+    federal_states = db.select_geodataframe(
+        f"""SELECT gen, geometry
+        FROM {cfg['vg250_lan_union']['schema']}.
+        {cfg['vg250_lan_union']['table']}""",
+        geom_col='geometry', index_col='gen')
+
+    # Map federal state and onshore wind turbine to weather cells
+    weather_cells['federal_state'] = gpd.sjoin(
+        weather_cells, federal_states).index_right
+
+    # Assign a federal state to each cell inside Germany
+    buffer = 200
+
+    while len(weather_cells[weather_cells['federal_state'].isnull()]) > 0:
+
+        cells = weather_cells[weather_cells['federal_state'].isnull()]
+
+        cells.loc[:, 'geom_point'] = cells.geom_point.buffer(buffer)
+
+        weather_cells.loc[cells.index, 'federal_state'] = gpd.sjoin(
+            cells, federal_states).index_right
+
+        buffer += 200
+
+        weather_cells = weather_cells.reset_index(
+                ).drop_duplicates(
+                    subset='w_id', keep='first').set_index('w_id')
+
+    return weather_cells.to_crs(4326)
+
 def turbine_per_weather_cell():
     """Assign wind onshore turbine types to weather cells
 
@@ -18,8 +88,6 @@ def turbine_per_weather_cell():
         Weather cells in Germany including turbine type
 
     """
-
-    cfg = egon.data.config.datasets()['renewable_feedin']['sources']
 
     # Select representative onshore wind turbines per federal state
     map_federal_states_turbines = {
@@ -31,7 +99,7 @@ def turbine_per_weather_cell():
         'Berlin': 'E-141',
         'Brandenburg': 'E-141',
         'Hessen': 'E-141',
-        'Nordhrein-Westfalen': 'E-141',
+        'Nordrhein-Westfalen': 'E-141',
         'Sachsen': 'E-141',
         'Sachsen-Anhalt': 'E-141',
         'Thüringen': 'E-141',
@@ -41,23 +109,10 @@ def turbine_per_weather_cell():
         'Saarland': 'E-141'
         }
 
-    # Select weather cells and ferear states from database
-    weather_cells = db.select_geodataframe(
-        f"""SELECT w_id, geom_point
-        FROM {cfg['weather_cells']['schema']}.
-        {cfg['weather_cells']['table']}""",
-        geom_col='geom_point', index_col='w_id', epsg=4326)
+    # Select weather cells and federal states
+    weather_cells = federal_states_per_weather_cell()
 
-    federal_states = db.select_geodataframe(
-        f"""SELECT gen, geometry
-        FROM {cfg['vg250_lan_union']['schema']}.
-        {cfg['vg250_lan_union']['table']}""",
-        geom_col='geometry', index_col='gen', epsg=4326)
-
-    # Map federal state and onshore wind turbine to weather cells
-    weather_cells['federal_state'] = gpd.sjoin(
-        weather_cells, federal_states).index_right
-
+    # Assign turbine type per federal state
     weather_cells['wind_turbine'] = weather_cells['federal_state'].map(
         map_federal_states_turbines)
 

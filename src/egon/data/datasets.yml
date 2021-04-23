@@ -316,6 +316,9 @@ renewable_feedin:
     vg250_lan_union:
       schema: 'boundaries'
       table: 'vg250_lan_union'
+    vg250_sta_union:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
   targets:
     feedin_table:
       schema: 'supply'
