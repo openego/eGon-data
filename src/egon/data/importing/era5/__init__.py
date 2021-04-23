@@ -25,7 +25,7 @@ class EgonEra5Cells(Base):
 
 
 class EgonRenewableFeedIn(Base):
-    __tablename__ = 'egon_renewable_feed_in'
+    __tablename__ = 'egon_era5_renewable_feedin'
     __table_args__ = {'schema': 'supply'}
     w_id = Column(Integer, primary_key=True)
     weather_year = Column(Integer, primary_key=True)
@@ -104,7 +104,9 @@ def download_era5():
 
         cutout = import_cutout()
 
-        cutout.prepare()
+        if not cutout.prepared:
+
+            cutout.prepare()
 
 
 def insert_weather_cells():

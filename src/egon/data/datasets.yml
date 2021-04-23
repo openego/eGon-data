@@ -364,4 +364,4 @@ renewable_feedin:
   targets:
     feedin_table:
       schema: 'supply'
-      table: 'egon_renewable_feed_in'
+      table: 'egon_era5_renewable_feedin'
