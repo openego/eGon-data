@@ -84,6 +84,7 @@ setup(
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         "apache-airflow>=1.10.14,<2.0",
         "atlite==0.0.3",
+        "cdsapi",
         "click",
         "disaggregator"
         "@git+https://github.com/openego/disaggregator.git"
