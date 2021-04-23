@@ -8,6 +8,7 @@ import numpy as np
 import egon.data.config
 from egon.data import db
 from egon.data.importing.era5 import import_cutout
+from egon.data.importing.scenarios import get_sector_parameters
 
 def weather_cells_in_germany():
     """ Get weather cells which intersect with Germany
@@ -191,9 +192,12 @@ def wind_feedin_per_weather_cell():
     timeseries = gpd.sjoin(
         weather_cells, timeseries_per_turbine)[['E-141', 'E-126']]
 
+    weather_year = get_sector_parameters('global', 'eGon2035')['weather_year']
+
     df = pd.DataFrame(index=weather_cells.index,
                       columns=['weather_year', 'carrier', 'feedin'],
-                      data={'weather_year':2011, 'carrier':'wind_onshore'})
+                      data={'weather_year': weather_year,
+                            'carrier':'wind_onshore'})
 
     # Insert feedin for selected turbine per weather cell
     for turbine in ['E-126', 'E-141']:

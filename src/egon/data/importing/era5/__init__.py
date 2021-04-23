@@ -9,6 +9,7 @@ from pathlib import Path
 import geopandas as gpd
 import egon.data.config
 from egon.data import db
+from egon.data.importing.scenarios import get_sector_parameters
 from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2 import Geometry
@@ -71,8 +72,7 @@ def import_cutout(boundary='Europe'):
         egon.data.config.datasets()
         ['era5_weather_data']['targets']['weather_data']['path'])
 
-    # TODO: Replace with scenario table query
-    weather_year = 2011
+    weather_year = get_sector_parameters('global', 'eGon2035')['weather_year']
 
     cutout = atlite.Cutout(
             f"europe-{str(weather_year)}-era5",
