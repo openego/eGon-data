@@ -124,6 +124,9 @@ demandregio_cts_ind_demand:
     wz_definitions:
       schema: 'demand'
       table: 'egon_demandregio_wz'
+    timeseries_cts_ind:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
 
 electrical_demands_households:
   sources:
