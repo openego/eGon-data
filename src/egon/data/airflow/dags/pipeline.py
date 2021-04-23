@@ -11,22 +11,28 @@ from egon.data.processing.zensus_vg250 import (
 )
 import airflow
 import egon.data.importing.demandregio as import_dr
+import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
+import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
+import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
+import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus as process_zs
-import egon.data.importing.era5 as import_era5
-import egon.data.processing.renewable_feedin as import_feedin
+import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
+
+from egon.data import db
+
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -153,13 +159,25 @@ with airflow.DAG(
     ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
+    # Scenario table
+    scenario_input_tables = PythonOperator(
+        task_id="create-scenario-parameters-table",
+        python_callable=import_scenarios.create_table
+    )
+
+    scenario_input_import = PythonOperator(
+        task_id="import-scenario-parameters",
+        python_callable=import_scenarios.insert_scenarios
+    )
+    setup >> scenario_input_tables >> scenario_input_import
+
     # DemandRegio data import
     demandregio_tables = PythonOperator(
         task_id="demandregio-tables",
         python_callable=import_dr.create_tables,
     )
 
-    setup >> demandregio_tables
+    scenario_input_tables >> demandregio_tables
 
     demandregio_society = PythonOperator(
         task_id="demandregio-society",
@@ -167,6 +185,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_society
     demandregio_tables >> demandregio_society
+    scenario_input_import >> demandregio_society
 
     demandregio_demand_households = PythonOperator(
         task_id="demandregio-household-demands",
@@ -174,6 +193,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_demand_households
     demandregio_tables >> demandregio_demand_households
+    scenario_input_import >> demandregio_demand_households
 
     demandregio_demand_cts_ind = PythonOperator(
         task_id="demandregio-cts-industry-demands",
@@ -181,6 +201,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> demandregio_demand_cts_ind
     demandregio_tables >> demandregio_demand_cts_ind
+    scenario_input_import >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(
@@ -333,6 +354,7 @@ with airflow.DAG(
     )
     vg250_clean_and_prepare >> heat_demand_import
     zensus_inside_ger_metadata >> heat_demand_import
+    scenario_input_import >> heat_demand_import
 
     # Power plant setup
     power_plant_tables = PythonOperator(
@@ -348,7 +370,26 @@ with airflow.DAG(
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
 
-    # Districute electrical CTS demands to zensus grid
+    # Import and merge data on industrial sites from different sources
+
+    industrial_sites_import = PythonOperator(
+        task_id="download-import-industrial-sites",
+        python_callable=industrial_sites.download_import_industrial_sites
+    )
+
+    industrial_sites_merge = PythonOperator(
+        task_id="merge-industrial-sites",
+        python_callable=industrial_sites.merge_inputs
+    )
+
+    industrial_sites_nuts = PythonOperator(
+        task_id="map-industrial-sites-nuts3",
+        python_callable=industrial_sites.map_nuts3
+    )
+    vg250_clean_and_prepare >> industrial_sites_import
+    industrial_sites_import >> industrial_sites_merge >> industrial_sites_nuts
+
+    # Distribute electrical CTS demands to zensus grid
 
     elec_cts_demands_zensus = PythonOperator(
         task_id="electrical-cts-demands-zensus",

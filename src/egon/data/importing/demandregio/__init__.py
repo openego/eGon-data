@@ -4,11 +4,14 @@ adjusting data from demandRegio
 """
 import os
 import pandas as pd
+import numpy as np
 import egon.data.config
 from egon.data import db
-from sqlalchemy import Column, String, Float, Integer
+from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
+from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from disaggregator import data, spatial
+import egon.data.importing.scenarios.parameters as scenario_parameters
 # will be later imported from another file ###
 Base = declarative_base()
 
@@ -18,7 +21,7 @@ class EgonDemandRegioHH(Base):
     __table_args__ = {'schema': 'demand'}
     nuts3 = Column(String(5), primary_key=True)
     hh_size = Column(Integer, primary_key=True)
-    scenario = Column(String(50), primary_key=True)
+    scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     year = Column(Integer)
     demand = Column(Float)
 
@@ -28,7 +31,7 @@ class EgonDemandRegioCtsInd(Base):
     __table_args__ = {'schema': 'demand'}
     nuts3 = Column(String(5), primary_key=True)
     wz = Column(Integer, primary_key=True)
-    scenario = Column(String(50), primary_key=True)
+    scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     year = Column(Integer)
     demand = Column(Float)
 
@@ -385,14 +388,9 @@ def insert_household_demand():
         db.execute_sql(
                 f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};")
 
-    for scn in targets['household_demand']['scenarios']:
+    for scn in ['eGon2035', 'eGon100RE']:
 
-        if scn == 'eGon2035':
-            year = 2035
-        elif scn == 'eGon100RE':
-            year = 2050
-        else:
-            print(f"Warning: Scenario {scn} can not be imported.")
+        year = scenario_parameters.global_settings(scn)['population_year']
 
         # Insert demands of private households
         insert_hh_demand(scn, year, engine)
@@ -417,14 +415,12 @@ def insert_cts_ind_demands():
 
     insert_cts_ind_wz_definitions()
 
-    for scn in targets['cts_ind_demand']['scenarios']:
+    for scn in ['eGon2035', 'eGon100RE']:
 
-        if scn == 'eGon2035':
+        year = scenario_parameters.global_settings(scn)['population_year']
+
+        if year > 2035:
             year = 2035
-        elif scn == 'eGon100RE':
-            year = 2035
-        else:
-            print(f"Warning: Scenario {scn} can not be imported.")
 
         # target values per scenario in MWh
         target_values = {
@@ -458,8 +454,10 @@ def insert_society_data():
         db.execute_sql(
                 f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};")
 
+    target_years = np.append(
+        get_sector_parameters('global').population_year.values, 2018)
 
-    for year in targets['population']['target_years']:
+    for year in target_years:
         df_pop = pd.DataFrame(data.population(year=year))
         df_pop['year'] = year
         df_pop = df_pop.rename({'value': 'population'}, axis='columns')
@@ -471,7 +469,7 @@ def insert_society_data():
                       if_exists='append')
 
 
-    for year in targets['household']['target_years']:
+    for year in target_years:
         df_hh = pd.DataFrame(data.households_per_size(year=year))
         # Select data for nuts3-regions in boundaries (needed for testmode)
         df_hh = data_in_boundaries(df_hh)
