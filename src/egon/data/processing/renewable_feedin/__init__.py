@@ -10,7 +10,7 @@ from egon.data import db
 from egon.data.importing.era5 import import_cutout
 from egon.data.importing.scenarios import get_sector_parameters
 
-def weather_cells_in_germany():
+def weather_cells_in_germany(geom_column='geom'):
     """ Get weather cells which intersect with Germany
 
     Returns
@@ -23,13 +23,13 @@ def weather_cells_in_germany():
     cfg = egon.data.config.datasets()['renewable_feedin']['sources']
 
     return db.select_geodataframe(
-        f"""SELECT a.w_id, a.geom_point
+        f"""SELECT a.w_id, a.geom_point, a.geom
         FROM {cfg['weather_cells']['schema']}.
         {cfg['weather_cells']['table']} a,
         {cfg['vg250_sta_union']['schema']}.
         {cfg['vg250_sta_union']['table']} b
         WHERE ST_Intersects(ST_Transform(b.geometry, 4326), a.geom)""",
-        geom_col='geom_point', index_col='w_id')
+        geom_col=geom_column, index_col='w_id')
 
 def federal_states_per_weather_cell():
     """ Assings a federal state to each weather cell in Germany.
@@ -48,7 +48,7 @@ def federal_states_per_weather_cell():
     cfg = egon.data.config.datasets()['renewable_feedin']['sources']
 
     # Select weather cells and ferear states from database
-    weather_cells = weather_cells_in_germany()
+    weather_cells = weather_cells_in_germany(geom_column='geom_point')
 
     federal_states = db.select_geodataframe(
         f"""SELECT gen, geometry
@@ -205,8 +205,112 @@ def wind_feedin_per_weather_cell():
                                   (weather_cells.index.isin(timeseries.index))]
         df.loc[idx, 'feedin'] = timeseries.loc[idx, turbine].values
 
+    db.execute_sql(f"""
+                   DELETE FROM {cfg['feedin_table']['schema']}.
+                   {cfg['feedin_table']['table']}
+                   WHERE carrier = 'wind_onshore'""")
+
     # Insert values into database
     df.to_sql(cfg['feedin_table']['table'],
               schema=cfg['feedin_table']['schema'],
+              con=db.engine(),
+              if_exists='append')
+
+def pv_feedin_per_weather_cell():
+    """ Insert feed-in timeseries for pv plants to database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Get weather cells in Germany
+    weather_cells = weather_cells_in_germany()
+
+    # Select weather data for Germany
+    cutout = import_cutout(boundary='Germany')
+
+    # Select weather year from cutout
+    weather_year = cutout.name.split('-')[1]
+
+    # Calculate feedin timeseries
+    ts_pv = cutout.pv('CSi',
+                      orientation = {'slope': 35., 'azimuth': 180.},
+                      per_unit=True,
+                      shapes=weather_cells.to_crs(4326).geom)
+
+    # Create dataframe and insert to database
+    insert_feedin(ts_pv, 'pv', weather_year)
+
+
+def solar_thermal_feedin_per_weather_cell():
+    """ Insert feed-in timeseries for pv plants to database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Get weather cells in Germany
+    weather_cells = weather_cells_in_germany()
+
+    # Select weather data for Germany
+    cutout = import_cutout(boundary='Germany')
+
+    # Select weather year from cutout
+    weather_year = cutout.name.split('-')[1]
+
+    # Calculate feedin timeseries
+    ts_solar_thermal = cutout.solar_thermal(
+        clearsky_model="simple",
+        orientation={'slope': 45., 'azimuth': 180.},
+        per_unit=True,
+        shapes=weather_cells.to_crs(4326).geom)
+
+    # Create dataframe and insert to database
+    insert_feedin(ts_solar_thermal, 'solar_thermal', weather_year)
+
+
+def insert_feedin(data, carrier, weather_year):
+    """ Insert feedin data into database
+
+    Parameters
+    ----------
+    data : xarray.core.dataarray.DataArray
+        Feedin timeseries data
+    carrier : str
+        Name of energy carrier
+    weather_year : int
+        Selected weather year
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Load configuration
+    cfg = egon.data.config.datasets()['renewable_feedin']
+
+    # Initialize DataFrame
+    df = pd.DataFrame(index=data.to_pandas().index,
+                      columns=['weather_year', 'carrier', 'feedin'],
+                      data={'weather_year': weather_year,
+                            'carrier': carrier})
+
+    # Insert feedin into DataFrame
+    df.feedin = data.to_pandas().values.tolist()
+
+    # Delete existing rows for carrier
+    db.execute_sql(f"""
+                   DELETE FROM {cfg['targets']['feedin_table']['schema']}.
+                   {cfg['targets']['feedin_table']['table']}
+                   WHERE carrier = '{carrier}'""")
+
+    # Insert values into database
+    df.to_sql(cfg['targets']['feedin_table']['table'],
+              schema=cfg['targets']['feedin_table']['schema'],
               con=db.engine(),
               if_exists='append')

@@ -426,5 +426,17 @@ with airflow.DAG(
         python_callable=import_feedin.wind_feedin_per_weather_cell,
     )
 
-    import_weather_cells >> feedin_wind_onshore
-    vg250_clean_and_prepare >> feedin_wind_onshore
+    feedin_pv = PythonOperator(
+        task_id="insert-feedin-pv",
+        python_callable=import_feedin.pv_feedin_per_weather_cell,
+    )
+
+    feedin_solar_thermal = PythonOperator(
+        task_id="insert-feedin-solar-thermal",
+        python_callable=import_feedin.solar_thermal_feedin_per_weather_cell,
+    )
+
+    import_weather_cells >> [feedin_wind_onshore,
+                             feedin_pv, feedin_solar_thermal]
+    vg250_clean_and_prepare >> [feedin_wind_onshore,
+                             feedin_pv, feedin_solar_thermal]
