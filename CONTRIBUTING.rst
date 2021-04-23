@@ -269,6 +269,15 @@ be saved locally, please use `CWD` to store the data. This is achieved by using
   filepath = Path(".") / "filename.csv"
   urlretrieve("https://url/to/file", filepath)
 
+Add metadata
+^^^^^^^^^^^^
+
+For describing data with machine-readable information,
+`oemetadata standard <https://github.com/OpenEnergyPlatform/oemetadata>`_ is
+used. Follow
+`the example <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/latest/example.json>`_
+to understand how the fields are used. Field are described in detail
+`here <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/latest/metadata_key_description.md>`_.
 
 Adjusting test mode data
 ------------------------

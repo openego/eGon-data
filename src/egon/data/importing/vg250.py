@@ -10,6 +10,7 @@ isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from urllib.request import urlretrieve
+import datetime
 import json
 import os
 
@@ -19,6 +20,7 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 import egon.data.config
+from egon.data.metadata import context, licenses_datenlizenz_deutschland
 
 
 def download_vg250_files():
@@ -149,113 +151,109 @@ def add_metadata():
     url = vg250_config["original_data"]["source"]["url"]
 
     # Insert metadata for each table
-    licenses = [
-        {
-            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
-            "path": "www.govdata.de/dl-de/by-2-0",
-            "instruction": (
-                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
-                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
-                "bereitgestellten Daten und Metadaten dürfen für die "
-                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
-                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
-                "bearbeitet sowie an Dritte übermittelt werden;\n "
-                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
-                "zu selbständigen neuen Datensätzen verbunden werden;\n "
-                "(3) in interne und externe Geschäftsprozesse, Produkte und "
-                "Anwendungen in öffentlichen und nicht öffentlichen "
-                "elektronischen Netzwerken eingebunden werden."
-            ),
-            "attribution": "© Bundesamt für Kartographie und Geodäsie",
-        }
-    ]
+    licenses = [licenses_datenlizenz_deutschland()]
+
+    vg250_source = {
+        "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
+        "description":
+            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+            "Verwaltungsebene des jeweiligen Landes.",
+        "path": url,
+        "licenses": licenses
+    }
+
+    resource_fields = [
+        {'description': 'Index', 'name': 'gid', 'type': 'integer', 'unit': None},
+        {'description': 'Administrative level', 'name': 'ade', 'type': 'integer', 'unit': None},
+        {'description': 'Geofactor', 'name': 'gf', 'type': 'integer', 'unit': None},
+        {'description': 'Particular areas', 'name': 'bsg', 'type': 'integer', 'unit': None},
+        {'description': 'Territorial code', 'name': 'ars', 'type': 'string', 'unit': None},
+        {'description': 'Official Municipality Key', 'name': 'ags', 'type': 'string', 'unit': None},
+        {'description': 'Seat of the administration (territorial code)', 'name': 'sdv_ars', 'type': 'string', 'unit': None},
+        {'description': 'Geographical name', 'name': 'gen', 'type': 'string', 'unit': None},
+        {'description': 'Designation of the administrative unit', 'name': 'bez', 'type': 'string', 'unit': None},
+        {'description': 'Identifier', 'name': 'ibz', 'type': 'integer', 'unit': None},
+        {'description': 'Note', 'name': 'bem', 'type': 'string', 'unit': None},
+        {'description': 'Name generation', 'name': 'nbd', 'type': 'string', 'unit': None},
+        {'description': 'Land (state)', 'name': 'sn_l', 'type': 'string', 'unit': None},
+        {'description': 'Administrative district', 'name': 'sn_r', 'type': 'string', 'unit': None},
+        {'description': 'District', 'name': 'sn_k', 'type': 'string', 'unit': None},
+        {'description': 'Administrative association – front part', 'name': 'sn_v1', 'type': 'string', 'unit': None},
+        {'description': 'Administrative association – rear part', 'name': 'sn_v2', 'type': 'string', 'unit': None},
+        {'description': 'Municipality', 'name': 'sn_g', 'type': 'string', 'unit': None},
+        {'description': 'Function of the 3rd key digit', 'name': 'fk_s3', 'type': 'string', 'unit': None},
+        {'description': 'European statistics key', 'name': 'nuts', 'type': 'string', 'unit': None},
+        {'description': 'Filled territorial code', 'name': 'ars_0', 'type': 'string', 'unit': None},
+        {'description': 'Filled Official Municipality Key', 'name': 'ags_0', 'type': 'string', 'unit': None},
+        {'description': 'Effectiveness', 'name': 'wsk', 'type': 'string', 'unit': None},
+        {'description': 'DLM identifier', 'name': 'debkg_id', 'type': 'string',
+         'unit': None},
+        {'description': 'Territorial code (deprecated column)', 'name': 'rs', 'type': 'string', 'unit': None},
+        {'description': 'Seat of the administration (territorial code, deprecated column)', 'name': 'sdv_rs', 'type': 'string', 'unit': None},
+        {'description': 'Filled territorial code (deprecated column)', 'name': 'rs_0', 'type': 'string', 'unit': None},
+        {'description': 'Geometry of areas as WKB',
+         'name': 'geometry',
+         'type': "Geometry(Polygon, srid=4326)",
+         'unit': None}]
+
     for table in vg250_config["processed"]["file_table_map"].values():
+        schema_table = ".".join([vg250_config["processed"]["schema"], table])
         meta = {
+            "name": schema_table,
             "title": title_and_description[table]["title"],
             "description": title_and_description[table]["title"],
-            "language": ["DE"],
+            "language": ["de-DE"],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": context(),
             "spatial": {
-                "location": "",
+                "location": None,
                 "extent": "Germany",
-                "resolution": "vector",
+                "resolution": "1:250000",
             },
             "temporal": {
                 "referenceDate": "2020-01-01",
                 "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
+                    "start": None,
+                    "end": None,
+                    "resolution": None,
+                    "alignment": None,
+                    "aggregationType": None,
                 },
             },
-            "sources": [
-                {
-                    "title": "Dienstleistungszentrum des Bundes für "
-                    "Geoinformation und Geodäsie - Open Data",
-                    "description": "Dieser Datenbestand steht über "
-                    "Geodatendienste gemäß "
-                    "Geodatenzugangsgesetz (GeoZG) "
-                    "(http://www.geodatenzentrum.de/auftrag/pdf"
-                    "/geodatenzugangsgesetz.pdf) für die "
-                    "kommerzielle und nicht kommerzielle "
-                    "Nutzung geldleistungsfrei zum Download "
-                    "und zur Online-Nutzung zur Verfügung. Die "
-                    "Nutzung der Geodaten und Geodatendienste "
-                    "wird durch die Verordnung zur Festlegung "
-                    "der Nutzungsbestimmungen für die "
-                    "Bereitstellung von Geodaten des Bundes "
-                    "(GeoNutzV) (http://www.geodatenzentrum.de"
-                    "/auftrag/pdf/geonutz.pdf) geregelt. "
-                    "Insbesondere hat jeder Nutzer den "
-                    "Quellenvermerk zu allen Geodaten, "
-                    "Metadaten und Geodatendiensten erkennbar "
-                    "und in optischem Zusammenhang zu "
-                    "platzieren. Veränderungen, Bearbeitungen, "
-                    "neue Gestaltungen oder sonstige "
-                    "Abwandlungen sind mit einem "
-                    "Veränderungshinweis im Quellenvermerk zu "
-                    "versehen. Quellenvermerk und "
-                    "Veränderungshinweis sind wie folgt zu "
-                    "gestalten. Bei der Darstellung auf einer "
-                    "Webseite ist der Quellenvermerk mit der "
-                    "URL http://www.bkg.bund.de zu verlinken. "
-                    "© GeoBasis-DE / BKG <Jahr des letzten "
-                    "Datenbezugs> © GeoBasis-DE / BKG "
-                    "<Jahr des letzten Datenbezugs> "
-                    "(Daten verändert) Beispiel: "
-                    "© GeoBasis-DE / BKG 2013",
-                    "path": url,
-                    "licenses": "Geodatenzugangsgesetz (GeoZG)",
-                    "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
-                },
-                {
-                    "title": "BKG - Verwaltungsgebiete 1:250.000 (vg250)",
-                    "description": "Der Datenbestand umfasst sämtliche "
-                    "Verwaltungseinheiten aller hierarchischen "
-                    "Verwaltungsebenen vom Staat bis zu den "
-                    "Gemeinden mit ihren Verwaltungsgrenzen, "
-                    "statistischen Schlüsselzahlen und dem "
-                    "Namen der Verwaltungseinheit sowie der "
-                    "spezifischen Bezeichnung der "
-                    "Verwaltungsebene des jeweiligen "
-                    "Bundeslandes.",
-                    "path": "http://www.bkg.bund.de",
-                    "licenses": licenses,
-                },
-            ],
+            "sources": [vg250_source],
             "licenses": licenses,
             "contributors": [
                 {
                     "title": "Guido Pleßmann",
                     "email": "http://github.com/gplssm",
-                    "date": "2020-12-04",
+                    "date": "",
                     "object": "",
-                    "comment": "Imported data",
+                    "comment": "",
+                }
+            ],
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": schema_table,
+                    "path": None,
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": resource_fields,
+                        "primaryKey": ["gid"],
+                        "foreignKeys": None
+                    },
+                    "dialect": {
+                        "delimiter": None,
+                        "decimalSeparator": "."
+                    }
                 }
             ],
             "metaMetadata": {
-                "metadataVersion": "OEP-1.4.0",
+                "metadataVersion": "OEP-1.4.1",
                 "metadataLicense": {
                     "name": "CC0-1.0",
                     "title": "Creative Commons Zero v1.0 Universal",
