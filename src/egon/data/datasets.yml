@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "http://download.geofabrik.de/europe/germany-200101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-210101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-210101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      path: "germany-200101.osm.pbf"
-      path_testmode: "schleswig-holstein-200101.osm.pbf"
+      path: "germany-210101.osm.pbf"
+      path_testmode: "schleswig-holstein-210101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -52,9 +52,9 @@ zensus_misc:
   processed:
     schema: "society"
     path_table_map:
-      "csv_Haushalte_100m_Gitter.zip": "destatis_zensus_household_per_ha"
-      "csv_Gebaeude_100m_Gitter.zip": "destatis_zensus_building_per_ha"
-      "csv_Wohnungen_100m_Gitter.zip": "destatis_zensus_apartment_per_ha"
+      "csv_Haushalte_100m_Gitter.zip": "egon_destatis_zensus_household_per_ha"
+      "csv_Gebaeude_100m_Gitter.zip": "egon_destatis_zensus_building_per_ha"
+      "csv_Wohnungen_100m_Gitter.zip": "egon_destatis_zensus_apartment_per_ha"
 
 map_zensus_vg250:
   sources:
@@ -83,15 +83,17 @@ demandregio_society:
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
+    scenarios:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     population:
       schema: 'society'
       table: 'egon_demandregio_population'
-      target_years: [2018, 2035, 2050]
     household:
       schema: 'society'
       table: 'egon_demandregio_household'
-      target_years: [2018, 2035, 2050]
+
 
 demandregio_household_demand:
   sources:
@@ -100,11 +102,13 @@ demandregio_household_demand:
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
+    scenarios:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     household_demand:
       schema: 'demand'
       table: 'egon_demandregio_hh'
-      scenarios: ["eGon2035", "eGon100RE"]
 
 demandregio_cts_ind_demand:
   sources:
@@ -117,11 +121,13 @@ demandregio_cts_ind_demand:
     wz_definitions:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
+    scenarios:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
   targets:
     cts_ind_demand:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
     wz_definitions:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -137,9 +143,65 @@ electrical_demands_households:
       table: 'egon_population_prognosis'
     map_zensus_vg250:
       schema: 'boundaries'
-      table: 'egon_map_zensus_nuts3'
+      table: 'egon_map_zensus_vg250'
   targets:
     household_demands_zensus:
+      schema: 'demand'
+      table: 'egon_demandregio_zensus_electricity'
+hotmaps:
+  original_data:
+    source:
+      url: "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database/-/raw/388278c6df35889b1447a959fc3759e3d78bf659/data/Industrial_Database.csv?inline=false"
+    target:
+      path: "data_Industrial_Database.csv"
+  processed:
+    schema: "demand"
+    table: "hotmaps_industrial_sites"
+seenergies:
+  original_data:
+    source:
+      url: "https://opendata.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0.csv"
+    target:
+      path: "D5_1_Industry_Dataset_With_Demand_Data.csv"
+  processed:
+    schema: "demand"
+    table: "seenergies_industrial_sites"
+schmidt:
+  original_data:
+    source:
+      url:
+    target:
+      path: "MA_Schmidt_Industriestandorte_georef.csv"
+  processed:
+    schema: "demand"
+    table: "schmidt_industrial_sites"
+industrial_sites:
+  original_data:
+    source:
+      url:
+    target:
+      path:
+  processed:
+    schema: "demand"
+    table: "industrial_sites"
+
+electrical_demands_cts:
+  sources:
+    demandregio:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+      scenarios: ["eGon2035", "eGon100RE"]
+    demandregio_wz:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
+    heat_demand_cts:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+    map_zensus_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+  targets:
+    cts_demands_zensus:
       schema: 'demand'
       table: 'egon_demandregio_zensus_electricity'
 
@@ -188,7 +250,7 @@ society_prognosis:
       table: 'destatis_zensus_population_per_ha'
     zensus_households:
       schema: 'society'
-      table: 'destatis_zensus_household_per_ha'
+      table: 'egon_destatis_zensus_household_per_ha'
     demandregio_population:
       schema: 'society'
       table: 'egon_demandregio_population'

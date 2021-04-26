@@ -84,7 +84,7 @@ setup(
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         "apache-airflow>=1.10.14,<2.0",
         "click",
-        "geopandas",
+        "geopandas>=0.9.0",
         "importlib-resources",
         "loguru",
         "oedialect==0.0.8",
