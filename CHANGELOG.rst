@@ -107,6 +107,8 @@ Changed
   `#185 <https://github.com/openego/eGon-data/issues/185>`_
 * Update task zensus-inside-germany
   `#196 <https://github.com/openego/eGon-data/issues/196>`_
+* Update installation of demandregio's disaggregator
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
 
 Bug fixes
 ---------
