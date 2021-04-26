@@ -14,28 +14,21 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.mastr as mastr
+import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.vg250 as import_vg250
+import egon.data.importing.zensus as import_zs
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.openstreetmap as process_osm
-import egon.data.importing.zensus as import_zs
-import egon.data.processing.zensus as process_zs
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
-import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.etrago as etrago
-import egon.data.importing.mastr as mastr
 import egon.data.processing.substation as substation
-import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
-import egon.data.importing.re_potential_areas as re_potential_areas
-import egon.data.importing.heat_demand_data as import_hd
+import egon.data.processing.mv_grid_districts as mvgd
+import egon.data.processing.zensus as process_zs
+import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 import egon.data.importing.scenarios as import_scenarios
-
-
 import egon.data.importing.industrial_sites as industrial_sites
-from egon.data import db
-
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -318,6 +311,13 @@ with airflow.DAG(
     substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
+
+    # MV grid districts
+    define_mv_grid_districts = PythonOperator(
+        task_id="define_mv_grid_districts",
+        python_callable=mvgd.define_mv_grid_districts
+    )
+    create_voronoi >> define_mv_grid_districts
 
     # osmTGmod ehv/hv grid model generation
     run_osmtgmod = PythonOperator(
