@@ -403,3 +403,11 @@ with airflow.DAG(
     heat_demand_import >> elec_cts_demands_zensus
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
+
+    # Electrical load curves CTS
+    map_zensus_grid_districts = PythonOperator(
+        task_id="map_zensus_grid_districts",
+        python_callable=zensus_grid_districts.map_zensus_mv_grid_districts,
+    )
+    population_import >> map_zensus_grid_districts
+    define_mv_grid_districts >> map_zensus_grid_districts

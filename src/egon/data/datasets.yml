@@ -342,3 +342,16 @@ power_plants:
   target:
       table: 'egon_power_plants'
       schema: 'supply'
+
+map_zensus_grid_districts:
+  sources:
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+  targets:
+    map:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_grid_districts'
