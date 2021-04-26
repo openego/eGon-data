@@ -15,7 +15,6 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         # get relevant pv plants: ground mounted
         df = pd.read_csv(path,usecols = ['Lage','Laengengrad','Breitengrad','Nettonennleistung'])
         df = df[df['Lage']=='Freiflaeche']
-        df.to_csv('/home/kathiesterl/PYTHON/pv_ground_mounted.csv')
         
         # examine data concerning locations and drop NaNs
         x1 = df['Laengengrad'].isnull().sum()
@@ -357,7 +356,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
     pv_rora = build_pv(pv_rora)
     pv_agri = build_pv(pv_agri)
     
-    # files for depiction in QGis
+    '''# files for depiction in QGis
     pv_rora['centroid'].to_file("PVs_rora_new.geojson", driver='GeoJSON')
     pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
     
@@ -369,7 +368,9 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
     pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv = check_target(pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, potentials_rora, pv_rora, pv_agri)
       
     
-    return pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv
+    return pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv'''
+
+    return pv_rora, pv_agri
 
 
 
@@ -400,8 +401,11 @@ max_dist_hv = 20000 # m
 target_power = 1337984 # kW 
 # assumption for target value of installed capacity in Germany per scenario
 
-pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv = regio_of_pv_ground_mounted(path,con,
+pv_rora, pv_agri  = regio_of_pv_ground_mounted(path,con,
                                                 pow_per_area, join_buffer, max_dist_hv, target_power)
+
+#pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv = regio_of_pv_ground_mounted(path,con,
+                                                #pow_per_area, join_buffer, max_dist_hv, target_power)
 
 
 
