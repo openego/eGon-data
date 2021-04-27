@@ -25,10 +25,14 @@ def calc_load_curve(share_wz, annual_demand=1):
     """
     year = 2011
 
+    sources = (egon.data.config.datasets()
+               ['electrical_load_curves_cts']['sources'])
+
     # Select normalizes load curves per cts branch
     df_select = db.select_dataframe(
         f"""SELECT wz, load_curve
-        FROM demand.egon_demandregio_timeseries_cts_ind
+        FROM {sources['demandregio_timeseries']['schema']}.
+            {sources['demandregio_timeseries']['table']}
         WHERE year = {year}""",
         index_col='wz').transpose()
 
@@ -73,37 +77,47 @@ def calc_load_curves_cts(scenario):
 
     """
 
+    sources = (egon.data.config.datasets()
+               ['electrical_load_curves_cts']['sources'])
+
     # Select demands per cts branch and nuts3-region
     demands_nuts = db.select_dataframe(
             f"""SELECT nuts3, wz, demand
-            FROM demand.egon_demandregio_cts_ind
+            FROM {sources['demandregio_cts']['schema']}.
+            {sources['demandregio_cts']['table']}
             WHERE scenario = '{scenario}'
             AND demand > 0
             AND wz IN (
                 SELECT wz FROM
-                demand.egon_demandregio_wz WHERE sector = 'CTS')
-            """)
+                {sources['demandregio_wz']['schema']}.
+                {sources['demandregio_wz']['table']}
+                WHERE sector = 'CTS')
+            """).set_index(['nuts3', 'wz'])
 
     # Select cts demands per zensus cell including nuts3-region and substation
     demands_zensus = db.select_dataframe(
             f"""SELECT a.zensus_population_id, a.demand,
             b.vg250_nuts3 as nuts3,
             c.subst_id
-            FROM demand.egon_demandregio_zensus_electricity a
-            INNER JOIN boundaries.egon_map_zensus_vg250 b
-            ON(a.zensus_population_id = b.zensus_population_id)
-            INNER JOIN boundaries.egon_map_zensus_grid_districts c
-            ON(a.zensus_population_id = c.zensus_population_id)
+            FROM {sources['zensus_electricity']['schema']}.
+            {sources['zensus_electricity']['table']} a
+            INNER JOIN
+            {sources['map_vg250']['schema']}.{sources['map_vg250']['table']} b
+            ON (a.zensus_population_id = b.zensus_population_id)
+            INNER JOIN
+            {sources['map_grid_districts']['schema']}.
+            {sources['map_grid_districts']['table']} c
+            ON (a.zensus_population_id = c.zensus_population_id)
             WHERE a.scenario = '{scenario}'
             AND a.sector = 'service'
             """, index_col='zensus_population_id')
 
     # Calculate shares of cts branches per nuts3-region
-    nuts3_share_wz = demands_nuts.set_index([
-        'nuts3', 'wz']).groupby('nuts3').apply(lambda grp: grp/grp.sum())
+    nuts3_share_wz = demands_nuts.groupby('nuts3').apply(
+        lambda grp: grp/grp.sum())
 
     # Calculate shares of cts branches per zensus cell
-    for wz in demands_nuts.wz.unique():
+    for wz in demands_nuts.index.get_level_values('wz').unique():
         demands_zensus[wz] = 0
         share = nuts3_share_wz[
             nuts3_share_wz.index.get_level_values('wz') == wz

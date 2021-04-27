@@ -411,3 +411,12 @@ with airflow.DAG(
     )
     population_import >> map_zensus_grid_districts
     define_mv_grid_districts >> map_zensus_grid_districts
+
+    electrical_load_curves_cts = PythonOperator(
+        task_id="electrical-load-curves-cts",
+        python_callable=process_dr.insert_cts_load,
+    )
+    map_zensus_grid_districts >> electrical_load_curves_cts
+    elec_cts_demands_zensus >> electrical_load_curves_cts
+    demandregio_demand_cts_ind >> electrical_load_curves_cts
+    map_zensus_vg250 >> electrical_load_curves_cts
