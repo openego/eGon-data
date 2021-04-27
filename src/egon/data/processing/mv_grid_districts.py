@@ -603,6 +603,7 @@ def merge_polygons_to_grid_district():
             with_substation = session.query(
                 MvGridDistrictsDissolved.subst_id,
                 MvGridDistrictsDissolved.geom,
+                MvGridDistrictsDissolved.id,
             ).subquery()
             without_substation = (
                 session.query(
@@ -714,6 +715,7 @@ def nearest_polygon_with_substation(
             func.ST_Distance(
                 without_substation.c.geom, with_substation.c.geom
             ),
+            with_substation.c.id
         )
         .subquery()
     )
