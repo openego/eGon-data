@@ -269,6 +269,7 @@ def egon_data(context, **kwargs):
         inserts=options,
         airflow=resources.files(egon.data.airflow),
     )
+    (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
