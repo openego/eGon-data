@@ -715,7 +715,11 @@ def nearest_polygon_with_substation(
             func.ST_Distance(
                 without_substation.c.geom, with_substation.c.geom
             ),
-            with_substation.c.id
+            #with_substation.c.id
+            func.ST_Distance(
+                func.ST_Centroid(without_substation.c.geom), 
+                func.ST_Centroid(with_substation.c.geom)
+            )
         )
         .subquery()
     )
