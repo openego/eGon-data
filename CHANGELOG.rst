@@ -65,9 +65,11 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * Add hydro and biomass power plants eGon2035
   `#127 <https://github.com/openego/eGon-data/issues/127>`_
-* Creation of the ehv/hv grid model with osmTGmod, see
-  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and
+* Creation of the ehv/hv grid model with osmTGmod, see 
+  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
+* Identification of medium-voltage grid districts
+  `#10 <https://github.com/openego/eGon-data/pull/10>`_  
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
 * Distribute electrical demands of cts to zensus cells
