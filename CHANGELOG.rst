@@ -78,8 +78,11 @@ Added
   `#117 <https://github.com/openego/eGon-data/issues/117>`_
 * Integrate scenario table with parameters for each sector 
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
+* Extract landuse areas from OSM 
+  `#214 <https://github.com/openego/eGon-data/issues/214>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
+
 
 Changed
 -------
