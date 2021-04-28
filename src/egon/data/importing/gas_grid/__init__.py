@@ -1,0 +1,244 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr  9 14:32:53 2021
+
+@author: nada_am
+"""
+import os
+import ast
+import pandas as pd
+import numpy as np
+import geopandas
+import json
+from shapely import geometry
+from egon.data import db
+from egon.data.config import settings                     
+from geoalchemy2.types import Geometry
+
+def define_gas_nodes_list():
+    """Define list of gas nodes from SciGRID_gas IGGIELGN data
+    
+    Returns
+    -------
+    None.
+    """
+
+    # Read-in data from csv-file
+    target_file = os.path.join(
+        os.path.dirname(__file__), 'IGGIELGN_Nodes.csv')
+    
+    gas_nodes_list = pd.read_csv(target_file,
+                               delimiter=';', decimal='.',
+                               usecols = ['lat', 'long', 'id', 'country_code','param'])
+    
+    # Ajouter tri pour ne conserver que les pays ayant des pipelines en commun.
+    
+    gas_nodes_list = gas_nodes_list.rename(columns={'lat': 'y','long': 'x'})
+    gas_nodes_list['bus_id'] = range(len(gas_nodes_list))
+    gas_nodes_list = gas_nodes_list.set_index('id')
+   
+    return gas_nodes_list
+
+
+def insert_gas_nodes_list(gas_nodes_list):
+    """Insert list of gas nodes from SciGRID_gas IGGIELGN data
+    
+    Returns
+    -------
+    None.
+    """
+    # Connect to local database
+    engine = db.engine()
+    
+    gas_nodes_list = gas_nodes_list[ gas_nodes_list['country_code'].str.match('DE')] # A remplacer evtmt par un test sur le NUTS0
+    # Cut data to federal state if in testmode
+    NUTS1 = []
+    for index, row in gas_nodes_list.iterrows():
+        param = ast.literal_eval(row['param'])
+        NUTS1.append(param['nuts_id_1'])
+    gas_nodes_list = gas_nodes_list.assign(NUTS1 = NUTS1)
+    
+    boundary = settings()['egon-data']['--dataset-boundary']
+    if boundary != 'Everything':
+        map_states = {'Baden-Württemberg':'DE1', 'Nordrhein-Westfalen': 'DEA',
+               'Hessen': 'DE7', 'Brandenburg': 'DE4', 'Bremen':'DE5',
+               'Rheinland-Pfalz': 'DEB', 'Sachsen-Anhalt': 'DEE',
+               'Schleswig-Holstein':'DEF', 'Mecklenburg-Vorpommern': 'DE8',
+               'Thüringen': 'DEG', 'Niedersachsen': 'DE9',
+               'Sachsen': 'DED', 'Hamburg': 'DE6', 'Saarland': 'DEC',
+               'Berlin': 'DE3', 'Bayern': 'DE2'}
+
+        gas_nodes_list = gas_nodes_list[gas_nodes_list['NUTS1'].isin([map_states[boundary], np.nan])]
+        
+        # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
+    
+    # Add missing columns
+    c = {'version':'0.0.0', 'scn_name':'eGon2035', 'carrier':'gas'}
+    gas_nodes_list = gas_nodes_list.assign(**c)
+    
+    gas_nodes_list = geopandas.GeoDataFrame(gas_nodes_list, geometry=geopandas.points_from_xy(gas_nodes_list['x'], gas_nodes_list['y']))
+    # gas_nodes_list = gas_nodes_list.rename(columns={'geometry': 'geom'})
+    gas_nodes_list = gas_nodes_list.reset_index(drop=True)
+    gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
+
+    # Insert data to db    
+    gas_nodes_list.to_postgis('egon_gas_bus',
+                              engine,
+                              schema='grid',
+                              index=False,
+                              if_exists='replace',
+                              dtype={"geometry": Geometry()}) ##### /!\ nom a modifier /!\
+
+    
+def insert_gas_pipeline_list(gas_nodes_list):
+    """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
+    Returns
+    -------
+    None.
+    """
+    # Connect to local database
+    engine = db.engine()
+
+    classifiaction_file = os.path.join(
+        os.path.dirname(__file__), 'pipeline_classification.csv') ##### /!\ nom a modifier /!\
+        
+    classification = pd.read_csv(classifiaction_file,
+                               delimiter=',',
+                               usecols = ['classification', 'max_transport_capacity_Gwh/d'])
+
+    # Read-in data from csv-file
+    target_file = os.path.join(
+        os.path.dirname(__file__), 'IGGIELGN_PipeSegment3.csv') ##### /!\ nom a modifier /!\
+    
+    gas_pipelines_list = pd.read_csv(target_file,
+                               delimiter=';', decimal='.',
+                               usecols = ['id', 'node_id', 'lat', 'long', 'country_code', 'param'])
+
+    gas_pipelines_list = gas_pipelines_list[ gas_pipelines_list['country_code'].str.contains('DE')] # A remplacer evtmt par un test sur le NUTS0?
+    gas_pipelines_list['link_id'] = range(len(gas_pipelines_list))
+
+    # Cut data to federal state if in testmode
+    NUTS1 = []
+    for index, row in gas_pipelines_list.iterrows():
+        param = ast.literal_eval(row['param'])
+        NUTS1.append(param['nuts_id_1'])
+    gas_pipelines_list['NUTS1'] = NUTS1
+    
+    boundary = settings()['egon-data']['--dataset-boundary']
+
+    if boundary != 'Everything':
+        map_states = {'Baden-Württemberg':'DE1', 'Nordrhein-Westfalen': 'DEA',
+                'Hessen': 'DE7', 'Brandenburg': 'DE4', 'Bremen':'DE5',
+                'Rheinland-Pfalz': 'DEB', 'Sachsen-Anhalt': 'DEE',
+                'Schleswig-Holstein':'DEF', 'Mecklenburg-Vorpommern': 'DE8',
+                'Thüringen': 'DEG', 'Niedersachsen': 'DE9',
+                'Sachsen': 'DED', 'Hamburg': 'DE6', 'Saarland': 'DEC',
+                'Berlin': 'DE3', 'Bayern': 'DE2'}
+        gas_pipelines_list["NUTS1"] = [x[0] for x in gas_pipelines_list['NUTS1']]
+        gas_pipelines_list = gas_pipelines_list[gas_pipelines_list["NUTS1"].str.contains(map_states[boundary])]
+        
+        # A completer avec nodes related to pipelines which have an end in the selected area
+   
+    # Add missing columns
+    gas_pipelines_list['scn_name'] = 'eGon2035'
+    gas_pipelines_list['carrier'] = 'gas'
+    gas_pipelines_list['version'] = '0.0.0'
+        
+    diameter = []
+    length = []
+    geom = []
+    topo = []
+    
+    for index, row in gas_pipelines_list.iterrows():
+        
+        param = ast.literal_eval(row['param'])
+        diameter.append(param['diameter_mm'])
+        length.append(param['length_km'])
+        
+        long_e = json.loads(row['long'])
+        lat_e = json.loads(row['lat'])
+        crd_e = list(zip(long_e, lat_e))
+        topo.append(geometry.LineString(crd_e))
+        
+        long_path = param['path_long'] 
+        lat_path = param['path_lat'] 
+        if not long_path:
+            geom.append(geometry.LineString(crd_e))
+        else:
+            crd = list(zip(long_path, lat_path))
+            crd.insert(0, crd_e[0])
+            crd.append(crd_e[1])
+            lines = []
+            for i in range(len(crd)-1):
+                lines.append(geometry.LineString([crd[i], crd[i+1]]))      
+            geom.append(geometry.MultiLineString(lines))
+                
+    gas_pipelines_list['diameter'] = diameter
+    gas_pipelines_list['length'] = length
+    gas_pipelines_list['topo'] = topo
+    gas_pipelines_list['geometry'] = geom
+    
+    gas_pipelines_list = geopandas.GeoDataFrame(gas_pipelines_list)
+    
+    # Adjust columns  
+    bus0 = []
+    bus1 = []
+    pipe_class = []
+    
+    for index, row in gas_pipelines_list.iterrows():
+        
+        buses = row['node_id'].strip('][').split(', ')
+        bus0.append(gas_nodes_list.loc[buses[0][1:-1],'bus_id'])
+        bus1.append(gas_nodes_list.loc[buses[1][1:-1],'bus_id'])
+        
+        if row['diameter'] >= 1000:
+            pipe_class = 'A'
+        elif 700 <= row['diameter'] <= 1000:
+            pipe_class = 'B'
+        elif 500 <= row['diameter'] <= 700:
+            pipe_class = 'C'
+        elif 350 <= row['diameter'] <= 500:
+            pipe_class = 'D'
+        elif 200 <= row['diameter'] <= 350:
+            pipe_class = 'E'
+        elif 100 <= row['diameter'] <= 200:
+            pipe_class = 'F'
+        elif row['diameter'] <= 100:
+            pipe_class = 'G'
+            
+    gas_pipelines_list['bus0'] = bus0
+    gas_pipelines_list['bus1'] = bus1    
+    gas_pipelines_list['pipe_class'] = pipe_class
+
+    gas_pipelines_list = gas_pipelines_list.merge(classification, 
+                                                  how='left',
+                                                  left_on='pipe_class', 
+                                                  right_on='classification')
+    gas_pipelines_list['p_nom'] = gas_pipelines_list['max_transport_capacity_Gwh/d'] * (1000/24)
+    
+    gas_pipelines_list = gas_pipelines_list.drop(columns=['id', 'node_id', 'param', 'NUTS1', 'country_code', 
+                                                          'diameter', 'pipe_class', 'classification', 
+                                                          'max_transport_capacity_Gwh/d', 'lat', 'long'])
+    
+    # Insert data to db
+    gas_pipelines_list.to_postgis('egon_gas_link',
+                          engine,
+                          schema='grid',
+                          index=False,
+                          if_exists='replace',
+                          dtype={"topo": Geometry(), 'geometry': Geometry() }) ##### /!\ nom a modifier /!\
+    
+    
+def insert_gas_data():
+    """Overall function for importing gas data from SciGRID_gas
+    Returns
+    -------
+    None.
+    """
+
+    gas_nodes_list = define_gas_nodes_list()
+   
+    insert_gas_nodes_list(gas_nodes_list)
+    
+    insert_gas_pipeline_list(gas_nodes_list)
+    

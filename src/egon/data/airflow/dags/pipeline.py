@@ -31,7 +31,7 @@ import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zen
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.scenarios as import_scenarios
-
+import egon.data.importing.gas_grid as gas_grid
 
 import egon.data.importing.industrial_sites as industrial_sites
 from egon.data import db
@@ -403,3 +403,11 @@ with airflow.DAG(
     heat_demand_import >> elec_cts_demands_zensus
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
+
+    # Gas grid import
+    gas_grid_insert_data = PythonOperator(
+        task_id="insert-gas-grid",
+        python_callable=gas_grid.insert_gas_data,
+    )
+
+    create_tables >> gas_grid_insert_data
