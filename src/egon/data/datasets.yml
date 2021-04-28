@@ -307,6 +307,6 @@ landuse:
       schema: 'boundaries'
       table: 'vg250_sta_union'
   target:
-      table: 'osm_polygon_urban'
+      table: 'osm_landuse'
       schema: 'openstreetmap'
 
