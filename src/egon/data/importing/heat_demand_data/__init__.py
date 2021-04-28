@@ -16,11 +16,11 @@ from jinja2 import Template
 
 from egon.data import db, subprocess
 import egon.data.config
+from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
 from urllib.request import urlretrieve
 import os
 import zipfile
 
-import pandas as pd
 import geopandas as gpd
 
 # for raster operations
@@ -34,7 +34,7 @@ import json
 # import time
 
 # packages for ORM class definition
-from sqlalchemy import Column, String, Float, Integer, Sequence
+from sqlalchemy import Column, String, Float, Integer, Sequence, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -53,7 +53,7 @@ class EgonPetaHeat(Base):
     )
     demand = Column(Float)
     sector = Column(String)
-    scenario = Column(String)
+    scenario = Column(String, ForeignKey(EgonScenario.name))
     version = Column(String)
     zensus_population_id = Column(Integer)
 
@@ -308,7 +308,7 @@ def future_heat_demand_germany(scenario_name):
 
     The calculation is based on Peta5_0_1 heat demand densities, cutcut for
     Germany, for the year 2015. The given scenario name is used to read the
-    adjustment factors for the heat demand rasters from a file.
+    adjustment factors for the heat demand rasters from the scenario table.
 
     Parameters
     ----------
@@ -333,34 +333,14 @@ def future_heat_demand_germany(scenario_name):
 
         Check, if there are populated cells without heat demand.
 
-        Check, if there are unpoplated cells with residential heat demands.
-
-        Option: Load the adjustment factors from an excel files, and not from
-        a csv: That might be implemented later for better documentation of the
-        development of the adjustment factors.
-        pip install xlrd to make it work
-        xlsfilename = ""
-        df_reductions = pd.read_excel(xlsfilename,
-                                      sheet_name =
-                                      "scenarios_for_raster_adjustment")
     """
+    # Load the values
+    heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
 
-    # Load the csv file with the sceanario data for raster adjustment
-    csvfilename = os.path.join(
-        os.path.dirname(__file__), "scenarios_HD_raster_adjustments.csv"
-    )
-    df_reductions = pd.read_csv(csvfilename).set_index("scenario")
+    res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
 
-    # Load the values, if scenario name is found in the file
-    if scenario_name in df_reductions.index:
-        res_hd_reduction = df_reductions.loc[
-            scenario_name, "HD_reduction_residential"
-        ]
-        ser_hd_reduction = df_reductions.loc[
-            scenario_name, "HD_reduction_service_sector"
-        ]
-    else:
-        print(f"Scenario {scenario_name} not defined.")
+    ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
+
 
     # Define the directory where the created rasters will be saved
     scenario_raster_directory = "heat_scenario_raster"
@@ -473,25 +453,32 @@ def heat_demand_to_db_table():
     sql_script = os.path.join(
         os.path.dirname(__file__), "raster2cells-and-centroids.sql"
     )
-    # Create a temporary table and fill the final table using the sql script
-    rasters = "heat_demand_rasters"
-    import_rasters = subprocess.run(
-        ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
-        + sources
-        + [f"{rasters}"],
-        text=True,
-    ).stdout
-    with engine.begin() as connection:
-        connection.execute(
-            f'CREATE TEMPORARY TABLE "{rasters}"'
-            ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
-        )
-        connection.execute(import_rasters)
-        connection.execute(f'ANALYZE "{rasters}"')
-        with open(sql_script) as convert:
+
+    db.execute_sql("DELETE FROM demand.egon_peta_heat;")
+
+    for source in sources:
+        # Create a temporary table and fill the final table using the sql script
+        rasters = f"heat_demand_rasters_{source.stem.lower()}"
+        import_rasters = subprocess.run(
+            ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
+            + [source]
+            + [f"{rasters}"],
+            text=True,
+        ).stdout
+        with engine.begin() as connection:
+            print(f'CREATE TEMPORARY TABLE "{rasters}"'
+                ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);')
             connection.execute(
-                Template(convert.read()).render(version="0.0.0")
+                f'CREATE TEMPORARY TABLE "{rasters}"'
+                ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
             )
+            connection.execute(import_rasters)
+            connection.execute(f'ANALYZE "{rasters}"')
+            with open(sql_script) as convert:
+                connection.execute(
+                    Template(convert.read()).render(version="0.0.0",
+                                                    source=rasters)
+                )
     return None
 
 
@@ -773,6 +760,14 @@ def add_metadata():
                             "reference": {
                                 "resource": "society.destatis_zensus_population_per_ha",
                                 "fields": ["id"],
+                            },
+                        },
+
+                        {
+                            "fields": ["scenario"],
+                            "reference": {
+                                "resource": "scenario.egon_scenario_parameters",
+                                "fields": ["name"],
                             },
                         }
                     ],

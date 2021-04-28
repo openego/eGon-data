@@ -1,5 +1,3 @@
-DELETE FROM demand.egon_peta_heat;
-
 INSERT INTO demand.egon_peta_heat (
   demand, sector, scenario, version, zensus_population_id
 ) SELECT
@@ -15,7 +13,7 @@ FROM (
     '{"res": "residential", "ser": "service"}'::json
     ->> substring(filename, 1, 3) AS sector,
     filename
-  FROM heat_demand_rasters
+  FROM {{ source }}
 ) AS demands
 LEFT JOIN (
   SELECT
