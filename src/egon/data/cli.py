@@ -268,6 +268,8 @@ def egon_data(context, **kwargs):
         update=False,
         inserts=options,
         airflow=resources.files(egon.data.airflow),
+        gid=os.getgid(),
+        uid=os.getuid(),
     )
     (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
 
