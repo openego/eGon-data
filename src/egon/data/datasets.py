@@ -7,6 +7,7 @@ you need any functionality from this module which is not reexported from
 requesting an addition of the needed functionality to the public API.
 """
 
+from dataclasses import dataclass
 from typing import Set, Tuple, Union
 import collections.abc as cabc
 
@@ -63,6 +64,13 @@ ParallelTasks = Set[TaskGraph]
 SequentialTasks = Tuple[TaskGraph, ...]
 
 
+@dataclass
+class Tasks:
+    first: Set[Operator]
+    last: Set[Operator]
+    all: Set[Operator]
+
+
 def connect(tasks: TaskGraph):
     """Connect multiple tasks into a potentially complex graph.
 
@@ -72,25 +80,25 @@ def connect(tasks: TaskGraph):
     executed in parallel.
     """
     if isinstance(tasks, Operator):
-        return {"first": [tasks], "last": [tasks], "all": [tasks]}
+        return Tasks(first={tasks}, last={tasks}, all={tasks})
     elif isinstance(tasks, cabc.Sized) and len(tasks) == 0:
-        return {"first": [], "last": [], "all": []}
+        return Tasks(first={}, last={}, all={})
     elif isinstance(tasks, cabc.Set):
         results = [connect(subtasks) for subtasks in tasks]
-        first = {task for result in results for task in result["first"]}
-        last = {task for result in results for task in result["last"]}
-        tasks = {task for result in results for task in result["all"]}
-        return {"first": first, "last": last, "all": tasks}
+        first = {task for result in results for task in result.first}
+        last = {task for result in results for task in result.last}
+        tasks = {task for result in results for task in result.all}
+        return Tasks(first, last, tasks)
     elif isinstance(tasks, tuple):
         results = [connect(subtasks) for subtasks in tasks]
         for (left, right) in zip(results[:-1], results[1:]):
-            for last in left["last"]:
-                for first in right["first"]:
+            for last in left.last:
+                for first in right.first:
                     last.set_downstream(first)
-        first = results[0]["first"]
-        last = results[-1]["last"]
-        tasks = {task for result in results for task in result["all"]}
-        return {"first": first, "last": last, "all": tasks}
+        first = results[0].first
+        last = results[-1].last
+        tasks = {task for result in results for task in result.all}
+        return Tasks(first, last, tasks)
     else:
         raise (
             TypeError(
