@@ -35,6 +35,8 @@ Added
 
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
+  which was updated to the latest long-term data set of the 2021-01-01 in
+  #223 <https://github.com/openego/eGon-data/issues/223>`_
 * Verwaltungsgebiete data import (vg250) more or less done as in open_ego
   `#3 <https://github.com/openego/eGon-data/issues/3>`_
 * Zensus population data import
@@ -72,9 +74,12 @@ Added
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
 * Distribute electrical demands of cts to zensus cells
   `#210 <https://github.com/openego/eGon-data/issues/210>`_
+* Include industrial sites' download, import and merge
+  `#117 <https://github.com/openego/eGon-data/issues/117>`_
+* Integrate scenario table with parameters for each sector 
+  `#177 <https://github.com/openego/eGon-data/issues/177>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
-
 
 Changed
 -------
@@ -104,6 +109,8 @@ Changed
   `#185 <https://github.com/openego/eGon-data/issues/185>`_
 * Update task zensus-inside-germany
   `#196 <https://github.com/openego/eGon-data/issues/196>`_
+* Update installation of demandregio's disaggregator
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
 
 Bug fixes
 ---------
@@ -117,3 +124,5 @@ Bug fixes
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Fix input table of electrical-demands-zensus
   `#217 <https://github.com/openego/eGon-data/issues/217>`_
+* Import heat demand raster files successively to fix import for dataset==Everything
+  `#204 <https://github.com/openego/eGon-data/issues/204>`_
