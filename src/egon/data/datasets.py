@@ -7,6 +7,10 @@ you need any functionality from this module which is not reexported from
 requesting an addition of the needed functionality to the public API.
 """
 
+from typing import Set, Tuple, Union
+import collections.abc as cabc
+
+from airflow.operators import BaseOperator as Operator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -53,3 +57,45 @@ class Model(Base):
 
 Model.__table__.create(bind=db.engine(), checkfirst=True)
 DependencyGraph.create(bind=db.engine(), checkfirst=True)
+
+TaskGraph = Union[Operator, "ParallelTasks", "SequentialTasks"]
+ParallelTasks = Set[TaskGraph]
+SequentialTasks = Tuple[TaskGraph, ...]
+
+
+def connect(tasks: TaskGraph):
+    """Connect multiple tasks into a potentially complex graph.
+
+    As per the type, a task graph can be given as a single operator, a tuple
+    of task graphs or a set of task graphs. A tuple will be executed in the
+    specified order, whereas a set means that the tasks in the graph will be
+    executed in parallel.
+    """
+    if isinstance(tasks, Operator):
+        return {"first": [tasks], "last": [tasks], "all": [tasks]}
+    elif isinstance(tasks, cabc.Sized) and len(tasks) == 0:
+        return {"first": [], "last": [], "all": []}
+    elif isinstance(tasks, cabc.Set):
+        results = [connect(subtasks) for subtasks in tasks]
+        first = {task for result in results for task in result["first"]}
+        last = {task for result in results for task in result["last"]}
+        tasks = {task for result in results for task in result["all"]}
+        return {"first": first, "last": last, "all": tasks}
+    elif isinstance(tasks, tuple):
+        results = [connect(subtasks) for subtasks in tasks]
+        for (left, right) in zip(results[:-1], results[1:]):
+            for last in left["last"]:
+                for first in right["first"]:
+                    last.set_downstream(first)
+        first = results[0]["first"]
+        last = results[-1]["last"]
+        tasks = {task for result in results for task in result["all"]}
+        return {"first": first, "last": last, "all": tasks}
+    else:
+        raise (
+            TypeError(
+                "`egon.data.datasets.connect` got an argument of type:\n\n"
+                f"  {type(tasks)}\n\n"
+                "where only `Operator`s, `Set`s and `Tuple`s are allowed."
+            )
+        )
