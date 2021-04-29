@@ -306,7 +306,7 @@ def future_heat_demand_germany(scenario_name):
     """
     Calculate the future residential and service-sector heat demand per ha.
 
-    The calculation is based on Peta5_0_1 heat demand densities, cutcut for
+    The calculation is based on Peta5_0_1 heat demand densities, cutout for
     Germany, for the year 2015. The given scenario name is used to read the
     adjustment factors for the heat demand rasters from the scenario table.
 
