@@ -19,7 +19,15 @@ from egon.data import db
 
 Base = declarative_base()
 SCHEMA = "metadata"
-db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA};")
+
+
+def setup():
+    """Create the database structure for storing dataset information."""
+    # TODO: Move this into a task generating the initial database structure.
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA};")
+    Model.__table__.create(bind=db.engine(), checkfirst=True)
+    DependencyGraph.create(bind=db.engine(), checkfirst=True)
+
 
 DependencyGraph = Table(
     "dependency_graph",
@@ -55,9 +63,6 @@ class Model(Base):
         backref="dependents",
     )
 
-
-Model.__table__.create(bind=db.engine(), checkfirst=True)
-DependencyGraph.create(bind=db.engine(), checkfirst=True)
 
 TaskGraph = Union[Operator, "ParallelTasks", "SequentialTasks"]
 ParallelTasks = Set[TaskGraph]
