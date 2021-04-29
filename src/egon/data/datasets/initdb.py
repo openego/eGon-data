@@ -1,7 +1,7 @@
 from airflow.operators.python_operator import PythonOperator
 
 from egon.data import db
-from egon.data.datasets import DEFAULTS, Dataset
+from egon.data.datasets import Dataset
 
 
 def initdb():
@@ -16,5 +16,5 @@ dataset = Dataset(
     name="database-structure",
     version="0.0.0",
     dependencies=[],
-    graph=PythonOperator(task_id="initdb", python_callable=initdb, **DEFAULTS),
+    graph=PythonOperator(task_id="initdb", python_callable=initdb),
 )

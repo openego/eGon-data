@@ -125,4 +125,8 @@ class Dataset:
                 p.set_downstream(first)
 
     def insert_into(self, dag: DAG):
+        for task in self.tasks.all:
+            for attribute in DEFAULTS:
+                if getattr(task, attribute) is None:
+                    setattr(task, attribute, DEFAULTS[attribute])
         dag.add_tasks(self.tasks.all)
