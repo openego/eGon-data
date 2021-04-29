@@ -53,6 +53,8 @@ def settings() -> dict[str, dict[str, str]]:
     """
     files = paths(pid="*") + paths()
     if not files[0].exists():
+        # TODO: Fatal errors should be raised as exceptions, so one can figure
+        #       out where they are coming from without having to debug.
         logger.error(
             f"Unable to determine settings.\nConfiguration file:"
             f"\n\n{files[0]}\n\nnot found.\nExiting."
