@@ -6,6 +6,7 @@ import collections.abc as cabc
 
 from airflow import DAG
 from airflow.operators import BaseOperator as Operator
+from airflow.utils.dates import days_ago
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -13,6 +14,7 @@ from egon.data import db
 
 Base = declarative_base()
 SCHEMA = "metadata"
+DEFAULTS = {"start_date": days_ago(1)}
 
 
 def setup():
