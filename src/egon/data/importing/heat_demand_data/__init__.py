@@ -335,12 +335,14 @@ def future_heat_demand_germany(scenario_name):
 
     """
     # Load the values
-    heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
+    if scenario_name == "eGon2015":
+        res_hd_reduction = 1
+        ser_hd_reduction = 1
+    else:
+        heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
 
-    res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
-
-    ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
-
+        res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
+        ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
 
     # Define the directory where the created rasters will be saved
     scenario_raster_directory = "heat_scenario_raster"
@@ -837,9 +839,11 @@ def future_heat_demand_data_import():
     # Specifiy the scenario names for loading factors from csv file
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
+    future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
     adjust_residential_heat_to_zensus("eGon2035")
     adjust_residential_heat_to_zensus("eGon100RE")
+    future_heat_demand_germany("eGon2015")
     add_metadata()
 
     return None
