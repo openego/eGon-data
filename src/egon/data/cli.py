@@ -339,6 +339,12 @@ def egon_data(context, **kwargs):
     airflow.add(connection)
     airflow.commit()
 
+    # TODO: This should probably rather be done during the database
+    #       initialization workflow task.
+    from egon.data.datasets import setup
+
+    setup()
+
 
 @egon_data.command(
     add_help_option=False,
