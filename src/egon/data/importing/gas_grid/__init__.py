@@ -77,17 +77,19 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.assign(**c)
     
     gas_nodes_list = geopandas.GeoDataFrame(gas_nodes_list, geometry=geopandas.points_from_xy(gas_nodes_list['x'], gas_nodes_list['y']))
-    # gas_nodes_list = gas_nodes_list.rename(columns={'geometry': 'geom'})
+    gas_nodes_list = gas_nodes_list.rename(columns={'geometry': 'geom'})
+    gas_nodes_list = gas_nodes_list.set_geometry('geom', crs=4326)
+    
     gas_nodes_list = gas_nodes_list.reset_index(drop=True)
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
 
     # Insert data to db    
     gas_nodes_list.to_postgis('egon_gas_bus',
                               engine,
-                              schema='grid',
-                              index=False,
-                              if_exists='replace',
-                              dtype={"geometry": Geometry()}) ##### /!\ nom a modifier /!\
+                              schema ='grid',
+                              index = True,
+                              if_exists = 'replace',
+                              dtype = {"geom": Geometry()})
 
     
 def insert_gas_pipeline_list(gas_nodes_list):
@@ -176,9 +178,8 @@ def insert_gas_pipeline_list(gas_nodes_list):
     gas_pipelines_list['diameter'] = diameter
     gas_pipelines_list['length'] = length
     gas_pipelines_list['topo'] = topo
-    gas_pipelines_list['geometry'] = geom
-    
-    gas_pipelines_list = geopandas.GeoDataFrame(gas_pipelines_list)
+    gas_pipelines_list['geom'] = geom
+    gas_pipelines_list = gas_pipelines_list.set_geometry('geom', crs=4326)
     
     # Adjust columns  
     bus0 = []
@@ -223,10 +224,12 @@ def insert_gas_pipeline_list(gas_nodes_list):
     # Insert data to db
     gas_pipelines_list.to_postgis('egon_gas_link',
                           engine,
-                          schema='grid',
-                          index=False,
-                          if_exists='replace',
-                          dtype={"topo": Geometry(), 'geometry': Geometry() }) ##### /!\ nom a modifier /!\
+                          schema = 'grid',
+                          index = False,
+                          if_exists = 'replace',
+                          dtype = {"topo": Geometry(),'geom': Geometry()})
+        
+    db.execute_sql(" select UpdateGeometrySRID('grid', 'egon_gas_link', 'topo', 4326) ;")
     
     
 def insert_gas_data():
