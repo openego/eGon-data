@@ -1,9 +1,10 @@
 """The API for configuring datasets."""
 
 from dataclasses import dataclass
-from typing import Set, Tuple, Union
+from typing import List, Set, Tuple, Union
 import collections.abc as cabc
 
+from airflow import DAG
 from airflow.operators import BaseOperator as Operator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm
 from sqlalchemy.ext.declarative import declarative_base
@@ -105,3 +106,21 @@ def connect(tasks: TaskGraph):
                 "where only `Operator`s, `Set`s and `Tuple`s are allowed."
             )
         )
+
+
+@dataclass
+class Dataset:
+    name: str
+    version: str
+    dependencies: List["Dataset"]
+    graph: TaskGraph
+
+    def __post_init__(self):
+        self.tasks = connect(self.graph)
+        predecessors = [p for d in self.dependencies for p in d.tasks.last]
+        for p in predecessors:
+            for first in self.tasks.first:
+                p.set_downstream(first)
+
+    def insert_into(self, dag: DAG):
+        dag.add_tasks(self.tasks.all)
