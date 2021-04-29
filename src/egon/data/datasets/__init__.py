@@ -1,11 +1,4 @@
-"""The API for configuring datasets.
-
-This is an internal module. Most of the functionality is supposed to be
-reexported from :py:mod:`egon.data` and should be used from there. If
-you need any functionality from this module which is not reexported from
-:py:mod:`egon.data`, this is considered a bug, so please file one,
-requesting an addition of the needed functionality to the public API.
-"""
+"""The API for configuring datasets."""
 
 from dataclasses import dataclass
 from typing import Set, Tuple, Union
