@@ -6,12 +6,18 @@ import os
 import pandas as pd
 import numpy as np
 import egon.data.config
+import egon.data.importing.scenarios.parameters as scenario_parameters
 from egon.data import db
 from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from disaggregator import data, spatial
-import egon.data.importing.scenarios.parameters as scenario_parameters
+
+try:
+    from disaggregator import data, spatial
+except:
+    print(
+        "Could not import disaggregator. "
+        "Please run task 'demandregio-installation'")
 # will be later imported from another file ###
 Base = declarative_base()
 

@@ -65,9 +65,11 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * Add hydro and biomass power plants eGon2035
   `#127 <https://github.com/openego/eGon-data/issues/127>`_
-* Creation of the ehv/hv grid model with osmTGmod, see
-  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and
+* Creation of the ehv/hv grid model with osmTGmod, see 
+  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
+* Identification of medium-voltage grid districts
+  `#10 <https://github.com/openego/eGon-data/pull/10>`_  
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
 * Distribute electrical demands of cts to zensus cells
@@ -76,8 +78,11 @@ Added
   `#117 <https://github.com/openego/eGon-data/issues/117>`_
 * Integrate scenario table with parameters for each sector 
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
+* Extract landuse areas from OSM 
+  `#214 <https://github.com/openego/eGon-data/issues/214>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
+
 
 Changed
 -------
@@ -107,6 +112,8 @@ Changed
   `#185 <https://github.com/openego/eGon-data/issues/185>`_
 * Update task zensus-inside-germany
   `#196 <https://github.com/openego/eGon-data/issues/196>`_
+* Update installation of demandregio's disaggregator
+  `#202 <https://github.com/openego/eGon-data/issues/202>`_
 
 Bug fixes
 ---------

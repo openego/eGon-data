@@ -69,10 +69,17 @@ map_zensus_vg250:
       schema: 'boundaries'
       table: 'egon_map_zensus_vg250'
 
+demandregio_installation:
+  sources:
+    git-repository: "https://github.com/openego/disaggregator.git"
+    branch: "features/pip_install"
+  targets:
+    path: 'demandregio-disaggregator'
+
 demandregio_society:
   sources:
     disaggregator:
-      git: 'https://github.com/openego/disaggregator/tree/features/pip_install'
+      path: 'demandregio-disaggregator'
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
@@ -91,7 +98,7 @@ demandregio_society:
 demandregio_household_demand:
   sources:
     disaggregator:
-      git: 'https://github.com/openego/disaggregator/tree/features/pip_install'
+      path: 'demandregio-disaggregator'
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
@@ -106,7 +113,7 @@ demandregio_household_demand:
 demandregio_cts_ind_demand:
   sources:
     disaggregator:
-      git: 'https://github.com/openego/disaggregator/tree/features/pip_install'
+      path: 'demandregio-disaggregator'
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
@@ -339,3 +346,16 @@ power_plants:
   target:
       table: 'egon_power_plants'
       schema: 'supply'
+
+landuse:
+  sources:
+    osm_polygons:
+      schema: 'openstreetmap'
+      table: 'osm_polygon'
+    vg250:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+  target:
+      table: 'osm_landuse'
+      schema: 'openstreetmap'
+
