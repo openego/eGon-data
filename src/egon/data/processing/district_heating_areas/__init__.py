@@ -25,10 +25,11 @@ import json
 # import time
 
 # packages for ORM class definition
-from sqlalchemy import Column, String, Float, Integer, Sequence, ForeignKey
+from sqlalchemy import Column, String, Integer, Sequence  #, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from geoalchemy2.types import Geometry
 
-# TO DO: Finish the class definition
+# TO DO: Add the foreign key again!
 # egon2015 is not part of the EgonScenario table!
 
 Base = declarative_base()
@@ -46,7 +47,7 @@ class MapZensusDistrictHeatingAreas(Base):
         primary_key=True,
     )
     area_id = Column(Integer)
-    scenario = Column(String, ForeignKey(EgonScenario.name))
+    scenario = Column(String)  #, ForeignKey(EgonScenario.name))
     version = Column(String)
     zensus_population_id = Column(Integer)
 
@@ -63,9 +64,45 @@ class DistrictHeatingAreas(Base):
         primary_key=True,
     )
     area_id = Column(Integer)
-    scenario = Column(String, ForeignKey(EgonScenario.name))
+    scenario = Column(String)  #, ForeignKey(EgonScenario.name))
     version = Column(String)
-    geom_polygon = Column(Geometry)
+    geom_polygon = Column(Geometry('POLYGON', 3035), index=True)
+
+
+
+def create_tables():
+    """Create tables for district heating areas
+
+    Returns
+    -------
+        None
+    """
+
+    # Drop tables
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            demand.district_heating_areas CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            demand.map_zensus_district_heating_areas CASCADE;"""
+    )
+
+    # Drop sequences
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            demand.district_heating_areas_seq CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP SEQUENCE IF EXISTS
+            demand.map_zensus_district_heating_areas_seq CASCADE;"""
+    )
+
+    engine = db.engine()
+    DistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
+    MapZensusDistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
 
 
 # Methods used are explained here:
@@ -442,6 +479,8 @@ def district_heating_areas_demarcation():
 
         Create diagrams/curves, make better curves with matplotlib
         PSD statistics
+
+        Add datasets to datasets configuration
 
         Check which tasks need to run (according to version number)
     """
