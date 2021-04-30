@@ -345,16 +345,21 @@ with airflow.DAG(
         python_callable=osmtgmod.run_osmtgmod,
     )
 
-
     osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
         python_callable=osmtgmod.osmtgmmod_to_pypsa,
     )
 
+    osmtgmod_substation = PostgresOperator(
+        task_id="osmtgmod_substation",
+        sql=resources.read_text(osmtgmod, "substation_otg.sql"),
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
     ehv_substation_extraction >> run_osmtgmod
     hvmv_substation_extraction >> run_osmtgmod
     run_osmtgmod >> osmtgmod_pypsa
-
+    run_osmtgmod >> osmtgmod_substation
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(

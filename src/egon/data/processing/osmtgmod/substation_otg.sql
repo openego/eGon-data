@@ -28,10 +28,14 @@ UPDATE grid.egon_ehv_substation
 	FROM osmtgmod_results.bus_data
 	WHERE osmtgmod_results.bus_data.base_kv > 110 AND(SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM TRIM(leading 'r' FROM grid.egon_ehv_substation.osm_id)))::BIGINT)=osmtgmod_results.bus_data.osm_substation_id; 
 
+DELETE FROM grid.egon_ehv_substation WHERE otg_id IS NULL;
+
 UPDATE grid.egon_ehv_substation
 	SET 	bus_id = otg_id;
 
 ALTER TABLE grid.egon_ehv_substation
 	DROP COLUMN otg_id;
+
+
 
 
