@@ -492,6 +492,10 @@ def district_heating_areas_demarcation():
 
     # load the total heat demand by census cell (residential plus service)
     #HD_2015 = load_heat_demands('eGon2015')
+    # status quo heat demand data is not inserted yet
+    # to do that, line 463 has to be deleted from importing/heat_demand_data/__init__.py
+    # and an emty row has to be added to scenario table (
+    # INSERT INTO scenario.egon_scenario_parameters (name)....)
     HD_2035 = load_heat_demands('eGon2035')
     HD_2050 = load_heat_demands('eGon100RE')
 
@@ -518,7 +522,7 @@ def district_heating_areas_demarcation():
 
     # scenario specific district heating areas
     district_heating_areas('eGon2035')
-    district_heating_areas('eGon2050')
+    district_heating_areas('eGon100RE')
 
     # plotting all cells
     fig, ax = plt.subplots(1, 1)
