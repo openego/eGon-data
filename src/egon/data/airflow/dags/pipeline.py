@@ -32,6 +32,7 @@ import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.district_heating_areas as district_heating_areas
+import egon.data.processing.heat_supply as heat_supply
 from egon.data import db
 
 
@@ -262,13 +263,6 @@ with airflow.DAG(
     demandregio_demand_households >> elec_household_demands_zensus
     map_zensus_vg250 >> elec_household_demands_zensus
 
-    # Power plant setup
-    power_plant_tables = PythonOperator(
-        task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables,
-    )
-    setup >> power_plant_tables
-
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
@@ -460,3 +454,17 @@ with airflow.DAG(
     zensus_misc_import >> import_district_heating_areas
     heat_demand_import >> import_district_heating_areas
     scenario_input_import >> import_district_heating_areas
+
+    # Heat supply
+    create_heat_supply_table = PythonOperator(
+        task_id="create-heat_supply-table",
+        python_callable=heat_supply.create_tables
+    )
+    import_district_heating_supply = PythonOperator(
+        task_id="import-district-heating-supply",
+        python_callable=heat_supply.insert_district_heating_supply
+    )
+    create_district_heating_areas_table >> create_heat_supply_table
+    import_district_heating_areas >> import_district_heating_supply
+    power_plant_import >> import_district_heating_supply
+    create_heat_supply_table >> import_district_heating_supply
