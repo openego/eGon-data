@@ -31,6 +31,7 @@ import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
+import egon.data.processing.district_heating_areas as district_heating_areas
 from egon.data import db
 
 
@@ -444,3 +445,18 @@ with airflow.DAG(
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
 
+    # District heating areas demarcation
+    create_district_heating_areas_table = PythonOperator(
+        task_id="create-district-heating-areas-table",
+        python_callable=district_heating_areas.create_tables
+    )
+    import_district_heating_areas = PythonOperator(
+        task_id="import-district-heating-areas",
+        python_callable=district_heating_areas.
+        district_heating_areas_demarcation
+    )
+    setup >> create_district_heating_areas_table
+    create_district_heating_areas_table >> import_district_heating_areas
+    zensus_misc_import >> import_district_heating_areas
+    heat_demand_import >> import_district_heating_areas
+    scenario_input_import >> import_district_heating_areas
