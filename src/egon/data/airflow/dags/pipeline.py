@@ -15,6 +15,7 @@ import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.mastr as mastr
+import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.vg250 as import_vg250
@@ -24,17 +25,12 @@ import egon.data.importing.zensus as import_zs
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
-import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.etrago as etrago
-import egon.data.importing.mastr as mastr
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
-import egon.data.importing.re_potential_areas as re_potential_areas
-import egon.data.importing.heat_demand_data as import_hd
+import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.importing.scenarios as import_scenarios
-
-
 import egon.data.importing.industrial_sites as industrial_sites
+import egon.data.processing.loadarea as loadarea
 from egon.data import db
 
 
@@ -248,6 +244,7 @@ with airflow.DAG(
     demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
+
     # Distribute electrical demands to zensus cells
     processed_dr_tables = PythonOperator(
         task_id="create-demand-tables",
@@ -326,7 +323,8 @@ with airflow.DAG(
     )
 
     create_voronoi = PythonOperator(
-        task_id="create_voronoi", python_callable=substation.create_voronoi
+        task_id="create_voronoi",
+        python_callable=substation.create_voronoi
     )
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction >> create_voronoi
@@ -334,11 +332,19 @@ with airflow.DAG(
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
 
+    # MV grid districts
+    define_mv_grid_districts = PythonOperator(
+        task_id="define_mv_grid_districts",
+        python_callable=mvgd.define_mv_grid_districts
+    )
+    create_voronoi >> define_mv_grid_districts
+
     # osmTGmod ehv/hv grid model generation
     run_osmtgmod = PythonOperator(
         task_id="run_osmtgmod",
         python_callable=osmtgmod.run_osmtgmod,
     )
+
 
     osmtgmod_pypsa = PythonOperator(
         task_id="osmtgmod_pypsa",
@@ -348,6 +354,7 @@ with airflow.DAG(
     ehv_substation_extraction >> run_osmtgmod
     hvmv_substation_extraction >> run_osmtgmod
     run_osmtgmod >> osmtgmod_pypsa
+
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
@@ -384,6 +391,7 @@ with airflow.DAG(
         task_id="import-power-plants",
         python_callable=power_plants.insert_power_plants,
     )
+
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
@@ -418,3 +426,21 @@ with airflow.DAG(
     heat_demand_import >> elec_cts_demands_zensus
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
+
+    # Extract landuse areas from osm data set
+    create_landuse_table = PythonOperator(
+        task_id="create-landuse-table",
+        python_callable=loadarea.create_landuse_table
+    )
+
+    landuse_extraction = PostgresOperator(
+        task_id="extract-osm_landuse",
+        sql=resources.read_text(loadarea, "osm_landuse_extraction.sql"),
+        postgres_conn_id="egon_data",
+        autocommit=True,
+    )
+    setup >> create_landuse_table
+    create_landuse_table >> landuse_extraction
+    osm_add_metadata >> landuse_extraction
+    vg250_clean_and_prepare >> landuse_extraction
+

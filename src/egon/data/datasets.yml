@@ -346,3 +346,16 @@ power_plants:
   target:
       table: 'egon_power_plants'
       schema: 'supply'
+
+landuse:
+  sources:
+    osm_polygons:
+      schema: 'openstreetmap'
+      table: 'osm_polygon'
+    vg250:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+  target:
+      table: 'osm_landuse'
+      schema: 'openstreetmap'
+
