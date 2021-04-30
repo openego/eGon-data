@@ -25,7 +25,7 @@ import json
 # import time
 
 # packages for ORM class definition
-from sqlalchemy import Column, String, Integer, Sequence  #, ForeignKey
+from sqlalchemy import Column, String, Integer, Sequence, Float  #, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
 
@@ -66,7 +66,8 @@ class DistrictHeatingAreas(Base):
     area_id = Column(Integer)
     scenario = Column(String)  #, ForeignKey(EgonScenario.name))
     version = Column(String)
-    geom_polygon = Column(Geometry('POLYGON', 3035), index=True)
+    geom_polygon = Column(Geometry('POLYGON', 3035))
+    residential_and_service_demand = Column(Float)
 
 
 
@@ -80,23 +81,23 @@ def create_tables():
 
     # Drop tables
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
+        """DROP TABLE IF EXISTS
             demand.district_heating_areas CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
+        """DROP TABLE IF EXISTS
             demand.map_zensus_district_heating_areas CASCADE;"""
     )
 
     # Drop sequences
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
+        """DROP SEQUENCE IF EXISTS
             demand.district_heating_areas_seq CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
+        """DROP SEQUENCE IF EXISTS
             demand.map_zensus_district_heating_areas_seq CASCADE;"""
     )
 
@@ -414,8 +415,8 @@ def district_heating_areas(scenario_name):
                    WHERE scenario = '{scenario_name}'""")
     # LATER HERE THE GEO INFORMATION COULD BE DELETED WHEN SAVING IN DB:
     # .drop('geom_polygon', axis=1) - how to drop two?
-    scenario_dh_area.drop('residential_and_service_demand', axis=1
-                          ).to_postgis('map_zensus_district_heating_areas',
+    scenario_dh_area[['version', 'scenario', 'area_id']].to_sql(
+        'map_zensus_district_heating_areas',
                                        schema='demand', con=db.engine(),
                                        if_exists="append")
     # scenario_dh_area.columns
@@ -490,12 +491,12 @@ def district_heating_areas_demarcation():
     # Zenus_DH_areas_201m = area_grouping(district_heat_zensus)
 
     # load the total heat demand by census cell (residential plus service)
-    HD_2015 = load_heat_demands('eGon2015')
+    #HD_2015 = load_heat_demands('eGon2015')
     HD_2035 = load_heat_demands('eGon2035')
     HD_2050 = load_heat_demands('eGon100RE')
 
     # select only cells with heat demands > 100 GJ / (ha a)
-    HD_2015_above_100GJ = select_high_heat_demands(HD_2015)
+    # HD_2015_above_100GJ = select_high_heat_demands(HD_2015)
     HD_2035_above_100GJ = select_high_heat_demands(HD_2035)
     HD_2050_above_100GJ = select_high_heat_demands(HD_2050)
 
@@ -503,9 +504,9 @@ def district_heating_areas_demarcation():
     # grouping cells applying the 201m distance buffer, including heat demand
     # aggregation
     # KEEP ONLY ONE after decision
-    PSD_2015_201m = area_grouping(HD_2015_above_100GJ
-                                  ).dissolve('area_id', aggfunc='sum')
-    PSD_2015_201m.to_file("PSDs_2015based.shp")
+    # PSD_2015_201m = area_grouping(HD_2015_above_100GJ
+    #                               ).dissolve('area_id', aggfunc='sum')
+    # PSD_2015_201m.to_file("PSDs_2015based.shp")
     PSD_2035_201m = area_grouping(HD_2035_above_100GJ
                                   ).dissolve('area_id', aggfunc='sum')
     PSD_2035_201m.to_file("PSDs_2035based.shp")
@@ -521,8 +522,8 @@ def district_heating_areas_demarcation():
 
     # plotting all cells
     fig, ax = plt.subplots(1, 1)
-    HD_2015.sort_values('demand', ascending=False
-                        ).reset_index().demand.plot(ax=ax)
+    # HD_2015.sort_values('demand', ascending=False
+    #                     ).reset_index().demand.plot(ax=ax)
     HD_2035.sort_values('demand', ascending=False
                         ).reset_index().demand.plot(ax=ax)
     HD_2050.sort_values('demand', ascending=False
