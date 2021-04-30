@@ -21,6 +21,7 @@ class EgonDistrictHeatingSupply(Base):
     index = Column(Integer, primary_key=True)
     district_heating_id = Column(Integer)
     carrier = Column(String(25))
+    category = Column(String(25))
     capacity = Column(Float)
     geometry = Column(Geometry('POINT', 3035))
     scenario = Column(String(50))
