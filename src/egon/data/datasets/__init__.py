@@ -40,7 +40,7 @@ DependencyGraph = Table(
         ForeignKey(f"{SCHEMA}.datasets.id"),
         primary_key=True,
     ),
-    schema="metadata",
+    schema=SCHEMA,
 )
 
 
