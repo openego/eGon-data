@@ -5,6 +5,7 @@ from typing import List, Set, Tuple, Union
 import collections.abc as cabc
 
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.operators import BaseOperator as Operator
 from airflow.utils.dates import days_ago
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm
@@ -117,8 +118,25 @@ class Dataset:
     dependencies: List["Dataset"]
     graph: TaskGraph
 
+    def check_version(self):
+        def skip_task(task, *xs, **ks):
+            raise AirflowSkipException(
+                f"{self.name} version {self.version} already executed."
+            )
+
+        return skip_task
+
     def __post_init__(self):
         self.tasks = connect(self.graph)
+        for task in self.tasks.all:
+            cls = task.__class__
+            versioned = type(
+                f"{self.name}VersionCheck",
+                (cls,),
+                {"execute": self.check_version()},
+            )
+            task.__class__ = versioned
+
         predecessors = [p for d in self.dependencies for p in d.tasks.last]
         for p in predecessors:
             for first in self.tasks.first:
