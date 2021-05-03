@@ -138,18 +138,80 @@ def calc_load_curves_cts(scenario):
 
 
 def insert_cts_load():
+    """Inserts electrical cts loads to etrago-tables in the database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    targets = (egon.data.config.datasets()
+               ['electrical_load_curves_cts']['targets'])
+
+    version = '0.0.0'
 
     for scenario in ['eGon2035', 'eGon100RE']:
-        # Calculate cts load curves per mv substation
+
+        # Delete existing data from database
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['pf_load']['schema']}.{targets['pf_load']['table']}
+            WHERE version = '{version}'
+            AND scn_name = '{scenario}'
+            AND carrier = 'AC-cts'
+            """)
+
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['pf_load_timeseries']['schema']}.
+            {targets['pf_load_timeseries']['table']}
+            WHERE version = '{version}'
+            AND scn_name = '{scenario}'
+            AND load_id NOT IN (
+                SELECT load_id FROM
+                {targets['pf_load']['schema']}.{targets['pf_load']['table']})
+            """)
+
+
+        # Calculate cts load curves per mv substation (hvmv bus)
         data = calc_load_curves_cts(scenario)
 
-        # Initalize pandas.DataFrame for pf table
-        load_df = pd.DataFrame(index=data.columns, columns=['p_set'])
-        load_df.p_set = data.transpose().values.tolist()
+        # Initalize pandas.DataFrame for pf table load
+        load_df = pd.DataFrame(
+            columns=['version', 'scn_name', 'load_id', 'bus',
+                     'carrier', 'sign']).set_index('load_id')
 
-    # TODO: match substation_id to etrago bus:
-        #https://github.com/openego/data_processing/blob/5edca414212ccb4b1df6b046bf916bc2ebb7b4c6/dataprocessing/sql_snippets/ego_dp_substation_otg.sql
+        # Insert data for pf load table
+        load_df.bus = data.columns
+        load_df.carrier = 'AC-cts'
+        load_df.sign = -1
+        load_df.version = version
+        load_df.scn_name = scenario
 
+        # Insert into database
+        load_df.to_sql(targets['pf_load']['table'],
+                       schema=targets['pf_load']['schema'],
+                       con=db.engine(),
+                       if_exists='append')
 
+        # Initalize pandas.DataFrame for pf table load timeseries
+        load_ts_df = pd.DataFrame(index=load_df.index,
+                                  columns=['version', 'scn_name',
+                                           'temp_id', 'p_set'])
+
+        # Insert data for pf load timeseries table
+        load_ts_df.p_set = data.transpose().values.tolist()
+        load_ts_df.version = version
+        load_ts_df.scn_name = scenario
+        load_ts_df.temp_id = 1
+
+        # Insert into database
+        load_ts_df.to_sql(targets['pf_load_timeseries']['table'],
+                       schema=targets['pf_load_timeseries']['schema'],
+                       con=db.engine(),
+                       if_exists='append')
 
 
