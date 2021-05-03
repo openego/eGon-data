@@ -172,7 +172,10 @@ def insert_cts_load():
             AND scn_name = '{scenario}'
             AND load_id NOT IN (
                 SELECT load_id FROM
-                {targets['pf_load']['schema']}.{targets['pf_load']['table']})
+                {targets['pf_load']['schema']}.{targets['pf_load']['table']}
+                  WHERE version = '{version}'
+                  AND scn_name = '{scenario}')
+
             """)
 
 
