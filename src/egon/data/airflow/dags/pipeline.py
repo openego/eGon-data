@@ -332,13 +332,6 @@ with airflow.DAG(
     vg250_clean_and_prepare >> hvmv_substation_extraction
     vg250_clean_and_prepare >> ehv_substation_extraction
 
-    # MV grid districts
-    define_mv_grid_districts = PythonOperator(
-        task_id="define_mv_grid_districts",
-        python_callable=mvgd.define_mv_grid_districts
-    )
-    create_voronoi >> define_mv_grid_districts
-
     # osmTGmod ehv/hv grid model generation
     run_osmtgmod = PythonOperator(
         task_id="run_osmtgmod",
@@ -360,6 +353,14 @@ with airflow.DAG(
     hvmv_substation_extraction >> run_osmtgmod
     run_osmtgmod >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
+
+    # MV grid districts
+    define_mv_grid_districts = PythonOperator(
+        task_id="define_mv_grid_districts",
+        python_callable=mvgd.define_mv_grid_districts
+    )
+    create_voronoi >> define_mv_grid_districts
+    osmtgmod_substation >> define_mv_grid_districts
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(
