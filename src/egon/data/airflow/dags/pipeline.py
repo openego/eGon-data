@@ -463,3 +463,4 @@ with airflow.DAG(
     elec_cts_demands_zensus >> electrical_load_curves_cts
     demandregio_demand_cts_ind >> electrical_load_curves_cts
     map_zensus_vg250 >> electrical_load_curves_cts
+    etrago_input_data >> electrical_load_curves_cts
