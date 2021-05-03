@@ -59,7 +59,6 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
@@ -80,15 +79,20 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires=">=3.6.*",
+    python_requires=">=3.7.*",
     install_requires=[
-        "apache-airflow",
-        "click",
-        "oedialect==0.0.8",
-        "pyaml",
-        "psycopg2",
-        "sqlalchemy"
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
+        "apache-airflow>=1.10.14,<2.0",
+        "click",
+        "geopandas>=0.9.0",
+        "importlib-resources",
+        "loguru",
+        "oedialect==0.0.8",
+        "psycopg2",
+        "pyaml",
+        "rasterio",
+        "rtree",
+        "sqlalchemy<1.4",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]

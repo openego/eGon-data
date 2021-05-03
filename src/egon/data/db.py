@@ -1,9 +1,11 @@
-import os
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine, text
-import yaml
+from sqlalchemy.orm import sessionmaker
+import pandas as pd
+import geopandas as gpd
 
-import egon
+from egon.data import config
 
 
 def credentials():
@@ -14,28 +16,32 @@ def credentials():
     dict
         Complete DB connection information
     """
-    # Read database configuration from docker-compose.yml
-    package_path = egon.data.__path__[0]
-    docker_compose_file = os.path.join(
-        package_path, "airflow", "docker-compose.yml"
+    translated = {
+        "--database-name": "POSTGRES_DB",
+        "--database-password": "POSTGRES_PASSWORD",
+        "--database-host": "HOST",
+        "--database-port": "PORT",
+        "--database-user": "POSTGRES_USER",
+    }
+    configuration = config.settings()["egon-data"]
+    update = {
+        translated[flag]: configuration[flag]
+        for flag in configuration
+        if flag in translated
+    }
+    configuration.update(update)
+    return configuration
+
+
+def engine():
+    """Engine for local database."""
+    db_config = credentials()
+    return create_engine(
+        f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
+        f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
+        f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
+        echo=False,
     )
-    docker_compose = yaml.load(
-        open(docker_compose_file), Loader=yaml.SafeLoader
-    )
-
-    # Select basic connection details
-    docker_db_config = docker_compose["services"]["egon-data-local-database"][
-        "environment"
-    ]
-
-    # Add HOST and PORT
-    docker_db_config_additional = docker_compose["services"][
-        "egon-data-local-database"
-    ]["ports"][0].split(":")
-    docker_db_config["HOST"] = docker_db_config_additional[0]
-    docker_db_config["PORT"] = docker_db_config_additional[1]
-
-    return docker_db_config
 
 
 def execute_sql(sql_string):
@@ -50,14 +56,7 @@ def execute_sql(sql_string):
         SQL expression
 
     """
-    db_config = credentials()
-
-    engine_local = create_engine(
-        f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
-        f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
-        f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
-        echo=False,
-    )
+    engine_local = engine()
 
     with engine_local.connect().execution_options(autocommit=True) as con:
         con.execute(text(sql_string))
@@ -93,3 +92,73 @@ def submit_comment(json, schema, table):
     # Query table comment and cast it into JSON
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
+
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    Session = sessionmaker(bind=engine())
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def select_dataframe(sql, index_col=None):
+    """ Select data from local database as pandas.DataFrame
+
+    Parameters
+    ----------
+    sql : str
+        SQL query to be executed.
+    index_col : str, optional
+        Column(s) to set as index(MultiIndex). The default is None.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Data returned from SQL statement.
+
+    """
+
+    df = pd.read_sql(sql, engine(), index_col=index_col)
+
+    if df.size == 0:
+        print(f"WARNING: No data returned by statement: \n {sql}")
+
+    return df
+
+def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
+    """ Select data from local database as geopandas.GeoDataFrame
+
+    Parameters
+    ----------
+    sql : str
+        SQL query to be executed.
+    index_col : str, optional
+        Column(s) to set as index(MultiIndex). The default is None.
+    geom_col : str, optional
+        column name to convert to shapely geometries. The default is 'geom'.
+    epsg : int, optional
+        EPSG code specifying output projection. The default is 3035.
+
+    Returns
+    -------
+    gdf : pandas.DataFrame
+        Data returned from SQL statement.
+
+    """
+
+    gdf = gpd.read_postgis(
+        sql, engine(), index_col=index_col, geom_col=geom_col
+        ).to_crs(epsg=epsg)
+
+    if gdf.size == 0:
+        print(f"WARNING: No data returned by statement: \n {sql}")
+
+    return gdf

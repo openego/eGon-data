@@ -4,7 +4,7 @@ Overview
 
 .. start-badges
 
-|commits-since| |travis| |docs| |requires|
+|commits-since| |tests| |docs| |requires|
 
 |coveralls| |codecov| |scrutinizer| |codacy| |codeclimate|
 
@@ -18,9 +18,9 @@ Overview
     :target: https://egon-data.readthedocs.io
     :alt: Documentation Status
 
-.. |travis| image:: https://api.travis-ci.org/openego/eGon-data.svg?branch=dev
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/openego/eGon-data
+.. |tests| image:: https://github.com/openego/eGon-data/workflows/Tests,%20code%20style%20&%20coverage/badge.svg
+    :alt: GitHub actions tests status
+    :target: https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/openego/eGon-data?branch=dev&svg=true
     :alt: AppVeyor Build Status
@@ -78,45 +78,126 @@ The data used in the eGo^N project along with the code importing, generating and
 
 * Free software: GNU Affero General Public License v3 or later (AGPLv3+)
 
+.. begin-getting-started-information
+
+Pre-requisites
+==============
+
+In addition to the installation of Python packages, some non-Python
+packages are required too. Right now these are:
+
+* `Docker <https://docs.docker.com/get-started/>`_: Docker is used to provide
+  a PostgreSQL database (in the default case).
+
+  Docker provides extensive installation instruction. Best you consult `their
+  docs <https://docs.docker.com/get-docker/>`_ and choose the appropriate
+  install method for your OS.
+
+  Docker is not required if you use a local PostreSQL installation.
+
+* The `psql` executable. On Ubuntu, this is provided by the
+  `postgresql-client-common` package.
+
+* Header files for the :code:`libpq5` PostgreSQL library. These are necessary
+  to build the :code:`psycopg2` package from source and are provided by the
+  :code:`libpq-dev` package on Ubuntu.
+
+* `osm2pgsql <https://osm2pgsql.org/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install osm2pgsql`.
+
+* `postgis <https://postgis.net/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install postgis`.
+* osmTGmod resp. osmosis needs `java <https://www.java.com/>`_.
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install default-jre` and
+  :code:`sudo apt install default-jdk`.
+
+
+* `gdal <https://gdal.org/>`_
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install gdal-bin`.
+
 Installation
 ============
 
-::
+Since no release is available on PyPI and installations are probably
+used for development, cloning it via
 
-    pip install egon.data
+.. code-block:: bash
 
-You can also install the in-development version with::
+   git clone git@github.com:openego/eGon-data.git
 
-    pip install https://github.com/openego/eGon-data/archive/master.zip
+and installing it in editable mode via
+
+.. code-block:: bash
+
+   pip install -e eGon-data/
+
+are recommended.
+
+In order to keep the package installation isolated, we recommend
+installing the package in a dedicated virtual environment. There's both,
+an `external tool`_ and a `builtin module`_ which help in doing so. I
+also highly recommend spending the time to set up `virtualenvwrapper`_
+to manage your virtual environments if you start having to keep multiple
+ones around.
+
+If you run into any problems during the installation of ``egon.data``,
+try looking into the list of `known installation problems`_ we have
+collected. Maybe we already know of your problem and also of a solution
+to it.
+
+.. _external tool: https://virtualenv.pypa.io/en/latest/
+.. _builtin module: https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages
+.. _virtualenvwrapper: https://virtualenvwrapper.readthedocs.io/en/latest/index.html
+.. _known installation problems: https://eGon-data.readthedocs.io/en/latest/troubleshooting.html#installation-errors
 
 
-Documentation
-=============
+Run the workflow
+================
+
+The :py:mod:`egon.data` package installs a command line application
+called :code:`egon-data` with which you can control the workflow so once
+the installation is successful, you can explore the command line
+interface starting with :code:`egon-data --help`.
+
+The most useful subcommand is probably :code:`egon-data serve`. After
+running this command, you can open your browser and point it to
+`localhost:8080`, after which you will see the web interface of `Apache
+Airflow`_ with which you can control the :math:`eGo^n` data processing
+pipeline.
+
+If running :code:`egon-data` results in an error, we also have collected
+a list of `known runtime errors`_, which can consult in search of a
+solution.
+
+.. _Apache Airflow: https://airflow.apache.org/docs/apache-airflow/stable/ui.html#ui-screenshots
+.. _known runtime errors: https://eGon-data.readthedocs.io/en/latest/troubleshooting.html#runtime-errors
+
+.. warning::
+
+   A complete run of the workflow might require much computing power and
+   can't be run on laptop. Use the :ref:`test mode <Test mode>` for
+   experimenting.
 
 
-https://eGon-data.readthedocs.io/
+Test mode
+---------
+
+The workflow can be tested on a smaller subset of data on example of the
+federal state of Schleswig-Holstein.
+Data is reduced during execution of the workflow to represent only this area.
+
+.. warning::
+
+   Right now, the test mode is set in `egon.data/airflow/pipeline.py`.
 
 
-Development
-===========
+.. end-getting-started-information
 
-To run all the tests run::
+Further Reading
+===============
 
-    tox
-
-Note, to combine the coverage data from all the tox environments run:
-
-.. list-table::
-    :widths: 10 90
-    :stub-columns: 1
-
-    - - Windows
-      - ::
-
-            set PYTEST_ADDOPTS=--cov-append
-            tox
-
-    - - Other
-      - ::
-
-            PYTEST_ADDOPTS=--cov-append tox
+You can find more in depth documentation at https://eGon-data.readthedocs.io.
