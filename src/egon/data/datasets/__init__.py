@@ -1,6 +1,6 @@
 """The API for configuring datasets."""
 
-from collections import abc
+from collections import UserDict, abc
 from dataclasses import dataclass
 from typing import List, Set, Tuple, Union
 
@@ -111,8 +111,40 @@ def connect(tasks: TaskGraph):
         )
 
 
+class UserDictMetaclassMixin(type, UserDict):
+    """Allows using classes as dictionaries.
+
+    Using this class as the `metaclass` of a class `C` allows you to use `C`
+    as a dictionary, like this:
+
+    >>> class C(metaclass=UserDictMetaclassMixin): pass
+    ...
+    >>> C["one"] = 1
+    >>> C[2] = "two"
+    >>> dict(C)
+    {'one': 1, 2: 'two'}
+
+    Note though, that you can not access the dictionary by simply specifying
+    the class name. The dictionary will be stored in the class level attribute
+    `data`, which is thus blocked for usage otherwise:
+
+    >>> C
+    <class 'data.datasets.C'>
+    >>> C.data
+    {'one': 1, 2: 'two'}
+
+    """
+
+    def __eq__(self, other):
+        return self is other
+
+    def __init__(self, *xs, **ks):
+        self.data = {}
+        return super().__init__(*xs, **ks)
+
+
 @dataclass
-class Dataset:
+class Dataset(metaclass=UserDictMetaclassMixin):
     name: str
     version: str
     dependencies: List["Dataset"]
