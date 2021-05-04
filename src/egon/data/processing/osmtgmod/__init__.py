@@ -19,8 +19,17 @@ def run_osmtgmod():
 
     osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
 
-    if not os.path.exists(osmtgmod_repos):
+    if os.path.exists(osmtgmod_repos):
         subproc.run(
+            [
+                "git",
+                "pull",
+            ],
+            cwd=osmtgmod_repos,
+        )
+       
+    else:
+    	subproc.run(
             [
                 "git",
                 "clone",
