@@ -14,23 +14,25 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
+import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
+import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
-import egon.data.processing.demandregio as process_dr
-import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
-import egon.data.processing.zensus as process_zs
+import egon.data.processing.demandregio as process_dr
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.mv_grid_districts as mvgd
-import egon.data.importing.scenarios as import_scenarios
-import egon.data.importing.industrial_sites as industrial_sites
-import egon.data.processing.loadarea as loadarea
+import egon.data.processing.zensus as process_zs
+import egon.data.processing.zensus_grid_districts as zensus_grid_districts
+
 from egon.data import db
 
 
@@ -452,3 +454,21 @@ with airflow.DAG(
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
 
+
+    # Electrical load curves CTS
+    map_zensus_grid_districts = PythonOperator(
+        task_id="map_zensus_grid_districts",
+        python_callable=zensus_grid_districts.map_zensus_mv_grid_districts,
+    )
+    population_import >> map_zensus_grid_districts
+    define_mv_grid_districts >> map_zensus_grid_districts
+
+    electrical_load_curves_cts = PythonOperator(
+        task_id="electrical-load-curves-cts",
+        python_callable=process_dr.insert_cts_load,
+    )
+    map_zensus_grid_districts >> electrical_load_curves_cts
+    elec_cts_demands_zensus >> electrical_load_curves_cts
+    demandregio_demand_cts_ind >> electrical_load_curves_cts
+    map_zensus_vg250 >> electrical_load_curves_cts
+    etrago_input_data >> electrical_load_curves_cts
