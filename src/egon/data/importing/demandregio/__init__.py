@@ -13,7 +13,7 @@ from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 
 try:
-    from disaggregator import data, spatial
+    from disaggregator import data, spatial, config
 except:
     print(
         "Could not import disaggregator. "
