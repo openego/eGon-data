@@ -338,6 +338,7 @@ with airflow.DAG(
         python_callable=mvgd.define_mv_grid_districts
     )
     create_voronoi >> define_mv_grid_districts
+    osmtgmod_substation >> define_mv_grid_districts
 
     # osmTGmod ehv/hv grid model generation
     run_osmtgmod = PythonOperator(
