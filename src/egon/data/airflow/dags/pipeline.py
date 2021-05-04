@@ -31,6 +31,7 @@ import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
 from egon.data import db
 
 
@@ -443,4 +444,11 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
+    
+        # Calculate dynamic line rating for HV trans lines
+    calculate_dlr = PythonOperator(
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
+    )
+    osmtgmod_pypsa >> calculate_dlr
 
