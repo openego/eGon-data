@@ -59,8 +59,8 @@ def run_pypsa_eur_sec():
             "-j1",
             "--use-conda",
             "--conda-frontend=conda",
-            "--snakefile="
-            + resources.files("egon.data.importing.pypsaeursec")
+            "--snakefile",
+            resources.files("egon.data.importing.pypsaeursec")
             / "Snakefile",
             "Main",
         ],
