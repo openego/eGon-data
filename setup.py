@@ -94,6 +94,12 @@ setup(
         "rtree",
         "sqlalchemy<1.4",
         "xarray",
+        "shapely",
+        "pandas",
+        "numpy",
+        "atlite==0.0.3",
+        
+        
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
