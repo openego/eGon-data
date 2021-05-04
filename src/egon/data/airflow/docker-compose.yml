@@ -1,6 +1,7 @@
 version: '3'
 services:
   egon-data-local-database-service:
+    user: {uid}:{gid}
     image: postgres:12-postgis
     container_name: {--docker-container-name}
     restart: unless-stopped
@@ -14,6 +15,4 @@ services:
       POSTGRES_USER: {--database-user}
       POSTGRES_PASSWORD: {--database-password}
     volumes:
-    - egon-data-local-database-volume:/var/lib/postgresql/data
-volumes:
-  egon-data-local-database-volume:
+    - ./database-data/:/var/lib/postgresql/data
