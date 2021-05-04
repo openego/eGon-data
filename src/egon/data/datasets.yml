@@ -359,3 +359,18 @@ landuse:
       table: 'osm_landuse'
       schema: 'openstreetmap'
 
+distributed_industrial_demand:
+  sources:
+    demandregio:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+      scenarios: ["eGon2035", "eGon100RE"]
+    osm_landuse:
+      schema: 'openstreetmap'
+      table: 'osm_landuse'
+    industrial_sites:
+      schema: 'demand'
+      table: 'industrial_sites'
+  target:
+      schema: 'demand'
+      table: 'egon_demandregio_industry_distributed'
