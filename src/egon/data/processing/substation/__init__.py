@@ -13,10 +13,10 @@ Base = declarative_base()
 class EgonEhvSubstation(Base):
     __tablename__ = 'egon_ehv_substation'
     __table_args__ = {'schema': 'grid'}
-    subst_id = Column(Integer,
-        Sequence('egon_ehv_substation_subst_id_seq', schema='grid'),
+    bus_id = Column(Integer,
+        Sequence('egon_ehv_substation_bus_id_seq', schema='grid'),
         server_default=
-            Sequence('egon_ehv_substation_subst_id_seq', schema='grid').next_value(),
+            Sequence('egon_ehv_substation_bus_id_seq', schema='grid').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
@@ -38,10 +38,10 @@ class EgonEhvSubstation(Base):
 class EgonHvmvSubstation(Base):
     __tablename__ = 'egon_hvmv_substation'
     __table_args__ = {'schema': 'grid'}
-    subst_id = Column(Integer,
-        Sequence('egon_hvmv_substation_subst_id_seq', schema='grid'),
+    bus_id = Column(Integer,
+        Sequence('egon_hvmv_substation_bus_id_seq', schema='grid'),
         server_default=
-            Sequence('egon_hvmv_substation_subst_id_seq', schema='grid').next_value(),
+            Sequence('egon_hvmv_substation_bus_id_seq', schema='grid').next_value(),
         primary_key=True)
     lon = Column(Float(53))
     lat = Column(Float(53))
@@ -67,7 +67,7 @@ class EgonHvmvSubstationVoronoi(Base):
         server_default=
             Sequence('egon_hvmv_substation_voronoi_id_seq', schema='grid').next_value(),
         primary_key=True)
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
 
 
@@ -79,7 +79,7 @@ class EgonEhvSubstationVoronoi(Base):
         server_default=
             Sequence('egon_ehv_substation_voronoi_id_seq', schema='grid').next_value(),
         primary_key=True)
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     geom = Column(Geometry('Multipolygon', 4326))
 
 def create_tables():
@@ -136,13 +136,13 @@ def create_tables():
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
             {cfg_hvmv['processed']['schema']}.
-            {cfg_hvmv['processed']['table']}_subst_id_seq CASCADE;"""
+            {cfg_hvmv['processed']['table']}_bus_id_seq CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
             {cfg_ehv['processed']['schema']}.
-            {cfg_ehv['processed']['table']}_subst_id_seq CASCADE;"""
+            {cfg_ehv['processed']['table']}_bus_id_seq CASCADE;"""
     )
 
     engine = db.engine()
@@ -289,14 +289,14 @@ def create_voronoi():
         db.execute_sql(
             f"""
             UPDATE {schema}.{voronoi_table} AS t1
-                SET  	subst_id = t2.subst_id
+                SET  	bus_id = t2.bus_id
 	            FROM	(SELECT	voi.id AS id,
-			                sub.subst_id ::integer AS subst_id
+			                sub.bus_id ::integer AS bus_id
 		            FROM	{schema}.{voronoi_table} AS voi,
 			                {schema}.{substation_table} AS sub
 		            WHERE  	voi.geom && sub.point AND
 			                ST_CONTAINS(voi.geom,sub.point)
-		           GROUP BY voi.id,sub.subst_id
+		           GROUP BY voi.id,sub.bus_id
 		           )AS t2
 	            WHERE  	t1.id = t2.id;
             """
