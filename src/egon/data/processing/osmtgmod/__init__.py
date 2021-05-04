@@ -27,7 +27,7 @@ def run_osmtgmod():
             ],
             cwd=osmtgmod_repos,
         )
-       
+
     else:
     	subproc.run(
             [
@@ -609,13 +609,16 @@ def osmtgmmod_to_pypsa(version="'0.0.0'", scenario_name="'Status Quo'"):
 
         -- BUS DATA
         INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
-                                         geom)
+                                         geom, x, y, carrier)
         SELECT
           {version},
           {scenario_name},
           bus_i AS bus_id,
           base_kv AS v_nom,
-          geom
+          geom,
+          ST_X(geom) as x,
+          ST_Y(geom) as y,
+          'AC' as carrier
           FROM osmtgmod_results.bus_data
           WHERE result_id = 1;
 
