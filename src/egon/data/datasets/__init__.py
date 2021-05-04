@@ -1,8 +1,8 @@
 """The API for configuring datasets."""
 
+from collections import abc
 from dataclasses import dataclass
 from typing import List, Set, Tuple, Union
-import collections.abc as cabc
 
 from airflow import DAG
 from airflow.exceptions import AirflowSkipException
@@ -83,9 +83,9 @@ def connect(tasks: TaskGraph):
     """
     if isinstance(tasks, Operator):
         return Tasks(first={tasks}, last={tasks}, all={tasks})
-    elif isinstance(tasks, cabc.Sized) and len(tasks) == 0:
+    elif isinstance(tasks, abc.Sized) and len(tasks) == 0:
         return Tasks(first={}, last={}, all={})
-    elif isinstance(tasks, cabc.Set):
+    elif isinstance(tasks, abc.Set):
         results = [connect(subtasks) for subtasks in tasks]
         first = {task for result in results for task in result.first}
         last = {task for result in results for task in result.last}
