@@ -25,12 +25,20 @@ def run_pypsa_eur_sec():
 
     if not pypsa_eur_repos.exists():
         subproc.run(
-            ["git", "clone", "https://github.com/PyPSA/pypsa-eur.git"],
+            ["git", 
+             "clone",
+             "--branch",
+             "v0.3.0",
+             "https://github.com/PyPSA/pypsa-eur.git"],
         )
 
     if not technology_data_repos.exists():
         subproc.run(
-            ["git", "clone", "https://github.com/PyPSA/technology-data.git"],
+            ["git",
+             "clone",
+             "--branch",
+             "v0.2.0",
+             "https://github.com/PyPSA/technology-data.git"],
         )
 
     if not pypsa_eur_sec_repos.exists():
@@ -46,9 +54,18 @@ def run_pypsa_eur_sec():
         tar.extractall(pypsa_eur_sec_repos_data)
 
     subproc.run(
-        ["snakemake", "-j1", "prepare_sector_networks"],
-        cwd=pypsa_eur_sec_repos,
+        [
+            "snakemake",
+            "-j1",
+            "--use-conda",
+            "--conda-frontend=conda",
+            "--snakefile="
+            + resources.files("egon.data.importing.pypsaeursec")
+            / "Snakefile",
+            "Main",
+        ],
     )
+
 
 
 def pypsa_eur_sec_eGon100_capacities():
