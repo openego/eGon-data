@@ -20,7 +20,6 @@ class EgonPopulationPrognosis(Base):
     year = Column(Integer, primary_key=True)
     population = Column(Float)
 
-
 class EgonHouseholdPrognosis(Base):
     __tablename__ = "egon_household_prognosis"
     __table_args__ = {"schema": "society"}
@@ -32,6 +31,7 @@ class EgonHouseholdPrognosis(Base):
 def create_tables():
     """Create table to map zensus grid and administrative districts (nuts3)"""
     engine = db.engine()
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS society;")
     EgonPopulationPrognosis.__table__.create(bind=engine, checkfirst=True)
     EgonHouseholdPrognosis.__table__.create(bind=engine, checkfirst=True)
 
