@@ -196,6 +196,31 @@ def import_osm_data(config_continue_run=False):
     db.execute_sql(f"UPDATE osm_metadata SET imported = '{v_date}'")
     logging.info("OSM data imported to database successfully.")
 
+    if 'Germany-21' in filtered_osm_pbf_path_to_file:
+        """
+        Manually add under construction substation expansion in Garenfeld
+        to existing substation. (see:)
+        """
+
+        db.execute_sql(
+            """
+            UPDATE power_ways
+            SET way = "0102000000160000001612D5004A081E4020A8644A35B349407B0ACA"
+            "7E27071E405F23EE563BB34940287CB60E0E061E4055A4C2D842B34940352FE29"
+            "6EA051E4017940E7B46B34940C0D02346CF051E4042EBE1CB44B34940D67E219A"
+            "2F051E40FECF06054AB349407F964A442F031E40C2F441F471B34940A8A544676"
+            "1021E40AB9412CA8FB349409C4848881E021E40B7BA08C691B34940B22D4E1430"
+            "001E40CE913856BDB34940E2810B122C001E40898CAEAFDBB349402CDAF043480"
+            "11E40ED678C32F0B349402FE640E25C041E405A86F21AF1B3494061D525C46F04"
+            "1E40ABEF60C892B34940DC2F9FAC18061E400D33D9E495B349401FD7868A71061"
+            "E40D2D8A89894B3494083932353F4061E40077360DE88B34940624ED02687071E"
+            "404F08782D7CB349405000C5C892091E403EFBDBAF4CB349403DDBFEF04E091E4"
+            "0658D7A8846B349405AD5928E72081E405BE8EF4A37B349401612D5004A081E40"
+            "20A8644A35B34940"
+            WHERE name = 'Umspannwerk Garenfeld'
+            AND id = 24667346
+            """)
+
 def osmtgmod(
     config_database="egon-data",
     config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
