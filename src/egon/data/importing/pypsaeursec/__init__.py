@@ -2,20 +2,19 @@
 the pysa-eur-sec scenario parameter creation
 """
 
+from pathlib import Path
+from urllib.request import urlretrieve
+import tarfile
+
 import importlib_resources as resources
 import pandas as pd
 
 from egon.data import db
 from egon.data.importing.nep_input_data import scenario_config
+import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
-
-    from pathlib import Path
-    from urllib.request import urlretrieve
-    import tarfile
-
-    import egon.data.subprocess as subproc
 
     filepath = Path(".")
     pypsa_eur_repos = filepath / "pypsa-eur"
