@@ -64,7 +64,7 @@ def run_osmtgmod():
     )
 
 
-def import_osm_data(config_continue_run=False):
+def import_osm_data():
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
@@ -82,8 +82,6 @@ def import_osm_data(config_continue_run=False):
     docker_db_config=db.credentials()
     config_database=docker_db_config["POSTGRES_DB"]
     config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data"
-    filtered_osm_pbf_path_to_file=filtered_osm_pbf_path_to_file
-
 
     config = configparser.ConfigParser()
     config.read(config_basepath + ".cfg")
@@ -94,30 +92,14 @@ def import_osm_data(config_continue_run=False):
     config["postgres_server"]["password"] = docker_db_config[
             "POSTGRES_PASSWORD"]
 
-
-        # Connects to new Database
-    logging.info("Connecting to database {} ..."
-                     .format(config_database))
-    conn = psycopg2.connect(
-            host=config["postgres_server"]["host"],
-            port=config["postgres_server"]["port"],
-            database=config_database,
-            user=config["postgres_server"]["user"],
-            password=config["postgres_server"]["password"],
-        )
-
-    cur = conn.cursor()
-    logging.info("Connected.")
     logging.info("Creating status table ...")
-    cur.execute(
-            """
-            DROP TABLE IF EXISTS _db_status;
-            CREATE TABLE _db_status (module TEXT, status BOOLEAN);
-            INSERT INTO _db_status (module, status) VALUES ('grid_model', FALSE);
-            """
-    )
-
-    conn.commit()
+    db.execute_sql(
+        """
+        DROP TABLE IF EXISTS _db_status;
+        CREATE TABLE _db_status (module TEXT, status BOOLEAN);
+        INSERT INTO _db_status (module, status) VALUES ('grid_model', FALSE);
+        """
+        )
 
     logging.info("Status table created.")
 
@@ -125,7 +107,6 @@ def import_osm_data(config_continue_run=False):
     # it is dropped before creation
     logging.info("Dropping osmtgmod_results schema if exists")
     db.execute_sql("DROP SCHEMA IF EXISTS osmtgmod_results CASCADE;")
-
 
     logging.info("Loading functions and result schema ...")
     scripts = [
@@ -142,8 +123,7 @@ def import_osm_data(config_continue_run=False):
                                  "processing/osmtgmod/osmTGmod/",
                                  script), "r", "utf-8-sig") as fd:
                 sqlfile = fd.read()
-            cur.execute(sqlfile)
-            conn.commit()
+            db.execute_sql(sqlfile)
             logging.info("Done.")
 
     db.execute_sql(
@@ -151,16 +131,15 @@ def import_osm_data(config_continue_run=False):
             WHERE module = 'grid_model'; """
         )
 
-    conn.commit()
 
     logging.info("osmTGmod-database successfully built up!")
 
     logging.info("Importing OSM-data to database.")
+
     logging.info("Using pdf file: {}".format(filtered_osm_pbf_path_to_file))
     logging.info(
-            "Assuming osmosis is avaliable at: {}".format(
-                config["osm_data"]["osmosis_path_to_binary"]
-            )
+        f"""Assuming osmosis is avaliable at
+        {config['osm_data']['osmosis_path_to_binary']}"""
         )
 
     # BUG: Python continues (and sets osm_metadata)
@@ -185,16 +164,25 @@ def import_osm_data(config_continue_run=False):
     logging.info("Importing OSM-Data...")
     proc.wait()
 
-        # After updating OSM-Data, power_tables (for editing)
-        # have to be updated as well
+    # After updating OSM-Data, power_tables (for editing)
+    # have to be updated as well
     logging.info("Creating power-tables...")
     db.execute_sql("SELECT otg_create_power_tables ();")
 
-        # Update OSM Metadata
+    # Update OSM Metadata
     logging.info("Updating OSM metadata")
     v_date = datetime.datetime.now().strftime("%Y-%m-%d")
     db.execute_sql(f"UPDATE osm_metadata SET imported = '{v_date}'")
     logging.info("OSM data imported to database successfully.")
+
+
+def osmtgmod(
+    config_database="egon-data",
+    config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
+    config_continue_run=False,
+    filtered_osm_pbf_path_to_file=None,
+    docker_db_config=None,
+):
 
     if 'Germany-21' in filtered_osm_pbf_path_to_file:
         """
@@ -221,14 +209,6 @@ def import_osm_data(config_continue_run=False):
             AND id = 24667346
             """)
 
-def osmtgmod(
-    config_database="egon-data",
-    config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
-    config_continue_run=False,
-    filtered_osm_pbf_path_to_file=None,
-    docker_db_config=None,
-):
-
     os.chdir(egon.data.__path__[0] + "/processing/osmtgmod/osmTGmod/")
     # ==============================================================
     # Setup logging
@@ -250,17 +230,6 @@ def osmtgmod(
         "Path for configuration file and results: {}"
         .format(config_basepath)
     )
-    if config_continue_run:
-        logging.info(
-            "Continuing abstraction at: {} \
-                (database will not be emptied)".format(
-                config_continue_run_at
-            )
-        )
-    else:
-        logging.info("Starting from scratch. "
-                     "Will remove database if exists.")
-
     # ==============================================================
     # read configuration from file and create folder structure
     # ==============================================================
@@ -314,45 +283,10 @@ def osmtgmod(
         )
     )
 
-    # Database connection
-    if config_continue_run:
-        logging.info(
-            "Testing connection to database {}".format(config_database)
-        )
-        try:
-            conn = psycopg2.connect(
-                host=config["postgres_server"]["host"],
-                port=config["postgres_server"]["port"],
-                database=config_database,
-                user=config["postgres_server"]["user"],
-                password=config["postgres_server"]["password"],
-            )
-            cur = conn.cursor()
-            logging.info("Successfully connected to existing database.")
-            for script in ["sql-scripts/functions.sql"]:
-                logging.info("Running script {0} ...".format(script))
-                with codecs.open(script, "r", "utf-8-sig") as fd:
-                    sqlfile = fd.read()
-                cur.execute(sqlfile)
-                conn.commit()
-                logging.info("Done.")
-        except:
-            # Get the most recent exception
-            logging.exception(
-                (
-                    "Connection failed, "
-                    "unable to continue abstraction process! "
-                    "You might want to start from scratch by dropping "
-                    "second command line argument."
-                )
-            )
-            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-            sys.exit(exceptionValue)
-    else:
-        # Connects to new Database
-        logging.info("Connecting to database {} ..."
+    # Connects to new Database
+    logging.info("Connecting to database {} ..."
                      .format(config_database))
-        conn = psycopg2.connect(
+    conn = psycopg2.connect(
             host=config["postgres_server"]["host"],
             port=config["postgres_server"]["port"],
             database=config_database,
@@ -360,7 +294,7 @@ def osmtgmod(
             password=config["postgres_server"]["password"],
         )
 
-        cur = conn.cursor()
+    cur = conn.cursor()
 
     min_voltage = 110000
 
@@ -498,15 +432,8 @@ def osmtgmod(
         ]
     )
 
-    if config_continue_run:
-        logging.info(
-            "Continuing power script, starting from command #{}...".format(
-                config_continue_run_at
-            )
-        )
-    else:
-        logging.info("Stating execution of  power script...")
-        config_continue_run_at = -1
+    logging.info("Stating execution of  power script...")
+    config_continue_run_at = -1
 
     if not config_continue_run:  # debugging - to be removed
         cur.execute(
