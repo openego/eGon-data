@@ -53,15 +53,17 @@ def run_pypsa_eur_sec():
         tar = tarfile.open(datapath)
         tar.extractall(pypsa_eur_sec_repos_data)
 
+    with open(filepath / "Snakefile", "w") as snakefile:
+        snakefile.write(
+            resources.read_text("egon.data.importing.pypsaeursec", "Snakefile")
+        )
+
     subproc.run(
         [
             "snakemake",
             "-j1",
             "--use-conda",
             "--conda-frontend=conda",
-            "--snakefile",
-            resources.files("egon.data.importing.pypsaeursec")
-            / "Snakefile",
             "Main",
         ],
     )
