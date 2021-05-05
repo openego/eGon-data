@@ -129,3 +129,5 @@ Bug fixes
   `#217 <https://github.com/openego/eGon-data/issues/217>`_
 * Import heat demand raster files successively to fix import for dataset==Everything
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
+* Replace wrong table name in SQL function used in substation extraction
+  `#236 <https://github.com/openego/eGon-data/issues/236>`_
