@@ -25,20 +25,24 @@ def run_pypsa_eur_sec():
 
     if not pypsa_eur_repos.exists():
         subproc.run(
-            ["git", 
-             "clone",
-             "--branch",
-             "v0.3.0",
-             "https://github.com/PyPSA/pypsa-eur.git"],
+            [
+                "git",
+                "clone",
+                "--branch",
+                "v0.3.0",
+                "https://github.com/PyPSA/pypsa-eur.git",
+            ],
         )
 
     if not technology_data_repos.exists():
         subproc.run(
-            ["git",
-             "clone",
-             "--branch",
-             "v0.2.0",
-             "https://github.com/PyPSA/technology-data.git"],
+            [
+                "git",
+                "clone",
+                "--branch",
+                "v0.2.0",
+                "https://github.com/PyPSA/technology-data.git",
+            ],
         )
 
     if not pypsa_eur_sec_repos.exists():
@@ -67,7 +71,6 @@ def run_pypsa_eur_sec():
             "Main",
         ],
     )
-
 
 
 def pypsa_eur_sec_eGon100_capacities():
