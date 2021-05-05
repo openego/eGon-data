@@ -2,7 +2,7 @@
 
 from collections import UserDict, abc
 from dataclasses import dataclass
-from typing import List, Set, Tuple, Union
+from typing import Iterable, Set, Tuple, Union
 
 from airflow import DAG
 from airflow.exceptions import AirflowSkipException
@@ -147,8 +147,8 @@ class UserDictMetaclassMixin(type, UserDict):
 class Dataset(metaclass=UserDictMetaclassMixin):
     name: str
     version: str
-    dependencies: List["Dataset"]
-    graph: TaskGraph
+    dependencies: Iterable["Dataset"] = ()
+    graph: TaskGraph = ()
 
     def check_version(self):
         def skip_task(task, *xs, **ks):
@@ -159,6 +159,7 @@ class Dataset(metaclass=UserDictMetaclassMixin):
         return skip_task
 
     def __post_init__(self):
+        self.dependencies = list(self.dependencies)
         self.tasks = connect(self.graph)
         for task in self.tasks.all:
             cls = task.__class__
