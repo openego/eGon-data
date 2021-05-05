@@ -95,6 +95,7 @@ setup(
         "pyaml",
         "rasterio",
         "rtree",
+        "snakemake",
         "sqlalchemy<1.4",
     ],
     extras_require={
