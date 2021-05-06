@@ -113,12 +113,21 @@ def pypsa_eur_sec_eGon100_capacities():
     df = pd.read_csv(target_file, skiprows=5)
     df.columns = ["component", "country", "carrier", "capacity"]
     df["scenario_name"] = "eGon100"
+    
+    desired_countries = ['DE', 'AT', 'CH', 'CZ', 'PL', 'SE', 'NO', 'DK',
+                         'GB', 'NL', 'BE', 'FR', 'LU']
+    
+    new_df =pd.DataFrame(columns=(df.columns))
+    for i in desired_countries:
+        new_df_1 = df[df.country.str.startswith(i, na=False)]
+        new_df = new_df.append(new_df_1)
+
 
     # Insert data to db
-    df.to_sql(
+    new_df.to_sql(
         "egon_scenario_capacities",
         engine,
         schema="supply",
         if_exists="append",
-        index=df.index,
+        index=new_df.index,
     )
