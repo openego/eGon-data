@@ -16,7 +16,10 @@ import egon.data.subprocess as subproc
 
 def run_pypsa_eur_sec():
 
-    filepath = Path(".")
+    cwd = Path(".")
+    filepath = cwd / "run-pypsa-eur-sec"
+    filepath.mkdir(parents=True, exist_ok=True)
+
     pypsa_eur_repos = filepath / "pypsa-eur"
     technology_data_repos = filepath / "technology-data"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
@@ -30,6 +33,7 @@ def run_pypsa_eur_sec():
                 "--branch",
                 "v0.3.0",
                 "https://github.com/PyPSA/pypsa-eur.git",
+                pypsa_eur_repos,
             ],
         )
 
@@ -41,12 +45,18 @@ def run_pypsa_eur_sec():
                 "--branch",
                 "v0.2.0",
                 "https://github.com/PyPSA/technology-data.git",
+                technology_data_repos,
             ],
         )
 
     if not pypsa_eur_sec_repos.exists():
         subproc.run(
-            ["git", "clone", "https://github.com/openego/pypsa-eur-sec.git"],
+            [
+                "git",
+                "clone",
+                "https://github.com/openego/pypsa-eur-sec.git",
+                pypsa_eur_sec_repos,
+            ],
         )
 
     datafile = "pypsa-eur-sec-data-bundle-201012.tar.gz"
@@ -65,6 +75,10 @@ def run_pypsa_eur_sec():
         [
             "snakemake",
             "-j1",
+            "--directory",
+            filepath,
+            "--snakefile",
+            filepath / "Snakefile",
             "--use-conda",
             "--conda-frontend=conda",
             "Main",
