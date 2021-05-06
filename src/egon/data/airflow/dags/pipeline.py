@@ -452,7 +452,7 @@ with airflow.DAG(
         task_id="download-weather-data",
         python_callable=import_era5.download_era5,
     )
-    setup >> download_era5
+    scenario_input_import >> download_era5
 
     create_weather_tables = PythonOperator(
         task_id="create-weather-tables",
