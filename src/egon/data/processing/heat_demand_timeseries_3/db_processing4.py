@@ -17,6 +17,7 @@ from math import ceil
 
 index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
 
+###generate temperature interval for each temperature zone
 class IdpProfiles:    
     def __init__(self,df_index, **kwargs):
         
@@ -68,20 +69,21 @@ class IdpProfiles:
         
         return self.df
 
+##extracting the temperature for each temperature zone from cds data
 def temperature_profile_extract():
     #downloading all data for Germany
     # load cutout
-        #cutout = atlite.Cutout("Germany-2011-era5",
-                                #cutout_dir = 'cutouts',
-                                #module="era5",
-                                #xs= slice(5., 16.), # ADJUST THIS IF YOU ONLY NEED GERMANY
-                                #ys=slice(46., 56.), # ADJUST THIS IF YOU ONLY NEED GERMANY
-                                #years= slice(2011, 2011)
-                                #)
-        #cutout.prepare()
+        cutout = atlite.Cutout("Germany-2011-era5",
+                                cutout_dir = 'cutouts',
+                                module="era5",
+                                xs= slice(5., 16.), 
+                                ys=slice(46., 56.), 
+                                years= slice(2011, 2011)
+                                )
+        cutout.prepare()
         #file in the nextcloud shared link
         #will be directly taken from the dataframe??
-        os.chdir(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/atlite/cutouts/Germany-2011-era5')
+        #os.chdir(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/atlite/cutouts/Germany-2011-era5')
         ##### replace this with input from the dataframe
         temperature_profile=pd.DataFrame()
         for file in glob.glob('*.nc'):        
@@ -104,8 +106,11 @@ def temperature_profile_extract():
                         count += 1
             weather_df = pd.DataFrame(weather_data)
             temperature_month = pd.DataFrame()
+            
             ##csv file available in the nextcloud folder
+            #os.chdir(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones')
             station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
+            
             
             for row in station_location.index:
                 station_name=station_location.iloc[row,0]            
@@ -127,9 +132,11 @@ def temperature_profile_extract():
         
         return temperature_profile
 
+###generate temperature zones for each cell
 def temp_interval():    
     temperature_interval = pd.DataFrame()
     temp_profile = temperature_profile_extract()
+    
     for x in range(len(temp_profile.columns)):
         name_station = temp_profile.columns[x]
         idp_this_station = IdpProfiles(index, temperature=temp_profile[temp_profile.columns[x]]).get_temperature_interval(how='geometric_series')
@@ -137,17 +144,121 @@ def temp_interval():
     
     return temperature_interval
 
+###generate idp pool from the profiles generated from the load profile generator
+def idp_pool_generator():
+    ###read hdf5 files with the generated profiles from the load profile generator
+    path = os.path.join(os.path.join(os.getcwd(), 'heat_data.hdf5')
 
-def idp_pool():
+    index = pd.date_range(pd.datetime(2011,1,1,0), periods = 8760, freq='H')
+
+    sfh = pd.read_hdf(path, key ='SFH')
+    mfh = pd.read_hdf(path, key ='MFH')
+    temp = pd.read_hdf(path, key ='temperature')
+    
+    ######can wuerzburg file directly be added into the hdf5 file????
+    temp_wuerzburg = pd.read_csv(os.path.join(os.path.join(os.getcwd(),'temp_2011_Wuerzburg.csv'))
+    temp_wuerzburg.drop(columns ='Unnamed: 0', inplace=True)
+    temp_wuerzburg.set_index(index, inplace=True)
+    temp_wuerzburg.rename(columns = {'temperature':'Wuerzburg'}, inplace=True)
+    temp = pd.concat([temp,temp_wuerzburg], axis =1)
+    
+    ##############################################################################
+    #demand per city
+    globals()['luebeck_sfh'] = sfh[sfh.filter(like='Luebeck').columns]
+    globals()['luebeck_mfh'] = mfh[mfh.filter(like='Luebeck').columns]
+    
+    globals()['kassel_sfh'] = sfh[sfh.filter(like='Kassel').columns]
+    globals()['kassel_mfh'] = mfh[mfh.filter(like='Kassel').columns]
+   
+    globals()['wuerzburg_sfh'] = sfh[sfh.filter(like='Wuerzburg').columns]
+    globals()['wuerzburg_mfh'] = mfh[mfh.filter(like='Wuerzburg').columns]
+    
+    
+    ####dataframe with daily temperature in geometric series
+    temp_daily = pd.DataFrame()
+    for column in temp.columns:
+        temp_current= temp[column].resample('D').mean().reindex(temp.index).fillna(method='ffill').fillna(method='bfill')
+        temp_daily=pd.concat([temp_daily,temp_current], axis=1)
+        
+    def round_temperature(station):
+        intervals = ({
+            -20: 1, -19: 1, -18: 1, -17: 1, -16: 1, -15: 1, -14: 2,
+            -13: 2, -12: 2, -11: 2, -10: 2, -9: 3, -8: 3, -7: 3, -6: 3, -5: 3,
+            -4: 4, -3: 4, -2: 4, -1: 4, 0: 4, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5,
+            6: 6, 7: 6, 8: 6, 9: 6, 10: 6, 11: 7, 12: 7, 13: 7, 14: 7, 15: 7,
+            16: 8, 17: 8, 18: 8, 19: 8, 20: 8, 21: 9, 22: 9, 23: 9, 24: 9,
+            25: 9, 26: 10, 27: 10, 28: 10, 29: 10, 30: 10, 31: 10, 32: 10,
+            33: 10, 34: 10, 35: 10, 36: 10, 37: 10, 38: 10, 39: 10, 40: 10})
+        temperature_rounded=[]
+        for i in temp_daily.loc[:,station]:
+            temperature_rounded.append(ceil(i))
+        temperature_interval =[]
+        for i in temperature_rounded:
+            temperature_interval.append(intervals[i])
+        temp_class_dic = {f'Class_{station}': temperature_interval}
+        temp_class = pd.DataFrame.from_dict(temp_class_dic)
+        return temp_class
+    
+    temp_class_luebeck = round_temperature('Luebeck')
+    temp_class_kassel = round_temperature('Kassel')
+    temp_class_wuerzburg = round_temperature('Wuerzburg')
+    temp_class =pd.concat([temp_class_luebeck, temp_class_kassel,temp_class_wuerzburg],axis=1)
+    temp_class.set_index(index, inplace=True)  
+       
+    def unique_classes(station):
+        classes=[]
+        for x in temp_class[f'Class_{station}']:
+            if x not in classes:
+                classes.append(x)       
+        classes.sort()
+        return classes
+        
+    globals()['luebeck_classes'] = unique_classes('Luebeck')
+    globals()['kassel_classes'] = unique_classes('Kassel')
+    globals()['wuerzburg_classes'] = unique_classes('Wuerzburg')
+      
     stock=['MFH','SFH']
-    class_list=[3,4,5,6,7,8,9,10]
+    class_list=[3,4,5,6,7,8,9,10] 
     for s in stock:
-        for m in class_list:
-            file_name=f'idp_collection_class_{m}_{s}_norm.pickle'
-            globals()[f'idp_collection_class_{m}_{s}']=pd.read_pickle(
-                os.path.join(r'/home/student/Documents/egon_AM/heat_demand_generation/idp pool generation/idp_pool_normalized_24hr', file_name))
-    return stock,class_list
-     
+         for m in class_list:
+             globals()[f'idp_collection_class_{m}_{s}']=pd.DataFrame(index=range(24))  
+    
+
+    def splitter(station,household_stock):
+        this_classes = globals()[f'{station.lower()}_classes']
+        for classes in this_classes:
+            this_itteration = globals()[f'{station.lower()}_{household_stock.lower()}'].loc[temp_class[f'Class_{station}']==classes,:]
+            days = list(range(int(len(this_itteration)/24)))
+            for day in days:
+                this_day = this_itteration[day*24:(day+1)*24]
+                this_day = this_day.reset_index(drop=True)
+                globals()[f'idp_collection_class_{classes}_{household_stock}']=pd.concat(
+                                [globals()[f'idp_collection_class_{classes}_{household_stock}'],
+                                                                            this_day],axis=1,ignore_index=True)
+    splitter('Luebeck','SFH')
+    splitter('Kassel','SFH')
+    splitter('Wuerzburg','SFH')
+    splitter('Luebeck','MFH')
+    splitter('Kassel','MFH')
+    splitter('Wuerzburg','MFH')
+    
+    def pool_normalize(x):
+            if x.sum()!=0:
+                c=x.sum()
+                return (x/c)
+            else:
+                return x
+   
+    stock=['MFH','SFH']
+    class_list=[3,4,5,6,7,8,9,10] 
+    for s in stock:
+         for m in class_list:
+             df_name = globals()[f'idp_collection_class_{m}_{s}']
+             globals()[f'idp_collection_class_{m}_{s}_norm']=df_name.apply(pool_normalize)
+        
+
+
+#convert the multiple idp pool into a single dataframe
 def idp_df_generator():
     stock,class_list = idp_pool()
     idp_df = pd.DataFrame(columns=['idp', 'house', 'temperature_class'])
@@ -163,7 +274,8 @@ def idp_df_generator():
                         }))
     return idp_df
 
-
+##extracting and adjusting the demand data to obtain desired structure
+## considering only residential for 2035 scenario
 def annual_demand_generator():      
     # function for extracting demand data from pgadmin airflow database(new one added on 3003); 
     #converts the table into a dataframe   
@@ -244,15 +356,15 @@ def annual_demand_generator():
     bg_pha['Household Stock'] = bg_pha['characteristics_text'].apply(
         household_stock)
     ##counting sfh and mfh for each cell
-    house_count = bg_pha[['grid_id', 'quantity', 'Household Stock']]
+    house_count = bg_pha[['zensus_population_id', 'quantity', 'Household Stock']]
     house_count = house_count.groupby(
-        ['grid_id', 'Household Stock']).sum('quantity')
+        ['zensus_population_id', 'Household Stock']).sum('quantity')
     house_count = house_count.reset_index()
     house_count = house_count.pivot_table(
-        values='quantity', index='grid_id', columns='Household Stock')
+        values='quantity', index='zensus_population_id', columns='Household Stock')
     house_count = house_count.fillna(0)
     
-    demand_count = pd.merge(demand_zone, house_count, how='inner', on='grid_id')
+    demand_count = pd.merge(demand_zone, house_count, how='inner', on='zensus_population_id')
     
     demand_count.drop('index_right', axis=1, inplace=True)
     #demand count consists of demand and household stock count for each cell
@@ -268,19 +380,18 @@ def annual_demand_generator():
     
     def interval_allocation(x):
         if x == 'Hamburg-Fuhlsbuettel':
-            return np.array(all_temperature_interval['Hamburg-Fuhlsbuettel'])
+            return np.array(all_temperature_interval['Hamburg_Fuhlsbuettel'])
         if x == 'Rostock-Warnemuende':
-            return np.array(all_temperature_interval['Rostock-Warnemuende'])
+            return np.array(all_temperature_interval['Rostock_Warnemuende'])
         if x == 'Bremerhaven':
             return np.array(all_temperature_interval['Bremerhaven'])
     
     demand_count['Temperature_interval'] = demand_count['Station'].apply(
         interval_allocation)
     demand_count.drop(demand_count.columns.difference(
-        ['grid_id', 'demand', 'SFH', 'MFH', 'Temperature_interval']), axis=1, inplace=True)
+        ['zensus_population_id', 'demand', 'SFH', 'MFH', 'Temperature_interval']), axis=1, inplace=True)
     
     return demand_count ##df with demand,hhstock count and daily temprature interval
-
 
 
 
@@ -359,9 +470,9 @@ def h_value():
     temp_profile =temperature_profile_extract()
     temperature_profile_res =temp_profile.resample('D').mean().reindex(index).fillna(method='ffill').fillna(method='bfill')
     
-    temp_profile_geom = (temperature_profile_res + 0.5 * np.roll(temperature_profile_res, 24) +
-                                    0.25 * np.roll(temperature_profile_res, 48) +
-                                    0.125 * np.roll(temperature_profile_res, 72)) / 1.875
+    temp_profile_geom = ((temperature_profile_res.transpose() + 0.5 * np.roll(temperature_profile_res.transpose(), 24,axis=1) +
+                                    0.25 * np.roll(temperature_profile_res.transpose(), 48,axis=1) +
+                                    0.125 * np.roll(temperature_profile_res.transpose(), 72,axis=1)) / 1.875).transpose()
     
     #for each temperature station h value created for hourly resolution
     h= (a / (1 + (b / (temp_profile_geom - 40)) ** c) + d)
@@ -391,6 +502,7 @@ def profile_generator(station):
     heat_profile_idp.set_index(index,inplace=True)
     heat_profile_idp = heat_profile_idp.groupby(lambda x:x, axis=1).sum()
     return heat_profile_idp
+
 
 ##scaling the profile as per the station h-value and the cell demand
 def demand_scale(station):
