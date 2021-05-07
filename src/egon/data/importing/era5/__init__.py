@@ -102,7 +102,7 @@ def download_era5():
 
         os.mkdir(directory)
 
-        cutout = import_cutout()
+    cutout = import_cutout()
 
     if not cutout.prepared:
 
