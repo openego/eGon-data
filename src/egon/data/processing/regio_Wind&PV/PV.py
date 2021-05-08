@@ -15,10 +15,10 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         # import MaStR data: locations, grid levels and installed capacities
 
         # get relevant pv plants: ground mounted
-        df = pd.read_csv(path,usecols = ['Lage','Laengengrad','Breitengrad','Nettonennleistung'])
+        df = pd.read_csv(path+'bnetza_mastr_solar_cleaned.csv',usecols = ['Lage','Laengengrad','Breitengrad','Nettonennleistung','EinheitMastrNummer'])
         df = df[df['Lage']=='Freiflaeche']
         
-        # examine data concerning locations and drop NaNs
+        # examine data concerning geographical locations and drop NaNs
         x1 = df['Laengengrad'].isnull().sum()
         x2 = df['Breitengrad'].isnull().sum()
         print(' ')
@@ -33,9 +33,6 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         mastr = gpd.GeoDataFrame(index=df.index,geometry=gpd.points_from_xy(df['Laengengrad'], df['Breitengrad']), crs={'init' :'epsg:4326'})
         mastr = mastr.to_crs(3035)
         
-        # derive grid levels
-        # TODO: data will be integrated soon
-        
         # derive installed capacities
         mastr['installed capacity in kW'] = df['Nettonennleistung'] 
         
@@ -49,9 +46,64 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         for index, row in mastr.iterrows():
             #row['buffer'] = row['geometry'].buffer(df_radius.loc[index]) ### funktioniert mit dieser Zeile nicht
             df_buffer.loc[index] = row['geometry'].buffer(df_radius.loc[index])
-            
         mastr['buffer'] = df_buffer
         mastr['buffer'].crs=3035
+        
+        # derive MaStR-Nummer
+        mastr['mastr_nummer'] = df['EinheitMastrNummer']
+        
+        # derive voltage level
+        # TODO: Zwischenlösung für fehlende Daten
+
+        mastr['voltage_level'] = pd.Series(dtype=int)
+        lvl = pd.read_csv(path+'location_elec_generation_raw.csv',usecols = ['Spannungsebene','MaStRNummer'])
+        
+        # assign voltage_level to MaStR-unit:
+        v_l = pd.Series()
+        for index, row in mastr.iterrows():
+            nr = row['mastr_nummer']
+            l = lvl[lvl['MaStRNummer']=="['"+nr+"']"]['Spannungsebene']
+            if len(l)>0:
+                if l.iloc[0] == 'Mittelspannung':
+                    v_l.loc[index] = 5
+                elif l.iloc[0] == 'UmspannungZurHochspannung':
+                    v_l.loc[index] = 4
+                elif l.iloc[0] == 'Hochspannung':   
+                    v_l.loc[index] = 3
+                elif l.iloc[0] == 'Höchstspannung':   
+                    v_l.loc[index] = 1
+                elif l.iloc[0] == 'UmspannungZurNiederspannung':   
+                    v_l.loc[index] = l.iloc[0]
+                elif l.iloc[0] == 'Niederspannung':   
+                    v_l.loc[index] = l.iloc[0]                
+            else: 
+               v_l.loc[index] = np.NaN 
+        mastr['voltage_level'] = v_l          
+        
+        # examine data concerning voltage level
+        x1 = mastr['voltage_level'].isnull().sum()
+        print(' ')
+        print('Untersuchung des MaStR-Datensatzes für Spannungsebenen:')
+        print('Anzahl der Zeilen im MaStR-Datensatz vorher: '+str(len(mastr)))
+        print('NaNs in Spannungsebene aufgrund a) keine Zuordnung zur Nummer oder b) fehlender Daten: '+str(x1))
+        # drop PVs with missing values due to a) no assignemtn of MaStR-numbers or b) missing data in row
+        mastr.dropna(inplace=True)
+        print('Anzahl der Zeilen im Datensatz nach Dropping der NaNs: '+str(len(mastr)))
+        
+        
+        # drop PVs in low voltage level 
+        index_names = mastr[ mastr['voltage_level'] == 'Niederspannung' ].index 
+        x2 = len(index_names)
+        mastr.drop(index_names,inplace=True)
+        index_names = mastr[ mastr['voltage_level'] == 'UmspannungZurNiederspannung' ].index
+        x3 = len(index_names)
+        mastr.drop(index_names,inplace=True)
+        
+        # further examination
+        print('Anzahl der PVs in der Niederspannungsebene: '+str(x2))
+        print('Anzahl der PVs in der NSMS-Ebene: '+str(x3))
+        print('Anzahl der Zeilen im Datensatz nach Dropping dieser Ebenen: '+str(len(mastr)))
+        print(' ')
         
         return mastr
         
@@ -191,12 +243,17 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         print(' ')'''
         
         pot_sel = pd.Series()
+        voltage_level = pd.Series()
         for index1, loc in mastr.iterrows():
             for index2, pot in potentials_pot.iterrows():
                     if pot['geom'].intersects(loc['buffer']):
                         pot_sel.loc[index2] = True 
+                        voltage_level.loc[index2] = loc['voltage_level']
         potentials_pot['selected'] = pot_sel                              
         pv_pot = potentials_pot.loc[potentials_pot['selected'] == True]
+        pv_pot.drop(['selected'], axis=1, inplace=True)
+        pv_pot['voltage_level'] = voltage_level
+        
         
         '''pot_sel2 = pd.Series()
         for index1, loc in mastr.iterrows():
@@ -227,26 +284,19 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         pv_pot['installed capacity in kW'] = pd.Series()
         pv_pot['installed capacity in kW'] = pv_pot['area']*pow_per_area
         
-        '''# check for maximal capacity for PV ground mounted
+        # check for maximal capacity for PV ground mounted
         # TODO: Do I need that? Choose value for limit!
-        limit_cap = 100000 # in kW 
+        limit_cap = 120000 # in kW 
         pv_pot['installed capacity in kW'] = pv_pot['installed capacity in kW'].apply(
-            lambda x: x if x < limit_cap else limit_cap)'''
+            lambda x: x if x < limit_cap else limit_cap)
         
         return pv_pot
     
     def adapt_grid_level(pv_pot, max_dist_hv=max_dist_hv, con=con):
         
-        # check grid level
-
-        # TODO: aus MaStR-Daten (jeweilige Originalanlagen)
-        ### Zwischenlösung für fehlende Daten
-        pv_pot['voltage'] = np.random.randint(100, 120, pv_pot['installed capacity in kW'].size)
-        ### 
-        
         # divide dataframe in MV and HV 
-        pv_pot_mv = pv_pot[pv_pot['voltage'] < 110]
-        pv_pot_hv = pv_pot[pv_pot['voltage'] >= 110]
+        pv_pot_mv = pv_pot[pv_pot['voltage_level'] == 5]
+        pv_pot_hv = pv_pot[pv_pot['voltage_level'] == 4]
         
         # check installed capacity in MV 
         
@@ -290,12 +340,16 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
             # delete PVs which are now HV from MV dataframe
             for index, pot in pv_pot_mv_to_hv.iterrows():
                 pv_pot_mv = pv_pot_mv.drop([index])
+            pv_pot_hv['voltage_level'] = 4
                 
             # keep grid level adjust capacity if transmission lines are too far 
             pv_pot_mv['installed capacity in kW'] = pv_pot_mv['installed capacity in kW'].apply(
                 lambda x: x if x < max_cap_mv else max_cap_mv)
+            pv_pot_mv['voltage_level'] = 5
+            
+            pv_pot = pv_pot_mv.append(pv_pot_hv)
         
-        return pv_pot_mv, pv_pot_hv
+        return pv_pot
     
     def build_additional_pv(potentials, pv, rest_cap, pow_per_area=pow_per_area, con=con): 
     
@@ -311,51 +365,53 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         # aggregate potential area per MV grid district 
         pot_per_distr=gpd.GeoDataFrame()
         pot_per_distr['geom'] = distr['geom'].copy()
-        overlay = gpd.sjoin(potentials,distr)
+        centroids = potentials.copy()
+        centroids['geom'] = centroids['geom'].centroid
+        
+        overlay = gpd.sjoin(centroids, distr)
+        
         for index, distr in distr.iterrows():
-            pot_per_distr['geom'].loc[index] = overlay[overlay['index_right']==index]['geom'].unary_union
-        # TODO: assignment of potential area to district not quite right
-            
+            pots = overlay[overlay['index_right']==index]['geom'].index
+            p = gpd.GeoSeries(index=pots)
+            for i in pots:
+                p.loc[i]=potentials['geom'].loc[i]
+            pot_per_distr['geom'].loc[index] = p.unary_union
+        
         # calculate area per MV grid district and linearly distribute needed capacity considering pow_per_area
         pot_per_distr['area'] = pot_per_distr['geom'].area
         pot_per_distr['installed capacity in kW'] = pot_per_distr['area']*pow_per_area
-        
-        # assign HV substations to power per MV district
-        
-        # get  substations 
-        sql = "SELECT point FROM grid.egon_hvmv_substation"
-        hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col= "point")
-        hvmv_substation = hvmv_substation.to_crs(3035)
 
-        # assign substation per MV district
-        sub = gpd.sjoin(hvmv_substation,distr)
-        pot_per_distr['substation'] = gpd.GeoSeries()
+        # assign grid level
+        pot_per_distr['voltage_level'] = pd.Series(dtype=int)
         for index, distr in pot_per_distr.iterrows():
-            pot_per_distr['substation'].loc[index] = sub[sub['index_right'] == index]['index_right']
-        # TODO: check
+            if distr['installed capacity in kW'] > 5000: # > 5 MW
+                distr['voltage_level'] = 4
+            else:
+                distr['voltage_level'] = 5
+        
+        # calculate centroid
+        pot_per_distr['centroid'] = pot_per_distr['geom'].centroid
           
         # files for depiction in QGis
         distr['geom'].to_file("mv_grid_districts.geojson", driver='GeoJSON',index=True)
         pot_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
+        pot_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
             
         return pot_per_distr
 
-    def check_target(pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, potentials_rora,pv_rora,pv_agri, target_power=target_power):
+    def check_target(pv_rora, pv_agri, potentials_rora, target_power=target_power):
         
         # sum overall installed capacity for MV and HV
 
-        total_pv_power = pv_rora_mv['installed capacity in kW'].sum() + pv_rora_hv['installed capacity in kW'].sum() + \
-        pv_agri_mv['installed capacity in kW'].sum() + pv_agri_hv['installed capacity in kW'].sum()
+        total_pv_power = pv_rora['installed capacity in kW'].sum() + pv_agri['installed capacity in kW'].sum() 
         
         # check target value
         
         # linear scale farms to meet target if sum of installed capacity is too high
         if total_pv_power > target_power:
                 scale_factor = target_power/total_pv_power
-                pv_rora_mv['installed capacity in kW'] = pv_rora_mv['installed capacity in kW'] * scale_factor
-                pv_rora_hv['installed capacity in kW'] = pv_rora_hv['installed capacity in kW'] * scale_factor
-                pv_agri_mv['installed capacity in kW'] = pv_agri_mv['installed capacity in kW'] * scale_factor
-                pv_agri_hv['installed capacity in kW'] = pv_agri_hv['installed capacity in kW'] * scale_factor
+                pv_rora['installed capacity in kW'] = pv_rora['installed capacity in kW'] * scale_factor
+                pv_agri['installed capacity in kW'] = pv_agri['installed capacity in kW'] * scale_factor
                  
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
@@ -375,13 +431,11 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
             # linear scale farms to meet target if sum of installed capacity is too high   
             if total_pv_power > target_power:
                 scale_factor = target_power/total_pv_power
-                pv_rora_mv['installed capacity in kW'] = pv_rora_mv['installed capacity in kW'] * scale_factor
-                pv_rora_hv['installed capacity in kW'] = pv_rora_hv['installed capacity in kW'] * scale_factor
-                pv_agri_mv['installed capacity in kW'] = pv_agri_mv['installed capacity in kW'] * scale_factor
-                pv_agri_hv['installed capacity in kW'] = pv_agri_hv['installed capacity in kW'] * scale_factor
+                pv_rora['installed capacity in kW'] = pv_rora['installed capacity in kW'] * scale_factor
+                pv_agri['installed capacity in kW'] = pv_agri['installed capacity in kW'] * scale_factor
                 pow_per_distr['installed capacity in kW'] = pow_per_distr['installed capacity in kW'] * scale_factor
 
-        return pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, pow_per_distr
+        return pv_rora, pv_agri, pow_per_distr
     
     
     # MaStR-data: existing PV farms 
@@ -415,30 +469,30 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
     pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
     
     # adapt grid level to new farms
-    pv_rora_mv, pv_rora_hv = adapt_grid_level(pv_rora)
-    pv_agri_mv, pv_agri_hv = adapt_grid_level(pv_agri)
+    pv_rora = adapt_grid_level(pv_rora)
+    pv_agri = adapt_grid_level(pv_agri)
     
     # check target value and adapt installed capacity if necessary
-    pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, pow_per_distr = check_target(pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, potentials_rora, pv_rora, pv_agri)
+    pv_rora, pv_agri, pow_per_distr = check_target(pv_rora, pv_agri, potentials_rora)
       
     
-    return pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, pow_per_distr
+    return pv_rora, pv_agri, pow_per_distr
 
 
-'''con = psycopg2.connect(host = "172.18.0.2",
+'''con = psycopg2.connect(host = "",
                                    database = "egon-data",
-                                   user = "egon",
-                                  password = "data")'''
+                                   user = "",
+                                  password = "")'''
     
-con = psycopg2.connect(host = "127.0.0.1",
+con = psycopg2.connect(host = "",
                                database = "test2",
-                               user = "egon",
-                               password = "data",
+                               user = "",
+                               password = "",
                                port= 59734)
 
 #con = db.engine()
 
-path = '/home/kathiesterl/PYTHON/Potentials_PV/bnetza_mastr_solar_cleaned.csv'
+path = '/home/'
 
 pow_per_area = 0.04 # kW per m² 
 # assumption for areas of existing pv farms and power of new built pv farms
@@ -451,10 +505,13 @@ max_dist_hv = 20000 # m
 # assumption for maximum distance of park with hv-power to next substation
 # TODO: research
 
-target_power = 1337984 # kW 
+sql = "SELECT capacity FROM supply.egon_scenario_capacities WHERE carrier='solar' "
+cur=con.cursor()
+cur.execute(sql)
+target_power = cur.fetchone()[0]*1000 # in kW
 # assumption for target value of installed capacity in Germany per scenario
 
-pv_rora_mv, pv_rora_hv, pv_agri_mv, pv_agri_hv, pow_per_distr = regio_of_pv_ground_mounted(path,con,
+pv_rora, pv_agri, pow_per_distr = regio_of_pv_ground_mounted(path,con,
                                                 pow_per_area, join_buffer, max_dist_hv, target_power)
 
 # TODO: integrate data in table eGon power plants (look at other scripts, copy eg from biomass)
