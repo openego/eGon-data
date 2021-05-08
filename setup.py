@@ -95,7 +95,7 @@ setup(
         "sqlalchemy<1.4",
         "pandas",
         "numpy",
-        "shapely"
+        "shapely" 
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]

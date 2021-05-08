@@ -270,12 +270,4 @@ def wind_power_parks():
         wind_farm_id+=1
 
     return wind_farms
-
-
-
-
-"""
-wind_farms[['geom', 'inst capacity [MW]', 'area [km²]']].to_file("Selected_Pot_areas.geojson", driver='GeoJSON')
-wind_farms = wind_farms.set_geometry('centroid')
-wind_farms[['centroid', 'inst capacity [MW]', 'area [km²]']].to_file("Wind_farms_points.geojson", driver='GeoJSON')
-"""
+    

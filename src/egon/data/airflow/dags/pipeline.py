@@ -453,4 +453,5 @@ with airflow.DAG(
     power_plant_tables >> generate_wind_farms
     insert_re_potential_areas >> generate_wind_farms
     scenario_input_import >> generate_wind_farms
+    
 
