@@ -31,6 +31,7 @@ import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
+import egon.data.processing.wind_farms as wf
 from egon.data import db
 
 
@@ -443,4 +444,13 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
+    
+    # Generate wind power farms
+    generate_wind_farms = PythonOperator(
+        task_id="generate_wind_farms",
+        python_callable=wf.wind_power_parks,
+    )
+    power_plant_tables >> generate_wind_farms
+    insert_re_potential_areas >> generate_wind_farms
+    scenario_input_import >> generate_wind_farms
 
