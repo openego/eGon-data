@@ -206,9 +206,9 @@ def create_sql_functions():
         BEGIN
             way = (SELECT ST_SetSRID
                    (ST_MakePoint((max(lon) + min(lon))/200.0,(max(lat) + min(lat))/200.0),900913)
-                   FROM openstreetmap.osm_deu_nodes
+                   FROM openstreetmap.osm_nodes
                    WHERE id in (SELECT unnest(nodes)
-                     FROM openstreetmap.osm_deu_ways
+                     FROM openstreetmap.osm_ways
                      WHERE id in (SELECT trim(leading 'w' from member)::bigint
 			                     FROM (SELECT unnest(members) as member) t
 	                               WHERE member~E'[w,1,2,3,4,5,6,7,8,9,0]')));
