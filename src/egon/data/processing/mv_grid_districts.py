@@ -29,7 +29,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
 from egon.data.db import session_scope
-from egon.data.processing.substation import EgonHvmvSubstationVoronoi
+from egon.data.processing.substation import (EgonHvmvSubstationVoronoi,
+                                             EgonHvmvSubstation)
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -52,28 +53,6 @@ class Vg250GemClean(Base):
     path = Column(ARRAY(Integer()))
     is_hole = Column(Boolean)
     geometry = Column(Geometry("POLYGON", 3035), index=True)
-
-
-class EgonHvmvSubstation(Base):
-    __tablename__ = "egon_hvmv_substation"
-    __table_args__ = {"schema": "grid"}
-
-    subst_id = Column(Integer, primary_key=True)
-    lon = Column(Float)
-    lat = Column(Float)
-    point = Column(Geometry("POINT", 4326), index=True)
-    polygon = Column(Geometry, index=True)
-    voltage = Column(String)
-    power_type = Column(String)
-    substation = Column(String)
-    osm_id = Column(String)
-    osm_www = Column(String)
-    frequency = Column(String)
-    subst_name = Column(String)
-    ref = Column(String)
-    operator = Column(String)
-    dbahn = Column(String)
-    status = Column(Integer)
 
 
 class HvmvSubstPerMunicipality(Base):
@@ -261,7 +240,7 @@ def split_multi_substation_municipalities():
                         ),
                     )
                 ).geom.label("geom"),
-                EgonHvmvSubstationVoronoi.subst_id,
+                EgonHvmvSubstationVoronoi.bus_id,
                 EgonHvmvSubstationVoronoi.id.label("voronoi_id"),
             )
             .filter(HvmvSubstPerMunicipality.subst_count > 1)
@@ -290,7 +269,7 @@ def split_multi_substation_municipalities():
         cuts_substation_subquery = (
             session.query(
                 VoronoiMunicipalityCuts.id,
-                EgonHvmvSubstation.subst_id,
+                EgonHvmvSubstation.bus_id,
                 func.ST_Transform(EgonHvmvSubstation.point, 3035).label(
                     "geom_sub"
                 ),
@@ -304,7 +283,7 @@ def split_multi_substation_municipalities():
             )
             .group_by(
                 VoronoiMunicipalityCuts.id,
-                EgonHvmvSubstation.subst_id,
+                EgonHvmvSubstation.bus_id,
                 EgonHvmvSubstation.point,
             )
             .subquery()
@@ -314,7 +293,7 @@ def split_multi_substation_municipalities():
         ).update(
             {
                 "subst_count": cuts_substation_subquery.c.subst_count,
-                "subst_id": cuts_substation_subquery.c.subst_id,
+                "subst_id": cuts_substation_subquery.c.bus_id,
                 "geom_sub": cuts_substation_subquery.c.geom_sub,
             },
             synchronize_session="fetch",
@@ -567,7 +546,7 @@ def merge_polygons_to_grid_district():
         # Step 2: Insert municipality polygons with exactly one substation
         one_substation = (
             session.query(
-                EgonHvmvSubstation.subst_id,
+                EgonHvmvSubstation.bus_id,
                 func.ST_Multi(HvmvSubstPerMunicipality.geometry).label("geom"),
                 func.ST_Area(
                     func.ST_Multi(HvmvSubstPerMunicipality.geometry)
@@ -717,7 +696,7 @@ def nearest_polygon_with_substation(
             ),
             #with_substation.c.id
             func.ST_Distance(
-                func.ST_Centroid(without_substation.c.geom), 
+                func.ST_Centroid(without_substation.c.geom),
                 func.ST_Centroid(with_substation.c.geom)
             )
         )
