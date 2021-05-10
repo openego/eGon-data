@@ -619,7 +619,7 @@ def add_metadata():
 
     # Metadata creation
     meta = {
-        "name": "heat",
+        "name": "egon_peta_heat_metadata",
         "title": "eGo_n scenario-specific future heat demand data",
         "description": "Future heat demands per hectare grid cell of "
         "the residential and service sector",
