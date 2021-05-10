@@ -564,8 +564,260 @@ def add_metadata():
 
     TODO
     ----
-        Do it!
+
+        Meta data must be check and adjusted to the egon_data standard:
+            - Add context
+            - authors and institutions
+
     """
+
+    # Prepare variables
+    license_district_heating_areas = [
+        {
+            # this could be the license of the "district_heating_areas"
+            "name": "Creative Commons Attribution 4.0 International",
+            "title": "CC BY 4.0",
+            "path": "https://creativecommons.org/licenses/by/4.0/",
+            "instruction": (
+                "You are free: To Share, To Adapt;"
+                " As long as you: Attribute!"
+            ),
+            "attribution": "© Europa-Universität Flensburg",  # if all agree
+            # "attribution": "© ZNES Flensburg",  # alternative
+        }
+    ]
+
+    # Metadata creation for district heating areas (polygons)
+    meta = {
+        "name": "district_heating_areas_metadata",
+        "title": "eGo^n scenario-specific future district heating areas",
+        "description": "Modelled future district heating areas for "
+        "the supply of residential and service-sector heat demands",
+        "language": ["EN"],
+        "spatial": {
+            "location": "",
+            "extent": "Germany",
+            "resolution": "",
+        },
+        "temporal": {
+            "referenceDate": "scenario-specific",
+            "timeseries": {
+                "start": "",
+                "end": "",
+                "resolution": "",
+                "alignment": "",
+                "aggregationType": "",
+            },
+        },
+        "sources": [
+            {
+                # eGon scenario specific heat demand distribution based
+                # on Peta5_0_1, using vg250 boundaries
+                },
+            {
+                # Census gridded apartment data
+            },
+        ],
+
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "district_heating_areas",
+                "path": "",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "id",
+                            "description": "Unique identifier",
+                            "type": "serial",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "area_id",
+                            "description": "District heating area id",
+                            "type": "integer",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "scenario",
+                            "description": "scenario name",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "version",
+                            "description": "data version number",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "residential_and_service_demand",
+                            "description": "annual heat demand",
+                            "type": "double precision",
+                            "unit": "MWh",
+                        },
+                        {
+                            "name": "geom_polygon",
+                            "description": "geo information of multipolygons",
+                            "type": "geometry(MULTIPOLYGON, 3035)",
+                            "unit": "none",
+                        },
+                    ],
+                    "primaryKey": ["id"],
+                    "foreignKeys": [
+                        {
+                            "fields": ["scenario"],
+                            "reference": {
+                                "resource": "scenario.egon_scenario_parameters",
+                                "fields": ["name"],
+                            },
+                        }
+                    ],
+                },
+                "dialect": {"delimiter": "none", "decimalSeparator": "."},
+            }
+        ],
+        "licenses": license_district_heating_areas,
+        "contributors": [
+            {
+                "title": "Eva, Clara",
+                "email": "",
+                "date": "2021-05-07",
+                "object": "",
+                "comment": "Processed data",
+            }
+        ],
+        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
+            "metadataVersion": "OEP-1.4.0",
+            "metadataLicense": {
+                "name": "CC0-1.0",
+                "title": "Creative Commons Zero v1.0 Universal",
+                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+            },
+        },
+    }
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    db.submit_comment(meta_json, "demand", "district_heating_areas")
+
+
+    # Metadata creation for "id mapping" table
+    meta = {
+        "name": "map_zensus_district_heating_areas_metadata",
+        "title": "district heating area ids assigned to zensus_population_ids",
+        "description": "Ids of scenario specific future district heating areas"
+        " for supply of residential and service-sector heat demands"
+        " assigned to zensus_population_ids",
+        "language": ["EN"],
+        "spatial": {
+            "location": "",
+            "extent": "Germany",
+            "resolution": "",
+        },
+        "temporal": {
+            "referenceDate": "scenario-specific",
+            "timeseries": {
+                "start": "",
+                "end": "",
+                "resolution": "",
+                "alignment": "",
+                "aggregationType": "",
+            },
+        },
+        "sources": [
+            {
+                # eGon scenario specific heat demand distribution based
+                # on Peta5_0_1, using vg250 boundaries
+                },
+            {
+                # Census gridded apartment data
+            },
+        ],
+
+
+    # Add the license for the map table
+
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "map_zensus_district_heating_areas",
+                "path": "",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "id",
+                            "description": "Unique identifier",
+                            "type": "serial",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "area_id",
+                            "description": "district heating area id",
+                            "type": "integer",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "scenario",
+                            "description": "scenario name",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "version",
+                            "description": "data version number",
+                            "type": "text",
+                            "unit": "none",
+                        },
+                    ],
+                    "primaryKey": ["id"],
+                    "foreignKeys": [
+                        {
+                            "fields": ["zensus_population_id"],
+                            "reference": {
+                                "resource": "society.destatis_zensus_population_per_ha",
+                                "fields": ["id"],
+                            },
+                        },
+                        {
+                            "fields": ["scenario"],
+                            "reference": {
+                                "resource": "scenario.egon_scenario_parameters",
+                                "fields": ["name"],
+                            },
+                        }
+                    ],
+                },
+                "dialect": {"delimiter": "none", "decimalSeparator": "."},
+            }
+        ],
+        "licenses": license_district_heating_areas,
+        "contributors": [
+            {
+                "title": "Eva, Clara",
+                "email": "",
+                "date": "2021-05-07",
+                "object": "",
+                "comment": "Processed data",
+            }
+        ],
+        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
+            "metadataVersion": "OEP-1.4.0",
+            "metadataLicense": {
+                "name": "CC0-1.0",
+                "title": "Creative Commons Zero v1.0 Universal",
+                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+            },
+        },
+    }
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    db.submit_comment(meta_json, "demand", "map_zensus_district_heating_areas")
+
+    return None
 
 
 def district_heating_areas_demarcation():
