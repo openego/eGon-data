@@ -11,7 +11,7 @@ import numpy as np
 def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv, target_power):
     
     
-    def mastr_exisiting_pv(path=path, pow_per_area=pow_per_area):
+    def mastr_existing_pv(path=path, pow_per_area=pow_per_area):
         
         # import MaStR data: locations, grid levels and installed capacities
 
@@ -401,7 +401,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_per_distr
 
 
-    def check_target(pv_rora, pv_agri, potentials_rora, target_power=target_power):
+    def check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power=target_power):
         
         # sum overall installed capacity for MV and HV
 
@@ -492,147 +492,153 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_rora, pv_agri, pv_per_distr
     
     
-    # MaStR-data: existing PV farms 
-    mastr = mastr_exisiting_pv()
+    def run_methodology():
     
-    # files for depiction in QGis
-    mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
-    mastr['buffer'].to_file("MaStR_PVs_buffered.geojson", driver='GeoJSON')
+        # MaStR-data: existing PV farms 
+        mastr = mastr_existing_pv()
     
-    # database-data: potential areas for new PV farms
-    potentials_rora, potentials_agri = potential_areas()
+        # files for depiction in QGis
+        mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
+        mastr['buffer'].to_file("MaStR_PVs_buffered.geojson", driver='GeoJSON')
     
-    # files for depiction in QGis        
-    potentials_rora['geom'].to_file("potentials_rora_joined.geojson", driver='GeoJSON',index=True)
-    potentials_agri['geom'].to_file("potentials_agri_joined.geojson", driver='GeoJSON',index=True)
-    
-    # select potential areas with existing PV farms to build new PV farms
-    pv_rora = select_pot_areas(mastr, potentials_rora)
-    pv_agri = select_pot_areas(mastr, potentials_agri)
-    
-    # files for depiction in QGis
-    pv_rora['geom'].to_file("potential_rora_selected.geojson", driver='GeoJSON')
-    pv_agri['geom'].to_file("potential_agri_selected.geojson", driver='GeoJSON')
-    
-    # build new PV farms
-    pv_rora = build_pv(pv_rora)
-    pv_agri = build_pv(pv_agri)
-    
-    # files for depiction in QGis
-    pv_rora['centroid'].to_file("PVs_rora_new.geojson", driver='GeoJSON')
-    pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
-    
-    # adapt grid level to new farms
-    pv_rora = adapt_grid_level(pv_rora)
-    pv_agri = adapt_grid_level(pv_agri)
-    
-    # check target value and adapt installed capacity if necessary
-    pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora)
-    
-    # files for depiction in QGis
-    pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
-    pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+        # database-data: potential areas for new PV farms
+        potentials_rora, potentials_agri = potential_areas()
+        
+        # files for depiction in QGis        
+        potentials_rora['geom'].to_file("potentials_rora_joined.geojson", driver='GeoJSON',index=True)
+        potentials_agri['geom'].to_file("potentials_agri_joined.geojson", driver='GeoJSON',index=True)
+        
+        # select potential areas with existing PV farms to build new PV farms
+        pv_rora = select_pot_areas(mastr, potentials_rora)
+        pv_agri = select_pot_areas(mastr, potentials_agri)
+        
+        # files for depiction in QGis
+        pv_rora['geom'].to_file("potential_rora_selected.geojson", driver='GeoJSON')
+        pv_agri['geom'].to_file("potential_agri_selected.geojson", driver='GeoJSON')
+        
+        # build new PV farms
+        pv_rora = build_pv(pv_rora)
+        pv_agri = build_pv(pv_agri)
+        
+        # files for depiction in QGis
+        pv_rora['centroid'].to_file("PVs_rora_new.geojson", driver='GeoJSON')
+        pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
+        
+        # adapt grid level to new farms
+        pv_rora = adapt_grid_level(pv_rora)
+        pv_agri = adapt_grid_level(pv_agri)
+        
+        # check target value and adapt installed capacity if necessary
+        pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri)
+        
+        # files for depiction in QGis
+        pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
+        pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
       
     
-    return pv_rora, pv_agri, pv_per_distr
+        return pv_rora, pv_agri, pv_per_distr
 
 
-    def pv_parks():
-        
-        con = db.engine()
-
-        path = ''
-
-        # assumption for areas of existing pv farms and power of new built pv farms
-        pow_per_area = 0.04 # kW per m² 
-        
-        # maximum distance for joining of potential areas (only small ones to big ones)
-        join_buffer = 10 # m
-        
-        # assumption for maximum distance of park with hv-power to next substation
-        max_dist_hv = 20000 # m
-        
-        # assumption for target value of installed capacity in Germany per scenario & scenario name
-        sql = "SELECT capacity, scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
-        cur=con.cursor()
-        cur.execute(sql)
-        val = cur.fetchall()[0]
-        target_power = val[0]*1000 # in kW
-        scenario_name = val[1]
-        cur.close()
-        
-        
-        pv_rora, pv_agri, pv_per_distr = regio_of_pv_ground_mounted(path,con,
-                                                        pow_per_area, join_buffer, max_dist_hv, target_power)
-        
-        
-        # prepare dataframe for integration in supply.egon_power_plants
-        
-        # change indices to sum up Dataframes in the end
-        pv_rora['pot_idx'] = pv_rora.index
-        pv_rora.index = range(0,len(pv_rora))
-        pv_agri['pot_idx'] = pv_agri.index
-        l1 = len(pv_rora)+len(pv_agri)
-        pv_agri.index = range(len(pv_rora), l1)  
-        l2 = l1 + len(pv_per_distr)
-        pv_per_distr.index = range(l1,l2)  
-        
-        pv_parks = gpd.GeoDataFrame(index=range(0,l2))
-        
-        # electrical capacity in MW+
-        cap = pv_rora['installed capacity in kW'].append(pv_agri['installed capacity in kW'])
-        cap = cap.append(pv_per_distr['installed capacity in kW'])
-        cap = cap/1000
-        pv_parks['el_capacity'] = cap
-        
-        # voltage level
-        lvl = pv_rora['voltage_level'].append(pv_agri['voltage_level'])
-        lvl = lvl.append(pv_per_distr['voltage_level'])
-        pv_parks['voltage_level'] = lvl
-        
-        # centroids
-        cen = pv_rora['centroid'].append(pv_agri['centroid'])
-        cen = cen.append(pv_per_distr['centroid'])
-        pv_parks['centroid'] = cen
-        pv_parks.set_geometry('centroid')
-        
-        
-        # integration in supply.egon_power_plants
-        
-        # assumption for target value of installed capacity in Germany per scenario & scenario name
-        sql = "SELECT MAX(id) FROM supply.egon_power_plants"
-        cur=con.cursor()
-        cur.execute(sql)
-        max_id = cur.fetchone()[0]
-        cur.close()
-        
-        pv_park_id = max_id+1
-        for pv in pv_parks.index:
-            con = psycopg2.connect(host = db.credentials()['HOST'],
-                                       database = db.credentials()['POSTGRES_DB'],
-                                       user = db.credentials()['POSTGRES_USER'],
-                                       password = db.credentials()['POSTGRES_PASSWORD'],
-                                       port = db.credentials()['PORT']) 
-            cur = con.cursor()
-            sql = '''insert into supply.egon_power_plants
-                (id, carrier, chp, el_capacity, th_capacity,
-                 voltage_level, scenario, geom) 
-                values (%s, %s, %s, %s, %s, %s, %s, %s)'''      
-            cur.execute(sql, (pv_park_id,
-                                  "solar",
-                                  # TODO: add sources?
-                                  False,
-                                  pv_parks.loc[pv].at['el_capacity'],
-                                  0,
-                                  pv_parks.loc[pv].at['voltage_level'],
-                                  scenario_name,
-                                  wkb.dumps(pv_parks.loc[pv].at['geom'])))
-            con.commit()
+    def pv_parks(pv_rora, pv_agri, pv_per_distr):
+            
+            con = db.engine()
+    
+            path = ''
+    
+            # assumption for areas of existing pv farms and power of new built pv farms
+            pow_per_area = 0.04 # kW per m² 
+            
+            # maximum distance for joining of potential areas (only small ones to big ones)
+            join_buffer = 10 # m
+            
+            # assumption for maximum distance of park with hv-power to next substation
+            max_dist_hv = 20000 # m
+            
+            # assumption for target value of installed capacity in Germany per scenario & scenario name
+            sql = "SELECT capacity, scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
+            cur=con.cursor()
+            cur.execute(sql)
+            val = cur.fetchall()[0]
+            target_power = val[0]*1000 # in kW
+            scenario_name = val[1]
             cur.close()
-            pv_park_id+=1
-
-        return pv_parks
-
+            
+            
+            pv_rora, pv_agri, pv_per_distr = regio_of_pv_ground_mounted(path,con,
+                                                            pow_per_area, join_buffer, max_dist_hv, target_power)
+            
+            
+            # prepare dataframe for integration in supply.egon_power_plants
+            
+            # change indices to sum up Dataframes in the end
+            pv_rora['pot_idx'] = pv_rora.index
+            pv_rora.index = range(0,len(pv_rora))
+            pv_agri['pot_idx'] = pv_agri.index
+            l1 = len(pv_rora)+len(pv_agri)
+            pv_agri.index = range(len(pv_rora), l1)  
+            l2 = l1 + len(pv_per_distr)
+            pv_per_distr.index = range(l1,l2)  
+            
+            pv_parks = gpd.GeoDataFrame(index=range(0,l2))
+            
+            # electrical capacity in MW+
+            cap = pv_rora['installed capacity in kW'].append(pv_agri['installed capacity in kW'])
+            cap = cap.append(pv_per_distr['installed capacity in kW'])
+            cap = cap/1000
+            pv_parks['el_capacity'] = cap
+            
+            # voltage level
+            lvl = pv_rora['voltage_level'].append(pv_agri['voltage_level'])
+            lvl = lvl.append(pv_per_distr['voltage_level'])
+            pv_parks['voltage_level'] = lvl
+            
+            # centroids
+            cen = pv_rora['centroid'].append(pv_agri['centroid'])
+            cen = cen.append(pv_per_distr['centroid'])
+            pv_parks['centroid'] = cen
+            pv_parks.set_geometry('centroid')
+            
+            
+            # integration in supply.egon_power_plants
+            
+            # assumption for target value of installed capacity in Germany per scenario & scenario name
+            sql = "SELECT MAX(id) FROM supply.egon_power_plants"
+            cur=con.cursor()
+            cur.execute(sql)
+            max_id = cur.fetchone()[0]
+            cur.close()
+            
+            pv_park_id = max_id+1
+            for pv in pv_parks.index:
+                con = psycopg2.connect(host = db.credentials()['HOST'],
+                                           database = db.credentials()['POSTGRES_DB'],
+                                           user = db.credentials()['POSTGRES_USER'],
+                                           password = db.credentials()['POSTGRES_PASSWORD'],
+                                           port = db.credentials()['PORT']) 
+                cur = con.cursor()
+                sql = '''insert into supply.egon_power_plants
+                    (id, carrier, chp, el_capacity, th_capacity,
+                     voltage_level, scenario, geom) 
+                    values (%s, %s, %s, %s, %s, %s, %s, %s)'''      
+                cur.execute(sql, (pv_park_id,
+                                      "solar",
+                                      # TODO: add sources?
+                                      False,
+                                      pv_parks.loc[pv].at['el_capacity'],
+                                      0,
+                                      pv_parks.loc[pv].at['voltage_level'],
+                                      scenario_name,
+                                      wkb.dumps(pv_parks.loc[pv].at['geom'])))
+                con.commit()
+                cur.close()
+                pv_park_id+=1
+    
+            return pv_parks
+        
+    pv_rora, pv_agri, pv_per_distr = run_methodology()
+    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr)
+    
+    return pv_parks
 
 
 
