@@ -521,6 +521,12 @@ def district_heating_areas(scenario_name, plotting = False):
         # ones without
 
         fig, ax = plt.subplots(1, 1)
+        # add the district heating share as a line
+        procent = round(district_heating_share * 100, 0)
+        plt.axvline(x=total_district_heat / 1000000, ls = "--", lw = 0.5,
+                    label = (f'District Heating Share of {procent} %'),
+                    color = 'red')
+        # add the sorted heat demand density curve
         no_district_heating = heat_demand_cells[~heat_demand_cells.index.isin(
             scenario_dh_area.index)]
         collection = pd.concat([cells.sort_values(
@@ -537,11 +543,9 @@ def district_heating_areas(scenario_name, plotting = False):
                                         residential_and_service_demand.
                                         cumsum()) / 1000000
 
-        # collection.residential_and_service_demand.plot(ax=ax)
         ax.plot(collection.Cumulative_Sum,
                 collection.residential_and_service_demand, label =
                 " Heat demand densities, sorted")
-        ax.margins(x=0, y=0) # remove empty space between axis and graph
 
         # annotations
         x1 = total_district_heat / 1000000 / 2
@@ -550,7 +554,6 @@ def district_heating_areas(scenario_name, plotting = False):
         #     'residential_and_service_demand'].sum() -
         #     total_district_heat) / 2)) / 1000000
         y = heat_demand_cells['residential_and_service_demand'].max() * 0.7
-        print(f"max = {y}")
 
         ax.text(x1, y, "District\nheat", ha="center", va="center", size=8,
                 bbox=dict(boxstyle="round, pad=0.5", fc="none",
@@ -565,14 +568,10 @@ def district_heating_areas(scenario_name, plotting = False):
         ax.set(title = ("Heat Sector in " + scenario_name))
         ax.set_xlabel("Cumulative Heat Demand [TWh / a]")
         ax.set_ylabel("Heat Demand Densities [MWh / (ha a)]")
-        # ax.set_ylim([0, capacity * 1.1])
 
-        # add the district heating share as a line
-        procent = round(district_heating_share * 100, 0)
-        plt.axvline(x=total_district_heat / 1000000, ls = "--", label =
-                    (f'District Heating Share of {procent} %'),
-                    color = 'red')
-
+        # remove empty space between axis and graph
+        ax.margins(x=0, y=0)
+        # axes style
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)
@@ -934,6 +933,7 @@ def district_heating_areas_demarcation():
     # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
     # https://www.earthdatascience.org/courses/scientists-guide-to-plotting-data-in-python/plot-with-matplotlib/introduction-to-matplotlib-plots/customize-plot-colors-labels-matplotlib/
     fig, ax = plt.subplots(1, 1)
+    # add the sorted heat demand densities
     HD_2015 = HD_2015.sort_values('residential_and_service_demand',
                                   ascending=False).reset_index()
     HD_2015["Cumulative_Sum"] = (HD_2015.residential_and_service_demand.
@@ -955,8 +955,18 @@ def district_heating_areas_demarcation():
     ax.plot(HD_2050.Cumulative_Sum,
             HD_2050.residential_and_service_demand, label='eGon100RE')
 
-    ax.margins(x=0, y=0) # default is 0.05
+    # add the district heating shares
+    plt.axvline(x=HD_2035.residential_and_service_demand.sum()/1000000*0.14,
+                ls = ":", lw = 0.5,
+                label = '72TWh DH in 2035 in Germany => 14% DH',
+                color = 'black')
+    plt.axvline(x=HD_2050.residential_and_service_demand.sum()/1000000*0.19,
+                ls = "-.", lw = 0.5,
+                label = '75TWh DH in 100RE in Germany => 19% DH',
+                color = 'black')
 
+    # axes meet in (0/0)
+    ax.margins(x=0, y=0) # default is 0.05
     # axis style
     # https://matplotlib.org/stable/gallery/ticks_and_spines/centered_spines_with_arrows.html
     # Hide the right and top spines
@@ -968,15 +978,6 @@ def district_heating_areas_demarcation():
     ax.set(title = "Heat Demand in eGo^n")
     ax.set_xlabel("Cumulative Heat Demand [TWh / a]")
     ax.set_ylabel("Heat Demand Densities [MWh / (ha a)]")
-
-    plt.axvline(x=HD_2035.residential_and_service_demand.sum()/1000000*0.14,
-                ls = ":", lw = 0.5,
-                label = '72TWh DH in 2035 in Germany => 14% DH',
-                color = 'black')
-    plt.axvline(x=HD_2050.residential_and_service_demand.sum()/1000000*0.19,
-                ls = "-.", lw = 0.5,
-                label = '75TWh DH in 100RE in Germany => 19% DH',
-                color = 'black')
 
     plt.legend()
     plt.savefig('Complete_HeatDemandDensities_Curves.png')
