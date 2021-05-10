@@ -460,7 +460,7 @@ def heat_demand_to_db_table():
 
     for source in sources:
 
-        if not '2015' in source.stem:
+        # if not '2015' in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
