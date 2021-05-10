@@ -464,12 +464,12 @@ def district_heating_areas(scenario_name, plotting = False):
             new_areas[['residential_and_service_demand', 'geom_polygon']]),
         geometry='geom_polygon')
 
-
     scenario_dh_area = area_grouping(gpd.GeoDataFrame(
         cells[['residential_and_service_demand', 'geom_polygon']].append(
             new_areas[['residential_and_service_demand', 'geom_polygon']]),
         geometry='geom_polygon'), distance=500)
     # scenario_dh_area.plot(column = "area_id")
+
     scenario_dh_area.groupby("area_id").size().sort_values()
     scenario_dh_area.residential_and_service_demand.sum()
     # scenario_dh_area.sort_index()
@@ -502,6 +502,16 @@ def district_heating_areas(scenario_name, plotting = False):
     # type(areas_dissolved["geom"][0])
     # print(type(areas_dissolved))
     # print(areas_dissolved.head())
+
+    if len(areas_dissolved[areas_dissolved.area == 100*100]) > 0:
+        print(f"""District heating areas ids of single zensus cells in
+              district heating areas:
+              {areas_dissolved[areas_dissolved.area == 100*100].index.values}""")
+        print(f"""Zensus_population_ids of single zensus cells
+              in district heating areas:
+              {scenario_dh_area[scenario_dh_area.area_id.isin(
+                  areas_dissolved[areas_dissolved.area == 100*100].index.values
+                  )].index.values}""")
 
     db.execute_sql(f"""DELETE FROM demand.district_heating_areas
                    WHERE scenario = '{scenario_name}'""")
