@@ -106,7 +106,7 @@ def download_era5():
 
     if not cutout.prepared:
 
-        cutout.prepare()
+        cutout.prepare(nprocesses=1)
 
 
 def insert_weather_cells():
