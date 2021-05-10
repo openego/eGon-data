@@ -80,6 +80,8 @@ Added
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
 * Extract landuse areas from OSM 
   `#214 <https://github.com/openego/eGon-data/issues/214>`_
+* Integrate weather data and renewable feedin timeseries
+  `#19 <https://github.com/openego/eGon-data/issues/19>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
