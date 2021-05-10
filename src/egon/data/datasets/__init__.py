@@ -148,7 +148,7 @@ class Dataset(metaclass=UserDictMetaclassMixin):
     name: str
     version: str
     dependencies: Iterable["Dataset"] = ()
-    graph: TaskGraph = ()
+    tasks: TaskGraph = ()
 
     def check_version(self):
         def skip_task(task, *xs, **ks):
@@ -160,7 +160,7 @@ class Dataset(metaclass=UserDictMetaclassMixin):
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
-        self.tasks = connect(self.graph)
+        self.tasks = connect(self.tasks)
         for task in self.tasks.all:
             cls = task.__class__
             versioned = type(

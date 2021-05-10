@@ -16,5 +16,5 @@ dataset = Dataset(
     name="database-structure",
     version="0.0.0",
     dependencies=[],
-    graph=PythonOperator(task_id="initdb", python_callable=initdb),
+    tasks=PythonOperator(task_id="initdb", python_callable=initdb),
 )
