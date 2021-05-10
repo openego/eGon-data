@@ -402,17 +402,22 @@ def district_heating_areas(scenario_name, plotting = False):
 
         district_heating_share = heat_parameters['DE_district_heating_share']
 
+    # heat_demand is scenario specific
+    heat_demand_cells = load_heat_demands(scenario_name)
+
     # Firstly, supply the cells which already have district heating according
     # to 2011 Census data and which are within likely dh areas (created
     # by the area grouping function), load only the first returned result: [0]
-    # min_hd_census = 10000 / 3.6
-    cells = area_grouping(load_census_data()[0], distance = 500,
-                          # minimum_total_demand = min_hd_census
-                          )
-    # heat_demand is scenario specific
-    heat_demand_cells = load_heat_demands(scenario_name)
-    cells['residential_and_service_demand'] = heat_demand_cells.loc[
-        cells.index.values, 'residential_and_service_demand']
+    min_hd_census = 10000 / 3.6 # in MWh
+
+    census_plus_heat_demand = load_census_data()[0].copy()
+    census_plus_heat_demand['residential_and_service_demand'] = (
+        heat_demand_cells.loc[census_plus_heat_demand.index.values,
+                              'residential_and_service_demand'])
+
+    cells = area_grouping(census_plus_heat_demand, distance = 500,
+                          minimum_total_demand = min_hd_census)
+    # cells.groupby("area_id").size().sort_values()
 
     total_district_heat = (heat_demand_cells['residential_and_service_demand'
                                              ].sum() * district_heating_share)
@@ -433,6 +438,8 @@ def district_heating_areas(scenario_name, plotting = False):
         load_heat_demands("eGon2035")), distance = 200,
         minimum_total_demand = min_hd)
 
+    # PSDs.groupby("area_id").size().sort_values()
+
     # select all cells not already suppied with district heat
     new_areas = heat_demand_cells[~heat_demand_cells.index.isin(cells.index)]
     # sort by heat demand density
@@ -443,11 +450,31 @@ def district_heating_areas(scenario_name, plotting = False):
     # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]
     # group the resulting scenario specify district heating areas
+
+    print(f"""Minimum heat demand density for cells with new district heat
+          supply in scenario {scenario_name} is
+          {new_areas.residential_and_service_demand.tail(1).values[0]}
+          MWh / (ha a).""")
+    print(f"""Number of cells with new district heat
+          supply in scenario {scenario_name} is
+          {len(new_areas)}.""")
+
+    check = gpd.GeoDataFrame(
+        cells[['residential_and_service_demand', 'geom_polygon']].append(
+            new_areas[['residential_and_service_demand', 'geom_polygon']]),
+        geometry='geom_polygon')
+
+
     scenario_dh_area = area_grouping(gpd.GeoDataFrame(
         cells[['residential_and_service_demand', 'geom_polygon']].append(
             new_areas[['residential_and_service_demand', 'geom_polygon']]),
-        geometry='geom_polygon'))
+        geometry='geom_polygon'), distance=500)
     # scenario_dh_area.plot(column = "area_id")
+    scenario_dh_area.groupby("area_id").size().sort_values()
+    scenario_dh_area.residential_and_service_demand.sum()
+    # scenario_dh_area.sort_index()
+    # cells[cells.index==1416974]
+
 
     # store the results in the database
     scenario_dh_area["scenario"] = scenario_name
@@ -455,8 +482,6 @@ def district_heating_areas(scenario_name, plotting = False):
 
     db.execute_sql(f"""DELETE FROM demand.map_zensus_district_heating_areas
                    WHERE scenario = '{scenario_name}'""")
-    # LATER HERE THE GEO INFORMATION COULD BE DELETED WHEN SAVING IN DB:
-    # .drop('geom_polygon', axis=1) - how to drop two?
     scenario_dh_area[['version', 'scenario', 'area_id']].to_sql(
         'map_zensus_district_heating_areas',
                                        schema='demand', con=db.engine(),
