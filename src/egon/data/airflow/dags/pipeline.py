@@ -264,13 +264,6 @@ with airflow.DAG(
     demandregio_demand_households >> elec_household_demands_zensus
     map_zensus_vg250 >> elec_household_demands_zensus
 
-    # Power plant setup
-    power_plant_tables = PythonOperator(
-        task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables,
-    )
-    setup >> power_plant_tables
-
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
@@ -360,7 +353,7 @@ with airflow.DAG(
     )
     osmtgmod_substation >> create_voronoi
 
-    
+
     define_mv_grid_districts = PythonOperator(
         task_id="define_mv_grid_districts",
         python_callable=mvgd.define_mv_grid_districts
