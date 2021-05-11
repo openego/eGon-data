@@ -74,7 +74,7 @@ class Tasks:
     all: Set[Operator]
 
 
-def connect(tasks: TaskGraph):
+def connect(tasks: TaskGraph) -> Tasks:
     """Connect multiple tasks into a potentially complex graph.
 
     As per the type, a task graph can be given as a single operator, a tuple
