@@ -2,6 +2,7 @@
 
 from collections import abc
 from dataclasses import dataclass
+from functools import reduce
 from typing import Iterable, Set, Tuple, Union
 
 from airflow import DAG
@@ -68,10 +69,9 @@ SequentialTasks = Tuple[TaskGraph, ...]
 
 
 @dataclass
-class Tasks:
+class Tasks(dict):
     first: Set[Operator]
     last: Set[Operator]
-    all: Set[Operator]
     graph: TaskGraph = ()
 
     def __init__(self, graph: TaskGraph):
@@ -86,16 +86,15 @@ class Tasks:
         if isinstance(graph, Operator):
             self.first = {graph}
             self.last = {graph}
-            self.all = {graph}
+            self[graph.task_id] = graph
         elif isinstance(graph, abc.Sized) and len(graph) == 0:
             self.first = {}
             self.last = {}
-            self.all = {}
         elif isinstance(graph, abc.Set):
             results = [Tasks(subtasks) for subtasks in graph]
             self.first = {task for result in results for task in result.first}
             self.last = {task for result in results for task in result.last}
-            self.all = {task for result in results for task in result.all}
+            self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
         elif isinstance(graph, tuple):
             results = [Tasks(subtasks) for subtasks in graph]
             for (left, right) in zip(results[:-1], results[1:]):
@@ -104,7 +103,7 @@ class Tasks:
                         last.set_downstream(first)
             self.first = results[0].first
             self.last = results[-1].last
-            self.all = {task for result in results for task in result.all}
+            self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
         else:
             raise (
                 TypeError(
@@ -170,7 +169,7 @@ class Dataset:
         # one task in `self.tasks.last` which the next line just
         # selects.
         last = list(self.tasks.last)[0]
-        for task in self.tasks.all:
+        for task in self.tasks.values():
             cls = task.__class__
             versioned = type(
                 f"Versioned{self.name[0].upper}{self.name[1:]}",
@@ -189,8 +188,8 @@ class Dataset:
                 p.set_downstream(first)
 
     def insert_into(self, dag: DAG):
-        for task in self.tasks.all:
+        for task in self.tasks.values():
             for attribute in DEFAULTS:
                 if getattr(task, attribute) is None:
                     setattr(task, attribute, DEFAULTS[attribute])
-        dag.add_tasks(self.tasks.all)
+        dag.add_tasks(self.tasks.values())
