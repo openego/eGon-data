@@ -451,18 +451,18 @@ with airflow.DAG(
         task_id="generate_wind_farms",
         python_callable=wf.wind_power_parks,
     )
-    power_plant_tables >> generate_wind_farms
+    retrieve_mastr_data >> generate_wind_farms
     insert_re_potential_areas >> generate_wind_farms
     scenario_input_import >> generate_wind_farms
     
-    # Regionalization of PV ground mounted
+    # regionalization of PV ground mounted
     generate_pv_ground_mounted = PythonOperator(
         task_id="generate_pv_ground_mounted",
         python_callable=pv_gm.regio_of_pv_ground_mounted,
     )
-    scenario_input_import >> generate_pv_ground_mounted
-    power_plant_tables >> generate_pv_ground_mounted
+    retrieve_mastr_data >> generate_pv_ground_mounted
     insert_re_potential_areas >> generate_pv_ground_mounted
+    scenario_input_import >> generate_pv_ground_mounted
     hvmv_substation_extraction >> generate_pv_ground_mounted
     define_mv_grid_districts >> generate_pv_ground_mounted
     
