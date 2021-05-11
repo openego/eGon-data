@@ -73,8 +73,7 @@ class Tasks:
     last: Set[Operator]
     all: Set[Operator]
 
-
-def connect(tasks: TaskGraph) -> Tasks:
+    def __init__(self, tasks: TaskGraph):
         """Connect multiple tasks into a potentially complex graph.
 
         As per the type, a task graph can be given as a single operator,
@@ -83,29 +82,31 @@ def connect(tasks: TaskGraph) -> Tasks:
         tasks in the graph will be executed in parallel.
         """
         if isinstance(tasks, Operator):
-            return Tasks(first={tasks}, last={tasks}, all={tasks})
+            self.first = {tasks}
+            self.last = {tasks}
+            self.all = {tasks}
         elif isinstance(tasks, abc.Sized) and len(tasks) == 0:
-            return Tasks(first={}, last={}, all={})
+            self.first = {}
+            self.last = {}
+            self.all = {}
         elif isinstance(tasks, abc.Set):
-            results = [connect(subtasks) for subtasks in tasks]
-            first = {task for result in results for task in result.first}
-            last = {task for result in results for task in result.last}
-            tasks = {task for result in results for task in result.all}
-            return Tasks(first, last, tasks)
+            results = [Tasks(subtasks) for subtasks in tasks]
+            self.first = {task for result in results for task in result.first}
+            self.last = {task for result in results for task in result.last}
+            self.all = {task for result in results for task in result.all}
         elif isinstance(tasks, tuple):
-            results = [connect(subtasks) for subtasks in tasks]
+            results = [Tasks(subtasks) for subtasks in tasks]
             for (left, right) in zip(results[:-1], results[1:]):
                 for last in left.last:
                     for first in right.first:
                         last.set_downstream(first)
-            first = results[0].first
-            last = results[-1].last
-            tasks = {task for result in results for task in result.all}
-            return Tasks(first, last, tasks)
+            self.first = results[0].first
+            self.last = results[-1].last
+            self.all = {task for result in results for task in result.all}
         else:
             raise (
                 TypeError(
-                    "`egon.data.datasets.connect` got an argument of type:\n\n"
+                    "`egon.data.datasets.Tasks` got an argument of type:\n\n"
                     f"  {type(tasks)}\n\n"
                     "where only `Operator`s, `Set`s and `Tuple`s are allowed."
                 )
@@ -153,7 +154,7 @@ class Dataset:
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
-        self.tasks = connect(self.tasks)
+        self.tasks = Tasks(self.tasks)
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
@@ -162,7 +163,7 @@ class Dataset:
                 # Do nothing, because updating will be added later.
                 python_callable=lambda *xs, **ks: None,
             )
-            self.tasks = connect((self.tasks, update_version))
+            self.tasks = Tasks((self.tasks, update_version))
         # Due to the `if`-block above, there'll now always be exactly
         # one task in `self.tasks.last` which the next line just
         # selects.
