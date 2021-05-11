@@ -23,7 +23,7 @@ class EgonPowerPlants(Base):
     chp = Column(Boolean)
     el_capacity = Column(Float)
     th_capacity = Column(Float)
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     voltage_level = Column(Integer)
     w_id = Column(Integer)
     scenario = Column(String)
