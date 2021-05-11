@@ -7,7 +7,7 @@ from typing import Iterable, Set, Tuple, Union
 
 from airflow import DAG
 from airflow.exceptions import AirflowSkipException
-from airflow.operators import BaseOperator as Operator
+from airflow.operators import BaseOperator as Task
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
@@ -63,15 +63,15 @@ class Model(Base):
     )
 
 
-TaskGraph = Union[Operator, "ParallelTasks", "SequentialTasks"]
+TaskGraph = Union[Task, "ParallelTasks", "SequentialTasks"]
 ParallelTasks = Set[TaskGraph]
 SequentialTasks = Tuple[TaskGraph, ...]
 
 
 @dataclass
 class Tasks(dict):
-    first: Set[Operator]
-    last: Set[Operator]
+    first: Set[Task]
+    last: Set[Task]
     graph: TaskGraph = ()
 
     def __init__(self, graph: TaskGraph):
@@ -83,7 +83,7 @@ class Tasks(dict):
         tasks in the graph will be executed in parallel.
         """
         self.graph = graph
-        if isinstance(graph, Operator):
+        if isinstance(graph, Task):
             self.first = {graph}
             self.last = {graph}
             self[graph.task_id] = graph
@@ -109,7 +109,8 @@ class Tasks(dict):
                 TypeError(
                     "`egon.data.datasets.Tasks` got an argument of type:\n\n"
                     f"  {type(graph)}\n\n"
-                    "where only `Operator`s, `Set`s and `Tuple`s are allowed."
+                    "where only `Task`s (i.e. `Operator`s), `Set`s and"
+                    " `Tuple`s are allowed."
                 )
             )
 
