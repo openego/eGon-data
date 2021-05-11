@@ -75,41 +75,41 @@ class Tasks:
 
 
 def connect(tasks: TaskGraph) -> Tasks:
-    """Connect multiple tasks into a potentially complex graph.
+        """Connect multiple tasks into a potentially complex graph.
 
-    As per the type, a task graph can be given as a single operator, a tuple
-    of task graphs or a set of task graphs. A tuple will be executed in the
-    specified order, whereas a set means that the tasks in the graph will be
-    executed in parallel.
-    """
-    if isinstance(tasks, Operator):
-        return Tasks(first={tasks}, last={tasks}, all={tasks})
-    elif isinstance(tasks, abc.Sized) and len(tasks) == 0:
-        return Tasks(first={}, last={}, all={})
-    elif isinstance(tasks, abc.Set):
-        results = [connect(subtasks) for subtasks in tasks]
-        first = {task for result in results for task in result.first}
-        last = {task for result in results for task in result.last}
-        tasks = {task for result in results for task in result.all}
-        return Tasks(first, last, tasks)
-    elif isinstance(tasks, tuple):
-        results = [connect(subtasks) for subtasks in tasks]
-        for (left, right) in zip(results[:-1], results[1:]):
-            for last in left.last:
-                for first in right.first:
-                    last.set_downstream(first)
-        first = results[0].first
-        last = results[-1].last
-        tasks = {task for result in results for task in result.all}
-        return Tasks(first, last, tasks)
-    else:
-        raise (
-            TypeError(
-                "`egon.data.datasets.connect` got an argument of type:\n\n"
-                f"  {type(tasks)}\n\n"
-                "where only `Operator`s, `Set`s and `Tuple`s are allowed."
+        As per the type, a task graph can be given as a single operator,
+        a tuple of task graphs or a set of task graphs. A tuple will be
+        executed in the specified order, whereas a set means that the
+        tasks in the graph will be executed in parallel.
+        """
+        if isinstance(tasks, Operator):
+            return Tasks(first={tasks}, last={tasks}, all={tasks})
+        elif isinstance(tasks, abc.Sized) and len(tasks) == 0:
+            return Tasks(first={}, last={}, all={})
+        elif isinstance(tasks, abc.Set):
+            results = [connect(subtasks) for subtasks in tasks]
+            first = {task for result in results for task in result.first}
+            last = {task for result in results for task in result.last}
+            tasks = {task for result in results for task in result.all}
+            return Tasks(first, last, tasks)
+        elif isinstance(tasks, tuple):
+            results = [connect(subtasks) for subtasks in tasks]
+            for (left, right) in zip(results[:-1], results[1:]):
+                for last in left.last:
+                    for first in right.first:
+                        last.set_downstream(first)
+            first = results[0].first
+            last = results[-1].last
+            tasks = {task for result in results for task in result.all}
+            return Tasks(first, last, tasks)
+        else:
+            raise (
+                TypeError(
+                    "`egon.data.datasets.connect` got an argument of type:\n\n"
+                    f"  {type(tasks)}\n\n"
+                    "where only `Operator`s, `Set`s and `Tuple`s are allowed."
+                )
             )
-        )
 
 
 @dataclass
