@@ -65,9 +65,11 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * Add hydro and biomass power plants eGon2035
   `#127 <https://github.com/openego/eGon-data/issues/127>`_
-* Creation of the ehv/hv grid model with osmTGmod, see
-  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and
+* Creation of the ehv/hv grid model with osmTGmod, see 
+  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
+* Identification of medium-voltage grid districts
+  `#10 <https://github.com/openego/eGon-data/pull/10>`_  
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
 * Distribute electrical demands of cts to zensus cells
@@ -82,8 +84,13 @@ Added
   Containers created prior to this change will fail when using the 
   changed code. The container needs to be re-created.
   `#228 <https://github.com/openego/eGon-data/issues/228>`_
+* Extract landuse areas from OSM 
+  `#214 <https://github.com/openego/eGon-data/issues/214>`_
+* Integrate weather data and renewable feedin timeseries
+  `#19 <https://github.com/openego/eGon-data/issues/19>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
+
 
 Changed
 -------
@@ -130,3 +137,5 @@ Bug fixes
   `#217 <https://github.com/openego/eGon-data/issues/217>`_
 * Import heat demand raster files successively to fix import for dataset==Everything
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
+* Replace wrong table name in SQL function used in substation extraction
+  `#236 <https://github.com/openego/eGon-data/issues/236>`_

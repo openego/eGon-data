@@ -346,3 +346,41 @@ power_plants:
   target:
       table: 'egon_power_plants'
       schema: 'supply'
+
+landuse:
+  sources:
+    osm_polygons:
+      schema: 'openstreetmap'
+      table: 'osm_polygon'
+    vg250:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+  target:
+      table: 'osm_landuse'
+      schema: 'openstreetmap'
+
+era5_weather_data:
+  targets:
+    weather_data:
+      path: 'cutouts'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+
+renewable_feedin:
+  sources:
+    era5_weather_data:
+      path: 'cutouts'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    vg250_lan_union:
+      schema: 'boundaries'
+      table: 'vg250_lan_union'
+    vg250_sta_union:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+  targets:
+    feedin_table:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
