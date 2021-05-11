@@ -170,7 +170,7 @@ class Dataset:
         for task in self.tasks.all:
             cls = task.__class__
             versioned = type(
-                f"{self.name}VersionCheck",
+                f"Versioned{self.name[0].upper}{self.name[1:]}",
                 (cls,),
                 {
                     "execute": self.check_version(
