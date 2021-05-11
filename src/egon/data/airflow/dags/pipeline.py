@@ -463,7 +463,7 @@ with airflow.DAG(
     scenario_input_import >> generate_pv_ground_mounted
     power_plant_tables >> generate_pv_ground_mounted
     insert_re_potential_areas >> generate_pv_ground_mounted
-  	hvmv_substation_extraction >> generate_pv_ground_mounted
+    hvmv_substation_extraction >> generate_pv_ground_mounted
     define_mv_grid_districts >> generate_pv_ground_mounted
     
     
