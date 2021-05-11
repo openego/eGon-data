@@ -354,36 +354,31 @@ def assign_voltage_level(mastr_loc):
     mastr_loc['Spannungsebene'] = np.nan
     mastr_loc['voltage_level'] = np.nan
 
-    try:
-
-        location = pd.read_csv('location_elec_generation_raw.csv', usecols=[
+    location = pd.read_csv('location_elec_generation_raw.csv', usecols=[
             'LokationMastrNummer', 'Spannungsebene']).set_index(
                 'LokationMastrNummer')
 
-        location = location[~location.index.duplicated(keep='first')]
+    location = location[~location.index.duplicated(keep='first')]
 
-        mastr_loc.loc[mastr_loc[mastr_loc.LokationMastrNummer.isin(
-            location.index)].index,'Spannungsebene'] = location.Spannungsebene[
-            mastr_loc[mastr_loc.LokationMastrNummer.isin(
-            location.index)].LokationMastrNummer].values
+    mastr_loc.loc[mastr_loc[mastr_loc.LokationMastrNummer.isin(
+        location.index)].index,'Spannungsebene'] = location.Spannungsebene[
+        mastr_loc[mastr_loc.LokationMastrNummer.isin(
+        location.index)].LokationMastrNummer].values
 
-        # Transfer voltage_level as integer from Spanungsebene
-        map_voltage_levels=pd.Series(data={
-            'Höchstspannung': 1,
-            'Hochspannung': 3,
-            'UmspannungZurMittelspannung': 4,
-            'Mittelspannung': 5,
-            'UmspannungZurNiederspannung': 6,
-            'Niederspannung':7})
+    # Transfer voltage_level as integer from Spanungsebene
+    map_voltage_levels=pd.Series(data={
+        'Höchstspannung': 1,
+        'Hochspannung': 3,
+        'UmspannungZurMittelspannung': 4,
+        'Mittelspannung': 5,
+        'UmspannungZurNiederspannung': 6,
+        'Niederspannung':7})
 
+    mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
+              'voltage_level'] = map_voltage_levels[
         mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
-                  'voltage_level'] = map_voltage_levels[
-            mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
-                  'Spannungsebene'].values].values
+              'Spannungsebene'].values].values
 
-    except:
-        print("MaStR location data not available. "
-              "Voltage levels are assigned according to capacity.")
 
     # If no voltage level is available from mastr, choose level according
     # to threshold values
