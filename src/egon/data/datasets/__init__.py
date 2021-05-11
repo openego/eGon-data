@@ -119,7 +119,7 @@ class Tasks(dict):
 class Dataset:
     name: str
     version: str
-    dependencies: Iterable["Dataset"] = ()
+    dependencies: Iterable[Union["Dataset", Task]] = ()
     tasks: TaskGraph = ()
 
     def check_version(self, after_execution=()):
@@ -146,7 +146,12 @@ class Dataset:
             session.query(Model)
             .filter(
                 tuple_(Model.name, Model.version).in_(
-                    [(d.name, d.version) for d in self.dependencies]
+                    [
+                        (dependency.dataset.name, dependency.dataset.version)
+                        if isinstance(dependency, Task)
+                        else (dependency.name, dependency.version)
+                        for dependency in self.dependencies
+                    ]
                 )
             )
             .all()
@@ -171,6 +176,7 @@ class Dataset:
         # selects.
         last = list(self.tasks.last)[0]
         for task in self.tasks.values():
+            task.dataset = self
             cls = task.__class__
             versioned = type(
                 f"Versioned{self.name[0].upper}{self.name[1:]}",
@@ -183,7 +189,12 @@ class Dataset:
             )
             task.__class__ = versioned
 
-        predecessors = [p for d in self.dependencies for p in d.tasks.last]
+        predecessors = [
+            task
+            for dataset in self.dependencies
+            if isinstance(dataset, Dataset)
+            for task in dataset.tasks.last
+        ] + [task for task in self.dependencies if isinstance(task, Task)]
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
