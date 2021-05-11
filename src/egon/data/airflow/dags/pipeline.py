@@ -53,7 +53,7 @@ with airflow.DAG(
     schedule_interval=None,
 ) as pipeline:
 
-    initdb.dataset.insert_into(pipeline)
+    initdb.dataset().insert_into(pipeline)
     setup = pipeline.task_dict["initdb"]
 
     # Openstreetmap data import

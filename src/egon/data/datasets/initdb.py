@@ -12,7 +12,7 @@ def initdb():
             connection.execute(f"CREATE EXTENSION IF NOT EXISTS {extension}")
 
 
-dataset = Dataset(
+def dataset(): return Dataset(
     name="database-structure",
     version="0.0.0",
     dependencies=[],
