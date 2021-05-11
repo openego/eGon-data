@@ -25,7 +25,7 @@ class EgonPowerPlants(Base):
     th_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
-    w_id = Column(Integer)
+    weather_cell_id = Column(Integer)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
@@ -210,8 +210,12 @@ def insert_biomass_plants(scenario):
     mastr = scale_prox2now(mastr, target, level=level)
 
     # Choose only entries with valid geometries inside DE/test mode
-    mastr_loc = filter_mastr_geometry(mastr)
+    mastr_loc = filter_mastr_geometry(mastr).set_geometry('geometry')
     # TODO: Deal with power plants without geometry
+
+    # Assign bus_id
+    if len(mastr_loc) > 0:
+        mastr_loc = assign_bus_id(mastr_loc)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -228,6 +232,7 @@ def insert_biomass_plants(scenario):
             el_capacity=row.Nettonennleistung,
             th_capacity=row.ThermischeNutzleistung / 1000,
             scenario=scenario,
+            bus_id = row.bus_id,
             geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
         )
         session.add(entry)
@@ -299,6 +304,10 @@ def insert_hydro_plants(scenario):
         mastr_loc = filter_mastr_geometry(mastr)
         # TODO: Deal with power plants without geometry
 
+        # Assign bus_id
+        if len(mastr_loc) > 0:
+            mastr_loc = assign_bus_id(mastr_loc)
+
         # Insert entries with location
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
@@ -312,6 +321,7 @@ def insert_hydro_plants(scenario):
                 chp=type(row.KwkMastrNummer) != float,
                 el_capacity=row.Nettonennleistung,
                 scenario=scenario,
+                bus_id = row.bus_id,
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
             session.add(entry)
@@ -335,3 +345,16 @@ def insert_power_plants():
     for scenario in ["eGon2035"]:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
+
+
+def assign_bus_id(power_plants):
+
+    mv_grid_districts = db.select_geodataframe(
+        """
+        SELECT * FROM grid.mv_grid_districts
+        """, epsg=4326)
+
+    power_plants['bus_id'] = gpd.sjoin(
+        power_plants, mv_grid_districts).subst_id
+
+    return power_plants
