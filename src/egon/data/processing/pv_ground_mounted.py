@@ -388,15 +388,6 @@ def regio_of_pv_ground_mounted():
         pv_per_distr['area'] = pv_per_distr['geom'].area
         pv_per_distr['installed capacity in kW'] = pv_per_distr['area']*pow_per_area
         
-        # assign grid level
-        v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
-        for index, distr in pv_per_distr.iterrows():
-            if distr['installed capacity in kW'] > 5500: # > 5 MW
-                v_lvl[index] = 4
-            else:
-                v_lvl[index] = 5
-        pv_per_distr['voltage_level'] = v_lvl
-        
         # calculate centroid
         pv_per_distr['centroid'] = pv_per_distr['geom'].centroid
             
@@ -433,6 +424,7 @@ def regio_of_pv_ground_mounted():
             
             ###
             print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität NICHT ausreichend:')
+            print('Installierte Kapazität auf Flächen existierender PV-Parks (Bestandsflächen): '+str(total_pv_power/1000)+' MW')
             print('Restkapazität: '+str(rest_cap/1000)+' MW')
             print('Restkapazität wird zunächst über übrige Potentialflächen Road & Railway verteilt.')
 
@@ -448,7 +440,7 @@ def regio_of_pv_ground_mounted():
             if pv_per_distr['installed capacity in kW'].sum() > rest_cap:
                 scale_factor = rest_cap/pv_per_distr['installed capacity in kW'].sum()
                 pv_per_distr['installed capacity in kW'] = pv_per_distr['installed capacity in kW'] * scale_factor
-            
+                
                 ### 
                 print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway verteilt.')
             
@@ -478,7 +470,19 @@ def regio_of_pv_ground_mounted():
                     ### 
                     print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway und Agriculture verteilt.')
             
+        ###
+        x=0
 
+        # assign grid level do pv_per_distr
+        v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
+        for index, distr in pv_per_distr.iterrows():
+            if distr['installed capacity in kW'] > 5500: # > 5 MW
+                v_lvl[index] = 4
+                x = x+1
+            else:
+                v_lvl[index] = 5
+        pv_per_distr['voltage_level'] = v_lvl
+    
         # new overall installed capacity
         total_pv_power = pv_rora['installed capacity in kW'].sum() + \
         pv_agri['installed capacity in kW'].sum() + \
@@ -487,6 +491,12 @@ def regio_of_pv_ground_mounted():
         ###
         print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
         print('(Zielwert: '+str(target_power/1000)+' MW)')
+        print(' ')
+        
+        ### 
+        print('Untersuchung der zusätzlich (außerhalb der Bestandsflächen) installierten Kapazität:')
+        print('Installierte Leistung pro MV Grid District > 5,5 MW und somit > MV-level: '+str(x))
+        print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
         print(' ')
 
         return pv_rora, pv_agri, pv_per_distr
@@ -513,8 +523,12 @@ def regio_of_pv_ground_mounted():
         max_dist_hv = 20000 # m
             
         # assumption for target value of installed capacity in Germany per scenario 
-        sql = "SELECT capacity, scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
-        target_power = (pd.read_sql(sql,con))*1000 # in kW
+        sql = "SELECT capacity FROM supply.egon_scenario_capacities WHERE carrier='solar' "
+        target_power = (pd.read_sql(sql,con))
+        target_power = target_power['capacity'].iat[0]*1000 #in kW
+        print(' ')
+        print('target power: '+str(target_power)+' kW')
+        print(' ')
 
         ### PARAMETERS ###
     
@@ -593,9 +607,8 @@ def regio_of_pv_ground_mounted():
             # centroids
             cen = pv_rora['centroid'].append(pv_agri['centroid'])
             cen = cen.append(pv_per_distr['centroid'])
-            pv_parks['centroid'] = cen
-            pv_parks.set_geometry('centroid')
-            
+            pv_parks = pv_parks.set_geometry(cen)
+            #to_crs(4326)
             
             # integration in supply.egon_power_plants
             
@@ -604,10 +617,18 @@ def regio_of_pv_ground_mounted():
             # scenario name
             sql = "SELECT scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
             scenario_name = pd.read_sql(sql,con)
+            scenario_name = scenario_name['scenario_name'].iat[0]
+            
+            ###
+            print(' ')
+            print('scenario name: '+str(scenario_name))
+            print(' ')
         
             # maximum ID in egon_power_plants
             sql = "SELECT MAX(id) FROM supply.egon_power_plants"
             max_id = pd.read_sql(sql,con)
+            max_id = max_id['max'].iat[0]
+            
             
             pv_park_id = max_id+1
             for pv in pv_parks.index:
@@ -627,17 +648,24 @@ def regio_of_pv_ground_mounted():
                                       False,
                                       pv_parks.loc[pv].at['el_capacity'],
                                       0,
-                                      pv_parks.loc[pv].at['voltage_level'],
+                                      pv_parks.loc[pv].at['voltage_level'].astype(float),
                                       scenario_name,
-                                      wkb.dumps(pv_parks.loc[pv].at['geom'])))
+                                      wkb.dumps(pv_parks.loc[pv].at['geometry'])))
                 con.commit()
                 cur.close()
                 pv_park_id+=1
     
             return pv_parks
         
+        
     pv_rora, pv_agri, pv_per_distr = run_methodology()
+    
+    pv_rora.to_csv('pv_rora.csv',index=True)
+    pv_agri.to_csv('pv_agri.csv',index=True)
+    pv_per_distr.to_csv('pv_per_distr.csv',index=True)
+    
     pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr)
+    
     
     return pv_parks
 
