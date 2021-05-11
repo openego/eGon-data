@@ -67,10 +67,12 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
             if len(l)>0:
                 if l.iloc[0] == 'Mittelspannung':
                     v_l.loc[index] = 5
-                elif l.iloc[0] == 'UmspannungZurHochspannung':
+                if l.iloc[0] == 'UmspannungZurMittelspannung':
                     v_l.loc[index] = 4
                 elif l.iloc[0] == 'Hochspannung':   
                     v_l.loc[index] = 3
+                elif l.iloc[0] == 'UmspannungZurHochspannung':
+                    v_l.loc[index] = 1
                 elif l.iloc[0] == 'Höchstspannung':   
                     v_l.loc[index] = 1
                 elif l.iloc[0] == 'UmspannungZurNiederspannung':   
@@ -622,7 +624,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
                     values (%s, %s, %s, %s, %s, %s, %s, %s)'''      
                 cur.execute(sql, (pv_park_id,
                                       "solar",
-                                      # TODO: add sources?
+                                      # TODO: add sources?""
                                       False,
                                       pv_parks.loc[pv].at['el_capacity'],
                                       0,
