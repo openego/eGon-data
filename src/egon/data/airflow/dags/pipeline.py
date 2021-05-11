@@ -32,7 +32,7 @@ import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.wind_farms as wf
-import egon.data.processing.PV_ground_mounted as pv_gm
+import egon.data.processing.pv_ground_mounted as pv_gm
 from egon.data import db
 
 
