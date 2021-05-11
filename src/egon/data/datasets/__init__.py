@@ -120,9 +120,15 @@ class Dataset:
 
     def check_version(self):
         def skip_task(task, *xs, **ks):
-            raise AirflowSkipException(
-                f"{self.name} version {self.version} already executed."
-            )
+            with db.session_scope() as session:
+                datasets = session.query(Model).filter_by(name=self.name).all()
+                if self.version in [ds.version for ds in datasets]:
+                    raise AirflowSkipException(
+                        f"{self.name} version {self.version} already executed."
+                    )
+                else:
+                    result = super(type(task), task).execute(*xs, **ks)
+                    return result
 
         return skip_task
 
