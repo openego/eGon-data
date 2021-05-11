@@ -216,8 +216,8 @@ def insert_biomass_plants(scenario):
 
     # Assign bus_id
     if len(mastr_loc) > 0:
-        mastr_loc['voltage_level'] = assign_voltage_level(mastr_loc)
-        mastr_loc = assign_bus_id(mastr_loc)
+        mastr_loc['voltage_level'] = assign_voltage_level(mastr_loc, cfg)
+        mastr_loc = assign_bus_id(mastr_loc, cfg)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -309,8 +309,8 @@ def insert_hydro_plants(scenario):
 
         # Assign bus_id and voltage level
         if len(mastr_loc) > 0:
-            mastr_loc['voltage_level'] = assign_voltage_level(mastr_loc)
-            mastr_loc = assign_bus_id(mastr_loc)
+            mastr_loc['voltage_level'] = assign_voltage_level(mastr_loc, cfg)
+            mastr_loc = assign_bus_id(mastr_loc, cfg)
 
         # Insert entries with location
         session = sessionmaker(bind=db.engine())()
@@ -333,7 +333,7 @@ def insert_hydro_plants(scenario):
 
         session.commit()
 
-def assign_voltage_level(mastr_loc):
+def assign_voltage_level(mastr_loc, cfg):
     """ Assigns voltage level to power plants.
 
     If location data inluding voltage level is available from
@@ -354,7 +354,7 @@ def assign_voltage_level(mastr_loc):
     mastr_loc['Spannungsebene'] = np.nan
     mastr_loc['voltage_level'] = np.nan
 
-    location = pd.read_csv('location_elec_generation_raw.csv', usecols=[
+    location = pd.read_csv(cfg['sources']['mastr_location'], usecols=[
             'LokationMastrNummer', 'Spannungsebene']).set_index(
                 'LokationMastrNummer')
 
@@ -404,7 +404,7 @@ def assign_voltage_level(mastr_loc):
 
     return mastr_loc.voltage_level
 
-def assign_bus_id(power_plants):
+def assign_bus_id(power_plants, cfg):
     """Assigns bus_ids to power plants according to location and voltage level
 
     Parameters
@@ -420,13 +420,13 @@ def assign_bus_id(power_plants):
     """
 
     mv_grid_districts = db.select_geodataframe(
-        """
-        SELECT * FROM grid.mv_grid_districts
+        f"""
+        SELECT * FROM {cfg['sources']['mv_grid_districts']}
         """, epsg=4326)
 
     ehv_grid_districts = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_ehv_substation_voronoi
+        f"""
+        SELECT * FROM {cfg['sources']['ehv_voronoi']}
         """, epsg=4326)
 
     # Assign power plants in hv and below to hvmv bus
