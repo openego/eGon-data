@@ -460,7 +460,7 @@ def heat_demand_to_db_table():
 
     for source in sources:
 
-        if not '2015' in source.stem:
+        # if not '2015' in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
@@ -619,7 +619,7 @@ def add_metadata():
 
     # Metadata creation
     meta = {
-        "name": "heat",
+        "name": "egon_peta_heat_metadata",
         "title": "eGo_n scenario-specific future heat demand data",
         "description": "Future heat demands per hectare grid cell of "
         "the residential and service sector",
