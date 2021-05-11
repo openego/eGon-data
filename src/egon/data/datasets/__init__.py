@@ -57,7 +57,7 @@ class Model(Base):
         secondary=DependencyGraph,
         primaryjoin=id == DependencyGraph.c.dependent_id,
         secondaryjoin=id == DependencyGraph.c.dependency_id,
-        backref="dependents",
+        backref=orm.backref("dependents", cascade="all, delete"),
     )
 
 
@@ -127,6 +127,8 @@ class Dataset:
                         f"{self.name} version {self.version} already executed."
                     )
                 else:
+                    for ds in datasets:
+                        session.delete(ds)
                     result = super(type(task), task).execute(*xs, **ks)
                     return result
 
