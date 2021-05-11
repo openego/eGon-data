@@ -8,10 +8,10 @@ import pandas as pd
 import numpy as np
 
 
-def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv, target_power):
+def regio_of_pv_ground_mounted():
     
     
-    def mastr_existing_pv(path=path, pow_per_area=pow_per_area):
+    def mastr_existing_pv(path, pow_per_area):
         
         # import MaStR data: locations, grid levels and installed capacities
 
@@ -111,7 +111,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return mastr
        
     
-    def potential_areas(con=con, join_buffer=join_buffer):
+    def potential_areas(con, join_buffer):
         
         # import potential areas: railways and roads & agriculture
         
@@ -279,7 +279,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_pot
     
     
-    def build_pv(pv_pot, pow_per_area=pow_per_area):
+    def build_pv(pv_pot, pow_per_area):
         
         # build pv farms in selected areas
 
@@ -298,7 +298,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_pot
     
     
-    def adapt_grid_level(pv_pot, max_dist_hv=max_dist_hv, con=con):
+    def adapt_grid_level(pv_pot, max_dist_hv, con):
         
         # divide dataframe in MV and HV 
         pv_pot_mv = pv_pot[pv_pot['voltage_level'] == 5]
@@ -306,7 +306,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         
         # check installed capacity in MV 
         
-        max_cap_mv = 20000 # in kW
+        max_cap_mv = 5500 # in kW
         
         # find PVs which need to be HV or to have reduced capacity
         pv_pot_mv_to_hv = pv_pot_mv[pv_pot_mv['installed capacity in kW'] > max_cap_mv]
@@ -358,7 +358,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_pot
     
     
-    def build_additional_pv(potentials, pv, pow_per_area=pow_per_area, con=con): 
+    def build_additional_pv(potentials, pv, pow_per_area, con): 
     
         # get MV grid districts
         sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
@@ -391,7 +391,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         # assign grid level
         v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
         for index, distr in pv_per_distr.iterrows():
-            if distr['installed capacity in kW'] > 5000: # > 5 MW
+            if distr['installed capacity in kW'] > 5500: # > 5 MW
                 v_lvl[index] = 4
             else:
                 v_lvl[index] = 5
@@ -403,7 +403,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_per_distr
 
 
-    def check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power=target_power):
+    def check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con):
         
         # sum overall installed capacity for MV and HV
 
@@ -416,48 +416,53 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         
         # linear scale farms to meet target if sum of installed capacity is too high
         if total_pv_power > target_power:
+            
                 scale_factor = target_power/total_pv_power
-                
-                ###
-                print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
-                print('Saklierungsfaktor: '+str(scale_factor))
-                
                 pv_rora['installed capacity in kW'] = pv_rora['installed capacity in kW'] * scale_factor
                 pv_agri['installed capacity in kW'] = pv_agri['installed capacity in kW'] * scale_factor
+                
+                ###
                 print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität ist ausreichend.') 
+                print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
+                print('Saklierungsfaktor: '+str(scale_factor))
                 
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
             
+            rest_cap = target_power - total_pv_power
+            
             ###
             print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität NICHT ausreichend:')
-            x = target_power - total_pv_power
-            print('Restkapazität: '+str(x/1000)+' MW')
+            print('Restkapazität: '+str(rest_cap/1000)+' MW')
             print('Restkapazität wird zunächst über übrige Potentialflächen Road & Railway verteilt.')
 
             # build pv parks in potential areas road & railway
-            pv_per_distr = build_additional_pv(potentials_rora, pv_rora) 
+            pv_per_distr = build_additional_pv(potentials_rora, pv_rora, pow_per_area, con) 
             # change index to add different Dataframes in the end
             pv_per_distr['grid_district']=pv_per_distr.index
             pv_per_distr.index = range(0,len(pv_per_distr))
             # delete empty grid districts
             index_names = pv_per_distr[pv_per_distr['installed capacity in kW'] == 0.0 ].index 
             pv_per_distr.drop(index_names,inplace=True)
-            # new overall installed capacity
-            total_pv_power = pv_rora['installed capacity in kW'].sum() + \
-                pv_agri['installed capacity in kW'].sum() + \
-                pv_per_distr['installed capacity in kW'].sum()
+            
+            if pv_per_distr['installed capacity in kW'].sum() > rest_cap:
+                scale_factor = rest_cap/pv_per_distr['installed capacity in kW'].sum()
+                pv_per_distr['installed capacity in kW'] = pv_per_distr['installed capacity in kW'] * scale_factor
+            
+                ### 
+                print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway verteilt.')
             
             # build pv parks on potential areas ariculture if still necessary
-            if total_pv_power < target_power: 
+            elif pv_per_distr['installed capacity in kW'].sum() < rest_cap:
+                
+                rest_cap = target_power - total_pv_power
                 
                 ###
-                print('Ausweitung existierender PV-Parks auf weiteren Potentialflächen Road & Railway NICHT ausreichend:')
-                x = target_power - total_pv_power
-                print('Restkapazität: '+str(x/1000)+' MW')
-                print('Restkapazität wird zusätzlich über übrige Potentialflächen Agriculture verteilt.')
+                print('Verteilung über Potentialflächen Road & Railway zur Erreichung der Zielkapazität NICHT ausreichend:')
+                print('Restkapazität: '+str(rest_cap/1000)+' MW')
+                print('Restkapazität wird über übrige Potentialflächen Agriculture verteilt.')
                 
-                pv_per_distr_2 = build_additional_pv(potentials_agri, pv_agri)
+                pv_per_distr_2 = build_additional_pv(potentials_agri, pv_agri, pow_per_area, con)
                 # change index to add different Dataframes in the end
                 pv_per_distr_2['grid_district']=pv_per_distr_2.index
                 pv_per_distr_2.index = range(len(pv_per_distr),2*len(pv_per_distr))
@@ -465,26 +470,19 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
                 index_names = pv_per_distr_2[pv_per_distr_2['installed capacity in kW'] == 0.0 ].index 
                 pv_per_distr_2.drop(index_names,inplace=True)
                 pv_per_distr.append(pv_per_distr_2)
-                # new overall installed capacity
-                total_pv_power = pv_rora['installed capacity in kW'].sum() + \
-                    pv_agri['installed capacity in kW'].sum() + \
-                    pv_per_distr['installed capacity in kW'].sum()
+
+                if pv_per_distr['installed capacity in kW'].sum() > rest_cap:
+                    scale_factor = rest_cap/pv_per_distr['installed capacity in kW'].sum()
+                    pv_per_distr['installed capacity in kW'] = pv_per_distr['installed capacity in kW'] * scale_factor
             
-            # linear scale farms to meet target if sum of installed capacity is too high   
-            if total_pv_power > target_power:
-                scale_factor = target_power/total_pv_power
-                
-                ###
-                print('Installierte Leistung ist nun größer als der Zielwert, es wird eine Skalierung vorgenommen:')
-                print('Saklierungsfaktor: '+str(scale_factor))
-                
-                pv_rora['installed capacity in kW'] = pv_rora['installed capacity in kW'] * scale_factor
-                pv_agri['installed capacity in kW'] = pv_agri['installed capacity in kW'] * scale_factor
-                pv_per_distr['installed capacity in kW'] = pv_per_distr['installed capacity in kW'] * scale_factor
-                # new overall installed capacity
-                total_pv_power = pv_rora['installed capacity in kW'].sum() + \
-                    pv_agri['installed capacity in kW'].sum() + \
-                    pv_per_distr['installed capacity in kW'].sum()
+                    ### 
+                    print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway und Agriculture verteilt.')
+            
+
+        # new overall installed capacity
+        total_pv_power = pv_rora['installed capacity in kW'].sum() + \
+        pv_agri['installed capacity in kW'].sum() + \
+        pv_per_distr['installed capacity in kW'].sum()
                 
         ###
         print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
@@ -495,16 +493,41 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
     
     
     def run_methodology():
+        
+        
+        ### PARAMETERS ###
+        
+        # TODO: change to parameters, add explanation
+        
+        con = db.engine()
+    
+        path = ''
+    
+        # assumption for areas of existing pv farms and power of new built pv farms
+        pow_per_area = 0.04 # kW per m² 
+            
+        # maximum distance for joining of potential areas (only small ones to big ones)
+        join_buffer = 10 # m
+            
+        # assumption for maximum distance of park with hv-power to next substation
+        max_dist_hv = 20000 # m
+            
+        # assumption for target value of installed capacity in Germany per scenario 
+        sql = "SELECT capacity, scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
+        target_power = (pd.read_sql(sql,con))*1000 # in kW
+
+        ### PARAMETERS ###
+    
     
         # MaStR-data: existing PV farms 
-        mastr = mastr_existing_pv()
+        mastr = mastr_existing_pv(path, pow_per_area)
     
         # files for depiction in QGis
         mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
         mastr['buffer'].to_file("MaStR_PVs_buffered.geojson", driver='GeoJSON')
     
         # database-data: potential areas for new PV farms
-        potentials_rora, potentials_agri = potential_areas()
+        potentials_rora, potentials_agri = potential_areas(con, join_buffer)
         
         # files for depiction in QGis        
         potentials_rora['geom'].to_file("potentials_rora_joined.geojson", driver='GeoJSON',index=True)
@@ -519,19 +542,19 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         pv_agri['geom'].to_file("potential_agri_selected.geojson", driver='GeoJSON')
         
         # build new PV farms
-        pv_rora = build_pv(pv_rora)
-        pv_agri = build_pv(pv_agri)
+        pv_rora = build_pv(pv_rora, pow_per_area)
+        pv_agri = build_pv(pv_agri, pow_per_area)
         
         # files for depiction in QGis
         pv_rora['centroid'].to_file("PVs_rora_new.geojson", driver='GeoJSON')
         pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
         
         # adapt grid level to new farms
-        pv_rora = adapt_grid_level(pv_rora)
-        pv_agri = adapt_grid_level(pv_agri)
+        pv_rora = adapt_grid_level(pv_rora, max_dist_hv, con)
+        pv_agri = adapt_grid_level(pv_agri, max_dist_hv, con)
         
         # check target value and adapt installed capacity if necessary
-        pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri)
+        pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
         
         # files for depiction in QGis
         pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
@@ -541,34 +564,7 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
         return pv_rora, pv_agri, pv_per_distr
 
 
-    def pv_parks(pv_rora, pv_agri, pv_per_distr):
-            
-            con = db.engine()
-    
-            path = ''
-    
-            # assumption for areas of existing pv farms and power of new built pv farms
-            pow_per_area = 0.04 # kW per m² 
-            
-            # maximum distance for joining of potential areas (only small ones to big ones)
-            join_buffer = 10 # m
-            
-            # assumption for maximum distance of park with hv-power to next substation
-            max_dist_hv = 20000 # m
-            
-            # assumption for target value of installed capacity in Germany per scenario & scenario name
-            sql = "SELECT capacity, scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
-            cur=con.cursor()
-            cur.execute(sql)
-            val = cur.fetchall()[0]
-            target_power = val[0]*1000 # in kW
-            scenario_name = val[1]
-            cur.close()
-            
-            
-            pv_rora, pv_agri, pv_per_distr = regio_of_pv_ground_mounted(path,con,
-                                                            pow_per_area, join_buffer, max_dist_hv, target_power)
-            
+    def pv_parks(pv_rora, pv_agri, pv_per_distr):           
             
             # prepare dataframe for integration in supply.egon_power_plants
             
@@ -603,12 +599,15 @@ def regio_of_pv_ground_mounted(path,con, pow_per_area, join_buffer, max_dist_hv,
             
             # integration in supply.egon_power_plants
             
-            # assumption for target value of installed capacity in Germany per scenario & scenario name
+            con = db.engine() 
+            
+            # scenario name
+            sql = "SELECT scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
+            scenario_name = pd.read_sql(sql,con)
+        
+            # maximum ID in egon_power_plants
             sql = "SELECT MAX(id) FROM supply.egon_power_plants"
-            cur=con.cursor()
-            cur.execute(sql)
-            max_id = cur.fetchone()[0]
-            cur.close()
+            max_id = pd.read_sql(sql,con)
             
             pv_park_id = max_id+1
             for pv in pv_parks.index:
