@@ -1,5 +1,7 @@
 """The API for configuring datasets."""
 
+from __future__ import annotations
+
 from collections import abc
 from dataclasses import dataclass
 from functools import reduce
@@ -119,7 +121,7 @@ class Tasks(dict):
 class Dataset:
     name: str
     version: str
-    dependencies: Iterable[Union["Dataset", Task]] = ()
+    dependencies: Iterable[Union[Dataset, Task]] = ()
     tasks: TaskGraph = ()
 
     def check_version(self, after_execution=()):
