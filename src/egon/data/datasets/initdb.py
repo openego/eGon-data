@@ -4,7 +4,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 
 
-def initdb():
+def setup():
     """ Initialize the local database used for data processing. """
     engine = db.engine()
     with engine.connect().execution_options(autocommit=True) as connection:
@@ -12,9 +12,9 @@ def initdb():
             connection.execute(f"CREATE EXTENSION IF NOT EXISTS {extension}")
 
 
-def dataset(): return Dataset(
+def database_structure(): return Dataset(
     name="database-structure",
     version="0.0.0",
     dependencies=[],
-    tasks=PythonOperator(task_id="initdb", python_callable=initdb),
+    tasks=PythonOperator(task_id="setup", python_callable=setup),
 )
