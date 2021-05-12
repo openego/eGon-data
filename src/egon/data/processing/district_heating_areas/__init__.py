@@ -102,7 +102,8 @@ def create_tables():
 
     engine = db.engine()
     DistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
-    MapZensusDistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
+    MapZensusDistrictHeatingAreas.__table__.create(bind=engine,
+                                                   checkfirst=True)
 
 
 # Methods used are explained here:
@@ -116,7 +117,9 @@ def load_census_data():
     The census apartment and the census building table contains information
     about the heating type. The information are loaded from the apartment
     table, because they might be more useful when it comes to the estimation of
-    the connection rates.
+    the connection rates. Only cells with a connection rate equal to or larger
+    than 30% (based on the census apartment data) are included in the returned
+    district_heat GeoDataFrame.
 
     Parameters
     ----------
@@ -181,7 +184,6 @@ def load_census_data():
 
     # calculate the connection rate for all census cells with DH
     # adding it to the district_heat geodataframe
-
     district_heat['connection_rate'] = district_heat['quantity'].div(
         heating_type['quantity'])[district_heat.index]
     # district_heat.head
@@ -189,13 +191,6 @@ def load_census_data():
 
     district_heat = district_heat[district_heat['connection_rate'] >= 0.3]
     # district_heat.columns
-
-    """
-    Alternative:
-    Return a geodataframe with the number of DH supplied flats and all flats
-    to calculate the connection rate in a PSD from the number of flats instead
-    of the calculation of an average
-    """
 
     return district_heat, heating_type
 
@@ -265,20 +260,13 @@ def select_high_heat_demands(heat_demand):
 
 def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None):
     """
-    This function groups polygons which are close to each other.
+    Group polygons which are close to each other.
 
-    Heat demand density polygons can be grouped into prospective district
-    heating supply districts (PSDs). Only cells with a minimum heat demand
-    density (e.g. >100 GJ/(ha a)) are considered. Therefore, the
-    select_high_heat_demands() function is used.
-
-    Census cells with district heating supply can be grouped into
-    existing district heating system areas.
-
-    Method
-    - buffer around the cell polygons
-    - union the intersecting buffer polygons
-    - union the cell polygons which are within one unioned buffer polygon
+    This function creates buffers around the given cell polygons (called
+    "raw_polygons") and unions the intersecting buffer polygons. Afterwards, it
+    unions the cell polygons which are within one unified buffer polygon.
+    If requested, the cells being in areas fulfilling the minimum heat demand
+    criterium are selected.
 
     Parameters
     ----------
@@ -333,11 +321,13 @@ def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None):
         'residential_and_service_demand' in raw_polygons.columns):
          # total_heat_demand = join.dissolve('area_id', aggfunc='sum')
          # type(large_areas)
-         # filtered = join.groupby(['area_id'])['residential_and_service_demand'].agg('sum') > 0.7
+         # filtered = join.groupby(['area_id'])[
+         #     'residential_and_service_demand'].agg('sum') > 0.7
          large_areas = gpd.GeoDataFrame(join.groupby(['area_id'])
                                         ['residential_and_service_demand'].
                                         agg('sum'))
-         # large_areas = large_areas[large_areas['residential_and_service_demand'] > minimum_total_demand]
+         # large_areas = large_areas[large_areas[
+         #     'residential_and_service_demand'] > minimum_total_demand]
          large_areas = (large_areas['residential_and_service_demand'] >
                         minimum_total_demand)
          join = join[join.area_id.isin(large_areas[large_areas].index)]
@@ -353,12 +343,42 @@ def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None):
 
 def district_heating_areas(scenario_name, plotting = False):
     """
-    This function creates scenario specific district heating areas.
+    Create scenario specific district heating areas considering on census data.
 
-    Load district heating share from the scenario table and demarcate the
-    areas.
+    This function loads the district heating share from the scenario table and
+    demarcate the scenario specific district heating areas. To do so it
+    uses the census data on flats currently supplied with district heat, which
+    are supplied selected first, if the estimated connection rate >= 30%.
 
-    ...
+    All scenarios use the Prospective Supply Districts (PSDs) made for the
+    eGon2035 scenario to identify the areas where additional district heating
+    supply is feasible. One PSD dataset is to defined which is constant over
+    the years to allow comparisons. Moreover, it is
+    assumed that the eGon2035 PSD dataset is suitable, even though the heat
+    demands will continue to decrease from 2035 to 2050, because district
+    heating systems will be to planned and built before 2050, to exist in 2050.
+
+    It is assumed that the connection rate in cells with district heating will
+    be a 100%. That is because later in project the number of buildings per
+    cell will be used and connection rates not being 0 or 100% will create
+    buildings which are not fully supplied by one technology.
+
+    The cell polygons which carry information (like heat demand etc.) are
+    grouped into areas which are close to each other.
+    Only cells with a minimum heat demand density (e.g. >100 GJ/(ha a)) are
+    considered when creating PSDs. Therefore, the select_high_heat_demands()
+    function is used. There is minimum heat demand per PSDs to achieve a
+    certain size.
+    While the grouping buffer for the creation of Prospective Supply Districts
+    (PSDs) is 200m as in the sEEnergies project, the buffer for grouping census
+    data cell with an estimated connection rate >= 30% is 500m.
+    The 500m buffer is also used when the resulting district heating areas are
+    grouped, because they are built upon the existing district heating systems.
+
+    To reduce the final number of district heating areas having the size of
+    only one hectare, the minimum heat demand critrium is also applied when
+    grouping the cells with census data on district heat.
+
 
     Parameters
     ----------
@@ -366,7 +386,7 @@ def district_heating_areas(scenario_name, plotting = False):
         name of scenario to be studies
 
     plotting: boolean
-        if True, figures will be created
+        if True, figure showing the heat demand density curve will be created
 
 
     Returns
@@ -382,16 +402,9 @@ def district_heating_areas(scenario_name, plotting = False):
         Do "area_grouping(load_census_data()[0])" only once, not for all
         scenarios.
 
-        There are one-cell sized district heating areas (because of the
-        census information). Implement
-        - a minimum number of cells z.B. 2/3 or
-        - a minimum heat demand?
-        in the areas_grouping function.
+        Check the applied buffer distances, find a justification for the
+        documentation
 
-        Make sure that puting data into the area_grouping, does not lead
-        totally wrong data e.g. aggregated connection rates.
-
-        Create the diagram with the curve, maybe in the final function or here
     """
 
     # Load district heating shares from the scenario table
@@ -449,21 +462,20 @@ def district_heating_areas(scenario_name, plotting = False):
     # select cells to be supplied with district heating until district
     # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]
-    # group the resulting scenario specify district heating areas
 
     print(f"""Minimum heat demand density for cells with new district heat
           supply in scenario {scenario_name} is
           {new_areas.residential_and_service_demand.tail(1).values[0]}
           MWh / (ha a).""")
-    print(f"""Number of cells with new district heat
-          supply in scenario {scenario_name} is
-          {len(new_areas)}.""")
+    print(f"""Number of cells with new district heat supply in scenario
+          {scenario_name} is {len(new_areas)}.""")
 
-    check = gpd.GeoDataFrame(
-        cells[['residential_and_service_demand', 'geom_polygon']].append(
-            new_areas[['residential_and_service_demand', 'geom_polygon']]),
-        geometry='geom_polygon')
+    # check = gpd.GeoDataFrame(
+    #     cells[['residential_and_service_demand', 'geom_polygon']].append(
+    #         new_areas[['residential_and_service_demand', 'geom_polygon']]),
+    #     geometry='geom_polygon')
 
+    # group the resulting scenario specific district heating areas
     scenario_dh_area = area_grouping(gpd.GeoDataFrame(
         cells[['residential_and_service_demand', 'geom_polygon']].append(
             new_areas[['residential_and_service_demand', 'geom_polygon']]),
@@ -475,7 +487,6 @@ def district_heating_areas(scenario_name, plotting = False):
     # scenario_dh_area.sort_index()
     # cells[cells.index==1416974]
 
-
     # store the results in the database
     scenario_dh_area["scenario"] = scenario_name
     scenario_dh_area["version"] = '0.0.0'
@@ -486,10 +497,8 @@ def district_heating_areas(scenario_name, plotting = False):
         'map_zensus_district_heating_areas',
                                        schema='demand', con=db.engine(),
                                        if_exists="append")
-    # scenario_dh_area.columns
 
     # Create polygons around the grouped cells and store them in the database
-    # CHECK ALTERNATIVE METHODS
     # join.dissolve(columnname).convex_hull.plot() # without holes, too big
     areas_dissolved = scenario_dh_area.dissolve('area_id', aggfunc='sum')
     areas_dissolved["scenario"] = scenario_name
@@ -506,7 +515,8 @@ def district_heating_areas(scenario_name, plotting = False):
     if len(areas_dissolved[areas_dissolved.area == 100*100]) > 0:
         print(f"""District heating areas ids of single zensus cells in
               district heating areas:
-              {areas_dissolved[areas_dissolved.area == 100*100].index.values}""")
+              {areas_dissolved[areas_dissolved.area == 100*100].index.values
+               }""")
         print(f"""Zensus_population_ids of single zensus cells
               in district heating areas:
               {scenario_dh_area[scenario_dh_area.area_id.isin(
@@ -524,11 +534,14 @@ def district_heating_areas(scenario_name, plotting = False):
 
     if plotting:
 
-        # create diagrams for visualisation, sorted by HDD
-        # sorted census dh first, sorted new areas, left overs, DH share
+        # create diagrams for visualisation:
+        # fristly, census district heating cell sorted by heat demand density,
+        # secondly, sorted new area cells sorted by heat demand density
+        # remaining cells sorted by heat demand density:
         # create one dataframe with all data: first the cells with existing,
         # then the cells with new district heating systems and in the end the
-        # ones without
+        # ones without;
+        # DH share as a vertical line
 
         fig, ax = plt.subplots(1, 1)
         # add the district heating share as a line
