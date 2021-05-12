@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
-from egon.data.datasets import initdb
+from egon.data.datasets import initdb, openstreetmap
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -15,11 +15,9 @@ import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.mastr as mastr
-import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.vg250 as import_vg250
 import egon.data.processing.demandregio as process_dr
-import egon.data.processing.openstreetmap as process_osm
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.osmtgmod as osmtgmod
@@ -53,27 +51,12 @@ with airflow.DAG(
     schedule_interval=None,
 ) as pipeline:
 
-    initdb.database_structure().insert_into(pipeline)
+    dbs = initdb.database_structure()
+    dbs.insert_into(pipeline)
     setup = pipeline.task_dict["setup"]
 
-    # Openstreetmap data import
-    osm_download = PythonOperator(
-        task_id="download-osm",
-        python_callable=import_osm.download_pbf_file,
-    )
-    osm_import = PythonOperator(
-        task_id="import-osm",
-        python_callable=import_osm.to_postgres,
-    )
-    osm_migrate = PythonOperator(
-        task_id="migrate-osm",
-        python_callable=process_osm.modify_tables,
-    )
-    osm_add_metadata = PythonOperator(
-        task_id="add-osm-metadata",
-        python_callable=import_osm.add_metadata,
-    )
-    setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
+    osm = openstreetmap.OpenStreetMap(dependencies=[dbs])
+    osm.insert_into(pipeline)
 
     # VG250 (Verwaltungsgebiete 250) data import
     vg250_download = PythonOperator(
@@ -330,7 +313,7 @@ with airflow.DAG(
     create_voronoi = PythonOperator(
         task_id="create_voronoi", python_callable=substation.create_voronoi
     )
-    osm_add_metadata >> substation_tables >> substation_functions
+    osm.tasks["add-osm-metadata"] >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction >> create_voronoi
     substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
