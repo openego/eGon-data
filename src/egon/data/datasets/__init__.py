@@ -28,6 +28,19 @@ def setup():
     DependencyGraph.create(bind=db.engine(), checkfirst=True)
 
 
+# TODO: Figure out how to use a mapped class as an association table.
+#
+# Trying it out, I ran into quite a few problems and didn't have time to do
+# further research. The benefits are mostly just convenience, so it doesn't
+# have a high priority. But I'd like to keep the code I started out with to
+# have a starting point for me or anybody else trying again.
+#
+# class DependencyGraph(Base):
+#     __tablename__ = "dependency_graph"
+#     __table_args__ = {"schema": SCHEMA}
+#     dependency_id = Column(Integer, ForeignKey(Model.id), primary_key=True,)
+#     dependent_id = Column(Integer, ForeignKey(Model.id), primary_key=True,)
+
 DependencyGraph = Table(
     "dependency_graph",
     Base.metadata,
