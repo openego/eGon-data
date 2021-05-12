@@ -24,22 +24,18 @@ import egon.data.subprocess as subprocess
 
 
 def download_pbf_file():
-    """Download OpenStreetMap `.pbf` file.
-
-    """
+    """Download OpenStreetMap `.pbf` file."""
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
-    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
-        source_url =osm_config["source"]["url"]
+    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        source_url = osm_config["source"]["url"]
         target_path = osm_config["target"]["path"]
     else:
         source_url = osm_config["source"]["url_testmode"]
         target_path = osm_config["target"]["path_testmode"]
 
-    target_file = os.path.join(
-        os.path.dirname(__file__), target_path
-    )
+    target_file = os.path.join(os.path.dirname(__file__), target_path)
 
     if not os.path.isfile(target_file):
         urlretrieve(source_url, target_file)
@@ -63,14 +59,12 @@ def to_postgres(num_processes=4, cache_size=4096):
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
-    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
+    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         target_path = osm_config["target"]["path"]
     else:
         target_path = osm_config["target"]["path_testmode"]
 
-    input_file = os.path.join(
-        os.path.dirname(__file__), target_path
-    )
+    input_file = os.path.join(os.path.dirname(__file__), target_path)
 
     # Prepare osm2pgsql command
     cmd = [
@@ -98,21 +92,17 @@ def to_postgres(num_processes=4, cache_size=4096):
 
 
 def add_metadata():
-    """Writes metadata JSON string into table comment.
-
-    """
+    """Writes metadata JSON string into table comment."""
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]
 
-    if settings()['egon-data']['--dataset-boundary'] == 'Everything':
+    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         osm_url = osm_config["original_data"]["source"]["url"]
         target_path = osm_config["original_data"]["target"]["path"]
     else:
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
         target_path = osm_config["original_data"]["target"]["path_testmode"]
-    spatial_and_date = os.path.basename(
-        target_path
-    ).split("-")
+    spatial_and_date = os.path.basename(target_path).split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"
