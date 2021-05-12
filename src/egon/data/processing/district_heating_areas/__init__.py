@@ -898,7 +898,7 @@ def study_prospective_district_heating_areas():
     """
 
     # load the total heat demand by census cell (residential plus service)
-    HD_2015 = load_heat_demands('eGon2015')
+    # HD_2015 = load_heat_demands('eGon2015')
     # status quo heat demand data are part of the regluar database content
     # to get them, line 463 ("if not '2015' in source.stem:") has to be
     # deleted from
@@ -911,7 +911,7 @@ def study_prospective_district_heating_areas():
     HD_2050 = load_heat_demands('eGon100RE')
 
     # select only cells with heat demands > 100 GJ / (ha a)
-    HD_2015_above_100GJ = select_high_heat_demands(HD_2015)
+    # HD_2015_above_100GJ = select_high_heat_demands(HD_2015)
     HD_2035_above_100GJ = select_high_heat_demands(HD_2035)
     HD_2050_above_100GJ = select_high_heat_demands(HD_2050)
 
@@ -921,10 +921,10 @@ def study_prospective_district_heating_areas():
     # after decision for one year/scenario (here 2035), in the pipeline PSDs
     # are only calculeated for the one selected year/scenario;
     # here you can see all years/scenarios:
-    PSD_2015_201m = area_grouping(HD_2015_above_100GJ, distance=200,
-                                  minimum_total_demand=(10000/3.6)
-                                   ).dissolve('area_id', aggfunc='sum')
-    PSD_2015_201m.to_file("PSDs_2015based.shp")
+    # PSD_2015_201m = area_grouping(HD_2015_above_100GJ, distance=200,
+    #                               minimum_total_demand=(10000/3.6)
+    #                                ).dissolve('area_id', aggfunc='sum')
+    # PSD_2015_201m.to_file("PSDs_2015based.shp")
     PSD_2035_201m = area_grouping(HD_2035_above_100GJ, distance=200,
                                   minimum_total_demand=(10000/3.6)
                                   ).dissolve('area_id', aggfunc='sum')
@@ -942,12 +942,12 @@ def study_prospective_district_heating_areas():
     # https://www.earthdatascience.org/courses/scientists-guide-to-plotting-data-in-python/plot-with-matplotlib/introduction-to-matplotlib-plots/customize-plot-colors-labels-matplotlib/
     fig, ax = plt.subplots(1, 1)
     # add the sorted heat demand densities
-    HD_2015 = HD_2015.sort_values('residential_and_service_demand',
-                                  ascending=False).reset_index()
-    HD_2015["Cumulative_Sum"] = (HD_2015.residential_and_service_demand.
-                                 cumsum()) / 1000000
-    ax.plot(HD_2015.Cumulative_Sum,
-            HD_2015.residential_and_service_demand, label='eGon2015')
+    # HD_2015 = HD_2015.sort_values('residential_and_service_demand',
+    #                               ascending=False).reset_index()
+    # HD_2015["Cumulative_Sum"] = (HD_2015.residential_and_service_demand.
+    #                              cumsum()) / 1000000
+    # ax.plot(HD_2015.Cumulative_Sum,
+    #         HD_2015.residential_and_service_demand, label='eGon2015')
 
     HD_2035 = HD_2035.sort_values('residential_and_service_demand',
                                   ascending=False).reset_index()
