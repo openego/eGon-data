@@ -11,7 +11,6 @@ from airflow import DAG
 from airflow.exceptions import AirflowSkipException
 from airflow.operators import BaseOperator as Task
 from airflow.operators.python_operator import PythonOperator
-from airflow.utils.dates import days_ago
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -19,7 +18,6 @@ from egon.data import db
 
 Base = declarative_base()
 SCHEMA = "metadata"
-DEFAULTS = {"start_date": days_ago(1)}
 
 
 def setup():
@@ -203,7 +201,7 @@ class Dataset:
 
     def insert_into(self, dag: DAG):
         for task in self.tasks.values():
-            for attribute in DEFAULTS:
+            for attribute in dag.default_args:
                 if getattr(task, attribute) is None:
-                    setattr(task, attribute, DEFAULTS[attribute])
+                    setattr(task, attribute, dag.default_args[attribute])
         dag.add_tasks(self.tasks.values())
