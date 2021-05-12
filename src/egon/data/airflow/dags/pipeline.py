@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
-from egon.data.datasets import initdb, openstreetmap
+from egon.data.datasets import database, openstreetmap
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -51,11 +51,11 @@ with airflow.DAG(
     schedule_interval=None,
 ) as pipeline:
 
-    dbs = initdb.database_structure()
-    dbs.insert_into(pipeline)
-    setup = pipeline.task_dict["setup"]
+    database_setup = database.DatabaseSetup()
+    database_setup.insert_into(pipeline)
+    setup = database_setup.tasks["database-setup"]
 
-    osm = openstreetmap.OpenStreetMap(dependencies=[dbs])
+    osm = openstreetmap.OpenStreetMap(dependencies=[setup])
     osm.insert_into(pipeline)
 
     # VG250 (Verwaltungsgebiete 250) data import
