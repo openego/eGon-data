@@ -36,6 +36,11 @@ def create_landuse_table():
     """
     cfg = egon.data.config.datasets()["landuse"]["target"]
 
+    # Create schema if not exists
+    db.execute_sql(
+        f"""CREATE SCHEMA IF NOT EXISTS {cfg['schema']};"""
+    )
+
     # Drop tables
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
