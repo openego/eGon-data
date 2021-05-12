@@ -20,7 +20,8 @@ import geopandas as gpd
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon
 from matplotlib import pyplot as plt
-
+from egon.data.processing.district_heating_areas.plot import (
+            plot_heat_density_sorted)
 # for metadata creation
 import json
 # import time
@@ -531,78 +532,26 @@ def district_heating_areas(scenario_name, plotting = False):
                                              if_exists="append")
     # Alternative:
     # join.groupby("columnname").demand.sum()
-
+    # add the sorted heat demand density curve
+    no_district_heating = heat_demand_cells[~heat_demand_cells.index.isin(
+        scenario_dh_area.index)]
+    collection = pd.concat([cells.sort_values(
+                                'residential_and_service_demand',
+                                ascending=False),
+                            new_areas.sort_values(
+                                'residential_and_service_demand',
+                                ascending=False),
+                            no_district_heating.sort_values(
+                                'residential_and_service_demand',
+                                ascending=False)],
+                           ignore_index=True)
+    collection["Cumulative_Sum"] = (collection.
+                                    residential_and_service_demand.
+                                    cumsum()) / 1000000
     if plotting:
+        plot_heat_density_sorted({scenario_name:collection}, scenario_name)
 
-        # create diagrams for visualisation:
-        # fristly, census district heating cell sorted by heat demand density,
-        # secondly, sorted new area cells sorted by heat demand density
-        # remaining cells sorted by heat demand density:
-        # create one dataframe with all data: first the cells with existing,
-        # then the cells with new district heating systems and in the end the
-        # ones without;
-        # DH share as a vertical line
-
-        fig, ax = plt.subplots(1, 1)
-        # add the district heating share as a line
-        procent = round(district_heating_share * 100, 0)
-        plt.axvline(x=total_district_heat / 1000000, ls = "--", lw = 0.5,
-                    label = (f'District Heating Share of {procent} %'),
-                    color = 'red')
-        # add the sorted heat demand density curve
-        no_district_heating = heat_demand_cells[~heat_demand_cells.index.isin(
-            scenario_dh_area.index)]
-        collection = pd.concat([cells.sort_values(
-                                    'residential_and_service_demand',
-                                    ascending=False),
-                                new_areas.sort_values(
-                                    'residential_and_service_demand',
-                                    ascending=False),
-                                no_district_heating.sort_values(
-                                    'residential_and_service_demand',
-                                    ascending=False)],
-                               ignore_index=True)
-        collection["Cumulative_Sum"] = (collection.
-                                        residential_and_service_demand.
-                                        cumsum()) / 1000000
-
-        ax.plot(collection.Cumulative_Sum,
-                collection.residential_and_service_demand, label =
-                " Heat demand densities, sorted")
-
-        # annotations
-        x1 = total_district_heat / 1000000 / 2
-        x2 = x1 * 4
-        # x2 = (total_district_heat + ((heat_demand_cells[
-        #     'residential_and_service_demand'].sum() -
-        #     total_district_heat) / 2)) / 1000000
-        y = heat_demand_cells['residential_and_service_demand'].max() * 0.7
-
-        ax.text(x1, y, "District\nheat", ha="center", va="center", size=8,
-                bbox=dict(boxstyle="round, pad=0.5", fc="none",
-                          ec="red", # lw=2
-                          ))
-        ax.text(x2, y, "Individual\nheat supply", ha='center', va="center",
-                size=8,
-                bbox=dict(boxstyle="round, pad=0.5", fc="none",
-                          ec="red", # lw=2
-                          ))
-
-        ax.set(title = ("Heat Sector in " + scenario_name))
-        ax.set_xlabel("Cumulative Heat Demand [TWh / a]")
-        ax.set_ylabel("Heat Demand Densities [MWh / (ha a)]")
-
-        # remove empty space between axis and graph
-        ax.margins(x=0, y=0)
-        # axes style
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)
-        ax.plot(0, 1, "^k", transform=ax.get_xaxis_transform(), clip_on=False)
-        ax.legend()  # or: plt.legend()
-        plt.savefig(f'HeatDemandDensities_Curve_{scenario_name}.png')
-
-    return None
+    return collection
 
 
 def add_metadata():
@@ -1000,7 +949,7 @@ def study_prospective_district_heating_areas():
     return None
 
 
-def district_heating_areas_demarcation():
+def district_heating_areas_demarcation(plotting=True):
     """
     Load scenario specific district heating areas with metadata into database.
 
@@ -1013,7 +962,8 @@ def district_heating_areas_demarcation():
 
     Parameters
     ----------
-        None
+    plotting: boolean
+        if True, figure showing the heat demand density curve will be created
 
     Returns
     -------
@@ -1050,10 +1000,15 @@ def district_heating_areas_demarcation():
     # district_heat_zensus, heating_type_zensus = load_census_data()
     # Zenus_DH_areas_201m = area_grouping(district_heat_zensus)
 
+    heat_density_per_scenario = {}
     # scenario specific district heating areas
-    district_heating_areas('eGon2035', plotting = True)
-    district_heating_areas('eGon100RE', plotting = True)
+    heat_density_per_scenario['eGon2035'] = district_heating_areas(
+        'eGon2035', plotting)
+    heat_density_per_scenario['eGon100RE'] = district_heating_areas(
+        'eGon100RE', plotting)
 
+    if plotting:
+        plot_heat_density_sorted(heat_density_per_scenario)
     # if you want to study/export the Prospective Supply Districts (PSDs)
     # for all scenarios
     study_prospective_district_heating_areas()
