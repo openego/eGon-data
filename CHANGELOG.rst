@@ -82,6 +82,8 @@ Added
   `#214 <https://github.com/openego/eGon-data/issues/214>`_
 * Integrate weather data and renewable feedin timeseries
   `#19 <https://github.com/openego/eGon-data/issues/19>`_
+* Create and import district heating areas
+  `#162 <https://github.com/openego/eGon-data/issues/162>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
