@@ -192,7 +192,7 @@ def osmtgmod(
         print('Manually updating geometry of substation in Garenfeld')
         db.execute_sql(
             """DROP TRIGGER IF EXISTS
-            otg_power_ways_update ON power_ways CASCADE """)
+            power_ways_update ON power_ways CASCADE """)
 
         db.execute_sql(
             """
