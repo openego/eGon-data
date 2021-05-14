@@ -156,7 +156,7 @@ def load_census_data():
         f"""SELECT flats.zensus_population_id, flats.characteristics_text,
         flats.quantity, flats.quantity_q, pop.geom_point,
         pop.geom AS geom_polygon
-        FROM society.destatis_zensus_apartment_per_ha AS flats
+        FROM society.egon_destatis_zensus_apartment_per_ha AS flats
         JOIN society.destatis_zensus_population_per_ha AS pop
         ON flats.zensus_population_id = pop.id
         AND flats.characteristics_text = 'Fernheizung (Fernwärme)'
@@ -169,7 +169,7 @@ def load_census_data():
     heating_type = db.select_geodataframe(
         f"""SELECT flats.zensus_population_id,
         SUM(flats.quantity) AS quantity, pop.geom AS geom_polygon
-        FROM society.destatis_zensus_apartment_per_ha AS flats
+        FROM society.egon_destatis_zensus_apartment_per_ha AS flats
         JOIN society.destatis_zensus_population_per_ha AS pop
         ON flats.zensus_population_id = pop.id
         AND flats.attribute = 'HEIZTYP'
