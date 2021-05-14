@@ -133,3 +133,5 @@ Bug fixes
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
 * Replace wrong table name in SQL function used in substation extraction
   `#236 <https://github.com/openego/eGon-data/issues/236>`_
+* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld 
+  `#241 <https://github.com/openego/eGon-data/issues/241>`_
