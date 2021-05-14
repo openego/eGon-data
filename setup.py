@@ -89,6 +89,7 @@ setup(
         "geopandas>=0.9.0",
         "importlib-resources",
         "loguru",
+        "matplotlib",
         "oedialect==0.0.8",
         "psycopg2",
         "pyaml",

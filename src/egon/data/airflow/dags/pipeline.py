@@ -33,6 +33,7 @@ import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.renewable_feedin as import_feedin
+import egon.data.processing.district_heating_areas as district_heating_areas
 
 from egon.data import db
 
@@ -336,6 +337,7 @@ with airflow.DAG(
         task_id="osmtgmod_osm_import",
         python_callable=osmtgmod.import_osm_data,
     )
+
     run_osmtgmod = PythonOperator(
         task_id="run_osmtgmod",
         python_callable=osmtgmod.run_osmtgmod,
@@ -366,7 +368,7 @@ with airflow.DAG(
     )
     osmtgmod_substation >> create_voronoi
 
-    
+
     define_mv_grid_districts = PythonOperator(
         task_id="define_mv_grid_districts",
         python_callable=mvgd.define_mv_grid_districts
@@ -500,3 +502,19 @@ with airflow.DAG(
                              feedin_pv, feedin_solar_thermal]
     vg250_clean_and_prepare >> [feedin_wind_onshore,
                              feedin_pv, feedin_solar_thermal]
+
+    # District heating areas demarcation
+    create_district_heating_areas_table = PythonOperator(
+        task_id="create-district-heating-areas-table",
+        python_callable=district_heating_areas.create_tables
+    )
+    import_district_heating_areas = PythonOperator(
+        task_id="import-district-heating-areas",
+        python_callable=district_heating_areas.
+        district_heating_areas_demarcation
+    )
+    setup >> create_district_heating_areas_table
+    create_district_heating_areas_table >> import_district_heating_areas
+    zensus_misc_import >> import_district_heating_areas
+    heat_demand_import >> import_district_heating_areas
+    scenario_input_import >> import_district_heating_areas
