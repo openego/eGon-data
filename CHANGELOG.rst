@@ -80,6 +80,8 @@ Added
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
 * Extract landuse areas from OSM 
   `#214 <https://github.com/openego/eGon-data/issues/214>`_
+* Integrate weather data and renewable feedin timeseries
+  `#19 <https://github.com/openego/eGon-data/issues/19>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -129,3 +131,5 @@ Bug fixes
   `#217 <https://github.com/openego/eGon-data/issues/217>`_
 * Import heat demand raster files successively to fix import for dataset==Everything
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
+* Replace wrong table name in SQL function used in substation extraction
+  `#236 <https://github.com/openego/eGon-data/issues/236>`_
