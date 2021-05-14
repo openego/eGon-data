@@ -108,9 +108,9 @@ def temperature_profile_extract():
             temperature_month = pd.DataFrame()
             
             ##csv file available in the nextcloud folder
-            #os.chdir(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones')
+            #path = '/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones'
             station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
-            
+            #station_location=pd.read_csv(os.path.join(path,'station_coordinates.csv'))
             
             for row in station_location.index:
                 station_name=station_location.iloc[row,0]            
@@ -147,16 +147,20 @@ def temp_interval():
 ###generate idp pool from the profiles generated from the load profile generator
 def idp_pool_generator():
     ###read hdf5 files with the generated profiles from the load profile generator
-    path = os.path.join(os.path.join(os.getcwd(), 'heat_data.hdf5')
+    #path = os.path.join(r'/home/student/Documents/egon_AM/heat_demand_generation/idp pool generation',
+                        'heat_data.hdf5')
+    path = os.path.join(os.path.join(os.getcwd(), 'heat_data.hdf5'))
 
-    index = pd.date_range(pd.datetime(2011,1,1,0), periods = 8760, freq='H')
+    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
 
     sfh = pd.read_hdf(path, key ='SFH')
     mfh = pd.read_hdf(path, key ='MFH')
     temp = pd.read_hdf(path, key ='temperature')
     
     ######can wuerzburg file directly be added into the hdf5 file????
-    temp_wuerzburg = pd.read_csv(os.path.join(os.path.join(os.getcwd(),'temp_2011_Wuerzburg.csv'))
+    #temp_wuerzburg = pd.read_csv(os.path.join(r'/home/student/Documents/egon_AM/feb_analysis/5_03',
+                                              'temp_2011_Wuerzburg.csv'))
+    temp_wuerzburg = pd.read_csv(os.path.join(os.path.join(os.getcwd(),'temp_2011_Wuerzburg.csv')))
     temp_wuerzburg.drop(columns ='Unnamed: 0', inplace=True)
     temp_wuerzburg.set_index(index, inplace=True)
     temp_wuerzburg.rename(columns = {'temperature':'Wuerzburg'}, inplace=True)
@@ -254,25 +258,43 @@ def idp_pool_generator():
     for s in stock:
          for m in class_list:
              df_name = globals()[f'idp_collection_class_{m}_{s}']
-             globals()[f'idp_collection_class_{m}_{s}_norm']=df_name.apply(pool_normalize)
-        
-
+             globals()[f'idp_collection_class_{m}_{s}_norm']=df_name.apply(pool_normalize)    
+    
+    return [idp_collection_class_3_SFH_norm,idp_collection_class_4_SFH_norm,idp_collection_class_5_SFH_norm,
+            idp_collection_class_6_SFH_norm,idp_collection_class_7_SFH_norm,idp_collection_class_8_SFH_norm,
+            idp_collection_class_9_SFH_norm,idp_collection_class_10_SFH_norm,idp_collection_class_3_MFH_norm,
+            idp_collection_class_4_MFH_norm,idp_collection_class_5_MFH_norm, idp_collection_class_6_MFH_norm,
+            idp_collection_class_7_MFH_norm,idp_collection_class_8_MFH_norm,idp_collection_class_9_MFH_norm,
+            idp_collection_class_10_MFH_norm]
 
 #convert the multiple idp pool into a single dataframe
 def idp_df_generator():
-    stock,class_list = idp_pool()
+    idp_list = idp_pool_generator()
+    stock=['MFH','SFH']
+    class_list=[3,4,5,6,7,8,9,10] 
     idp_df = pd.DataFrame(columns=['idp', 'house', 'temperature_class'])
     for s in stock:
         for m in class_list:
-            var_name=globals()[f'idp_collection_class_{m}_{s}']
+            #var_name=globals()[f'idp_collection_class_{m}_{s}']
+            if s =='SFH':
+              i = class_list.index(m)
+            if s == 'MFH':
+              i = class_list.index(m) + 8
+            current_pool = idp_list[i]
             idp_df = idp_df.append(
                 pd.DataFrame(
                     data = {
-                        'idp': var_name.transpose().values.tolist(),
+                        'idp': current_pool.transpose().values.tolist(),
                         'house': s,
                         'temperature_class': m
                         }))
-    return idp_df
+    idp_df = idp_df.reset_index(drop=True)
+    idp_df['idp'] =idp_df.idp.apply(lambda x: np.array(x)) 
+    
+    ####write to the database
+        
+    return idp_df 
+    
 
 ##extracting and adjusting the demand data to obtain desired structure
 ## considering only residential for 2035 scenario
@@ -324,8 +346,9 @@ def annual_demand_generator():
         demand_geom.columns.difference(['demand', 'grid_id', 'geom','zensus_population_id']), 1)
     demand_geom['geom'] = demand_geom['geom'].to_crs(epsg=4326)
     ####import demand geo ###shape file available in the next cloud link
-    temperature_zones = gpd.read_file(
-        '/home/student/Documents/egon_AM/Maps/Try_Climate_Zone.shp')
+    #temperature_zones = gpd.read_file(
+        '/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones/Try_Climate_Zone.shp')###change this file location
+    temperature_zones = gpd.read_file(os.path.join(os.getcwd(),'TRY_Climate_Zones','Try_Climate_Zone.shp'))
     temperature_zones.sort_values('Zone', inplace=True)
     temperature_zones.reset_index(inplace=True)
     temperature_zones.drop(columns=['index', 'Id'], inplace=True, axis=0)
@@ -379,83 +402,88 @@ def annual_demand_generator():
     all_temperature_interval = all_temperature_interval.resample('D').max()
     
     def interval_allocation(x):
-        if x == 'Hamburg-Fuhlsbuettel':
+        if x == 'Hamburg_Fuhlsbuettel':
             return np.array(all_temperature_interval['Hamburg_Fuhlsbuettel'])
-        if x == 'Rostock-Warnemuende':
+        if x == 'Rostock_Warnemuende':
             return np.array(all_temperature_interval['Rostock_Warnemuende'])
         if x == 'Bremerhaven':
             return np.array(all_temperature_interval['Bremerhaven'])
+        
+        ####other station to be added for the whole database
     
     demand_count['Temperature_interval'] = demand_count['Station'].apply(
         interval_allocation)
     demand_count.drop(demand_count.columns.difference(
-        ['zensus_population_id', 'demand', 'SFH', 'MFH', 'Temperature_interval']), axis=1, inplace=True)
+        ['zensus_population_id', 'demand', 'SFH', 'MFH', 'Temperature_interval','Station']), axis=1, inplace=True)
     
-    return demand_count ##df with demand,hhstock count and daily temprature interval
+    return demand_count,all_temperature_interval ##df with demand,hhstock count and daily temprature interval
 
 
 
 ##generates dataframe with randomly selected column names from the idp pool
-def profile_selector():
+def profile_selector(station):
     idp_df = idp_df_generator()
-    annual_demand = annual_demand_generator()
-    all_temperature_interval = temp_interval()
+    
+    #idp_df = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/idp_df.pickle')
+    #idp_df = idp_df_sample #####################################to be read from the pgadmin database direclty
+    annual_demand, all_temperature_interval = annual_demand_generator()
+    #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
+    #all_temperature_interval = temp_interval()
     
     Temperature_interval = pd.DataFrame(columns = range(365))
    
-    all_temperature_interval.set_index(index,inplace=True)
-    all_temperature_interval = all_temperature_interval.resample('D').max()
+    #all_temperature_interval.set_index(index,inplace=True)
+    #all_temperature_interval = all_temperature_interval.resample('D').max() ###already resampled inside annual_demand_generator##delete this
 
-    all_temperature_interval.reset_index(inplace=True)
-    all_temperature_interval.drop('index',axis=1,inplace=True)
+    all_temperature_interval.reset_index(drop=True, inplace=True)
+    
+    all_temperature_interval = all_temperature_interval.iloc[:,0:3]#####only considering the saple
 
-    for x in all_temperature_interval.iloc[:,0:3]:###needs to be changed when running for the entire country 
-        Station = x
-        for c in range(365):
-            Temperature_interval.loc[Station,c] =annual_demand[annual_demand.Station==Station].Temperature_interval.iloc[0][c]
-            ####"single positional indexer is out-of-bounds") as all temperature zones are not included in the test data
-
-    idp_df = idp_df.reset_index()
-    idp_df.drop('index',axis=1,inplace=True)
+        
+    Temperature_interval = all_temperature_interval.transpose()
+             
 
     # Set seed value to have reproducable results
     np.random.seed(0)
     #generates a dataframe with the idp index number of the selected profiles for each temperature 
 
-    for station in Temperature_interval.index:
-        globals()[f'result_SFH_{station}']=pd.DataFrame(columns=Temperature_interval.columns)
-        globals()[f'result_MFH_{station}']=pd.DataFrame(columns=Temperature_interval.columns)
-        for day in Temperature_interval.columns:
-            t_class = Temperature_interval.loc[station,day].astype(int)
-            
-            array_SFH = np.array(idp_df[(idp_df.temperature_class==t_class)
-                                        &(idp_df.house=='SFH')].index.values)
-            
-            array_MFH = np.array(idp_df[(idp_df.temperature_class==t_class)
-                                        &(idp_df.house=='MFH')].index.values) 
-            
-            globals()[f'result_SFH_{station}'][day] = np.random.choice(
-                array_SFH, int(annual_demand[annual_demand.Station==station].SFH.sum()))
-            
-            globals()[f'result_MFH_{station}'][day] = np.random.choice(
-                array_MFH, int(annual_demand[annual_demand.Station==station].MFH.sum()))
-    
-    
-         
-        globals()[f'result_SFH_{station}']['zensus_population_id'] = annual_demand[
-            annual_demand.Station==station].loc[
-                annual_demand[annual_demand.Station==station].index.repeat(
-                    annual_demand[annual_demand.Station==station].SFH.astype(int))].zensus_population_id.values
-    
-        globals()[f'result_MFH_{station}']['zensus_population_id'] =annual_demand[
-            annual_demand.Station==station].loc[
-                annual_demand[annual_demand.Station==station].index.repeat(
-                    annual_demand[annual_demand.Station==station].MFH.astype(int))].zensus_population_id.values
+    #for station in Temperature_interval.index:
+    result_SFH =pd.DataFrame(columns=Temperature_interval.columns)
+    result_MFH =pd.DataFrame(columns=Temperature_interval.columns)
+    for day in Temperature_interval.columns:
+        t_class = Temperature_interval.loc[station,day].astype(int)
         
-        globals()[f'result_SFH_{station}'].set_index('zensus_population_id',inplace=True)
-        globals()[f'result_MFH_{station}'].set_index('zensus_population_id',inplace=True)
+        array_SFH = np.array(idp_df[(idp_df.temperature_class==t_class)
+                                    &(idp_df.house=='SFH')].index.values)
+        
+        array_MFH = np.array(idp_df[(idp_df.temperature_class==t_class)
+                                    &(idp_df.house=='MFH')].index.values) 
+        
+        result_SFH[day] = np.random.choice(
+            array_SFH, int(annual_demand[annual_demand.Station==station].SFH.sum()))
+        
+        result_MFH[day] = np.random.choice(
+            array_MFH, int(annual_demand[annual_demand.Station==station].MFH.sum()))
 
-        
+
+     
+    result_SFH['zensus_population_id'] = annual_demand[
+        annual_demand.Station==station].loc[
+            annual_demand[annual_demand.Station==station].index.repeat(
+                annual_demand[annual_demand.Station==station].SFH.astype(int))].zensus_population_id.values
+
+    result_MFH['zensus_population_id'] =annual_demand[
+        annual_demand.Station==station].loc[
+            annual_demand[annual_demand.Station==station].index.repeat(
+                annual_demand[annual_demand.Station==station].MFH.astype(int))].zensus_population_id.values
+    
+    result_SFH.set_index('zensus_population_id',inplace=True)
+    result_MFH.set_index('zensus_population_id',inplace=True)
+
+    return [result_SFH,result_MFH]
+
+
+
 ##for building class 11, shlp_type =EFH, wind_impact=0, from shlp_sigmoid_factors.csv, demandlib
 def h_value():
     a = 3.0469695
@@ -481,40 +509,97 @@ def h_value():
 ##generaing specific profiles of grid cell as per the assigned index
 ###### normalizing and scaling up of profiles
 def profile_generator(station):
-    profile_selector()
-    x = globals()[f'result_SFH_{station}']
+    #selected_profile=profile_selector()
+    #x = globals()[f'result_MFH_{station}']
+    selected_profiles = profile_selector()
+    
+    if station=='Bremerhaven':
+        sfh=selected_profiles[0]
+        mfh=slelected_profile[1]
+    if station=='Hamburg_Fuhlsbuettel':
+        sfh=selected_profiles[2]
+        mfh=slelected_profile[3]
+    if station=='Rostock_Warnemuende':
+        sfh=selected_profiles[4]
+        mfh=slelected_profile[5]
+        
     idp_df = idp_df_generator()
     y = idp_df['idp'].reset_index()
-    heat_profile_idp = pd.DataFrame(index=x.index)
-    #heat_profile_idp.reset_index()
-    for i in x.columns:
-        col=x[i]
+    heat_profile_idp_sfh = pd.DataFrame(index=sfh.index)
+    heat_profile_idp_mfh = pd.DataFrame(index=sfh.index)
+    
+    ##for SFH
+    for i in sfh.columns:
+        col=sfh[i]
         col=col.reset_index()
         y.rename(columns={'index':i},inplace=True)
-        col=pd.merge(col,y[[i,'idp']],how='inner', on=i)
+        col=pd.merge(col,y[[i,'idp']],how='left', on=i)
         col[i]=col['idp']
         col.drop('idp',axis=1,inplace=True)
         col.set_index('zensus_population_id', inplace=True)
-        heat_profile_idp[i] = col[i].values
+        #col=col.groupby(lambda x:x, axis=0).sum()
+        #heat_profile_idp = col[i].values
+        heat_profile_idp_sfh[i] = col[i].values
         y.rename(columns={i:'index'},inplace=True)
-    heat_profile_idp = heat_profile_idp.transpose()
-    heat_profile_idp = heat_profile_idp.apply(lambda x: x.explode())
-    heat_profile_idp.set_index(index,inplace=True)
-    heat_profile_idp = heat_profile_idp.groupby(lambda x:x, axis=1).sum()
-    return heat_profile_idp
+    heat_profile_idp_sfh = heat_profile_idp_sfh.groupby(lambda x:x, axis=0).sum()
+    heat_profile_idp_sfh = heat_profile_idp_sfh.transpose()
+    heat_profile_idp_sfh = heat_profile_idp_sfh.apply(lambda x: x.explode())
+    heat_profile_idp_sfh.set_index(index,inplace=True)
+    heat_profile_idp_sfh = heat_profile_idp_sfh.transpose()
+    
+    for i in mfh.columns:
+        col=mfh[i]
+        col=col.reset_index()
+        y.rename(columns={'index':i},inplace=True)
+        col=pd.merge(col,y[[i,'idp']],how='left', on=i)
+        col[i]=col['idp']
+        col.drop('idp',axis=1,inplace=True)
+        col.set_index('zensus_population_id', inplace=True)
+        #col=col.groupby(lambda x:x, axis=0).sum()
+        #heat_profile_idp = col[i].values
+        heat_profile_idp_mfh[i] = col[i].values
+        y.rename(columns={i:'index'},inplace=True)
+    heat_profile_idp_mfh = heat_profile_idp_mfh.groupby(lambda x:x, axis=0).sum()
+    heat_profile_idp_mfh = heat_profile_idp_mfh.transpose()
+    heat_profile_idp_mfh = heat_profile_idp_mfh.apply(lambda x: x.explode())
+    heat_profile_idp_mfh.set_index(index,inplace=True)
+    heat_profile_idp_mfh = heat_profile_idp_mfh.transpose()
+    
+    return heat_profile_idp_sfh, heat_profile_idp_mfh
 
+
+def profile_district_heating_generator():
+    #district_heating = pd.read_csv('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/map_district_heating_areas.csv')
+    #imporrting distric heating table as csv; to be directly imported from database
+    district_heating = pd.read_csv(os.path.join(os.getcwd(),'map_district_heating_areas.csv'))
+    distric_heating = district_heating[district_heating['scenario']=='eGon2035']
+    profile = profile_generator()
+    profile = profile.transpose()
+    district_profile= pd.merge(profile,district_heating[['area_id','zensus_population_id']],
+             how='inner', left_on = profile.index,right_on ='zensus_population_id')
+    district_profile.drop('zensus_population_id',axis=1,inplace=True)
+    district_profile = district_profile.groupby(lambda x:x, axis=1).sum()
+    
+    district_demand = pd.merge(district_heating, annual_demand[['demand','zensus_population_id']], 
+                              how='left', on='zensus_population_id')
+    district_demand=district_demand[['area_id','demand']]
+    district_demaand = district_demand.groupby('area_id').sum()
+    
+    
 
 ##scaling the profile as per the station h-value and the cell demand
 def demand_scale(station):
-    heat_demand_profile = profile_generator(station)
+    heat_demand_profile_sfh, heat_demand_profile_mfh = profile_generator(station)
     h = h_value()
     annual_demand = annual_demand_generator()
-    demand_curve = heat_demand_profile.multiply(h[station],axis=0)
-    demand_curve = demand_curve.apply(lambda x: x/x.sum())
-    heat_demand=demand_curve.transpose()
-    heat_demand=heat_demand.reset_index()
-    heat_demand.rename(columns={'index':'zensus_population_id'},inplace=True)
-    heat_demand=pd.merge(heat_demand,annual_demand[['zensus_population_id','demand']],
+    
+    #for SFH
+    demand_curve_sfh = heat_demand_profile_sfh.multiply(h[station],axis=0)
+    demand_curve_sfh = demand_curve_sfh.apply(lambda x: x/x.sum())
+    heat_demand_sfh=demand_curve_sfh.transpose()
+    heat_demand_sfh=heat_demand_sfh.reset_index()
+    heat_demand_sfh.rename(columns={'index':'zensus_population_id'},inplace=True)
+    heat_demand_sfh=pd.merge(heat_demand_sfh,annual_demand[['zensus_population_id','demand']],
                          how='inner', on='zensus_population_id')
         
     heat_demand.set_index('zensus_population_id', inplace=True)
@@ -526,3 +611,5 @@ def demand_scale(station):
     
     return heat_demand
 
+
+    
