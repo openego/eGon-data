@@ -11,7 +11,7 @@ This module obtains the information from the census tables and the heat demand
 densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
-
+import os
 from egon.data import db
 from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
 
@@ -180,8 +180,8 @@ def load_census_data():
         geom_col="geom_polygon"
     )
 
-    # district_heat.to_file("dh.shp")
-    # heating_type.to_file("heating.shp")
+    # district_heat.to_file(results_path+"dh.shp")
+    # heating_type.to_file(results_path+"heating.shp")
 
     # calculate the connection rate for all census cells with DH
     # adding it to the district_heat geodataframe
@@ -884,6 +884,12 @@ def study_prospective_district_heating_areas():
         be studied
     """
 
+    # create directory to store files
+    results_path = 'district_heating_areas/'
+
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
     # load the total heat demand by census cell (residential plus service)
     # HD_2015 = load_heat_demands('eGon2015')
     # status quo heat demand data are part of the regluar database content
@@ -911,17 +917,17 @@ def study_prospective_district_heating_areas():
     # PSD_2015_201m = area_grouping(HD_2015_above_100GJ, distance=200,
     #                               minimum_total_demand=(10000/3.6)
     #                                ).dissolve('area_id', aggfunc='sum')
-    # PSD_2015_201m.to_file("PSDs_2015based.shp")
+    # PSD_2015_201m.to_file(results_path+"PSDs_2015based.shp")
     PSD_2035_201m = area_grouping(HD_2035_above_100GJ, distance=200,
                                   minimum_total_demand=(10000/3.6)
                                   ).dissolve('area_id', aggfunc='sum')
-    # HD_2035.to_file("HD_2035.shp")
-    # HD_2035_above_100GJ.to_file("HD_2035_above_100GJ.shp")
-    PSD_2035_201m.to_file("PSDs_2035based.shp")
+    # HD_2035.to_file(results_path+"HD_2035.shp")
+    # HD_2035_above_100GJ.to_file(results_path+"HD_2035_above_100GJ.shp")
+    PSD_2035_201m.to_file(results_path+"PSDs_2035based.shp")
     PSD_2050_201m = area_grouping(HD_2050_above_100GJ, distance=200,
                                   minimum_total_demand=(10000/3.6)
                                   ).dissolve('area_id', aggfunc='sum')
-    PSD_2050_201m.to_file("PSDs_2050based.shp")
+    PSD_2050_201m.to_file(results_path+"PSDs_2050based.shp")
 
 
     # plotting all cells - not considering census data
@@ -982,7 +988,7 @@ def study_prospective_district_heating_areas():
     ax.set_ylabel("Heat Demand Densities [MWh / (ha a)]")
 
     plt.legend()
-    plt.savefig('Complete_HeatDemandDensities_Curves.png')
+    plt.savefig(results_path+'Complete_HeatDemandDensities_Curves.png')
 
     return None
 
@@ -1049,7 +1055,7 @@ def district_heating_areas_demarcation(plotting=True):
         plot_heat_density_sorted(heat_density_per_scenario)
     # if you want to study/export the Prospective Supply Districts (PSDs)
     # for all scenarios
-    study_prospective_district_heating_areas()
+    # study_prospective_district_heating_areas()
 
     add_metadata()
 

@@ -7,6 +7,7 @@
 """
 Module containing all code creating with plots of district heating areas
 """
+import os
 from egon.data.importing.scenarios import get_sector_parameters
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -41,6 +42,12 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     None.
 
     """
+
+    # create directory to store files
+    results_path = 'district_heating_areas/'
+
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
 
     fig, ax = plt.subplots(1, 1)
 
@@ -107,6 +114,7 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     ax.plot(0, 1, "^k", transform=ax.get_xaxis_transform(), clip_on=False)
     ax.legend()  # or: plt.legend()
     if scenario_name:
-        plt.savefig(f'HeatDemandDensities_Curve_{scenario_name}.png')
+        plt.savefig(results_path+
+                    f'HeatDemandDensities_Curve_{scenario_name}.png')
     else:
-        plt.savefig('HeatDemandDensities_Curves.png')
+        plt.savefig(results_path+'HeatDemandDensities_Curves.png')
