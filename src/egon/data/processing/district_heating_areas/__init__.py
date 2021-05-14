@@ -259,7 +259,8 @@ def select_high_heat_demands(heat_demand):
     return high_heat_demand
 
 
-def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None):
+def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None,
+                  maximum_total_demand = None):
     """
     Group polygons which are close to each other.
 
@@ -279,6 +280,11 @@ def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None):
 
     minimum_total_demand: integer
         optional minimum total heat demand to achieve a minimum size of areas
+
+    maximal_total_demand: integer
+        optional maximal total heat demand per area, if demand is higher the
+        area is cut at nuts3 borders
+
 
     Returns
     -------
@@ -339,6 +345,33 @@ def area_grouping(raw_polygons, distance = 200, minimum_total_demand = None):
               on geodataframe having a column named
               'residential_and_service_demand' """)
 
+    if (maximum_total_demand and
+        'residential_and_service_demand' in join.columns):
+
+        huge_areas_index = (
+            join.groupby('area_id').residential_and_service_demand.sum()
+            > maximum_total_demand)
+
+        cells_in_huge_areas = join[
+            join.area_id.isin(huge_areas_index[huge_areas_index].index)]
+
+        nuts3_boundaries=db.select_geodataframe(
+            """
+            SELECT gen, geometry as geom FROM boundaries.vg250_krs
+            """)
+        join_2 = gpd.sjoin(cells_in_huge_areas,
+                           nuts3_boundaries, how="inner",
+                           op="intersects")
+
+        join = join.drop(cells_in_huge_areas.index)
+
+        max_area_id = join.area_id.max()
+
+        join_2['area_id'] = join_2.index_right+max_area_id + 1
+
+        join = join.append(join_2[
+            ['residential_and_service_demand', 'geom_polygon', 'area_id']])
+
     return join
 
 
@@ -379,6 +412,11 @@ def district_heating_areas(scenario_name, plotting = False):
     To reduce the final number of district heating areas having the size of
     only one hectare, the minimum heat demand critrium is also applied when
     grouping the cells with census data on district heat.
+
+    To avoid huge district heating areas, as they appear in the Ruhr area,
+    district heating areas with an annual demand > 4,000,000 MWh are split
+    by nuts3 boundaries. This as set as maximum_total_demand of the
+    area_grouping function.
 
 
     Parameters
@@ -480,7 +518,7 @@ def district_heating_areas(scenario_name, plotting = False):
     scenario_dh_area = area_grouping(gpd.GeoDataFrame(
         cells[['residential_and_service_demand', 'geom_polygon']].append(
             new_areas[['residential_and_service_demand', 'geom_polygon']]),
-        geometry='geom_polygon'), distance=500)
+        geometry='geom_polygon'), distance=500, maximum_total_demand=4e6)
     # scenario_dh_area.plot(column = "area_id")
 
     scenario_dh_area.groupby("area_id").size().sort_values()
