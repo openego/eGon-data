@@ -552,15 +552,18 @@ def district_heating_areas(scenario_name, plotting = False):
     # print(areas_dissolved.head())
 
     if len(areas_dissolved[areas_dissolved.area == 100*100]) > 0:
-        print(f"""District heating areas ids of single zensus cells in
-              district heating areas:
-              {areas_dissolved[areas_dissolved.area == 100*100].index.values
+        print(f"""Number of district heating areas of single zensus cells:
+              {len(areas_dissolved[areas_dissolved.area == 100*100])
                }""")
-        print(f"""Zensus_population_ids of single zensus cells
-              in district heating areas:
-              {scenario_dh_area[scenario_dh_area.area_id.isin(
-                  areas_dissolved[areas_dissolved.area == 100*100].index.values
-                  )].index.values}""")
+        # print(f"""District heating areas ids of single zensus cells in
+        #       district heating areas:
+        #       {areas_dissolved[areas_dissolved.area == 100*100].index.values
+        #        }""")
+        # print(f"""Zensus_population_ids of single zensus cells
+        #       in district heating areas:
+        #       {scenario_dh_area[scenario_dh_area.area_id.isin(
+        #           areas_dissolved[areas_dissolved.area == 100*100].index.values
+        #           )].index.values}""")
 
     db.execute_sql(f"""DELETE FROM demand.district_heating_areas
                    WHERE scenario = '{scenario_name}'""")
