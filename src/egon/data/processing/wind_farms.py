@@ -8,6 +8,18 @@ from shapely.geometry import Polygon, LineString, Point, MultiPoint
 
 
 def wind_power_parks():
+    con = db.engine()
+    sql = "SELECT carrier, capacity, scenario_name FROM supply.egon_scenario_capacities"
+    target_power_df = pd.read_sql(sql, con)
+    target_power_df = target_power_df[target_power_df['carrier'] == "wind_onshore"]
+    for scenario in target_power_df.index:
+        target_power = target_power_df.at[scenario, 'capacity']
+        scenario_year = target_power_df.at[scenario, 'scenario_name']
+        source =  target_power_df.at[scenario, 'carrier']
+        wind_farms_scenario(target_power, scenario_year, source)
+
+
+def wind_farms_scenario(target_power, scenario_year, source):
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
     def filter_current_wf(wf_geometry):
@@ -28,32 +40,29 @@ def wind_power_parks():
         except:
             return(np.nan)
     
-    # The function 'voltage_level' returns the voltage level a wind turbine operates 
-    def voltage_level(x):    
+    # The function 'voltage' returns the voltage level a wind turbine operates 
+    def voltage(x):    
         try:
             return(map_ap_wea_voltage[x])
         except:
             return(np.nan)
-        
+    
+    def match_district_se(x):
+        for sub in hvmv_substation.index:
+            if x['geom'].contains(hvmv_substation.at[sub, 'point']):
+                return hvmv_substation.at[sub, 'point']
+            
     #Connect to the data base
     con = db.engine()
     sql = "SELECT geom FROM supply.egon_re_potential_area_wind"
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
-    sql = "SELECT carrier, capacity, scenario_name FROM supply.egon_scenario_capacities"
-    ###############################################################################
-    #####TASK: Adjust "target_power" and "scenario" to work with +1 scenario ######
-    ###############################################################################
-    target_power_df = pd.read_sql(sql, con)
-    target_power = target_power_df[target_power_df['carrier'] == "wind_onshore"]['capacity'].iat[0]
-    scenario = target_power_df[target_power_df['carrier'] == "wind_onshore"]['scenario_name'].iat[0]
-    ###############################################################################
-    #####TASK: Adjust "target_power" and "scenario" to work with +1 scenario ######
-    ###############################################################################
+    sql= "SELECT geom FROM grid.mv_grid_districts"
+    # mv_districts has geographic info of medium voltage districts in Germany
+    mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
     sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
     # hvmv_substation has the information about HV transmission lines in Germany
     hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col= "point")
-    hvmv_substation = hvmv_substation.to_crs(3035)
     sql = "SELECT gen, geometry FROM boundaries.vg250_sta"
     # states has the administrative boundaries of Germany
     states = gpd.GeoDataFrame.from_postgis(sql, con, geom_col= "geometry")
@@ -80,7 +89,7 @@ def wind_power_parks():
             map_ap_wea_farm[unit[1:-1]] = bus['NetzanschlusspunktMastrNummer'][i]
             map_ap_wea_voltage[unit[1:-1]] = bus['Spannungsebene'][i]
     wea['connection point'] = wea['EinheitMastrNummer'].apply(wind_farm)
-    wea['voltage_level'] = wea['EinheitMastrNummer'].apply(voltage_level)
+    wea['voltage'] = wea['EinheitMastrNummer'].apply(voltage)
     
     # Create the columns 'geometry' which will have location of each WT in a point type
     wea = gpd.GeoDataFrame(wea,
@@ -98,10 +107,10 @@ def wind_power_parks():
     #current_wfs has all the geometries that represent the existing wind farms
     current_wfs = gpd.GeoDataFrame(index= wf_size.index,
                                    crs = 4326,
-                                   columns = ['geometry', 'voltage_level'])
+                                   columns = ['geometry', 'voltage'])
     for conn_point, wt_location in wea.groupby('connection point'):
         current_wfs.at[conn_point, 'geometry'] = MultiPoint(wt_location['geometry'].values).convex_hull
-        current_wfs.at[conn_point, 'voltage_level'] = wt_location['voltage_level'].iat[0]
+        current_wfs.at[conn_point, 'voltage'] = wt_location['voltage'].iat[0]
     current_wfs['geometry2'] =  current_wfs['geometry'].to_crs(3035)
     current_wfs['area'] = current_wfs['geometry2'].apply( lambda x: x.area)
     current_wfs['length'] = current_wfs['geometry2'].apply( lambda x: x.length)
@@ -114,39 +123,6 @@ def wind_power_parks():
     
     wf_areas['area [km²]'] = wf_areas.area/1000000
     
-    ################################ TASK 1 ######################################
-    # Define if it is necessary to implement the small areas unification
-    ################################ TASK 1 ######################################
-    """
-    # Unify small potential areas:
-    wf_areas_big = wf_areas[wf_areas['area [m²]'] >= 1000000].copy()
-    wf_areas_small = wf_areas[wf_areas['area [m²]'] < 1000000].copy()
-    wf_areas.sort_values(by= 'area [m²]', ascending= False, inplace= True)
-    wf_areas_small['geom2'] = wf_areas_small['geom'].buffer(10)
-    wf_areas_small['parent'] = 0
-    wf_areas_small.set_geometry('geom2', inplace=True)
-    area = 1
-    wf_areas_small = wf_areas_small.head(500)
-    wf_areas_small['inters'] = False
-    for i in wf_areas_small.index:
-        wf_areas_small['inters'].loc[i:] = wf_areas_small.loc[i:].intersects(wf_areas_small['geom2'].loc[i])
-        if wf_areas_small['parent'].loc[i] == 0:
-            wf_areas_small['parent'].loc[i] = area
-            area+=1
-        group = wf_areas_small['parent'].loc[i]
-        wf_areas_small['parent'] = wf_areas_small.apply(lambda x: group if (x['inters'] == True and x['parent'] == 0) else x['parent'], axis = 1)
-        wf_areas_small['inters'] = False
-        
-    ###### JUST FOR VISUALIZATION ####
-    wf_areas_small['geom2'] = wf_areas_small['geom2'].to_crs(4326)
-    wf_areas_small[['geom2','area [m²]', 'parent']].to_file("small_areas.geojson", driver='GeoJSON')
-    ###### JUST FOR VISUALIZATION ####
-    """
-    ################################ TASK 1 ######################################
-    # Define if it is necessary to implement the small areas unification
-    ################################ TASK 1 ######################################
-    
-    
     # Exclude areas smaller than X m². X was calculated as the area of
     # 3 WT in the corners of an equilateral triangle with l = 4*rotor_diameter
     min_area = 4 * (0.126**2) * np.sqrt(3) 
@@ -158,11 +134,13 @@ def wind_power_parks():
     for i in wf_areas.index:
         intersection = current_wfs.intersects(wf_areas.at[i, 'geom'])
         if intersection.any() == False:
-            wf_areas.at[i, 'voltage_level'] = 'No Intersection'
+            wf_areas.at[i, 'voltage'] = 'No Intersection'
         else:
-            wf_areas.at[i, 'voltage_level'] = current_wfs[intersection].voltage_level[0]
-            
-    wf_areas = wf_areas[wf_areas['voltage_level'] != 'No Intersection']
+            wf_areas.at[i, 'voltage'] = current_wfs[intersection].voltage[0]
+    
+    # wf_areas_ni has the potential areas which don't intersect any current wind farm
+    wf_areas_ni = wf_areas[wf_areas['voltage'] == 'No Intersection']        
+    wf_areas = wf_areas[wf_areas['voltage'] != 'No Intersection']
     
     # Create the centroid of the selected potential areas and assign an installed capacity
     power_north = 21.05 #MW/km²
@@ -180,19 +158,22 @@ def wind_power_parks():
         lambda x: power_north*x['area [km²]']
         if x['north'] == True
         else power_south*x['area [km²]'], axis= 1)
+    
+    wf_areas.drop(columns= ['north'], inplace= True)
      
     # Divide selected areas based on voltage of connection points
-    wf_mv = wf_areas[(wf_areas['voltage_level'] != 'Hochspannung') &
-                     (wf_areas['voltage_level'] != 'Hoechstspannung') &
-                     (wf_areas['voltage_level'] != 'UmspannungZurHochspannung')]
+    wf_mv = wf_areas[(wf_areas['voltage'] != 'Hochspannung') &
+                     (wf_areas['voltage'] != 'Hoechstspannung') &
+                     (wf_areas['voltage'] != 'UmspannungZurHochspannung')]
     
-    wf_hv = wf_areas[(wf_areas['voltage_level'] == 'Hochspannung') |
-                     (wf_areas['voltage_level'] == 'Hoechstspannung') |
-                     (wf_areas['voltage_level'] == 'UmspannungZurHochspannung')]
+    wf_hv = wf_areas[(wf_areas['voltage'] == 'Hochspannung') |
+                     (wf_areas['voltage'] == 'Hoechstspannung') |
+                     (wf_areas['voltage'] == 'UmspannungZurHochspannung')]
     
     # Wind farms connected to MV network will be connected to HV network if the distance
     # to the closest HV substation is =< max_dist_hv, and the installed capacity
     # is bigger than max_power_mv
+    hvmv_substation = hvmv_substation.to_crs(3035)
     hvmv_substation['voltage'] = hvmv_substation['voltage'].apply(
         lambda x: int(x.split(';')[0]))
     hv_substations = hvmv_substation[hvmv_substation['voltage'] >= 110000]
@@ -200,7 +181,8 @@ def wind_power_parks():
     wf_mv['dist_to_HV'] = wf_areas['geom'].to_crs(3035).distance(hv_substations)
     wf_mv_to_hv = wf_mv[(wf_mv['dist_to_HV'] <= max_dist_hv) &
                         (wf_mv['inst capacity [MW]'] >= max_power_mv)]
-    wf_mv_to_hv = wf_mv_to_hv.drop(columns= ['dist_to_HV'])    
+    wf_mv_to_hv = wf_mv_to_hv.drop(columns= ['dist_to_HV'])
+    wf_mv_to_hv['voltage'] = 'Hochspannung'
     
     wf_hv = wf_hv.append(wf_mv_to_hv)
     wf_mv = wf_mv[(wf_mv['dist_to_HV'] > max_dist_hv) |
@@ -214,17 +196,6 @@ def wind_power_parks():
         lambda x: x if x < max_power_mv else max_power_mv)
     
     wind_farms= wf_hv.append(wf_mv)
-    # Use Definition of thresholds for voltage level assignment
-    for i in wind_farms.index:
-        if wind_farms.at[i, 'inst capacity [MW]'] < 5.5:
-            wind_farms.at[i, 'voltage level'] = 5
-            continue
-        if wind_farms.at[i, 'inst capacity [MW]'] < 20:
-            wind_farms.at[i, 'voltage level'] = 4
-            continue
-        if wind_farms.at[i, 'inst capacity [MW]'] >= 20 :
-            wind_farms.at[i, 'voltage level'] = 3
-            continue
     
     # Adjust the total installed capacity to the scenario
     total_wind_power = wf_hv['inst capacity [MW]'].sum() + wf_mv['inst capacity [MW]'].sum()
@@ -232,20 +203,57 @@ def wind_power_parks():
         scale_factor = target_power/total_wind_power
         wf_mv['inst capacity [MW]'] = wf_mv['inst capacity [MW]'] * scale_factor
         wf_hv['inst capacity [MW]'] = wf_hv['inst capacity [MW]'] * scale_factor
-    """
+    
     else:
-    ################################ TASK 5 ######################################
-    # Define mothodology to build new farms in HV level if necessary
-    ################################ TASK 5 ######################################
-        wf_mv['inst capacity [MW]'] = wf_mv['inst capacity [MW]']
-        wf_hv['inst capacity [MW]'] = wf_hv['inst capacity [MW]']
-    ################################ TASK 5 ######################################
-    # Define mothodology to build new farms in HV level if necessary
-    ################################ TASK 5 ######################################
-    """
+        wf_areas_ni['centroid'] = wf_areas_ni.to_crs(3035).centroid
+        wf_areas_ni = wf_areas_ni.set_geometry('centroid')
+        #wf_areas_ni['centroid'].to_file("centroid_districs.geojson", driver='GeoJSON')
+        #wf_areas_ni['geom'].to_file("restastes pa.geojson", driver='GeoJSON')
+        extra_wf = mv_districts.copy()
+        # the column centroid has the coordinates of the substation corresponting
+        # to each mv_grid_district
+        extra_wf['centroid'] = extra_wf.apply(match_district_se, axis = 1)
+        extra_wf = extra_wf.set_geometry("centroid")
+        extra_wf['area [km²]'] = 0.0
+        for district in extra_wf.index:
+            pot_area_district = gpd.clip(wf_areas_ni, extra_wf.at[district, 'geom'])
+            extra_wf.at[district, 'area [km²]'] = pot_area_district['area [km²]'].sum()
+        extra_wf = extra_wf.to_crs(4326)
+        #extra_wf[['substation', 'area']].to_file("extra.geojson", driver='GeoJSON')
+        extra_wf = extra_wf[extra_wf['area [km²]'] != 0]
+        total_new_area = extra_wf['area [km²]'].sum()
+        scale_factor = (target_power - total_wind_power) / total_new_area
+        extra_wf['inst capacity [MW]'] = extra_wf['area [km²]'] * scale_factor
+        extra_wf['voltage'] = 'Hochspannung'
+        
+    wind_farms = wind_farms.append(extra_wf, ignore_index= True) 
+    
+    # Use Definition of thresholds for voltage level assignment
+    for i in wind_farms.index:
+        try:
+            if wind_farms.at[i, 'inst capacity [MW]'] < 5.5:
+                wind_farms.at[i, 'voltage level'] = 5
+                continue
+            if wind_farms.at[i, 'inst capacity [MW]'] < 20:
+                wind_farms.at[i, 'voltage level'] = 4
+                continue
+            if wind_farms.at[i, 'inst capacity [MW]'] >= 20 :
+                wind_farms.at[i, 'voltage level'] = 3
+                continue
+        except:
+            print(i)
+    
+    # Look for the maximum id in the table egon_power_plants
+    sql = "SELECT MAX(id) FROM supply.egon_power_plants"
+    max_id = pd.read_sql(sql,con)
+    max_id = max_id['max'].iat[0]
     
     # write_table in egon-data database:
-    wind_farm_id = 1
+    if max_id == None:
+        wind_farm_id = 1
+    else:
+        wind_farm_id = int(max_id+1)
+        
     for wf in wind_farms.index:
         con = psycopg2.connect(host = db.credentials()['HOST'],
                                database = db.credentials()['POSTGRES_DB'],
@@ -258,16 +266,15 @@ def wind_power_parks():
          voltage_level, scenario, geom) 
         values (%s, %s, %s, %s, %s, %s, %s, %s)'''      
         cur.execute(sql, (wind_farm_id,
-                          "wind_onshore",
+                          source,
                           False,
                           wind_farms.loc[wf].at['inst capacity [MW]'],
                           0,
                           wind_farms.loc[wf].at['voltage level'],
-                          scenario,
+                          scenario_year,
                           wkb.dumps(wind_farms.loc[wf].at['centroid'])))
         con.commit()
         cur.close()
         wind_farm_id+=1
 
     return wind_farms
-    
