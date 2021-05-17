@@ -182,6 +182,10 @@ INSERT INTO grid.egon_hvmv_substation (lon, lat, point, polygon, voltage, power_
 	SELECT lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status
 	FROM grid.egon_final_result;
 
+-- update voltage level if split by '/' instead of ';'
+UPDATE grid.egon_hvmv_substation
+SET voltage = (SELECT REPLACE (voltage, '/', ';'))
+WHERE voltage LIKE '%/%';
 
 -- drop
 DROP VIEW IF EXISTS grid.egon_final_result CASCADE;
