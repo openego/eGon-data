@@ -266,13 +266,6 @@ with airflow.DAG(
     demandregio_demand_households >> elec_household_demands_zensus
     map_zensus_vg250 >> elec_household_demands_zensus
 
-    # Power plant setup
-    power_plant_tables = PythonOperator(
-        task_id="create-power-plant-tables",
-        python_callable=power_plants.create_tables,
-    )
-    setup >> power_plant_tables
-
     # NEP data import
     create_tables = PythonOperator(
         task_id="create-scenario-tables",
@@ -408,13 +401,14 @@ with airflow.DAG(
     )
 
     power_plant_import = PythonOperator(
-        task_id="import-power-plants",
+        task_id="import-hydro-biomass-power-plants",
         python_callable=power_plants.insert_power_plants,
     )
 
     setup >> power_plant_tables >> power_plant_import
     nep_insert_data >> power_plant_import
     retrieve_mastr_data >> power_plant_import
+    define_mv_grid_districts >> power_plant_import
 
     # Import and merge data on industrial sites from different sources
 

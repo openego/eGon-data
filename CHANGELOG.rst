@@ -86,6 +86,8 @@ Added
   `#162 <https://github.com/openego/eGon-data/issues/162>`_
 * Integrate electrical load time series for cts sector
   `#109 <https://github.com/openego/eGon-data/issues/109>`_
+* Assign voltage level and bus_id to power plants
+  `#15 <https://github.com/openego/eGon-data/issues/15>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

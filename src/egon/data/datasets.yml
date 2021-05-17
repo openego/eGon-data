@@ -289,7 +289,7 @@ mastr:
     - "gsgk"
     - "storage"
   file_basename: "bnetza_mastr"
-  deposit_id: 740153
+  deposit_id: 808086
 
 re_potential_areas:
   original_data:
@@ -343,9 +343,12 @@ power_plants:
   sources:
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
+      mastr_location: "location_elec_generation_raw.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
+      mv_grid_districts: "grid.mv_grid_districts"
+      ehv_voronoi: "grid.egon_ehv_substation_voronoi"
   target:
       table: 'egon_power_plants'
       schema: 'supply'
