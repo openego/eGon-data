@@ -84,6 +84,8 @@ Added
   `#19 <https://github.com/openego/eGon-data/issues/19>`_
 * Create and import district heating areas
   `#162 <https://github.com/openego/eGon-data/issues/162>`_
+* Integrate electrical load time series for cts sector
+  `#109 <https://github.com/openego/eGon-data/issues/109>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

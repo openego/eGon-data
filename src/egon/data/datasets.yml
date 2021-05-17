@@ -131,6 +131,9 @@ demandregio_cts_ind_demand:
     wz_definitions:
       schema: 'demand'
       table: 'egon_demandregio_wz'
+    timeseries_cts_ind:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
 
 electrical_demands_households:
   sources:
@@ -384,3 +387,48 @@ renewable_feedin:
     feedin_table:
       schema: 'supply'
       table: 'egon_era5_renewable_feedin'
+
+map_zensus_grid_districts:
+  sources:
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+  targets:
+    map:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_grid_districts'
+
+electrical_load_curves_cts:
+  sources:
+    map_grid_districts:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_grid_districts'
+    map_vg250:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_vg250'
+    zensus_electricity:
+      schema: 'demand'
+      table: 'egon_demandregio_zensus_electricity'
+    demandregio_cts:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+    demandregio_wz:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
+    demandregio_timeseries:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+  targets:
+    pf_load:
+      schema: 'grid'
+      table: 'egon_pf_hv_load'
+    pf_load_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_load_timeseries'
+
