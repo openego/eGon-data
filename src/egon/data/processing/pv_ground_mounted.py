@@ -439,6 +439,8 @@ def regio_of_pv_ground_mounted():
                 print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität ist ausreichend.')
                 print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
                 print('Saklierungsfaktor: '+str(scale_factor))
+                
+                return pv_rora, pv_agri
 
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
@@ -495,36 +497,36 @@ def regio_of_pv_ground_mounted():
                     ###
                     print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway und Agriculture verteilt.')
 
-        ###
-        x=0
-
-        # assign grid level do pv_per_distr
-        v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
-        for index, distr in pv_per_distr.iterrows():
-            if distr['installed capacity in kW'] > 5500: # > 5 MW
-                v_lvl[index] = 4
-                x = x+1
-            else:
-                v_lvl[index] = 5
-        pv_per_distr['voltage_level'] = v_lvl
-
-        # new overall installed capacity
-        total_pv_power = pv_rora['installed capacity in kW'].sum() + \
-        pv_agri['installed capacity in kW'].sum() + \
-        pv_per_distr['installed capacity in kW'].sum()
-
-        ###
-        print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
-        print('(Zielwert: '+str(target_power/1000)+' MW)')
-        print(' ')
-
-        ###
-        print('Untersuchung der zusätzlich (außerhalb der Bestandsflächen) installierten Kapazität:')
-        print('Installierte Leistung pro MV Grid District > 5,5 MW und somit > MV-level: '+str(x))
-        print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
-        print(' ')
-
-        return pv_rora, pv_agri, pv_per_distr
+            ###
+            x=0
+    
+            # assign grid level do pv_per_distr
+            v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
+            for index, distr in pv_per_distr.iterrows():
+                if distr['installed capacity in kW'] > 5500: # > 5 MW
+                    v_lvl[index] = 4
+                    x = x+1
+                else:
+                    v_lvl[index] = 5
+            pv_per_distr['voltage_level'] = v_lvl
+    
+            # new overall installed capacity
+            total_pv_power = pv_rora['installed capacity in kW'].sum() + \
+            pv_agri['installed capacity in kW'].sum() + \
+            pv_per_distr['installed capacity in kW'].sum()
+    
+            ###
+            print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
+            print('(Zielwert: '+str(target_power/1000)+' MW)')
+            print(' ')
+    
+            ###
+            print('Untersuchung der zusätzlich (außerhalb der Bestandsflächen) installierten Kapazität:')
+            print('Installierte Leistung pro MV Grid District > 5,5 MW und somit > MV-level: '+str(x))
+            print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
+            print(' ')
+    
+            return pv_rora, pv_agri, pv_per_distr
 
 
     def run_methodology():
