@@ -137,3 +137,5 @@ Bug fixes
   `#236 <https://github.com/openego/eGon-data/issues/236>`_
 * Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld 
   `#241 <https://github.com/openego/eGon-data/issues/241>`_
+* Adjust format of voltage levels in hvmv substation
+  `#248 <https://github.com/openego/eGon-data/issues/248>`_
