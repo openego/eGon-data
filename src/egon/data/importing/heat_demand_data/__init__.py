@@ -460,7 +460,7 @@ def heat_demand_to_db_table():
 
     for source in sources:
 
-        # if not '2015' in source.stem:
+        if not '2015' in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
@@ -841,11 +841,11 @@ def future_heat_demand_data_import():
     # Specifiy the scenario names for loading factors from csv file
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
-    future_heat_demand_germany("eGon2015")
+    # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
     adjust_residential_heat_to_zensus("eGon2035")
     adjust_residential_heat_to_zensus("eGon100RE")
-    future_heat_demand_germany("eGon2015")
+    # future_heat_demand_germany("eGon2015")
     add_metadata()
 
     return None
