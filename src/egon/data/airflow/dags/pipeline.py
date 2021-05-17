@@ -12,6 +12,7 @@ from egon.data.processing.zensus_vg250 import (
 import airflow
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
+import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
@@ -23,10 +24,12 @@ import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.demandregio as process_dr
+import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
+import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.mv_grid_districts as mvgd
@@ -331,6 +334,11 @@ with airflow.DAG(
     vg250_clean_and_prepare >> ehv_substation_extraction
 
     # osmTGmod ehv/hv grid model generation
+    osmtgmod_osm_import = PythonOperator(
+        task_id="osmtgmod_osm_import",
+        python_callable=osmtgmod.import_osm_data,
+    )
+
     run_osmtgmod = PythonOperator(
         task_id="run_osmtgmod",
         python_callable=osmtgmod.run_osmtgmod,
@@ -347,6 +355,8 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
+
+    osm_download >> osmtgmod_osm_import >> run_osmtgmod
     ehv_substation_extraction >> run_osmtgmod
     hvmv_substation_extraction >> run_osmtgmod
     run_osmtgmod >> osmtgmod_pypsa
@@ -359,7 +369,7 @@ with airflow.DAG(
     )
     osmtgmod_substation >> create_voronoi
 
-    
+
     define_mv_grid_districts = PythonOperator(
         task_id="define_mv_grid_districts",
         python_callable=mvgd.define_mv_grid_districts
@@ -454,6 +464,61 @@ with airflow.DAG(
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
 
+ # Import weather data
+    download_era5 = PythonOperator(
+        task_id="download-weather-data",
+        python_callable=import_era5.download_era5,
+    )
+    scenario_input_import >> download_era5
+
+    create_weather_tables = PythonOperator(
+        task_id="create-weather-tables",
+        python_callable=import_era5.create_tables,
+    )
+    setup >> create_weather_tables
+
+    import_weather_cells = PythonOperator(
+        task_id="insert-weather-cells",
+        python_callable=import_era5.insert_weather_cells,
+    )
+    create_weather_tables >> import_weather_cells
+    download_era5 >> import_weather_cells
+
+    feedin_wind_onshore = PythonOperator(
+        task_id="insert-feedin-wind",
+        python_callable=import_feedin.wind_feedin_per_weather_cell,
+    )
+
+    feedin_pv = PythonOperator(
+        task_id="insert-feedin-pv",
+        python_callable=import_feedin.pv_feedin_per_weather_cell,
+    )
+
+    feedin_solar_thermal = PythonOperator(
+        task_id="insert-feedin-solar-thermal",
+        python_callable=import_feedin.solar_thermal_feedin_per_weather_cell,
+    )
+
+    import_weather_cells >> [feedin_wind_onshore,
+                             feedin_pv, feedin_solar_thermal]
+    vg250_clean_and_prepare >> [feedin_wind_onshore,
+                             feedin_pv, feedin_solar_thermal]
+
+    # District heating areas demarcation
+    create_district_heating_areas_table = PythonOperator(
+        task_id="create-district-heating-areas-table",
+        python_callable=district_heating_areas.create_tables
+    )
+    import_district_heating_areas = PythonOperator(
+        task_id="import-district-heating-areas",
+        python_callable=district_heating_areas.
+        district_heating_areas_demarcation
+    )
+    setup >> create_district_heating_areas_table
+    create_district_heating_areas_table >> import_district_heating_areas
+    zensus_misc_import >> import_district_heating_areas
+    heat_demand_import >> import_district_heating_areas
+    scenario_input_import >> import_district_heating_areas
 
     # Electrical load curves CTS
     map_zensus_grid_districts = PythonOperator(

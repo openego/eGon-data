@@ -306,7 +306,7 @@ def future_heat_demand_germany(scenario_name):
     """
     Calculate the future residential and service-sector heat demand per ha.
 
-    The calculation is based on Peta5_0_1 heat demand densities, cutcut for
+    The calculation is based on Peta5_0_1 heat demand densities, cutout for
     Germany, for the year 2015. The given scenario name is used to read the
     adjustment factors for the heat demand rasters from the scenario table.
 
@@ -335,12 +335,14 @@ def future_heat_demand_germany(scenario_name):
 
     """
     # Load the values
-    heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
+    if scenario_name == "eGon2015":
+        res_hd_reduction = 1
+        ser_hd_reduction = 1
+    else:
+        heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
 
-    res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
-
-    ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
-
+        res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
+        ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
 
     # Define the directory where the created rasters will be saved
     scenario_raster_directory = "heat_scenario_raster"
@@ -457,28 +459,30 @@ def heat_demand_to_db_table():
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
     for source in sources:
-        # Create a temporary table and fill the final table using the sql script
-        rasters = f"heat_demand_rasters_{source.stem.lower()}"
-        import_rasters = subprocess.run(
-            ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
-            + [source]
-            + [f"{rasters}"],
-            text=True,
-        ).stdout
-        with engine.begin() as connection:
-            print(f'CREATE TEMPORARY TABLE "{rasters}"'
-                ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);')
-            connection.execute(
-                f'CREATE TEMPORARY TABLE "{rasters}"'
-                ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
-            )
-            connection.execute(import_rasters)
-            connection.execute(f'ANALYZE "{rasters}"')
-            with open(sql_script) as convert:
+
+        if not '2015' in source.stem:
+            # Create a temporary table and fill the final table using the sql script
+            rasters = f"heat_demand_rasters_{source.stem.lower()}"
+            import_rasters = subprocess.run(
+                ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
+                + [source]
+                + [f"{rasters}"],
+                text=True,
+            ).stdout
+            with engine.begin() as connection:
+                print(f'CREATE TEMPORARY TABLE "{rasters}"'
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);')
                 connection.execute(
-                    Template(convert.read()).render(version="0.0.0",
-                                                    source=rasters)
+                    f'CREATE TEMPORARY TABLE "{rasters}"'
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
                 )
+                connection.execute(import_rasters)
+                connection.execute(f'ANALYZE "{rasters}"')
+                with open(sql_script) as convert:
+                    connection.execute(
+                        Template(convert.read()).render(version="0.0.0",
+                                                        source=rasters)
+                    )
     return None
 
 
@@ -615,7 +619,7 @@ def add_metadata():
 
     # Metadata creation
     meta = {
-        "name": "heat",
+        "name": "egon_peta_heat_metadata",
         "title": "eGo_n scenario-specific future heat demand data",
         "description": "Future heat demands per hectare grid cell of "
         "the residential and service sector",
@@ -837,9 +841,11 @@ def future_heat_demand_data_import():
     # Specifiy the scenario names for loading factors from csv file
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
+    # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
     adjust_residential_heat_to_zensus("eGon2035")
     adjust_residential_heat_to_zensus("eGon100RE")
+    # future_heat_demand_germany("eGon2015")
     add_metadata()
 
     return None
