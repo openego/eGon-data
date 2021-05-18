@@ -6,5 +6,4 @@ rule Main:
           " --directory=pypsa-eur-sec/"
           " --snakefile=pypsa-eur-sec/Snakefile"
           " -j1"
-          " prepare_sector_networks"
         )
