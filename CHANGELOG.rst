@@ -78,6 +78,12 @@ Added
   `#117 <https://github.com/openego/eGon-data/issues/117>`_
 * Integrate scenario table with parameters for each sector 
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
+* The volume of the docker container for the PostgreSQL database
+  is saved in the project directory under `docker/database-data`.
+  The current user (`$USER`) is owner of the volume.
+  Containers created prior to this change will fail when using the 
+  changed code. The container needs to be re-created.
+  `#228 <https://github.com/openego/eGon-data/issues/228>`_
 * Extract landuse areas from OSM 
   `#214 <https://github.com/openego/eGon-data/issues/214>`_
 * Integrate weather data and renewable feedin timeseries
