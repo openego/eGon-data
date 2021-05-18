@@ -1,9 +1,7 @@
 from egon.data import db
 import geopandas as gpd
 import pandas as pd
-import psycopg2
 import numpy as np
-from shapely import wkb
 from shapely.geometry import Polygon, LineString, Point, MultiPoint
 
 
@@ -17,6 +15,7 @@ def wind_power_parks():
         scenario_year = target_power_df.at[scenario, 'scenario_name']
         source =  target_power_df.at[scenario, 'carrier']
         wind_farms_scenario(target_power, scenario_year, source)
+    return 0
 
 
 def wind_farms_scenario(target_power, scenario_year, source):
@@ -203,6 +202,7 @@ def wind_farms_scenario(target_power, scenario_year, source):
         scale_factor = target_power/total_wind_power
         wf_mv['inst capacity [MW]'] = wf_mv['inst capacity [MW]'] * scale_factor
         wf_hv['inst capacity [MW]'] = wf_hv['inst capacity [MW]'] * scale_factor
+        wind_farms= wf_hv.append(wf_mv)
     
     else:
         wf_areas_ni['centroid'] = wf_areas_ni.to_crs(3035).centroid
@@ -219,41 +219,70 @@ def wind_farms_scenario(target_power, scenario_year, source):
             pot_area_district = gpd.clip(wf_areas_ni, extra_wf.at[district, 'geom'])
             extra_wf.at[district, 'area [km²]'] = pot_area_district['area [km²]'].sum()
         extra_wf = extra_wf.to_crs(4326)
-        #extra_wf[['substation', 'area']].to_file("extra.geojson", driver='GeoJSON')
         extra_wf = extra_wf[extra_wf['area [km²]'] != 0]
         total_new_area = extra_wf['area [km²]'].sum()
         scale_factor = (target_power - total_wind_power) / total_new_area
         extra_wf['inst capacity [MW]'] = extra_wf['area [km²]'] * scale_factor
-        extra_wf['voltage'] = 'Hochspannung'
-        
-    wind_farms = wind_farms.append(extra_wf, ignore_index= True) 
+        extra_wf['voltage'] = 'Hochspannung'    
+        wind_farms = wind_farms.append(extra_wf, ignore_index= True) 
     
     # Use Definition of thresholds for voltage level assignment
+    wind_farms['voltage_level'] = 0
     for i in wind_farms.index:
         try:
             if wind_farms.at[i, 'inst capacity [MW]'] < 5.5:
-                wind_farms.at[i, 'voltage level'] = 5
+                wind_farms.at[i, 'voltage_level'] = 5
                 continue
             if wind_farms.at[i, 'inst capacity [MW]'] < 20:
-                wind_farms.at[i, 'voltage level'] = 4
+                wind_farms.at[i, 'voltage_level'] = 4
                 continue
             if wind_farms.at[i, 'inst capacity [MW]'] >= 20 :
-                wind_farms.at[i, 'voltage level'] = 3
+                wind_farms.at[i, 'voltage_level'] = 3
                 continue
         except:
             print(i)
+
     
     # Look for the maximum id in the table egon_power_plants
     sql = "SELECT MAX(id) FROM supply.egon_power_plants"
     max_id = pd.read_sql(sql,con)
     max_id = max_id['max'].iat[0]
-    
-    # write_table in egon-data database:
     if max_id == None:
         wind_farm_id = 1
     else:
         wind_farm_id = int(max_id+1)
+
+    # write_table in egon-data database:
         
+    # Copy relevant columns from wind_farms
+    insert_wind_farms = wind_farms[['inst capacity [MW]', 'voltage_level', 'centroid']]
+
+    # Set static column values
+    insert_wind_farms['carrier'] = source
+    insert_wind_farms['chp'] = False
+    insert_wind_farms['th_capacity'] = 0
+    insert_wind_farms['scenario'] = scenario_year
+
+    # Change name and crs of geometry column
+    insert_wind_farms = insert_wind_farms.rename(
+        {'centroid':'geom',
+         'inst capacity [MW]': 'el_capacity'},
+        axis=1).set_geometry('geom').to_crs(4326)
+
+    # Reset index
+    insert_wind_farms.index = pd.RangeIndex(
+        start = wind_farm_id,
+        stop = wind_farm_id + len(insert_wind_farms),
+        name = 'id')
+
+    # Insert into database
+    insert_wind_farms.reset_index().to_postgis('egon_power_plants',
+                               schema='supply',
+                               con=db.engine(),
+                               if_exists='append')
+    return wind_farms
+
+"""
     for wf in wind_farms.index:
         con = psycopg2.connect(host = db.credentials()['HOST'],
                                database = db.credentials()['POSTGRES_DB'],
@@ -276,5 +305,13 @@ def wind_farms_scenario(target_power, scenario_year, source):
         con.commit()
         cur.close()
         wind_farm_id+=1
+"""
 
-    return wind_farms
+
+
+
+"""
+wind_farms[['geom', 'inst capacity [MW]', 'area [km²]']].to_file("Selected_Pot_areas.geojson", driver='GeoJSON')
+wind_farms = wind_farms.set_geometry('centroid')
+wind_farms[['centroid', 'inst capacity [MW]', 'area [km²]']].to_file("Wind_farms_points.geojson", driver='GeoJSON')
+"""
