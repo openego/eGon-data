@@ -89,7 +89,7 @@ def loadarea_peak_load(scenario):
     # respecting the MV grid district boundaries
     load_area_polygons_tmp = []
     for name, group in cts_peak_loads_cells.groupby("subst_id"):
-        load_areas_polygons_in_group = group["geom"].unary_union
+        load_areas_polygons_in_group = (group["geom"].buffer(10).unary_union).buffer(-10)
         load_area_polygons_tmp.append(load_areas_polygons_in_group)
     load_areas_polygons = gpd.GeoDataFrame(geometry=load_area_polygons_tmp,
                                   crs=3035)
