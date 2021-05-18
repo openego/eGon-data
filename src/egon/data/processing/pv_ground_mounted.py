@@ -442,8 +442,6 @@ def regio_of_pv_ground_mounted():
                 
                 pv_per_distr = gpd.GeoDataFrame()
                 
-                return pv_rora, pv_agri, pv_per_distr
-
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
 
@@ -502,7 +500,7 @@ def regio_of_pv_ground_mounted():
             ###
             x=0
     
-            # assign grid level do pv_per_distr
+            # assign grid level to pv_per_distr
             v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
             for index, distr in pv_per_distr.iterrows():
                 if distr['installed capacity in kW'] > 5500: # > 5 MW
@@ -528,10 +526,10 @@ def regio_of_pv_ground_mounted():
             print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
             print(' ')
     
-            return pv_rora, pv_agri, pv_per_distr
+        return pv_rora, pv_agri, pv_per_distr
 
 
-    def run_methodology(scenario):
+    def run_methodology():
 
 
         ### PARAMETERS ###
@@ -552,19 +550,6 @@ def regio_of_pv_ground_mounted():
         max_dist_hv = 20000 # m
 
         ### PARAMETERS ###
-        
-        # assumption for target value of installed capacity in Germany per scenario
-        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
-        target_power = (pd.read_sql(sql,con))
-        target_power = target_power[target_power['scenario_name']==scenario]
-        target_power = target_power['capacity'].sum()
-        
-        # TODO: change target_power to value per Bundesland
-        
-        ###
-        print(' ')
-        print('target power: '+str(target_power)+' kW')
-        print(' ')
         
         ###
         print(' ')
@@ -636,16 +621,59 @@ def regio_of_pv_ground_mounted():
         print(datetime.datetime.now())
         print(' ')
         
+        # 1) scenario: eGon2035
+        
+        # assumption for target value of installed capacity in Germany per scenario
+        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
+        target_power = (pd.read_sql(sql,con))
+        target_power = target_power[target_power['scenario_name']=='eGon2035']
+        target_power = target_power['capacity'].sum() * 1000
+        
+        # TODO: change target_power to value per Bundesland
+        
+        ###
+        print(' ')
+        print('scenario: eGon2035')
+        print('target power: '+str(target_power)+' kW')
+        print(' ')
+        
         # check target value and adapt installed capacity if necessary
         pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
 
         # files for depiction in QGis
-        pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
-        pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+        if len(pv_per_distr) > 0:
+        	pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
+        	pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
 
+        # 2) scenario: eGon100RE
 
-        return pv_rora, pv_agri, pv_per_distr
+        # TODO
+        
+        '''
+        
+        # assumption for target value of installed capacity in Germany per scenario
+        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
+        target_power = (pd.read_sql(sql,con))
+        target_power = target_power[target_power['scenario_name']=='eGon100RE']
+        target_power = target_power['capacity'].sum() * 1000
+        
+        ###
+        print(' ')
+        print('scenario: eGon2035')
+        print('target power: '+str(target_power)+' kW')
+        print(' ')
+        
+        # check target value and adapt installed capacity if necessary
+        pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
 
+        # files for depiction in QGis
+        if len(pv_per_distr_100RE) > 0:
+        	pv_per_distr_100RE['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
+        	pv_per_distr_100RE['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+        
+        '''
+
+        return pv_rora, pv_agri, pv_per_distr #, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
 
     def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
@@ -683,11 +711,6 @@ def regio_of_pv_ground_mounted():
 
             con = db.engine()
 
-            ###
-            print(' ')
-            print('scenario name: '+str(scenario_name))
-            print(' ')
-
             # maximum ID in egon_power_plants
             sql = "SELECT MAX(id) FROM supply.egon_power_plants"
             max_id = pd.read_sql(sql,con)
@@ -724,34 +747,28 @@ def regio_of_pv_ground_mounted():
 
 
             return pv_parks
-        
-    scenario1 = 'eGon2035'
 
-    pv_rora, pv_agri, pv_per_distr = run_methodology(scenario1)
+    pv_rora, pv_agri, pv_per_distr = run_methodology() 
+    
+    # pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
 
     pv_rora.to_csv('pv_rora.csv',index=True)
     pv_agri.to_csv('pv_agri.csv',index=True)
     if len(pv_per_distr) > 0:
         pv_per_distr.to_csv('pv_per_distr.csv',index=True)
-
-    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, scenario1)
-    
-    #####
-    ### for scenario 'eGon100RE'
-    # TODO
-    '''
-    scenario2 = 'eGon100RE'
-
-    pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(scenario2)
-
+        
+    '''   
     pv_rora_100RE.to_csv('pv_rora_100RE.csv',index=True)
-    pv_agri_100RE.to_csv('pv_agri_100RE.csv',index=True) 
-    if len(pv_per_distr) > 0:
+    pv_agri_100RE.to_csv('pv_agri_100RE.csv',index=True)
+    if len(pv_per_distr_100RE) > 0:
         pv_per_distr_100RE.to_csv('pv_per_distr_100RE.csv',index=True)
-
-    pv_parks_100RE = pv_parks(pv_rora, pv_agri, pv_per_distr, scenario2)
     '''
-    #####
+    
+    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, 'eGon2035')
+    
+    # pv_parks_100RE = pv_parks(pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, 'eGon100RE')
+    
+    # TODO: add dataframes for scenario eGon100RE
 
     return pv_parks #, pv_parks_100RE
 
