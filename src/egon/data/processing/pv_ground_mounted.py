@@ -440,7 +440,9 @@ def regio_of_pv_ground_mounted():
                 print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
                 print('Saklierungsfaktor: '+str(scale_factor))
                 
-                return pv_rora, pv_agri
+                pv_per_distr = gpd.GeoDataFrame()
+                
+                return pv_rora, pv_agri, pv_per_distr
 
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
@@ -529,7 +531,7 @@ def regio_of_pv_ground_mounted():
             return pv_rora, pv_agri, pv_per_distr
 
 
-    def run_methodology():
+    def run_methodology(scenario):
 
 
         ### PARAMETERS ###
@@ -549,15 +551,20 @@ def regio_of_pv_ground_mounted():
         # assumption for maximum distance of park with hv-power to next substation
         max_dist_hv = 20000 # m
 
+        ### PARAMETERS ###
+        
         # assumption for target value of installed capacity in Germany per scenario
-        sql = "SELECT capacity FROM supply.egon_scenario_capacities WHERE carrier='solar' "
+        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
         target_power = (pd.read_sql(sql,con))
-        target_power = target_power['capacity'].iat[0]*1000 #in kW
+        target_power = target_power[target_power['scenario_name']==scenario]
+        target_power = target_power['capacity'].sum()
+        
+        # TODO: change target_power to value per Bundesland
+        
+        ###
         print(' ')
         print('target power: '+str(target_power)+' kW')
         print(' ')
-
-        ### PARAMETERS ###
         
         ###
         print(' ')
@@ -640,7 +647,7 @@ def regio_of_pv_ground_mounted():
         return pv_rora, pv_agri, pv_per_distr
 
 
-    def pv_parks(pv_rora, pv_agri, pv_per_distr):
+    def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
             # prepare dataframe for integration in supply.egon_power_plants
 
@@ -675,11 +682,6 @@ def regio_of_pv_ground_mounted():
             # integration in supply.egon_power_plants
 
             con = db.engine()
-
-            # scenario name
-            sql = "SELECT scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
-            scenario_name = pd.read_sql(sql,con)
-            scenario_name = scenario_name['scenario_name'].iat[0]
 
             ###
             print(' ')
@@ -722,18 +724,36 @@ def regio_of_pv_ground_mounted():
 
 
             return pv_parks
+        
+    scenario1 = 'eGon2035'
 
-
-    pv_rora, pv_agri, pv_per_distr = run_methodology()
+    pv_rora, pv_agri, pv_per_distr = run_methodology(scenario1)
 
     pv_rora.to_csv('pv_rora.csv',index=True)
     pv_agri.to_csv('pv_agri.csv',index=True)
-    pv_per_distr.to_csv('pv_per_distr.csv',index=True)
+    if len(pv_per_distr) > 0:
+        pv_per_distr.to_csv('pv_per_distr.csv',index=True)
 
-    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr)
+    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, scenario1)
+    
+    #####
+    ### for scenario 'eGon100RE'
+    # TODO
+    '''
+    scenario2 = 'eGon100RE'
 
+    pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(scenario2)
 
-    return pv_parks
+    pv_rora_100RE.to_csv('pv_rora_100RE.csv',index=True)
+    pv_agri_100RE.to_csv('pv_agri_100RE.csv',index=True) 
+    if len(pv_per_distr) > 0:
+        pv_per_distr_100RE.to_csv('pv_per_distr_100RE.csv',index=True)
+
+    pv_parks_100RE = pv_parks(pv_rora, pv_agri, pv_per_distr, scenario2)
+    '''
+    #####
+
+    return pv_parks #, pv_parks_100RE
 
 
 
