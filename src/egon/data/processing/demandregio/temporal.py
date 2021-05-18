@@ -3,11 +3,12 @@ timeseries data using demandregio
 
 """
 
+import geopandas as gpd
 import pandas as pd
 import egon.data.config
 from egon.data import db
 
-def calc_load_curve(share_wz, annual_demand=1):
+def calc_load_curve(share_wz, annual_demand=1, max_only=False):
     """ Create aggregated demand curve for service sector
 
     Parameters
@@ -16,11 +17,16 @@ def calc_load_curve(share_wz, annual_demand=1):
         Share of annual demand per cts branch
     annual_demand : float or pandas.Series, optional
         Annual demand in MWh. The default is 1.
+    max_only: bool
+        Toggle between returning a time series (False) or only the maximum
+        value (True). Can be used only when `share_wz` is of type
+        `pandas.DataFrame`.
+        Defaults to False.
 
     Returns
     -------
     pandas.Series or pandas.DataFrame
-        Annual load curve of combindes cts branches
+        Annual load curve of combinde cts branches in MW
 
     """
     year = 2011
@@ -49,11 +55,18 @@ def calc_load_curve(share_wz, annual_demand=1):
 
     # If shares per cts branch is a DataFrame (e.g. shares per substation)
     # demand curves are created for each row
-    if type(share_wz) == pd.core.frame.DataFrame:
-        result = pd.DataFrame(columns=share_wz.index)
+    if isinstance(share_wz, (pd.core.frame.DataFrame, gpd.GeoDataFrame)):
+        if max_only:
+            result = pd.Series(index=share_wz.index)
+        else:
+            result = pd.DataFrame(columns=share_wz.index)
         for i, row in share_wz.iterrows():
-            result[i] = df[row.index].mul(row).sum(axis=1).mul(
-                annual_demand[i])
+            if max_only:
+                result[i] = df[row.index].mul(row).sum(axis=1).mul(
+                    annual_demand[i]).max()
+            else:
+                result[i] = df[row.index].mul(row).sum(axis=1).mul(
+                    annual_demand[i])
     else:
         result = df[share_wz.index].mul(share_wz).sum(axis=1).mul(
             annual_demand)
