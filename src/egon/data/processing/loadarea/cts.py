@@ -1,8 +1,23 @@
 import geopandas as gpd
 import pandas as pd
 import egon.data.config
+from sqlalchemy import Column, String, Integer, Sequence, Float, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from geoalchemy2.types import Geometry
+Base = declarative_base()
 from egon.data import db
 from egon.data.processing.demandregio.temporal import calc_load_curve
+
+
+class LoadAreaCTS(Base):
+    __tablename__ = "load_area_cts"
+    __table_args__ = {"schema": "demand"}
+
+    cts_loadarea_id = Column(Integer, primary_key=True)
+    subst_id = Column(Integer)
+    peak_load = Column(Float)
+    demand = Column(Float)
+    geometry = Column(Geometry)
 
 
 def loadarea_peak_load(scenario):
@@ -16,6 +31,9 @@ def loadarea_peak_load(scenario):
         Scenario name.
 
     """
+    engine = db.engine()
+    LoadAreaCTS.__table__.drop(bind=engine, checkfirst=True)
+    LoadAreaCTS.__table__.create(bind=engine, checkfirst=True)
 
     sources = (egon.data.config.datasets()
                ['electrical_load_curves_cts']['sources'])
@@ -89,13 +107,22 @@ def loadarea_peak_load(scenario):
     # respecting the MV grid district boundaries
     load_area_polygons_tmp = []
     for name, group in cts_peak_loads_cells.groupby("subst_id"):
+        group["subst_id"] = name
         load_areas_polygons_in_group = (group["geom"].buffer(10).unary_union).buffer(-10)
         load_area_polygons_tmp.append(load_areas_polygons_in_group)
     load_areas_polygons = gpd.GeoDataFrame(geometry=load_area_polygons_tmp,
                                   crs=3035)
 
     load_areas_tmp = gpd.GeoDataFrame(gpd.sjoin(cts_peak_loads_cells, load_areas_polygons, how="right", op="within").reset_index())
-    load_areas = load_areas_tmp.dissolve(by="index", aggfunc={"peak_load": "sum", "demand": "sum"})
-    load_areas = load_areas.explode().reset_index()
+    load_areas = load_areas_tmp.dissolve(by="index", aggfunc={"peak_load": "sum", "demand": "sum", "subst_id": "first"})
+    load_areas = load_areas.explode().reset_index().drop(["index", "level_1"], axis=1)
+    load_areas.to_postgis(
+        LoadAreaCTS.__tablename__,
+        engine,
+        schema=LoadAreaCTS.__table_args__["schema"],
+        index=True,
+        index_label="cts_loadarea_id",
+        if_exists="replace"
+    )
 
 
