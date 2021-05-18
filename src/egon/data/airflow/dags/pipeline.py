@@ -454,6 +454,8 @@ with airflow.DAG(
     retrieve_mastr_data >> generate_wind_farms
     insert_re_potential_areas >> generate_wind_farms
     scenario_input_import >> generate_wind_farms
+    hvmv_substation_extraction >> generate_wind_farms
+    define_mv_grid_districts >> generate_wind_farms
     
     # regionalization of PV ground mounted
     generate_pv_ground_mounted = PythonOperator(
