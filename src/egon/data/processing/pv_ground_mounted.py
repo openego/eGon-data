@@ -715,8 +715,9 @@ def regio_of_pv_ground_mounted():
             sql = "SELECT MAX(id) FROM supply.egon_power_plants"
             max_id = pd.read_sql(sql,con)
             max_id = max_id['max'].iat[0]
-
-
+            if max_id == None: 
+                max_id = 1
+            
             pv_park_id = max_id+1
 
             # Copy relevant columns from pv_parks
