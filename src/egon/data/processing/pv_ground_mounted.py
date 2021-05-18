@@ -7,6 +7,9 @@ from shapely import wkb
 import pandas as pd
 import numpy as np
 
+###
+import datetime
+
 
 def regio_of_pv_ground_mounted():
 
@@ -27,7 +30,7 @@ def regio_of_pv_ground_mounted():
         print('originale Anzahl der Zeilen im Datensatz: '+str(len(df)))
         print('NaNs für Längen- und Breitengrad: '+str(x1)+' & '+str(x2))
         df.dropna(inplace=True)
-        print('Anzahl der Zeilen im Datensatz nach Dropping der NaNs:'+str(len(df)))
+        print('Anzahl der Zeilen im Datensatz nach Dropping der NaNs: '+str(len(df)))
         print(' ')
 
         # derive dataframe for locations
@@ -43,11 +46,7 @@ def regio_of_pv_ground_mounted():
         df_radius = mastr['installed capacity in kW'].div(pow_per_area*np.pi)**0.5 # in m
 
         # create buffer
-        df_buffer = gpd.GeoSeries()
-        for index, row in mastr.iterrows():
-            #row['buffer'] = row['geometry'].buffer(df_radius.loc[index]) ### funktioniert mit dieser Zeile nicht
-            df_buffer.loc[index] = row['geometry'].buffer(df_radius.loc[index])
-        mastr['buffer'] = df_buffer
+        mastr['buffer'] = mastr['geometry'].buffer(df_radius)
         mastr['buffer'].crs=3035
 
         # derive MaStR-Nummer
@@ -115,7 +114,7 @@ def regio_of_pv_ground_mounted():
 
         # import potential areas: railways and roads & agriculture
 
-        # railways and roads
+        # roads and railway
         sql = "SELECT id, geom FROM supply.egon_re_potential_area_pv_road_railway"
         potentials_rora = gpd.GeoDataFrame.from_postgis(sql, con)
         potentials_rora = potentials_rora.set_index("id")
@@ -126,34 +125,43 @@ def regio_of_pv_ground_mounted():
         potentials_agri = potentials_agri.set_index("id")
 
         # add areas < 1 ha to bigger areas if they are very close, otherwise exclude areas < 1 ha
-
-        ### counting variables for examination
-        count_small = 0
-        count_join = 0
-        count_del_join = 0
-        before = len(potentials_rora)
-
-        rora_join = gpd.GeoSeries()
+        
+        # calculate area
         potentials_rora['area'] = potentials_rora.area
-        for index, row in potentials_rora.iterrows():
-            if row['area'] < 10000: ### suche kleine Flächen
-                buffer = row['geom'].buffer(join_buffer) # Buffer um kleine Fläche
-                count_small = count_small+1
-                for index2, row2 in potentials_rora.iterrows():
-                    if ((row2['area'] > 10000) and (buffer.intersects(row2['geom']))): ### prüfe, ob sich Buffer mit großer Fläche überschneidet
-                        count_join = count_join+1
-                        #row2['geom']=gpd.GeoSeries([row2['geom'],row['geom']]).unary_union ### funktioniert mit dieser Zeile nicht
-                        rora_join.loc[index2] = gpd.GeoSeries([row2['geom'],row['geom']]).unary_union ### join kleine zu große Fläche
-                        break ### verhindere doppelte Zuordnung
-                potentials_rora = potentials_rora.drop(index) ### danach oder falls keine Überschneidung lösche Zeile mit kleiner Fläche
-                count_del_join = count_del_join + 1
-        potentials_rora['joined'] = potentials_rora['geom'].copy()
-        for i in range(len(rora_join)):
-            index = rora_join.index[i]
-            potentials_rora['joined'].loc[index] = rora_join.iloc[i]
-
+        potentials_agri['area'] = potentials_agri.area
+        
+        # roads and railwas
+        
+        ### counting variables for examination
+        before = len(potentials_rora)
+        
+        # get small areas and create buffer for joining around them
+        small_areas = potentials_rora[potentials_rora['area'] < 10000]
+        small_buffers = small_areas.copy()
+        small_buffers['geom'] = small_areas['geom'].buffer(join_buffer)
+        
+        # drop small areas in potential areas
+        index_names = potentials_rora[potentials_rora['area'] < 10000 ].index
+        potentials_rora.drop(index_names,inplace=True)
+        
+        # check intersection of small areas with other potential areas
+        overlay = gpd.sjoin(potentials_rora, small_buffers)
+        o = overlay['index_right']
+        o.drop_duplicates(inplace=True)
+        
+        # add small areas to big ones if buffer intersects
+        for i in range(0,len(o)):
+            index_potentials = o.index[i]
+            index_small = o.iloc[i]
+            x = potentials_rora['geom'].loc[index_potentials]
+            y = small_areas['geom'].loc[index_small]
+            join = gpd.GeoSeries(data=[x,y])
+            potentials_rora['geom'].loc[index_potentials] = join.unary_union
+            
         ### print counting variables for examination
-        count_delete = count_del_join - count_join
+        count_small = len(small_buffers)
+        count_join = len(o)
+        count_delete = count_small - count_join
         print(' ')
         print('Untersuchung der Zusammenfassung von Potentialflächen im Bereich Roads and Railways')
         print('Länge des Dataframes der Flächen vorher: '+str(before))
@@ -162,34 +170,39 @@ def regio_of_pv_ground_mounted():
         print('gelöschte Flächen (not joined): '+str(count_delete))
         print('Länge des Dataframes der Flächen danach: '+str(len(potentials_rora)))
         print(' ')
-
+            
+        # agriculture
+        
         ### counting variables for examination
-        count_small = 0
-        count_join = 0
-        count_del_join = 0
         before = len(potentials_agri)
-
-        agri_join = gpd.GeoSeries()
-        potentials_agri['area'] = potentials_agri.area
-        for index, row in potentials_agri.iterrows():
-            if row['area'] < 10000:
-                buffer = row['geom'].buffer(join_buffer)
-                count_small = count_small+1
-                for index2, row2 in potentials_agri.iterrows():
-                    if ((row2['area'] > 10000) and (buffer.intersects(row2['geom']))):
-                        count_join = count_join+1
-                        #row2['geom']=gpd.GeoSeries([row2['geom'],row['geom']]).unary_union
-                        agri_join.loc[index2] = gpd.GeoSeries([row2['geom'],row['geom']]).unary_union
-                        break
-                potentials_agri = potentials_agri.drop(index)
-                count_del_join = count_del_join + 1
-        potentials_agri['joined'] = potentials_agri['geom'].copy()
-        for i in range(len(agri_join)):
-            index = agri_join.index[i]
-            potentials_agri['joined'].loc[index] = agri_join.iloc[i]
-
+        
+        # get small areas and create buffer for joining around them
+        small_areas = potentials_agri[potentials_agri['area'] < 10000]
+        small_buffers = small_areas.copy()
+        small_buffers['geom'] = small_areas['geom'].buffer(join_buffer)
+        
+        # drop small areas in potential areas
+        index_names = potentials_agri[potentials_agri['area'] < 10000 ].index
+        potentials_agri.drop(index_names,inplace=True)
+        
+        # check intersection of small areas with other potential areas
+        overlay = gpd.sjoin(potentials_agri, small_buffers)
+        o = overlay['index_right']
+        o.drop_duplicates(inplace=True)
+        
+        # add small areas to big ones if buffer intersects
+        for i in range(0,len(o)):
+            index_potentials = o.index[i]
+            index_small = o.iloc[i]
+            x = potentials_agri['geom'].loc[index_potentials]
+            y = small_areas['geom'].loc[index_small]
+            join = gpd.GeoSeries(data=[x,y])
+            potentials_agri['geom'].loc[index_potentials] = join.unary_union
+            
         ### print counting variables for examination
-        count_delete = count_del_join - count_join
+        count_small = len(small_buffers)
+        count_join = len(o)
+        count_delete = count_small - count_join
         print(' ')
         print('Untersuchung der Zusammenfassung von Potentialflächen im Bereich Roads and Railways')
         print('Länge des Dataframes der Flächen vorher: '+str(before))
@@ -198,37 +211,30 @@ def regio_of_pv_ground_mounted():
         print('gelöschte Flächen (not joined): '+str(count_delete))
         print('Länge des Dataframes der Flächen danach: '+str(len(potentials_agri)))
         print(' ')
-
-        # edit dataframe to only save relevant information
-
-        potentials_rora['geom'] = potentials_rora['joined']
-        potentials_rora.drop(['joined'], axis=1, inplace=True)
-        potentials_rora['area'] = potentials_rora['geom'].area
-        potentials_agri['geom'] = potentials_agri['joined']
-        potentials_agri.drop(['joined'], axis=1, inplace=True)
-        potentials_agri['area'] = potentials_agri['geom'].area
+            
+        # calculate new areas
+        potentials_rora['area'] = potentials_rora.area
+        potentials_agri['area'] = potentials_agri.area
 
         # check intersection of potential areas
 
         ### counting variables
         agri_vorher = len(potentials_agri)
-        x_inter = 0
-
-        pot_r = potentials_rora['geom'].unary_union
 
         # if areas intersect, keep road & railway potential areas and drop agricultural ones
-        for index, agri in potentials_agri.iterrows():
-            if agri['geom'].intersects(pot_r):
-                x_inter = x_inter + 1
-                potentials_agri = potentials_agri.drop([index])
+        overlay = gpd.sjoin(potentials_rora, potentials_agri)
+        o = overlay['index_right']
+        o.drop_duplicates(inplace=True)
+        for i in range(0,len(o)):
+            index=o.iloc[i]
+            potentials_agri.drop([index], inplace=True)
 
         ### examination
-        agri_nachher = len(potentials_agri)
         print(' ')
         print('Überprüfung der Funktion zur Meidung der Intersection von Potentialflächen:')
         print('Länge potentials_agri vorher: '+str(agri_vorher))
-        print('Anzahl der auftretenden Fälle: '+str(x_inter))
-        print('Länge potentials_agri nachher: '+str(agri_nachher))
+        print('Anzahl der auftretenden Fälle: '+str(len(o)))
+        print('Länge potentials_agri nachher: '+str(len(potentials_agri)))
         print(' ')
 
         return potentials_rora, potentials_agri
@@ -239,6 +245,7 @@ def regio_of_pv_ground_mounted():
         # select potential areas with existing pv plants
         # (potential areas intersect buffer around existing plants)
 
+        ### alt
         '''### test data
         print(' ')
         print('Testdaten für intersect-Funktion an PV-Koordinaten und Buffers je mit Potentialflächen:')
@@ -246,20 +253,36 @@ def regio_of_pv_ground_mounted():
         print('POINT INTERSECTS: '+str(potentials_pot['geom'].loc[2136].intersects(mastr['geometry'].loc[798803])))
         print('BUFFER INTERSECTS: '+str(potentials_pot['geom'].loc[2136].intersects(mastr['buffer'].loc[798803])))
         print(' ')'''
+        
+        # prepare dataframes to check intersection
+        pvs = gpd.GeoDataFrame()
+        pvs['geom'] = mastr['buffer'].copy()
+        pvs.crs=3035
+        pvs = pvs.set_geometry('geom')
+        potentials = gpd.GeoDataFrame()
+        potentials['geom'] = potentials_pot['geom'].copy()
+        potentials.crs=3035
+        potentials = potentials.set_geometry('geom')
+        
+        # check intersection of potential areas with exisiting PVs (MaStR)
+        overlay = gpd.sjoin(pvs, potentials)
+        o = overlay['index_right']
+        o.drop_duplicates(inplace=True)
+               
+        # define selected potentials areas
+        pot_sel = potentials_pot.copy()
+        pot_sel['selected'] = pd.Series()
+        pot_sel['voltage_level'] = pd.Series(dtype=int)
+        for i in range(0,len(o)):
+            index_pot = o.iloc[i]
+            pot_sel['selected'].loc[index_pot] = True
+            # get voltage level of existing PVs
+            index_pv = o.index[i]
+            pot_sel['voltage_level'] = mastr['voltage_level'].loc[index_pv]
+        pot_sel = pot_sel[pot_sel['selected']==True]
+        pot_sel.drop('selected', axis=1, inplace=True)
 
-        pot_sel = pd.Series()
-        voltage_level = pd.Series()
-        for index1, loc in mastr.iterrows():
-            for index2, pot in potentials_pot.iterrows():
-                    if pot['geom'].intersects(loc['buffer']):
-                        pot_sel.loc[index2] = True
-                        voltage_level.loc[index2] = loc['voltage_level']
-        potentials_pot['selected'] = pot_sel
-        pv_pot = potentials_pot.loc[potentials_pot['selected'] == True]
-        pv_pot.drop(['selected'], axis=1, inplace=True)
-        pv_pot['voltage_level'] = voltage_level
-
-
+        ### alt
         '''pot_sel2 = pd.Series()
         for index1, loc in mastr.iterrows():
             for index2, pot in potentials_pot.iterrows():
@@ -276,7 +299,7 @@ def regio_of_pv_ground_mounted():
         print('Anzahl ausgewählter Potentialflächen ohne Buffer: '+str(x_without_buffer))
         print(' ')'''
 
-        return pv_pot
+        return pot_sel
 
 
     def build_pv(pv_pot, pow_per_area):
@@ -416,7 +439,9 @@ def regio_of_pv_ground_mounted():
                 print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität ist ausreichend.')
                 print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
                 print('Saklierungsfaktor: '+str(scale_factor))
-
+                
+                pv_per_distr = gpd.GeoDataFrame()
+                
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
 
@@ -427,6 +452,7 @@ def regio_of_pv_ground_mounted():
             print('Installierte Kapazität auf Flächen existierender PV-Parks (Bestandsflächen): '+str(total_pv_power/1000)+' MW')
             print('Restkapazität: '+str(rest_cap/1000)+' MW')
             print('Restkapazität wird zunächst über übrige Potentialflächen Road & Railway verteilt.')
+            print(datetime.datetime.now())
 
             # build pv parks in potential areas road & railway
             pv_per_distr = build_additional_pv(potentials_rora, pv_rora, pow_per_area, con)
@@ -453,6 +479,7 @@ def regio_of_pv_ground_mounted():
                 print('Verteilung über Potentialflächen Road & Railway zur Erreichung der Zielkapazität NICHT ausreichend:')
                 print('Restkapazität: '+str(rest_cap/1000)+' MW')
                 print('Restkapazität wird über übrige Potentialflächen Agriculture verteilt.')
+                print(datetime.datetime.now())
 
                 pv_per_distr_2 = build_additional_pv(potentials_agri, pv_agri, pow_per_area, con)
                 # change index to add different Dataframes in the end
@@ -470,35 +497,35 @@ def regio_of_pv_ground_mounted():
                     ###
                     print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway und Agriculture verteilt.')
 
-        ###
-        x=0
-
-        # assign grid level do pv_per_distr
-        v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
-        for index, distr in pv_per_distr.iterrows():
-            if distr['installed capacity in kW'] > 5500: # > 5 MW
-                v_lvl[index] = 4
-                x = x+1
-            else:
-                v_lvl[index] = 5
-        pv_per_distr['voltage_level'] = v_lvl
-
-        # new overall installed capacity
-        total_pv_power = pv_rora['installed capacity in kW'].sum() + \
-        pv_agri['installed capacity in kW'].sum() + \
-        pv_per_distr['installed capacity in kW'].sum()
-
-        ###
-        print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
-        print('(Zielwert: '+str(target_power/1000)+' MW)')
-        print(' ')
-
-        ###
-        print('Untersuchung der zusätzlich (außerhalb der Bestandsflächen) installierten Kapazität:')
-        print('Installierte Leistung pro MV Grid District > 5,5 MW und somit > MV-level: '+str(x))
-        print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
-        print(' ')
-
+            ###
+            x=0
+    
+            # assign grid level to pv_per_distr
+            v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
+            for index, distr in pv_per_distr.iterrows():
+                if distr['installed capacity in kW'] > 5500: # > 5 MW
+                    v_lvl[index] = 4
+                    x = x+1
+                else:
+                    v_lvl[index] = 5
+            pv_per_distr['voltage_level'] = v_lvl
+    
+            # new overall installed capacity
+            total_pv_power = pv_rora['installed capacity in kW'].sum() + \
+            pv_agri['installed capacity in kW'].sum() + \
+            pv_per_distr['installed capacity in kW'].sum()
+    
+            ###
+            print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
+            print('(Zielwert: '+str(target_power/1000)+' MW)')
+            print(' ')
+    
+            ###
+            print('Untersuchung der zusätzlich (außerhalb der Bestandsflächen) installierten Kapazität:')
+            print('Installierte Leistung pro MV Grid District > 5,5 MW und somit > MV-level: '+str(x))
+            print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
+            print(' ')
+    
         return pv_rora, pv_agri, pv_per_distr
 
 
@@ -522,16 +549,13 @@ def regio_of_pv_ground_mounted():
         # assumption for maximum distance of park with hv-power to next substation
         max_dist_hv = 20000 # m
 
-        # assumption for target value of installed capacity in Germany per scenario
-        sql = "SELECT capacity FROM supply.egon_scenario_capacities WHERE carrier='solar' "
-        target_power = (pd.read_sql(sql,con))
-        target_power = target_power['capacity'].iat[0]*1000 #in kW
-        print(' ')
-        print('target power: '+str(target_power)+' kW')
-        print(' ')
-
         ### PARAMETERS ###
-
+        
+        ###
+        print(' ')
+        print('MaStR-Data')
+        print(datetime.datetime.now())
+        print(' ')
 
         # MaStR-data: existing PV farms
         mastr = mastr_existing_pv(path, pow_per_area)
@@ -539,7 +563,13 @@ def regio_of_pv_ground_mounted():
         # files for depiction in QGis
         mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
         mastr['buffer'].to_file("MaStR_PVs_buffered.geojson", driver='GeoJSON')
-
+        
+        ###
+        print(' ')
+        print('potential area')
+        print(datetime.datetime.now())
+        print(' ')
+        
         # database-data: potential areas for new PV farms
         potentials_rora, potentials_agri = potential_areas(con, join_buffer)
 
@@ -547,6 +577,12 @@ def regio_of_pv_ground_mounted():
         potentials_rora['geom'].to_file("potentials_rora_joined.geojson", driver='GeoJSON',index=True)
         potentials_agri['geom'].to_file("potentials_agri_joined.geojson", driver='GeoJSON',index=True)
 
+        ###
+        print(' ')
+        print('select potentials area')
+        print(datetime.datetime.now())
+        print(' ')
+        
         # select potential areas with existing PV farms to build new PV farms
         pv_rora = select_pot_areas(mastr, potentials_rora)
         pv_agri = select_pot_areas(mastr, potentials_agri)
@@ -555,6 +591,12 @@ def regio_of_pv_ground_mounted():
         pv_rora['geom'].to_file("potential_rora_selected.geojson", driver='GeoJSON')
         pv_agri['geom'].to_file("potential_agri_selected.geojson", driver='GeoJSON')
 
+        ###
+        print(' ')
+        print('build PV parks where there is PV ground mounted already (-> MaStR) on potential area')
+        print(datetime.datetime.now())
+        print(' ')
+        
         # build new PV farms
         pv_rora = build_pv(pv_rora, pow_per_area)
         pv_agri = build_pv(pv_agri, pow_per_area)
@@ -562,23 +604,78 @@ def regio_of_pv_ground_mounted():
         # files for depiction in QGis
         pv_rora['centroid'].to_file("PVs_rora_new.geojson", driver='GeoJSON')
         pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
-
+        
+        ### 
+        print(' ')
+        print('adapt grid level of PV parks')
+        print(datetime.datetime.now())
+        print(' ')
+        
         # adapt grid level to new farms
         pv_rora = adapt_grid_level(pv_rora, max_dist_hv, con)
         pv_agri = adapt_grid_level(pv_agri, max_dist_hv, con)
 
+        ###
+        print(' ')
+        print('check target value and build more Pv parks on potential area if necessary')
+        print(datetime.datetime.now())
+        print(' ')
+        
+        # 1) scenario: eGon2035
+        
+        # assumption for target value of installed capacity in Germany per scenario
+        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
+        target_power = (pd.read_sql(sql,con))
+        target_power = target_power[target_power['scenario_name']=='eGon2035']
+        target_power = target_power['capacity'].sum() * 1000
+        
+        # TODO: change target_power to value per Bundesland
+        
+        ###
+        print(' ')
+        print('scenario: eGon2035')
+        print('target power: '+str(target_power)+' kW')
+        print(' ')
+        
         # check target value and adapt installed capacity if necessary
         pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
 
         # files for depiction in QGis
-        pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
-        pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+        if len(pv_per_distr) > 0:
+        	pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
+        	pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
 
+        # 2) scenario: eGon100RE
 
-        return pv_rora, pv_agri, pv_per_distr
+        # TODO
+        
+        '''
+        
+        # assumption for target value of installed capacity in Germany per scenario
+        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
+        target_power = (pd.read_sql(sql,con))
+        target_power = target_power[target_power['scenario_name']=='eGon100RE']
+        target_power = target_power['capacity'].sum() * 1000
+        
+        ###
+        print(' ')
+        print('scenario: eGon2035')
+        print('target power: '+str(target_power)+' kW')
+        print(' ')
+        
+        # check target value and adapt installed capacity if necessary
+        pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
 
+        # files for depiction in QGis
+        if len(pv_per_distr_100RE) > 0:
+        	pv_per_distr_100RE['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
+        	pv_per_distr_100RE['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+        
+        '''
 
-    def pv_parks(pv_rora, pv_agri, pv_per_distr):
+        return pv_rora, pv_agri, pv_per_distr #, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
+
+    def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
             # prepare dataframe for integration in supply.egon_power_plants
 
@@ -613,16 +710,6 @@ def regio_of_pv_ground_mounted():
             # integration in supply.egon_power_plants
 
             con = db.engine()
-
-            # scenario name
-            sql = "SELECT scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar' "
-            scenario_name = pd.read_sql(sql,con)
-            scenario_name = scenario_name['scenario_name'].iat[0]
-
-            ###
-            print(' ')
-            print('scenario name: '+str(scenario_name))
-            print(' ')
 
             # maximum ID in egon_power_plants
             sql = "SELECT MAX(id) FROM supply.egon_power_plants"
@@ -661,17 +748,29 @@ def regio_of_pv_ground_mounted():
 
             return pv_parks
 
-
-    pv_rora, pv_agri, pv_per_distr = run_methodology()
+    pv_rora, pv_agri, pv_per_distr = run_methodology() 
+    
+    # pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
 
     pv_rora.to_csv('pv_rora.csv',index=True)
     pv_agri.to_csv('pv_agri.csv',index=True)
-    pv_per_distr.to_csv('pv_per_distr.csv',index=True)
+    if len(pv_per_distr) > 0:
+        pv_per_distr.to_csv('pv_per_distr.csv',index=True)
+        
+    '''   
+    pv_rora_100RE.to_csv('pv_rora_100RE.csv',index=True)
+    pv_agri_100RE.to_csv('pv_agri_100RE.csv',index=True)
+    if len(pv_per_distr_100RE) > 0:
+        pv_per_distr_100RE.to_csv('pv_per_distr_100RE.csv',index=True)
+    '''
+    
+    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, 'eGon2035')
+    
+    # pv_parks_100RE = pv_parks(pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, 'eGon100RE')
+    
+    # TODO: add dataframes for scenario eGon100RE
 
-    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr)
-
-
-    return pv_parks
+    return pv_parks #, pv_parks_100RE
 
 
 
