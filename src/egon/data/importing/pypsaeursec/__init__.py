@@ -42,8 +42,8 @@ def run_pypsa_eur_sec():
                 "git",
                 "checkout",
                 "4e44822514755cdd0289687556547100fba6218b",
-                pypsa_eur_repos,
             ],
+            cwd=pypsa_eur_repos,
         )        
 
     if not technology_data_repos.exists():
