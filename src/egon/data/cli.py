@@ -352,7 +352,13 @@ def airflow(context):
     subprocess.run(["airflow"] + context.args)
 
 
-@egon_data.command(context_settings={"help_option_names": ["-h", "--help"]})
+@egon_data.command(
+    context_settings={
+        "allow_extra_args": True,
+        "help_option_names": ["-h", "--help"],
+        "ignore_unknown_options": True,
+    }
+)
 @click.pass_context
 def serve(context):
     """Start the airflow webapp controlling the egon-data pipeline.
@@ -362,6 +368,12 @@ def serve(context):
     doesn't exist and starting the scheduler in the background before starting
     the webserver.
 
+    Any OPTIONS other than `-h`/`--help` will be forwarded to
+    `airflow webserver`, so you can for example specify an alternate port
+    for the webapp to listen on via `egon-data serve -p PORT_NUMBER`.
+    Find out more about the possible webapp options via:
+
+        `egon-data airflow webserver --help`.
     """
     scheduler = Process(
         target=subprocess.run,
@@ -369,7 +381,7 @@ def serve(context):
         kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
     )
     scheduler.start()
-    subprocess.run(["airflow", "webserver"])
+    subprocess.run(["airflow", "webserver"] + context.args)
 
 
 def main():
