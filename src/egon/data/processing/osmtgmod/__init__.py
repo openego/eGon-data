@@ -17,30 +17,6 @@ def run_osmtgmod():
 
     # execute osmTGmod
 
-    osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
-
-    if os.path.exists(osmtgmod_repos):
-        subproc.run(
-            [
-                "git",
-                "pull",
-            ],
-            cwd=osmtgmod_repos,
-        )
-
-    else:
-    	subproc.run(
-            [
-                "git",
-                "clone",
-                "--single-branch",
-                "--branch",
-                "features/egon",
-                "https://github.com/openego/osmTGmod.git",
-            ],
-            cwd=os.path.dirname(__file__),
-        )
-
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
@@ -65,6 +41,30 @@ def run_osmtgmod():
 
 
 def import_osm_data():
+
+    osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
+
+    if os.path.exists(osmtgmod_repos):
+        subproc.run(
+            [
+                "git",
+                "pull",
+            ],
+            cwd=osmtgmod_repos,
+        )
+
+    else:
+    	subproc.run(
+            [
+                "git",
+                "clone",
+                "--single-branch",
+                "--branch",
+                "features/egon",
+                "https://github.com/openego/osmTGmod.git",
+            ],
+            cwd=os.path.dirname(__file__),
+        )
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
