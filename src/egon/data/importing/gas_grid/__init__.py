@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr  9 14:32:53 2021
-
-@author: nada_am
+The central module containing all code dealing with importing data from SciGRID_gas IGGIELGN data
 """
 import os
 import ast
@@ -10,10 +8,36 @@ import pandas as pd
 import numpy as np
 import geopandas
 import json
+
 from shapely import geometry
 from egon.data import db
 from egon.data.config import settings                     
 from geoalchemy2.types import Geometry
+from urllib.request import urlretrieve
+from zipfile import ZipFile
+
+def download_SciGRID_gas_data():
+    """
+    Download SciGRID_gas IGGIELGN data from Zenodo
+
+    """
+    path = 'src/egon/data/importing/gas_grid/'
+    
+    zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/IGGIELGN.zip")
+    if not os.path.isfile(zenodo_zip_file_url):
+        urlretrieve(zenodo_zip_file_url, path + 'IGGIELGN.zip')
+        
+    components = ['Nodes', 'PipeSegments', 'Productions', 'Storages'] #'Compressors'
+    files = []
+    for i in components:
+        files.append('data/IGGIELGN_' + i + '.csv')
+    
+    with ZipFile(path + 'IGGIELGN.zip', 'r') as zipObj:
+        listOfFileNames = zipObj.namelist()
+        for fileName in listOfFileNames:
+            if fileName in files:
+                zipObj.extract(fileName, path) 
+
 
 def define_gas_nodes_list():
     """Define list of gas nodes from SciGRID_gas IGGIELGN data
@@ -25,7 +49,7 @@ def define_gas_nodes_list():
 
     # Read-in data from csv-file
     target_file = os.path.join(
-        os.path.dirname(__file__), 'IGGIELGN_Nodes.csv')
+        os.path.dirname(__file__), 'data/IGGIELGN_Nodes.csv')
     
     gas_nodes_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -50,7 +74,7 @@ def insert_gas_nodes_list(gas_nodes_list):
     # Connect to local database
     engine = db.engine()
     
-    gas_nodes_list = gas_nodes_list[ gas_nodes_list['country_code'].str.match('DE')] # A remplacer evtmt par un test sur le NUTS0
+    gas_nodes_list = gas_nodes_list[ gas_nodes_list['country_code'].str.match('DE')] # A remplacer evtmt par un test sur le NUTS0 ?
     # Cut data to federal state if in testmode
     NUTS1 = []
     for index, row in gas_nodes_list.iterrows():
@@ -77,8 +101,7 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.assign(**c)
     
     gas_nodes_list = geopandas.GeoDataFrame(gas_nodes_list, geometry=geopandas.points_from_xy(gas_nodes_list['x'], gas_nodes_list['y']))
-    gas_nodes_list = gas_nodes_list.rename(columns={'geometry': 'geom'})
-    gas_nodes_list = gas_nodes_list.set_geometry('geom', crs=4326)
+    gas_nodes_list = gas_nodes_list.rename(columns={'geometry': 'geom'}).set_geometry('geom', crs=4326)
     
     gas_nodes_list = gas_nodes_list.reset_index(drop=True)
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
@@ -102,7 +125,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
     engine = db.engine()
 
     classifiaction_file = os.path.join(
-        os.path.dirname(__file__), 'pipeline_classification.csv') ##### /!\ nom a modifier /!\
+        os.path.dirname(__file__), 'pipeline_classification.csv') ##### /!\ nom a modifier /!\ [download from zenodo repository with small files]
         
     classification = pd.read_csv(classifiaction_file,
                                delimiter=',',
@@ -110,13 +133,13 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
     # Read-in data from csv-file
     target_file = os.path.join(
-        os.path.dirname(__file__), 'IGGIELGN_PipeSegment3.csv') ##### /!\ nom a modifier /!\
+        os.path.dirname(__file__), 'data/IGGIELGN_PipeSegments.csv')
     
     gas_pipelines_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
                                usecols = ['id', 'node_id', 'lat', 'long', 'country_code', 'param'])
 
-    gas_pipelines_list = gas_pipelines_list[ gas_pipelines_list['country_code'].str.contains('DE')] # A remplacer evtmt par un test sur le NUTS0?
+    gas_pipelines_list = gas_pipelines_list[ gas_pipelines_list['country_code'].str.contains('DE')] # A remplacer evtmt par un test sur le NUTS0 ?
     gas_pipelines_list['link_id'] = range(len(gas_pipelines_list))
 
     # Cut data to federal state if in testmode
@@ -238,7 +261,8 @@ def insert_gas_data():
     -------
     None.
     """
-
+    download_SciGRID_gas_data()
+    
     gas_nodes_list = define_gas_nodes_list()
    
     insert_gas_nodes_list(gas_nodes_list)
