@@ -160,10 +160,13 @@ class Dataset:
             .filter(
                 tuple_(Model.name, Model.version).in_(
                     [
-                        (dependency.dataset.name, dependency.dataset.version)
-                        if isinstance(dependency, Task)
-                        else (dependency.name, dependency.version)
+                        (dataset.name, dataset.version)
                         for dependency in self.dependencies
+                        for dataset in [
+                            dependency.dataset
+                            if isinstance(dependency, Task)
+                            else dependency
+                        ]
                     ]
                 )
             )
