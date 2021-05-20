@@ -90,6 +90,7 @@ setup(
         "importlib-resources",
         "loguru",
         "matplotlib",
+        "netcdf4",
         "oedialect==0.0.8",
         "psycopg2",
         "pyaml",
