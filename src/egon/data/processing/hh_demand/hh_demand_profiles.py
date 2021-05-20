@@ -13,6 +13,7 @@ import hh_demand_profiles_tools as hh_tools
 # ###################
 # in Wh
 # TODO: > to/from SQL?
+# filed needs to be placed manually in directory
 file = 'h0_profiles.h5'
 file = os.path.join(os.path.realpath(file))
 df_profiles = pd.read_hdf(file)
@@ -24,6 +25,7 @@ df_profiles.columns = pd.MultiIndex.from_arrays([df_profiles.columns.str[:2], df
 # Load Zensus data at nuts-level
 # ###################
 # TODO: > to/from SQL?
+# filed needs to be placed manually in directory
 file = 'Zensus2011_Personen.csv'
 file = os.path.join(os.path.realpath(file))
 df_zensus = pd.read_csv(file, sep=';', decimal='.', skiprows=5, skipfooter=7,
