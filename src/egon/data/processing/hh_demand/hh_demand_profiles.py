@@ -82,6 +82,7 @@ hh_types = {'SR': [('Einpersonenhaushalte (Singlehaushalte)', 'Insgesamt', 'Seni
                    ('Paare ohne Kind(er)', '5 Personen', 'Adults'),
                    ('Paare ohne Kind(er)', '6 und mehr Personen', 'Adults')],  # no info about share of kids
             # TODO: maybe remove following lines if not needed
+
             #             'O1': [('Mehrpersonenhaushalte ohne Kernfamilie', '3 Personen', 'Adults'),
             #                    ('Mehrpersonenhaushalte ohne Kernfamilie', '4 Personen', 'Adults'),
             #                    ('Mehrpersonenhaushalte ohne Kernfamilie', '5 Personen', 'Adults'),
@@ -130,7 +131,8 @@ mapping_people_in_households = {'SR': 1,
 # derivate households data from inhabitants data by compound number of people per household type
 df_dist_households = hh_tools.inhabitants_to_households(df_hh_types_nad_abs, mapping_people_in_households)
 
-
+# TODO: direct db.engine to configuration file
+# engine = db.engine()
 # SQL - Access Zensus household data cell-level
 df_households_typ = db.select_dataframe(sql="""
             SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
@@ -190,16 +192,16 @@ df_demand_regio = db.select_dataframe(sql="""
                         GROUP BY nuts3, year
                         ORDER BY year""", index_col=['year', 'nuts3'])
 
-# testcase
+# # testcase
 # test_data = df_zensus_cells.groupby('nuts3').get_group('DEF03')
 # test_data = pd.concat([df_zensus_cells.groupby('nuts3').get_group('DEF03'),
 #                        df_zensus_cells.groupby('nuts3').get_group('DEF06')])
-# 
+#
 # df_cell_demand_metadata = hh_tools.get_cell_demand_metadata(test_data, df_profiles)
 # df_cell_demand_metadata = hh_tools.adjust_to_demand_regio_nuts3_annual(df_cell_demand_metadata, df_profiles, df_demand_regio)
-# 
-# 
-# 
+#
+#
+#
 # import random
 # load_area_ids = random.sample(list(df_cell_demand_metadata.index), 100)
 # max_value_load_area = hh_tools.get_load_area_max_load(df_profiles, df_cell_demand_metadata, load_area_ids, 2034)
