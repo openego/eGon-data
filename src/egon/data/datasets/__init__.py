@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections import abc
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterable, Set, Tuple, Union
+from typing import Callable, Iterable, Set, Tuple, Union
 
 from airflow import DAG
 from airflow.exceptions import AirflowSkipException
-from airflow.operators import BaseOperator as Task
+from airflow.operators import BaseOperator as Operator
 from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
@@ -76,6 +76,20 @@ class Model(Base):
     )
 
 
+#: A :class:`Task` is an Airflow :class:`Operator` or any
+#: :class:`Callable <typing.Callable>` taking no arguments and returning
+#: :obj:`None`. :class:`Callables <typing.Callable>` will be converted
+#: to :class:`Operators <Operator>` by wrapping them in a
+#: :class:`PythonOperator` and setting the :obj:`~PythonOperator.task_id`
+#: to the :class:`Callable <typing.Callable>`'s
+#: :obj:`~definition.__name__`, with underscores replaced with hyphens.
+#: If the :class:`Callable <typing.Callable>`'s `__module__`__ attribute
+#: contains the string :obj:`"egon.data.datasets."`, the
+#: :obj:`~PythonOperator.task_id` is also prefixed with the module name,
+#: followed by a dot and with :obj:`"egon.data.datasets."` removed.
+#:
+#: __ https://docs.python.org/3/reference/datamodel.html#index-34
+Task = Union[Callable[[], None], Operator]
 TaskGraph = Union[Task, "ParallelTasks", "SequentialTasks"]
 ParallelTasks = Set[TaskGraph]
 SequentialTasks = Tuple[TaskGraph, ...]
@@ -90,13 +104,23 @@ class Tasks(dict):
     def __init__(self, graph: TaskGraph):
         """Connect multiple tasks into a potentially complex graph.
 
-        As per the type, a task graph can be given as a single operator,
+        As per the type, a task graph can be given as a single :class:`Task`,
         a tuple of task graphs or a set of task graphs. A tuple will be
         executed in the specified order, whereas a set means that the
         tasks in the graph will be executed in parallel.
         """
+        if isinstance(graph, Callable):
+            graph = PythonOperator(
+                task_id=(
+                    f"{graph.__module__.replace('egon.data.datasets.', '')}."
+                    if "egon.data.datasets." in graph.__module__
+                    else ""
+                )
+                + graph.__name__.replace("_", "-"),
+                python_callable=graph,
+            )
         self.graph = graph
-        if isinstance(graph, Task):
+        if isinstance(graph, Operator):
             self.first = {graph}
             self.last = {graph}
             self[graph.task_id] = graph
@@ -164,7 +188,7 @@ class Dataset:
                         for dependency in self.dependencies
                         for dataset in [
                             dependency.dataset
-                            if isinstance(dependency, Task)
+                            if isinstance(dependency, Operator)
                             else dependency
                         ]
                     ]
@@ -210,7 +234,7 @@ class Dataset:
             for dataset in self.dependencies
             if isinstance(dataset, Dataset)
             for task in dataset.tasks.last
-        ] + [task for task in self.dependencies if isinstance(task, Task)]
+        ] + [task for task in self.dependencies if isinstance(task, Operator)]
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
