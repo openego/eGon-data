@@ -8,18 +8,21 @@ import os
 import glob
 from egon.data import db
 import xarray as xr
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 
 import atlite
 import netCDF4
 from netCDF4 import Dataset
 
+from disaggregator import config, data, spatial, temporal, plot
+
 from math import ceil
 
-index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
 
 ###generate temperature interval for each temperature zone
 class IdpProfiles:    
     def __init__(self,df_index, **kwargs):
+        index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
         
         self.df = pd.DataFrame(index = df_index)
         
@@ -27,6 +30,7 @@ class IdpProfiles:
        
    #combination of weighted_temperature, get_normalized_bdew and temperature_inteval
     def get_temperature_interval(self, how='geometric_series'):
+        index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
         """Appoints the corresponding temperature interval to each temperature
         in the temperature vector.
         """
@@ -109,8 +113,8 @@ def temperature_profile_extract():
             
             ##csv file available in the nextcloud folder
             #path = '/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones'
-            station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
-            #station_location=pd.read_csv(os.path.join(path,'station_coordinates.csv'))
+            #station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
+            station_location=pd.read_csv(os.path.join(path,'station_coordinates.csv'))
             
             for row in station_location.index:
                 station_name=station_location.iloc[row,0]            
@@ -133,7 +137,8 @@ def temperature_profile_extract():
         return temperature_profile
 
 ###generate temperature zones for each cell
-def temp_interval():    
+def temp_interval():  
+    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
     temperature_interval = pd.DataFrame()
     temp_profile = temperature_profile_extract()
     
@@ -158,10 +163,11 @@ def idp_pool_generator():
     temp = pd.read_hdf(path, key ='temperature')
     
     ######can wuerzburg file directly be added into the hdf5 file????
-    #temp_wuerzburg = pd.read_csv(os.path.join(r'/home/student/Documents/egon_AM/feb_analysis/5_03',
-                                              'temp_2011_Wuerzburg.csv'))
-    temp_wuerzburg = pd.read_csv(os.path.join(os.path.join(os.getcwd(),'temp_2011_Wuerzburg.csv')))
-    temp_wuerzburg.drop(columns ='Unnamed: 0', inplace=True)
+    
+    # temp_wuerzburg = pd.read_csv(os.path.join(r'/home/student/Documents/egon_AM/feb_analysis/5_03',
+    #                                           'temp_2011_Wuerzburg.csv'))
+    temp_wuerzburg = pd.read_csv(os.path.join(os.path.join(os.getcwd(),'temp_2011_Wuerzburg.csv')),index_col = 0)
+    
     temp_wuerzburg.set_index(index, inplace=True)
     temp_wuerzburg.rename(columns = {'temperature':'Wuerzburg'}, inplace=True)
     temp = pd.concat([temp,temp_wuerzburg], axis =1)
@@ -289,36 +295,53 @@ def idp_df_generator():
                         'temperature_class': m
                         }))
     idp_df = idp_df.reset_index(drop=True)
-    idp_df['idp'] =idp_df.idp.apply(lambda x: np.array(x)) 
+    #idp_df['idp'] =idp_df.idp.apply(lambda x: np.array(x)) 
     
-    ####write to the database
+    #idp_df.idp = idp_df.idp.apply(lambda x:  x.astype(np.float32))
+    
+    ##writting to the database
+    idp_df.to_sql('heat_idp_pool',con=db.engine(),schema='demand' ,if_exists ='replace', index=True,
+                      dtype = {'index': Integer(),
+                                'idp':ARRAY(Float()),
+                                'house': String(),
+                                'temperature_class':Integer()})
+
         
     return idp_df 
     
 
+# function for extracting demand data from pgadmin airflow database
+#converts the table into a dataframe   
+def psycop_df_AF(table_name):
+    conn = db.engine()
+    sql = "SELECT * FROM {}".format(table_name)
+    data = sqlio.read_sql_query(sql, conn)
+    conn = None
+    return data
+
+# the function extracts all spatial data in the form of geopandas dataframe      
+def psycop_gdf_AF(table_name):
+    conn = db.engine()
+    sql = "SELECT * FROM {}".format(table_name)
+    data = gpd.read_postgis(sql, conn)
+    conn = None
+    return data
+
+def psycop_gdf_AF(table_name,geom_column = 'geom'):
+        conn = db.engine()
+        sql = "SELECT * FROM {}".format(table_name)
+        data = gpd.read_postgis(sql, conn, geom_column)
+        conn = None
+        return data
+
 ##extracting and adjusting the demand data to obtain desired structure
 ## considering only residential for 2035 scenario
-def annual_demand_generator():      
-    # function for extracting demand data from pgadmin airflow database(new one added on 3003); 
-    #converts the table into a dataframe   
-    def psycop_df_AF(table_name):
-        conn = db.engine()
-        sql = "SELECT * FROM {}".format(table_name)
-        data = sqlio.read_sql_query(sql, conn)
-        conn = None
-        return data
-    # the function extracts all spatial data in the form of geopandas dataframe      
-    def psycop_gdf_AF(table_name):
-        conn = db.engine()
-        sql = "SELECT * FROM {}".format(table_name)
-        data = gpd.read_postgis(sql, conn)
-        conn = None
-        return data
-           
+def annual_demand_generator():  
+    #os.chdir(r'/home/student')              
     demand = psycop_df_AF('demand.egon_peta_heat')
-    a_pha = psycop_df_AF('society.destatis_zensus_apartment_per_ha')
-    b_pha = psycop_df_AF('society.destatis_zensus_building_per_ha')
-    h_pha = psycop_df_AF('society.destatis_zensus_household_per_ha')
+    a_pha = psycop_df_AF('society.egon_destatis_zensus_apartment_per_ha')
+    b_pha = psycop_df_AF('society.egon_destatis_zensus_building_per_ha')
+    h_pha = psycop_df_AF('society.egon_destatis_zensus_household_per_ha')
     
     zp_pha = psycop_gdf_AF('society.destatis_zensus_population_per_ha')
     
@@ -346,8 +369,8 @@ def annual_demand_generator():
         demand_geom.columns.difference(['demand', 'grid_id', 'geom','zensus_population_id']), 1)
     demand_geom['geom'] = demand_geom['geom'].to_crs(epsg=4326)
     ####import demand geo ###shape file available in the next cloud link
-    #temperature_zones = gpd.read_file(
-        '/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones/Try_Climate_Zone.shp')###change this file location
+    # temperature_zones = gpd.read_file(
+    #     '/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones/Try_Climate_Zone.shp')###change this file location
     temperature_zones = gpd.read_file(os.path.join(os.getcwd(),'TRY_Climate_Zones','Try_Climate_Zone.shp'))
     temperature_zones.sort_values('Zone', inplace=True)
     temperature_zones.reset_index(inplace=True)
@@ -392,100 +415,92 @@ def annual_demand_generator():
     demand_count.drop('index_right', axis=1, inplace=True)
     #demand count consists of demand and household stock count for each cell
     
-    
-    ###assigning a array for each cell consiting of the day class. array length 365
-    # all_temperature_interval is the output of HTS_generation.py
-    # direct:
-    all_temperature_interval = temp_interval()
-    all_temperature_interval.set_index(pd.to_datetime(
-        all_temperature_interval.index), inplace=True)
-    all_temperature_interval = all_temperature_interval.resample('D').max()
-    
-    def interval_allocation(x):
-        if x == 'Hamburg_Fuhlsbuettel':
-            return np.array(all_temperature_interval['Hamburg_Fuhlsbuettel'])
-        if x == 'Rostock_Warnemuende':
-            return np.array(all_temperature_interval['Rostock_Warnemuende'])
-        if x == 'Bremerhaven':
-            return np.array(all_temperature_interval['Bremerhaven'])
-        
-        ####other station to be added for the whole database
-    
-    demand_count['Temperature_interval'] = demand_count['Station'].apply(
-        interval_allocation)
     demand_count.drop(demand_count.columns.difference(
-        ['zensus_population_id', 'demand', 'SFH', 'MFH', 'Temperature_interval','Station']), axis=1, inplace=True)
+        ['zensus_population_id', 'demand', 'SFH', 'MFH','Station']), axis=1, inplace=True)
     
-    return demand_count,all_temperature_interval ##df with demand,hhstock count and daily temprature interval
-
-
+    return demand_count ##df with demand,hhstock count and daily temprature interval
 
 ##generates dataframe with randomly selected column names from the idp pool
-def profile_selector(station):
+def profile_selector():
     idp_df = idp_df_generator()
-    
     #idp_df = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/idp_df.pickle')
     #idp_df = idp_df_sample #####################################to be read from the pgadmin database direclty
-    annual_demand, all_temperature_interval = annual_demand_generator()
+    annual_demand = annual_demand_generator()
     #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
-    #all_temperature_interval = temp_interval()
+    all_temperature_interval = temp_interval()
     
-    Temperature_interval = pd.DataFrame(columns = range(365))
-   
+    #Temperature_interval = pd.DataFrame(columns = range(365))
     #all_temperature_interval.set_index(index,inplace=True)
-    #all_temperature_interval = all_temperature_interval.resample('D').max() ###already resampled inside annual_demand_generator##delete this
-
+    all_temperature_interval = all_temperature_interval.resample('D').max() 
     all_temperature_interval.reset_index(drop=True, inplace=True)
     
-    all_temperature_interval = all_temperature_interval.iloc[:,0:3]#####only considering the saple
-
-        
+    all_temperature_interval = all_temperature_interval.iloc[:,0:3]#####for testmode
+    #all_temperature_interval = all_temperature_interval.iloc
+            
     Temperature_interval = all_temperature_interval.transpose()
-             
 
     # Set seed value to have reproducable results
     np.random.seed(0)
     #generates a dataframe with the idp index number of the selected profiles for each temperature 
-
-    #for station in Temperature_interval.index:
-    result_SFH =pd.DataFrame(columns=Temperature_interval.columns)
-    result_MFH =pd.DataFrame(columns=Temperature_interval.columns)
-    for day in Temperature_interval.columns:
-        t_class = Temperature_interval.loc[station,day].astype(int)
-        
-        array_SFH = np.array(idp_df[(idp_df.temperature_class==t_class)
-                                    &(idp_df.house=='SFH')].index.values)
-        
-        array_MFH = np.array(idp_df[(idp_df.temperature_class==t_class)
-                                    &(idp_df.house=='MFH')].index.values) 
-        
-        result_SFH[day] = np.random.choice(
-            array_SFH, int(annual_demand[annual_demand.Station==station].SFH.sum()))
-        
-        result_MFH[day] = np.random.choice(
-            array_MFH, int(annual_demand[annual_demand.Station==station].MFH.sum()))
-
-
-     
-    result_SFH['zensus_population_id'] = annual_demand[
-        annual_demand.Station==station].loc[
-            annual_demand[annual_demand.Station==station].index.repeat(
-                annual_demand[annual_demand.Station==station].SFH.astype(int))].zensus_population_id.values
-
-    result_MFH['zensus_population_id'] =annual_demand[
-        annual_demand.Station==station].loc[
-            annual_demand[annual_demand.Station==station].index.repeat(
-                annual_demand[annual_demand.Station==station].MFH.astype(int))].zensus_population_id.values
     
-    result_SFH.set_index('zensus_population_id',inplace=True)
-    result_MFH.set_index('zensus_population_id',inplace=True)
-
-    return [result_SFH,result_MFH]
-
+    selected_idp_names = pd.DataFrame()
+    for station in Temperature_interval.index:
+        result_SFH =pd.DataFrame(columns=Temperature_interval.columns)
+        result_MFH =pd.DataFrame(columns=Temperature_interval.columns)
+        for day in Temperature_interval.columns:
+            t_class = Temperature_interval.loc[station,day].astype(int)
+            
+            array_SFH = np.array(idp_df[(idp_df.temperature_class==t_class)
+                                        &(idp_df.house=='SFH')].index.values)
+            
+            array_MFH = np.array(idp_df[(idp_df.temperature_class==t_class)
+                                        &(idp_df.house=='MFH')].index.values) 
+            
+            result_SFH[day] = np.random.choice(
+                array_SFH, int(annual_demand[annual_demand.Station==station].SFH.sum()))
+            
+            result_MFH[day] = np.random.choice(
+                array_MFH, int(annual_demand[annual_demand.Station==station].MFH.sum()))
+    
+    
+         
+        result_SFH['zensus_population_id'] = annual_demand[
+            annual_demand.Station==station].loc[
+                annual_demand[annual_demand.Station==station].index.repeat(
+                    annual_demand[annual_demand.Station==station].SFH.astype(int))].zensus_population_id.values
+    
+        result_MFH['zensus_population_id'] =annual_demand[
+            annual_demand.Station==station].loc[
+                annual_demand[annual_demand.Station==station].index.repeat(
+                    annual_demand[annual_demand.Station==station].MFH.astype(int))].zensus_population_id.values
+        
+        result_SFH.set_index('zensus_population_id',inplace=True)
+        result_MFH.set_index('zensus_population_id',inplace=True)
+        
+        selected_idp_names = selected_idp_names.append(result_SFH)
+        selected_idp_names = selected_idp_names.append(result_MFH)
+    
+    
+    selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
+      
+    chunk_size = 50000
+    chunks = range(ceil(len(selected_profiles)/chunk_size))
+    for i in chunks:
+        x = chunk_size * i
+        y = x + chunk_size
+        if y < len(selected_profiles):
+            df = selected_profiles.iloc[x:y,:]
+        if y > len(selected_profiles):
+            df = selected_profiles.iloc[x:len(selected_profiles),:]
+        df.to_sql('selected_idp_names',con=db.egine(),schema='demand' ,if_exists ='append', index=True) 
+    
+    return idp_df, selected_idp_names
 
 
 ##for building class 11, shlp_type =EFH, wind_impact=0, from shlp_sigmoid_factors.csv, demandlib
 def h_value():
+    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
+    
     a = 3.0469695
     
     b = -37.1833141
@@ -495,7 +510,7 @@ def h_value():
     d = 0.1163157
     
    
-    temp_profile =temperature_profile_extract()
+    temp_profile = temperature_profile_extract()
     temperature_profile_res =temp_profile.resample('D').mean().reindex(index).fillna(method='ffill').fillna(method='bfill')
     
     temp_profile_geom = ((temperature_profile_res.transpose() + 0.5 * np.roll(temperature_profile_res.transpose(), 24,axis=1) +
@@ -504,112 +519,251 @@ def h_value():
     
     #for each temperature station h value created for hourly resolution
     h= (a / (1 + (b / (temp_profile_geom - 40)) ** c) + d)
+    
     return h
     
 ##generaing specific profiles of grid cell as per the assigned index
 ###### normalizing and scaling up of profiles
-def profile_generator(station):
-    #selected_profile=profile_selector()
-    #x = globals()[f'result_MFH_{station}']
-    selected_profiles = profile_selector()
+def profile_generator(aggregation_level):
     
-    if station=='Bremerhaven':
-        sfh=selected_profiles[0]
-        mfh=slelected_profile[1]
-    if station=='Hamburg_Fuhlsbuettel':
-        sfh=selected_profiles[2]
-        mfh=slelected_profile[3]
-    if station=='Rostock_Warnemuende':
-        sfh=selected_profiles[4]
-        mfh=slelected_profile[5]
-        
-    idp_df = idp_df_generator()
+    idp_df, selected_profiles = profile_selector()
+    #selected_profiles = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/selected_profiles.pickle')
+    #idp_df = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/idp_df.pickle')
+    
     y = idp_df['idp'].reset_index()
-    heat_profile_idp_sfh = pd.DataFrame(index=sfh.index)
-    heat_profile_idp_mfh = pd.DataFrame(index=sfh.index)
+    heat_profile_idp= pd.DataFrame(index=selected_profiles.index.sort_values())
+    #os.chdir(r'/home/student')   
+    district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+    district_heating = district_heating[district_heating.scenario == 'eGon2035']
     
-    ##for SFH
-    for i in sfh.columns:
-        col=sfh[i]
+    for i in selected_profiles.columns:
+        col=selected_profiles[i]
         col=col.reset_index()
         y.rename(columns={'index':i},inplace=True)
         col=pd.merge(col,y[[i,'idp']],how='left', on=i)
         col[i]=col['idp']
         col.drop('idp',axis=1,inplace=True)
         col.set_index('zensus_population_id', inplace=True)
-        #col=col.groupby(lambda x:x, axis=0).sum()
-        #heat_profile_idp = col[i].values
-        heat_profile_idp_sfh[i] = col[i].values
+        #col = col.groupby(lambda x:x, axis=0).sum()
+        heat_profile_idp[i] = col[i].values
         y.rename(columns={i:'index'},inplace=True)
-    heat_profile_idp_sfh = heat_profile_idp_sfh.groupby(lambda x:x, axis=0).sum()
-    heat_profile_idp_sfh = heat_profile_idp_sfh.transpose()
-    heat_profile_idp_sfh = heat_profile_idp_sfh.apply(lambda x: x.explode())
-    heat_profile_idp_sfh.set_index(index,inplace=True)
-    heat_profile_idp_sfh = heat_profile_idp_sfh.transpose()
-    
-    for i in mfh.columns:
-        col=mfh[i]
-        col=col.reset_index()
-        y.rename(columns={'index':i},inplace=True)
-        col=pd.merge(col,y[[i,'idp']],how='left', on=i)
-        col[i]=col['idp']
-        col.drop('idp',axis=1,inplace=True)
-        col.set_index('zensus_population_id', inplace=True)
-        #col=col.groupby(lambda x:x, axis=0).sum()
-        #heat_profile_idp = col[i].values
-        heat_profile_idp_mfh[i] = col[i].values
-        y.rename(columns={i:'index'},inplace=True)
-    heat_profile_idp_mfh = heat_profile_idp_mfh.groupby(lambda x:x, axis=0).sum()
-    heat_profile_idp_mfh = heat_profile_idp_mfh.transpose()
-    heat_profile_idp_mfh = heat_profile_idp_mfh.apply(lambda x: x.explode())
-    heat_profile_idp_mfh.set_index(index,inplace=True)
-    heat_profile_idp_mfh = heat_profile_idp_mfh.transpose()
-    
-    return heat_profile_idp_sfh, heat_profile_idp_mfh
+        
+    if aggregation_level == 'district':
+        heat_profile_idp = pd.merge(heat_profile_idp,
+                                     district_heating[['area_id','zensus_population_id']]
+                                     , on='zensus_population_id', how = 'inner' )
 
+        heat_profile_idp.sort_values('area_id',inplace=True)
+        heat_profile_idp.set_index('area_id',inplace=True)
+        heat_profile_idp.drop('zensus_population_id',axis=1,inplace=True)            
+    
+    heat_profile_idp = heat_profile_idp.groupby(lambda x:x, axis=0).sum()
+    heat_profile_idp =  heat_profile_idp.transpose()
+    heat_profile_idp =  heat_profile_idp.apply(lambda x: x.explode())
+    heat_profile_idp.reset_index(drop=True,inplace=True)
+    heat_profile_idp = heat_profile_idp.apply(lambda x: x/x.sum())
+    #heat_profile_idp =  heat_profile_idp.transpose()
 
-def profile_district_heating_generator():
-    #district_heating = pd.read_csv('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/map_district_heating_areas.csv')
-    #imporrting distric heating table as csv; to be directly imported from database
-    district_heating = pd.read_csv(os.path.join(os.getcwd(),'map_district_heating_areas.csv'))
-    distric_heating = district_heating[district_heating['scenario']=='eGon2035']
-    profile = profile_generator()
-    profile = profile.transpose()
-    district_profile= pd.merge(profile,district_heating[['area_id','zensus_population_id']],
-             how='inner', left_on = profile.index,right_on ='zensus_population_id')
-    district_profile.drop('zensus_population_id',axis=1,inplace=True)
-    district_profile = district_profile.groupby(lambda x:x, axis=1).sum()
-    
-    district_demand = pd.merge(district_heating, annual_demand[['demand','zensus_population_id']], 
-                              how='left', on='zensus_population_id')
-    district_demand=district_demand[['area_id','demand']]
-    district_demaand = district_demand.groupby('area_id').sum()
-    
-    
+    return heat_profile_idp
 
-##scaling the profile as per the station h-value and the cell demand
-def demand_scale(station):
-    heat_demand_profile_sfh, heat_demand_profile_mfh = profile_generator(station)
+def residential_demand_scale(aggregation_level):
+    heat_profile = profile_generator(aggregation_level)
+    #heat_profile = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/heat_profile_idp_final.pickle')
     h = h_value()
+    h= h.reset_index(drop=True)
     annual_demand = annual_demand_generator()
     
-    #for SFH
-    demand_curve_sfh = heat_demand_profile_sfh.multiply(h[station],axis=0)
-    demand_curve_sfh = demand_curve_sfh.apply(lambda x: x/x.sum())
-    heat_demand_sfh=demand_curve_sfh.transpose()
-    heat_demand_sfh=heat_demand_sfh.reset_index()
-    heat_demand_sfh.rename(columns={'index':'zensus_population_id'},inplace=True)
-    heat_demand_sfh=pd.merge(heat_demand_sfh,annual_demand[['zensus_population_id','demand']],
-                         how='inner', on='zensus_population_id')
+    if aggregation_level == 'district':
         
-    heat_demand.set_index('zensus_population_id', inplace=True)
-    heat_demand=heat_demand[heat_demand.columns[:-1]].multiply(heat_demand.demand,axis=0)
+        district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+        district_heating = district_heating[district_heating.scenario == 'eGon2035']
     
-    heat_demand=heat_demand.transpose()
+        district_station=pd.merge(district_heating[['area_id','zensus_population_id']],
+                          annual_demand[['zensus_population_id','Station','demand']],
+                          on='zensus_population_id', how ='inner')
     
-    heat_demand.set_index(index,inplace=True)
+        district_station.sort_values('area_id',inplace=True)    
+        district_station.drop('zensus_population_id',axis=1, inplace =True)
+        district_station=district_station.groupby(['area_id','Station']).sum()
+        district_station.reset_index('Station', inplace =True)
     
-    return heat_demand
+        demand_curves = pd.DataFrame()
+        for j in range(len(heat_profile.columns)):
+            current_district = heat_profile.iloc[:,j]
+            area_id = heat_profile.columns[j]
+            station = district_station[district_station.index == area_id]['Station'][area_id]
+            ##some area id cover two different stations
+            if type(station)!=str: 
+                station = station.reset_index()
+                multiple_stations = pd.DataFrame()
+                for i in station.index:
+                    current_station = station.Station[i]
+                    multiple_stations[i] = current_district.multiply(h[current_station],axis=0)
+                multiple_stations = multiple_stations.sum(axis=1)   
+                demand_curves[area_id] = multiple_stations
+            else:
+                demand_curves[area_id] = current_district.multiply(h[station],axis=0)
+        demand_curves = demand_curves.apply(lambda x: x/x.sum())
+        demand_curves = demand_curves.transpose()
+        
+        district_station.drop('Station',axis =1,inplace=True)
+        district_station = district_station.groupby(district_station.index).sum()
+        
+        heat_demand_profile = pd.merge(demand_curves,district_station[['demand']],
+                             how='inner', right_on = demand_curves.index, left_on = district_station.index)
+        
+        heat_demand_profile.rename(columns={'key_0': 'area_id'},inplace=True)
+        heat_demand_profile.set_index('area_id',inplace =True)
+        heat_demand_profile =  heat_demand_profile[heat_demand_profile.columns[:-1]].multiply(heat_demand_profile.demand,axis=0)
+    
+    else:
+        
+        heat_demand_profile = pd.DataFrame()
+        for j in h.columns:
+            station = h.iloc[j]
+            current_zensus = annual_demand[annual_demand.Station == station]
+            heat_profile_station = pd.merge(current_zensus['zensus_population_id'],heat_profile.transpose(),
+                                           left_on ='zensus_population_id', 
+                                           right_on = heat_profile.transpose().index, how= 'inner')
+            heat_profile_station = heat_profile_station.multiply(h[station],axis=0)
+            heat_demand_profile = pd.concat([heat_demad_profile, heat_profile_station],axis=1)
+            
+        heat_demand_profile =  heat_demand_profile.transpose()
+        
+        heat_demand_profile = pd.merge(heat_demand_profile,annual_demand[['zensus_population_id','demand']],
+                             how='inner', right_on = demand_curves.index, left_on = district_station.index)
+        
+        heat_demand_profile.rename(columns={'key_0': 'zensus_population_id'},inplace=True)
+        heat_demand_profile.set_index('zensus_population_id',inplace =True)
+        heat_demand_profile =  heat_demand_profile[heat_demand_profile.columns[:-1]].multiply(heat_demand_profile.demand,axis=0)
+    #heat_demand_profile = heat_demand_profile.transpose()
+    
+    return heat_demand_profile
+    
 
 
+###assigning the nuts3 profile per zensus cell and aggregatint he cells per aggregation level
+def cts_demand_per_aggregation_level(aggregation_level):
+    ## dataframe interlinking the zensus_population_id to the nuts3 level
+    nuts_zensus = psycop_gdf_AF('boundaries.egon_map_zensus_vg250', geom_column = 'zensus_geom')
+    nuts_zensus.drop('zensus_geom', axis=1, inplace=True)
+          
+    ##extracting the demand data for the service sector and conncting it to the nuts3 level
+    demand = psycop_df_AF('demand.egon_peta_heat')
+    demand = demand[(demand['sector']=='service') & (demand['scenario']=='eGon2035')]
+    demand.drop(demand.columns.difference(['demand', 'zensus_population_id']),axis=1,inplace=True)
+    demand.sort_values('zensus_population_id',inplace=True)
+    
+    demand_nuts = pd.merge(demand, nuts_zensus, how='left', on = 'zensus_population_id')
+    
+    ###CTS secotor NUTS§ level temperature profile
+    df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(use_nuts3code=True, year=2011)
+    #df_CTS_gas_2011=pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/CTS/df_CTS_gas_2011.pickle')
+    df_CTS_gas_2011.reset_index(drop=True,inplace=True)
+    
+    ##df linking ags_lk and natcode_nuts_3 ### this file is available in the nextcloud link
+    ags_lk = pd.read_json(os.path.join(os.getcwd(),'t_nuts3_lk.json'))
+    #ags_lk = pd.read_json(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/CTS/t_nuts3_lk.json')
+    ags_lk =ags_lk.drop(ags_lk.columns.difference(['natcode_nuts3', 'ags_lk']),axis=1)
+    #ags_lk = pd.read_csv()
+    
+    ##replacing the ags_lk with natcode_nuts3
+    CTS_profile = df_CTS_gas_2011.transpose()
+    CTS_profile.reset_index(inplace=True)
+    CTS_profile.ags_lk=CTS_profile.ags_lk.astype(int)
+    CTS_profile=pd.merge(CTS_profile,ags_lk,on='ags_lk',how='inner')
+    CTS_profile.set_index('natcode_nuts3',inplace=True)
+    CTS_profile.drop('ags_lk', axis=1, inplace =True)
+    
+    CTS_per_zensus = pd.merge(demand_nuts[['zensus_population_id','vg250_nuts3']],CTS_profile, 
+                              left_on='vg250_nuts3', right_on=CTS_profile.index,
+                              how='left')
+    CTS_per_zensus = CTS_per_zensus.drop('vg250_nuts3',axis=1)
+    
+    district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+    district_heating = district_heating[district_heating.scenario == 'eGon2035']
+    
+    if aggregation_level == 'district':
+        CTS_per_district = pd.merge(CTS_per_zensus,district_heating[['area_id','zensus_population_id']],
+                                     on='zensus_population_id',
+                                     how='inner')
+        CTS_per_district.set_index('area_id',inplace=True)
+        CTS_per_district.drop('zensus_population_id',axis=1,inplace=True)
+        CTS_aggregated = CTS_per_district
+    else:
+        CTS_per_zensus.set_index('zensus_population_id',inplace=True)
+        CTS_aggregated = CTS_per_zensus
+        
+    CTS_aggregated = CTS_aggregated.groupby(lambda x:x, axis=0).sum()
+    CTS_aggregated = CTS_aggregated.transpose()
+    CTS_aggregated = CTS_aggregated.apply(lambda x: x/x.sum())
+    
+    return CTS_aggregated
+
+
+def CTS_demand_scale(aggregation_level):
+    CTS_profiles = cts_demand_per_aggregation_level(aggregation_level).transpose()
+        
+    demand = psycop_df_AF('demand.egon_peta_heat')
+    demand = demand[(demand['sector']=='service') & (demand['scenario']=='eGon2035')]
+    demand.drop(demand.columns.difference(['demand', 'zensus_population_id']),axis=1,inplace=True)
+    demand.sort_values('zensus_population_id',inplace=True)
+        
+    if aggregation_level =='district':
+        district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+        district_heating = district_heating[district_heating.scenario == 'eGon2035']
+    
+        CTS_demands = pd.merge(demand, district_heating[['zensus_population_id','area_id']],
+                                   on='zensus_population_id', how = 'inner') 
+        CTS_demands.drop('zensus_population_id', axis =1, inplace =True)
+        CTS_demands= CTS_demands.groupby('area_id').sum()
+         
+        CTS_profiles =  pd.merge(CTS_profiles,CTS_demands[['demand']],
+                         how='inner', right_on =  CTS_profiles.index, left_on = CTS_demands.index)
+        
+        CTS_profiles = CTS_profiles.rename(columns={'key_0':'area_id'})
+        CTS_profiles.set_index('area_id', inplace =True)
+    
+    else:
+        CTS_profiles =  pd.merge(CTS_profiles,demand, how='inner',
+                                 right_on =  CTS_profiles.index, left_on = demand.zensus_population_id)
+        CTS_profiles = CTS_profiles.drop('key_0',axis=1)
+        CTS_profiles.set_index('zensus_population_id',inplace =True)
+       
+    CTS_demand_profile =  CTS_profiles[CTS_profiles.columns[:-1]].multiply(CTS_profiles.demand,axis=0)
+    
+
+    return CTS_demand_profile
+
+
+def demand_profile_generator(aggregation_level = 'district'):
+    
+    residential_demand = residential_demand_scale(aggregation_level)
+    CTS_demand = CTS_demand_scale(aggregation_level)
+    
+    total_demands = pd.concat([residential_demand,CTS_demand])
+    total_demands.sort_index(inplace=True)
+    
+    total_demands = total_demands.groupby(lambda x:x, axis=0).sum()
+    
+    ##spliting the df into daily lists
+    final_heat_profiles = pd.DataFrame(index= final_profile.index)
+    x=0
+    for i in range(365):
+        current_day = final_profile.iloc[:,x:x+24]
+        hourly_data = current_day.values.tolist()
+        final_heat_profiles[i] = hourly_data
+        x+=24   
+    
+    ##writting to database
+    final_heat_profiles.to_sql('egon_heat_time_series',con=db.engine(),schema='demand' ,if_exists ='append', 
+        index=True,dtype=ARRAY(Float()))   
+    
+    return final_heat_profiles
+
+##call function 
+# heat_idp_pool = PythonOperator(
+#         task_id="heat_idp_pool",
+#         python_callable=db_porcessing4.demand_profile_generator,
+#     )
     
