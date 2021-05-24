@@ -1,7 +1,5 @@
 import functools
 
-from airflow.operators.python_operator import PythonOperator
-
 from egon.data import db
 from egon.data.datasets import Dataset
 
@@ -19,7 +17,5 @@ DatabaseSetup = functools.partial(
     name="DatabaseSetup",
     version="0.0.0",
     dependencies=[],
-    tasks=PythonOperator(
-        task_id="database-setup", python_callable=database_setup
-    ),
+    tasks=database_setup
 )

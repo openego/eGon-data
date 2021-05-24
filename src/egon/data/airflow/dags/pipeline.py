@@ -53,7 +53,7 @@ with airflow.DAG(
 
     database_setup = database.DatabaseSetup()
     database_setup.insert_into(pipeline)
-    setup = database_setup.tasks["database-setup"]
+    setup = database_setup.tasks["database.database-setup"]
 
     osm = openstreetmap.OpenStreetMap(dependencies=[setup])
     osm.insert_into(pipeline)
