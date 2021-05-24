@@ -14,8 +14,6 @@ import json
 import os
 import time
 
-from airflow.operators.python_operator import PythonOperator
-
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
@@ -260,24 +258,9 @@ def modify_tables():
 
 class OpenStreetMap(Dataset):
     def __init__(self, dependencies):
-        download_osm = PythonOperator(
-            task_id="download-osm", python_callable=download_pbf_file
-        )
-        import_osm = PythonOperator(
-            task_id="import-osm",
-            python_callable=to_postgres,
-        )
-        migrate_osm = PythonOperator(
-            task_id="migrate-osm",
-            python_callable=modify_tables,
-        )
-        add_osm_metadata = PythonOperator(
-            task_id="add-osm-metadata",
-            python_callable=add_metadata,
-        )
         super().__init__(
             name="OpenStreetMap",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(download_osm, import_osm, migrate_osm, add_osm_metadata),
+            tasks=(download_pbf_file, to_postgres, modify_tables, add_metadata)
         )
