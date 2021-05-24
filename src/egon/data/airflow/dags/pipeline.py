@@ -51,13 +51,15 @@ with airflow.DAG(
     schedule_interval=None,
 ) as pipeline:
 
+    tasks = pipeline.task_dict
+
     database_setup = database.DatabaseSetup()
     database_setup.insert_into(pipeline)
-    setup = database_setup.tasks["database.database-setup"]
+    setup = tasks["database.database-setup"]
 
     osm = openstreetmap.OpenStreetMap(dependencies=[setup])
     osm.insert_into(pipeline)
-    osm_add_metadata = osm.tasks["openstreetmap.add-metadata"]
+    osm_add_metadata = tasks["openstreetmap.add-metadata"]
 
     # VG250 (Verwaltungsgebiete 250) data import
     vg250_download = PythonOperator(
