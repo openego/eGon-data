@@ -57,6 +57,7 @@ with airflow.DAG(
 
     osm = openstreetmap.OpenStreetMap(dependencies=[setup])
     osm.insert_into(pipeline)
+    osm_add_metadata = osm.tasks["add-osm-metadata"]
 
     # VG250 (Verwaltungsgebiete 250) data import
     vg250_download = PythonOperator(
@@ -313,7 +314,7 @@ with airflow.DAG(
     create_voronoi = PythonOperator(
         task_id="create_voronoi", python_callable=substation.create_voronoi
     )
-    osm.tasks["add-osm-metadata"] >> substation_tables >> substation_functions
+    osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction >> create_voronoi
     substation_functions >> ehv_substation_extraction >> create_voronoi
     vg250_clean_and_prepare >> hvmv_substation_extraction
