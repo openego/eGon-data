@@ -25,6 +25,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
+import egon.data.processing.etrago_heat as etrago_heat
 import egon.data.processing.heat_supply as heat_supply
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.openstreetmap as process_osm
@@ -550,7 +551,7 @@ with airflow.DAG(
     # Heat to eTraGo
     insert_heat_etrago = PythonOperator(
         task_id="import-heat-etrago",
-        python_callable=heat_supply.insert_heat_etrago
+        python_callable=etrago_heat.insert_heat_etrago
     )
     import_district_heating_supply >> insert_heat_etrago
     define_mv_grid_districts >> insert_heat_etrago
