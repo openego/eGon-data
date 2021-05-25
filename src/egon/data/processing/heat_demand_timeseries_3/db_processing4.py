@@ -9,8 +9,8 @@ import glob
 from egon.data import db
 import xarray as xr
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
+import egon.data.importing.era5 as era 
 
-import atlite
 import netCDF4
 from netCDF4 import Dataset
 
@@ -75,66 +75,54 @@ class IdpProfiles:
 
 ##extracting the temperature for each temperature zone from cds data
 def temperature_profile_extract():
-    #downloading all data for Germany
-    # load cutout
-        cutout = atlite.Cutout("Germany-2011-era5",
-                                cutout_dir = 'cutouts',
-                                module="era5",
-                                xs= slice(5., 16.), 
-                                ys=slice(46., 56.), 
-                                years= slice(2011, 2011)
-                                )
-        cutout.prepare()
-        #file in the nextcloud shared link
-        #will be directly taken from the dataframe??
-        #os.chdir(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/atlite/cutouts/Germany-2011-era5')
-        ##### replace this with input from the dataframe
-        temperature_profile=pd.DataFrame()
-        for file in glob.glob('*.nc'):        
-            weather_data_raw = xr.open_dataset(file)
-            temperature_raw = weather_data_raw.temperature.values
-            index = weather_data_raw.indexes._indexes
-            lats= index['y']
-            lon = index['x']
-            time =index['time']
-            weather_data = np.zeros(shape=(temperature_raw.size, 4))
-            count = 0
-            
-            for hour in range(index['time'].size):
-                for row in range(index['y'].size):
-                    for column in range(index['x'].size):
-                        weather_data[count, 0] = hour
-                        weather_data[count, 1] = index['y'][row]
-                        weather_data[count, 2] = index['x'][column]
-                        weather_data[count, 3] = temperature_raw[hour, row, column] - 273.15
-                        count += 1
-            weather_df = pd.DataFrame(weather_data)
-            temperature_month = pd.DataFrame()
-            
-            ##csv file available in the nextcloud folder
-            #path = '/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/TRY_Climate_Zones'
-            #station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
-            station_location=pd.read_csv(os.path.join(path,'station_coordinates.csv'))
-            
-            for row in station_location.index:
-                station_name=station_location.iloc[row,0]            
-                longitude_station = station_location.iloc[row,1]
-                latitude_station = station_location.iloc[row,2]
-                sq_diff_lat =(lats-latitude_station)**2
-                sq_diff_lon = (lon-longitude_station)**2
-                min_index_lat = sq_diff_lat.argmin()
-                min_index_lon = sq_diff_lon.argmin()
-                current_cut = weather_df[(weather_df[1]==index['y'][min_index_lat]) & (weather_df[2]==index['x'][min_index_lon])]
-                current_cut.set_index(time, inplace =True)
-                df= pd.DataFrame(0, columns = [station_name], index = time)
-                df[station_name]=current_cut.iloc[:,3]
-                temperature_month=pd.concat([temperature_month,df],axis=1)
+    
+    #cutout = era.import_cutout(boundary = 'Germany')
+    path = os.path.join(os.getcwd(),'cutouts','Germany-2011-era5')
+    temperature_profile=pd.DataFrame()
+    for file in glob.glob(os.path.join(path,'[!meta]*.nc')):
+        weather_data_raw = xr.open_dataset(file)
+        temperature_raw = weather_data_raw.temperature.values
+        index = weather_data_raw.indexes._indexes
+        lats= index['y']
+        lon = index['x']
+        time =index['time']
+        weather_data = np.zeros(shape=(temperature_raw.size, 4))
+        count = 0
         
-            temperature_profile = temperature_profile.append(temperature_month)
+        for hour in range(index['time'].size):
+            for row in range(index['y'].size):
+                for column in range(index['x'].size):
+                    weather_data[count, 0] = hour
+                    weather_data[count, 1] = index['y'][row]
+                    weather_data[count, 2] = index['x'][column]
+                    weather_data[count, 3] = temperature_raw[hour, row, column] - 273.15
+                    count += 1
+        weather_df = pd.DataFrame(weather_data)
+        temperature_month = pd.DataFrame()
         
-        temperature_profile.sort_index(inplace=True)
+        ##csv file available in the nextcloud folder
+        coordinates_path = os.path.join(os.getcwd(),'TRY_Climate_Zones')            #station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
+        station_location=pd.read_csv(os.path.join(coordinates_path,'station_coordinates.csv'))
         
-        return temperature_profile
+        for row in station_location.index:
+            station_name=station_location.iloc[row,0]            
+            longitude_station = station_location.iloc[row,1]
+            latitude_station = station_location.iloc[row,2]
+            sq_diff_lat =(lats-latitude_station)**2
+            sq_diff_lon = (lon-longitude_station)**2
+            min_index_lat = sq_diff_lat.argmin()
+            min_index_lon = sq_diff_lon.argmin()
+            current_cut = weather_df[(weather_df[1]==index['y'][min_index_lat]) & (weather_df[2]==index['x'][min_index_lon])]
+            current_cut.set_index(time, inplace =True)
+            df= pd.DataFrame(0, columns = [station_name], index = time)
+            df[station_name]=current_cut.iloc[:,3]
+            temperature_month=pd.concat([temperature_month,df],axis=1)
+    
+        temperature_profile = temperature_profile.append(temperature_month)
+    
+    temperature_profile.sort_index(inplace=True)
+    
+    return temperature_profile
 
 ###generate temperature zones for each cell
 def temp_interval():  
@@ -300,11 +288,11 @@ def idp_df_generator():
     #idp_df.idp = idp_df.idp.apply(lambda x:  x.astype(np.float32))
     
     ##writting to the database
-    idp_df.to_sql('heat_idp_pool',con=db.engine(),schema='demand' ,if_exists ='replace', index=True,
-                      dtype = {'index': Integer(),
-                                'idp':ARRAY(Float()),
-                                'house': String(),
-                                'temperature_class':Integer()})
+    # idp_df.to_sql('heat_idp_pool',con=db.engine(),schema='demand' ,if_exists ='replace', index=True,
+    #                   dtype = {'index': Integer(),
+    #                             'idp':ARRAY(Float()),
+    #                             'house': String(),
+    #                             'temperature_class':Integer()})
 
         
     return idp_df 
@@ -483,16 +471,16 @@ def profile_selector():
     
     selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
       
-    chunk_size = 50000
-    chunks = range(ceil(len(selected_profiles)/chunk_size))
-    for i in chunks:
-        x = chunk_size * i
-        y = x + chunk_size
-        if y < len(selected_profiles):
-            df = selected_profiles.iloc[x:y,:]
-        if y > len(selected_profiles):
-            df = selected_profiles.iloc[x:len(selected_profiles),:]
-        df.to_sql('selected_idp_names',con=db.egine(),schema='demand' ,if_exists ='append', index=True) 
+    # chunk_size = 50000
+    # chunks = range(ceil(len(selected_profiles)/chunk_size))
+    # for i in chunks:
+    #     x = chunk_size * i
+    #     y = x + chunk_size
+    #     if y < len(selected_profiles):
+    #         df = selected_profiles.iloc[x:y,:]
+    #     if y > len(selected_profiles):
+    #         df = selected_profiles.iloc[x:len(selected_profiles),:]
+    #     df.to_sql('selected_idp_names',con=db.egine(),schema='demand' ,if_exists ='append', index=True) 
     
     return idp_df, selected_idp_names
 
@@ -756,8 +744,8 @@ def demand_profile_generator(aggregation_level = 'district'):
         x+=24   
     
     ##writting to database
-    final_heat_profiles.to_sql('egon_heat_time_series',con=db.engine(),schema='demand' ,if_exists ='append', 
-        index=True,dtype=ARRAY(Float()))   
+    # final_heat_profiles.to_sql('egon_heat_time_series',con=db.engine(),schema='demand' ,if_exists ='append', 
+    #     index=True,dtype=ARRAY(Float()))   
     
     return final_heat_profiles
 
