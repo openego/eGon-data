@@ -21,7 +21,7 @@ import egon.data.config
 import egon.data.subprocess as subprocess
 
 
-def download_pbf_file():
+def download():
     """Download OpenStreetMap `.pbf` file."""
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
@@ -262,5 +262,5 @@ class OpenStreetMap(Dataset):
             name="OpenStreetMap",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(download_pbf_file, to_postgres, modify_tables, add_metadata)
+            tasks=(download, to_postgres, modify_tables, add_metadata),
         )

@@ -4,7 +4,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 
 
-def database_setup():
+def setup():
     """ Initialize the local database used for data processing. """
     engine = db.engine()
     with engine.connect().execution_options(autocommit=True) as connection:
@@ -12,10 +12,10 @@ def database_setup():
             connection.execute(f"CREATE EXTENSION IF NOT EXISTS {extension}")
 
 
-DatabaseSetup = functools.partial(
+Setup = functools.partial(
     Dataset,
     name="DatabaseSetup",
     version="0.0.0",
     dependencies=[],
-    tasks=database_setup
+    tasks=setup,
 )

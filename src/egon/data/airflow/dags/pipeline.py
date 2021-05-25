@@ -53,9 +53,9 @@ with airflow.DAG(
 
     tasks = pipeline.task_dict
 
-    database_setup = database.DatabaseSetup()
+    database_setup = database.Setup()
     database_setup.insert_into(pipeline)
-    setup = tasks["database.database-setup"]
+    setup = tasks["database.setup"]
 
     osm = openstreetmap.OpenStreetMap(dependencies=[setup])
     osm.insert_into(pipeline)
