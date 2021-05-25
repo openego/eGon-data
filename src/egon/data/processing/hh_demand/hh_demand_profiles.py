@@ -117,6 +117,14 @@ if __name__ == "__main__":
     # O1, O2 are not used anymore
     # influence of OO and OR -parameter to overall household-sum rather small
     # ###########################
+    df_hh_size = db.select_dataframe(sql="""
+                    SELECT characteristics_text, SUM(quantity) as summe
+                    FROM society.egon_destatis_zensus_household_per_ha as egon_d
+                    WHERE attribute = 'HHGROESS_KLASS'
+                    GROUP BY characteristics_text """, index_col='characteristics_text')
+
+    df_hh_size = df_hh_size.drop(index=['1 Person', '2 Personen'])
+    OO_factor = sum(df_hh_size['summe'] * [3, 4, 5, 6]) / df_hh_size['summe'].sum()
 
     mapping_people_in_households = {'SR': 1,
                                     'SO': 1,
@@ -126,8 +134,8 @@ if __name__ == "__main__":
                                     'P1': 2,  # kids are excluded
                                     'P2': 2,  # ""
                                     'P3': 2,  # ""
-                                    'OR': 4,  # parameter needs to be re/defined
-                                    'OO': 4,  # ""
+                                    'OR': OO_factor,
+                                    'OO': OO_factor,
                                     #                                 'O1': 4,  # ""
                                     #                                 'O2': 4,  # ""
                                     }
@@ -136,6 +144,9 @@ if __name__ == "__main__":
 
     # FIXME:
     # compare df_dist_households.sum() here with values from other source
+    # maybe scale on state-level
+
+
 
     # TODO: direct db.engine to configuration file
     # engine = db.engine()
