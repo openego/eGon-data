@@ -5,6 +5,7 @@ the pysa-eur-sec scenario parameter creation
 from pathlib import Path
 from urllib.request import urlretrieve
 import tarfile
+import os
 
 import importlib_resources as resources
 import pandas as pd
@@ -44,7 +45,18 @@ def run_pypsa_eur_sec():
                 "4e44822514755cdd0289687556547100fba6218b",
             ],
             cwd=pypsa_eur_repos,
-        )        
+        )
+        
+        file_to_copy = os.path.join(
+        db.__path__[0] + "/importing" + "/pypsaeursec/pypsaeur/Snakefile")
+        
+        subproc.run(
+            [
+                "cp",
+                file_to_copy,
+                pypsa_eur_repos,
+            ],
+        )
 
     if not technology_data_repos.exists():
         subproc.run(
