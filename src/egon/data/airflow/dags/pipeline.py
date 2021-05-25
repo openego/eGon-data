@@ -546,3 +546,12 @@ with airflow.DAG(
     import_district_heating_areas >> import_district_heating_supply
     power_plant_import >> import_district_heating_supply
     create_heat_supply_table >> import_district_heating_supply
+
+    # Heat to eTraGo
+    insert_heat_etrago = PythonOperator(
+        task_id="import-heat-etrago",
+        python_callable=heat_supply.insert_heat_etrago
+    )
+    import_district_heating_supply >> insert_heat_etrago
+    define_mv_grid_districts >> insert_heat_etrago
+    etrago_input_data >> insert_heat_etrago
