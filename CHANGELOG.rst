@@ -149,3 +149,5 @@ Bug fixes
   `#241 <https://github.com/openego/eGon-data/issues/241>`_
 * Adjust format of voltage levels in hvmv substation
   `#248 <https://github.com/openego/eGon-data/issues/248>`_
+* Change order of osmtgmod tasks
+  `#253 <https://github.com/openego/eGon-data/issues/253>`_
