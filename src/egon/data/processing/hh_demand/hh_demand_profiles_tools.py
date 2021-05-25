@@ -9,6 +9,7 @@ import random
 
 
 def clean(x):
+    """clean dataset convert '.' and '-' to str(0). remove brackets. table will be converted to int/floats afterwards"""
     x = str(x).replace('-', str(0))
     x = str(x).replace('.', str(0))
     x = x.strip('()')
@@ -16,6 +17,24 @@ def clean(x):
 
 
 def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
+    """group zensus data to fit Demand-Profile-Generator (DPG) format.
+    Parameters
+    ----------
+    df_zensus: pd.DataFrame
+        containing zensus data
+    hh_types: dict
+        mapping of zensus groups to DPG groups
+    multi-adjust: bool
+        if True, splits DPG-group 'OO' into 3 subgroups and uses distribution factor derived by
+        table II in https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
+    relative: bool
+        if True produces relative values
+    Returns
+    ----------
+    df_hh_types: pd.DataFrame
+        distribution of people by household type and regional-resolution
+    !data still needs to be converted from amount of people to amount of households!
+     """
     # adjust multi with/without kids via eurostat share as not clearly derivable without infos about share of kids
     if multi_adjust:
         adjust = {'SR': 1, 'SO': 1, 'SK': 1, 'PR': 1, 'PO': 1, 'P1': 1, 'P2': 1, 'P3': 1, 'OR': 1,
@@ -35,51 +54,23 @@ def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
     return df_hh_types.T
 
 
-def get_loadprofiles(df_profiles, df_hh_types, hh_total, state_dist=False):
-    # equal share of hh_total for every state
-    if not state_dist:
-        state_dist = pd.Series(hh_total / df_hh_types.shape[1], index=df_hh_types.columns)
-    # specific share of hh_total by state_dist
-    else:
-        state_dist = state_dist * hh_total
-
-    header = pd.MultiIndex.from_tuples(
-        [(state, hh_type) for state in df_hh_types.columns for hh_type in df_hh_types.index],
-        names=['State', 'Type'])
-
-    df_loadprofiles = pd.DataFrame(columns=header)
-
-    for state, state_share in state_dist.items():
-
-        for hh_type, type_share in df_hh_types[state].items():
-            samples = state_share * type_share
-            #             if samples<1:
-            #                 raise ValueError(f"Sample size needs to be >=1. hh-share of {state}-{hh_type} is {samples:.2f} , increase hh_total")
-            samples = int(samples)
-            hh_type_ts = df_profiles[hh_type].T.sample(samples, axis=0, replace=True).sum()
-
-            df_loadprofiles.loc[:, (state, hh_type)] = hh_type_ts
-
-    timestamp = pd.date_range(start='01-01-2012', periods=df_loadprofiles.shape[0], freq='h')
-    df_loadprofiles.index = timestamp
-    return df_loadprofiles
-
-
-def normalize_loadprofiles(df_lp, to_value):
-    # normed to 'to_value' kWh annual
-    df_kwh = df_lp.groupby(level='State', axis=1).sum() * to_value / df_lp.groupby(level='State', axis=1).sum().sum()
-
-    return df_kwh
-
-
-def aggregate_loadprofiles(df_lp, to_value):
-    # normed to 'to_value' kWh annual
-    df_kwh = df_lp.sum(axis=1) * to_value / df_lp.sum(axis=1).sum()
-
-    return df_kwh
-
-
 def inhabitants_to_households(df_people_by_householdtypes_abs, mapping_people_in_households):
+    """converts distribution of peoples living in types of households to distribution of household types by using
+    a people-in-household mapping. results are rounded to int (ceiled) to full households.
+
+    Parameters
+    ----------
+    df_people_by_householdtypes_abs: pd.DataFrame
+        distribution of people living in households
+    mapping_people_in_households: dict
+        mapping of people living in certain types of households
+    Returns
+    ----------
+    df_households_by_type: pd.DataFrame
+        distribution of households type
+
+    """
+    # compare categories and remove form mapping if to many
     diff = set(df_people_by_householdtypes_abs.index) ^ set(mapping_people_in_households.keys())
 
     if bool(diff):
@@ -88,13 +79,21 @@ def inhabitants_to_households(df_people_by_householdtypes_abs, mapping_people_in
             del mapping_people_in_households[key]
         print(f'Removed {diff} from mapping!')
 
+    # divide amount of people by people in household types
     df_households_by_type = df_people_by_householdtypes_abs.div(mapping_people_in_households, axis=0)
-    df_households_by_type = df_households_by_type.apply(np.ceil)  # round up households
+    # TODO: check @ Guido
+    # round up households
+    df_households_by_type = df_households_by_type.apply(np.ceil)
 
     return df_households_by_type
 
 
 def process_nuts1_zensus_data(df_zensus):
+    """group, remove and reorder categories wich are not needed for demand-profile-generator (DPG)
+    Kids (<15) are excluded as they are also excluded in DPG origin dataset.
+    Adults (15<65)
+    Seniors (<65)
+    """
     # Group data to fit Load Profile Generator categories
     # define kids/adults/seniors
     kids = ['Unter 3', '3 - 5', '6 - 14']  # < 15
@@ -156,7 +155,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     for cell_id, df_cell in df_zensus_cells.groupby(by='grid_id'):
         # FIXME
         # ! runden der Haushaltszahlen auf int
-        # ! kein Zurücklegen innerhalb einer Zelle ?!
+        # ! kein zurücklegen innerhalb einer Zelle ?! -> das is ok.
         cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size, df_profiles)
 
         df_cell_demand_metadata.at[cell_id, 'cell_profile_ids'] = cell_profile_ids
