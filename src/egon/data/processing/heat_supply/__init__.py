@@ -2,7 +2,7 @@
 
 """
 
-from egon.data import db
+from egon.data import db, config
 
 from egon.data.processing.heat_supply.district_heating import (
     cascade_heat_supply)
@@ -48,11 +48,13 @@ def insert_district_heating_supply():
     None.
 
     """
+    targets = config.datasets()['heat_supply']['targets']
 
     supply_2035 = cascade_heat_supply('eGon2035', plotting=False)
 
     supply_2035['scenario'] = 'eGon2035'
 
     supply_2035.to_postgis(
-        'egon_district_heating', schema='supply',
+        targets['district_heating_supply']['table'],
+        schema=targets['district_heating_supply']['schema'],
         con=db.engine(), if_exists='append')

@@ -2,7 +2,7 @@
 """
 import pandas as pd
 import geopandas as gpd
-from egon.data import db
+from egon.data import db, config
 from egon.data.processing.etrago_heat.power_to_heat import (
     insert_central_power_to_heat, next_id)
 
@@ -21,11 +21,12 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
         Name of the scenario The default is 'eGon2035'.
 
     """
-
+    sources = config.datasets()['etrago_heat']['sources']
+    target = config.datasets()['etrago_heat']['targets']['heat_buses']
     # Delete existing heat buses (central or rural)
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_pf_hv_bus
+        DELETE FROM {target['schema']}.{target['table']}
         WHERE scn_name = '{scenario}'
         AND carrier = '{carrier}'
         AND version = '{version}'
@@ -44,7 +45,8 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
         areas = db.select_geodataframe(
             f"""
             SELECT area_id, geom_polygon as geom
-            FROM demand.district_heating_areas
+            FROM  {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
             WHERE scenario = '{scenario}'
             """,
             index_col='area_id'
@@ -55,7 +57,9 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
     else:
         hvmv_substation = db.select_geodataframe(
             """
-            SELECT point AS geom FROM grid.egon_hvmv_substation
+            SELECT point AS geom
+            FROM {sources['hvmv_substation']['schema']}.
+            {sources['hvmv_substation']['table']}
             """)
         heat_buses.geom = hvmv_substation.geom.to_crs(epsg=4326)
 
@@ -68,8 +72,8 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
     heat_buses.bus_id = range(next_bus_id, next_bus_id+len(heat_buses))
 
     # Insert data into database
-    heat_buses.to_postgis('egon_pf_hv_bus',
-                        schema='grid',
+    heat_buses.to_postgis(target['table'],
+                        schema=target['schema'],
                         if_exists='append',
                         con=db.engine())
 
@@ -88,18 +92,22 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
     None.
 
     """
+    sources = config.datasets()['etrago_heat']['sources']
+    targets = config.datasets()['etrago_heat']['targets']
 
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_pf_hv_generator
+        f"""
+        DELETE FROM {targets['heat_generators']['schema']}.
+        {targets['heat_generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
         AND version = '{version}'
         """)
 
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_pf_hv_generator_timeseries
+        f"""
+        DELETE FROM {targets['heat_generator_timeseries']['schema']}.
+        {targets['heat_generator_timeseries']['table']}
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id FROM
@@ -111,7 +119,8 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
     central_thermal = db.select_geodataframe(
             f"""
             SELECT district_heating_id, capacity, geometry, carrier
-            FROM supply.egon_district_heating
+            FROM  {sources['district_heating_supply']['schema']}.
+            {sources['district_heating_supply']['table']}
             WHERE scenario = '{scenario}'
             AND carrier IN (
                 'solar_thermal_collector', 'geo_thermal')
@@ -121,8 +130,11 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
 
     map_dh_id_bus_id = db.select_dataframe(
         f"""
-        SELECT bus_id, area_id, id FROM grid.egon_pf_hv_bus
-        JOIN demand.district_heating_areas
+        SELECT bus_id, area_id, id FROM
+        {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']}
+        JOIN {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
         ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
         WHERE carrier = 'central_heat'
         AND scenario = '{scenario}'
@@ -144,9 +156,10 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         central_thermal.carrier=='solar_thermal_collector']
 
     weather_cells = db.select_geodataframe(
-        """
+        f"""
         SELECT w_id, geom
-        FROM supply.egon_era5_weather_cells
+        FROM {sources['weather_cells']['schema']}.
+            {sources['weather_cells']['table']}
         """,
         index_col='w_id'
         )
@@ -155,8 +168,10 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
     join = gpd.sjoin(weather_cells, solar_thermal)[['index_right']]
 
     feedin = db.select_dataframe(
-        """
-        SELECT w_id, feedin FROM supply.egon_era5_renewable_feedin
+        f"""
+        SELECT w_id, feedin
+        FROM {sources['solar_thermal_feedin']['schema']}.
+            {sources['solar_thermal_feedin']['table']}
         WHERE carrier = 'solar_thermal'
         AND weather_year = 2011
         """,
@@ -174,14 +189,14 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
     generator = generator.set_index('generator_id')
 
     generator.to_sql(
-        'egon_pf_hv_generator',
-        schema='grid',
+        targets['heat_generators']['table'],
+        schema=targets['heat_generators']['schema'],
         if_exists='append',
         con=db.engine())
 
     timeseries.to_sql(
-        'egon_pf_hv_generator_timeseries',
-        schema='grid',
+        targets['heat_generator_timeseries']['table'],
+        schema=targets['heat_generator_timeseries']['schema'],
         if_exists='append',
         con=db.engine())
 

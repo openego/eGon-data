@@ -4,7 +4,7 @@ for district heating areas.
 """
 import pandas as pd
 import geopandas as gpd
-from egon.data import db
+from egon.data import db, config
 
 from egon.data.processing.heat_supply.geothermal import calc_geothermal_costs
 
@@ -24,11 +24,13 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
         DESCRIPTION.
 
     """
+    sources = config.datasets()['heat_supply']['sources']
 
     target_values = db.select_dataframe(
-        """
+        f"""
         SELECT capacity, split_part(carrier, 'urban_central_', 2) as technology
-        FROM supply.egon_scenario_capacities
+        FROM {sources['scenario_capacities']['schema']}.
+        {sources['scenario_capacities']['table']}
         WHERE carrier IN (
             'urban_central_heat_pump',
             'urban_central_resistive_heater',
@@ -95,6 +97,9 @@ def select_district_heating_areas(scenario):
         District heating areas per scenario
 
     """
+
+    sources = config.datasets()['heat_supply']['sources']
+
     max_demand_medium_district_heating = 96000
 
     max_demand_small_district_heating = 2400
@@ -104,7 +109,8 @@ def select_district_heating_areas(scenario):
          SELECT id as district_heating_id,
          residential_and_service_demand as demand,
          geom_polygon as geom
-         FROM demand.district_heating_areas
+         FROM {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']}
          WHERE scenario = '{scenario}'
          """,
          index_col='district_heating_id')
@@ -155,14 +161,17 @@ def cascade_per_technology(
         List of plants per district heating grid for the selected technology
 
     """
+    sources = config.datasets()['heat_supply']['sources']
 
     tech = technologies[technologies.priority==technologies.priority.max()]
 
     if tech.index == 'CHP':
 
         gdf_chp = db.select_geodataframe(
-            """SELECT id, geom, th_capacity as capacity
-            FROM supply.egon_power_plants WHERE chp = True""")
+            f"""SELECT id, geom, th_capacity as capacity
+            FROM {sources['power_plants']['schema']}.
+            {sources['power_plants']['table']}
+            WHERE chp = True""")
 
         join = gpd.sjoin(gdf_chp.to_crs(4326), areas, rsuffix='area')
 

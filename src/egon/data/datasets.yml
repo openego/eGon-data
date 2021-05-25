@@ -435,3 +435,61 @@ electrical_load_curves_cts:
       schema: 'grid'
       table: 'egon_pf_hv_load_timeseries'
 
+heat_supply:
+  sources:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'district_heating_areas'
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+  targets:
+    district_heating_supply:
+      schema: 'grid'
+      table: 'egon_district_heating'
+
+etrago_heat:
+  sources:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'district_heating_areas'
+    map_district_heating_areas:
+      schema: 'demand'
+      table: 'map_zensus_district_heating_areas'
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    district_heating_supply:
+      schema: 'grid'
+      table: 'egon_district_heating'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    solar_thermal_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    heat_demand:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+  targets:
+    heat_buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    heat_generators:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator'
+    heat_generator_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator_timeseries'
+    heat_links:
+      schema: 'grid'
+      table: 'egon_pf_hv_link'

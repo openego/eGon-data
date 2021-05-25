@@ -2,7 +2,7 @@
 """
 import pandas as pd
 import geopandas as gpd
-from egon.data import db
+from egon.data import db, config
 from shapely.geometry import LineString
 
 def next_id(component):
@@ -48,16 +48,22 @@ def insert_central_power_to_heat(version = '0.0.0', scenario='eGon2035'):
     None.
 
     """
+
+    sources = config.datasets()['etrago_heat']['sources']
+    targets = config.datasets()['etrago_heat']['targets']
+
     # Delete existing entries
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_pf_hv_link
+        f"""
+        DELETE FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
         WHERE carrier = 'central_heat_pump'
         """)
     # Select heat pumps in district heating
     central_heat_pumps = db.select_geodataframe(
         f"""
-        SELECT * FROM supply.egon_district_heating
+        SELECT * FROM {sources['district_heating_supply']['schema']}.
+            {sources['district_heating_supply']['table']}
         WHERE scenario = '{scenario}'
         AND carrier = 'heat_pump'
         """,
@@ -100,14 +106,16 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
     None.
 
     """
-
+    sources = config.datasets()['etrago_heat']['sources']
+    targets = config.datasets()['etrago_heat']['targets']
     # Calculate heat pumps per electrical bus
     gdf = assign_electrical_bus(heat_pumps, multiple_per_mv_grid)
 
     # Select geometry of buses
     geom_buses = db.select_geodataframe(
-        """
-        SELECT bus_id, geom FROM grid.egon_pf_hv_bus
+        f"""
+        SELECT bus_id, geom FROM {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']}
         """,
         index_col='bus_id',
         epsg=4326)
@@ -139,8 +147,8 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
     links.link_id = range(next_link_id, next_link_id+len(links))
 
     # Insert data into database
-    links.to_postgis('egon_pf_hv_link',
-                     schema='grid',
+    links.to_postgis(targets['heat_links']['table'],
+                     schema=targets['heat_links']['schema'],
                      if_exists = 'append',
                      con=db.engine())
 
@@ -158,6 +166,7 @@ def assign_voltage_level(heat_pumps):
         Heat pumps including voltage level
 
     """
+
     # set voltage level for heat pumps according to category
     heat_pumps['voltage_level'] = 0
 
@@ -202,11 +211,17 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
 
     """
 
+    sources = config.datasets()['etrago_heat']['sources']
+    targets = config.datasets()['etrago_heat']['targets']
+
     # Map heat buses to district heating id and area_id
     heat_buses = db.select_dataframe(
-        """
-        SELECT bus_id, area_id, id FROM grid.egon_pf_hv_bus
-        JOIN demand.district_heating_areas
+        f"""
+        SELECT bus_id, area_id, id FROM
+        {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']}
+        JOIN {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
         ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
         WHERE carrier = 'central_heat'
         AND scenario='eGon2035'
@@ -217,24 +232,27 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
 
     # Select mv grid distrcits
     mv_grid_district = db.select_geodataframe(
-        """
-        SELECT subst_id, geom FROM grid.mv_grid_districts
+        f"""
+        SELECT subst_id, geom FROM
+        {sources['mv_grid_districts']['schema']}.
+        {sources['mv_grid_districts']['table']}
         """)
 
     # Map zensus cells to district heating areas
     map_zensus_dh = db.select_geodataframe(
-        """
+        f"""
         SELECT area_id, a.zensus_population_id,
         geom_point as geom, sum(a.demand) as demand
-        FROM demand.map_zensus_district_heating_areas
-        JOIN demand.egon_peta_heat a
-        ON demand.map_zensus_district_heating_areas.zensus_population_id =
-        a.zensus_population_id
+        FROM {sources['map_district_heating_areas']['schema']}.
+            {sources['map_district_heating_areas']['table']} b
+        JOIN {sources['heat_demand']['schema']}.
+            {sources['heat_demand']['table']} a
+        ON b.zensus_population_id = a.zensus_population_id
         JOIN society.destatis_zensus_population_per_ha
         ON society.destatis_zensus_population_per_ha.id =
         a.zensus_population_id
         WHERE a.scenario = 'eGon2035'
-        AND demand.map_zensus_district_heating_areas.scenario = 'eGon2035'
+        AND b.scenario = 'eGon2035'
         GROUP BY (area_id, a.zensus_population_id, geom_point)
         """)
 
