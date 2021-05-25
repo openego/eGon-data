@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
     # FIXME:
     # compare df_dist_households.sum() here with values from other source
-    # maybe scale on state-level
+    # maybe scale on state-levelm
 
 
 
