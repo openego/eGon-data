@@ -35,6 +35,7 @@ import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zen
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
+import egon.data.processing.db_processing_4 as heat_time_series
 
 from egon.data import db
 
@@ -531,3 +532,14 @@ with airflow.DAG(
     demandregio_demand_cts_ind >> electrical_load_curves_cts
     map_zensus_vg250 >> electrical_load_curves_cts
     etrago_input_data >> electrical_load_curves_cts
+
+    # Heat demand time series
+    heat_time_series = PythonOperator(
+         task_id="heat_time_series",
+         python_callable=heat_time_series.demand_profile_generator,    
+    )
+    
+    heat_demand_import >> heat_time_series
+    import_district_heating_areas >> heat_time_series
+    import_district_heating_areas >> heat_time_series
+    vg250_population_metadata >> heat_time_series
