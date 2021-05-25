@@ -1,12 +1,12 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import pandas as pd
 import numpy as np
 
 from itertools import cycle
 import random
+from pathlib import Path
+from urllib.request import urlretrieve
 
+import egon.data.config
 
 def clean(x):
     """clean dataset convert '.' and '-' to str(0). remove brackets. table will be converted to int/floats afterwards"""
@@ -14,6 +14,35 @@ def clean(x):
     x = str(x).replace('.', str(0))
     x = x.strip('()')
     return x
+
+
+def get_household_demand_profiles_raw():
+    """
+    Downloads and returns household electricity demand profiles
+
+    Download only happens, if file isn't already existing.
+
+    Returns
+    -------
+    pd.DataFrame
+        Table with profiles in columns and time as index. A pd.MultiIndex is
+        used to distinguish load profiles from different EUROSTAT household
+        types.
+    """
+    data_config = egon.data.config.datasets()["household_electricity_demand"]
+
+    hh_profiles_url = data_config["sources"]["household_electricity_demand_profiles"]["url"]
+    hh_profiles_file = Path(".") / Path(hh_profiles_url).name
+
+    if not hh_profiles_file.is_file():
+        urlretrieve(hh_profiles_url, hh_profiles_file)
+
+    hh_profiles = pd.read_hdf(hh_profiles_file)
+
+    # set multiindex to HH_types
+    hh_profiles.columns = pd.MultiIndex.from_arrays([hh_profiles.columns.str[:2], hh_profiles.columns.str[3:]])
+
+    return hh_profiles
 
 
 def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):

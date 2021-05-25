@@ -435,3 +435,7 @@ electrical_load_curves_cts:
       schema: 'grid'
       table: 'egon_pf_hv_load_timeseries'
 
+household_electricity_demand:
+  sources:
+    household_electricity_demand_profiles:
+      url: "https://next.rl-institut.de/s/M8o3ALXPappRM3Y/download/h0_profiles.h5"

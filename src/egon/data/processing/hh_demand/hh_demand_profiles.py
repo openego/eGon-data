@@ -14,12 +14,13 @@ if __name__ == "__main__":
     # in Wh
     # TODO: > to/from SQL?
     # filed needs to be placed manually in directory
-    file = 'h0_profiles.h5'
-    file = os.path.join(os.path.realpath(file))
-    df_profiles = pd.read_hdf(file)
-
-    # set multiindex to HH_types
-    df_profiles.columns = pd.MultiIndex.from_arrays([df_profiles.columns.str[:2], df_profiles.columns.str[3:]])
+    # file = 'h0_profiles.h5'
+    # file = os.path.join(os.path.realpath(file))
+    # df_profiles = pd.read_hdf(file)
+    #
+    # # set multiindex to HH_types
+    # df_profiles.columns = pd.MultiIndex.from_arrays([df_profiles.columns.str[:2], df_profiles.columns.str[3:]])
+    df_profiles = hh_tools.get_household_demand_profiles_raw()
 
 
     # Load Zensus data at nuts-level
