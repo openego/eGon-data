@@ -112,7 +112,8 @@ if __name__ == "__main__":
     # #########################
     # FIXME:
     # mapping needs to be adjusted for OR, OO, O1, O2
-    #
+    # O1, O2 are not used anymore
+    # influence of OO and OR -parameter to overall household-sum rather small
     # ###########################
 
     mapping_people_in_households = {'SR': 1,
@@ -130,6 +131,9 @@ if __name__ == "__main__":
                                     }
     # derivate households data from inhabitants data by compound number of people per household type
     df_dist_households = hh_tools.inhabitants_to_households(df_hh_types_nad_abs, mapping_people_in_households)
+
+    # FIXME:
+    # compare df_dist_households.sum() here with values from other source
 
     # TODO: direct db.engine to configuration file
     # engine = db.engine()
