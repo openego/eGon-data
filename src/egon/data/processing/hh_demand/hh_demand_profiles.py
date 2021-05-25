@@ -142,7 +142,7 @@ if __name__ == "__main__":
     # SQL - Access Zensus household data cell-level
     df_households_typ = db.select_dataframe(sql="""
                 SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
-                FROM society.destatis_zensus_household_per_ha
+                FROM society.egon_destatis_zensus_household_per_ha
                 WHERE attribute = 'HHTYP_FAM' """)
     df_households_typ = df_households_typ.drop(columns=['attribute', 'characteristics_text'])
     df_households_typ = df_households_typ.rename(columns={'quantity': 'hh_5types'})
