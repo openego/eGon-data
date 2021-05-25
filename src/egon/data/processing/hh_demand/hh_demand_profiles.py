@@ -203,8 +203,8 @@ df_demand_regio = db.select_dataframe(sql="""
 #
 #
 # import random
-# load_area_ids = random.sample(list(df_cell_demand_metadata.index), 100)
-# max_value_load_area = hh_tools.get_load_area_max_load(df_profiles, df_cell_demand_metadata, load_area_ids, 2034)
+# load_area_cell_ids = random.sample(list(df_cell_demand_metadata.index), 100)
+# max_value_load_area = hh_tools.get_load_area_max_load(df_profiles, df_cell_demand_metadata, load_area_cell_ids, 2035)
 # # print(df_cell_demand_metadata.shape)
 # print(max_value_load_area)
 
