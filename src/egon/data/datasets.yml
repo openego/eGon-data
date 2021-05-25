@@ -439,3 +439,5 @@ household_electricity_demand:
   sources:
     household_electricity_demand_profiles:
       url: "https://next.rl-institut.de/s/M8o3ALXPappRM3Y/download/h0_profiles.h5"
+    zensus_household_types:
+      url: "https://next.rl-institut.de/s/oQXRkYgWLXK3zND/download/Zensus2011_Personen.csv"

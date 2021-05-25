@@ -45,6 +45,42 @@ def get_household_demand_profiles_raw():
     return hh_profiles
 
 
+def download_process_zensus_households():
+    """
+    Downloads and pre-processes zensus age x household type data
+
+    Download only happens, if file isn't already existing.
+    TODO: Add description about data
+
+
+    Returns
+    -------
+    pd.DataFrame
+        Pre-processed zensus household data
+    """
+    data_config = egon.data.config.datasets()["household_electricity_demand"]
+
+    households_url = data_config["sources"]["zensus_household_types"]["url"]
+    households_file = Path(".") / Path(households_url).name
+
+    # Download prepared data file from nextcloud
+    if not households_file.is_file():
+        urlretrieve(households_url, households_file)
+
+    # Read downloaded file from disk
+    households_raw = pd.read_csv(households_file, sep=';', decimal='.', skiprows=5, skipfooter=7,
+                            index_col=[0, 1], header=[0, 1], encoding='latin1', engine='python')
+
+    # Clean data
+    households = households_raw.applymap(clean).applymap(int)
+
+    # Make data compatible with household demand profile categories
+    # Use less age interval and aggregate data to NUTS-1 level
+    households_nuts1 = process_nuts1_zensus_data(households)
+
+    return households_nuts1
+
+
 def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
     """group zensus data to fit Demand-Profile-Generator (DPG) format.
     Parameters
