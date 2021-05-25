@@ -153,7 +153,7 @@ def temp_interval():
 def idp_pool_generator():
     ###read hdf5 files with the generated profiles from the load profile generator
     #path = os.path.join(r'/home/student/Documents/egon_AM/heat_demand_generation/idp pool generation',
-                        'heat_data.hdf5')
+                        #'heat_data.hdf5')
     path = os.path.join(os.path.join(os.getcwd(), 'heat_data.hdf5'))
 
     index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
