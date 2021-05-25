@@ -12,6 +12,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.importing.nep_input_data import scenario_config
+from egon.data import __path__
 import egon.data.subprocess as subproc
 
 
@@ -48,7 +49,7 @@ def run_pypsa_eur_sec():
         )
         
         file_to_copy = os.path.join(
-        db.__path__[0] + "/importing" + "/pypsaeursec/pypsaeur/Snakefile")
+        __path__[0] + "/importing" + "/pypsaeursec/pypsaeur/Snakefile")
         
         subproc.run(
             [
