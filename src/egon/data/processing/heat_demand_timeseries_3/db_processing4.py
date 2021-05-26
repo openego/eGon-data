@@ -484,7 +484,7 @@ def profile_selector():
             df = selected_idp_names.iloc[x:y,:]
         if y > len(selected_idp_names):
             df = selected_idp_names.iloc[x:len(selected_idp_names),:]
-        df.to_sql('selected_idp_names',con=db.egine(),schema='demand' ,if_exists ='append', index=True) 
+        df.to_sql('selected_idp_names',con=db.engine(),schema='demand' ,if_exists ='append', index=True) 
     
     return idp_df, selected_idp_names
 
