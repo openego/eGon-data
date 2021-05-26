@@ -156,7 +156,9 @@ class Dataset:
     name: str
     version: str
     dependencies: Iterable[Union[Dataset, Task]] = ()
-    tasks: TaskGraph = ()
+    #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
+    #: automatically be converted to :class:`Tasks`.
+    tasks: Union[Tasks, TaskGraph] = ()
 
     def check_version(self, after_execution=()):
         def skip_task(task, *xs, **ks):
@@ -200,7 +202,8 @@ class Dataset:
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
-        self.tasks = Tasks(self.tasks)
+        if not isinstance(self.tasks, Tasks):
+            self.tasks = Tasks(self.tasks)
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
