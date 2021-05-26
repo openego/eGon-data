@@ -8,8 +8,27 @@ from urllib.request import urlretrieve
 
 import egon.data.config
 
+
 def clean(x):
-    """clean dataset convert '.' and '-' to str(0). remove brackets. table will be converted to int/floats afterwards"""
+    """Clean zensus household data row-wise
+
+    Clean dataset by
+
+    * converting '.' and '-' to str(0)
+    * removing brackets
+
+    Table can be converted to int/floats afterwards
+
+    Parameters
+    ----------
+    x: pd.Series
+        It is meant to be used with :code:`df.applymap()`
+
+    Returns
+    -------
+    pd.Series
+        Re-formatted data row
+    """
     x = str(x).replace('-', str(0))
     x = str(x).replace('.', str(0))
     x = x.strip('()')
@@ -82,23 +101,31 @@ def download_process_zensus_households():
 
 
 def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
-    """group zensus data to fit Demand-Profile-Generator (DPG) format.
+    """
+    Group zensus data to fit Demand-Profile-Generator (DPG) format.
+
     Parameters
     ----------
     df_zensus: pd.DataFrame
-        containing zensus data
+        Zensus households data
     hh_types: dict
-        mapping of zensus groups to DPG groups
+        Mapping of zensus groups to DPG groups
     multi-adjust: bool
-        if True, splits DPG-group 'OO' into 3 subgroups and uses distribution factor derived by
-        table II in https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
+        If True (default), splits DPG-group 'OO' into 3 subgroups and uses
+        distribution factor derived by table II in
+        https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
     relative: bool
         if True produces relative values
+
     Returns
     ----------
     df_hh_types: pd.DataFrame
         distribution of people by household type and regional-resolution
-    !data still needs to be converted from amount of people to amount of households!
+
+        .. warning::
+
+            Data still needs to be converted from amount of people to amount
+            of households
      """
     # adjust multi with/without kids via eurostat share as not clearly derivable without infos about share of kids
     if multi_adjust:
@@ -120,19 +147,26 @@ def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
 
 
 def inhabitants_to_households(df_people_by_householdtypes_abs, mapping_people_in_households):
-    """converts distribution of peoples living in types of households to distribution of household types by using
-    a people-in-household mapping. results are rounded to int (ceiled) to full households.
+    """
+    Convert number of inhabitant to number of household types
+
+    Takes the distribution of peoples living in types of households to
+    calculate a distribution of household types by using a people-in-household
+    mapping.
+
+    Results are rounded to int (ceiled) to full households.
 
     Parameters
     ----------
     df_people_by_householdtypes_abs: pd.DataFrame
-        distribution of people living in households
+        Distribution of people living in households
     mapping_people_in_households: dict
-        mapping of people living in certain types of households
+        Mapping of people living in certain types of households
+
     Returns
     ----------
     df_households_by_type: pd.DataFrame
-        distribution of households type
+        Distribution of households type
 
     """
     # compare categories and remove form mapping if to many
@@ -154,10 +188,19 @@ def inhabitants_to_households(df_people_by_householdtypes_abs, mapping_people_in
 
 
 def process_nuts1_zensus_data(df_zensus):
-    """group, remove and reorder categories wich are not needed for demand-profile-generator (DPG)
-    Kids (<15) are excluded as they are also excluded in DPG origin dataset.
-    Adults (15<65)
-    Seniors (<65)
+    """Make data compatible with household demand profile categories
+
+    Groups, removes and reorders categories which are not needed for
+    demand-profile-generator (DPG)
+
+    * Kids (<15) are excluded as they are also excluded in DPG origin dataset
+    * Adults (15<65)
+    * Seniors (<65)
+
+    Returns
+    -------
+    pd.DataFrame
+        Aggregated zensus household data on NUTS-1 level
     """
     # Group data to fit Load Profile Generator categories
     # define kids/adults/seniors
@@ -187,8 +230,25 @@ def process_nuts1_zensus_data(df_zensus):
     return df_zensus
 
 
-def get_cell_demand_profile_ids(df_cell, pool_size, df_profiles):
-    """generates tuple of hh_type and random sample(without replacement) profile ids for cell"""
+def get_cell_demand_profile_ids(df_cell, pool_size):
+    """
+    Generates tuple of hh_type and zensus cell ids
+
+    Takes a random sample (without replacement) of profile ids for given cell
+
+    Parameters
+    ----------
+    df_cell: pd.DataFrame
+        Household type information for a single zensus cell
+    pool_size: int
+        Number of available profiles to select from
+
+    Returns
+    -------
+    list of tuple
+        List of (`hh_type`, `cell_id`)
+
+    """
     # maybe use instead
     # np.random.default_rng().integers(low=0, high=pool_size[hh_type], size=sq) instead of random.sample
     # use random.choice() if with replacement
@@ -207,7 +267,32 @@ def get_cell_demand_profile_ids(df_cell, pool_size, df_profiles):
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def get_cell_demand_metadata(df_zensus_cells, df_profiles):
-    """generate table including demand profile ids for each cell using get_cell_demand_profile_ids"""
+    """
+    Defines information about profiles for each zensus cell
+
+    A table including the demand profile ids for each cell is created by using
+    :func:`get_cell_demand_profile_ids`.
+
+    Parameters
+    ----------
+    df_zensus_cells: pd.DataFrame
+        Household type parameters. Each row representing one household. Hence,
+        multiple rows per zensus cell.
+    df_profiles: pd.DataFrame
+        Household load profile data
+
+        * Index: Times steps as serial integers
+        * Columns: pd.MultiIndex with (`HH_TYPE`, `id`)
+
+    Returns
+    -------
+    pd.DataFrame
+        Tabular data with one row represents one zensus cell.
+        The column `cell_profile_ids` contains
+        a list of tuples (see :func:`get_cell_demand_profile_ids`) providing a
+        reference to the actual load profiles that are associated with this
+        cell.
+    """
 
     df_cell_demand_metadata = pd.DataFrame(index=df_zensus_cells.grid_id.unique(),
                                            columns=['cell_profile_ids', 'nuts3', 'nuts1', '2035_factor',
@@ -221,7 +306,8 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
         # FIXME
         # ! runden der Haushaltszahlen auf int
         # ! kein zurücklegen innerhalb einer Zelle ?! -> das is ok.
-        cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size, df_profiles)
+        # cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size, df_profiles)
+        cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size)
 
         df_cell_demand_metadata.at[cell_id, 'cell_profile_ids'] = cell_profile_ids
         df_cell_demand_metadata.at[cell_id, 'nuts3'] = df_cell.loc[:, 'nuts3'].unique()[0]
@@ -232,7 +318,33 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def adjust_to_demand_regio_nuts3_annual(df_cell_demand_metadata, df_profiles, df_demand_regio):
-    """computes the profile scaling factor by accumulated nuts3 cells and demand_regio data"""
+    """
+    Computes the profile scaling factor for alignment to demand regio data
+
+    The scaling factor can be used to re-scale each load profile such that the
+    sum of all load profiles within one NUTS-3 area equals the annual demand
+    of demand regio data.
+
+    Parameters
+    ----------
+    df_cell_demand_metadata: pd.DataFrame
+        Result of :func:`get_cell_demand_metadata`.
+    df_profiles: pd.DataFrame
+        Household load profile data
+
+        * Index: Times steps as serial integers
+        * Columns: pd.MultiIndex with (`HH_TYPE`, `id`)
+
+    df_demand_regio: pd.DataFrame
+        Annual demand by demand regio for each NUTS-3 region and scenario year.
+        Index is pd.MultiIndex with :code:`tuple(scenario_year, nuts3_code)`.
+
+    Returns
+    -------
+    pd.DataFrame
+        Returns the same data as :func:`get_cell_demand_metadata`, but with
+        filled columns `2035_factor` and `2050_factor`.
+    """
     for nuts3_id, df_nuts3 in df_cell_demand_metadata.groupby(by='nuts3'):
         nuts3_cell_ids = df_nuts3.index
         nuts3_profile_ids = df_nuts3.loc[:, 'cell_profile_ids'].sum()
@@ -255,15 +367,39 @@ def adjust_to_demand_regio_nuts3_annual(df_cell_demand_metadata, df_profiles, df
     return df_cell_demand_metadata
 
 
-def get_load_area_max_load(df_profiles, df_cell_demand_metadata, load_area_ids, year):
-    """get max value of load area demand profile"""
+def get_load_area_max_load(df_profiles, df_cell_demand_metadata, cell_ids, year):
+    """
+    Get peak load for one load area
+
+    The peak load is calculated in aggregated manner for a group of zensus
+    cells that belong to one load area (defined by `cell_ids`).
+
+    Parameters
+    ----------
+    df_profiles: pd.DataFrame
+        Household load profile data
+
+        * Index: Times steps as serial integers
+        * Columns: pd.MultiIndex with (`HH_TYPE`, `id`)
+
+        Used to calculate the peak load from.
+    df_cell_demand_metadata: pd.DataFrame
+        Return value of :func:`adjust_to_demand_regio_nuts3_annual`.
+    cell_ids: list
+        Zensus cell ids that define one group of zensus cells that belong to
+        the same load area.
+    year: int
+        Scenario year. Is used to consider the scaling factor for aligning
+        annual demand to NUTS-3 data.
+
+    """
     timesteps = len(df_profiles)
     full_load = pd.Series(data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps))
-    load_area_meta = df_cell_demand_metadata.loc[load_area_ids, ['cell_profile_ids', 'nuts3', f'{year}_factor']]
+    load_area_meta = df_cell_demand_metadata.loc[cell_ids, ['cell_profile_ids', 'nuts3', f'{year}_factor']]
     for (nuts3, factor), df in load_area_meta.groupby(by=['nuts3', f'{year}_factor']):
         part_load = df_profiles.loc[:, df['cell_profile_ids'].sum()].sum(axis=1) * factor / 1e3  # profiles in Wh
         full_load = full_load.add(part_load)
-    return full_load.max()  #, full_load.idxmax()
+    return full_load.max()
 
 
 def download_files():
