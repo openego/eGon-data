@@ -146,8 +146,7 @@ class Tasks(dict):
                 TypeError(
                     "`egon.data.datasets.Tasks` got an argument of type:\n\n"
                     f"  {type(graph)}\n\n"
-                    "where only `Task`s (i.e. `Operator`s), `Set`s and"
-                    " `Tuple`s are allowed."
+                    "where only `Task`s, `Set`s and `Tuple`s are allowed."
                 )
             )
 
