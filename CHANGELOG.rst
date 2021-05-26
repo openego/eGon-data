@@ -94,6 +94,8 @@ Added
   `#109 <https://github.com/openego/eGon-data/issues/109>`_
 * Assign voltage level and bus_id to power plants
   `#15 <https://github.com/openego/eGon-data/issues/15>`_
+* Integrate solar rooftop for etrago tables
+  `#255 <https://github.com/openego/eGon-data/issues/255>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
