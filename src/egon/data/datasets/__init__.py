@@ -90,9 +90,15 @@ class Model(Base):
 #:
 #: __ https://docs.python.org/3/reference/datamodel.html#index-34
 Task = Union[Callable[[], None], Operator]
-TaskGraph = Union[Task, "ParallelTasks", "SequentialTasks"]
-ParallelTasks = Set[TaskGraph]
-SequentialTasks = Tuple[TaskGraph, ...]
+#: A graph of tasks is, in its simplest form, just a single node, i.e. a
+#: single :class:`Task`. More complex graphs can be specified by nesting
+#: :class:`sets <builtins.set>` and :class:`tuples <builtins.tuple>` of
+#: :class:`TaskGraphs <TaskGraph>`. A set of :class:`TaskGraphs
+#: <TaskGraph>` means that they are unordered and can be
+#: executed in parallel. A :class:`tuple` specifies an implicit ordering so
+#: a :class:`tuple` of :class:`TaskGraphs <TaskGraph>` will be executed
+#: sequentially in the given order.
+TaskGraph = Union[Task, Set["TaskGraph"], Tuple["TaskGraph", ...]]
 
 
 @dataclass
@@ -104,10 +110,7 @@ class Tasks(dict):
     def __init__(self, graph: TaskGraph):
         """Connect multiple tasks into a potentially complex graph.
 
-        As per the type, a task graph can be given as a single :class:`Task`,
-        a tuple of task graphs or a set of task graphs. A tuple will be
-        executed in the specified order, whereas a set means that the
-        tasks in the graph will be executed in parallel.
+        Parses a :class:`TaskGraph` into a :class:`Tasks` object.
         """
         if isinstance(graph, Callable):
             graph = PythonOperator(
@@ -153,8 +156,20 @@ class Tasks(dict):
 
 @dataclass
 class Dataset:
+    #: The name of the Dataset
     name: str
+    #: The :class:`Dataset`'s version. Can be anything from a simple
+    #: semantic versioning string like "2.1.3", to a more complex
+    #: string, like for example "2021-01-01.schleswig-holstein.0" for
+    #: OpenStreetMap data.
+    #: Note that the latter encodes the :class:`Dataset`'s date, region
+    #: and a sequential number in case the data changes without the date
+    #: or region changing, for example due to implementation changes.
     version: str
+    #: The first task(s) of this :class:`Dataset` will be marked as
+    #: downstream of any of the listed dependencies. In case of bare
+    #: :class:`Task`, a direct link will be created whereas for a
+    #: :class:`Dataset` the link will be made to all of its last tasks.
     dependencies: Iterable[Union[Dataset, Task]] = ()
     #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
     #: automatically be converted to :class:`Tasks`.
