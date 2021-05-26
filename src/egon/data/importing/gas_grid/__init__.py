@@ -25,14 +25,14 @@ def download_SciGRID_gas_data():
     
     zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/IGGIELGN.zip")
     if not os.path.isfile(zenodo_zip_file_url):
-        urlretrieve(zenodo_zip_file_url, path + 'IGGIELGN.zip')
+        urlretrieve(zenodo_zip_file_url, 'IGGIELGN.zip') #path +
         
     components = ['Nodes', 'PipeSegments', 'Productions', 'Storages'] #'Compressors'
     files = []
     for i in components:
         files.append('data/IGGIELGN_' + i + '.csv')
     
-    with ZipFile(path + 'IGGIELGN.zip', 'r') as zipObj:
+    with ZipFile('IGGIELGN.zip', 'r') as zipObj: #path +
         listOfFileNames = zipObj.namelist()
         for fileName in listOfFileNames:
             if fileName in files:
