@@ -23,6 +23,7 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.loadarea as loadarea
@@ -531,3 +532,24 @@ with airflow.DAG(
     demandregio_demand_cts_ind >> electrical_load_curves_cts
     map_zensus_vg250 >> electrical_load_curves_cts
     etrago_input_data >> electrical_load_curves_cts
+
+    # Map federal states to mv_grid_districts
+    map_boundaries_grid_districts = PythonOperator(
+        task_id="map_vg250_grid_districts",
+        python_callable=boundaries_grid_districts.map_mvgriddistricts_vg250,
+    )
+    define_mv_grid_districts >> map_boundaries_grid_districts
+    vg250_clean_and_prepare >> map_boundaries_grid_districts
+
+    # Solar rooftop per mv grid district
+    solar_rooftop_etrago = PythonOperator(
+        task_id="etrago_solar_rooftop",
+        python_callable=power_plants.pv_rooftop_per_mv_grid,
+    )
+    map_boundaries_grid_districts >> solar_rooftop_etrago
+    feedin_pv >> solar_rooftop_etrago
+    elec_cts_demands_zensus >> solar_rooftop_etrago
+    elec_household_demands_zensus >> solar_rooftop_etrago
+    nep_insert_data >> solar_rooftop_etrago
+    etrago_input_data >> solar_rooftop_etrago
+    map_zensus_grid_districts >> solar_rooftop_etrago

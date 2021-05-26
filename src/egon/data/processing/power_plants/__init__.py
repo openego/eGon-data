@@ -10,7 +10,7 @@ import pandas as pd
 import geopandas as gpd
 import egon.data.config
 import numpy as np
-
+from egon.data.processing.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 Base = declarative_base()
 
 
