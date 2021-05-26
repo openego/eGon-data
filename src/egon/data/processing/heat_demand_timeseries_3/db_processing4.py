@@ -101,7 +101,7 @@ def temperature_profile_extract():
         temperature_month = pd.DataFrame()
         
         ##csv file available in the nextcloud folder
-        coordinates_path = os.path.join(os.getcwd(),'TRY_Climate_Zones')            #station_location=pd.read_csv(os.path.join(os.getcwd(),'TRY_Climate_Zones','station_coordinates.csv'))
+        coordinates_path = os.path.join(os.getcwd(),'TRY_Climate_Zones')           
         station_location=pd.read_csv(os.path.join(coordinates_path,'station_coordinates.csv'))
         
         for row in station_location.index:
@@ -283,9 +283,7 @@ def idp_df_generator():
                         'temperature_class': m
                         }))
     idp_df = idp_df.reset_index(drop=True)
-    #idp_df['idp'] =idp_df.idp.apply(lambda x: np.array(x)) 
     
-    #idp_df.idp = idp_df.idp.apply(lambda x:  x.astype(np.float32))
     
     ##writting to the database
     # idp_df.to_sql('heat_idp_pool',con=db.engine(),schema='demand' ,if_exists ='replace', index=True,
@@ -293,6 +291,10 @@ def idp_df_generator():
     #                             'idp':ARRAY(Float()),
     #                             'house': String(),
     #                             'temperature_class':Integer()})
+    
+    idp_df['idp'] =idp_df.idp.apply(lambda x: np.array(x)) 
+    
+    idp_df.idp = idp_df.idp.apply(lambda x:  x.astype(np.float32))
 
         
     return idp_df 
@@ -416,6 +418,7 @@ def profile_selector():
     annual_demand = annual_demand_generator()
     #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
     all_temperature_interval = temp_interval()
+    #all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
     
     #Temperature_interval = pd.DataFrame(columns = range(365))
     #all_temperature_interval.set_index(index,inplace=True)
@@ -556,10 +559,16 @@ def profile_generator(aggregation_level):
 
 def residential_demand_scale(aggregation_level):
     heat_profile = profile_generator(aggregation_level)
-    #heat_profile = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/heat_profile_idp_final.pickle')
+    #heat_profile = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/heat_profile_idp_final_final.pickle')
+    
     h = h_value()
+    #h = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/h.pickle')
     h= h.reset_index(drop=True)
+    
     annual_demand = annual_demand_generator()
+    #annual_demand = pd.read_pickle('/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
+    #annual_demand.drop('Temperature_interval',axis=1,inplace=True)
+    
     
     if aggregation_level == 'district':
         
@@ -576,6 +585,7 @@ def residential_demand_scale(aggregation_level):
         district_station.reset_index('Station', inplace =True)
     
         demand_curves = pd.DataFrame()
+        
         for j in range(len(heat_profile.columns)):
             current_district = heat_profile.iloc[:,j]
             area_id = heat_profile.columns[j]
@@ -645,8 +655,8 @@ def cts_demand_per_aggregation_level(aggregation_level):
     demand_nuts = pd.merge(demand, nuts_zensus, how='left', on = 'zensus_population_id')
     
     ###CTS secotor NUTS§ level temperature profile
-    df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(use_nuts3code=True, year=2011)
-    #df_CTS_gas_2011=pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/CTS/df_CTS_gas_2011.pickle')
+    #df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(use_nuts3code=True, year=2011)
+    df_CTS_gas_2011=pd.read_pickle(os.path.join(os.getcwd(), 'df_CTS_gas_2011.pickle'))
     df_CTS_gas_2011.reset_index(drop=True,inplace=True)
     
     ##df linking ags_lk and natcode_nuts_3 ### this file is available in the nextcloud link
@@ -735,10 +745,10 @@ def demand_profile_generator(aggregation_level = 'district'):
     total_demands = total_demands.groupby(lambda x:x, axis=0).sum()
     
     ##spliting the df into daily lists
-    final_heat_profiles = pd.DataFrame(index= final_profile.index)
+    final_heat_profiles = pd.DataFrame(index= total_demands.index)
     x=0
     for i in range(365):
-        current_day = final_profile.iloc[:,x:x+24]
+        current_day = total_demands.iloc[:,x:x+24]
         hourly_data = current_day.values.tolist()
         final_heat_profiles[i] = hourly_data
         x+=24   
