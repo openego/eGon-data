@@ -21,22 +21,22 @@ def download_SciGRID_gas_data():
     Download SciGRID_gas IGGIELGN data from Zenodo
 
     """
-    path = 'src/egon/data/importing/gas_grid/'
+    path = os.path.dirname(__file__) + '/'
     
     zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/IGGIELGN.zip")
     if not os.path.isfile(zenodo_zip_file_url):
-        urlretrieve(zenodo_zip_file_url, 'IGGIELGN.zip') #path +
+        urlretrieve(zenodo_zip_file_url, path + 'IGGIELGN.zip')
         
     components = ['Nodes', 'PipeSegments', 'Productions', 'Storages'] #'Compressors'
     files = []
     for i in components:
         files.append('data/IGGIELGN_' + i + '.csv')
     
-    with ZipFile('IGGIELGN.zip', 'r') as zipObj: #path +
+    with ZipFile(path + 'IGGIELGN.zip', 'r') as zipObj:
         listOfFileNames = zipObj.namelist()
         for fileName in listOfFileNames:
             if fileName in files:
-                zipObj.extract(fileName, path) 
+                zipObj.extract(fileName, path)
 
 
 def define_gas_nodes_list():
