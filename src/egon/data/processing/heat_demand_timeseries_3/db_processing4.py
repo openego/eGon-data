@@ -286,11 +286,11 @@ def idp_df_generator():
     
     
     ##writting to the database
-    # idp_df.to_sql('heat_idp_pool',con=db.engine(),schema='demand' ,if_exists ='replace', index=True,
-    #                   dtype = {'index': Integer(),
-    #                             'idp':ARRAY(Float()),
-    #                             'house': String(),
-    #                             'temperature_class':Integer()})
+    idp_df.to_sql('heat_idp_pool',con=db.engine(),schema='demand' ,if_exists ='replace', index=True,
+                      dtype = {'index': Integer(),
+                                'idp':ARRAY(Float()),
+                                'house': String(),
+                                'temperature_class':Integer()})
     
     idp_df['idp'] =idp_df.idp.apply(lambda x: np.array(x)) 
     
@@ -474,16 +474,17 @@ def profile_selector():
     
     selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
       
-    # chunk_size = 50000
-    # chunks = range(ceil(len(selected_profiles)/chunk_size))
-    # for i in chunks:
-    #     x = chunk_size * i
-    #     y = x + chunk_size
-    #     if y < len(selected_profiles):
-    #         df = selected_profiles.iloc[x:y,:]
-    #     if y > len(selected_profiles):
-    #         df = selected_profiles.iloc[x:len(selected_profiles),:]
-    #     df.to_sql('selected_idp_names',con=db.egine(),schema='demand' ,if_exists ='append', index=True) 
+    #writting in the database
+    chunk_size = 50000
+    chunks = range(ceil(len(selected_idp_names)/chunk_size))
+    for i in chunks:
+        x = chunk_size * i
+        y = x + chunk_size
+        if y < len(selected_idp_names):
+            df = selected_idp_names.iloc[x:y,:]
+        if y > len(selected_idp_names):
+            df = selected_idp_names.iloc[x:len(selected_idp_names),:]
+        df.to_sql('selected_idp_names',con=db.egine(),schema='demand' ,if_exists ='append', index=True) 
     
     return idp_df, selected_idp_names
 
@@ -754,8 +755,8 @@ def demand_profile_generator(aggregation_level = 'district'):
         x+=24   
     
     ##writting to database
-    # final_heat_profiles.to_sql('egon_heat_time_series',con=db.engine(),schema='demand' ,if_exists ='append', 
-    #     index=True,dtype=ARRAY(Float()))   
+    final_heat_profiles.to_sql('egon_heat_time_series',con=db.engine(),schema='demand' ,if_exists ='append', 
+        index=True,dtype=ARRAY(Float()))   
     
     return final_heat_profiles
 
