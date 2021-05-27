@@ -4,6 +4,7 @@
 """
 import egon.data.config
 from egon.data import db
+from egon.data.processing.demandregio.temporal import insert_cts_load
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data.processing.zensus_vg250.zensus_population_inside_germany import DestatisZensusPopulationPerHa
