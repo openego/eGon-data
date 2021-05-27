@@ -128,6 +128,8 @@ Changed
   `#196 <https://github.com/openego/eGon-data/issues/196>`_
 * Update installation of demandregio's disaggregator
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
+* Update etrago tables
+  `#243 <https://github.com/openego/eGon-data/issues/243>`_
 
 Bug fixes
 ---------
