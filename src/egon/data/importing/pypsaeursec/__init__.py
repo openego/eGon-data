@@ -14,6 +14,8 @@ from egon.data import db
 from egon.data.importing.nep_input_data import scenario_config
 from egon.data import __path__
 import egon.data.subprocess as subproc
+import yaml
+
 
 
 def run_pypsa_eur_sec():
@@ -58,6 +60,17 @@ def run_pypsa_eur_sec():
                 pypsa_eur_repos,
             ],
         )
+        
+        # Read YAML file
+        path_to_env = pypsa_eur_repos / "envs/environment.yaml"
+        with open(path_to_env, 'r') as stream:
+            env = yaml.safe_load(stream)
+            
+        env["dependencies"].append("gurobipy")
+
+        # Write YAML file
+        with open(path_to_env, 'w', encoding='utf8') as outfile:
+            yaml.dump(env, outfile, default_flow_style=False, allow_unicode=True)
 
     if not technology_data_repos.exists():
         subproc.run(
