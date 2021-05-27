@@ -114,6 +114,7 @@ class EgonPfHvLine(Base):
     num_parallel = Column(Float(53))
     v_ang_min = Column(Float(53))
     v_ang_max = Column(Float(53))
+    v_nom = Column(Float(53))
     geom = Column(Geometry('MULTILINESTRING', 4326))
     topo = Column(Geometry('LINESTRING', 4326))
 
