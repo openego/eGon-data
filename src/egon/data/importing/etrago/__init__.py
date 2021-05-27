@@ -358,6 +358,26 @@ def create_tables():
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
+    # Drop existing tables
+    EgonPfHvBus.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvBusTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGenerator.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGeneratorTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLine.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLineTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLink.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLinkTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLoad.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLoadTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvCarrier.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStorage.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStorageTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStore.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStoreTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvTempResolution.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvTransformer.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvTransformerTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    # Create new tables
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvGenerator.__table__.create(bind=engine, checkfirst=True)
@@ -376,4 +396,3 @@ def create_tables():
     EgonPfHvTempResolution.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
-
