@@ -408,6 +408,9 @@ def profile_selector():
 
     # Set seed value to have reproducable results
     np.random.seed(0)
+
+    db.execute_sql("DROP TABLE IF EXISTS demand.selected_idp_names;")
+
     #generates a dataframe with the idp index number of the selected profiles for each temperature
 
     selected_idp_names = pd.DataFrame()
@@ -434,33 +437,33 @@ def profile_selector():
         result_SFH['zensus_population_id'] = annual_demand[
             annual_demand.Station==station].loc[
                 annual_demand[annual_demand.Station==station].index.repeat(
-                    annual_demand[annual_demand.Station==station].SFH.astype(int))].zensus_population_id.values
+                    annual_demand[annual_demand.Station==station].SFH.astype(int))
+                ].zensus_population_id.values
 
         result_MFH['zensus_population_id'] =annual_demand[
             annual_demand.Station==station].loc[
                 annual_demand[annual_demand.Station==station].index.repeat(
-                    annual_demand[annual_demand.Station==station].MFH.astype(int))].zensus_population_id.values
+                    annual_demand[annual_demand.Station==station].MFH.astype(int))
+                ].zensus_population_id.values
 
         result_SFH.set_index('zensus_population_id',inplace=True)
         result_MFH.set_index('zensus_population_id',inplace=True)
 
+        result_SFH_array = pd.DataFrame(index=result_SFH.index)
+        result_SFH_array['idp'] = result_SFH.values.tolist()
+
+        result_MFH_array = pd.DataFrame(index=result_MFH.index)
+        result_MFH_array['idp'] = result_MFH.values.tolist()
+        result_SFH_array.to_sql(
+            'selected_idp_names',con=db.engine(),
+            schema='demand' ,if_exists ='append', index=True)
+        result_MFH_array.to_sql(
+            'selected_idp_names',con=db.engine(),
+            schema='demand' ,if_exists ='append', index=True)
         selected_idp_names = selected_idp_names.append(result_SFH)
         selected_idp_names = selected_idp_names.append(result_MFH)
 
-
-    selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
-
-    #writting in the database
-    chunk_size = 50000
-    chunks = range(ceil(len(selected_idp_names)/chunk_size))
-    for i in chunks:
-        x = chunk_size * i
-        y = x + chunk_size
-        if y < len(selected_idp_names):
-            df = selected_idp_names.iloc[x:y,:]
-        if y > len(selected_idp_names):
-            df = selected_idp_names.iloc[x:len(selected_idp_names),:]
-        df.to_sql('selected_idp_names',con=db.engine(),schema='demand' ,if_exists ='append', index=True)
+    selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.uint16))
 
     return idp_df, selected_idp_names
 
