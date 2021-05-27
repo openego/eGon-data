@@ -627,7 +627,7 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
 
             -- BRANCH DATA
             INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0,
-                                              bus1, x, r, b, s_nom, cables,
+                                              bus1, x, r, b, s_nom, cables, v_nom,
                                               geom, topo)
             SELECT
               {version},
@@ -640,6 +640,7 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
               br_b as b,
               rate_a as s_nom,
               cables,
+              branch_voltage/1000 as v_nom,
               geom,
               topo
               FROM osmtgmod_results.branch_data
