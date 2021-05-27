@@ -530,7 +530,7 @@ def osmtgmod(
 
 def osmtgmmod_to_pypsa(version="'0.0.0'"):
 
-    for scenario_name in ['eGon2035', 'eGon100RE']:
+    for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
 
         db.execute_sql(
             f"""
