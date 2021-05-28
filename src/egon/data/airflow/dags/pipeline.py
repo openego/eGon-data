@@ -51,6 +51,9 @@ from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 
+# Set number of threads used by numpy and pandas
+set_numexpr_threads()
+
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
