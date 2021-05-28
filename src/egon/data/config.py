@@ -85,3 +85,19 @@ def datasets(config_file=None):
         config_file = os.path.join(package_path, "datasets.yml")
 
     return yaml.load(open(config_file), Loader=yaml.SafeLoader)
+
+def set_numexpr_threads(max_threads='1'):
+    """Sets maximum threads used by NumExpr
+
+    Parameters
+    ----------
+    max_threads : str, optional
+        Number of maximal threads
+
+    Returns
+    -------
+    None
+
+    """
+    os.environ['NUMEXPR_MAX_THREADS'] = max_threads
+    os.environ['NUMEXPR_NUM_THREADS'] = max_threads

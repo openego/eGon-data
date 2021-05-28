@@ -37,7 +37,10 @@ import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 
 from egon.data import db
+from egon.data.config import set_numexpr_threads
 
+# Set number of threads used by numpy and pandas
+#set_numexpr_threads()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
