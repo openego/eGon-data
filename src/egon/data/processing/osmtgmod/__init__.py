@@ -529,17 +529,23 @@ def osmtgmod(
 
 
 def osmtgmmod_to_pypsa(version="'0.0.0'"):
+    db.execute_sql(
+            f"""
+            -- CLEAN UP OF TABLES
+            DELETE FROM grid.egon_pf_hv_bus
+            WHERE version = {version}
+            AND carrier = 'AC';
+            DELETE FROM grid.egon_pf_hv_line
+            WHERE version = {version};
+            DELETE FROM grid.egon_pf_hv_transformer
+            WHERE version = {version};
+            """
+            )
 
     for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
 
         db.execute_sql(
             f"""
-                -- CLEAN UP OF TABLES
-            TRUNCATE grid.egon_pf_hv_bus CASCADE;
-            TRUNCATE grid.egon_pf_hv_line CASCADE;
-            TRUNCATE grid.egon_pf_hv_transformer CASCADE;
-
-
             -- BUS DATA
             INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
                                              geom, x, y, carrier)
@@ -605,14 +611,20 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
             UPDATE grid.egon_pf_hv_line a
             SET
                  r = r * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus
-                            WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
+                            FROM grid.egon_pf_hv_bus b
+                            WHERE bus_id=bus1
+                            AND a.scn_name = b.scn_name
+                            )*1000)^2 / (100 * 10^6)),
                  x = x * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus
-                            WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
+                            FROM grid.egon_pf_hv_bus b
+                            WHERE bus_id=bus1
+                            AND a.scn_name = b.scn_name
+                            )*1000)^2 / (100 * 10^6)),
                  b = b * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus
-                            WHERE bus_id=bus1)*1000)^2 / (100 * 10^6));
+                            FROM grid.egon_pf_hv_bus b
+                            WHERE bus_id=bus1
+                            AND a.scn_name = b.scn_name
+                            )*1000)^2 / (100 * 10^6));
 
             -- calculate line length (in km) from geoms
 
@@ -629,7 +641,10 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
-            DELETE FROM grid.egon_pf_hv_bus WHERE scn_name={scenario_name}
+            DELETE FROM grid.egon_pf_hv_bus
+            WHERE scn_name={scenario_name}
+            AND carrier = 'AC'
+            AND version = {version}
             AND bus_id NOT IN
             (SELECT bus0 FROM grid.egon_pf_hv_line WHERE
              scn_name={scenario_name})
