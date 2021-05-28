@@ -94,7 +94,7 @@ def run_pypsa_eur_sec():
             ],
         )
 
-    datafile = "pypsa-eur-sec-data-bundle-201012.tar.gz"
+    datafile = "pypsa-eur-sec-data-bundle-210418.tar.gz"
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
         urlretrieve(f"https://nworbmot.org/{datafile}", datapath)
