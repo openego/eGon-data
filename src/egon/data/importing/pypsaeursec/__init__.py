@@ -66,7 +66,7 @@ def run_pypsa_eur_sec():
         with open(path_to_env, 'r') as stream:
             env = yaml.safe_load(stream)
             
-        env["dependencies"].append("gurobipy")
+        env["dependencies"].append("gurobi")
 
         # Write YAML file
         with open(path_to_env, 'w', encoding='utf8') as outfile:
