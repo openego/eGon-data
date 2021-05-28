@@ -353,6 +353,7 @@ with airflow.DAG(
     ehv_substation_extraction >> run_osmtgmod
     hvmv_substation_extraction >> run_osmtgmod
     run_osmtgmod >> osmtgmod_pypsa
+    etrago_input_data >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
