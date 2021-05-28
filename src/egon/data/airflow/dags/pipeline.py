@@ -507,6 +507,14 @@ with airflow.DAG(
 
     download_era5 >> run_pypsaeursec
 
+    pypsaeursec_capacities = PythonOperator(
+        task_id="pypsaeursec_capacities",
+        python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,
+    )
+
+    run_pypsaeursec >> pypsaeursec_capacities
+    create_tables >> pypsaeursec_capacities
+    
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(
         task_id="create-district-heating-areas-table",
