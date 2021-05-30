@@ -535,7 +535,7 @@ with airflow.DAG(
 
     # Heat demand time series
     heat_time_series = PythonOperator(
-         task_id="heat_time_series",
+         task_id="heat-time-series",
          python_callable=heat_time_series.demand_profile_generator,    
     )
     
@@ -543,3 +543,5 @@ with airflow.DAG(
     import_district_heating_areas >> heat_time_series
     import_district_heating_areas >> heat_time_series
     vg250_population_metadata >> heat_time_series
+    map_zensus_grid_districts >> heat_time_series
+    
