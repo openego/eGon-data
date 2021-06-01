@@ -458,7 +458,10 @@ def insert_power_plants():
     """
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(
-        f"DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}"
+        f"""
+        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+        WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
+        """
     )
 
     for scenario in ["eGon2035"]:
