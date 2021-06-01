@@ -204,7 +204,7 @@ def regio_of_pv_ground_mounted():
         count_join = len(o)
         count_delete = count_small - count_join
         print(' ')
-        print('Untersuchung der Zusammenfassung von Potentialflächen im Bereich Roads and Railways')
+        print('Untersuchung der Zusammenfassung von Potentialflächen im Bereich Agriculture')
         print('Länge des Dataframes der Flächen vorher: '+str(before))
         print('Anzahl kleiner Flächen: '+str(count_small))
         print('Anzahl der durchgeführten Prozedur des Zusammenfassens: '+str(count_join))
