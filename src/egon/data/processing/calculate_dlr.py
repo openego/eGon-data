@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 from egon.data import db
 import xarray as xr
-import atlite
 from shapely.geometry import Point
 import psycopg2
 
@@ -20,22 +19,12 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     regions = gpd.read_file(regions_shape_path)
     regions = regions.set_index(["Region"])
     regions = regions.sort_values(by=["Region"])
-    
-    # download weather data from ERA-5 for Germany 2011
-    cutout = atlite.Cutout("Germany-2011_era5",
-                           cutout_dir = 'cutouts',
-                           module="era5",
-                           xs= slice(5., 16.),
-                           ys=slice(56., 46.),
-                           years= slice(2011, 2011)
-                           )
-    cutout.prepare()
-        
+ 
     # The data downloaded using Atlite is divided by months. Paths_weather stores
     # the paths of the 12 files to be loaded together in 'weather_data_raw'. 
     paths_weather = []
     for i in range(1,13):
-        paths_weather.append('cutouts/Germany-2011_era5/2011'+str(i).zfill(2)+'.nc') 
+        paths_weather.append('cutouts/europe-2011-era5/2011'+str(i).zfill(2)+'.nc') 
     weather_data_raw = xr.open_mfdataset(paths_weather)
     wind_speed_raw = weather_data_raw.wnd100m.values
     temperature_raw = weather_data_raw.temperature.values
@@ -219,8 +208,27 @@ def Calculate_DLR():
             min_DLR_reg = dlr_hourly[reg].min(axis = 1)
             DLR.append(list(min_DLR_reg))
                
-    trans_lines["Hourly DLR"] = DLR
+    trans_lines["s_max_pu"] = DLR
+
+    # write in a csv file the resuts for revision
+    trans_lines.to_csv("DLR.csv")
     
+    #delete unnecessary columns
+    trans_lines.drop(columns= ["in_regions", "s_nom"], inplace= True)
+
+    # Modify column "s_max_pu" to fit the requirement of the table
+    trans_lines["s_max_pu"] = trans_lines.apply(
+        lambda x: list(x["s_max_pu"]), axis= 1)
+    
+    trans_lines.index.rename("id")
+    # Insert into database
+    trans_lines.to_sql('egon_pf_hv_line_timeseries',
+                               schema='grid',
+                               con=db.engine(),
+                               if_exists='append')
+    return 0
+    
+"""    
     #def write_table(id, values):
     for id_line in trans_lines.index:
         con = psycopg2.connect(host = db.credentials()['HOST'],
@@ -238,8 +246,8 @@ def Calculate_DLR():
                           list(trans_lines.loc[id_line][4])))
         con.commit()
         cur.close()
+"""    
     
-    return 0
 
 
 
