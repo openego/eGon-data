@@ -442,8 +442,8 @@ def assign_bus_id(power_plants, cfg):
 
     if len(power_plants_ehv) > 0:
         power_plants.loc[power_plants_ehv, 'bus_id'] = gpd.sjoin(
-            power_plants[power_plants.index.isin(power_plants_hv)
-                         ], ehv_grid_districts).bus_id
+            power_plants[power_plants.index.isin(power_plants_ehv)
+                         ], ehv_grid_districts).bus_id_right
 
 
     return power_plants
