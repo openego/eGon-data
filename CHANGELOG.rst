@@ -147,8 +147,9 @@ Bug fixes
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
 * Replace wrong table name in SQL function used in substation extraction
   `#236 <https://github.com/openego/eGon-data/issues/236>`_
-* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld 
+* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld and set srid
   `#241 <https://github.com/openego/eGon-data/issues/241>`_
+  `#258 <https://github.com/openego/eGon-data/issues/258>`_
 * Adjust format of voltage levels in hvmv substation
   `#248 <https://github.com/openego/eGon-data/issues/248>`_
 * Change order of osmtgmod tasks
