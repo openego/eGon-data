@@ -368,6 +368,7 @@ def assign_voltage_level(mastr_loc, cfg):
     # Transfer voltage_level as integer from Spanungsebene
     map_voltage_levels=pd.Series(data={
         'Höchstspannung': 1,
+        'Hoechstspannung': 1,
         'Hochspannung': 3,
         'UmspannungZurMittelspannung': 4,
         'Mittelspannung': 5,
