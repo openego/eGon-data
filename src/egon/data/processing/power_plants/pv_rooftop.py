@@ -175,6 +175,9 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
             """,
             index_col='w_id')
 
+    # Create timeseries only for mv grid districts with pv rooftop
+    join = join[join.index_right.isin(pv_rooftop.generator_id)]
+
     timeseries =  pd.DataFrame(
             data = {'version': version,
                     'scn_name': scenario,
