@@ -196,6 +196,9 @@ def wind_farms_scenario(target_power, scenario_year, source):
     
     wind_farms= wf_hv.append(wf_mv)
     
+    # write in a csv file the resuts for revision
+    wind_farms.to_csv("initial_results.csv")
+    
     # Adjust the total installed capacity to the scenario
     total_wind_power = wf_hv['inst capacity [MW]'].sum() + wf_mv['inst capacity [MW]'].sum()
     if total_wind_power > target_power:
@@ -269,45 +272,21 @@ def wind_farms_scenario(target_power, scenario_year, source):
          'inst capacity [MW]': 'el_capacity'},
         axis=1).set_geometry('geom').to_crs(4326)
 
+    # write in a csv file the resuts for revision
+    insert_wind_farms.to_csv("final_results.csv")
+    
     # Reset index
     insert_wind_farms.index = pd.RangeIndex(
         start = wind_farm_id,
         stop = wind_farm_id + len(insert_wind_farms),
         name = 'id')
-
+    
     # Insert into database
     insert_wind_farms.reset_index().to_postgis('egon_power_plants',
                                schema='supply',
                                con=db.engine(),
                                if_exists='append')
     return wind_farms
-
-"""
-    for wf in wind_farms.index:
-        con = psycopg2.connect(host = db.credentials()['HOST'],
-                               database = db.credentials()['POSTGRES_DB'],
-                               user = db.credentials()['POSTGRES_USER'],
-                               password = db.credentials()['POSTGRES_PASSWORD'],
-                               port = db.credentials()['PORT']) 
-        cur = con.cursor()
-        sql = '''insert into supply.egon_power_plants
-        (id, carrier, chp, el_capacity, th_capacity,
-         voltage_level, scenario, geom) 
-        values (%s, %s, %s, %s, %s, %s, %s, %s)'''      
-        cur.execute(sql, (wind_farm_id,
-                          source,
-                          False,
-                          wind_farms.loc[wf].at['inst capacity [MW]'],
-                          0,
-                          wind_farms.loc[wf].at['voltage level'],
-                          scenario_year,
-                          wkb.dumps(wind_farms.loc[wf].at['centroid'])))
-        con.commit()
-        cur.close()
-        wind_farm_id+=1
-"""
-
-
 
 
 """

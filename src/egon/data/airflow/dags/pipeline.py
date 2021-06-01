@@ -471,7 +471,6 @@ with airflow.DAG(
     scenario_input_import >> generate_wind_farms
     hvmv_substation_extraction >> generate_wind_farms
     define_mv_grid_districts >> generate_wind_farms
-    power_plant_import >> generate_wind_farms
     
     # Regionalization of PV ground mounted
     generate_pv_ground_mounted = PythonOperator(
@@ -483,7 +482,6 @@ with airflow.DAG(
     scenario_input_import >> generate_pv_ground_mounted
     hvmv_substation_extraction >> generate_pv_ground_mounted
     define_mv_grid_districts >> generate_pv_ground_mounted
-    power_plant_import >> generate_pv_ground_mounted
     
  # Import weather data
     download_era5 = PythonOperator(
