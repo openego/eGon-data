@@ -57,7 +57,8 @@ def distribute_household_demands():
               ['electrical_demands_households']['targets']
               ['household_demands_zensus'])
 
-    db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
+    db.execute_sql(f"""DELETE FROM {target['schema']}.{target['table']}
+                   WHERE sector = 'residential'""")
 
     # Select match between zensus cells and nuts3 regions of vg250
     map_nuts3 = db.select_dataframe(
