@@ -130,6 +130,8 @@ Changed
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
   `#243 <https://github.com/openego/eGon-data/issues/243>`_
+* Limit number of parallel proccesses per task
+  `#265 <https://github.com/openego/eGon-data/issues/265>`_
 
 Bug fixes
 ---------
