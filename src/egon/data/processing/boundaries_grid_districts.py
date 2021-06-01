@@ -48,7 +48,7 @@ def map_mvgriddistricts_vg250():
     # Select sources from database
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT subst_id as bus_id, geom
+        SELECT subst_id as bus_id, ST_Centroid(geom) as geom
         FROM {sources['mv_grid_districts']['schema']}.
         {sources['mv_grid_districts']['table']}
         """,
