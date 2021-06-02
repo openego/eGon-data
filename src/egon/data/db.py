@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import functools
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -107,6 +108,33 @@ def session_scope():
         raise
     finally:
         session.close()
+
+
+def session_scoped(function):
+    """Provide a session scope to a function.
+
+    Can be used as a decorator like this:
+
+    >>> @session_scoped
+    ... def get_bind(session):
+    ...     return session.get_bind()
+    ...
+    >>> get_bind()
+    Engine(postgresql+psycopg2://egon:***@127.0.0.1:59734/egon-data)
+
+    Note that the decorated function needs to accept a parameter named
+    `session`, but is called without supplying a value for that parameter
+    because the parameter's value will be filled in by `session_scoped`.
+    Using this decorator allows saving an indentation level when defining
+    such functions but it also has other usages.
+    """
+
+    @functools.wraps(function)
+    def wrapped(*xs, **ks):
+        with session_scope() as session:
+            return function(session=session, *xs, **ks)
+
+    return wrapped
 
 
 def select_dataframe(sql, index_col=None):
