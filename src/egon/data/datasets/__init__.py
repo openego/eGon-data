@@ -8,13 +8,12 @@ from functools import reduce
 from typing import Callable, Iterable, Set, Tuple, Union
 
 from airflow import DAG
-from airflow.exceptions import AirflowSkipException
 from airflow.operators import BaseOperator as Operator
 from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 
-from egon.data import db
+from egon.data import db, logger
 
 Base = declarative_base()
 SCHEMA = "metadata"
@@ -180,8 +179,9 @@ class Dataset:
             with db.session_scope() as session:
                 datasets = session.query(Model).filter_by(name=self.name).all()
                 if self.version in [ds.version for ds in datasets]:
-                    raise AirflowSkipException(
-                        f"{self.name} version {self.version} already executed."
+                    logger.info(
+                        f"Dataset '{self.name}' version '{self.version}'"
+                        f" already executed. Skipping."
                     )
                 else:
                     for ds in datasets:
