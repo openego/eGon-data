@@ -4,6 +4,7 @@
 """
 import egon.data.config
 from egon.data import db
+from egon.data.processing.demandregio.temporal import insert_cts_load
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data.processing.zensus_vg250.zensus_population_inside_germany import DestatisZensusPopulationPerHa
@@ -56,7 +57,8 @@ def distribute_household_demands():
               ['electrical_demands_households']['targets']
               ['household_demands_zensus'])
 
-    db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
+    db.execute_sql(f"""DELETE FROM {target['schema']}.{target['table']}
+                   WHERE sector = 'residential'""")
 
     # Select match between zensus cells and nuts3 regions of vg250
     map_nuts3 = db.select_dataframe(
