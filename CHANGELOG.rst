@@ -96,6 +96,8 @@ Added
   `#15 <https://github.com/openego/eGon-data/issues/15>`_
 * Integrate solar rooftop for etrago tables
   `#255 <https://github.com/openego/eGon-data/issues/255>`_
+* Integrate gas bus and link tables
+  `#198 <https://github.com/openego/eGon-data/issues/198>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
