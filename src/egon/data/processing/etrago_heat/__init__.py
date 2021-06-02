@@ -182,7 +182,8 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
                 'scn_name': scenario,
                 'temp_id': 1,
                 'p_max_pu': feedin.feedin[join.index].values,
-                'generator_id': generator.generator_id[join.index_right].values
+                'generator_id': generator.generator_id[
+                    generator.carrier=='solar_thermal_collector'].values
                     }
         ).set_index('generator_id')
 

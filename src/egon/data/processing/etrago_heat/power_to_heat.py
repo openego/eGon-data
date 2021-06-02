@@ -116,6 +116,7 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
         f"""
         SELECT bus_id, geom FROM {targets['heat_buses']['schema']}.
         {targets['heat_buses']['table']}
+        WHERE scn_name = '{scenario}'
         """,
         index_col='bus_id',
         epsg=4326)
