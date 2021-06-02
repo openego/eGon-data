@@ -397,6 +397,7 @@ def profile_selector():
     #idp_df = idp_df_sample #####################################to be read from the pgadmin database direclty
     annual_demand = annual_demand_generator()
     #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
+    #annual_demand.drop('Temperature_interval',axis=1,inplace=True)
     all_temperature_interval = temp_interval()
     #all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
 
@@ -637,8 +638,13 @@ def residential_demand_scale(aggregation_level):
 
         ##mv_grid aggregation
         mv_grid = psycop_df_AF('boundaries.egon_map_zensus_grid_districts')
-
-        district_grid =pd.merge(mv_grid[['subst_id','zensus_population_id']],
+        
+        mv_grid = mv_grid.set_index('zensus_population_id')
+        district_heating =district_heating.set_index('zensus_population_id')
+        mv_grid_ind = mv_grid.loc[mv_grid.index.difference(district_heating.index),:]
+        mv_grid_ind = mv_grid_ind.reset_index()
+        
+        district_grid =pd.merge(mv_grid_ind[['subst_id','zensus_population_id']],
                       annual_demand[['zensus_population_id','Station','demand']],
                       on='zensus_population_id', how ='inner')
         
@@ -766,9 +772,18 @@ def cts_demand_per_aggregation_level(aggregation_level):
         CTS_per_district = CTS_per_district.transpose()
         CTS_per_district = CTS_per_district.apply(lambda x: x/x.sum())
         CTS_per_district.columns.name = 'area_id'
+        CTS_per_district.reset_index(drop=True,inplace=True)
                 
-        mv_grid = psycop_df_AF('boundaries.egon_map_zensus_grid_districts')
-        CTS_per_grid = pd.merge(CTS_per_zensus,mv_grid[['subst_id','zensus_population_id']],
+        #mv_grid = psycop_df_AF('boundaries.egon_map_zensus_grid_districts')
+        
+        mv_grid = mv_grid.set_index('zensus_population_id')
+        district_heating =district_heating.set_index('zensus_population_id')
+    
+        mv_grid_ind = mv_grid.loc[mv_grid.index.difference(district_heating.index),:]
+        mv_grid_ind = mv_grid_ind.reset_index()
+        
+        
+        CTS_per_grid = pd.merge(CTS_per_zensus,mv_grid_ind[['subst_id','zensus_population_id']],
                                      on='zensus_population_id',
                                      how='inner') 
         CTS_per_grid.set_index('subst_id',inplace=True)
@@ -778,6 +793,7 @@ def cts_demand_per_aggregation_level(aggregation_level):
         CTS_per_grid = CTS_per_grid.transpose()
         CTS_per_grid = CTS_per_grid.apply(lambda x: x/x.sum())
         CTS_per_grid.columns.name = 'subst_id'
+        CTS_per_grid.reset_index(drop=True,inplace=True)
         
         CTS_per_zensus = pd.DataFrame()
         
@@ -790,6 +806,7 @@ def cts_demand_per_aggregation_level(aggregation_level):
         CTS_per_zensus = CTS_per_zensus.transpose()
         CTS_per_zensus = CTS_per_zensus.apply(lambda x: x/x.sum())
         CTS_per_zensus.columns.name = 'zensus_population_id'
+        CTS_per_zensus.reset_index(drop=True,inplace=True)
 
     return CTS_per_district, CTS_per_grid, CTS_per_zensus
 
@@ -824,10 +841,17 @@ def CTS_demand_scale(aggregation_level):
         
         CTS_per_district =  CTS_per_district[CTS_per_district.columns[:-1]].multiply(CTS_per_district.demand,axis=0)
         
-        
+        ##on mv grid level
         mv_grid = psycop_df_AF('boundaries.egon_map_zensus_grid_districts')
-        CTS_demands_grid = pd.merge(demand,  mv_grid[['zensus_population_id','subst_id']],
-                                   on='zensus_population_id', how = 'inner')
+        mv_grid = mv_grid.set_index('zensus_population_id')
+        district_heating =district_heating.set_index('zensus_population_id')
+        mv_grid_ind = mv_grid.loc[mv_grid.index.difference(district_heating.index),:]
+        mv_grid_ind = mv_grid_ind.reset_index()
+        
+        CTS_demands_grid = pd.merge(demand,mv_grid_ind[['subst_id','zensus_population_id']],
+                                     on='zensus_population_id',
+                                     how='inner') 
+        
         CTS_demands_grid.drop('zensus_population_id', axis =1, inplace =True)
         CTS_demands_grid = CTS_demands_grid.groupby('subst_id').sum()
         
