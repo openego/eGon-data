@@ -15,6 +15,31 @@ from egon.data.config import settings
 from geoalchemy2.types import Geometry
 from urllib.request import urlretrieve
 from zipfile import ZipFile
+from geoalchemy2.shape import from_shape
+
+def next_id(component): 
+    """ Select next id value for components in pf-tables
+    Parameters
+    ----------
+    component : str
+        Name of componenet
+    Returns
+    -------
+    next_id : int
+        Next index value
+    """
+    max_id = db.select_dataframe(
+        f"""
+        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        """)['max'][0]
+
+    if max_id:
+        next_id = max_id + 1
+    else:
+        next_id = 1
+
+    return next_id
+
 
 def download_SciGRID_gas_data():
     """
@@ -44,9 +69,13 @@ def define_gas_nodes_list():
     
     Returns
     -------
-    None.
+    gas_nodes_list : dataframe
+        Dataframe containing the gas nodes (Europe)
+        
     """
-
+    # Select next id value
+    new_id = next_id('bus')
+    
     # Read-in data from csv-file
     target_file = os.path.join(
         os.path.dirname(__file__), 'data/IGGIELGN_Nodes.csv')
@@ -58,7 +87,12 @@ def define_gas_nodes_list():
     # Ajouter tri pour ne conserver que les pays ayant des pipelines en commun.
     
     gas_nodes_list = gas_nodes_list.rename(columns={'lat': 'y','long': 'x'})
-    gas_nodes_list['bus_id'] = range(len(gas_nodes_list))
+
+    # Remove buses disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
+    gas_nodes_list = gas_nodes_list[ ~ gas_nodes_list['id'].str.match('SEQ_11790_p')]
+    gas_nodes_list = gas_nodes_list[ ~ gas_nodes_list['id'].str.match('Stor_EU_107')]    
+    
+    gas_nodes_list['bus_id'] = range(new_id, new_id + len(gas_nodes_list))
     gas_nodes_list = gas_nodes_list.set_index('id')
    
     return gas_nodes_list
@@ -66,7 +100,10 @@ def define_gas_nodes_list():
 
 def insert_gas_nodes_list(gas_nodes_list):
     """Insert list of gas nodes from SciGRID_gas IGGIELGN data
-    
+        Parameters
+    ----------
+    gas_nodes_list : dataframe
+        Dataframe containing the gas nodes (Europe)
     Returns
     -------
     None.
@@ -107,22 +144,29 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
 
     # Insert data to db    
-    gas_nodes_list.to_postgis('egon_gas_bus',
+    gas_nodes_list.to_postgis('egon_pf_hv_bus', #egon_gas_
                               engine,
                               schema ='grid',
-                              index = True,
-                              if_exists = 'replace',
+                              index = False,
+                              if_exists = 'append',
                               dtype = {"geom": Geometry()})
 
     
 def insert_gas_pipeline_list(gas_nodes_list):
     """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
+    Parameters
+    ----------
+    gas_nodes_list : dataframe
+        Dataframe containing the gas nodes (Europe)
     Returns
     -------
     None.
     """
     # Connect to local database
     engine = db.engine()
+    
+    # Select next id value
+    new_id = next_id('link')
 
     classifiaction_file = os.path.join(
         os.path.dirname(__file__), 'pipeline_classification.csv') ##### /!\ nom a modifier /!\ [download from zenodo repository with small files]
@@ -139,8 +183,14 @@ def insert_gas_pipeline_list(gas_nodes_list):
                                delimiter=';', decimal='.',
                                usecols = ['id', 'node_id', 'lat', 'long', 'country_code', 'param'])
 
-    gas_pipelines_list = gas_pipelines_list[ gas_pipelines_list['country_code'].str.contains('DE')] # A remplacer evtmt par un test sur le NUTS0 ?
-    gas_pipelines_list['link_id'] = range(len(gas_pipelines_list))
+    # Select the links having at least one bus in Germany
+    gas_pipelines_list = gas_pipelines_list[gas_pipelines_list['country_code'].str.contains('DE')] # A remplacer evtmt par un test sur le NUTS0 ?
+    
+    # Remove links disconnected of the rest of the grid, until the SciGRID_gas data has been corrected. 
+    gas_pipelines_list = gas_pipelines_list[ ~ gas_pipelines_list['id'].str.match('EntsoG_Map__ST_195')]
+    gas_pipelines_list = gas_pipelines_list[ ~ gas_pipelines_list['id'].str.match('EntsoG_Map__ST_5')]
+    
+    gas_pipelines_list['link_id'] = range(new_id, new_id + len(gas_pipelines_list))  
 
     # Cut data to federal state if in testmode
     NUTS1 = []
@@ -183,28 +233,25 @@ def insert_gas_pipeline_list(gas_nodes_list):
         long_e = json.loads(row['long'])
         lat_e = json.loads(row['lat'])
         crd_e = list(zip(long_e, lat_e))
-        topo.append(geometry.LineString(crd_e))
+        topo.append(from_shape(geometry.LineString(crd_e), srid=4326)) 
         
         long_path = param['path_long'] 
         lat_path = param['path_lat'] 
-        if not long_path:
-            geom.append(geometry.LineString(crd_e))
-        else:
-            crd = list(zip(long_path, lat_path))
-            crd.insert(0, crd_e[0])
-            crd.append(crd_e[1])
-            lines = []
-            for i in range(len(crd)-1):
-                lines.append(geometry.LineString([crd[i], crd[i+1]]))      
-            geom.append(geometry.MultiLineString(lines))
+        crd = list(zip(long_path, lat_path))
+        crd.insert(0, crd_e[0])
+        crd.append(crd_e[1])
+        lines = []
+        for i in range(len(crd)-1):
+            lines.append(geometry.LineString([crd[i], crd[i+1]]))      
+        geom.append(geometry.MultiLineString(lines))
                 
     gas_pipelines_list['diameter'] = diameter
     gas_pipelines_list['length'] = length
-    gas_pipelines_list['topo'] = topo
     gas_pipelines_list['geom'] = geom
+    # gas_pipelines_list['topo'] = topo  /!\ To be inserted later /!\ 
     gas_pipelines_list = gas_pipelines_list.set_geometry('geom', crs=4326)
     
-    # Adjust columns  
+    # Adjust columns
     bus0 = []
     bus1 = []
     pipe_class = []
@@ -245,15 +292,13 @@ def insert_gas_pipeline_list(gas_nodes_list):
                                                           'max_transport_capacity_Gwh/d', 'lat', 'long'])
     
     # Insert data to db
-    gas_pipelines_list.to_postgis('egon_gas_link',
+    gas_pipelines_list.to_postgis('egon_pf_hv_link',
                           engine,
                           schema = 'grid',
                           index = False,
-                          if_exists = 'replace',
-                          dtype = {"topo": Geometry(),'geom': Geometry()})
+                          if_exists = 'append',
+                          dtype = { 'geom': Geometry()})
         
-    db.execute_sql(" select UpdateGeometrySRID('grid', 'egon_gas_link', 'topo', 4326) ;")
-    
     
 def insert_gas_data():
     """Overall function for importing gas data from SciGRID_gas
