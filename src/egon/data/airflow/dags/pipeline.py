@@ -25,6 +25,7 @@ import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
+import egon.data.processing.industry as industry
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.osmtgmod as osmtgmod
@@ -531,3 +532,21 @@ with airflow.DAG(
     demandregio_demand_cts_ind >> electrical_load_curves_cts
     map_zensus_vg250 >> electrical_load_curves_cts
     etrago_input_data >> electrical_load_curves_cts
+
+    # Distribution of annual industrial demand to osm landuse area and sites
+
+    create_industrial_demand_tables= PythonOperator(
+        task_id='industrial_demand_tables',
+        python_callable=industry.create_tables,
+    )
+
+    distribute_industrial_demand= PythonOperator(
+        task_id='industrial_demand_distribution',
+        python_callable=industry.industrial_demand_distr,
+    )
+
+    setup >> create_industrial_demand_tables
+    create_industrial_demand_tables >> distribute_industrial_demand
+    demandregio_demand_cts_ind >> distribute_industrial_demand
+    osm_add_metadata >> distribute_industrial_demand
+    vg250_clean_and_prepare >> distribute_industrial_demand

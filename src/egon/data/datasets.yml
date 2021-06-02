@@ -441,13 +441,23 @@ distributed_industrial_demand:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
       scenarios: ["eGon2035", "eGon100RE"]
+    wz:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
     osm_landuse:
       schema: 'openstreetmap'
       table: 'osm_landuse'
     industrial_sites:
       schema: 'demand'
       table: 'industrial_sites'
-  target:
+    vg250_krs:
+      schema: 'boundaries'
+      table: 'vg250_krs'
+  targets:
+    osm:
       schema: 'demand'
-      table: 'egon_demandregio_industry_distributed'
+      table: 'egon_demandregio_osm_ind_electricity'
+    sites:
+      schema: 'demand'
+      table: 'egon_demandregio_sites_ind_electricity'
 
