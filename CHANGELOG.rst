@@ -94,6 +94,8 @@ Added
   `#109 <https://github.com/openego/eGon-data/issues/109>`_
 * Assign voltage level and bus_id to power plants
   `#15 <https://github.com/openego/eGon-data/issues/15>`_
+* Integrate solar rooftop for etrago tables
+  `#255 <https://github.com/openego/eGon-data/issues/255>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -149,8 +151,9 @@ Bug fixes
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
 * Replace wrong table name in SQL function used in substation extraction
   `#236 <https://github.com/openego/eGon-data/issues/236>`_
-* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld 
+* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld and set srid
   `#241 <https://github.com/openego/eGon-data/issues/241>`_
+  `#258 <https://github.com/openego/eGon-data/issues/258>`_
 * Adjust format of voltage levels in hvmv substation
   `#248 <https://github.com/openego/eGon-data/issues/248>`_
 * Change order of osmtgmod tasks
