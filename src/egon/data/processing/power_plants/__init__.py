@@ -10,7 +10,7 @@ import pandas as pd
 import geopandas as gpd
 import egon.data.config
 import numpy as np
-
+from egon.data.processing.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 Base = declarative_base()
 
 
@@ -368,6 +368,7 @@ def assign_voltage_level(mastr_loc, cfg):
     # Transfer voltage_level as integer from Spanungsebene
     map_voltage_levels=pd.Series(data={
         'Höchstspannung': 1,
+        'Hoechstspannung': 1,
         'Hochspannung': 3,
         'UmspannungZurMittelspannung': 4,
         'Mittelspannung': 5,

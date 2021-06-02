@@ -5,7 +5,8 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
-from egon.data.airflow.tasks import initdb
+from egon.data.datasets import database
+from egon.data.datasets.osm import OpenStreetMap
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -18,20 +19,20 @@ import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.openstreetmap as import_osm
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
+import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.loadarea as loadarea
-import egon.data.processing.openstreetmap as process_osm
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
+import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
@@ -56,26 +57,17 @@ with airflow.DAG(
     is_paused_upon_creation=False,
     schedule_interval=None,
 ) as pipeline:
-    setup = PythonOperator(task_id="initdb", python_callable=initdb)
 
-    # Openstreetmap data import
-    osm_download = PythonOperator(
-        task_id="download-osm",
-        python_callable=import_osm.download_pbf_file,
-    )
-    osm_import = PythonOperator(
-        task_id="import-osm",
-        python_callable=import_osm.to_postgres,
-    )
-    osm_migrate = PythonOperator(
-        task_id="migrate-osm",
-        python_callable=process_osm.modify_tables,
-    )
-    osm_add_metadata = PythonOperator(
-        task_id="add-osm-metadata",
-        python_callable=import_osm.add_metadata,
-    )
-    setup >> osm_download >> osm_import >> osm_migrate >> osm_add_metadata
+    tasks = pipeline.task_dict
+
+    database_setup = database.Setup()
+    database_setup.insert_into(pipeline)
+    setup = tasks["database.setup"]
+
+    osm = OpenStreetMap(dependencies=[setup])
+    osm.insert_into(pipeline)
+    osm_add_metadata = tasks["osm.add-metadata"]
+    osm_download = tasks["osm.download"]
 
     # VG250 (Verwaltungsgebiete 250) data import
     vg250_download = PythonOperator(
@@ -356,6 +348,7 @@ with airflow.DAG(
     ehv_substation_extraction >> run_osmtgmod
     hvmv_substation_extraction >> run_osmtgmod
     run_osmtgmod >> osmtgmod_pypsa
+    etrago_input_data >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
@@ -443,6 +436,15 @@ with airflow.DAG(
     heat_demand_import >> elec_cts_demands_zensus
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
+
+
+    # Gas grid import
+    gas_grid_insert_data = PythonOperator(
+        task_id="insert-gas-grid",
+        python_callable=gas_grid.insert_gas_data,
+    )
+
+    create_tables >> gas_grid_insert_data
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -556,3 +558,24 @@ with airflow.DAG(
     demandregio_demand_cts_ind >> electrical_load_curves_cts
     map_zensus_vg250 >> electrical_load_curves_cts
     etrago_input_data >> electrical_load_curves_cts
+
+    # Map federal states to mv_grid_districts
+    map_boundaries_grid_districts = PythonOperator(
+        task_id="map_vg250_grid_districts",
+        python_callable=boundaries_grid_districts.map_mvgriddistricts_vg250,
+    )
+    define_mv_grid_districts >> map_boundaries_grid_districts
+    vg250_clean_and_prepare >> map_boundaries_grid_districts
+
+    # Solar rooftop per mv grid district
+    solar_rooftop_etrago = PythonOperator(
+        task_id="etrago_solar_rooftop",
+        python_callable=power_plants.pv_rooftop_per_mv_grid,
+    )
+    map_boundaries_grid_districts >> solar_rooftop_etrago
+    feedin_pv >> solar_rooftop_etrago
+    elec_cts_demands_zensus >> solar_rooftop_etrago
+    elec_household_demands_zensus >> solar_rooftop_etrago
+    nep_insert_data >> solar_rooftop_etrago
+    etrago_input_data >> solar_rooftop_etrago
+    map_zensus_grid_districts >> solar_rooftop_etrago
