@@ -9,33 +9,8 @@ from egon.data.processing.hh_demand import hh_demand_profiles_tools as hh_tools
 
 
 if __name__ == "__main__":
-    # Loadprofilesdump
-    # ###################
-    # in Wh
-    # TODO: > to/from SQL?
-    # filed needs to be placed manually in directory
-    # file = 'h0_profiles.h5'
-    # file = os.path.join(os.path.realpath(file))
-    # df_profiles = pd.read_hdf(file)
-    #
-    # # set multiindex to HH_types
-    # df_profiles.columns = pd.MultiIndex.from_arrays([df_profiles.columns.str[:2], df_profiles.columns.str[3:]])
+    # Get demand profiles and zensus household type x age category data
     df_profiles = hh_tools.get_household_demand_profiles_raw()
-
-
-    # Load Zensus data at nuts-level
-    # ###################
-    # TODO: > to/from SQL?
-    # filed needs to be placed manually in directory
-    # file = 'Zensus2011_Personen.csv'
-    # file = os.path.join(os.path.realpath(file))
-    # df_zensus = pd.read_csv(file, sep=';', decimal='.', skiprows=5, skipfooter=7,
-    #                         index_col=[0, 1], header=[0, 1], encoding='latin1', engine='python')
-    #
-    # # clean data
-    # df_zensus = df_zensus.applymap(hh_tools.clean).applymap(int)
-    # # preprocess nuts1 zensus data
-    # df_zensus = hh_tools.process_nuts1_zensus_data(df_zensus)
     df_zensus = hh_tools.download_process_zensus_households()
 
     # ## Household distribution
