@@ -6,7 +6,7 @@ import pandas as pd
 import geopandas as gpd
 from egon.data import db, config
 
-from egon.data.processing.heat_supply.geothermal import calc_geothermal_costs
+from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 
 def capacity_per_district_heating_category(district_heating_areas, scenario):
     """ Calculates target values per district heating category and technology

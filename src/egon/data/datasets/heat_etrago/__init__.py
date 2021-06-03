@@ -3,7 +3,7 @@
 import pandas as pd
 import geopandas as gpd
 from egon.data import db, config
-from egon.data.processing.etrago_heat.power_to_heat import (
+from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_central_power_to_heat, next_id)
 from egon.data.datasets import Dataset
 

@@ -4,7 +4,7 @@
 
 from egon.data import db, config
 
-from egon.data.processing.heat_supply.district_heating import (
+from egon.data.datasets.heat_supply.district_heating import (
     cascade_heat_supply)
 from egon.data.processing.district_heating_areas import DistrictHeatingAreas
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
