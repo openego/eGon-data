@@ -34,6 +34,7 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
+import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
@@ -434,6 +435,15 @@ with airflow.DAG(
     heat_demand_import >> elec_cts_demands_zensus
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
+
+
+    # Gas grid import
+    gas_grid_insert_data = PythonOperator(
+        task_id="insert-gas-grid",
+        python_callable=gas_grid.insert_gas_data,
+    )
+
+    create_tables >> gas_grid_insert_data
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
