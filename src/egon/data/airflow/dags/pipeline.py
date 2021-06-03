@@ -449,6 +449,7 @@ with airflow.DAG(
     )
 
     create_tables >> gas_grid_insert_data
+    download_data_bundle >> gas_grid_insert_data
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(

@@ -1,8 +1,0 @@
-classification,pression_bar,diameter_mm,min_transport_capacity_Gwh/d,max_transport_capacity_Gwh/d
-A,100,x>=1000,651,1275
-B,25-100,700<=x<1000,80,651
-C,25-63,500<=x<700,41,201
-D,25,350<=x<500,20,41
-E,16-25,200<=x<350,4,20
-F,63,100<=x<200,4,16
-G,63,X<=100,,4
