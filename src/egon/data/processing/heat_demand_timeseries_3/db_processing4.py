@@ -406,7 +406,7 @@ def profile_selector():
     all_temperature_interval = all_temperature_interval.resample('D').max()
     all_temperature_interval.reset_index(drop=True, inplace=True)
 
-    all_temperature_interval = all_temperature_interval.iloc[:,0:3]#####for testmode
+    #all_temperature_interval = all_temperature_interval.iloc[:,0:3]#####for testmode
     #all_temperature_interval = all_temperature_interval.iloc
 
     Temperature_interval = all_temperature_interval.transpose()
