@@ -277,6 +277,7 @@ with airflow.DAG(
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
+    download_data_bundle >> nep_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
