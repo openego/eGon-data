@@ -218,6 +218,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> demandregio_demand_cts_ind
     demandregio_tables >> demandregio_demand_cts_ind
     scenario_input_import >> demandregio_demand_cts_ind
+    download_data_bundle >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(

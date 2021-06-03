@@ -142,12 +142,18 @@ def insert_cts_ind_wz_definitions():
     engine = db.engine()
 
     for sector in source['wz_definitions']:
+        if sector=='CTS':
+            delimiter=';'
+        else:
+            delimiter=','
         df = pd.read_csv(
             os.path.join(
-                os.path.dirname(__file__),
-                source['wz_definitions'][sector])).rename(
-                    {'WZ': 'wz', 'Name': 'definition'},
-                    axis='columns').set_index('wz')
+                "data_bundle_egon_data/wz_definition/",
+                source['wz_definitions'][sector]),
+            delimiter=delimiter,
+            header=None).rename(
+                {0: 'wz', 1: 'definition'},
+                axis='columns').set_index('wz')
         df['sector'] = sector
         df.to_sql(target['table'],
                   engine,
@@ -203,7 +209,7 @@ def adjust_cts_ind_nep(ec_cts_ind, sector):
 
     # get data from NEP per federal state
     new_con = pd.read_csv(os.path.join(
-        os.path.dirname(__file__),
+        "data_bundle_egon_data/nep2035_version2021/",
         sources['new_consumers_2035']),
         delimiter=';', decimal=',', index_col=0)
 
