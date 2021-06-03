@@ -6,6 +6,8 @@ from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
 from egon.data.datasets import database
+from egon.data.datasets.heat_etrago import HeatEtrago
+from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -26,8 +28,6 @@ import egon.data.importing.zensus as import_zs
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
-import egon.data.processing.etrago_heat as etrago_heat
-import egon.data.processing.heat_supply as heat_supply
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
@@ -548,24 +548,28 @@ with airflow.DAG(
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
-    create_heat_supply_table = PythonOperator(
-        task_id="create-heat_supply-table",
-        python_callable=heat_supply.create_tables
-    )
-    import_district_heating_supply = PythonOperator(
-        task_id="import-district-heating-supply",
-        python_callable=heat_supply.insert_district_heating_supply
-    )
-    create_district_heating_areas_table >> create_heat_supply_table
-    import_district_heating_areas >> import_district_heating_supply
-    power_plant_import >> import_district_heating_supply
-    create_heat_supply_table >> import_district_heating_supply
+    heat_supply = HeatSupply(
+        dependencies=[setup])
+
+    heat_supply.insert_into(pipeline)
+    import_district_heating_supply = tasks["heat_supply.district-heating"]
+    district_heating_supply_tables = tasks["heat_supply.create-tables"]
+
+    create_district_heating_areas_table >> district_heating_supply_tables
+    import_district_heating_areas >>  import_district_heating_supply
+    power_plant_import >>  import_district_heating_supply
 
     # Heat to eTraGo
-    insert_heat_etrago = PythonOperator(
-        task_id="import-heat-etrago",
-        python_callable=etrago_heat.insert_heat_etrago
-    )
-    import_district_heating_supply >> insert_heat_etrago
-    define_mv_grid_districts >> insert_heat_etrago
-    etrago_input_data >> insert_heat_etrago
+    heat_etrago = HeatEtrago(
+        dependencies=[
+            define_mv_grid_districts,
+            etrago_input_data,
+            import_district_heating_supply])
+
+    heat_etrago.insert_into(pipeline)
+    heat_etrago_buses = tasks["heat_etrago.buses"]
+    heat_etrago_supply = tasks["heat_etrago.supply"]
+
+    etrago_input_data >> heat_etrago_buses
+    define_mv_grid_districts >> heat_etrago_buses
+    import_district_heating_supply >> heat_etrago_supply

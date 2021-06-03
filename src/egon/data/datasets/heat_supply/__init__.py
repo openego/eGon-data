@@ -10,7 +10,7 @@ from egon.data.processing.district_heating_areas import DistrictHeatingAreas
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
-
+from egon.data.datasets import Dataset
 ### will be later imported from another file ###
 Base = declarative_base()
 
@@ -40,7 +40,7 @@ def create_tables():
     EgonDistrictHeatingSupply.__table__.create(bind=engine, checkfirst=True)
 
 
-def insert_district_heating_supply():
+def district_heating():
     """ Insert supply for district heating areas
 
     Returns
@@ -58,3 +58,12 @@ def insert_district_heating_supply():
         targets['district_heating_supply']['table'],
         schema=targets['district_heating_supply']['schema'],
         con=db.engine(), if_exists='append')
+
+class HeatSupply(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HeatSupply",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(create_tables, district_heating),
+        )

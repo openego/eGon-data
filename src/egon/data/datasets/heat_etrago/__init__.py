@@ -5,6 +5,7 @@ import geopandas as gpd
 from egon.data import db, config
 from egon.data.processing.etrago_heat.power_to_heat import (
     insert_central_power_to_heat, next_id)
+from egon.data.datasets import Dataset
 
 def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
     """ Insert heat buses to etrago table
@@ -201,9 +202,45 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         if_exists='append',
         con=db.engine())
 
-def insert_heat_etrago(version='0.0.0'):
+def buses(version='0.0.0'):
+    """ Insert individual and district heat buses into eTraGo-tables
+
+    Parameters
+    ----------
+    version : str, optional
+        Version number. The default is '0.0.0'.
+
+    Returns
+    -------
+    None.
+
+    """
 
     insert_buses('central_heat', version=version, scenario='eGon2035')
-    #insert_buses('rural_heat', version=version, scenario='eGon2035')
+    insert_buses('rural_heat', version=version, scenario='eGon2035')
+
+def supply(version='0.0.0'):
+    """ Insert individual and district heat supply into eTraGo-tables
+
+    Parameters
+    ----------
+    version : str, optional
+        Version number. The default is '0.0.0'.
+
+    Returns
+    -------
+    None.
+
+    """
+
     insert_central_direct_heat(version = '0.0.0', scenario='eGon2035')
     insert_central_power_to_heat(version, scenario='eGon2035')
+
+class HeatEtrago(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HeatSupply",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(buses, supply),
+        )
