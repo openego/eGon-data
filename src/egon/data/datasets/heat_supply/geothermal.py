@@ -18,7 +18,7 @@ def calc_geothermal_potentials():
     pw_km = 0.25
     ## geothermal potentials per temperature (p. 94)
     potentials = gpd.read_file(
-        'geothermal_potential/geothermal_potential_germany.shp')
+        'data_bundle_egon_data/geothermal_potential/geothermal_potential_germany.shp')
     ## temperature heating system in °C (p. 95)
     sys_temp = 60
     ## temeprature losses heat recuperator in °C (p. 95)

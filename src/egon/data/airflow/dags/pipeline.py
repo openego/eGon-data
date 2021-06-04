@@ -567,7 +567,7 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[setup])
+        dependencies=[data_bundle])
 
     heat_supply.insert_into(pipeline)
     import_district_heating_supply = tasks["heat_supply.district-heating"]
@@ -580,8 +580,6 @@ with airflow.DAG(
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
         dependencies=[
-            define_mv_grid_districts,
-            etrago_input_data,
             import_district_heating_supply])
 
     heat_etrago.insert_into(pipeline)
