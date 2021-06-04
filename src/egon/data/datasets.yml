@@ -501,10 +501,31 @@ heat_supply:
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
+    federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    heat_demand:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+    map_zensus_grid:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_grid_districts'
+    map_vg250_grid:
+      schema: 'boundaries'
+      table: 'egon_map_mvgriddistrict_vg250'
+    mv_grids:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    map_dh:
+      schema: 'demand'
+      table: 'map_zensus_district_heating_areas'
   targets:
     district_heating_supply:
-      schema: 'grid'
+      schema: 'supply'
       table: 'egon_district_heating'
+    individual_heating_supply:
+      schema: 'supply'
+      table: 'egon_individual_heating'
 
 etrago_heat:
   sources:
