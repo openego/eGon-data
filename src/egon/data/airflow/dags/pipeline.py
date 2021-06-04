@@ -584,8 +584,7 @@ with airflow.DAG(
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[
-            import_district_heating_supply])
+        dependencies=[heat_supply])
 
     heat_etrago.insert_into(pipeline)
     heat_etrago_buses = tasks["heat_etrago.buses"]

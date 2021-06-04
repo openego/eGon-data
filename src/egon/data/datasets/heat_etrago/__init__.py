@@ -57,7 +57,7 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
     # which represents aggregated individual heating for etrago
     else:
         hvmv_substation = db.select_geodataframe(
-            """
+            f"""
             SELECT point AS geom
             FROM {sources['hvmv_substation']['schema']}.
             {sources['hvmv_substation']['table']}
@@ -239,8 +239,8 @@ def supply(version='0.0.0'):
 class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="HeatSupply",
-            version="0.0.0",
+            name="HeatEtrago",
+            version="0.0.0-2",
             dependencies=dependencies,
             tasks=(buses, supply),
         )

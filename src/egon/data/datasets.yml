@@ -542,7 +542,7 @@ etrago_heat:
       schema: 'grid'
       table: 'egon_hvmv_substation'
     district_heating_supply:
-      schema: 'grid'
+      schema: 'supply'
       table: 'egon_district_heating'
     weather_cells:
       schema: 'supply'
