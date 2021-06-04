@@ -6,6 +6,9 @@ from itertools import cycle
 import random
 from pathlib import Path
 from urllib.request import urlretrieve
+from sqlalchemy import Column, String, Float, Integer, ARRAY
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 
 import egon.data.config
 
@@ -77,6 +80,18 @@ MAPPING_ZENSUS_HH_SUBGROUPS = {1: ['SR', 'SO'],
                                4: ['P1', 'P2', 'P3'],
                                5: ['OR', 'OO'],
                                }
+
+
+class HouseholdElectricityProfilesInCensusCells(Base):
+    __tablename__ = "household_electricity_profiles_in_census_cells"
+    __table_args__ = {"schema": "demand"}
+
+    cell_id = Column(Integer, primary_key=True)
+    cell_profile_ids = Column(ARRAY(String, dimensions=2))
+    nuts3 = Column(String)
+    nuts1 = Column(String)
+    factor_2035 = Column(Float)
+    factor_2050 = Column(Float)
 
 
 def clean(x):
@@ -404,8 +419,8 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     """
 
     df_cell_demand_metadata = pd.DataFrame(index=df_zensus_cells.grid_id.unique(),
-                                           columns=['cell_profile_ids', 'nuts3', 'nuts1', '2035_factor',
-                                                    '2050_factor', ])
+                                           columns=['cell_profile_ids', 'nuts3', 'nuts1', 'factor_2035',
+                                                    'factor_2050', ])
     # 'peak_loads_hh', 'peak_load_cell',
     df_cell_demand_metadata = df_cell_demand_metadata.rename_axis('cell_id')
 
@@ -452,7 +467,7 @@ def adjust_to_demand_regio_nuts3_annual(df_cell_demand_metadata, df_profiles, df
     -------
     pd.DataFrame
         Returns the same data as :func:`get_cell_demand_metadata`, but with
-        filled columns `2035_factor` and `2050_factor`.
+        filled columns `factor_2035` and `factor_2050`.
     """
     for nuts3_id, df_nuts3 in df_cell_demand_metadata.groupby(by='nuts3'):
         nuts3_cell_ids = df_nuts3.index
@@ -466,10 +481,10 @@ def adjust_to_demand_regio_nuts3_annual(df_cell_demand_metadata, df_profiles, df
         # ##############
         # demand regio in MWh
         # profiles in Wh
-        df_cell_demand_metadata.loc[nuts3_cell_ids, '2035_factor'] = df_demand_regio.loc[
+        df_cell_demand_metadata.loc[nuts3_cell_ids, 'factor_2035'] = df_demand_regio.loc[
                                                                          (2035, nuts3_id), 'demand_mwha'] * 1e3 / (
                                                                                  nuts3_profiles_sum_annual / 1e3)
-        df_cell_demand_metadata.loc[nuts3_cell_ids, '2050_factor'] = df_demand_regio.loc[
+        df_cell_demand_metadata.loc[nuts3_cell_ids, 'factor_2050'] = df_demand_regio.loc[
                                                                          (2050, nuts3_id), 'demand_mwha'] * 1e3 / (
                                                                                  nuts3_profiles_sum_annual / 1e3)
 
@@ -504,8 +519,8 @@ def get_load_area_max_load(df_profiles, df_cell_demand_metadata, cell_ids, year)
     """
     timesteps = len(df_profiles)
     full_load = pd.Series(data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps))
-    load_area_meta = df_cell_demand_metadata.loc[cell_ids, ['cell_profile_ids', 'nuts3', f'{year}_factor']]
-    for (nuts3, factor), df in load_area_meta.groupby(by=['nuts3', f'{year}_factor']):
+    load_area_meta = df_cell_demand_metadata.loc[cell_ids, ['cell_profile_ids', 'nuts3', f'factor_{year}']]
+    for (nuts3, factor), df in load_area_meta.groupby(by=['nuts3', f'factor_{year}']):
         part_load = df_profiles.loc[:, df['cell_profile_ids'].sum()].sum(axis=1) * factor / 1e3  # profiles in Wh
         full_load = full_load.add(part_load)
     return full_load.max()
@@ -628,4 +643,24 @@ def houseprofiles_in_census_cells():
     df_cell_demand_metadata = adjust_to_demand_regio_nuts3_annual(
         df_cell_demand_metadata, df_profiles, df_demand_regio)
 
-    return df_cell_demand_metadata
+    # Insert data into respective database table
+    engine = db.engine()
+    HouseholdElectricityProfilesInCensusCells.__table__.drop(bind=engine,
+                                                             checkfirst=True)
+    HouseholdElectricityProfilesInCensusCells.__table__.create(bind=engine,
+                                                               checkfirst=True)
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(HouseholdElectricityProfilesInCensusCells,
+                                     df_cell_demand_metadata.to_dict(orient="records"))
+
+
+def get_houseprofiles_in_census_cells():
+    with db.session_scope() as session:
+        q = session.query(HouseholdElectricityProfilesInCensusCells)
+
+        census_profile_mapping = pd.read_sql(q.statement, q.session.bind, index_col="cell_id")
+
+    census_profile_mapping["cell_profile_ids"] = census_profile_mapping["cell_profile_ids"].apply(
+        lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+
+    return census_profile_mapping
