@@ -405,8 +405,10 @@ def profile_selector():
     #all_temperature_interval.set_index(index,inplace=True)
     all_temperature_interval = all_temperature_interval.resample('D').max()
     all_temperature_interval.reset_index(drop=True, inplace=True)
-
-    #all_temperature_interval = all_temperature_interval.iloc[:,0:3]#####for testmode
+    
+    station_count = annual_demand.Station.nunique()
+        
+    all_temperature_interval = all_temperature_interval.iloc[:,0:station_count]
     #all_temperature_interval = all_temperature_interval.iloc
 
     Temperature_interval = all_temperature_interval.transpose()
@@ -426,7 +428,9 @@ def profile_selector():
         
         for day in Temperature_interval.columns:
             t_class = Temperature_interval.loc[station,day].astype(int)
-
+            if t_class ==2:
+                t_class =3
+            
             array_SFH = np.array(idp_df[(idp_df.temperature_class==t_class)
                                         &(idp_df.house=='SFH')].index.values)
 
