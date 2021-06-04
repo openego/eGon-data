@@ -482,6 +482,14 @@ solar_rooftop:
       schema: 'grid'
       table: 'egon_pf_hv_generator_timeseries'
 
+data-bundle:
+  sources:
+    zenodo:
+      deposit_id: 4896527
+  targets:
+    file:
+      'data_bundle_egon_data.zip'
+
 heat_supply:
   sources:
     scenario_capacities:
@@ -540,3 +548,4 @@ etrago_heat:
     heat_links:
       schema: 'grid'
       table: 'egon_pf_hv_link'
+
