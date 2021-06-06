@@ -37,6 +37,7 @@ def download_mastr_data(data_stages=None):
                 f"{data_config['file_basename']}_{technology}_cleaned.csv"
             )
         files.append("datapackage.json")
+        files.append("location_elec_generation_raw.csv")
 
     # Retrieve specified files
     for filename in files:

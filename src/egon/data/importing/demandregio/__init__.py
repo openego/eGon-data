@@ -9,11 +9,11 @@ import egon.data.config
 import egon.data.importing.scenarios.parameters as scenario_parameters
 from egon.data import db
 from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
-from sqlalchemy import Column, String, Float, Integer, ForeignKey
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 
 try:
-    from disaggregator import data, spatial
+    from disaggregator import data, spatial, config
 except:
     print(
         "Could not import disaggregator. "
@@ -66,6 +66,13 @@ class EgonDemandRegioWz(Base):
     sector = Column(String(50))
     definition = Column(String(150))
 
+class EgonDemandRegioTimeseriesCtsInd(Base):
+    __tablename__ = 'egon_demandregio_timeseries_cts_ind'
+    __table_args__ = {'schema': 'demand'}
+    wz = Column(Integer, primary_key=True)
+    year = Column(Integer, primary_key=True)
+    slp = Column(String(50))
+    load_curve = Column(ARRAY(Float()))
 
 def create_tables():
     """Create tables for demandregio data
@@ -83,6 +90,8 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
+    EgonDemandRegioTimeseriesCtsInd.__table__.drop(bind=engine, checkfirst=True)
+    EgonDemandRegioTimeseriesCtsInd.__table__.create(bind=engine, checkfirst=True)
 
 def data_in_boundaries(df):
     """ Select rows with nuts3 code within boundaries, used for testmode
@@ -133,12 +142,18 @@ def insert_cts_ind_wz_definitions():
     engine = db.engine()
 
     for sector in source['wz_definitions']:
+        if sector=='CTS':
+            delimiter=';'
+        else:
+            delimiter=','
         df = pd.read_csv(
             os.path.join(
-                os.path.dirname(__file__),
-                source['wz_definitions'][sector])).rename(
-                    {'WZ': 'wz', 'Name': 'definition'},
-                    axis='columns').set_index('wz')
+                "data_bundle_egon_data/wz_definition/",
+                source['wz_definitions'][sector]),
+            delimiter=delimiter,
+            header=None).rename(
+                {0: 'wz', 1: 'definition'},
+                axis='columns').set_index('wz')
         df['sector'] = sector
         df.to_sql(target['table'],
                   engine,
@@ -194,7 +209,7 @@ def adjust_cts_ind_nep(ec_cts_ind, sector):
 
     # get data from NEP per federal state
     new_con = pd.read_csv(os.path.join(
-        os.path.dirname(__file__),
+        "data_bundle_egon_data/nep2035_version2021/",
         sources['new_consumers_2035']),
         delimiter=';', decimal=',', index_col=0)
 
@@ -443,6 +458,9 @@ def insert_cts_ind_demands():
 
         insert_cts_ind(scn, year, engine, target_values)
 
+    # Insert load curves per wz
+    timeseries_per_wz()
+
 
 def insert_society_data():
     """ Insert population and number of households per nuts3-region in Germany
@@ -488,3 +506,76 @@ def insert_society_data():
                       engine,
                       schema=targets['household']['schema'],
                       if_exists='append')
+
+
+def insert_timeseries_per_wz(sector, year):
+    """ Insert normalized electrical load time series for the selected sector
+
+    Parameters
+    ----------
+    sector : str
+        Name of the sector. ['CTS', 'industry']
+    year : int
+        Selected weather year
+
+    Returns
+    -------
+    None.
+
+    """
+    targets = egon.data.config.datasets()[
+        'demandregio_cts_ind_demand']['targets']
+
+    if sector == 'CTS':
+        profiles = data.CTS_power_slp_generator(
+            'SH', year=year).resample('H').sum()
+        wz_slp = config.slp_branch_cts_power()
+    elif sector == 'industry':
+        profiles = data.shift_load_profile_generator(
+            state='SH', year=year).resample('H').sum()
+        wz_slp = config.shift_profile_industry()
+
+    else:
+        print(f"Sector {sector} is not valid.")
+
+    df = pd.DataFrame(
+            index = wz_slp.keys(),
+            columns=['slp', 'load_curve', 'year'])
+
+    df.index.rename('wz', inplace=True)
+
+    df.slp = wz_slp.values()
+
+    df.year = year
+
+    df.load_curve = profiles[df.slp].transpose().values.tolist()
+
+    db.execute_sql(f"""
+                   DELETE FROM {targets['timeseries_cts_ind']['schema']}.
+                   {targets['timeseries_cts_ind']['table']}
+                   WHERE wz IN (
+                       SELECT wz FROM {targets['wz_definitions']['schema']}.
+                       {targets['wz_definitions']['table']}
+                       WHERE sector = '{sector}')
+                   """)
+
+    df.to_sql(targets['timeseries_cts_ind']['table'],
+              schema=targets['timeseries_cts_ind']['schema'],
+              con=db.engine(), if_exists='append')
+
+def timeseries_per_wz():
+    """ Calcultae and insert normalized timeseries per wz for cts and industry
+
+    Returns
+    -------
+    None.
+
+    """
+
+    years = get_sector_parameters('global').weather_year.unique()
+
+    for year in years:
+
+        for sector in ['CTS', 'industry']:
+
+            insert_timeseries_per_wz(sector, int(year))

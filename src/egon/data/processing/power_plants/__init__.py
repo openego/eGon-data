@@ -9,7 +9,8 @@ from geoalchemy2 import Geometry
 import pandas as pd
 import geopandas as gpd
 import egon.data.config
-
+import numpy as np
+from egon.data.processing.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 Base = declarative_base()
 
 
@@ -23,9 +24,9 @@ class EgonPowerPlants(Base):
     chp = Column(Boolean)
     el_capacity = Column(Float)
     th_capacity = Column(Float)
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     voltage_level = Column(Integer)
-    w_id = Column(Integer)
+    weather_cell_id = Column(Integer)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
@@ -210,8 +211,13 @@ def insert_biomass_plants(scenario):
     mastr = scale_prox2now(mastr, target, level=level)
 
     # Choose only entries with valid geometries inside DE/test mode
-    mastr_loc = filter_mastr_geometry(mastr)
+    mastr_loc = filter_mastr_geometry(mastr).set_geometry('geometry')
     # TODO: Deal with power plants without geometry
+
+    # Assign bus_id
+    if len(mastr_loc) > 0:
+        mastr_loc['voltage_level'] = assign_voltage_level(mastr_loc, cfg)
+        mastr_loc = assign_bus_id(mastr_loc, cfg)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -228,6 +234,8 @@ def insert_biomass_plants(scenario):
             el_capacity=row.Nettonennleistung,
             th_capacity=row.ThermischeNutzleistung / 1000,
             scenario=scenario,
+            bus_id = row.bus_id,
+            voltage_level = row.voltage_level,
             geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
         )
         session.add(entry)
@@ -299,6 +307,11 @@ def insert_hydro_plants(scenario):
         mastr_loc = filter_mastr_geometry(mastr)
         # TODO: Deal with power plants without geometry
 
+        # Assign bus_id and voltage level
+        if len(mastr_loc) > 0:
+            mastr_loc['voltage_level'] = assign_voltage_level(mastr_loc, cfg)
+            mastr_loc = assign_bus_id(mastr_loc, cfg)
+
         # Insert entries with location
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
@@ -312,12 +325,128 @@ def insert_hydro_plants(scenario):
                 chp=type(row.KwkMastrNummer) != float,
                 el_capacity=row.Nettonennleistung,
                 scenario=scenario,
+                bus_id = row.bus_id,
+                voltage_level = row.voltage_level,
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
             session.add(entry)
 
         session.commit()
 
+def assign_voltage_level(mastr_loc, cfg):
+    """ Assigns voltage level to power plants.
+
+    If location data inluding voltage level is available from
+    Marktstammdatenregister, this is used. Otherwise the voltage level is
+    assigned according to the electrical capacity.
+
+    Parameters
+    ----------
+    mastr_loc : pandas.DataFrame
+        Power plants listed in MaStR with geometry inside German boundaries
+
+    Returns
+    -------
+    pandas.DataFrame
+        Power plants including voltage_level
+
+    """
+    mastr_loc['Spannungsebene'] = np.nan
+    mastr_loc['voltage_level'] = np.nan
+
+    location = pd.read_csv(cfg['sources']['mastr_location'], usecols=[
+            'LokationMastrNummer', 'Spannungsebene']).set_index(
+                'LokationMastrNummer')
+
+    location = location[~location.index.duplicated(keep='first')]
+
+    mastr_loc.loc[mastr_loc[mastr_loc.LokationMastrNummer.isin(
+        location.index)].index,'Spannungsebene'] = location.Spannungsebene[
+        mastr_loc[mastr_loc.LokationMastrNummer.isin(
+        location.index)].LokationMastrNummer].values
+
+    # Transfer voltage_level as integer from Spanungsebene
+    map_voltage_levels=pd.Series(data={
+        'Höchstspannung': 1,
+        'Hoechstspannung': 1,
+        'Hochspannung': 3,
+        'UmspannungZurMittelspannung': 4,
+        'Mittelspannung': 5,
+        'UmspannungZurNiederspannung': 6,
+        'Niederspannung':7})
+
+    mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
+              'voltage_level'] = map_voltage_levels[
+        mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
+              'Spannungsebene'].values].values
+
+
+    # If no voltage level is available from mastr, choose level according
+    # to threshold values
+
+    for i, row in mastr_loc[mastr_loc.voltage_level.isnull()].iterrows():
+
+        if row.Nettonennleistung > 120:
+            level = 1
+        elif row.Nettonennleistung > 20:
+            level = 3
+        elif row.Nettonennleistung > 5.5:
+            level = 4
+        elif row.Nettonennleistung > 0.2:
+            level = 5
+        elif row.Nettonennleistung > 0.1:
+            level = 6
+        else:
+            level = 7
+
+        mastr_loc.loc[i, 'voltage_level'] = level
+
+    mastr_loc.voltage_level = mastr_loc.voltage_level.astype(int)
+
+    return mastr_loc.voltage_level
+
+def assign_bus_id(power_plants, cfg):
+    """Assigns bus_ids to power plants according to location and voltage level
+
+    Parameters
+    ----------
+    power_plants : pandas.DataFrame
+        Power plants including voltage level
+
+    Returns
+    -------
+    power_plants : pandas.DataFrame
+        Power plants including voltage level and bus_id
+
+    """
+
+    mv_grid_districts = db.select_geodataframe(
+        f"""
+        SELECT * FROM {cfg['sources']['mv_grid_districts']}
+        """, epsg=4326)
+
+    ehv_grid_districts = db.select_geodataframe(
+        f"""
+        SELECT * FROM {cfg['sources']['ehv_voronoi']}
+        """, epsg=4326)
+
+    # Assign power plants in hv and below to hvmv bus
+    power_plants_hv = power_plants[power_plants.voltage_level >= 3].index
+    if len(power_plants_hv) > 0:
+        power_plants.loc[power_plants_hv, 'bus_id'] = gpd.sjoin(
+            power_plants[power_plants.index.isin(power_plants_hv)
+                         ], mv_grid_districts).subst_id
+
+    # Assign power plants in ehv to ehv bus
+    power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
+
+    if len(power_plants_ehv) > 0:
+        power_plants.loc[power_plants_ehv, 'bus_id'] = gpd.sjoin(
+            power_plants[power_plants.index.isin(power_plants_hv)
+                         ], ehv_grid_districts).bus_id
+
+
+    return power_plants
 
 def insert_power_plants():
     """Insert power plants in database
@@ -335,3 +464,5 @@ def insert_power_plants():
     for scenario in ["eGon2035"]:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
+
+
