@@ -638,6 +638,8 @@ def regio_of_pv_ground_mounted():
             state = state.to_crs(3035)
             
             # select PVs in state
+            rora = rora.set_geometry('centroid')
+            agri = agri.set_geometry('centroid')
             rora_i = gpd.sjoin(rora, state)
             agri_i = gpd.sjoin(agri, state)
             rora_i.drop('index_right', axis=1, inplace=True)
@@ -653,7 +655,6 @@ def regio_of_pv_ground_mounted():
             rora_hv = rora[rora['voltage_level']==4]
             agri_mv = agri[agri['voltage_level']==5]
             agri_hv = agri[agri['voltage_level']==4]
-            print(' ')
             print('Untersuchung der Spannungslevel pro Bundesland:')
             print('a) PVs auf Potentialflächen Road & Railway: ')
             print('Insgesamt installierte Leistung: '+str(rora['installed capacity in kW'].sum()/1000)+' MW')
