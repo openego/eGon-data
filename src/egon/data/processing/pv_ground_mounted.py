@@ -629,8 +629,9 @@ def regio_of_pv_ground_mounted():
             
             ###
             land =  target[target['nuts']==i]['nuts'].iloc[0] 
+            print(' ')
             print('Bundesland (NUTS): '+land)
-            print('target power: '+str(target_power))
+            print('target power: '+str(target_power/1000)+' MW')
             
             # select state
             state = states[states['nuts']==i]
@@ -652,8 +653,7 @@ def regio_of_pv_ground_mounted():
             rora_hv = rora[rora['voltage_level']==4]
             agri_mv = agri[agri['voltage_level']==5]
             agri_hv = agri[agri['voltage_level']==4]
-            distr_mv = distr[distr['voltage_level']==5]
-            distr_hv = distr[distr['voltage_level']==4]
+            print(' ')
             print('Untersuchung der Spannungslevel pro Bundesland:')
             print('a) PVs auf Potentialflächen Road & Railway: ')
             print('Insgesamt installierte Leistung: '+str(rora['installed capacity in kW'].sum()/1000)+' MW')
@@ -667,12 +667,15 @@ def regio_of_pv_ground_mounted():
             print(' - davon Hochspannung: '+str(len(agri_hv)))
             print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
             if len(pv_per_distr) > 0:
+                distr_mv = distr[distr['voltage_level']==5]
+                distr_hv = distr[distr['voltage_level']==4]
                 print('Insgesamt installierte Leistung: '+str(distr['installed capacity in kW'].sum()/1000)+' MW')
                 print('Anzahl der PV-Parks: '+str(len(distr)))
                 print(' - davon Mittelspannung: '+str(len(distr_mv)))
                 print(' - davon Hochspannung: '+str(len(distr_hv)))
             else: 
                 print(' -> zusätzlicher Ausbau nicht notwendig')
+            print(' ')
 
             pv_rora = pv_rora.append(rora)
             pv_agri = pv_agri.append(agri)
@@ -684,7 +687,6 @@ def regio_of_pv_ground_mounted():
         # TODO: eGon100RE-scenario
         
         '''
-        
         # assumption for target value of installed capacity in Germany per scenario
         sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
         target_power = (pd.read_sql(sql,con))
