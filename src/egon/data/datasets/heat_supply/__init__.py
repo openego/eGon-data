@@ -95,7 +95,8 @@ def individual_heating():
         {targets['individual_heating_supply']['table']}
         """)
 
-    supply_2035 = cascade_heat_supply_indiv('eGon2035', plotting=True)
+    supply_2035 = cascade_heat_supply_indiv(
+        'eGon2035', distribution_level='federal_states', plotting=False)
 
     supply_2035['scenario'] = 'eGon2035'
 
@@ -108,7 +109,7 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.0-3",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(create_tables, {district_heating, individual_heating}),
         )

@@ -8,7 +8,7 @@ from egon.data import db, config
 
 def cascade_per_technology(
         heat_per_mv, technologies, scenario,
-        max_size_individual_chp=0.05):
+        distribution_level, max_size_individual_chp=0.05):
 
     """ Add plants for individual heat.
     Currently only on mv grid district level.
@@ -54,27 +54,45 @@ def cascade_per_technology(
             join.groupby('index_mv').capacity.sum()).reset_index().rename(
                 {'index_mv': 'mv_grid_id'}, axis=1)
 
+    # Distribute heat pumps linear to remaining demand.
     if tech.index == 'heat_pump':
 
-        # Select target values per federal state
-        target = db.select_dataframe(
-                f"""
-                SELECT DISTINCT ON (gen) gen as state, capacity
-                FROM {sources['scenario_capacities']['schema']}.
-                {sources['scenario_capacities']['table']} a
-                JOIN {sources['federal_states']['schema']}.
-                {sources['federal_states']['table']} b
-                ON a.nuts = b.nuts
-                WHERE scenario_name = '{scenario}'
-                AND carrier = 'residential_rural_heat_pump'
-                """,
-                index_col='state')
+        if distribution_level == 'federal_state':
+            # Select target values per federal state
+            target = db.select_dataframe(
+                    f"""
+                    SELECT DISTINCT ON (gen) gen as state, capacity
+                    FROM {sources['scenario_capacities']['schema']}.
+                    {sources['scenario_capacities']['table']} a
+                    JOIN {sources['federal_states']['schema']}.
+                    {sources['federal_states']['table']} b
+                    ON a.nuts = b.nuts
+                    WHERE scenario_name = '{scenario}'
+                    AND carrier = 'residential_rural_heat_pump'
+                    """,
+                    index_col='state')
 
-        heat_per_mv['share'] = heat_per_mv.groupby(
-            'state').remaining_demand.apply(lambda grp: grp/grp.sum())
+            heat_per_mv['share'] = heat_per_mv.groupby(
+                'state').remaining_demand.apply(lambda grp: grp/grp.sum())
 
-        append_df = heat_per_mv['share'].mul(
-            target.capacity[heat_per_mv['state']].values).reset_index()
+            append_df = heat_per_mv['share'].mul(
+                target.capacity[heat_per_mv['state']].values).reset_index()
+        else:
+            # Select target value for Germany
+            target = db.select_dataframe(
+                    f"""
+                    SELECT SUM(capacity) AS capacity
+                    FROM {sources['scenario_capacities']['schema']}.
+                    {sources['scenario_capacities']['table']} a
+                    WHERE scenario_name = '{scenario}'
+                    AND carrier = 'residential_rural_heat_pump'
+                    """)
+
+            heat_per_mv['share'] = (heat_per_mv.remaining_demand/
+                                    heat_per_mv.remaining_demand.sum())
+
+            append_df = heat_per_mv['share'].mul(
+                target.capacity[0]).reset_index()
 
         append_df.rename({
             'bus_id':'mv_grid_id',
@@ -94,7 +112,7 @@ def cascade_per_technology(
     return heat_per_mv, technologies, append_df
 
 
-def cascade_heat_supply_indiv(scenario, plotting=True):
+def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     """Assigns supply strategy for individual heating in four steps.
 
     1.) all small scale CHP are connected.
@@ -169,7 +187,7 @@ def cascade_heat_supply_indiv(scenario, plotting=True):
     while (len(technologies) > 0) and (len(heat_per_mv) > 0):
         # Attach new supply technology
         heat_per_mv, technologies, append_df = cascade_per_technology(
-            heat_per_mv, technologies, scenario=scenario)
+            heat_per_mv, technologies, scenario, distribution_level)
         # Collect resulting capacities
         resulting_capacities = resulting_capacities.append(
             append_df, ignore_index=True)
