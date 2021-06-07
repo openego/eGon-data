@@ -423,10 +423,13 @@ def regio_of_pv_ground_mounted():
 
         total_pv_power = pv_rora['installed capacity in kW'].sum() + pv_agri['installed capacity in kW'].sum()
 
+        pv_per_distr = gpd.GeoDataFrame()
+
         # check target value
 
         ###
         print(' ')
+        print('Installierte Kapazität auf Flächen existierender PV-Parks (Bestandsflächen): '+str(total_pv_power/1000)+' MW')
 
         # linear scale farms to meet target if sum of installed capacity is too high
         if total_pv_power > target_power:
@@ -440,8 +443,6 @@ def regio_of_pv_ground_mounted():
                 print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
                 print('Saklierungsfaktor: '+str(scale_factor))
                 
-                pv_per_distr = gpd.GeoDataFrame()
-                
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
 
@@ -449,7 +450,6 @@ def regio_of_pv_ground_mounted():
 
             ###
             print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität NICHT ausreichend:')
-            print('Installierte Kapazität auf Flächen existierender PV-Parks (Bestandsflächen): '+str(total_pv_power/1000)+' MW')
             print('Restkapazität: '+str(rest_cap/1000)+' MW')
             print('Restkapazität wird zunächst über übrige Potentialflächen Road & Railway verteilt.')
             print(datetime.datetime.now())
@@ -676,7 +676,8 @@ def regio_of_pv_ground_mounted():
 
             pv_rora = pv_rora.append(rora)
             pv_agri = pv_agri.append(agri)
-            pv_per_distr = pv_per_distr.append(distr)
+            if len(distr) > 0:
+                pv_per_distr = pv_per_distr.append(distr)
 
         # 2) scenario: eGon100RE
 
