@@ -25,6 +25,7 @@ class EgonPfHvBus(Base):
     x = Column(Float(53))
     y = Column(Float(53))
     geom = Column(Geometry('POINT', 4326), index=True)
+    country = Column(Text, server_default=Text("'DE'::Text"))
 
     
 class EgonPfHvBusTimeseries(Base):

@@ -506,7 +506,16 @@ with airflow.DAG(
     )
 
     download_era5 >> run_pypsaeursec
-
+    
+    neighbors = PythonOperator(
+        task_id="neighbors",
+        python_callable=pypsaeursec.neighbor_reduction,
+    )
+    
+    run_pypsaeursec >> neighbors
+    create_tables >> neighbors
+   
+    
     pypsaeursec_capacities = PythonOperator(
         task_id="pypsaeursec_capacities",
         python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,

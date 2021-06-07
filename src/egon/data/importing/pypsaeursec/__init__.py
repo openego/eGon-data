@@ -123,7 +123,7 @@ def run_pypsa_eur_sec():
     )
 
 
-def pypsa_eur_sec_eGon100_capacities():
+def pypsa_eur_sec_eGon100_capacities(version="0.0.0"):
     """Inserts installed capacities for the eGon100 scenario
 
     Returns
@@ -135,25 +135,25 @@ def pypsa_eur_sec_eGon100_capacities():
     # Connect to local database
     engine = db.engine()
 
-    # Delete rows if already exist
-    db.execute_sql(
-        "DELETE FROM supply.egon_scenario_capacities "
-        "WHERE scenario_name = 'eGon100'"
-    )
-
     # read-in installed capacities
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-    data_config = egon.data.config.datasets(config_file=pypsa_eur_sec_repos 
-                                            / "egon_config.yaml")
+    
+    # Read YAML file
+    pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
+    with open(pes_egonconfig, 'r') as stream:
+        data_config = yaml.safe_load(stream)
     target_file = (pypsa_eur_sec_repos / "results" / data_config["run"] 
                    / "csvs/nodal_capacities.csv"
     )
 
     df = pd.read_csv(target_file, skiprows=5)
-    df.columns = ["component", "country", "carrier", "capacity"]
-    df["scenario_name"] = "eGon100"
+    df.columns = ["component", "country", "carrier", "p_nom"]
+    df["scn_name"] = "eGon100RE"
+    df["version"] = version
+    # Todo: connection to bus!
+
     
     desired_countries = ['DE', 'AT', 'CH', 'CZ', 'PL', 'SE', 'NO', 'DK',
                          'GB', 'NL', 'BE', 'FR', 'LU']
@@ -164,32 +164,59 @@ def pypsa_eur_sec_eGon100_capacities():
         new_df = new_df.append(new_df_1)
 
 
-    # Insert data to db
-    new_df.to_sql(
-        "egon_scenario_capacities",
+
+    # Insert generator data to db
+    gens = new_df["component"] == "generators"
+    df_gens = new_df.loc[gens]
+    df_gens = df_gens.drop('component', axis=1)
+    df_gens = df_gens.drop('country', axis=1) # use for bus connection!
+    df_gens["p_nom_extendable"] = False
+    
+    # ToDo for all: 
+    ## if conventional, then p_min_pu_fixed=0 and p_max_pu_fixed=1,
+    ## set marginal costs fixed
+    df_gens["sign"]= 1
+    
+
+    df_gens.to_sql(
+        "egon_pf_hv_generator",
         engine,
-        schema="supply",
+        schema="grid",
         if_exists="append",
-        index=new_df.index,
+        index=True,
+        index_label="generator_id"
     )
 
 
-def neighbor_reduction():
+def neighbor_reduction(version="0.0.0"):
     
     
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-    data_config = egon.data.config.datasets(config_file=pypsa_eur_sec_repos 
-                                            / "egon_config.yaml")
+    # Read YAML file
+    pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
+    with open(pes_egonconfig, 'r') as stream:
+        data_config = yaml.safe_load(stream)
+
+        
+    simpl = data_config["scenario"]["simpl"][0]
+    clusters = data_config["scenario"]["clusters"][0]
+    lv = data_config["scenario"]["lv"][0]
+    opts = data_config["scenario"]["opts"][0]
+    sector_opts = data_config["scenario"]["sector_opts"][0]
+    planning_horizons = data_config["scenario"]["planning_horizons"][0]
+    file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(simpl=simpl,
+                             clusters=clusters,
+                             opts=opts,
+                             lv=lv,
+                             sector_opts=sector_opts,
+                             planning_horizons=planning_horizons)
     
-    # todo: file name should refer to the one from the egon_config.yaml
     target_file = (pypsa_eur_sec_repos / "results" / data_config["run"] 
-                   / "postnetworks" 
-                   / "elec_s_37_lv4__Co2L0-3H-T-H-B-solar3-dist1_go_2030.nc"
-    )   
+                   / "postnetworks" / file )   
     
-    network = pypsa.Network(target_file)
+    network = pypsa.Network(str(target_file))
         
     foreign_buses = network.buses[~network.buses.country.isin(
         ['DE', 'AT', 'CH', 'CZ', 'PL', 'SE', 'NO', 'DK', 'GB', 'NL', 'BE',
@@ -286,3 +313,56 @@ def neighbor_reduction():
                 del getattr(nw, i)[k]
     # todo: write components into etrago tables, harmonize with capacity function
     # how to handle values for Germany
+    
+    # writing components of neighboring countries to etrago tables
+    
+    neighbors = network.buses[~network.buses.country.isin(['DE'])]
+    
+    # Connect to local database
+    engine = db.engine()
+    
+    db.execute_sql("DELETE FROM grid.egon_pf_hv_bus "
+                   "WHERE scn_name = 'eGon100RE' "
+                   "AND country <> 'DE'")
+    
+    neighbors["scn_name"] = "eGon100RE"
+    neighbors["version"] = version
+    neighbors = neighbors.rename(columns={'v_mag_pu_set': 'v_mag_pu_set_fixed'})
+    neighbors.reset_index(inplace=True)
+    for i in ['name', 'control', 'generator', 'location', 'sub_network']:
+        neighbors = neighbors.drop(i, axis=1)
+
+
+    
+    neighbors.to_sql(
+        "egon_pf_hv_bus",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="bus_id"
+    )
+
+    neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
+    neighbor_gens.reset_index(inplace=True)
+    neighbor_gens["scn_name"] = "eGon100RE"
+    neighbor_gens["version"] = version
+    neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
+    neighbor_gens = neighbor_gens.rename(columns={'marginal_cost': 
+                                                  'marginal_cost_fixed', 
+                                                  'p_min_pu':
+                                                  'p_min_pu_fixed',
+                                                  'p_max_pu': 
+                                                  'p_max_pu_fixed'})
+
+    for i in ['name','weight', 'lifetime', 'p_set', 'q_set', 'p_nom_opt']:
+        neighbor_gens = neighbor_gens.drop(i, axis=1)
+
+    neighbor_gens.to_sql(
+        "egon_pf_hv_generator",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="generator_id"
+    )
