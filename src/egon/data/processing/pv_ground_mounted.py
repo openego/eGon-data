@@ -496,16 +496,12 @@ def regio_of_pv_ground_mounted():
 
                     ###
                     print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway und Agriculture verteilt.')
-
-            ###
-            x=0
     
             # assign grid level to pv_per_distr
             v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
             for index, distr in pv_per_distr.iterrows():
                 if distr['installed capacity in kW'] > 5500: # > 5 MW
                     v_lvl[index] = 4
-                    x = x+1
                 else:
                     v_lvl[index] = 5
             pv_per_distr['voltage_level'] = v_lvl
@@ -514,16 +510,9 @@ def regio_of_pv_ground_mounted():
             total_pv_power = pv_rora['installed capacity in kW'].sum() + \
             pv_agri['installed capacity in kW'].sum() + \
             pv_per_distr['installed capacity in kW'].sum()
-    
+            
             ###
-            print('Installierte Leistung der PV-Parks: '+str(total_pv_power/1000)+' MW')
-            print('(Zielwert: '+str(target_power/1000)+' MW)')
-            print(' ')
-    
-            ###
-            print('Untersuchung der zusätzlich (außerhalb der Bestandsflächen) installierten Kapazität:')
-            print('Installierte Leistung pro MV Grid District > 5,5 MW und somit > MV-level: '+str(x))
-            print('Länge pv_per_distr insgesamt: '+str(len(pv_per_distr)))
+            print('Installierte Leistung der PV-Parks insgesamt: '+str(total_pv_power/1000)+' MW')
             print(' ')
     
         return pv_rora, pv_agri, pv_per_distr
@@ -558,8 +547,8 @@ def regio_of_pv_ground_mounted():
         print(' ')
 
         # MaStR-data: existing PV farms
-        mastr = mastr_existing_pv(path, pow_per_area)
-
+        mastr = mastr_existing_pv(path, pow_per_area)        
+        
         # files for depiction in QGis
         mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
         mastr['buffer'].to_file("MaStR_PVs_buffered.geojson", driver='GeoJSON')
@@ -571,8 +560,8 @@ def regio_of_pv_ground_mounted():
         print(' ')
         
         # database-data: potential areas for new PV farms
-        potentials_rora, potentials_agri = potential_areas(con, join_buffer)
-
+        potentials_rora, potentials_agri = potential_areas(con, join_buffer)               
+        
         # files for depiction in QGis
         potentials_rora['geom'].to_file("potentials_rora_joined.geojson", driver='GeoJSON',index=True)
         potentials_agri['geom'].to_file("potentials_agri_joined.geojson", driver='GeoJSON',index=True)
@@ -587,10 +576,6 @@ def regio_of_pv_ground_mounted():
         pv_rora = select_pot_areas(mastr, potentials_rora)
         pv_agri = select_pot_areas(mastr, potentials_agri)
 
-        # files for depiction in QGis
-        pv_rora['geom'].to_file("potential_rora_selected.geojson", driver='GeoJSON')
-        pv_agri['geom'].to_file("potential_agri_selected.geojson", driver='GeoJSON')
-
         ###
         print(' ')
         print('build PV parks where there is PV ground mounted already (-> MaStR) on potential area')
@@ -600,10 +585,6 @@ def regio_of_pv_ground_mounted():
         # build new PV farms
         pv_rora = build_pv(pv_rora, pow_per_area)
         pv_agri = build_pv(pv_agri, pow_per_area)
-
-        # files for depiction in QGis
-        pv_rora['centroid'].to_file("PVs_rora_new.geojson", driver='GeoJSON')
-        pv_agri['centroid'].to_file("PVs_agri_new.geojson", driver='GeoJSON')
         
         ### 
         print(' ')
@@ -612,42 +593,91 @@ def regio_of_pv_ground_mounted():
         print(' ')
         
         # adapt grid level to new farms
-        pv_rora = adapt_grid_level(pv_rora, max_dist_hv, con)
-        pv_agri = adapt_grid_level(pv_agri, max_dist_hv, con)
+        rora = adapt_grid_level(pv_rora, max_dist_hv, con)
+        agri = adapt_grid_level(pv_agri, max_dist_hv, con)
 
         ###
         print(' ')
-        print('check target value and build more Pv parks on potential area if necessary')
+        print('check target value and build more PV parks on potential area if necessary')
         print(datetime.datetime.now())
         print(' ')
         
         # 1) scenario: eGon2035
         
-        # assumption for target value of installed capacity in Germany per scenario
-        sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
-        target_power = (pd.read_sql(sql,con))
-        target_power = target_power[target_power['scenario_name']=='eGon2035']
-        target_power = target_power['capacity'].sum() * 1000
-        
-        # TODO: change target_power to value per Bundesland
-        
         ###
         print(' ')
         print('scenario: eGon2035')
-        print('target power: '+str(target_power)+' kW')
         print(' ')
         
-        # check target value and adapt installed capacity if necessary
-        pv_rora, pv_agri, pv_per_distr = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
+        # German states
+        sql = "SELECT geometry as geom, nuts FROM boundaries.vg250_lan"
+        states = gpd.GeoDataFrame.from_postgis(sql, con)
+        
+        # assumption for target value of installed capacity 
+        sql = "SELECT capacity,scenario_name,nuts FROM supply.egon_scenario_capacities WHERE carrier='solar'"
+        target = pd.read_sql(sql,con)
+        target = target[target['scenario_name']=='eGon2035']
+        nuts = np.unique(target['nuts'])
+        
+        # initialize final dataframe
+        pv_rora = gpd.GeoDataFrame()
+        pv_agri = gpd.GeoDataFrame()
+        pv_per_distr = gpd.GeoDataFrame()
+        
+        # check target value per state
+        for i in nuts:
+            target_power = target[target['nuts']==i]['capacity'].iloc[0] * 1000
+            
+            ###
+            land =  target[target['nuts']==i]['nuts'].iloc[0] 
+            print('Bundesland (NUTS): '+land)
+            print('target power: '+str(target_power))
+            
+            # select state
+            state = states[states['nuts']==i]
+            state = state.to_crs(3035)
+            
+            # select PVs in state
+            rora_i = gpd.sjoin(rora, state)
+            agri_i = gpd.sjoin(agri, state)
+            rora_i.drop('index_right', axis=1, inplace=True)
+            agri_i.drop('index_right', axis=1, inplace=True)
+            
+            # check target value and adapt installed capacity if necessary
+            rora, agri, distr = check_target(rora_i, agri_i, potentials_rora, potentials_agri, target_power, pow_per_area, con)
+            distr['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
+            
+            ###
+            rora_mv = rora[rora['voltage_level']==5]
+            rora_hv = rora[rora['voltage_level']==4]
+            agri_mv = agri[agri['voltage_level']==5]
+            agri_hv = agri[agri['voltage_level']==4]
+            distr_mv = distr[distr['voltage_level']==5]
+            distr_hv = distr[distr['voltage_level']==4]
+            print('Untersuchung der Spannungslevel pro Bundesland:')
+            print('a) PVs auf Potentialflächen Road & Railway: ')
+            print('Insegesamt installierte Leistung: '+str(rora['installed capacity in kW'].sum()/1000)+' MW')
+            print('Anzahl der PV-Parks: '+str(len(rora)))
+            print(' - davon Mittelspannung: '+str(len(rora_mv)))
+            print(' - davon Hochspannung: '+str(len(rora_hv)))
+            print('b) PVs auf Potentialflächen Agriculture: ')
+            print('Insegesamt installierte Leistung: '+str(agri['installed capacity in kW'].sum()/1000)+' MW')
+            print('Anzahl der PV-Parks: '+str(len(agri)))
+            print(' - davon Mittelspannung: '+str(len(agri_mv)))
+            print(' - davon Hochspannung: '+str(len(agri_hv)))
+            print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
+            print('Insegesamt installierte Leistung: '+str(distr['installed capacity in kW'].sum()/1000)+' MW')
+            print('Anzahl der PV-Parks: '+str(len(distr)))
+            print(' - davon Mittelspannung: '+str(len(distr_mv)))
+            print(' - davon Hochspannung: '+str(len(distr_hv)))
 
-        # files for depiction in QGis
-        if len(pv_per_distr) > 0:
-        	pv_per_distr['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
-        	pv_per_distr['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+            pv_rora = pv_rora.append(rora)
+            pv_agri = pv_agri.append(agri)
+            pv_per_distr = pv_per_distr.append(distr)
 
         # 2) scenario: eGon100RE
 
-        # TODO
+        # TODO: eGon100RE-scenario
         
         '''
         
@@ -659,18 +689,12 @@ def regio_of_pv_ground_mounted():
         
         ###
         print(' ')
-        print('scenario: eGon2035')
+        print('scenario: eGon100RE')
         print('target power: '+str(target_power)+' kW')
         print(' ')
         
         # check target value and adapt installed capacity if necessary
-        pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
-
-        # files for depiction in QGis
-        if len(pv_per_distr_100RE) > 0:
-        	pv_per_distr_100RE['geom'].to_file("pot_per_distr.geojson", driver='GeoJSON',index=True)
-        	pv_per_distr_100RE['centroid'].to_file("pot_per_distr_centroid.geojson", driver='GeoJSON',index=True)
-        
+        pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = check_target(rora, agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
         '''
 
         return pv_rora, pv_agri, pv_per_distr #, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
@@ -690,7 +714,7 @@ def regio_of_pv_ground_mounted():
 
             pv_parks = gpd.GeoDataFrame(index=range(0,l2))
 
-            # electrical capacity in MW+
+            # electrical capacity in MW
             cap = pv_rora['installed capacity in kW'].append(pv_agri['installed capacity in kW'])
             cap = cap.append(pv_per_distr['installed capacity in kW'])
             cap = cap/1000
@@ -752,12 +776,40 @@ def regio_of_pv_ground_mounted():
     pv_rora, pv_agri, pv_per_distr = run_methodology() 
     
     # pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
-
+    
+    ###
     pv_rora.to_csv('pv_rora.csv',index=True)
     pv_agri.to_csv('pv_agri.csv',index=True)
+    pv_rora['centroid'].to_file("PVs_rora.geojson", driver='GeoJSON',index=True)
+    pv_agri['centroid'].to_file("PVs_agri.geojson", driver='GeoJSON',index=True)
     if len(pv_per_distr) > 0:
         pv_per_distr.to_csv('pv_per_distr.csv',index=True)
-        
+        pv_per_distr['centroid'].to_file("PVs_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+    pv_rora_mv = pv_rora[pv_rora['voltage_level']==5]
+    pv_rora_hv = pv_rora[pv_rora['voltage_level']==4]
+    pv_agri_mv = pv_agri[pv_agri['voltage_level']==5]
+    pv_agri_hv = pv_agri[pv_agri['voltage_level']==4]
+    pv_per_distr_mv = pv_per_distr[pv_per_distr['voltage_level']==5]
+    pv_per_distr_hv = pv_per_distr[pv_per_distr['voltage_level']==4]
+    print(' ')
+    print('Untersuchung der Spannungslevel (gesamt):')
+    print('a) PVs auf Potentialflächen Road & Railway: ')
+    print('Insegesamt installierte Leistung: '+str(pv_rora['installed capacity in kW'].sum()/1000)+' MW')
+    print('Anzahl der PV-Parks: '+str(len(pv_rora)))
+    print(' - davon Mittelspannung: '+str(len(pv_rora_mv)))
+    print(' - davon Hochspannung: '+str(len(pv_rora_hv)))
+    print('b) PVs auf Potentialflächen Agriculture: ')
+    print('Insegesamt installierte Leistung: '+str(pv_agri['installed capacity in kW'].sum()/1000)+' MW')
+    print('Anzahl der PV-Parks: '+str(len(pv_agri)))
+    print(' - davon Mittelspannung: '+str(len(pv_agri_mv)))
+    print(' - davon Hochspannung: '+str(len(pv_agri_hv)))
+    print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
+    print('Insegesamt installierte Leistung: '+str(pv_per_distr['installed capacity in kW'].sum()/1000)+' MW')
+    print('Anzahl der PV-Parks: '+str(len(pv_per_distr)))
+    print(' - davon Mittelspannung: '+str(len(pv_per_distr_mv)))
+    print(' - davon Hochspannung: '+str(len(pv_per_distr_hv)))
+    print(' ')
+   
     '''   
     pv_rora_100RE.to_csv('pv_rora_100RE.csv',index=True)
     pv_agri_100RE.to_csv('pv_agri_100RE.csv',index=True)
