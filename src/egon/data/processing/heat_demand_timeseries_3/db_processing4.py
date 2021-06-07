@@ -692,21 +692,24 @@ def residential_demand_scale(aggregation_level):
         heat_demand_profile_mv = 0
         heat_demand_profile_zensus = pd.DataFrame()
         for j in h.columns:
-            station = h.iloc[j]
+            station = j
             current_zensus = annual_demand[annual_demand.Station == station]
             heat_profile_station = pd.merge(current_zensus['zensus_population_id'],heat_profile_idp.transpose(),
                                            left_on ='zensus_population_id',
                                            right_on = heat_profile_idp.transpose().index, how= 'inner')
-            heat_profile_station = heat_profile_station.multiply(h[station],axis=0)
+            heat_profile_station = heat_profile_station.set_index('zensus_population_id')
+        
+            heat_profile_station = heat_profile_station.multiply(h[station],axis=1)
+            heat_profile_station = heat_profile_station.transpose()
+            heat_profile_station =  heat_profile_station.apply(lambda x: x/x.sum())
+            heat_profile_station = heat_profile_station.transpose()
             heat_demand_profile_zensus = pd.concat([heat_demand_profile_zensus, heat_profile_station],axis=1)
 
-        heat_demand_profile_zensus =  heat_demand_profile_zensus.transpose()
-
+        heat_demand_profile_zensus.reset_index(inplace=True)
+        
         heat_demand_profile_zensus = pd.merge(heat_demand_profile_zensus,annual_demand[['zensus_population_id','demand']],
-                             how='inner', right_on = heat_demand_profile_zensus.index, 
-                             left_on = 'zensus_population_id')
+                             how='inner', on = 'zensus_population_id') 
 
-        heat_demand_profile_zensus.rename(columns={'key_0': 'zensus_population_id'},inplace=True)
         heat_demand_profile_zensus.set_index('zensus_population_id',inplace =True)
         heat_demand_profile_zensus =  heat_demand_profile_zensus[heat_demand_profile_zensus.columns[:-1]].multiply(heat_demand_profile_zensus.demand,axis=0)
     #heat_demand_profile = heat_demand_profile.transpose()
