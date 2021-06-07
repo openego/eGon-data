@@ -551,7 +551,6 @@ def regio_of_pv_ground_mounted():
         
         # files for depiction in QGis
         mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
-        mastr['buffer'].to_file("MaStR_PVs_buffered.geojson", driver='GeoJSON')
         
         ###
         print(' ')
@@ -563,8 +562,8 @@ def regio_of_pv_ground_mounted():
         potentials_rora, potentials_agri = potential_areas(con, join_buffer)               
         
         # files for depiction in QGis
-        potentials_rora['geom'].to_file("potentials_rora_joined.geojson", driver='GeoJSON',index=True)
-        potentials_agri['geom'].to_file("potentials_agri_joined.geojson", driver='GeoJSON',index=True)
+        potentials_rora['geom'].to_file("potentials_rora.geojson", driver='GeoJSON',index=True)
+        potentials_agri['geom'].to_file("potentials_agri.geojson", driver='GeoJSON',index=True)
 
         ###
         print(' ')
