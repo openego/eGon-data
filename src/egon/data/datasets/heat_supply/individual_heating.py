@@ -154,11 +154,12 @@ def cascade_heat_supply_indiv(scenario, plotting=True):
 
     # Set technology data according to
     # http://www.wbzu.de/seminare/infopool/infopool-bhkw
+    # TODO: Add gas boilers and solar themal (eGon100RE)
     technologies = pd.DataFrame(
         index = ['CHP', 'heat_pump'],
         columns = ['estimated_flh', 'priority'],
         data = {
-            'estimated_flh': [4000,  4000],
+            'estimated_flh': [4000, 4000],
             'priority': [3, 1]})
 
     # In the beginning, the remaining demand equals demand
