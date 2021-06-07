@@ -783,7 +783,7 @@ def regio_of_pv_ground_mounted():
     pv_agri['centroid'].to_file("PVs_agri.geojson", driver='GeoJSON',index=True)
     if len(pv_per_distr) > 0:
         pv_per_distr.to_csv('pv_per_distr.csv',index=True)
-        pv_per_distr['centroid'].to_file("PVs_per_distr_centroid.geojson", driver='GeoJSON',index=True)
+        pv_per_distr['centroid'].to_file("PVs_per_distr.geojson", driver='GeoJSON',index=True)
     pv_rora_mv = pv_rora[pv_rora['voltage_level']==5]
     pv_rora_hv = pv_rora[pv_rora['voltage_level']==4]
     pv_agri_mv = pv_agri[pv_agri['voltage_level']==5]
