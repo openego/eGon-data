@@ -31,6 +31,60 @@ def next_id(component):
 
     return next_id
 
+def insert_individual_power_to_heat(version = '0.0.0', scenario='eGon2035'):
+    """ Insert power to heat into database
+
+    Parameters
+    ----------
+    version : str, optional
+        Version number. The default is '0.0.0'.
+    scenario : str, optional
+        Name of the scenario The default is 'eGon2035'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = config.datasets()['etrago_heat']['sources']
+    targets = config.datasets()['etrago_heat']['targets']
+
+    # Delete existing entries
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier = 'individual_heat_pump'
+        """)
+
+    # Select heat pumps for individual heating
+    heat_pumps = db.select_dataframe(
+        f"""
+        SELECT mv_grid_id as power_bus,
+        a.carrier, capacity, b.bus_id as heat_bus
+        FROM {sources['individual_heating_supply']['schema']}.
+            {sources['individual_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Intersects(
+            ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
+            geom)
+        WHERE scenario = '{scenario}'
+        AND scn_name  = '{scenario}'
+        AND a.carrier = 'heat_pump'
+        AND b.carrier = 'rural_heat'
+        """)
+
+    # Assign voltage level
+    heat_pumps['voltage_level'] = 7
+
+    # Insert heatpumps
+    insert_power_to_heat_per_level(
+        heat_pumps,
+        carrier = 'individual_heat_pump',
+        multiple_per_mv_grid=False,
+        version = '0.0.0', scenario='eGon2035')
 
 
 def insert_central_power_to_heat(version = '0.0.0', scenario='eGon2035'):
@@ -87,6 +141,7 @@ def insert_central_power_to_heat(version = '0.0.0', scenario='eGon2035'):
 
 
 def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
+                                   carrier = 'central_heat_pump',
                                    version = '0.0.0', scenario='eGon2035'):
     """ Insert power to heat plants per grid level
 
@@ -108,8 +163,13 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
     """
     sources = config.datasets()['etrago_heat']['sources']
     targets = config.datasets()['etrago_heat']['targets']
-    # Calculate heat pumps per electrical bus
-    gdf = assign_electrical_bus(heat_pumps, multiple_per_mv_grid)
+
+    if 'central' in carrier:
+        # Calculate heat pumps per electrical bus
+        gdf = assign_electrical_bus(heat_pumps, multiple_per_mv_grid)
+
+    else:
+        gdf = heat_pumps.copy()
 
     # Select geometry of buses
     geom_buses = db.select_geodataframe(
@@ -137,7 +197,7 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
             'version', 'scn_name', 'bus0', 'bus1',
             'carrier', 'link_id', 'p_nom', 'topo'],
         data = {'version': version, 'scn_name': scenario,
-                'carrier': 'central_heat_pump'}
+                'carrier': carrier}
         ).set_geometry('topo').set_crs(epsg=4326)
 
     # Insert values into dataframe

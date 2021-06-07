@@ -4,7 +4,7 @@ import pandas as pd
 import geopandas as gpd
 from egon.data import db, config
 from egon.data.datasets.heat_etrago.power_to_heat import (
-    insert_central_power_to_heat, next_id)
+    insert_central_power_to_heat,insert_individual_power_to_heat, next_id)
 from egon.data.datasets import Dataset
 
 def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
@@ -56,13 +56,13 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
     # otherwise create one heat bus per hvmv substation
     # which represents aggregated individual heating for etrago
     else:
-        hvmv_substation = db.select_geodataframe(
+        mv_grids = db.select_geodataframe(
             f"""
-            SELECT point AS geom
-            FROM {sources['hvmv_substation']['schema']}.
-            {sources['hvmv_substation']['table']}
+            SELECT ST_Centroid(geom) AS geom
+            FROM {sources['mv_grids']['schema']}.
+            {sources['mv_grids']['table']}
             """)
-        heat_buses.geom = hvmv_substation.geom.to_crs(epsg=4326)
+        heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
 
     # Insert values into dataframe
     heat_buses.version = '0.0.0'
@@ -235,12 +235,13 @@ def supply(version='0.0.0'):
 
     insert_central_direct_heat(version = '0.0.0', scenario='eGon2035')
     insert_central_power_to_heat(version, scenario='eGon2035')
+    insert_individual_power_to_heat(version, scenario='eGon2035')
 
 class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.0-2",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(buses, supply),
         )

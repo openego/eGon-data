@@ -538,12 +538,15 @@ etrago_heat:
     map_district_heating_areas:
       schema: 'demand'
       table: 'map_zensus_district_heating_areas'
-    hvmv_substation:
+    mv_grids:
       schema: 'grid'
-      table: 'egon_hvmv_substation'
+      table: 'mv_grid_districts'
     district_heating_supply:
       schema: 'supply'
       table: 'egon_district_heating'
+    individual_heating_supply:
+      schema: 'supply'
+      table: 'egon_individual_heating'
     weather_cells:
       schema: 'supply'
       table: 'egon_era5_weather_cells'
