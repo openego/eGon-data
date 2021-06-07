@@ -644,7 +644,8 @@ def regio_of_pv_ground_mounted():
             
             # check target value and adapt installed capacity if necessary
             rora, agri, distr = check_target(rora_i, agri_i, potentials_rora, potentials_agri, target_power, pow_per_area, con)
-            distr['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
+            if len(distr) > 0 :
+                distr['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
             
             ###
             rora_mv = rora[rora['voltage_level']==5]
@@ -655,20 +656,23 @@ def regio_of_pv_ground_mounted():
             distr_hv = distr[distr['voltage_level']==4]
             print('Untersuchung der Spannungslevel pro Bundesland:')
             print('a) PVs auf Potentialflächen Road & Railway: ')
-            print('Insegesamt installierte Leistung: '+str(rora['installed capacity in kW'].sum()/1000)+' MW')
+            print('Insgesamt installierte Leistung: '+str(rora['installed capacity in kW'].sum()/1000)+' MW')
             print('Anzahl der PV-Parks: '+str(len(rora)))
             print(' - davon Mittelspannung: '+str(len(rora_mv)))
             print(' - davon Hochspannung: '+str(len(rora_hv)))
             print('b) PVs auf Potentialflächen Agriculture: ')
-            print('Insegesamt installierte Leistung: '+str(agri['installed capacity in kW'].sum()/1000)+' MW')
+            print('Insgesamt installierte Leistung: '+str(agri['installed capacity in kW'].sum()/1000)+' MW')
             print('Anzahl der PV-Parks: '+str(len(agri)))
             print(' - davon Mittelspannung: '+str(len(agri_mv)))
             print(' - davon Hochspannung: '+str(len(agri_hv)))
             print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
-            print('Insegesamt installierte Leistung: '+str(distr['installed capacity in kW'].sum()/1000)+' MW')
-            print('Anzahl der PV-Parks: '+str(len(distr)))
-            print(' - davon Mittelspannung: '+str(len(distr_mv)))
-            print(' - davon Hochspannung: '+str(len(distr_hv)))
+            if len(pv_per_distr) > 0:
+                print('Insgesamt installierte Leistung: '+str(distr['installed capacity in kW'].sum()/1000)+' MW')
+                print('Anzahl der PV-Parks: '+str(len(distr)))
+                print(' - davon Mittelspannung: '+str(len(distr_mv)))
+                print(' - davon Hochspannung: '+str(len(distr_hv)))
+            else: 
+                print(' -> zusätzlicher Ausbau nicht notwendig')
 
             pv_rora = pv_rora.append(rora)
             pv_agri = pv_agri.append(agri)
@@ -784,29 +788,33 @@ def regio_of_pv_ground_mounted():
     if len(pv_per_distr) > 0:
         pv_per_distr.to_csv('pv_per_distr.csv',index=True)
         pv_per_distr['centroid'].to_file("PVs_per_distr.geojson", driver='GeoJSON',index=True)
+        pv_per_distr_mv = pv_per_distr[pv_per_distr['voltage_level']==5]
+        pv_per_distr_hv = pv_per_distr[pv_per_distr['voltage_level']==4]
     pv_rora_mv = pv_rora[pv_rora['voltage_level']==5]
     pv_rora_hv = pv_rora[pv_rora['voltage_level']==4]
     pv_agri_mv = pv_agri[pv_agri['voltage_level']==5]
     pv_agri_hv = pv_agri[pv_agri['voltage_level']==4]
-    pv_per_distr_mv = pv_per_distr[pv_per_distr['voltage_level']==5]
-    pv_per_distr_hv = pv_per_distr[pv_per_distr['voltage_level']==4]
+
     print(' ')
     print('Untersuchung der Spannungslevel (gesamt):')
     print('a) PVs auf Potentialflächen Road & Railway: ')
-    print('Insegesamt installierte Leistung: '+str(pv_rora['installed capacity in kW'].sum()/1000)+' MW')
+    print('Insgesamt installierte Leistung: '+str(pv_rora['installed capacity in kW'].sum()/1000)+' MW')
     print('Anzahl der PV-Parks: '+str(len(pv_rora)))
     print(' - davon Mittelspannung: '+str(len(pv_rora_mv)))
     print(' - davon Hochspannung: '+str(len(pv_rora_hv)))
     print('b) PVs auf Potentialflächen Agriculture: ')
-    print('Insegesamt installierte Leistung: '+str(pv_agri['installed capacity in kW'].sum()/1000)+' MW')
+    print('Insgesamt installierte Leistung: '+str(pv_agri['installed capacity in kW'].sum()/1000)+' MW')
     print('Anzahl der PV-Parks: '+str(len(pv_agri)))
     print(' - davon Mittelspannung: '+str(len(pv_agri_mv)))
     print(' - davon Hochspannung: '+str(len(pv_agri_hv)))
     print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
-    print('Insegesamt installierte Leistung: '+str(pv_per_distr['installed capacity in kW'].sum()/1000)+' MW')
-    print('Anzahl der PV-Parks: '+str(len(pv_per_distr)))
-    print(' - davon Mittelspannung: '+str(len(pv_per_distr_mv)))
-    print(' - davon Hochspannung: '+str(len(pv_per_distr_hv)))
+    if len(pv_per_distr) > 0: 
+        print('Insgesamt installierte Leistung: '+str(pv_per_distr['installed capacity in kW'].sum()/1000)+' MW')
+        print('Anzahl der PV-Parks: '+str(len(pv_per_distr)))
+        print(' - davon Mittelspannung: '+str(len(pv_per_distr_mv)))
+        print(' - davon Hochspannung: '+str(len(pv_per_distr_hv)))
+    else: 
+        print(' -> zusätzlicher Ausbau nicht notwendig')
     print(' ')
    
     '''   
