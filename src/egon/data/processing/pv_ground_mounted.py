@@ -666,7 +666,7 @@ def regio_of_pv_ground_mounted():
             print(' - davon Mittelspannung: '+str(len(agri_mv)))
             print(' - davon Hochspannung: '+str(len(agri_hv)))
             print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
-            if len(pv_per_distr) > 0:
+            if len(distr) > 0:
                 distr_mv = distr[distr['voltage_level']==5]
                 distr_hv = distr[distr['voltage_level']==4]
                 print('Insgesamt installierte Leistung: '+str(distr['installed capacity in kW'].sum()/1000)+' MW')
