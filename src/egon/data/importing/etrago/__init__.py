@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import ARRAY, BigInteger, Boolean, Column, DateTime, Float, Integer, Numeric, String, Text
+from sqlalchemy import ARRAY, BigInteger, Boolean, Column, DateTime, Float, Integer, Numeric, String, Text, text
 from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
@@ -25,7 +25,7 @@ class EgonPfHvBus(Base):
     x = Column(Float(53))
     y = Column(Float(53))
     geom = Column(Geometry('POINT', 4326), index=True)
-    country = Column(Text, server_default=Text("'DE'::Text"))
+    country = Column(Text, server_default=text("'DE'::text"))
 
     
 class EgonPfHvBusTimeseries(Base):

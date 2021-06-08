@@ -318,6 +318,12 @@ def neighbor_reduction(version="0.0.0"):
     
     neighbors = network.buses[~network.buses.country.isin(['DE'])]
     
+    neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
+    neighbors['new_index']=neighbors.reset_index().index
+    neighbor_gens.reset_index(inplace=True)
+    neighbor_gens.bus = neighbors.loc[neighbor_gens.bus, 'new_index'].reset_index().new_index
+    
+    
     # Connect to local database
     engine = db.engine()
     
@@ -328,12 +334,11 @@ def neighbor_reduction(version="0.0.0"):
     neighbors["scn_name"] = "eGon100RE"
     neighbors["version"] = version
     neighbors = neighbors.rename(columns={'v_mag_pu_set': 'v_mag_pu_set_fixed'})
-    neighbors.reset_index(inplace=True)
-    for i in ['name', 'control', 'generator', 'location', 'sub_network']:
+    neighbors.index = neighbors['new_index']
+
+    for i in ['new_index', 'control', 'generator', 'location', 'sub_network']:
         neighbors = neighbors.drop(i, axis=1)
 
-
-    
     neighbors.to_sql(
         "egon_pf_hv_bus",
         engine,
@@ -342,9 +347,8 @@ def neighbor_reduction(version="0.0.0"):
         index=True,
         index_label="bus_id"
     )
-
-    neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
-    neighbor_gens.reset_index(inplace=True)
+    
+    neighbor_gens.bus
     neighbor_gens["scn_name"] = "eGon100RE"
     neighbor_gens["version"] = version
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
