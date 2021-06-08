@@ -6,6 +6,7 @@ from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
 from egon.data.datasets import database
+from egon.data.datasets.chp_locations import insert_chp_egon2035
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.processing.zensus_vg250 import (
@@ -562,3 +563,12 @@ with airflow.DAG(
     nep_insert_data >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+
+    # CHP locations
+    chp_locations_nep = PythonOperator(
+        task_id="CHP_location_nep",
+        python_callable=insert_chp_egon2035,
+    )
+
+    nep_insert_data >> chp_locations_nep
+    retrieve_mastr_data >> chp_locations_nep

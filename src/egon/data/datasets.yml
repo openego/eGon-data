@@ -489,3 +489,14 @@ data-bundle:
   targets:
     file:
       'data_bundle_egon_data.zip'
+
+chp_location:
+  sources:
+    list_conv_pp:
+      table: 'nep_2021_conv_powerplants'
+      schema: 'supply'
+    mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
+  targets:
+    power_plants:
+      table: 'egon_power_plants'
+      schema: 'supply'
