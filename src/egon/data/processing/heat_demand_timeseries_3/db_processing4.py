@@ -173,7 +173,8 @@ def idp_pool_generator():
         temperature_interval =[]
         for i in temperature_rounded:
             temperature_interval.append(intervals[i])
-        temp_class_dic = {f'Class_{station}': temperature_interval}
+        #temp_class_dic = {f'Class_{station}': temperature_interval}
+        temp_class_dic = {'Class_{}'.format(station): temperature_interval}
         temp_class = pd.DataFrame.from_dict(temp_class_dic)
         return temp_class
 
@@ -199,7 +200,8 @@ def idp_pool_generator():
     class_list=[3,4,5,6,7,8,9,10]
     for s in stock:
          for m in class_list:
-             globals()[f'idp_collection_class_{m}_{s}']=pd.DataFrame(index=range(24))
+             #globals()[f'idp_collection_class_{m}_{s}']=pd.DataFrame(index=range(24))
+             globals()['idp_collection_class_{}_{}'.format(m,s)]=pd.DataFrame(index=range(24))
 
 
     def splitter(station,household_stock):
