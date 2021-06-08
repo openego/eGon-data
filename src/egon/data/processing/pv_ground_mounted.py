@@ -12,8 +12,8 @@ import datetime
 
 
 def regio_of_pv_ground_mounted():
-
-
+    
+    
     def mastr_existing_pv(path, pow_per_area):
 
         # import MaStR data: locations, grid levels and installed capacities
@@ -417,7 +417,7 @@ def regio_of_pv_ground_mounted():
         return pv_per_distr
 
 
-    def check_target(pv_rora, pv_agri, potentials_rora, potentials_agri, target_power, pow_per_area, con):
+    def check_target(pv_rora, pv_agri, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con):
 
         # sum overall installed capacity for MV and HV
 
@@ -455,7 +455,7 @@ def regio_of_pv_ground_mounted():
             print(datetime.datetime.now())
 
             # build pv parks in potential areas road & railway
-            pv_per_distr = build_additional_pv(potentials_rora, pv_rora, pow_per_area, con)
+            pv_per_distr = build_additional_pv(potentials_rora_i, pv_rora, pow_per_area, con)
             # change index to add different Dataframes in the end
             pv_per_distr['grid_district']=pv_per_distr.index
             pv_per_distr.index = range(0,len(pv_per_distr))
@@ -481,7 +481,7 @@ def regio_of_pv_ground_mounted():
                 print('Restkapazität wird über übrige Potentialflächen Agriculture verteilt.')
                 print(datetime.datetime.now())
 
-                pv_per_distr_2 = build_additional_pv(potentials_agri, pv_agri, pow_per_area, con)
+                pv_per_distr_2 = build_additional_pv(potentials_agri_i, pv_agri, pow_per_area, con)
                 # change index to add different Dataframes in the end
                 pv_per_distr_2['grid_district']=pv_per_distr_2.index
                 pv_per_distr_2.index = range(len(pv_per_distr),2*len(pv_per_distr))
@@ -645,8 +645,18 @@ def regio_of_pv_ground_mounted():
             rora_i.drop('index_right', axis=1, inplace=True)
             agri_i.drop('index_right', axis=1, inplace=True)
             
+            ###
+            
+            # select potential area in state
+            potentials_rora_i = gpd.sjoin(potentials_rora, state)
+            potentials_agri_i = gpd.sjoin(potentials_agri, state)
+            potentials_rora_i.drop('index_right', axis=1, inplace=True)
+            potentials_agri_i.drop('index_right', axis=1, inplace=True)
+            
+            ###
+            
             # check target value and adapt installed capacity if necessary
-            rora, agri, distr = check_target(rora_i, agri_i, potentials_rora, potentials_agri, target_power, pow_per_area, con)
+            rora, agri, distr = check_target(rora_i, agri_i, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con)
             if len(distr) > 0 :
                 distr['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
             
