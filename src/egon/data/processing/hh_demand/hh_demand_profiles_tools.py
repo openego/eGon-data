@@ -491,7 +491,7 @@ def adjust_to_demand_regio_nuts3_annual(df_cell_demand_metadata, df_profiles, df
     return df_cell_demand_metadata
 
 
-def get_load_area_max_load(df_profiles, df_cell_demand_metadata, cell_ids, year):
+def get_load_timeseries(df_profiles, df_cell_demand_metadata, cell_ids, year, peak_load_only=False):
     """
     Get peak load for one load area
 
@@ -515,7 +515,16 @@ def get_load_area_max_load(df_profiles, df_cell_demand_metadata, cell_ids, year)
     year: int
         Scenario year. Is used to consider the scaling factor for aligning
         annual demand to NUTS-3 data.
+    peak_load_only: bool
+        If true, only the peak load value is returned (the type of the return
+        value is `float`). Defaults to False which returns the entire time
+        series as pd.Series.
 
+    Returns
+    -------
+    pd.Series or float
+        Aggregated time series for given `cell_ids` or peak load of this time
+        series.
     """
     timesteps = len(df_profiles)
     full_load = pd.Series(data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps))
@@ -523,7 +532,10 @@ def get_load_area_max_load(df_profiles, df_cell_demand_metadata, cell_ids, year)
     for (nuts3, factor), df in load_area_meta.groupby(by=['nuts3', f'factor_{year}']):
         part_load = df_profiles.loc[:, df['cell_profile_ids'].sum()].sum(axis=1) * factor / 1e3  # profiles in Wh
         full_load = full_load.add(part_load)
-    return full_load.max()
+    if peak_load_only:
+        return full_load.max()
+    else:
+        return full_load
 
 
 def houseprofiles_in_census_cells():
