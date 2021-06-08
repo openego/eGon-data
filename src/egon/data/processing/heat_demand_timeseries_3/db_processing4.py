@@ -173,8 +173,8 @@ def idp_pool_generator():
         temperature_interval =[]
         for i in temperature_rounded:
             temperature_interval.append(intervals[i])
-        #temp_class_dic = {f'Class_{station}': temperature_interval}
-        temp_class_dic = {'Class_{}'.format(station): temperature_interval}
+        temp_class_dic = {f'Class_{station}': temperature_interval}
+        #temp_class_dic = {'Class_{}'.format(station): temperature_interval}
         temp_class = pd.DataFrame.from_dict(temp_class_dic)
         return temp_class
 
@@ -186,8 +186,8 @@ def idp_pool_generator():
 
     def unique_classes(station):
         classes=[]
-        #for x in temp_class[f'Class_{station}']:
-        for x in temp_class['Class_{}'.format(station)]:
+        for x in temp_class[f'Class_{station}']:
+        #for x in temp_class['Class_{}'.format(station)]:
             if x not in classes:
                 classes.append(x)
         classes.sort()
@@ -201,8 +201,8 @@ def idp_pool_generator():
     class_list=[3,4,5,6,7,8,9,10]
     for s in stock:
          for m in class_list:
-             #globals()[f'idp_collection_class_{m}_{s}']=pd.DataFrame(index=range(24))
-             globals()['idp_collection_class_{}_{}'.format(m,s)]=pd.DataFrame(index=range(24))
+             globals()[f'idp_collection_class_{m}_{s}']=pd.DataFrame(index=range(24))
+             #globals()['idp_collection_class_{}_{}'.format(m,s)]=pd.DataFrame(index=range(24))
 
 
     def splitter(station,household_stock):
@@ -215,12 +215,12 @@ def idp_pool_generator():
             for day in days:
                 this_day = this_itteration[day*24:(day+1)*24]
                 this_day = this_day.reset_index(drop=True)
-                # globals()[f'idp_collection_class_{classes}_{household_stock}']=pd.concat(
-                #                 [globals()[f'idp_collection_class_{classes}_{household_stock}'],
-                #                                                             this_day],axis=1,ignore_index=True)
-                globals()['idp_collection_class_{}_{}'.format(classes,household_stock)]=pd.concat(
-                                [globals()['idp_collection_class_{}_{}'.format(classes,household_stock)],
+                globals()[f'idp_collection_class_{classes}_{household_stock}']=pd.concat(
+                                [globals()[f'idp_collection_class_{classes}_{household_stock}'],
                                                                             this_day],axis=1,ignore_index=True)
+                # globals()['idp_collection_class_{}_{}'.format(classes,household_stock)]=pd.concat(
+                #                 [globals()['idp_collection_class_{}_{}'.format(classes,household_stock)],
+                #                                                             this_day],axis=1,ignore_index=True)
     splitter('Luebeck','SFH')
     splitter('Kassel','SFH')
     splitter('Wuerzburg','SFH')
@@ -239,10 +239,10 @@ def idp_pool_generator():
     class_list=[3,4,5,6,7,8,9,10]
     for s in stock:
          for m in class_list:
-             #df_name = globals()[f'idp_collection_class_{m}_{s}']
-             df_name = globals()['idp_collection_class_{}_{}'.format(m,s)]
-             #globals()[f'idp_collection_class_{m}_{s}_norm']=df_name.apply(pool_normalize)
-             globals()['idp_collection_class_{}_{}_norm'.format(m,s)]=df_name.apply(pool_normalize)
+             df_name = globals()[f'idp_collection_class_{m}_{s}']
+             #df_name = globals()['idp_collection_class_{}_{}'.format(m,s)]
+             globals()[f'idp_collection_class_{m}_{s}_norm']=df_name.apply(pool_normalize)
+             #globals()['idp_collection_class_{}_{}_norm'.format(m,s)]=df_name.apply(pool_normalize)
 
     return [idp_collection_class_3_SFH_norm,idp_collection_class_4_SFH_norm,idp_collection_class_5_SFH_norm,
             idp_collection_class_6_SFH_norm,idp_collection_class_7_SFH_norm,idp_collection_class_8_SFH_norm,
@@ -898,7 +898,7 @@ def CTS_demand_scale(aggregation_level):
 
 
 def demand_profile_generator(aggregation_level = 'district'):
-
+    print('****test***************************************test********')
     residential_demand_dist, residential_demand_grid, residential_demand_zensus = residential_demand_scale(aggregation_level)
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(aggregation_level)
 
