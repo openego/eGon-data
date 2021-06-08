@@ -210,7 +210,7 @@ def idp_pool_generator():
         this_classes = globals()['{}_classes'.format(station.lower())]
         for classes in this_classes:
             #this_itteration = globals()[f'{station.lower()}_{household_stock.lower()}'].loc[temp_class[f'Class_{station}']==classes,:]
-            this_itteration = globals()['{}_{}'.format(station.lower(),household_stock.lower())].loc[temp_class[f'Class_{station}']==classes,:]
+            this_itteration = globals()['{}_{}'.format(station.lower(),household_stock.lower())].loc[temp_class['Class_{}'.format(station)]==classes,:]
             days = list(range(int(len(this_itteration)/24)))
             for day in days:
                 this_day = this_itteration[day*24:(day+1)*24]
