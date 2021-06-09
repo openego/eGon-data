@@ -623,6 +623,12 @@ def regio_of_pv_ground_mounted():
         pv_agri = gpd.GeoDataFrame()
         pv_per_distr = gpd.GeoDataFrame()
         
+        # prepare selection per state
+        rora = rora.set_geometry('centroid')
+        agri = agri.set_geometry('centroid')
+        potentials_rora = potentials_rora.set_geometry('geom')
+        potentials_agri = potentials_agri.set_geometry('geom')
+        
         # check target value per state
         for i in nuts:
             target_power = target[target['nuts']==i]['capacity'].iloc[0] * 1000
@@ -638,8 +644,6 @@ def regio_of_pv_ground_mounted():
             state = state.to_crs(3035)
             
             # select PVs in state
-            rora = rora.set_geometry('centroid')
-            agri = agri.set_geometry('centroid')
             rora_i = gpd.sjoin(rora, state)
             agri_i = gpd.sjoin(agri, state)
             rora_i.drop('index_right', axis=1, inplace=True)
@@ -648,8 +652,6 @@ def regio_of_pv_ground_mounted():
             agri_i.drop_duplicates(inplace=True)
             
             # select potential area in state
-            potentials_rora = potentials_rora.set_geometry('geom')
-            potentials_agri = potentials_agri.set_geometry('geom')
             potentials_rora_i = gpd.sjoin(potentials_rora, state)
             potentials_agri_i = gpd.sjoin(potentials_agri, state)
             potentials_rora_i.drop('index_right', axis=1, inplace=True)
@@ -658,49 +660,42 @@ def regio_of_pv_ground_mounted():
             potentials_agri_i.drop_duplicates(inplace=True)
             
             # check target value and adapt installed capacity if necessary
-            rora, agri, distr = check_target(rora_i, agri_i, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con)
-            if len(distr) > 0 :
-                distr['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
+            rora_i, agri_i, distr_i = check_target(rora_i, agri_i, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con)
+            if len(distr_i) > 0 :
+                distr_i['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
             
             ###
-            rora_mv = rora[rora['voltage_level']==5]
-            rora_hv = rora[rora['voltage_level']==4]
-            agri_mv = agri[agri['voltage_level']==5]
-            agri_hv = agri[agri['voltage_level']==4]
+            rora_i_mv = rora_i[rora_i['voltage_level']==5]
+            rora_i_hv = rora_i[rora_i['voltage_level']==4]
+            agri_i_mv = agri_i[agri_i['voltage_level']==5]
+            agri_i_hv = agri_i[agri_i['voltage_level']==4]
             print('Untersuchung der Spannungslevel pro Bundesland:')
             print('a) PVs auf Potentialflächen Road & Railway: ')
-            print('Insgesamt installierte Leistung: '+str(rora['installed capacity in kW'].sum()/1000)+' MW')
-            print('Anzahl der PV-Parks: '+str(len(rora)))
-            print(' - davon Mittelspannung: '+str(len(rora_mv)))
-            print(' - davon Hochspannung: '+str(len(rora_hv)))
+            print('Insgesamt installierte Leistung: '+str(rora_i['installed capacity in kW'].sum()/1000)+' MW')
+            print('Anzahl der PV-Parks: '+str(len(rora_i)))
+            print(' - davon Mittelspannung: '+str(len(rora_i_mv)))
+            print(' - davon Hochspannung: '+str(len(rora_i_hv)))
             print('b) PVs auf Potentialflächen Agriculture: ')
-            print('Insgesamt installierte Leistung: '+str(agri['installed capacity in kW'].sum()/1000)+' MW')
-            print('Anzahl der PV-Parks: '+str(len(agri)))
-            print(' - davon Mittelspannung: '+str(len(agri_mv)))
-            print(' - davon Hochspannung: '+str(len(agri_hv)))
+            print('Insgesamt installierte Leistung: '+str(agri_i['installed capacity in kW'].sum()/1000)+' MW')
+            print('Anzahl der PV-Parks: '+str(len(agri_i)))
+            print(' - davon Mittelspannung: '+str(len(agri_i_mv)))
+            print(' - davon Hochspannung: '+str(len(agri_i_hv)))
             print('c) PVs auf zusätzlichen Potentialflächen pro MV-District: ')
-            if len(distr) > 0:
-                distr_mv = distr[distr['voltage_level']==5]
-                distr_hv = distr[distr['voltage_level']==4]
-                print('Insgesamt installierte Leistung: '+str(distr['installed capacity in kW'].sum()/1000)+' MW')
-                print('Anzahl der PV-Parks: '+str(len(distr)))
-                print(' - davon Mittelspannung: '+str(len(distr_mv)))
-                print(' - davon Hochspannung: '+str(len(distr_hv)))
+            if len(distr_i) > 0:
+                distr_i_mv = distr_i[distr_i['voltage_level']==5]
+                distr_i_hv = distr_i[distr_i['voltage_level']==4]
+                print('Insgesamt installierte Leistung: '+str(distr_i['installed capacity in kW'].sum()/1000)+' MW')
+                print('Anzahl der PV-Parks: '+str(len(distr_i)))
+                print(' - davon Mittelspannung: '+str(len(distr_i_mv)))
+                print(' - davon Hochspannung: '+str(len(distr_i_hv)))
             else: 
                 print(' -> zusätzlicher Ausbau nicht notwendig')
             print(' ')
-            
-            ###
-            print('pv_rora: ')
-            print(pv_rora)
-            print('rora: ')
-            print(rora)
-            ###
 
-            pv_rora = pv_rora.append(rora)
-            pv_agri = pv_agri.append(agri)
-            if len(distr) > 0:
-                pv_per_distr = pv_per_distr.append(distr)
+            pv_rora = pv_rora.append(rora_i)
+            pv_agri = pv_agri.append(agri_i)
+            if len(distr_i) > 0:
+                pv_per_distr = pv_per_distr.append(distr_i)
 
         # 2) scenario: eGon100RE
 
