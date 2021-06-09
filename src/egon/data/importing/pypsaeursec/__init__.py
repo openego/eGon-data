@@ -330,8 +330,13 @@ def neighbor_reduction(version="0.0.0"):
     neighbor_gens.bus = neighbors.loc[neighbor_gens.bus, 'new_index'].reset_index().new_index
     
     neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    neighbor_loads_t = network.loads_t['p_set'][neighbor_loads.index]
+    # todo: change column names to new loads index
+
     neighbor_loads.reset_index(inplace=True)
     neighbor_loads.bus = neighbors.loc[neighbor_loads.bus, 'new_index'].reset_index().new_index
+    
+    network.loads_t['p_set'][neighbor_loads.index]
     
     # Connect to local database
     engine = db.engine()
@@ -396,3 +401,5 @@ def neighbor_reduction(version="0.0.0"):
         index=True,
         index_label="load_id"
     )
+    
+    #todo: writing neighboring loads_t p_sets to etrago tables
