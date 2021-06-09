@@ -118,7 +118,7 @@ def idp_pool_generator():
     ###read hdf5 files with the generated profiles from the load profile generator
     #path = os.path.join(r'/home/student/Documents/egon_AM/heat_demand_generation/idp pool generation',
                         #'heat_data.hdf5')
-    path = os.path.join(os.path.join(os.getcwd(), 'heat_data.hdf5'))
+    path = os.path.join(os.path.join(os.getcwd(), 'heat_data_new.hdf5'))
 
     index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
 
@@ -408,8 +408,8 @@ def profile_selector():
     annual_demand = annual_demand_generator()
     #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
     #annual_demand.drop('Temperature_interval',axis=1,inplace=True)
-    all_temperature_interval = temp_interval()
-    #all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
+    #all_temperature_interval = temp_interval()
+    all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
 
     #Temperature_interval = pd.DataFrame(columns = range(365))
     #all_temperature_interval.set_index(index,inplace=True)
@@ -426,7 +426,7 @@ def profile_selector():
     # Set seed value to have reproducable results
     np.random.seed(0)
 
-    db.execute_sql("DROP TABLE IF EXISTS demand.selected_idp_names;")
+    db.execute_sql("DELETE FROM demand.selected_idp_names;")
 
     #generates a dataframe with the idp index number of the selected profiles for each temperature
 
@@ -438,8 +438,6 @@ def profile_selector():
         
         for day in Temperature_interval.columns:
             t_class = Temperature_interval.loc[station,day].astype(int)
-            if t_class ==2:
-                t_class =3
             
             array_SFH = np.array(idp_df[(idp_df.temperature_class==t_class)
                                         &(idp_df.house=='SFH')].index.values)
