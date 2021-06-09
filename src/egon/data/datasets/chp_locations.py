@@ -263,9 +263,17 @@ def insert_chp_egon2035():
 
     chp_NEP_matched, chp_NEP, MaStR_konv = match_chp(
         chp_NEP, MaStR_konv, chp_NEP_matched, consider_carrier=False)
+    chp_NEP_matched["geometry_wkt"] = chp_NEP_matched["geometry"].apply(lambda geom: geom.wkt)
 
     print(chp_NEP_matched.el_capacity.sum())
     print(chp_NEP.c2035_capacity.sum())
+
+    # Aggregate chp per location and carrier
+    insert_chp = chp_NEP_matched.groupby(["carrier", "geometry_wkt"])[
+        ['el_capacity', 'th_capacity', 'geometry',
+           'MaStRNummer', 'source']].sum(numeric_only=False).reset_index()
+    insert_chp['geometry'] = chp_NEP_matched.set_index('geometry_wkt').loc[
+        insert_chp.set_index('geometry_wkt').index, 'geometry'].unique()
 
     db.execute_sql(
         f"""DELETE FROM {target['schema']}.{target['table']}
@@ -274,7 +282,7 @@ def insert_chp_egon2035():
 
     session = sessionmaker(bind=db.engine())()
 
-    for i, row in chp_NEP_matched.iterrows():
+    for i, row in insert_chp.iterrows():
         entry = EgonPowerPlants(
                 sources={
                     "chp": "MaStR",
