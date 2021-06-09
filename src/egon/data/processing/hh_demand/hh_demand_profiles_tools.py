@@ -711,3 +711,69 @@ def mv_grid_district_HH_electricity_load():
 
     return mvgd_profiles
 
+
+def mv_grid_district_HH_electricity_load_check():
+    with db.session_scope() as session:
+        cells_w_geom_query = session.query(
+            HouseholdElectricityProfilesInCensusCells,
+            MapZensusGridDistricts.subst_id,
+            DestatisZensusPopulationPerHaInsideGermany.population,
+            DestatisZensusPopulationPerHaInsideGermany.geom
+        ).join(
+            MapZensusGridDistricts,
+            HouseholdElectricityProfilesInCensusCells.cell_id == MapZensusGridDistricts.zensus_population_id
+        ).join(DestatisZensusPopulationPerHaInsideGermany,
+               HouseholdElectricityProfilesInCensusCells.cell_id == DestatisZensusPopulationPerHaInsideGermany.gid)
+
+    # Used for visual check of data
+    import geopandas as gpd
+    cells_w_geom = gpd.read_postgis(cells_w_geom_query.statement, cells_w_geom_query.session.bind, index_col="cell_id")
+    cells_w_geom.to_postgis(
+        "household_electricity_profiles_in_census_cells_with_geom",
+        schema="demand",
+        con=db.engine(),
+        if_exists="replace")
+
+
+class EgonDestatisZensusHouseholdPerHa(Base):
+    __tablename__ = 'egon_destatis_zensus_household_per_ha'
+    __table_args__ = {'schema': 'society'}
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('society.egon_destatis_zensus_household_per_ha_id_seq'::regclass)"))
+    grid_id = Column(String(50))
+    grid_id_new = Column(String(50))
+    attribute = Column(String(50))
+    characteristics_code = Column(Integer)
+    characteristics_text = Column(String)
+    quantity = Column(Integer)
+    quantity_q = Column(Integer)
+    zensus_population_id = Column(ForeignKey('society.destatis_zensus_population_per_ha.id'))
+
+
+def zensus_household_with_geom_check():
+    import geopandas as gpd
+
+    with db.session_scope() as session:
+
+        # Household x Zensus population x Zensus grid district mapping
+        cells_w_geom_query = session.query(
+            EgonDestatisZensusHouseholdPerHa,
+            MapZensusGridDistricts.subst_id,
+            DestatisZensusPopulationPerHaInsideGermany.population,
+            DestatisZensusPopulationPerHaInsideGermany.geom
+        ).join(
+            MapZensusGridDistricts,
+            EgonDestatisZensusHouseholdPerHa.zensus_population_id == MapZensusGridDistricts.zensus_population_id
+        ).join(DestatisZensusPopulationPerHaInsideGermany,
+               EgonDestatisZensusHouseholdPerHa.zensus_population_id == DestatisZensusPopulationPerHaInsideGermany.gid
+               )
+        cells_w_geom = gpd.read_postgis(cells_w_geom_query.statement,
+                                        cells_w_geom_query.session.bind,
+                                        index_col="zensus_population_id")
+
+    # Used for visual check of data
+    cells_w_geom.to_postgis(
+        "egon_destatis_zensus_household_per_ha_with_geom",
+        schema="society",
+        con=db.engine(),
+        if_exists="replace")
