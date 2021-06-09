@@ -238,7 +238,8 @@ def neighbor_reduction(version="0.0.0"):
     # create a load at bus1 with the line's hourly loading
     for i,k in zip(lines_cb_1.bus1.values, lines_cb_1.index) :
         network.add("Load", "slack_fix "+i+' '+k, bus=i,
-                    p_set = network.lines_t.p1[k]) 
+                    p_set = network.lines_t.p1[k])
+        network.loads.carrier.loc["slack_fix "+i+' '+k] = lines_cb_1.carrier[k]
         
     # select all lines which have at bus0 the bus which is kept
     lines_cb_0 = network.lines[
@@ -248,6 +249,7 @@ def neighbor_reduction(version="0.0.0"):
     for i,k in zip(lines_cb_0.bus0.values, lines_cb_0.index) :
         network.add("Load", "slack_fix "+i+' '+k, bus=i,
                     p_set = network.lines_t.p0[k]) 
+        network.loads.carrier.loc["slack_fix "+i+' '+k] = lines_cb_0.carrier[k]
     
      
     # do the same for links
@@ -265,7 +267,7 @@ def neighbor_reduction(version="0.0.0"):
     for i,k in zip(links_cb_1.bus1.values, links_cb_1.index) :
         network.add("Load", "slack_fix_links "+i+' '+k, bus=i,
                     p_set = network.links_t.p1[k]) 
-        
+        network.loads.carrier.loc["slack_fix_links "+i+' '+k] = links_cb_1.carrier[k]
         
     # select all links which have at bus0 the bus which is kept
     links_cb_0 = network.links[
@@ -275,6 +277,8 @@ def neighbor_reduction(version="0.0.0"):
     for i,k in zip(links_cb_0.bus0.values, links_cb_0.index) :
         network.add("Load", "slack_fix_links "+i+' '+k, bus=i,
                     p_set = network.links_t.p0[k])
+        network.loads.carrier.loc["slack_fix_links "+i+' '+k] = links_cb_0.carrier[k]
+
       
     
     # drop remaining foreign components
@@ -295,8 +299,10 @@ def neighbor_reduction(version="0.0.0"):
                                            buses.index) == False)].index)
     network.generators = network.generators.drop(network.generators[
         (network.generators['bus'].isin(network.buses.index) == False)].index)
+    
     network.loads = network.loads.drop(network.loads[
         (network.loads['bus'].isin(network.buses.index) == False)].index)
+    
     network.storage_units = network.storage_units.drop(network.storage_units[
         (network.storage_units['bus'].isin(network.
                                            buses.index) == False)].index)
@@ -317,12 +323,15 @@ def neighbor_reduction(version="0.0.0"):
     # writing components of neighboring countries to etrago tables
     
     neighbors = network.buses[~network.buses.country.isin(['DE'])]
+    neighbors['new_index']=neighbors.reset_index().index
     
     neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
-    neighbors['new_index']=neighbors.reset_index().index
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = neighbors.loc[neighbor_gens.bus, 'new_index'].reset_index().new_index
     
+    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    neighbor_loads.reset_index(inplace=True)
+    neighbor_loads.bus = neighbors.loc[neighbor_loads.bus, 'new_index'].reset_index().new_index
     
     # Connect to local database
     engine = db.engine()
@@ -348,7 +357,8 @@ def neighbor_reduction(version="0.0.0"):
         index_label="bus_id"
     )
     
-    neighbor_gens.bus
+    
+    # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
     neighbor_gens["version"] = version
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
@@ -369,4 +379,20 @@ def neighbor_reduction(version="0.0.0"):
         if_exists="append",
         index=True,
         index_label="generator_id"
+    )
+    
+    # prepare neighboring loads for etrago tables
+    neighbor_loads["scn_name"] = "eGon100RE"
+    neighbor_loads["version"] = version
+
+    for i in ['index', 'p_set','q_set']:
+        neighbor_loads = neighbor_loads.drop(i, axis=1)
+
+    neighbor_loads.to_sql(
+        "egon_pf_hv_load",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="load_id"
     )
