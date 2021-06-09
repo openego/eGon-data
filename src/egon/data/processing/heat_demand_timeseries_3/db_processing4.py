@@ -126,16 +126,6 @@ def idp_pool_generator():
     mfh = pd.read_hdf(path, key ='MFH')
     temp = pd.read_hdf(path, key ='temperature')
 
-    ######can wuerzburg file directly be added into the hdf5 file????
-
-    # temp_wuerzburg = pd.read_csv(os.path.join(r'/home/student/Documents/egon_AM/feb_analysis/5_03',
-    #                                           'temp_2011_Wuerzburg.csv'))
-    temp_wuerzburg = pd.read_csv(os.path.join(os.path.join(os.getcwd(),'temp_2011_Wuerzburg.csv')),index_col = 0)
-
-    temp_wuerzburg.set_index(index, inplace=True)
-    temp_wuerzburg.rename(columns = {'temperature':'Wuerzburg'}, inplace=True)
-    temp = pd.concat([temp,temp_wuerzburg], axis =1)
-
     ##############################################################################
     #demand per city
     globals()['luebeck_sfh'] = sfh[sfh.filter(like='Luebeck').columns]
@@ -147,14 +137,18 @@ def idp_pool_generator():
     globals()['wuerzburg_sfh'] = sfh[sfh.filter(like='Wuerzburg').columns]
     globals()['wuerzburg_mfh'] = mfh[mfh.filter(like='Wuerzburg').columns]
 
+    globals()['chemnitz_sfh'] = sfh[sfh.filter(like='Chemnitz').columns]
+    globals()['chemnitz_mfh'] = mfh[mfh.filter(like='Chemnitz').columns]
 
     ####dataframe with daily temperature in geometric series
     temp_daily = pd.DataFrame()
     for column in temp.columns:
         temp_current= temp[column].resample('D').mean().reindex(temp.index).fillna(method='ffill').fillna(method='bfill')
-        temp_current_geom = (temp_current + 0.5 * np.roll(temp_current, 24) +
-                                    0.25 * np.roll(temp_current, 48) +
-                                    0.125 * np.roll(temp_current, 72)) / 1.875 
+        # temp_current_geom = (temp_current + 0.5 * np.roll(temp_current, 24) +
+        #                             0.25 * np.roll(temp_current, 48) +
+        #                             0.125 * np.roll(temp_current, 72)) / 1.875 
+        temp_current_geom = temp_current
+        
         
         temp_daily=pd.concat([temp_daily,temp_current_geom], axis=1)
 
@@ -181,7 +175,8 @@ def idp_pool_generator():
     temp_class_luebeck = round_temperature('Luebeck')
     temp_class_kassel = round_temperature('Kassel')
     temp_class_wuerzburg = round_temperature('Wuerzburg')
-    temp_class =pd.concat([temp_class_luebeck, temp_class_kassel,temp_class_wuerzburg],axis=1)
+    temp_class_chemnitz = round_temperature('Chemnitz')
+    temp_class =pd.concat([temp_class_luebeck, temp_class_kassel,temp_class_wuerzburg,temp_class_chemnitz],axis=1)
     temp_class.set_index(index, inplace=True)
 
     def unique_classes(station):
@@ -196,9 +191,10 @@ def idp_pool_generator():
     globals()['luebeck_classes'] = unique_classes('Luebeck')
     globals()['kassel_classes'] = unique_classes('Kassel')
     globals()['wuerzburg_classes'] = unique_classes('Wuerzburg')
+    globals()['chemnitz_classes'] = unique_classes('Chemnitz')
 
     stock=['MFH','SFH']
-    class_list=[3,4,5,6,7,8,9,10]
+    class_list=[2,3,4,5,6,7,8,9,10]
     for s in stock:
          for m in class_list:
              globals()[f'idp_collection_class_{m}_{s}']=pd.DataFrame(index=range(24))
@@ -224,9 +220,10 @@ def idp_pool_generator():
     splitter('Luebeck','SFH')
     splitter('Kassel','SFH')
     splitter('Wuerzburg','SFH')
+    splitter('Chemnitz','SFH')
     splitter('Luebeck','MFH')
     splitter('Kassel','MFH')
-    splitter('Wuerzburg','MFH')
+    splitter('Chemnitz','MFH')
 
     def pool_normalize(x):
             if x.sum()!=0:
@@ -236,7 +233,7 @@ def idp_pool_generator():
                 return x
 
     stock=['MFH','SFH']
-    class_list=[3,4,5,6,7,8,9,10]
+    class_list=[2,3,4,5,6,7,8,9,10]
     for s in stock:
          for m in class_list:
              df_name = globals()[f'idp_collection_class_{m}_{s}']
@@ -244,18 +241,18 @@ def idp_pool_generator():
              globals()[f'idp_collection_class_{m}_{s}_norm']=df_name.apply(pool_normalize)
              #globals()['idp_collection_class_{}_{}_norm'.format(m,s)]=df_name.apply(pool_normalize)
 
-    return [idp_collection_class_3_SFH_norm,idp_collection_class_4_SFH_norm,idp_collection_class_5_SFH_norm,
-            idp_collection_class_6_SFH_norm,idp_collection_class_7_SFH_norm,idp_collection_class_8_SFH_norm,
-            idp_collection_class_9_SFH_norm,idp_collection_class_10_SFH_norm,idp_collection_class_3_MFH_norm,
-            idp_collection_class_4_MFH_norm,idp_collection_class_5_MFH_norm, idp_collection_class_6_MFH_norm,
-            idp_collection_class_7_MFH_norm,idp_collection_class_8_MFH_norm,idp_collection_class_9_MFH_norm,
-            idp_collection_class_10_MFH_norm]
+    return [idp_collection_class_2_SFH_norm,idp_collection_class_3_SFH_norm,idp_collection_class_4_SFH_norm,
+            idp_collection_class_5_SFH_norm,idp_collection_class_6_SFH_norm,idp_collection_class_7_SFH_norm,
+            idp_collection_class_8_SFH_norm,idp_collection_class_9_SFH_norm,idp_collection_class_10_SFH_norm,
+            idp_collection_class_2_MFH_norm,idp_collection_class_3_MFH_norm,idp_collection_class_4_MFH_norm,
+            idp_collection_class_5_MFH_norm, idp_collection_class_6_MFH_norm,idp_collection_class_7_MFH_norm,
+            idp_collection_class_8_MFH_norm,idp_collection_class_9_MFH_norm,idp_collection_class_10_MFH_norm]
 
 #convert the multiple idp pool into a single dataframe
 def idp_df_generator():
     idp_list = idp_pool_generator()
     stock=['MFH','SFH']
-    class_list=[3,4,5,6,7,8,9,10]
+    class_list=[2,3,4,5,6,7,8,9,10]
     idp_df = pd.DataFrame(columns=['idp', 'house', 'temperature_class'])
     for s in stock:
         for m in class_list:
@@ -263,7 +260,7 @@ def idp_df_generator():
             if s =='SFH':
               i = class_list.index(m)
             if s == 'MFH':
-              i = class_list.index(m) + 8
+              i = class_list.index(m) + 9
             current_pool = idp_list[i]
             idp_df = idp_df.append(
                 pd.DataFrame(
