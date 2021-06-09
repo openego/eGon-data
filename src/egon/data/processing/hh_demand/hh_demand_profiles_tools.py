@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
 from egon.data import db
+from egon.data.processing.zensus_grid_districts import MapZensusGridDistricts
+from egon.data.processing.zensus_vg250.zensus_population_inside_germany import DestatisZensusPopulationPerHaInsideGermany, DestatisZensusPopulationPerHa
 
 from itertools import cycle
 import random
 from pathlib import Path
 from urllib.request import urlretrieve
-from sqlalchemy import Column, String, Float, Integer, ARRAY
+from sqlalchemy import Column, String, Float, Integer, ARRAY, ForeignKey, text
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
@@ -676,3 +678,36 @@ def get_houseprofiles_in_census_cells():
         lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     return census_profile_mapping
+
+
+def mv_grid_district_HH_electricity_load():
+
+    with db.session_scope() as session:
+        cells_query = session.query(
+            HouseholdElectricityProfilesInCensusCells, MapZensusGridDistricts.subst_id).join(
+            MapZensusGridDistricts,
+            HouseholdElectricityProfilesInCensusCells.cell_id == MapZensusGridDistricts.zensus_population_id
+        )
+
+    cells = pd.read_sql(cells_query.statement, cells_query.session.bind, index_col="cell_id")
+    cells["cell_profile_ids"] = cells[
+        "cell_profile_ids"].apply(
+        lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+
+    # Create aggregated load profile for each MV grid district
+    df_profiles = get_household_demand_profiles_raw()
+
+    mvgd_profiles_list = []
+    for grid_district, data in cells.groupby("subst_id"):
+        mvgd_profile = get_load_timeseries(df_profiles,
+                            data,
+                            data.index,
+                            2035,
+                            peak_load_only=False)
+        mvgd_profile.name = grid_district
+        mvgd_profiles_list.append(mvgd_profile)
+
+    mvgd_profiles = pd.concat(mvgd_profiles_list, axis=1)
+
+    return mvgd_profiles
+
