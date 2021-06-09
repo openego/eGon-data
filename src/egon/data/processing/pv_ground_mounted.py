@@ -417,13 +417,13 @@ def regio_of_pv_ground_mounted():
         return pv_per_distr
 
 
-    def check_target(pv_rora, pv_agri, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con):
+    def check_target(pv_rora_i, pv_agri_i, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con):
 
         # sum overall installed capacity for MV and HV
 
-        total_pv_power = pv_rora['installed capacity in kW'].sum() + pv_agri['installed capacity in kW'].sum()
+        total_pv_power = pv_rora_i['installed capacity in kW'].sum() + pv_agri_i['installed capacity in kW'].sum()
 
-        pv_per_distr = gpd.GeoDataFrame()
+        pv_per_distr_i= gpd.GeoDataFrame()
 
         # check target value
 
@@ -435,8 +435,8 @@ def regio_of_pv_ground_mounted():
         if total_pv_power > target_power:
 
                 scale_factor = target_power/total_pv_power
-                pv_rora['installed capacity in kW'] = pv_rora['installed capacity in kW'] * scale_factor
-                pv_agri['installed capacity in kW'] = pv_agri['installed capacity in kW'] * scale_factor
+                pv_rora_i['installed capacity in kW'] = pv_rora_i['installed capacity in kW'] * scale_factor
+                pv_agri_i['installed capacity in kW'] = pv_agri_i['installed capacity in kW'] * scale_factor
 
                 ###
                 print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität ist ausreichend.')
@@ -455,23 +455,23 @@ def regio_of_pv_ground_mounted():
             print(datetime.datetime.now())
 
             # build pv parks in potential areas road & railway
-            pv_per_distr = build_additional_pv(potentials_rora_i, pv_rora, pow_per_area, con)
+            pv_per_distr_i = build_additional_pv(potentials_rora_i, pv_rora_i, pow_per_area, con)
             # change index to add different Dataframes in the end
-            pv_per_distr['grid_district']=pv_per_distr.index
-            pv_per_distr.index = range(0,len(pv_per_distr))
+            pv_per_distr_i['grid_district']=pv_per_distr_i.index
+            pv_per_distr_i.index = range(0,len(pv_per_distr_i))
             # delete empty grid districts
-            index_names = pv_per_distr[pv_per_distr['installed capacity in kW'] == 0.0 ].index
-            pv_per_distr.drop(index_names,inplace=True)
+            index_names = pv_per_distr_i[pv_per_distr_i['installed capacity in kW'] == 0.0 ].index
+            pv_per_distr_i.drop(index_names,inplace=True)
 
-            if pv_per_distr['installed capacity in kW'].sum() > rest_cap:
-                scale_factor = rest_cap/pv_per_distr['installed capacity in kW'].sum()
-                pv_per_distr['installed capacity in kW'] = pv_per_distr['installed capacity in kW'] * scale_factor
+            if pv_per_distr_i['installed capacity in kW'].sum() > rest_cap:
+                scale_factor = rest_cap/pv_per_distr_i['installed capacity in kW'].sum()
+                pv_per_distr_i['installed capacity in kW'] = pv_per_distr_i['installed capacity in kW'] * scale_factor
 
                 ###
                 print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway verteilt.')
 
             # build pv parks on potential areas ariculture if still necessary
-            elif pv_per_distr['installed capacity in kW'].sum() < rest_cap:
+            elif pv_per_distr_i['installed capacity in kW'].sum() < rest_cap:
 
                 rest_cap = target_power - total_pv_power
 
@@ -481,41 +481,41 @@ def regio_of_pv_ground_mounted():
                 print('Restkapazität wird über übrige Potentialflächen Agriculture verteilt.')
                 print(datetime.datetime.now())
 
-                pv_per_distr_2 = build_additional_pv(potentials_agri_i, pv_agri, pow_per_area, con)
+                pv_per_distr_i_2 = build_additional_pv(potentials_agri_i, pv_agri_i, pow_per_area, con)
                 # change index to add different Dataframes in the end
-                pv_per_distr_2['grid_district']=pv_per_distr_2.index
-                pv_per_distr_2.index = range(len(pv_per_distr),2*len(pv_per_distr))
+                pv_per_distr_i_2['grid_district']=pv_per_distr_i_2.index
+                pv_per_distr_i_2.index = range(len(pv_per_distr_i),2*len(pv_per_distr_i))
                 # delete empty grid districts
-                index_names = pv_per_distr_2[pv_per_distr_2['installed capacity in kW'] == 0.0 ].index
-                pv_per_distr_2.drop(index_names,inplace=True)
-                pv_per_distr.append(pv_per_distr_2)
+                index_names = pv_per_distr_i_2[pv_per_distr_i_2['installed capacity in kW'] == 0.0 ].index
+                pv_per_distr_i_2.drop(index_names,inplace=True)
+                pv_per_distr_i.append(pv_per_distr_i_2)
 
-                if pv_per_distr['installed capacity in kW'].sum() > rest_cap:
-                    scale_factor = rest_cap/pv_per_distr['installed capacity in kW'].sum()
-                    pv_per_distr['installed capacity in kW'] = pv_per_distr['installed capacity in kW'] * scale_factor
+                if pv_per_distr_i['installed capacity in kW'].sum() > rest_cap:
+                    scale_factor = rest_cap/pv_per_distr_i['installed capacity in kW'].sum()
+                    pv_per_distr_i['installed capacity in kW'] = pv_per_distr_i['installed capacity in kW'] * scale_factor
 
                     ###
                     print('Restkapazität ist mit dem Skalierungsfaktor '+str(scale_factor)+' über übrige Potentialflächen Road & Railway und Agriculture verteilt.')
     
             # assign grid level to pv_per_distr
-            v_lvl = pd.Series(dtype=int, index=pv_per_distr.index)
-            for index, distr in pv_per_distr.iterrows():
+            v_lvl = pd.Series(dtype=int, index=pv_per_distr_i.index)
+            for index, distr in pv_per_distr_i.iterrows():
                 if distr['installed capacity in kW'] > 5500: # > 5 MW
                     v_lvl[index] = 4
                 else:
                     v_lvl[index] = 5
-            pv_per_distr['voltage_level'] = v_lvl
+            pv_per_distr_i['voltage_level'] = v_lvl
     
             # new overall installed capacity
-            total_pv_power = pv_rora['installed capacity in kW'].sum() + \
-            pv_agri['installed capacity in kW'].sum() + \
-            pv_per_distr['installed capacity in kW'].sum()
+            total_pv_power = pv_rora_i['installed capacity in kW'].sum() + \
+            pv_agri_i['installed capacity in kW'].sum() + \
+            pv_per_distr_i['installed capacity in kW'].sum()
             
             ###
             print('Installierte Leistung der PV-Parks insgesamt: '+str(total_pv_power/1000)+' MW')
             print(' ')
     
-        return pv_rora, pv_agri, pv_per_distr
+        return pv_rora_i, pv_agri_i, pv_per_distr_i
 
 
     def run_methodology():
@@ -644,16 +644,18 @@ def regio_of_pv_ground_mounted():
             agri_i = gpd.sjoin(agri, state)
             rora_i.drop('index_right', axis=1, inplace=True)
             agri_i.drop('index_right', axis=1, inplace=True)
-            
-            ###
+            rora_i.drop_duplicates(inplace=True)
+            agri_i.drop_duplicates(inplace=True)
             
             # select potential area in state
+            potentials_rora = potentials_rora.set_geometry('geom')
+            potentials_agri = potentials_agri.set_geometry('geom')
             potentials_rora_i = gpd.sjoin(potentials_rora, state)
             potentials_agri_i = gpd.sjoin(potentials_agri, state)
             potentials_rora_i.drop('index_right', axis=1, inplace=True)
             potentials_agri_i.drop('index_right', axis=1, inplace=True)
-            
-            ###
+            potentials_rora_i.drop_duplicates(inplace=True)
+            potentials_agri_i.drop_duplicates(inplace=True)
             
             # check target value and adapt installed capacity if necessary
             rora, agri, distr = check_target(rora_i, agri_i, potentials_rora_i, potentials_agri_i, target_power, pow_per_area, con)
