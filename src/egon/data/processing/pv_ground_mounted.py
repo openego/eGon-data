@@ -689,6 +689,13 @@ def regio_of_pv_ground_mounted():
             else: 
                 print(' -> zusätzlicher Ausbau nicht notwendig')
             print(' ')
+            
+            ###
+            print('pv_rora: ')
+            print(pv_rora)
+            print('rora: ')
+            print(rora)
+            ###
 
             pv_rora = pv_rora.append(rora)
             pv_agri = pv_agri.append(agri)
