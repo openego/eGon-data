@@ -326,18 +326,27 @@ def neighbor_reduction(version="0.0.0"):
     neighbors['new_index']=neighbors.reset_index().index
     
     neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
+    neighbor_gens_t = network.generators_t['p_max_pu'][neighbor_gens.index]
+
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = neighbors.loc[neighbor_gens.bus, 'new_index'].reset_index().new_index
     
+    for i in neighbor_gens_t.columns:
+        new_index = neighbor_gens[neighbor_gens['name']==i].index
+        neighbor_gens_t.rename(columns={i:new_index[0]}, inplace=True)
+    
     neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
     neighbor_loads_t = network.loads_t['p_set'][neighbor_loads.index]
-    # todo: change column names to new loads index
+
 
     neighbor_loads.reset_index(inplace=True)
     neighbor_loads.bus = neighbors.loc[neighbor_loads.bus, 'new_index'].reset_index().new_index
-    
-    network.loads_t['p_set'][neighbor_loads.index]
-    
+
+    for i in neighbor_loads_t.columns:
+        new_index = neighbor_loads[neighbor_loads['index']==i].index
+        neighbor_loads_t.rename(columns={i:new_index[0]}, inplace=True)
+        
+
     # Connect to local database
     engine = db.engine()
     
@@ -401,5 +410,43 @@ def neighbor_reduction(version="0.0.0"):
         index=True,
         index_label="load_id"
     )
+
+    # writing neighboring loads_t p_sets to etrago tables
     
-    #todo: writing neighboring loads_t p_sets to etrago tables
+    neighbor_loads_t_etrago = pd.DataFrame(
+        columns=['version', 'scn_name', 'temp_id', 'p_set'], 
+        index=neighbor_loads_t.columns)
+    neighbor_loads_t_etrago['version']=version
+    neighbor_loads_t_etrago['scn_name']='eGon100RE'
+    neighbor_loads_t_etrago['temp_id']=1
+    for i in neighbor_loads_t.columns:
+        neighbor_loads_t_etrago['p_set'][i] = neighbor_loads_t[i].values.tolist()
+
+    neighbor_loads_t_etrago.to_sql(
+    "egon_pf_hv_load_timeseries",
+    engine,
+    schema="grid",
+    if_exists="append",
+    index=True,
+    index_label="load_id"
+    )
+
+    
+    # writing neighboring generator_t p_mas_pu to etrago tables
+    neighbor_gens_t_etrago = pd.DataFrame(
+        columns=['version', 'scn_name', 'temp_id', 'p_max_pu'], 
+        index=neighbor_gens_t.columns)
+    neighbor_gens_t_etrago['version']=version
+    neighbor_gens_t_etrago['scn_name']='eGon100RE'
+    neighbor_gens_t_etrago['temp_id']=1
+    for i in neighbor_gens_t.columns:
+        neighbor_gens_t_etrago['p_max_pu'][i] = neighbor_gens_t[i].values.tolist()
+
+    neighbor_gens_t_etrago.to_sql(
+    "egon_pf_hv_generator_timeseries",
+    engine,
+    schema="grid",
+    if_exists="append",
+    index=True,
+    index_label="generator_id"
+    )
