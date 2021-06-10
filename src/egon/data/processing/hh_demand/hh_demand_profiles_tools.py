@@ -307,8 +307,8 @@ def inhabitants_to_households(df_people_by_householdtypes_abs, mapping_people_in
 
     # divide amount of people by people in household types
     df_households_by_type = df_people_by_householdtypes_abs.div(mapping_people_in_households, axis=0)
-    # TODO: check @ Guido
-    # round up households
+    # Number of people gets adjusted to integer values by ceiling
+    # This introduces a small deviation
     df_households_by_type = df_households_by_type.apply(np.ceil)
 
     return df_households_by_type
