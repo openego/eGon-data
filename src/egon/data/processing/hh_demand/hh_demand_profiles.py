@@ -1,6 +1,5 @@
 from egon.data.processing.hh_demand import hh_demand_profiles_tools as hh_tools
 
-
 if __name__ == "__main__":
 
     # Create table with mapping of census cells and household elec. profiles
