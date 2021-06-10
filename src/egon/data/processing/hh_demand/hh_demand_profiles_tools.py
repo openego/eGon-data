@@ -590,10 +590,6 @@ def houseprofiles_in_census_cells():
     df_dist_households = inhabitants_to_households(
         df_hh_types_nad_abs, mapping_people_in_households)
 
-    # TODO:
-    # compare df_dist_households.sum() here with values from other source
-    # maybe scale on state-level
-
     # Retrieve information about households for each census cell
     df_households_typ = db.select_dataframe(sql="""
                     SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
