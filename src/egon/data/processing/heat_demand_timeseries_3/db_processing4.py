@@ -405,8 +405,8 @@ def profile_selector():
     annual_demand = annual_demand_generator()
     #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
     #annual_demand.drop('Temperature_interval',axis=1,inplace=True)
-    #all_temperature_interval = temp_interval()
-    all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
+    all_temperature_interval = temp_interval()
+    #all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
 
     #Temperature_interval = pd.DataFrame(columns = range(365))
     #all_temperature_interval.set_index(index,inplace=True)
@@ -447,8 +447,6 @@ def profile_selector():
 
             result_MFH[day] = np.random.choice(
                 array_MFH, int(annual_demand[annual_demand.Station==station].MFH.sum()))
-
-
 
         result_SFH['zensus_population_id'] = annual_demand[
             annual_demand.Station==station].loc[
