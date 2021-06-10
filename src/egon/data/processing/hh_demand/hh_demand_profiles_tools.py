@@ -88,7 +88,8 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     __tablename__ = "household_electricity_profiles_in_census_cells"
     __table_args__ = {"schema": "demand"}
 
-    cell_id = Column(Integer, primary_key=True)
+    cell_id = Column(String, primary_key=True)
+    grid_id = Column(String)
     cell_profile_ids = Column(ARRAY(String, dimensions=2))
     nuts3 = Column(String)
     nuts1 = Column(String)
@@ -421,23 +422,24 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     """
 
     df_cell_demand_metadata = pd.DataFrame(index=df_zensus_cells.grid_id.unique(),
-                                           columns=['cell_profile_ids', 'nuts3', 'nuts1', 'factor_2035',
+                                           columns=['cell_profile_ids', 'cell_id', 'nuts3', 'nuts1', 'factor_2035',
                                                     'factor_2050', ])
     # 'peak_loads_hh', 'peak_load_cell',
-    df_cell_demand_metadata = df_cell_demand_metadata.rename_axis('cell_id')
+    df_cell_demand_metadata = df_cell_demand_metadata.rename_axis('grid_id')
 
     pool_size = df_profiles.groupby(level=0, axis=1).size()
 
-    for cell_id, df_cell in df_zensus_cells.groupby(by='grid_id'):
+    for grid_id, df_cell in df_zensus_cells.groupby(by='grid_id'):
         # FIXME
-        # ! runden der Haushaltszahlen auf int
+        # ! runden der Haushaltszahlen auf int -> zu einfach!
         # ! kein zurücklegen innerhalb einer Zelle ?! -> das is ok.
         # cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size, df_profiles)
         cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size)
 
-        df_cell_demand_metadata.at[cell_id, 'cell_profile_ids'] = cell_profile_ids
-        df_cell_demand_metadata.at[cell_id, 'nuts3'] = df_cell.loc[:, 'nuts3'].unique()[0]
-        df_cell_demand_metadata.at[cell_id, 'nuts1'] = df_cell.loc[:, 'nuts1'].unique()[0]
+        df_cell_demand_metadata.at[grid_id, 'cell_id'] = df_cell.loc[:, 'cell_id'].unique()[0]
+        df_cell_demand_metadata.at[grid_id, 'cell_profile_ids'] = cell_profile_ids
+        df_cell_demand_metadata.at[grid_id, 'nuts3'] = df_cell.loc[:, 'nuts3'].unique()[0]
+        df_cell_demand_metadata.at[grid_id, 'nuts1'] = df_cell.loc[:, 'nuts1'].unique()[0]
 
     return df_cell_demand_metadata
 
@@ -609,7 +611,7 @@ def houseprofiles_in_census_cells():
 
     # Census cells with nuts3 and nuts1 information
     df_grid_id = db.select_dataframe(sql="""
-                            SELECT pop.grid_id, pop.gid, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
+                            SELECT pop.grid_id, pop.gid as cell_id, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
                             FROM society.destatis_zensus_population_per_ha_inside_germany as pop
                             LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
                             ON (pop.gid=vg250.zensus_population_id)
@@ -621,8 +623,7 @@ def houseprofiles_in_census_cells():
     # Merge household type and size data with considered (populated) census cells
     # how='inner' is used as ids of unpopulated areas are removed df_grid_id or earliers tables. see here:
     # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
-    df_households_typ = pd.merge(df_households_typ, df_grid_id[
-        ['grid_id', 'gen', 'nuts1', 'nuts3']],
+    df_households_typ = pd.merge(df_households_typ, df_grid_id,
                                  left_on='grid_id', right_on='grid_id',
                                  how='inner')
 
@@ -656,6 +657,7 @@ def houseprofiles_in_census_cells():
                                                                 df_profiles)
     df_cell_demand_metadata = adjust_to_demand_regio_nuts3_annual(
         df_cell_demand_metadata, df_profiles, df_demand_regio)
+    df_cell_demand_metadata = df_cell_demand_metadata.reset_index(drop=False)
 
     # Insert data into respective database table
     engine = db.engine()
@@ -699,11 +701,11 @@ def mv_grid_district_HH_electricity_load():
 
     mvgd_profiles_list = []
     for grid_district, data in cells.groupby("subst_id"):
-        mvgd_profile = get_load_timeseries(df_profiles,
-                            data,
-                            data.index,
-                            2035,
-                            peak_load_only=False)
+        mvgd_profile = get_load_timeseries(df_profiles=df_profiles,
+                                           df_cell_demand_metadata=data,
+                                           cell_ids=data.index,
+                                           year=2035,
+                                           peak_load_only=False)
         mvgd_profile.name = grid_district
         mvgd_profiles_list.append(mvgd_profile)
 
