@@ -88,7 +88,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     __tablename__ = "household_electricity_profiles_in_census_cells"
     __table_args__ = {"schema": "demand"}
 
-    cell_id = Column(String, primary_key=True)
+    cell_id = Column(Integer, primary_key=True)
     grid_id = Column(String)
     cell_profile_ids = Column(ARRAY(String, dimensions=2))
     nuts3 = Column(String)
@@ -665,6 +665,7 @@ def houseprofiles_in_census_cells():
                                                              checkfirst=True)
     HouseholdElectricityProfilesInCensusCells.__table__.create(bind=engine,
                                                                checkfirst=True)
+    df_cell_demand_metadata["cell_id"] = df_cell_demand_metadata["cell_id"].astype(int)
     with db.session_scope() as session:
         session.bulk_insert_mappings(HouseholdElectricityProfilesInCensusCells,
                                      df_cell_demand_metadata.to_dict(orient="records"))

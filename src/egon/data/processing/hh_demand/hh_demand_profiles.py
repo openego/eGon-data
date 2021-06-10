@@ -7,7 +7,8 @@ if __name__ == "__main__":
     hh_tools.houseprofiles_in_census_cells()
 
     # Calculate household electricity demand time series for each MV grid
-    hh_tools.mv_grid_district_HH_electricity_load()
+    profiles = hh_tools.mv_grid_district_HH_electricity_load()
+    print(profiles)
 
     # ONLY FOR CHECKING
     # Create table with profiles for each census cell including geom
