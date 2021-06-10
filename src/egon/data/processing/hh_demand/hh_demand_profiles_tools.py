@@ -1,3 +1,41 @@
+"""
+Household electricity demand time series for scenarios in 2035 and 2050
+
+Electricity demand data for households in Germany in 1-hourly resolution for
+an entire year. Spatially, the data is resolved to 100 x 100 m cells and
+provides individual and distinct time series for each household in a cell.
+
+The resulting data is stored in two separate tables
+
+* `demand.household_electricity_profiles_in_census_cells`:
+  Lists references to time series data for each household in a cell by
+  identifiers. This table is fundamental for creating subsequent data like
+  demand profiles on MV grid level or for determining the peak load at load
+  area level.
+* `demand.TABLE_NEEDS_TO_BE_CREATED`:
+  Household electricity demand profiles aggregated at MV grid district level.
+  Primarily used to create the eTraGo data model.
+
+Data is created ...
+# TODO: describe how census data and IEE profiles are used to determine individual HH demand profiles for each cell
+- IEE electricity demand time series as basis
+- Spatial information about households by zensus
+- How are these datasets mapped?
+- What are central assumptions during the data processing?
+- Drawbacks and limitations of the data
+
+The table `demand.household_electricity_profiles_in_census_cells` is created
+by :func:`houseprofiles_in_census_cells`.
+# TODO: reference the function that create the table with HH profiles for each MV grid
+
+Notes
+-----
+
+This module docstring is rather a dataset documentation. Once, a decision
+is made in ... the content of this module docstring needs to be moved to
+docs attribute of the respective dataset class.
+"""
+
 from itertools import cycle
 from pathlib import Path
 from urllib.request import urlretrieve
