@@ -110,6 +110,17 @@ import egon.data.config as config
     show_default=True,
 )
 @click.option(
+    "--processes-per-task",
+    default=1,
+    metavar="N_PROCESS",
+    help=(
+        "Each task can use at maximum N_PROCESS parallel processes. Remember"
+        " that in addition to that, tasks can run in parallel (see N) and"
+        " there's always the scheduler and probably the serverrunning."
+    ),
+    show_default=True,
+)
+@click.option(
     "--docker-container-name",
     default="egon-data-local-database-container",
     metavar="NAME",
