@@ -1,7 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from egon.data import db
-from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
+from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import sessionmaker
@@ -17,7 +17,7 @@ Base = declarative_base()
 class EgonPowerPlants(Base):
     __tablename__ = "egon_power_plants"
     __table_args__ = {"schema": "supply"}
-    id = Column(Integer, Sequence("pp_seq"), primary_key=True)
+    id = Column(BigInteger, Sequence("pp_seq"), primary_key=True)
     sources = Column(JSONB)
     source_id = Column(JSONB)
     carrier = Column(String)
@@ -44,6 +44,10 @@ def create_tables():
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
         {cfg['target']['schema']}.{cfg['target']['table']}"""
+    )
+
+    db.execute_sql(
+        """DROP SEQUENCE IF EXISTS pp_seq"""
     )
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
@@ -304,7 +308,7 @@ def insert_hydro_plants(scenario):
         mastr = scale_prox2now(mastr, target, level=level)
 
         # Choose only entries with valid geometries inside DE/test mode
-        mastr_loc = filter_mastr_geometry(mastr)
+        mastr_loc = filter_mastr_geometry(mastr).set_geometry('geometry')
         # TODO: Deal with power plants without geometry
 
         # Assign bus_id and voltage level
