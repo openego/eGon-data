@@ -136,6 +136,8 @@ Changed
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
   `#243 <https://github.com/openego/eGon-data/issues/243>`_
+* Migrate VG250 to datasets
+  `#283 <https://github.com/openego/eGon-data/issues/283>`_
 
 Bug fixes
 ---------
