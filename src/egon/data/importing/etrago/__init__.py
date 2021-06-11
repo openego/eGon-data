@@ -399,3 +399,30 @@ def create_tables():
     EgonPfHvTempResolution.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
+
+def insert_temp_resolution(version='0.0.0'):
+    """ Insert temporal resolution for etrago
+
+    Returns
+    -------
+    None.
+
+    """
+
+    db.execute_sql(
+        f"""
+        INSERT INTO grid.egon_pf_hv_temp_resolution
+        (version, temp_id, timesteps, resolution, start_time)
+        SELECT '{version}', 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
+        """)
+
+def setup():
+    """ Set up table structure and temporal resolution for etrago
+
+    Returns
+    -------
+    None.
+
+    """
+    create_tables()
+    insert_temp_resolution()
