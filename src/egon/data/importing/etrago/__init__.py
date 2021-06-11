@@ -26,7 +26,7 @@ class EgonPfHvBus(Base):
     y = Column(Float(53))
     geom = Column(Geometry('POINT', 4326), index=True)
 
-    
+
 class EgonPfHvBusTimeseries(Base):
     __tablename__ = 'egon_pf_hv_bus_timeseries'
     __table_args__ = {'schema': 'grid'}
@@ -64,8 +64,8 @@ class EgonPfHvGenerator(Base):
     shut_down_cost = Column(Float(53))
     min_up_time = Column(BigInteger)
     min_down_time = Column(BigInteger)
-    up_time_before = Column(BigInteger)    
-    down_time_before = Column(BigInteger)    
+    up_time_before = Column(BigInteger)
+    down_time_before = Column(BigInteger)
     ramp_limit_up = Column(Float(53))
     ramp_limit_down = Column(Float(53))
     ramp_limit_start_up = Column(Float(53))
@@ -79,7 +79,7 @@ class EgonPfHvGeneratorTimeseries(Base):
     version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
-    temp_id = Column(Integer, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     p_set = Column(ARRAY(Float(precision=53)))
     q_set = Column(ARRAY(Float(precision=53)))
     p_min_pu = Column(ARRAY(Float(precision=53)))
@@ -97,7 +97,7 @@ class EgonPfHvLine(Base):
     bus0 = Column(BigInteger)
     bus1 = Column(BigInteger)
     type = Column(Text)
-    carrier = Column(Text)    
+    carrier = Column(Text)
     x = Column(Numeric)
     r = Column(Numeric)
     g = Column(Numeric)
@@ -126,6 +126,7 @@ class EgonPfHvLineTimeseries(Base):
     version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
 
 
@@ -162,6 +163,7 @@ class EgonPfHvLinkTimeseries(Base):
     version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     p_set = Column(ARRAY(Float(precision=53)))
     p_min_pu = Column(ARRAY(Float(precision=53)))
     p_max_pu = Column(ARRAY(Float(precision=53)))
@@ -191,7 +193,7 @@ class EgonPfHvLoadTimeseries(Base):
     version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
-    temp_id = Column(Integer, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     p_set = Column(ARRAY(Float(precision=53)))
     q_set = Column(ARRAY(Float(precision=53)))
 
@@ -238,7 +240,7 @@ class EgonPfHvStorage(Base):
     efficiency_dispatch = Column(Float(53))
     standing_loss = Column(Float(53))
     inflow_fixed = Column(Float(53))
-    
+
 
 
 class EgonPfHvStorageTimeseries(Base):
@@ -346,6 +348,7 @@ class EgonPfHvTransformerTimeseries(Base):
     version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
 
 
