@@ -528,7 +528,9 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     Defines information about profiles for each zensus cell
 
     A table including the demand profile ids for each cell is created by using
-    :func:`get_cell_demand_profile_ids`.
+    :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled for each cell. The profiles
+    are not replaced to the pool within a cell but after. The number of households are rounded to the nearest integer
+    if float. This results in a small deviation for the course of the aggregated profiles.
 
     Parameters
     ----------
@@ -568,10 +570,11 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     pool_size = df_profiles.groupby(level=0, axis=1).size()
 
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
-        # FIXME
-        # ! runden der Haushaltszahlen auf int -> zu einfach!
-        # ! kein zurücklegen innerhalb einer Zelle ?! -> das is ok.
-        # cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size, df_profiles)
+
+        # random sampling of household profiles for each cell
+        # without replacement within cell but after
+        # number of households are rounded to the nearest integer if float
+        # this results in a small deviation for the course of the aggregated profiles
         cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size)
 
         df_cell_demand_metadata.at[grid_id, "cell_id"] = df_cell.loc[
