@@ -136,6 +136,8 @@ Changed
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
   `#243 <https://github.com/openego/eGon-data/issues/243>`_
+* Allow configuring the airflow port
+  `#281 <https://github.com/openego/eGon-data/issues/281>`_
 
 Bug fixes
 ---------
