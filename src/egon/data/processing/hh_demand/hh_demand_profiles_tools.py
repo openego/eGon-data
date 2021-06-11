@@ -508,7 +508,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     cell_profile_ids = [
         (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
         for hh_type, sq in zip(
-            df_cell["hh_type"], df_cell["hh_10types"].apply(np.rint)
+            df_cell["hh_type"], np.rint(df_cell["hh_10types"].values).astype(int)
         )
     ]
 
