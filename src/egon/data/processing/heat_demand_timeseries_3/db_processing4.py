@@ -399,16 +399,16 @@ def annual_demand_generator():
 
 ##generates dataframe with randomly selected column names from the idp pool
 def profile_selector():
-    #idp_df = idp_df_generator()
-    idp_df = pd.read_pickle(os.path.join(os.getcwd(),'idp_df.pickle'))
+    idp_df = idp_df_generator()
+    #idp_df = pd.read_pickle(os.path.join(os.getcwd(),'idp_df.pickle'))
     #idp_df = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/idp_df.pickle')
     #idp_df = idp_df_sample #####################################to be read from the pgadmin database direclty
-    #annual_demand = annual_demand_generator()
-    annual_demand =  pd.read_pickle(os.path.join(os.getcwd(),'annual_demand.pickle'))
+    annual_demand = annual_demand_generator()
+    #annual_demand =  pd.read_pickle(os.path.join(os.getcwd(),'annual_demand.pickle'))
     #annual_demand = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/annual_demand.pickle')
     #annual_demand.drop('Temperature_interval',axis=1,inplace=True)
-    #all_temperature_interval = temp_interval()
-    all_temperature_interval =  pd.read_pickle(os.path.join(os.getcwd(),'all_temperature_interval.pickle'))
+    all_temperature_interval = temp_interval()
+    #all_temperature_interval =  pd.read_pickle(os.path.join(os.getcwd(),'all_temperature_interval.pickle'))
     #all_temperature_interval = pd.read_pickle(r'/home/student/Documents/egon_AM/heat_demand_generation/Heat_time_series_all_files/phase4/profile_selector_output_12.05/all_temperature_interval.pickle')
 
     #Temperature_interval = pd.DataFrame(columns = range(365))
