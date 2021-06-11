@@ -18,11 +18,51 @@ The resulting data is stored in two separate tables
 
 Data is created ...
 # TODO: describe how census data and IEE profiles are used to determine individual HH demand profiles for each cell
-- IEE electricity demand time series as basis
-- Spatial information about households by zensus
-- How are these datasets mapped?
-- What are central assumptions during the data processing?
-- Drawbacks and limitations of the data
+The following datasets are used:
+* IEE electricity demand time series produced by demand-profile-generator (DPG) as basis
+* Spatial information about people living in households by zensus (2011) at federal state level
+    * type of household (family status)
+    * age
+    * size
+* Spatial information about number of households per ha
+    * type of household (family status, 5 types)
+* mapping of 100 x 100 m cells to NUTS3 and NUTS1
+* Demand-Regio annual household demand at NUTS3 level
+
+What is the goal?
+To use the IEE electricity demand time series at spatial resolution of 100 x 100 m cells.
+
+What is the challenge?
+The IEE electricity demand time series produced by demand-profile-generator (DPG) offer 12 different
+household profile types. To use most of them, the spatial information about the number of households per ha (5 types)
+needs to be enriched by supplementary data to better fit household profile specifications. Hence, 10 out of 12
+different household profile types can be distinguished and used.
+
+How are these datasets mapped?
+* Spatial information about people living in households by zensus (2011) at federal state NUTS1 level
+:var:`df_zensus` is aggregated to be compatible to IEE household profile specifications.
+    * exclude kids and reduce to adults and seniors
+    * group as defined in :var:`HH_TYPES`
+    * convert data from people living in households to number of households by :var:`mapping_people_in_households`
+    * calculate fraction of fine household types (10) within subgroup of rough household types (5) :var:`df_dist_households`
+* Spatial information about number of households per ha :var:`df_households_typ` is mapped to NUTS1 and NUTS3 level.
+Data is enriched with refined household subgroups via :var:`df_dist_households` in :var:`df_zensus_cells`.
+* Enriched 100 x 100 m household dataset is used to sample and aggregate household profiles. A table including
+individual profile id's for each cell and scaling factor to match Demand-Regio annual sum projections for 2035 and 2050
+at NUTS3 level is created in the database as `demand.household_electricity_profiles_in_census_cells`.
+
+What are central assumptions during the data processing?
+* the mapping of zensus data to IEE household types is not trivial. In conversion from persons in household to number of
+households, number of inhabitants for multi-persons households is estimated as weighted average in :var:`OO_factor`
+* the distribution to refine household types at cell level are the same for each federal state
+* refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
+* 100 x 100 m cells are matched to NUTS via centroid location
+* cells with households in unpopulated areas are removed
+
+Drawbacks and limitations of the data
+* the distribution to refine household types at cell level are the same for each federal state
+*
+
 
 The table `demand.household_electricity_profiles_in_census_cells` is created
 by :func:`houseprofiles_in_census_cells`.
@@ -236,7 +276,7 @@ def download_process_zensus_households():
 
     * family type
     * age class
-    * gender
+    * household size
 
     for Germany in spatial resolution of federal states.
 
@@ -244,9 +284,9 @@ def download_process_zensus_households():
     https://ergebnisse2011.zensus2022.de/datenbank/online
     For reproducing data selection, please do:
 
-    * Search for: "1000A-2029"
+    * Search for: "1000A-3016"
     * or choose topic: "Bevölkerung kompakt"
-    * Choose table code: "1000A-2029" with title "Personen: Alter (11 Altersklassen)/Geschlecht/Größe des
+    * Choose table code: "1000A-3016" with title "Personen: Alter (11 Altersklassen) - Größe des
     privaten Haushalts - Typ des privaten Haushalts (nach Familien/Lebensform)"
     - Change setting "GEOLK1" to "Bundesländer (16)"
 
@@ -765,6 +805,12 @@ def houseprofiles_in_census_cells():
         df_hh_types_nad_abs, mapping_people_in_households
     )
 
+    # Calculate fraction of fine household types within subgroup of rough household types
+    for value in MAPPING_ZENSUS_HH_SUBGROUPS.values():
+        df_dist_households.loc[value] = df_dist_households.loc[value].div(
+            df_dist_households.loc[value].sum()
+        )
+
     # Retrieve information about households for each census cell
     df_households_typ = db.select_dataframe(
         sql="""
@@ -778,12 +824,6 @@ def houseprofiles_in_census_cells():
     df_households_typ = df_households_typ.rename(
         columns={"quantity": "hh_5types"}
     )
-
-    # Calculate fraction of persons within subgroup
-    for value in MAPPING_ZENSUS_HH_SUBGROUPS.values():
-        df_dist_households.loc[value] = df_dist_households.loc[value].div(
-            df_dist_households.loc[value].sum()
-        )
 
     # Census cells with nuts3 and nuts1 information
     df_grid_id = db.select_dataframe(
@@ -809,7 +849,8 @@ def houseprofiles_in_census_cells():
         how="inner",
     )
 
-    # Merge Zensus nuts level household data with zensus cell level by dividing hh-groups with mapping_zensus_hh_subgroups
+    # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
+    # by refining hh-groups with MAPPING_ZENSUS_HH_SUBGROUPS
     df_zensus_cells = pd.DataFrame()
     for (country, code), df_country_type in df_households_typ.groupby(
         ["gen", "characteristics_code"]
