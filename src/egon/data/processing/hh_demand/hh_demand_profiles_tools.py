@@ -486,7 +486,8 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     """
     Generates tuple of hh_type and zensus cell ids
 
-    Takes a random sample (without replacement) of profile ids for given cell
+    Takes a random sample (without replacement) of profile ids for given cell.
+    The number of households are rounded to the nearest integer if float.
 
     Parameters
     ----------
