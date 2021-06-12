@@ -426,12 +426,12 @@ def profile_selector():
     # Set seed value to have reproducable results
     np.random.seed(0)
 
-    db.execute_sql("DELETE FROM demand.selected_idp_names;")
+    #db.execute_sql("DELETE FROM demand.selected_idp_names;")
 
     #generates a dataframe with the idp index number of the selected profiles for each temperature
 
     selected_idp_names = pd.DataFrame()
-    length = 0
+    #length = 0
     for station in Temperature_interval.index:
         result_SFH =pd.DataFrame(columns=Temperature_interval.columns)
         result_MFH =pd.DataFrame(columns=Temperature_interval.columns)
@@ -472,17 +472,17 @@ def profile_selector():
         selected_idp_names = selected_idp_names.append(result_MFH)
         selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
         
-        new_length = len(selected_idp_names)
+        #new_length = len(selected_idp_names)
         
-        current_idp = selected_idp_names.iloc[length:new_length,:] 
-        selected_array = pd.DataFrame(index=current_idp.index)
-        selected_array['selected_idp'] =current_idp.values.tolist()
+        # current_idp = selected_idp_names.iloc[length:new_length,:] 
+        # selected_array = pd.DataFrame(index=current_idp.index)
+        # selected_array['selected_idp'] =current_idp.values.tolist()
         
-        selected_array.to_sql(
-            'selected_idp_names',con=db.engine(),
-            schema='demand' ,if_exists ='append', index=True) 
+        # selected_array.to_sql(
+        #     'selected_idp_names',con=db.engine(),
+        #     schema='demand' ,if_exists ='append', index=True) 
         
-        length = new_length
+        #length = new_length
         
     
     return annual_demand, idp_df, selected_idp_names
