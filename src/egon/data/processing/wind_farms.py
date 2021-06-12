@@ -72,8 +72,11 @@ def wind_power_parks():
         wind_farms_state, summary_state = wind_power_states(state_wf,
                           state_wf_ni, state_mv_districts, target_power,
                           scenario_year, source, fed_state)
-        summary_t = summary_t.append(summary_state)
-        farms = farms.append(wind_farms_state)
+        summary_t = summary_t.append(summary_state)  
+    	farms = farms.append(wind_farms_state)
+    
+    summary_t.to_pickle("summary_t.pkl")
+    farms.to_pickle("farms.pkl")
     return (summary_t, farms)
 
 
