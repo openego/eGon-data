@@ -785,9 +785,11 @@ def houseprofiles_in_census_cells():
     """
     Identify household electricity profiles for each census cell
 
+    Creates a table that maps household electricity demand profiles to zensus
+    cells. Each row represents one cell and contains a list of profile IDs.
 
-    Returns
-    -------
+    Use :func:`get_houseprofiles_in_census_cells` to retrieve the data from
+    the database as pandas
 
     """
     # Get demand profiles and zensus household type x age category data
@@ -939,6 +941,18 @@ def houseprofiles_in_census_cells():
 
 
 def get_houseprofiles_in_census_cells():
+    """
+    Retrieve household demand time profile mapping
+
+    See Also
+    --------
+    :func:`houseprofiles_in_census_cells`
+
+    Returns
+    -------
+    pd.DataFrame
+        Mapping of household demand profiles to zensus cells
+    """
     with db.session_scope() as session:
         q = session.query(HouseholdElectricityProfilesInCensusCells)
 
@@ -954,6 +968,18 @@ def get_houseprofiles_in_census_cells():
 
 
 def mv_grid_district_HH_electricity_load():
+    """
+    Aggregated household demand time series at HV/MV substation level
+
+    Calculate the aggregated demand time series based on the demand profiles
+    of each zensus cell inside each MV grid district.
+
+    Returns
+    -------
+    pd.DataFrame
+        Multiindexed dataframe with `timestep` and `subst_id` as indexers.
+        Demand is given in kWh.
+    """
 
     with db.session_scope() as session:
         cells_query = session.query(
