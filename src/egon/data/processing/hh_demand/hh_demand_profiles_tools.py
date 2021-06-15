@@ -81,7 +81,8 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import random
 
-from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String, text
+from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String, \
+    text, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
@@ -188,6 +189,21 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     nuts1 = Column(String)
     factor_2035 = Column(Float)
     factor_2050 = Column(Float)
+
+
+class HouseholdElectricityProfilesHvMvSubstation(Base):
+    __tablename__ = "household_electricity_profiles_hvmv_substation"
+    __table_args__ = {"schema": "demand"}
+
+    index = Column(
+        Integer,
+        Sequence(f"{__tablename__}_id_seq",
+                 schema=f"{ __table_args__['schema']}"),
+        primary_key=True,
+    )
+    subst_id = Column(Integer)
+    timestep = Column(Integer)
+    household_electricity_load = Column(Float)
 
 
 def clean(x):
@@ -960,6 +976,29 @@ def mv_grid_district_HH_electricity_load():
 
     mvgd_profiles = pd.concat(mvgd_profiles_list, axis=1)
 
+    # Add timestep index
+    mvgd_profiles["timestep"] = mvgd_profiles.index + 1
+
+    # Reshape data: put MV grid ids in columns to a single index column
+    mvgd_profiles = mvgd_profiles.set_index("timestep").stack()
+    mvgd_profiles.name = "household_electricity_load"
+    mvgd_profiles.index.names = ["timestep", "subst_id"]
+    mvgd_profiles = mvgd_profiles.reset_index()
+
+    # Insert data into respective database table
+    engine = db.engine()
+    HouseholdElectricityProfilesHvMvSubstation.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    HouseholdElectricityProfilesHvMvSubstation.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            HouseholdElectricityProfilesHvMvSubstation,
+            mvgd_profiles.to_dict(orient="records"),
+        )
     return mvgd_profiles
 
 
