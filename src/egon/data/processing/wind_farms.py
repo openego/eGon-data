@@ -7,18 +7,80 @@ from shapely.geometry import Polygon, LineString, Point, MultiPoint
 
 def wind_power_parks():
     con = db.engine()
-    sql = "SELECT carrier, capacity, scenario_name FROM supply.egon_scenario_capacities"
+    
+    # federal_std has the shapes of the German states
+    sql = "SELECT  gen, gf, nuts, geometry FROM boundaries.vg250_lan"
+    federal_std = gpd.GeoDataFrame.from_postgis(sql, con,
+                                                geom_col= 'geometry',
+                                                crs = 4326)
+    
+    # target_power_df has the expected capacity of each federal state
+    sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities"
     target_power_df = pd.read_sql(sql, con)
+    
+    # mv_districts has geographic info of medium voltage districts in Germany
+    sql= "SELECT geom FROM grid.mv_grid_districts"
+    mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
+    
+    # Delete all the water bodies from the federal states shapes
+    federal_std = federal_std[federal_std['gf'] != 1]
+    federal_std.drop(columns=['gf'], inplace= True)
+    # Filter the potential expected from wind_onshore
     target_power_df = target_power_df[target_power_df['carrier'] == "wind_onshore"]
+    target_power_df.set_index('nuts', inplace=True)
+    target_power_df['geom'] = Point(0,0)
+    
+    # Join the geometries which belong to the same states 
+    for std in target_power_df.index:
+        df = federal_std[federal_std["nuts"] == std]
+        if df.size > 0:
+            target_power_df.at[std, 'name'] = df['gen'].iat[0]
+        else:
+            target_power_df.at[std, 'name'] = np.nan
+        target_power_df.at[std, 'geom'] = df.unary_union
+    target_power_df = gpd.GeoDataFrame(target_power_df,
+                                       geometry = 'geom',
+                                       crs = 4326)
+    target_power_df = target_power_df[target_power_df['capacity'] > 0]
+    target_power_df = target_power_df.to_crs(3035)
+    
+    federal_std.to_file("federal_std.geojson", driver='GeoJSON')
+    
+    # Generate WFs for Germany based on potential areas and existing WFs
+    wf_areas, wf_areas_ni = generate_wind_farms()
+    
+    # Change the columns "geometry" of this GeoDataFrames
+    wf_areas.set_geometry('centroid', inplace= True)
+    wf_areas_ni.set_geometry('centroid', inplace= True)
+    
+    # Create centroids of mv_districts to apply the clip function
+    mv_districts['centroid'] = mv_districts.centroid
+    mv_districts.set_geometry('centroid', inplace= True)
+    
+    summary_t = pd.DataFrame()
+    farms = pd.DataFrame()
+    
+    # Fit wind farms scenarions for each one of the states
     for scenario in target_power_df.index:
+        state_wf = gpd.clip(wf_areas, target_power_df.at[scenario, 'geom'])
+        state_wf_ni = gpd.clip(wf_areas_ni, target_power_df.at[scenario, 'geom'])
+        state_mv_districts = gpd.clip(mv_districts, target_power_df.at[scenario, 'geom'])
         target_power = target_power_df.at[scenario, 'capacity']
         scenario_year = target_power_df.at[scenario, 'scenario_name']
         source =  target_power_df.at[scenario, 'carrier']
-        wind_farms_scenario(target_power, scenario_year, source)
-    return 0
+        fed_state = target_power_df.at[scenario, 'name']
+        wind_farms_state, summary_state = wind_power_states(state_wf,
+                          state_wf_ni, state_mv_districts, target_power,
+                          scenario_year, source, fed_state)
+        summary_t = summary_t.append(summary_state)  
+        farms = farms.append(wind_farms_state)
+    
+    summary_t.to_pickle("summary_t.pkl")
+    farms.to_pickle("farms.pkl")
+    return (summary_t, farms)
 
 
-def wind_farms_scenario(target_power, scenario_year, source):
+def generate_wind_farms():
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
     def filter_current_wf(wf_geometry):
@@ -46,28 +108,12 @@ def wind_farms_scenario(target_power, scenario_year, source):
         except:
             return(np.nan)
     
-    def match_district_se(x):
-        for sub in hvmv_substation.index:
-            if x['geom'].contains(hvmv_substation.at[sub, 'point']):
-                return hvmv_substation.at[sub, 'point']
             
     #Connect to the data base
     con = db.engine()
     sql = "SELECT geom FROM supply.egon_re_potential_area_wind"
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
-    sql= "SELECT geom FROM grid.mv_grid_districts"
-    # mv_districts has geographic info of medium voltage districts in Germany
-    mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
-    sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
-    # hvmv_substation has the information about HV transmission lines in Germany
-    hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col= "point")
-    sql = "SELECT gen, geometry FROM boundaries.vg250_sta"
-    # states has the administrative boundaries of Germany
-    states = gpd.GeoDataFrame.from_postgis(sql, con, geom_col= "geometry")
-    north = ['Schleswig-Holstein', 'Mecklenburg-Vorpommern', 'Niedersachsen']
-    north_states = states[states['gen'].isin(north)].unary_union
-      
     # bus has the connection points of the wind farms
     bus = pd.read_csv('location_elec_generation_raw.csv')
     # Drop all the rows without connection point
@@ -127,6 +173,9 @@ def wind_farms_scenario(target_power, scenario_year, source):
     min_area = 4 * (0.126**2) * np.sqrt(3) 
     wf_areas = wf_areas[wf_areas['area [km²]'] > min_area]
     
+    # Find the centroid of all the suitable potential areas
+    wf_areas['centroid'] = wf_areas.centroid
+    
     # find the potential areas that intersects the convex hulls of current wind farms
     # and assign voltage levels
     wf_areas= wf_areas.to_crs(4326)
@@ -141,7 +190,25 @@ def wind_farms_scenario(target_power, scenario_year, source):
     wf_areas_ni = wf_areas[wf_areas['voltage'] == 'No Intersection']        
     wf_areas = wf_areas[wf_areas['voltage'] != 'No Intersection']
     
-    # Create the centroid of the selected potential areas and assign an installed capacity
+    wf_areas[['geom', 'area [km²]', 'voltage']].to_file("Selected_Pot_areas.geojson", driver='GeoJSON')
+    return wf_areas, wf_areas_ni
+    
+    
+    
+def wind_power_states(state_wf, state_wf_ni, state_mv_districts,
+                          target_power, scenario_year, source, fed_state):
+    
+    def match_district_se(x):
+        for sub in hvmv_substation.index:
+            if x['geom'].contains(hvmv_substation.at[sub, 'point']):
+                return hvmv_substation.at[sub, 'point']
+    
+    con = db.engine()
+    sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
+    # hvmv_substation has the information about HV transmission lines in Germany
+    hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col= "point")
+    
+    # Set wind potential depending on geographical location
     power_north = 21.05 #MW/km²
     power_south = 16.81 #MW/km²
     # Set a maximum installed capacity to limit the power of big potential areas
@@ -151,23 +218,26 @@ def wind_farms_scenario(target_power, scenario_year, source):
     # allows its connection to HV.
     max_dist_hv = 20000 # in meters
     
-    wf_areas['centroid'] = wf_areas.centroid
-    wf_areas['north'] = wf_areas['centroid'].within(north_states)
-    wf_areas['inst capacity [MW]'] = wf_areas.apply(
-        lambda x: power_north*x['area [km²]']
-        if x['north'] == True
-        else power_south*x['area [km²]'], axis= 1)
+    summary = pd.DataFrame(columns= ['state', 'target',
+                                     'from existin WF', 'MV districts'])
+    north = ['Schleswig-Holstein', 'Mecklenburg-Vorpommern', 'Niedersachsen',
+             'Bremen', 'Hamburg']
     
-    wf_areas.drop(columns= ['north'], inplace= True)
-     
+
+    
+    if fed_state in north: 
+        state_wf['inst capacity [MW]'] = power_north * state_wf['area [km²]']
+    else:
+        state_wf['inst capacity [MW]'] = power_south * state_wf['area [km²]']
+
     # Divide selected areas based on voltage of connection points
-    wf_mv = wf_areas[(wf_areas['voltage'] != 'Hochspannung') &
-                     (wf_areas['voltage'] != 'Hoechstspannung') &
-                     (wf_areas['voltage'] != 'UmspannungZurHochspannung')]
+    wf_mv = state_wf[(state_wf['voltage'] != 'Hochspannung') &
+                     (state_wf['voltage'] != 'Hoechstspannung') &
+                     (state_wf['voltage'] != 'UmspannungZurHochspannung')]
     
-    wf_hv = wf_areas[(wf_areas['voltage'] == 'Hochspannung') |
-                     (wf_areas['voltage'] == 'Hoechstspannung') |
-                     (wf_areas['voltage'] == 'UmspannungZurHochspannung')]
+    wf_hv = state_wf[(state_wf['voltage'] == 'Hochspannung') |
+                     (state_wf['voltage'] == 'Hoechstspannung') |
+                     (state_wf['voltage'] == 'UmspannungZurHochspannung')]
     
     # Wind farms connected to MV network will be connected to HV network if the distance
     # to the closest HV substation is =< max_dist_hv, and the installed capacity
@@ -177,7 +247,7 @@ def wind_farms_scenario(target_power, scenario_year, source):
         lambda x: int(x.split(';')[0]))
     hv_substations = hvmv_substation[hvmv_substation['voltage'] >= 110000]
     hv_substations = hv_substations.unary_union # join all the hv_substations
-    wf_mv['dist_to_HV'] = wf_areas['geom'].to_crs(3035).distance(hv_substations)
+    wf_mv['dist_to_HV'] = state_wf['geom'].to_crs(3035).distance(hv_substations)
     wf_mv_to_hv = wf_mv[(wf_mv['dist_to_HV'] <= max_dist_hv) &
                         (wf_mv['inst capacity [MW]'] >= max_power_mv)]
     wf_mv_to_hv = wf_mv_to_hv.drop(columns= ['dist_to_HV'])
@@ -194,6 +264,8 @@ def wind_farms_scenario(target_power, scenario_year, source):
     wf_mv['inst capacity [MW]'] = wf_mv['inst capacity [MW]'].apply(
         lambda x: x if x < max_power_mv else max_power_mv)
     
+    
+    
     wind_farms= wf_hv.append(wf_mv)
     
     # write in a csv file the resuts for revision
@@ -206,27 +278,40 @@ def wind_farms_scenario(target_power, scenario_year, source):
         wf_mv['inst capacity [MW]'] = wf_mv['inst capacity [MW]'] * scale_factor
         wf_hv['inst capacity [MW]'] = wf_hv['inst capacity [MW]'] * scale_factor
         wind_farms= wf_hv.append(wf_mv)
-    
+        summary = summary.append({'state': fed_state,
+                                 'target': target_power,
+                                 'from existin WF': wind_farms['inst capacity [MW]'].sum(),
+                                 'MV districts': 0},
+                                 ignore_index= True)
     else:
-        wf_areas_ni['centroid'] = wf_areas_ni.to_crs(3035).centroid
-        wf_areas_ni = wf_areas_ni.set_geometry('centroid')
+        #state_wf_ni['centroid'] = state_wf_ni.to_crs(3035).centroid
+        #state_wf_ni = state_wf_ni.set_geometry('centroid')
         #wf_areas_ni['centroid'].to_file("centroid_districs.geojson", driver='GeoJSON')
         #wf_areas_ni['geom'].to_file("restastes pa.geojson", driver='GeoJSON')
-        extra_wf = mv_districts.copy()
+        extra_wf = state_mv_districts.copy()
+        extra_wf = extra_wf.drop(columns= ['centroid'])
         # the column centroid has the coordinates of the substation corresponting
         # to each mv_grid_district
         extra_wf['centroid'] = extra_wf.apply(match_district_se, axis = 1)
         extra_wf = extra_wf.set_geometry("centroid")
         extra_wf['area [km²]'] = 0.0
         for district in extra_wf.index:
-            pot_area_district = gpd.clip(wf_areas_ni, extra_wf.at[district, 'geom'])
-            extra_wf.at[district, 'area [km²]'] = pot_area_district['area [km²]'].sum()
-        extra_wf = extra_wf.to_crs(4326)
+            try:
+                pot_area_district = gpd.clip(state_wf_ni, extra_wf.at[district, 'geom'])
+                extra_wf.at[district, 'area [km²]'] = pot_area_district['area [km²]'].sum()
+            except:
+                print(district)
+        #extra_wf = extra_wf.to_crs(4326)
         extra_wf = extra_wf[extra_wf['area [km²]'] != 0]
         total_new_area = extra_wf['area [km²]'].sum()
         scale_factor = (target_power - total_wind_power) / total_new_area
         extra_wf['inst capacity [MW]'] = extra_wf['area [km²]'] * scale_factor
-        extra_wf['voltage'] = 'Hochspannung'    
+        extra_wf['voltage'] = 'Hochspannung'
+        summary = summary.append({'state': fed_state,
+                                 'target': target_power,
+                                 'from existin WF': wind_farms['inst capacity [MW]'].sum(),
+                                 'MV districts': extra_wf['inst capacity [MW]'].sum()},
+                                 ignore_index= True)
         wind_farms = wind_farms.append(extra_wf, ignore_index= True) 
     
     # Use Definition of thresholds for voltage level assignment
@@ -286,7 +371,7 @@ def wind_farms_scenario(target_power, scenario_year, source):
                                schema='supply',
                                con=db.engine(),
                                if_exists='append')
-    return wind_farms
+    return wind_farms, summary
 
 
 """
