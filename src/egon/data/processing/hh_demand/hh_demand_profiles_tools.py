@@ -94,8 +94,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import random
 
-from sqlalchemy import ARRAY, Column, Float, Integer, String, \
-    Sequence
+from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
@@ -201,19 +200,16 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     factor_2050 = Column(Float)
 
 
-class HouseholdElectricityProfilesHvMvSubstation(Base):
-    __tablename__ = "household_electricity_profiles_hvmv_substation"
+class EgonEtragoElectricityHouseholds(Base):
+    __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
 
-    index = Column(
-        Integer,
-        Sequence(f"{__tablename__}_id_seq",
-                 schema=f"{ __table_args__['schema']}"),
-        primary_key=True,
-    )
-    subst_id = Column(Integer)
-    timestep = Column(Integer)
-    household_electricity_load = Column(Float)
+    version = Column(String, primary_key=True)
+    subst_id = Column(Integer, primary_key=True)
+    scn_name = Column(String, primary_key=True)
+    p_set = Column(ARRAY(Float))
+    q_set = Column(ARRAY(Float))
+
 
 
 def clean(x):
@@ -964,12 +960,24 @@ def get_houseprofiles_in_census_cells():
     return census_profile_mapping
 
 
-def mv_grid_district_HH_electricity_load():
+def mv_grid_district_HH_electricity_load(scenario_name, scenario_year, version, drop_table=False):
     """
     Aggregated household demand time series at HV/MV substation level
 
     Calculate the aggregated demand time series based on the demand profiles
     of each zensus cell inside each MV grid district.
+
+    Parameters
+    ----------
+    scenario_name: str
+        Scenario name identifier, i.e. "eGon2035"
+    scenario_year: int
+        Scenario year according to `scenario_name`
+    version: str
+        Version identifier
+    drop_table: bool
+        Toggle to True for dropping table at beginning of this function.
+        Be careful, delete any data.
 
     Returns
     -------
@@ -977,6 +985,14 @@ def mv_grid_district_HH_electricity_load():
         Multiindexed dataframe with `timestep` and `subst_id` as indexers.
         Demand is given in kWh.
     """
+    engine = db.engine()
+    if drop_table:
+        EgonEtragoElectricityHouseholds.__table__.drop(
+            bind=engine, checkfirst=True
+        )
+    EgonEtragoElectricityHouseholds.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
     with db.session_scope() as session:
         cells_query = session.query(
@@ -998,41 +1014,30 @@ def mv_grid_district_HH_electricity_load():
     # Create aggregated load profile for each MV grid district
     df_profiles = get_household_demand_profiles_raw()
 
-    mvgd_profiles_list = []
+    mvgd_profiles_dict = {}
     for grid_district, data in cells.groupby("subst_id"):
         mvgd_profile = get_load_timeseries(
             df_profiles=df_profiles,
             df_cell_demand_metadata=data,
             cell_ids=data.index,
-            year=2035,
+            year=scenario_year,
             peak_load_only=False,
         )
-        mvgd_profile.name = grid_district
-        mvgd_profiles_list.append(mvgd_profile)
-
-    mvgd_profiles = pd.concat(mvgd_profiles_list, axis=1)
-
-    # Add timestep index
-    mvgd_profiles["timestep"] = mvgd_profiles.index + 1
+        mvgd_profiles_dict[grid_district] = [mvgd_profile.to_list()]
+    mvgd_profiles = pd.DataFrame.from_dict(mvgd_profiles_dict, orient="index")
 
     # Reshape data: put MV grid ids in columns to a single index column
-    mvgd_profiles = mvgd_profiles.set_index("timestep").stack()
-    mvgd_profiles.name = "household_electricity_load"
-    mvgd_profiles.index.names = ["timestep", "subst_id"]
     mvgd_profiles = mvgd_profiles.reset_index()
+    mvgd_profiles.columns = ["subst_id", "p_set"]
+
+    # Add remaining columns
+    mvgd_profiles["version"] = version
+    mvgd_profiles["scn_name"] = scenario_name
 
     # Insert data into respective database table
-    engine = db.engine()
-    HouseholdElectricityProfilesHvMvSubstation.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    HouseholdElectricityProfilesHvMvSubstation.__table__.create(
-        bind=engine, checkfirst=True
-    )
-
     with db.session_scope() as session:
         session.bulk_insert_mappings(
-            HouseholdElectricityProfilesHvMvSubstation,
+            EgonEtragoElectricityHouseholds,
             mvgd_profiles.to_dict(orient="records"),
         )
 
