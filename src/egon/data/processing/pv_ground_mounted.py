@@ -10,6 +10,8 @@ import numpy as np
 ###
 import datetime
 
+# TODO: 
+# delete examination stuff / add it as parameter, eg plot=True
 
 def regio_of_pv_ground_mounted():
     
@@ -401,6 +403,10 @@ def regio_of_pv_ground_mounted():
         centroids['geom'] = centroids['geom'].centroid
 
         overlay = gpd.sjoin(centroids, distr)
+        
+        #####
+        
+        #####
 
         for index, dist in distr.iterrows():
             pots = overlay[overlay['index_right']==index]['geom'].index
