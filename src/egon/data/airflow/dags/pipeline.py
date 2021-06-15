@@ -287,7 +287,7 @@ with airflow.DAG(
     # setting etrago input tables
     etrago_input_data = PythonOperator(
         task_id="setting-etrago-input-tables",
-        python_callable=etrago.create_tables,
+        python_callable=etrago.setup,
     )
     setup >> etrago_input_data
 
