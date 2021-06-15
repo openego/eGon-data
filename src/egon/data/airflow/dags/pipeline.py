@@ -37,6 +37,7 @@ import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
+import egon.data.processing.dsm.cts as dsm_cts
 
 from egon.data import db
 
@@ -562,3 +563,10 @@ with airflow.DAG(
     nep_insert_data >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+    
+    # DSM for CTS
+    components_dsm_cts =  PythonOperator(
+        task_id="components_dsm_cts",
+        python_callable=dsm_cts.dsm_cts_processing,
+    )
+    electrical_load_curves_cts >> components_dsm_cts
