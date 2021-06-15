@@ -4,6 +4,7 @@ Household electricity demand time series for scenarios in 2035 and 2050
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
 provides individual and distinct time series for each household in a cell.
+The cells are defined by the dataset Zensus 2011.
 
 The resulting data is stored in two separate tables
 
@@ -11,62 +12,74 @@ The resulting data is stored in two separate tables
   Lists references and scaling parameters to time series data for each household in a cell by
   identifiers. This table is fundamental for creating subsequent data like
   demand profiles on MV grid level or for determining the peak load at load
-  area level.
-* `demand.TABLE_NEEDS_TO_BE_CREATED`:
+  area level. The table is created by :func:`houseprofiles_in_census_cells`.
+* `demand.household_electricity_profiles_hvmv_substation`:
   Household electricity demand profiles aggregated at MV grid district level.
   Primarily used to create the eTraGo data model.
+  The table is created with :func:`mv_grid_district_HH_electricity_load`.
 
-Data is created ...
-# TODO: describe how census data and IEE profiles are used to determine individual HH demand profiles for each cell
-The following datasets are used:
-* IEE electricity demand time series produced by demand-profile-generator (DPG) as basis
-* Spatial information about people living in households by zensus (2011) at federal state level
+The following datasets are used for creating the data:
+
+* Electricity demand time series for household categories
+  produced by demand profile generator (DPG) from Fraunhofer IEE
+  (see :func:`get_household_demand_profiles_raw`)
+* Spatial information about people living in households by Zensus 2011 at
+  federal state level
     * type of household (family status)
     * age
     * size
-* Spatial information about number of households per ha
-    * type of household (family status, 5 types)
-* mapping of 100 x 100 m cells to NUTS3 and NUTS1
+* Spatial information about number of households per ha, categorized by type
+  of household (family status) with 5 categories (also from Zensus 2011)
 * Demand-Regio annual household demand at NUTS3 level
 
-What is the goal?
-To use the IEE electricity demand time series at spatial resolution of 100 x 100 m cells.
+**What is the goal?**
 
-What is the challenge?
-The IEE electricity demand time series produced by demand-profile-generator (DPG) offer 12 different
-household profile types. To use most of them, the spatial information about the number of households per ha (5 types)
-needs to be enriched by supplementary data to better fit household profile specifications. Hence, 10 out of 12
-different household profile types can be distinguished and used.
+To use the electricity demand time series from the `demand profile generator`
+to created spatially reference household demand time series for Germany at a
+resolution of 100 x 100 m cells.
 
-How are these datasets mapped?
+**What is the challenge?**
+
+The electricity demand time series produced by demand profile generator offer
+12 different household profile categories.
+To use most of them, the spatial information about the number of households
+per cell (5 categories) needs to be enriched by supplementary data to match
+the household demand profile categories specifications. Hence, 10 out of 12
+different household profile categories can be distinguished and by increasing
+the number of categories of cell-level household data.
+
+**How are these datasets combined?**
+
 * Spatial information about people living in households by zensus (2011) at federal state NUTS1 level
-:var:`df_zensus` is aggregated to be compatible to IEE household profile specifications.
+ :var:`df_zensus` is aggregated to be compatible to IEE household profile specifications.
     * exclude kids and reduce to adults and seniors
     * group as defined in :var:`HH_TYPES`
     * convert data from people living in households to number of households by :var:`mapping_people_in_households`
     * calculate fraction of fine household types (10) within subgroup of rough household types (5) :var:`df_dist_households`
 * Spatial information about number of households per ha :var:`df_households_typ` is mapped to NUTS1 and NUTS3 level.
-Data is enriched with refined household subgroups via :var:`df_dist_households` in :var:`df_zensus_cells`.
+  Data is enriched with refined household subgroups via :var:`df_dist_households` in :var:`df_zensus_cells`.
 * Enriched 100 x 100 m household dataset is used to sample and aggregate household profiles. A table including
-individual profile id's for each cell and scaling factor to match Demand-Regio annual sum projections for 2035 and 2050
-at NUTS3 level is created in the database as `demand.household_electricity_profiles_in_census_cells`.
+  individual profile id's for each cell and scaling factor to match Demand-Regio annual sum projections for 2035 and 2050
+  at NUTS3 level is created in the database as `demand.household_electricity_profiles_in_census_cells`.
 
-What are central assumptions during the data processing?
-* the mapping of zensus data to IEE household types is not trivial. In conversion from persons in household to number of
-households, number of inhabitants for multi-persons households is estimated as weighted average in :var:`OO_factor`
+**What are central assumptions during the data processing?**
+
+* mapping zensus data to IEE household categories is not trivial. In
+  conversion from persons in household to number of
+  households, number of inhabitants for multi-person households is estimated
+  as weighted average in :var:`OO_factor`
 * the distribution to refine household types at cell level are the same for each federal state
 * refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
 * 100 x 100 m cells are matched to NUTS via centroid location
 * cells with households in unpopulated areas are removed
 
-Drawbacks and limitations of the data
-* the distribution to refine household types at cell level are the same for each federal state
-*
+**Drawbacks and limitations of the data**
 
+* the distribution to refine household types at cell level are the same for
+  each federal state
+* Household profiles aggregated annual demand matches Demand Regio demand at
+  NUTS-3 level, but it is not matching the demand regio time series profile
 
-The table `demand.household_electricity_profiles_in_census_cells` is created
-by :func:`houseprofiles_in_census_cells`.
-# TODO: reference the function that create the table with HH profiles for each MV grid
 
 Notes
 -----
@@ -999,6 +1012,7 @@ def mv_grid_district_HH_electricity_load():
             HouseholdElectricityProfilesHvMvSubstation,
             mvgd_profiles.to_dict(orient="records"),
         )
+
     return mvgd_profiles
 
 
