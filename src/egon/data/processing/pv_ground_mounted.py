@@ -15,6 +15,8 @@ def regio_of_pv_ground_mounted():
     
     
     def mastr_existing_pv(path, pow_per_area):
+        
+        ### mastr = gpd.read_file('mastr.csv')
 
         # import MaStR data: locations, grid levels and installed capacities
 
@@ -400,7 +402,7 @@ def regio_of_pv_ground_mounted():
 
         overlay = gpd.sjoin(centroids, distr)
 
-        for index, distr in distr.iterrows():
+        for index, dist in distr.iterrows():
             pots = overlay[overlay['index_right']==index]['geom'].index
             p = gpd.GeoSeries(index=pots)
             for i in pots:
@@ -413,7 +415,7 @@ def regio_of_pv_ground_mounted():
 
         # calculate centroid
         pv_per_distr['centroid'] = pv_per_distr['geom'].centroid
-
+        
         return pv_per_distr
 
 
@@ -457,7 +459,7 @@ def regio_of_pv_ground_mounted():
             # build pv parks in potential areas road & railway
             pv_per_distr_i = build_additional_pv(potentials_rora_i, pv_rora_i, pow_per_area, con)
             # change index to add different Dataframes in the end
-            pv_per_distr_i['grid_district']=pv_per_distr_i.index
+            pv_per_distr_i['grid_district']=pv_per_distr_i.index.copy()
             pv_per_distr_i.index = range(0,len(pv_per_distr_i))
             # delete empty grid districts
             index_names = pv_per_distr_i[pv_per_distr_i['installed capacity in kW'] == 0.0 ].index
@@ -696,6 +698,37 @@ def regio_of_pv_ground_mounted():
             pv_agri = pv_agri.append(agri_i)
             if len(distr_i) > 0:
                 pv_per_distr = pv_per_distr.append(distr_i)
+                
+        #####
+        
+        # get MV grid districts
+        sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+        distr = gpd.GeoDataFrame.from_postgis(sql, con)
+        distr = distr.set_index("subst_id")
+        
+        distr['capacity'] = pd.Series()
+        for index, row in distr.iterrows():
+            if index in np.unique(pv_per_distr['grid_district']):
+                pv = pv_per_distr[pv_per_distr['grid_district']==index]
+                x = pv['installed capacity in kW'].iloc[0]
+                distr['capacity'].loc[index] = x
+            else:
+                distr['capacity'].loc[index] = 0
+        distr['capacity'] = distr['capacity'] / 1000
+        
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots(1,1)
+        distr.boundary.plot(linewidth=0.2,ax=ax, color='black')
+        distr.plot(
+            ax=ax,
+            column = 'capacity',
+            cmap='magma_r',
+            legend=True,
+            legend_kwds={'label': f"Installed capacity in MW",
+                                 'orientation': "vertical"})
+        plt.savefig('pv_per_distr_map.png', dpi=300)
+        
+        #####
 
         # 2) scenario: eGon100RE
 
