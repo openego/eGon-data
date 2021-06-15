@@ -4,13 +4,11 @@ import psycopg2
 import pandas as pd
 import numpy as np
 
-# letzte TODOS bis Prüfung
-# p_nom & e_nom abändern auf Maximalwerte
-# einfügen der Zeile in temp_resolution
-# temp_id nach temp_resolution in stores & links (für links neuer branch)
-# geopandas notwendig für buses-geom?
-    
-# TODO: deltaT korrekt in Formeln einfügen, so als Parameter nutzbar
+# TODO: temp_id = 1 aus Tabellen auslesen oder ienfach so festlegen?
+
+# TODO: geopandas notwendig für buses-geom?   
+
+# TODO:  delta_t korrekt in Formeln einfügen, so als Parameter nutzbar
 
 # TODO: eindeutige Identifikation mitschleppen, zB original Bus?
 
@@ -100,7 +98,10 @@ def dsm_cts_processing():
             lamb = lam.loc[index]
             p = []
             for item in liste:
-                p.append(lamb*s_inc-item)
+                value = lamb*s_inc-item
+                if value < 0:
+                    value = 0
+                p.append(value)
             p_max.loc[index] = p
             
         # P_min
@@ -109,7 +110,10 @@ def dsm_cts_processing():
             lamb = lam.loc[index]
             p = []
             for item in liste:
-                p.append(-(item-lamb*s_dec))
+                value = -(item-lamb*s_dec)
+                if value > 0:
+                    value = 0
+                p.append(value)
             p_min.loc[index] = p
             
         # calculation of E_max and E_min
@@ -128,9 +132,43 @@ def dsm_cts_processing():
                     e.append(liste[i-1])
             e_min.loc[index] = e
             
+# =============================================================================
+#         e_max = scheduled_load.copy()
+#         e_min = scheduled_load.copy()
+#           
+#         for index, liste in scheduled_load.iteritems():
+#             for i in range(0,len(liste)):
+#                 if i+delta_t >= len(liste)-1:
+#                     e_max.loc[index][i] = sum(liste[i:len(liste)-1]+sum(liste[0:delta_t-(len(liste)-1-i)])
+#                 else:
+#                     e_max.loc[index][i] = sum(liste[i:i+delta_t])
+#                 e_min.loc[index][i] = -1*sum(liste[i-delta_t:i])
+# =============================================================================
+            
         return p_max, p_min, e_max, e_min
+
     
     def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
+        
+        # calculate P_nom and P per unit 
+        p_nom = pd.Series(index=p_max.index)
+        for index, row in p_max.iteritems():
+             nom = max(max(row),abs(min(p_min.loc[index])))
+             p_nom.loc[index] = nom
+             new = [element * nom for element in row]
+             p_max.loc[index] = new
+             new = [element * nom for element in p_min.loc[index]]
+             p_min.loc[index] = new
+        
+        # calculate E_nom and E per unit
+        e_nom = pd.Series(index=p_min.index)
+        for index, row in e_max.iteritems():
+            nom = max(max(row),abs(min(e_min.loc[index])))
+            e_nom.loc[index] = nom
+            new = [element * nom for element in row]
+            e_max.loc[index] = new
+            new = [element * nom for element in e_min.loc[index]]
+            e_min.loc[index] = new        
         
         # add DSM-buses to "original" buses
         
@@ -196,7 +234,7 @@ def dsm_cts_processing():
         dsm_links['link_id'] = link_id   
         
         # timeseries
-        dsm_links['p_nom'] = 1
+        dsm_links['p_nom'] = p_nom
         dsm_links['p_min'] = p_min
         dsm_links['p_max'] = p_max
         
@@ -219,7 +257,7 @@ def dsm_cts_processing():
         dsm_stores['store_id'] = store_id  
         
         # timeseries
-        dsm_stores['e_nom'] = 1
+        dsm_stores['e_nom'] = e_nom
         dsm_stores['e_min'] = e_min
         dsm_stores['e_max'] = e_max
         
@@ -271,6 +309,7 @@ def dsm_cts_processing():
         insert_links_timeseries['link_id'] = dsm_links['link_id']
         insert_links_timeseries['p_min_pu'] = dsm_links['p_min']
         insert_links_timeseries['p_max_pu'] = dsm_links['p_max']
+        insert_links_timeseries['temp_id'] = 1
         
         # insert into database
         insert_links_timeseries.to_sql('egon_pf_hv_link_timeseries',
@@ -302,6 +341,7 @@ def dsm_cts_processing():
         insert_stores_timeseries['store_id'] = dsm_stores['store_id']
         insert_stores_timeseries['e_min_pu'] = dsm_stores['e_min']
         insert_stores_timeseries['e_max_pu'] = dsm_stores['e_max']
+        insert_stores_timeseries['temp_id'] = 1
         
         # insert into database
         insert_stores_timeseries.to_sql('egon_pf_hv_store_timeseries',
@@ -312,17 +352,17 @@ def dsm_cts_processing():
     
     ### PARAMETERS ###
     
-    #con = db.engine()
+    con = db.engine()
     
     '''l = pd.read_csv('egon.-Daten/grid_egon_pf_hv_load.csv')
     
     t = pd.read_csv('egon.-Daten/grid_egon_pf_hv_load_timeseries.csv')'''
     
-    con = psycopg2.connect(host = "127.0.0.1",
+    '''con = psycopg2.connect(host = "127.0.0.1",
                                    database = "SH",
                                    user = "egon",
                                    password = "data",
-                                   port= 59734)
+                                   port= 59734)'''
     
     # share of air conditioning, cooling and ventilation in CTS
     cts_share = 0.22
