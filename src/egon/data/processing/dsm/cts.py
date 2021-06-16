@@ -354,16 +354,6 @@ def dsm_cts_processing():
     
     con = db.engine()
     
-    '''l = pd.read_csv('egon.-Daten/grid_egon_pf_hv_load.csv')
-    
-    t = pd.read_csv('egon.-Daten/grid_egon_pf_hv_load_timeseries.csv')'''
-    
-    '''con = psycopg2.connect(host = "127.0.0.1",
-                                   database = "SH",
-                                   user = "egon",
-                                   password = "data",
-                                   port= 59734)'''
-    
     # share of air conditioning, cooling and ventilation in CTS
     cts_share = 0.22
     
