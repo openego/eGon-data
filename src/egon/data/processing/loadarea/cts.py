@@ -128,19 +128,19 @@ def loadarea_peak_load(scenario):
     load_areas_polygons = gpd.GeoDataFrame(
         geometry=load_area_polygons_tmp, crs=3035
     )
-
+    load_areas_polygons = load_areas_polygons.explode().reset_index().drop(["level_0", "level_1"],
+                                                     axis=1)
     load_areas_tmp = gpd.GeoDataFrame(
         gpd.sjoin(
-            cts_peak_loads_cells, load_areas_polygons, how="right", op="within"
+            cts_peak_loads_cells, load_areas_polygons, how="right", op="intersects"
         ).reset_index()
     )
+
     load_areas = load_areas_tmp.dissolve(
         by="index",
         aggfunc={"peak_load": "sum", "demand": "sum", "subst_id": "first"},
     )
-    load_areas = (
-        load_areas.explode().reset_index().drop(["index", "level_1"], axis=1)
-    )
+
     load_areas.to_postgis(
         LoadAreaCTS.__tablename__,
         engine,
