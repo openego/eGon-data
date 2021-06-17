@@ -52,6 +52,13 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     weather_data = pd.DataFrame(weather_data,
                                 columns= ['hour', 'lat', 'lon', 'wind_s', 'temp'])
     
+    # Filter coordinates out of Germany
+    weather_data = weather_data[weather_data['lat'] >= 46.0]
+    weather_data = weather_data[weather_data['lat'] <= 56.0]
+    weather_data = weather_data[weather_data['lon'] >= 5.0]
+    weather_data = weather_data[weather_data['lon'] <= 16.0]   
+    
+    
     region_selec = weather_data[0:index['x'].size*index['y'].size].copy()
     region_selec['geom'] = region_selec.apply(lambda x: Point(x['lon'], x['lat']), axis= 1)
     region_selec = gpd.GeoDataFrame(region_selec)
@@ -166,8 +173,11 @@ def Calculate_DLR():
     
     #Connect to the data base
     con = db.engine()
+    ############### TO WORK WITH eGon-Data ####################################
     sql = 'SELECT version, scn_name, line_id, geom, s_nom FROM grid.egon_pf_hv_line'
     df = gpd.GeoDataFrame.from_postgis(sql, con, crs = "EPSG:4326")
+    ############### TO WORK WITH eGon-Data ####################################
+    
     
     ############### TO WORK WITH eTraGo ######################################
     #df = gpd.read_file('grid_egon_pf_hv_lines/grid_egon_pf_hv_lines.shp')
@@ -179,7 +189,16 @@ def Calculate_DLR():
         trans_lines_R[i] = gpd.clip(df, shape_area)       
     trans_lines= df[["s_nom"]]
     trans_lines["in_regions"] = [[] for i in range(len(df))]
-    trans_lines[['line_id', 'geometry']]= df[['line_id', 'geometry']]
+    
+    ############### TO WORK WITH eGon-Data ####################################
+    trans_lines[['line_id', 'geometry', 'version', 'scn_name']] = df[[
+        'line_id', 'geom', 'version', 'scn_name']]
+    ############### TO WORK WITH eGon-Data ####################################
+    
+    ############### TO WORK WITH eTraGo ######################################
+    #trans_lines[['line_id', 'geometry', 'version', 'scn_name']] = df[[
+    #    'line_id', 'geometry', 'version', 'scn_name']]
+    ############### TO WORK WITH eTraGo ######################################
     
     # Assign to each transmission line the region to which it belongs
     for i in trans_lines_R:
@@ -217,12 +236,13 @@ def Calculate_DLR():
     trans_lines["s_max_pu"] = DLR
 
     # write in a csv file the resuts for revision
-    trans_lines.to_pickle('DLR.pkl')
-    trans_lines.to_csv("DLR.csv")
+    trans_lines.to_pickle('DLR_to check.pkl')
     
     #delete unnecessary columns
-    trans_lines.drop(columns= ["in_regions", "s_nom"], inplace= True)
-
+    trans_lines.drop(columns= ["in_regions", "s_nom", "geometry"], inplace= True)
+    # write in a csv file the resuts for eTraGo input
+    trans_lines.to_csv("DLR.csv")
+    
     # Modify column "s_max_pu" to fit the requirement of the table
     trans_lines["s_max_pu"] = trans_lines.apply(
         lambda x: list(x["s_max_pu"]), axis= 1)
@@ -234,28 +254,6 @@ def Calculate_DLR():
                                con=db.engine(),
                                if_exists='append')
     return 0
-    
-"""    
-    #def write_table(id, values):
-    for id_line in trans_lines.index:
-        con = psycopg2.connect(host = db.credentials()['HOST'],
-                               database = db.credentials()['POSTGRES_DB'],
-                               user = db.credentials()['POSTGRES_USER'],
-                               password = db.credentials()['POSTGRES_PASSWORD'],
-                               port = db.credentials()['PORT']) 
-        cur = con.cursor()
-        sql = '''insert into grid.egon_pf_hv_line_timeseries
-        (version, scn_name, line_id, s_max_pu) 
-        values (%s, %s, %s, %s)'''      
-        cur.execute(sql, (trans_lines.loc[id_line][2],
-                          trans_lines.loc[id_line][3],
-                          id_line,
-                          list(trans_lines.loc[id_line][4])))
-        con.commit()
-        cur.close()
-"""    
-    
-
 
 
 
