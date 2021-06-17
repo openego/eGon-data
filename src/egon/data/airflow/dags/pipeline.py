@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets import Dataset
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -37,6 +38,7 @@ import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
+import egon.data.processing.hh_demand.hh_demand_profiles_tools as hh_tools
 
 from egon.data import db
 
@@ -562,3 +564,36 @@ with airflow.DAG(
     nep_insert_data >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+
+    hh_profiles_in_census_cells = PythonOperator(
+        task_id="hh_profiles_in_census_cells",
+        python_callable=hh_tools.houseprofiles_in_census_cells,
+    )
+
+    mv_HH_electricity_load_2035 = PythonOperator(
+        task_id="mv_HH_electricity_load_2035",
+        python_callable=hh_tools.mv_grid_district_HH_electricity_load,
+        op_args=["eGon2035", 2035, "0.0.0"],
+        op_kwargs={'drop_table': True},
+    )
+
+    mv_HH_electricity_load_2050 = PythonOperator(
+        task_id="mv_HH_electricity_load_2050",
+        python_callable=hh_tools.mv_grid_district_HH_electricity_load,
+        op_args=["eGon100RE", 2050, "0.0.0"],
+        op_kwargs={'drop_table': True},
+    )
+
+    hh_demand = Dataset(
+        name="hh_demand",
+        version="0.0.0",
+        dependencies=[vg250_clean_and_prepare,
+                      zensus_misc_import,
+                      map_zensus_vg250,
+                      # zensus_inside_ger,
+                      demandregio_demand_households],
+        tasks=(hh_profiles_in_census_cells,
+               mv_HH_electricity_load_2035,
+               mv_HH_electricity_load_2050),
+    )
+    hh_demand.insert_into(pipeline)
