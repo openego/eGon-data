@@ -24,7 +24,8 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     # the paths of the 12 files to be loaded together in 'weather_data_raw'. 
     paths_weather = []
     for i in range(1,13):
-        paths_weather.append('cutouts/europe-2011-era5/2011'+str(i).zfill(2)+'.nc') 
+        paths_weather.append('cutouts/europe-2011-era5/2011'+str(i).zfill(2)+'.nc')
+
     weather_data_raw = xr.open_mfdataset(paths_weather)
     wind_speed_raw = weather_data_raw.wnd100m.values
     temperature_raw = weather_data_raw.temperature.values
@@ -167,15 +168,20 @@ def Calculate_DLR():
     con = db.engine()
     sql = 'SELECT version, scn_name, line_id, geom, s_nom FROM grid.egon_pf_hv_line'
     df = gpd.GeoDataFrame.from_postgis(sql, con, crs = "EPSG:4326")
-    df = df.set_index("line_id")
+    
+    ############### TO WORK WITH eTraGo ######################################
+    #df = gpd.read_file('grid_egon_pf_hv_lines/grid_egon_pf_hv_lines.shp')
+    ############### TO WORK WITH eTraGo ######################################
+    
     trans_lines_R ={}
     for i in regions.Region:
         shape_area = regions[regions["Region"] == i]
-        trans_lines_R[i] = gpd.clip(df, shape_area)        
+        trans_lines_R[i] = gpd.clip(df, shape_area)       
     trans_lines= df[["s_nom"]]
     trans_lines["in_regions"] = [[] for i in range(len(df))]
-    trans_lines[["version", "scn_name"]]= df[["version", "scn_name"]]
+    trans_lines[['line_id', 'geometry']]= df[['line_id', 'geometry']]
     
+    # Assign to each transmission line the region to which it belongs
     for i in trans_lines_R:
         for j in trans_lines_R[i].index:
             trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
@@ -204,13 +210,14 @@ def Calculate_DLR():
         if len(trans_lines.loc[i][1]) > 1:
             reg = []
             for j in trans_lines.loc[i][1]:
-                reg.append("R" + str(j) + '-DLR')
+                reg.append("Reg_" + str(j))
             min_DLR_reg = dlr_hourly[reg].min(axis = 1)
             DLR.append(list(min_DLR_reg))
                
     trans_lines["s_max_pu"] = DLR
 
     # write in a csv file the resuts for revision
+    trans_lines.to_pickle('DLR.pkl')
     trans_lines.to_csv("DLR.csv")
     
     #delete unnecessary columns
