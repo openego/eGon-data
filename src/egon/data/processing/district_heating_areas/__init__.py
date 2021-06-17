@@ -81,6 +81,9 @@ def create_tables():
         None
     """
 
+    # Create schema
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
+
     # Drop tables
     db.execute_sql(
         """DROP TABLE IF EXISTS

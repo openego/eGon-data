@@ -441,3 +441,59 @@ household_electricity_demand:
       url: "https://next.rl-institut.de/s/M8o3ALXPappRM3Y/download/h0_profiles.h5"
     zensus_household_types:
       url: "https://next.rl-institut.de/s/oQXRkYgWLXK3zND/download/Zensus2011_Personen.csv"
+
+map_mvgrid_vg250:
+  sources:
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan_union'
+  targets:
+    map:
+      schema: 'boundaries'
+      table: 'egon_map_mvgriddistrict_vg250'
+
+solar_rooftop:
+  sources:
+    solar_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    electricity_demand:
+      schema: 'demand'
+      table: 'egon_demandregio_zensus_electricity'
+    map_zensus_grid_districts:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_grid_districts'
+    map_grid_boundaries:
+      schema: 'boundaries'
+      table: 'egon_map_mvgriddistrict_vg250'
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+  targets:
+    generators:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator'
+    generator_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator_timeseries'
+
+data-bundle:
+  sources:
+    zenodo:
+      deposit_id: 4896527
+  targets:
+    file:
+      'data_bundle_egon_data.zip'
+
