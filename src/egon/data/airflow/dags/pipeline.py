@@ -581,7 +581,6 @@ with airflow.DAG(
         task_id="mv_HH_electricity_load_2050",
         python_callable=hh_tools.mv_grid_district_HH_electricity_load,
         op_args=["eGon100RE", 2050, "0.0.0"],
-        op_kwargs={'drop_table': True},
     )
 
     hh_demand = Dataset(
