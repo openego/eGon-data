@@ -10,8 +10,10 @@ import pandas as pd
 import numpy as np
 from egon.data import db
 import xarray as xr
+import rioxarray
 from shapely.geometry import Point
 import psycopg2
+
 
 def DLR_Regions(weather_info_path, regions_shape_path):
     
@@ -27,6 +29,13 @@ def DLR_Regions(weather_info_path, regions_shape_path):
         paths_weather.append('cutouts/europe-2011-era5/2011'+str(i).zfill(2)+'.nc')
 
     weather_data_raw = xr.open_mfdataset(paths_weather)
+    weather_data_raw = weather_data_raw.rio.write_crs(4326)
+    weather_data_raw = weather_data_raw.rio.clip_box(
+    minx=5.5,
+    miny=47,
+    maxx=15.5,
+    maxy=55.5,)
+    
     wind_speed_raw = weather_data_raw.wnd100m.values
     temperature_raw = weather_data_raw.temperature.values
     roughness_raw = weather_data_raw.roughness.values
@@ -50,14 +59,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
                 count += 1
     
     weather_data = pd.DataFrame(weather_data,
-                                columns= ['hour', 'lat', 'lon', 'wind_s', 'temp'])
-    
-    # Filter coordinates out of Germany
-    weather_data = weather_data[weather_data['lat'] >= 46.0]
-    weather_data = weather_data[weather_data['lat'] <= 56.0]
-    weather_data = weather_data[weather_data['lon'] >= 5.0]
-    weather_data = weather_data[weather_data['lon'] <= 16.0]   
-    
+                                columns= ['hour', 'lat', 'lon', 'wind_s', 'temp']) 
     
     region_selec = weather_data[0:index['x'].size*index['y'].size].copy()
     region_selec['geom'] = region_selec.apply(lambda x: Point(x['lon'], x['lat']), axis= 1)
