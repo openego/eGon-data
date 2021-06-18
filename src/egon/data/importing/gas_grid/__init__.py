@@ -169,7 +169,8 @@ def insert_gas_pipeline_list(gas_nodes_list):
     new_id = next_id('link')
 
     classifiaction_file = os.path.join(
-        os.path.dirname(__file__), 'pipeline_classification.csv') ##### /!\ nom a modifier /!\ [download from zenodo repository with small files]
+        "data_bundle_egon_data/pipeline_classification_gas/",
+        'pipeline_classification.csv')
         
     classification = pd.read_csv(classifiaction_file,
                                delimiter=',',
