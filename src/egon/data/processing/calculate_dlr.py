@@ -169,6 +169,7 @@ def Calculate_DLR():
     
     #Calculate hourly DLR per region
     dlr_hourly_dic, dlr_hourly = DLR_Regions(weather_info_path, regions_shape_path)
+    dlr_hourly.to_pickle('DLR_hourly.pkl')
     
     regions = gpd.read_file(regions_shape_path)
     regions = regions.sort_values(by=["Region"])
