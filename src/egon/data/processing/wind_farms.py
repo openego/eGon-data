@@ -2,6 +2,7 @@ from egon.data import db
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot as plt
 from shapely.geometry import Polygon, LineString, Point, MultiPoint
 
 
@@ -72,11 +73,13 @@ def wind_power_parks():
         wind_farms_state, summary_state = wind_power_states(state_wf,
                           state_wf_ni, state_mv_districts, target_power,
                           scenario_year, source, fed_state)
-        summary_t = summary_t.append(summary_state)  
+        summary_t = summary_t.append(summary_state)
         farms = farms.append(wind_farms_state)
     
-    summary_t.to_pickle("summary_t.pkl")
-    farms.to_pickle("farms.pkl")
+    geneate_map()
+    summary_t.to_csv('wind_farms_summary')
+    farms.to_csv('wind_farms_location')
+    
     return (summary_t, farms)
 
 
@@ -220,6 +223,7 @@ def wind_power_states(state_wf, state_wf_ni, state_mv_districts,
     
     summary = pd.DataFrame(columns= ['state', 'target',
                                      'from existin WF', 'MV districts'])
+    
     north = ['Schleswig-Holstein', 'Mecklenburg-Vorpommern', 'Niedersachsen',
              'Bremen', 'Hamburg']
     
@@ -373,6 +377,42 @@ def wind_power_states(state_wf, state_wf_ni, state_mv_districts,
                                if_exists='append')
     return wind_farms, summary
 
+
+
+def geneate_map():
+    con = db.engine()
+    
+    # Import wind farms from egon-data
+    sql = "SELECT  carrier, el_capacity, geom FROM supply.egon_power_plants"
+    wind_farms = gpd.GeoDataFrame.from_postgis(sql, con,
+                                                geom_col= 'geom',
+                                                crs = 4326)
+    wind_farms = wind_farms.to_crs(3035)
+    
+    # mv_districts has geographic info of medium voltage districts in Germany
+    sql= "SELECT geom FROM grid.mv_grid_districts"
+    mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
+    mv_districts = mv_districts.to_crs(3035)
+    
+    mv_districts['power'] = 0.0
+    for std in mv_districts.index:
+        try:
+            mv_districts.at[std, 'power'] = gpd.clip(
+                wind_farms, mv_districts.at[std, 'geom']).el_capacity.sum()
+        except:
+            print(std)
+    
+    fig, ax = plt.subplots(1, 1)
+    mv_districts.geom.plot(linewidth=0.2,ax=ax, color='black')
+    mv_districts.plot(
+        ax=ax,
+        column= 'power',
+        cmap='magma_r',
+        legend=True,
+        legend_kwds={'label': "Installed capacity in MW",
+                     'orientation': "vertical"})
+    plt.savefig('wind_farms_map.png', dpi=300)
+    return 0
 
 """
 wind_farms[['geom', 'inst capacity [MW]', 'area [km²]']].to_file("Selected_Pot_areas.geojson", driver='GeoJSON')
