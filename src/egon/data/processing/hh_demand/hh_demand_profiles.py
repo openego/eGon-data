@@ -102,7 +102,6 @@ import pandas as pd
 from egon.data import db
 from egon.data.processing.zensus_grid_districts import MapZensusGridDistricts
 
-
 Base = declarative_base()
 
 import egon.data.config
@@ -209,7 +208,6 @@ class EgonEtragoElectricityHouseholds(Base):
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
     q_set = Column(ARRAY(Float))
-
 
 
 def clean(x):
@@ -571,7 +569,8 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     cell_profile_ids = [
         (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
         for hh_type, sq in zip(
-            df_cell["hh_type"], np.rint(df_cell["hh_10types"].values).astype(int)
+            df_cell["hh_type"],
+            np.rint(df_cell["hh_10types"].values).astype(int),
         )
     ]
 
@@ -960,7 +959,9 @@ def get_houseprofiles_in_census_cells():
     return census_profile_mapping
 
 
-def mv_grid_district_HH_electricity_load(scenario_name, scenario_year, version, drop_table=False):
+def mv_grid_district_HH_electricity_load(
+    scenario_name, scenario_year, version, drop_table=False
+):
     """
     Aggregated household demand time series at HV/MV substation level
 
