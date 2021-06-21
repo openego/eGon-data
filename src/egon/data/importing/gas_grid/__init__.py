@@ -29,7 +29,7 @@ def next_id(component):
         Next index value
     """
     max_id = db.select_dataframe(
-        f"""
+        """
         SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
         """)['max'][0]
 
@@ -144,7 +144,7 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
 
     # Insert data to db    
-    gas_nodes_list.to_postgis('egon_pf_hv_bus', #egon_gas_
+    gas_nodes_list.to_postgis('egon_pf_hv_bus',
                               engine,
                               schema ='grid',
                               index = False,
@@ -236,7 +236,6 @@ def insert_gas_pipeline_list(gas_nodes_list):
         lat_e = json.loads(row['lat'])
         crd_e = list(zip(long_e, lat_e))
         topo.append(geometry.LineString(crd_e))
-        # topo.append(from_shape(geometry.LineString(crd_e)))#, srid=4326)) 
         
         long_path = param['path_long'] 
         lat_path = param['path_lat'] 
@@ -252,7 +251,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
     gas_pipelines_list['diameter'] = diameter
     gas_pipelines_list['length'] = length
     gas_pipelines_list['geom'] = geom
-    gas_pipelines_list['topo'] = topo  #/!\ To be inserted later /!\ 
+    gas_pipelines_list['topo'] = topo
     gas_pipelines_list = gas_pipelines_list.set_geometry('geom', crs=4326)
     
     # Adjust columns
@@ -304,7 +303,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
                           dtype = { 'geom': Geometry(), 'topo': Geometry()})
     
     db.execute_sql(
-        f"""
+        """
     select UpdateGeometrySRID('grid', 'egon_pf_hv_gas_link', 'topo', 4326) ;
     
     INSERT INTO grid.egon_pf_hv_link (version, scn_name, link_id, bus0,
@@ -316,13 +315,6 @@ def insert_gas_pipeline_list(gas_nodes_list):
         
     DROP TABLE grid.egon_pf_hv_gas_link;
         """)
-    
-    # gas_pipelines_list.to_postgis('egon_pf_hv_link',
-    #                       engine,
-    #                       schema = 'grid',
-    #                       index = False,
-    #                       if_exists = 'append',
-    #                       dtype = { 'geom': Geometry()})#, 'topo': Geometry()})
         
     
 def insert_gas_data():
