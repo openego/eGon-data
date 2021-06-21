@@ -6,6 +6,7 @@ from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
 from egon.data.datasets import database
+from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -68,6 +69,10 @@ with airflow.DAG(
     osm.insert_into(pipeline)
     osm_add_metadata = tasks["osm.add-metadata"]
     osm_download = tasks["osm.download"]
+
+    data_bundle = DataBundle(dependencies=[setup])
+    data_bundle.insert_into(pipeline)
+    download_data_bundle = tasks["data_bundle.download"]
 
     # VG250 (Verwaltungsgebiete 250) data import
     vg250_download = PythonOperator(
@@ -216,6 +221,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> demandregio_demand_cts_ind
     demandregio_tables >> demandregio_demand_cts_ind
     scenario_input_import >> demandregio_demand_cts_ind
+    download_data_bundle >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(
@@ -275,11 +281,12 @@ with airflow.DAG(
     setup >> create_tables >> nep_insert_data
     vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
+    download_data_bundle >> nep_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
         task_id="setting-etrago-input-tables",
-        python_callable=etrago.create_tables,
+        python_callable=etrago.setup,
     )
     setup >> etrago_input_data
 
@@ -445,6 +452,7 @@ with airflow.DAG(
     )
 
     create_tables >> gas_grid_insert_data
+    download_data_bundle >> gas_grid_insert_data
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
