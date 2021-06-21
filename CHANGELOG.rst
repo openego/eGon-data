@@ -98,8 +98,6 @@ Added
   `#255 <https://github.com/openego/eGon-data/issues/255>`_
 * Integrate gas bus and link tables
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
-* Integrate data bundle
-  `#272 <https://github.com/openego/eGon-data/issues/272>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -135,8 +133,7 @@ Changed
 * Update installation of demandregio's disaggregator
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
-  `#243 <https://github.com/openego/eGon-data/issues/243>`_ and 
-  `#285 <https://github.com/openego/eGon-data/issues/285>`_
+  `#243 <https://github.com/openego/eGon-data/issues/243>`_
 
 Bug fixes
 ---------

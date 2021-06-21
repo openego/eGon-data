@@ -24,16 +24,18 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.gas_grid as gas_grid
+
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
+import egon.data.processing.power2gas as power2gas
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
-import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
@@ -450,6 +452,15 @@ with airflow.DAG(
 
     create_tables >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
+    
+     # Power-to-gas installations creation
+    insert_power2gas_installations = PythonOperator(
+        task_id="insert-power-to-gas-installations",
+        python_callable=power2gas.insert_power2gas,
+    )
+
+    gas_grid_insert_data >> insert_power2gas_installations
+    run_osmtgmod >> insert_power2gas_installations
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
