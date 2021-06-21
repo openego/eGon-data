@@ -100,7 +100,9 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
-* Add hh demand profiles and load area aggregation
+* Add household electricity demand time series, mapping of
+  demand profiles to census cells and aggregated household
+  electricity demand time series at MV grid district level
   `#256 <https://github.com/openego/eGon-data/issues/256>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
