@@ -10,15 +10,11 @@ import numpy as np
 ###
 import datetime
 
-# TODO: 
-### delete examination stuff / add it as parameter, eg plot=True
 
 def regio_of_pv_ground_mounted():
     
     
     def mastr_existing_pv(path, pow_per_area):
-        
-        ### mastr = gpd.read_file('mastr.csv')
 
         # import MaStR data: locations, grid levels and installed capacities
 
@@ -26,7 +22,7 @@ def regio_of_pv_ground_mounted():
         df = pd.read_csv(path+'bnetza_mastr_solar_cleaned.csv',usecols = ['Lage','Laengengrad','Breitengrad','Nettonennleistung','EinheitMastrNummer'])
         df = df[df['Lage']=='Freiflaeche']
 
-        # examine data concerning geographical locations and drop NaNs
+        ### examine data concerning geographical locations and drop NaNs
         x1 = df['Laengengrad'].isnull().sum()
         x2 = df['Breitengrad'].isnull().sum()
         print(' ')
@@ -85,7 +81,7 @@ def regio_of_pv_ground_mounted():
                v_l.loc[index] = np.NaN
         mastr['voltage_level'] = v_l
 
-        # examine data concerning voltage level
+        ### examine data concerning voltage level
         x1 = mastr['voltage_level'].isnull().sum()
         print(' ')
         print('Untersuchung des MaStR-Datensatzes für Spannungsebenen:')
@@ -104,7 +100,7 @@ def regio_of_pv_ground_mounted():
         x3 = len(index_names)
         mastr.drop(index_names,inplace=True)
 
-        # further examination
+        ### further examination
         print('Anzahl der PVs in der Niederspannungsebene: '+str(x2))
         print('Anzahl der PVs in der NSMS-Ebene: '+str(x3))
         print('Anzahl der Zeilen im Datensatz nach Dropping dieser Ebenen: '+str(len(mastr)))
@@ -135,7 +131,7 @@ def regio_of_pv_ground_mounted():
         
         # roads and railways
         
-        ### counting variables for examination
+        ### counting variable for examination
         before = len(potentials_rora)
         
         # get small areas and create buffer for joining around them
@@ -161,7 +157,7 @@ def regio_of_pv_ground_mounted():
             join = gpd.GeoSeries(data=[x,y])
             potentials_rora['geom'].loc[index_potentials] = join.unary_union
             
-        ### print counting variables for examination
+        ### examination of joining of areas
         count_small = len(small_buffers)
         count_join = len(o)
         count_delete = count_small - count_join
@@ -176,7 +172,7 @@ def regio_of_pv_ground_mounted():
             
         # agriculture
         
-        ### counting variables for examination
+        ### counting variable for examination
         before = len(potentials_agri)
         
         # get small areas and create buffer for joining around them
@@ -202,7 +198,7 @@ def regio_of_pv_ground_mounted():
             join = gpd.GeoSeries(data=[x,y])
             potentials_agri['geom'].loc[index_potentials] = join.unary_union
             
-        ### print counting variables for examination
+        ### examination of joining of areas
         count_small = len(small_buffers)
         count_join = len(o)
         count_delete = count_small - count_join
@@ -221,7 +217,7 @@ def regio_of_pv_ground_mounted():
 
         # check intersection of potential areas
 
-        ### counting variables
+        ### counting variable
         agri_vorher = len(potentials_agri)
 
         # if areas intersect, keep road & railway potential areas and drop agricultural ones
@@ -232,7 +228,7 @@ def regio_of_pv_ground_mounted():
             index=o.iloc[i]
             potentials_agri.drop([index], inplace=True)
 
-        ### examination
+        ### examination of intersection of areas
         print(' ')
         print('Überprüfung der Funktion zur Meidung der Intersection von Potentialflächen:')
         print('Länge potentials_agri vorher: '+str(agri_vorher))
@@ -501,27 +497,7 @@ def regio_of_pv_ground_mounted():
         return pv_rora_i, pv_agri_i, pv_per_distr_i
 
 
-    def run_methodology():
-
-
-        ### PARAMETERS ###
-
-        # TODO: change to parameters, add explanation
-
-        con = db.engine()
-
-        path = ''
-
-        # assumption for areas of existing pv farms and power of new built pv farms
-        pow_per_area = 0.04 # kW per m²
-
-        # maximum distance for joining of potential areas (only small ones to big ones)
-        join_buffer = 10 # m
-
-        # assumption for maximum distance of park with hv-power to next substation
-        max_dist_hv = 20000 # m
-
-        ### PARAMETERS ###
+    def run_methodology(con = db.engine(), path = '', pow_per_area = 0.04, join_buffer = 10, max_dist_hv = 20000, show_map=False):
         
         ###
         print(' ')
@@ -533,7 +509,7 @@ def regio_of_pv_ground_mounted():
         mastr = mastr_existing_pv(path, pow_per_area)        
         
         # files for depiction in QGis
-        mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
+        # mastr['geometry'].to_file("MaStR_PVs.geojson", driver='GeoJSON',index=True)
         
         ###
         print(' ')
@@ -545,8 +521,8 @@ def regio_of_pv_ground_mounted():
         potentials_rora, potentials_agri = potential_areas(con, join_buffer)               
         
         # files for depiction in QGis
-        potentials_rora['geom'].to_file("potentials_rora.geojson", driver='GeoJSON',index=True)
-        potentials_agri['geom'].to_file("potentials_agri.geojson", driver='GeoJSON',index=True)
+        # potentials_rora['geom'].to_file("potentials_rora.geojson", driver='GeoJSON',index=True)
+        # potentials_agri['geom'].to_file("potentials_agri.geojson", driver='GeoJSON',index=True)
 
         ###
         print(' ')
@@ -578,15 +554,16 @@ def regio_of_pv_ground_mounted():
         rora = adapt_grid_level(pv_rora, max_dist_hv, con)
         agri = adapt_grid_level(pv_agri, max_dist_hv, con)
 
-        ###
+        #
         print(' ')
         print('check target value and build more PV parks on potential area if necessary')
         print(datetime.datetime.now())
         print(' ')
         
+        
         # 1) scenario: eGon2035
         
-        ###
+        #
         print(' ')
         print('scenario: eGon2035')
         print(' ')
@@ -616,7 +593,7 @@ def regio_of_pv_ground_mounted():
         for i in nuts:
             target_power = target[target['nuts']==i]['capacity'].iloc[0] * 1000
             
-            ###
+            #
             land =  target[target['nuts']==i]['nuts'].iloc[0] 
             print(' ')
             print('Bundesland (NUTS): '+land)
@@ -647,7 +624,7 @@ def regio_of_pv_ground_mounted():
             if len(distr_i) > 0 :
                 distr_i['nuts'] = target[target['nuts']==i]['nuts'].iloc[0] 
             
-            ###
+            ### examination of built PV parks per state
             rora_i_mv = rora_i[rora_i['voltage_level']==5]
             rora_i_hv = rora_i[rora_i['voltage_level']==4]
             agri_i_mv = agri_i[agri_i['voltage_level']==5]
@@ -679,57 +656,10 @@ def regio_of_pv_ground_mounted():
             pv_agri = pv_agri.append(agri_i)
             if len(distr_i) > 0:
                 pv_per_distr = pv_per_distr.append(distr_i)
-                
-        ### create map to show distribution of installed capacity 
-        
-        # get MV grid districts
-        sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
-        distr = gpd.GeoDataFrame.from_postgis(sql, con)
-        distr = distr.set_index("subst_id")
-        
-        # assign pv_per_distr-power to districts
-        distr['capacity'] = pd.Series()
-        for index, row in distr.iterrows():
-            if index in np.unique(pv_per_distr['grid_district']):
-                pv = pv_per_distr[pv_per_distr['grid_district']==index]
-                x = pv['installed capacity in kW'].iloc[0]
-                distr['capacity'].loc[index] = x
-            else:
-                distr['capacity'].loc[index] = 0
-        distr['capacity'] = distr['capacity'] / 1000
-        
-        # add pv_rora- and pv_agri-power to district
-        pv_rora = pv_rora.set_geometry('centroid')
-        pv_agri = pv_agri.set_geometry('centroid')
-        overlay_rora = gpd.sjoin(pv_rora,distr)
-        overlay_agri = gpd.sjoin(pv_agri,distr)
 
-        for index, row in distr.iterrows():
-            o_rora = overlay_rora[overlay_rora['index_right']==index]
-            o_agri = overlay_agri[overlay_agri['index_right']==index]
-            cap_rora = o_rora['installed capacity in kW'].sum()/1000
-            cap_agri = o_agri['installed capacity in kW'].sum()/1000
-        distr['capacity'].loc[index] = distr['capacity'].loc[index] + cap_rora + cap_agri
-           
-        from matplotlib import pyplot as plt
-        fig, ax = plt.subplots(1,1)
-        distr.boundary.plot(linewidth=0.2,ax=ax, color='black')
-        distr.plot(
-            ax=ax,
-            column = 'capacity',
-            cmap='magma_r',
-            legend=True,
-            legend_kwds={'label': f"Installed capacity in MW",
-                                 'orientation': "vertical"})
-        plt.savefig('pv_per_distr_map.png', dpi=300)
-        
-        ###
 
         # 2) scenario: eGon100RE
-
-        # TODO: eGon100RE-scenario
         
-        '''
         # assumption for target value of installed capacity in Germany per scenario
         sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
         target_power = (pd.read_sql(sql,con))
@@ -744,9 +674,98 @@ def regio_of_pv_ground_mounted():
         
         # check target value and adapt installed capacity if necessary
         pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = check_target(rora, agri, potentials_rora, potentials_agri, target_power, pow_per_area, con)
-        '''
+        
 
-        return pv_rora, pv_agri, pv_per_distr #, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
+        ### create map to show distribution of installed capacity 
+        if show_map==True:
+            
+            # 1) eGon2035
+            
+            # get MV grid districts
+            sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+            distr = gpd.GeoDataFrame.from_postgis(sql, con)
+            distr = distr.set_index("subst_id")
+            
+            # assign pv_per_distr-power to districts
+            distr['capacity'] = pd.Series()
+            for index, row in distr.iterrows():
+                if index in np.unique(pv_per_distr['grid_district']):
+                    pv = pv_per_distr[pv_per_distr['grid_district']==index]
+                    x = pv['installed capacity in kW'].iloc[0]
+                    distr['capacity'].loc[index] = x
+                else:
+                    distr['capacity'].loc[index] = 0
+            distr['capacity'] = distr['capacity'] / 1000
+            
+            # add pv_rora- and pv_agri-power to district
+            pv_rora = pv_rora.set_geometry('centroid')
+            pv_agri = pv_agri.set_geometry('centroid')
+            overlay_rora = gpd.sjoin(pv_rora,distr)
+            overlay_agri = gpd.sjoin(pv_agri,distr)
+    
+            for index, row in distr.iterrows():
+                o_rora = overlay_rora[overlay_rora['index_right']==index]
+                o_agri = overlay_agri[overlay_agri['index_right']==index]
+                cap_rora = o_rora['installed capacity in kW'].sum()/1000
+                cap_agri = o_agri['installed capacity in kW'].sum()/1000
+            distr['capacity'].loc[index] = distr['capacity'].loc[index] + cap_rora + cap_agri
+               
+            from matplotlib import pyplot as plt
+            fig, ax = plt.subplots(1,1)
+            distr.boundary.plot(linewidth=0.2,ax=ax, color='black')
+            distr.plot(
+                ax=ax,
+                column = 'capacity',
+                cmap='magma_r',
+                legend=True,
+                legend_kwds={'label': f"Installed capacity in MW",
+                                     'orientation': "vertical"})
+            plt.savefig('pv_per_distr_map_eGon2035.png', dpi=300)
+            
+            # 2) eGon100RE
+            
+            # get MV grid districts
+            sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+            distr = gpd.GeoDataFrame.from_postgis(sql, con)
+            distr = distr.set_index("subst_id")
+            
+            # assign pv_per_distr-power to districts
+            distr['capacity'] = pd.Series()
+            for index, row in distr.iterrows():
+                if index in np.unique(pv_per_distr_100RE['grid_district']):
+                    pv = pv_per_distr_100RE[pv_per_distr_100RE['grid_district']==index]
+                    x = pv['installed capacity in kW'].iloc[0]
+                    distr['capacity'].loc[index] = x
+                else:
+                    distr['capacity'].loc[index] = 0
+            distr['capacity'] = distr['capacity'] / 1000
+            
+            # add pv_rora- and pv_agri-power to district
+            pv_rora_100RE = pv_rora_100RE.set_geometry('centroid')
+            pv_agri_100RE = pv_agri_100RE.set_geometry('centroid')
+            overlay_rora = gpd.sjoin(pv_rora_100RE,distr)
+            overlay_agri = gpd.sjoin(pv_agri_100RE,distr)
+    
+            for index, row in distr.iterrows():
+                o_rora = overlay_rora[overlay_rora['index_right']==index]
+                o_agri = overlay_agri[overlay_agri['index_right']==index]
+                cap_rora = o_rora['installed capacity in kW'].sum()/1000
+                cap_agri = o_agri['installed capacity in kW'].sum()/1000
+            distr['capacity'].loc[index] = distr['capacity'].loc[index] + cap_rora + cap_agri
+               
+            from matplotlib import pyplot as plt
+            fig, ax = plt.subplots(1,1)
+            distr.boundary.plot(linewidth=0.2,ax=ax, color='black')
+            distr.plot(
+                ax=ax,
+                column = 'capacity',
+                cmap='magma_r',
+                legend=True,
+                legend_kwds={'label': f"Installed capacity in MW",
+                                     'orientation': "vertical"})
+            plt.savefig('pv_per_distr_map_eGon100RE.png', dpi=300)
+
+        return pv_rora, pv_agri, pv_per_distr, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
 
     def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
@@ -821,19 +840,48 @@ def regio_of_pv_ground_mounted():
 
 
             return pv_parks
+        
+        
+    #########################################################################
+    
+    # execute methodology
 
-    pv_rora, pv_agri, pv_per_distr = run_methodology() 
+    pv_rora, pv_agri, pv_per_distr, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(con = db.engine, path='', pow_per_area = 0.04, join_buffer = 10, max_dist_hv = 20000, show_map=True) 
     
-    # pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE
+    # PARAMETERS:
+
+    '''
+    con:            connection to database
     
-    ###
-    pv_rora.to_csv('pv_rora.csv',index=True)
-    pv_agri.to_csv('pv_agri.csv',index=True)
-    pv_rora['centroid'].to_file("PVs_rora.geojson", driver='GeoJSON',index=True)
-    pv_agri['centroid'].to_file("PVs_agri.geojson", driver='GeoJSON',index=True)
+    path:           string
+                    path to location of mastr-file
+                    default = ''
+    
+    pow_per_area:   float
+                    assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
+                    default = 0.04
+
+    join_buffer:    int
+                    maximum distance for joining of potential areas (only small ones to big ones) in m
+                    default = 10
+
+    max_dist_hv:    int
+                    assumption for maximum distance of park with hv-power to next substation in m
+                    default = 20000 
+                    
+    show_map:       boolean
+                    option to show map with distribution of power of PV parks per MV grid district
+                    default = False
+    '''
+    
+    ### examination of results
+    #pv_rora.to_csv('pv_rora.csv',index=True)
+    #pv_agri.to_csv('pv_agri.csv',index=True)
+    #pv_rora['centroid'].to_file("PVs_rora.geojson", driver='GeoJSON',index=True)
+    #pv_agri['centroid'].to_file("PVs_agri.geojson", driver='GeoJSON',index=True)
     if len(pv_per_distr) > 0:
-        pv_per_distr.to_csv('pv_per_distr.csv',index=True)
-        pv_per_distr['centroid'].to_file("PVs_per_distr.geojson", driver='GeoJSON',index=True)
+        #pv_per_distr.to_csv('pv_per_distr.csv',index=True)
+        #pv_per_distr['centroid'].to_file("PVs_per_distr.geojson", driver='GeoJSON',index=True)
         pv_per_distr_mv = pv_per_distr[pv_per_distr['voltage_level']==5]
         pv_per_distr_hv = pv_per_distr[pv_per_distr['voltage_level']==4]
     pv_rora_mv = pv_rora[pv_rora['voltage_level']==5]
@@ -870,13 +918,15 @@ def regio_of_pv_ground_mounted():
         pv_per_distr_100RE.to_csv('pv_per_distr_100RE.csv',index=True)
     '''
     
+    # save to DB
+    
     pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, 'eGon2035')
     
-    # pv_parks_100RE = pv_parks(pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, 'eGon100RE')
+    pv_parks_100RE = pv_parks(pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, 'eGon100RE')
     
-    # TODO: add dataframes for scenario eGon100RE
+   
 
-    return pv_parks #, pv_parks_100RE
+    return pv_parks, pv_parks_100RE
 
 
 
