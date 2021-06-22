@@ -1,3 +1,24 @@
+"""
+Commercial, trade and service (CTS) load areas
+
+CTS load areas define the area where CTS demand is located in. These polygons
+form of smaller polygons (cells of Zensus dataset) and are merged based on
+adjacency.
+
+The starting point for CTS demand is the demand regio dataset that provides
+CTS demand time series on NUTS-3 level distinguished by CTS sectors (`Wirtschaftszweige`).
+For disaggregating data further down on spatial scale, boundaries of zensus cells
+are used.
+The same method is used for identifying annual CTS demand in each zensus cell
+as for annual CTS heat demand. The idea is: wherever CTS heat demand is
+expected, electricity might be consumed in similar numbers (only used to scale
+CTS demand from NUTS3 to census cells).
+The profile of electricity demand is scaled down to zensus cells according to the
+annual demand in each cell. Hence, the profile of the time series is the same
+for all census within one NUTS-3 region, except for the magnitude which is
+defined by the annual demand.
+"""
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
