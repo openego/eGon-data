@@ -1,10 +1,10 @@
+from functools import partial
 from urllib.request import urlretrieve
 import os
 
+from egon.data.datasets import Dataset
 import egon.data.config
 
-from functools import partial
-from egon.data.datasets import Dataset
 
 def download_mastr_data(data_stages=None):
     """
