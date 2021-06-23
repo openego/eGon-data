@@ -778,10 +778,11 @@ def define_mv_grid_districts():
 #                    define_mv_grid_districts,
 #                    ),
 #         )
-mv_grid_districts = partial(
+mv_grid_districts_setup = partial(
     Dataset,
-    name="MVGridDistricts",
+    name="MV_Grid_Districts",
     version="0.0.0",
     dependencies=[],
-    tasks=(create_voronoi, define_mv_grid_districts),
+    tasks=(create_voronoi,
+           define_mv_grid_districts),
 )
