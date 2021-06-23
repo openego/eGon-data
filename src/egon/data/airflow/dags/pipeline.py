@@ -8,7 +8,8 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
-from egon.data.processing.mv_grid_districts import mv_grid_districts
+from egon.data.processing.mv_grid_districts import mv_grid_districts_setup
+from egon.data.importing.re_potential_areas import re_potential_areas_setup
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -21,7 +22,6 @@ import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
@@ -356,26 +356,18 @@ with airflow.DAG(
     run_osmtgmod >> osmtgmod_substation
 
     # # MV grid districts
-    mv_grid_districts = mv_grid_districts(dependencies=[osmtgmod_substation])
+    mv_grid_districts = mv_grid_districts_setup(dependencies=[osmtgmod_substation])
     mv_grid_districts.insert_into(pipeline)
     define_mv_grid_districts = tasks["define-mv-grid-districts"]
     create_voronoi = tasks["create-voronoi"]
 
     # Import potential areas for wind onshore and ground-mounted PV
-    download_re_potential_areas = PythonOperator(
-        task_id="download_re_potential_area_data",
-        python_callable=re_potential_areas.download_datasets,
-    )
-    create_re_potential_areas_tables = PythonOperator(
-        task_id="create_re_potential_areas_tables",
-        python_callable=re_potential_areas.create_tables,
-    )
-    insert_re_potential_areas = PythonOperator(
-        task_id="insert_re_potential_areas",
-        python_callable=re_potential_areas.insert_data,
-    )
-    setup >> download_re_potential_areas >> create_re_potential_areas_tables
-    create_re_potential_areas_tables >> insert_re_potential_areas
+    re_potential_areas = re_potential_areas_setup(dependencies=[setup])
+    re_potential_areas.insert_into(pipeline)
+    download_re_potential_areas = tasks["download-datasets"]
+    create_re_potential_areas_tables = tasks["create-tables"]
+    insert_re_potential_areas = tasks["insert-data"]
+
 
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
