@@ -10,6 +10,7 @@ from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.processing.mv_grid_districts import mv_grid_districts_setup
 from egon.data.importing.re_potential_areas import re_potential_areas_setup
+from egon.data.importing.mastr import mastr_data_setup
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -288,11 +289,9 @@ with airflow.DAG(
     setup >> etrago_input_data
 
     # Retrieve MaStR data
-    retrieve_mastr_data = PythonOperator(
-        task_id="retrieve_mastr_data",
-        python_callable=mastr.download_mastr_data,
-    )
-    setup >> retrieve_mastr_data
+    mastr_data = mastr_data_setup(dependencies=[setup])
+    mastr_data.insert_into(pipeline)
+    retrieve_mastr_data = tasks["download-mastr-data"]
 
     # Substation extraction
     substation_tables = PythonOperator(
