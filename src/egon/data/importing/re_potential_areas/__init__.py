@@ -9,6 +9,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer
 from geoalchemy2 import Geometry
 
+from functools import partial
+from egon.data.datasets import Dataset
+
 import egon.data.config
 from egon.data import db
 
@@ -121,3 +124,15 @@ def insert_data():
             if_exists="append",
             dtype={"geom": Geometry()},
         )
+
+
+# create re_potential_areas dataset partial object
+re_potential_areas_setup = partial(
+    Dataset,
+    name="RE_Potential_Areas",
+    version="0.0.0",
+    dependencies=[],
+    tasks=(download_datasets,
+           create_tables,
+           insert_data),
+)
