@@ -129,7 +129,7 @@ def insert_data():
 # create re_potential_areas dataset partial object
 re_potential_areas_setup = partial(
     Dataset,
-    name="RE_Potential_Areas",
+    name="RE Potential Areas",
     version="0.0.0",
     dependencies=[],
     tasks=(download_datasets,
