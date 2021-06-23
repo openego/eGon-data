@@ -570,3 +570,4 @@ with airflow.DAG(
         python_callable=dsm_cts.dsm_cts_processing,
     )
     electrical_load_curves_cts >> components_dsm_cts
+    osmtgmod_pypsa >> components_dsm_cts
