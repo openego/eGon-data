@@ -8,7 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
-from  egon.data.datasets.mv_grid_districts import MVGridDistricts
+from egon.data.processing.mv_grid_districts import mv_grid_districts
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -356,7 +356,7 @@ with airflow.DAG(
     run_osmtgmod >> osmtgmod_substation
 
     # # MV grid districts
-    mv_grid_districts = MVGridDistricts(dependencies=[osmtgmod_substation])
+    mv_grid_districts = mv_grid_districts(dependencies=[osmtgmod_substation])
     mv_grid_districts.insert_into(pipeline)
     define_mv_grid_districts = tasks["define-mv-grid-districts"]
     create_voronoi = tasks["create-voronoi"]
