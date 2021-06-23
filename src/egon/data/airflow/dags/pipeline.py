@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
+from  egon.data.datasets.mv_grid_districts import MVGridDistricts
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -34,7 +35,6 @@ import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.importing.gas_grid as gas_grid
-import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 
@@ -355,19 +355,11 @@ with airflow.DAG(
     etrago_input_data >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
 
-    # MV grid districts
-    create_voronoi = PythonOperator(
-        task_id="create_voronoi",
-        python_callable=substation.create_voronoi
-    )
-    osmtgmod_substation >> create_voronoi
-
-
-    define_mv_grid_districts = PythonOperator(
-        task_id="define_mv_grid_districts",
-        python_callable=mvgd.define_mv_grid_districts
-    )
-    create_voronoi >> define_mv_grid_districts
+    # # MV grid districts
+    mv_grid_districts = MVGridDistricts(dependencies=[osmtgmod_substation])
+    mv_grid_districts.insert_into(pipeline)
+    define_mv_grid_districts = tasks["define-mv-grid-districts"]
+    create_voronoi = tasks["create-voronoi"]
 
     # Import potential areas for wind onshore and ground-mounted PV
     download_re_potential_areas = PythonOperator(

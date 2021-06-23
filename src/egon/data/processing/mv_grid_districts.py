@@ -27,6 +27,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 
+from functools import partial
+from egon.data.processing.substation import create_voronoi
+from egon.data.datasets import Dataset
+
 from egon.data import db
 from egon.data.db import session_scope
 from egon.data.processing.substation import (EgonHvmvSubstationVoronoi,
@@ -762,3 +766,22 @@ def define_mv_grid_districts():
         bind=engine, checkfirst=True
     )
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
+
+
+# class MVGridDistricts(Dataset):
+#     def __init__(self, dependencies):
+#         super().__init__(
+#             name="MV_grid_districts",
+#             version="0.0.0",
+#             dependencies=dependencies,
+#             tasks=(create_voronoi,
+#                    define_mv_grid_districts,
+#                    ),
+#         )
+mv_grid_districts = partial(
+    Dataset,
+    name="MVGridDistricts",
+    version="0.0.0",
+    dependencies=[],
+    tasks=(create_voronoi, define_mv_grid_districts),
+)
