@@ -460,7 +460,7 @@ with airflow.DAG(
     )
 
     gas_grid_insert_data >> insert_power2gas_installations
-    run_osmtgmod >> insert_power2gas_installations
+    osmtgmod_pypsa >> insert_power2gas_installations
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
