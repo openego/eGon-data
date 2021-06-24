@@ -259,7 +259,7 @@ with airflow.DAG(
     # setting etrago input tables
     etrago_input_data = PythonOperator(
         task_id="setting-etrago-input-tables",
-        python_callable=etrago.create_tables,
+        python_callable=etrago.setup,
     )
     setup >> etrago_input_data
 
@@ -424,7 +424,7 @@ with airflow.DAG(
         python_callable=gas_grid.insert_gas_data,
     )
 
-    create_tables >> gas_grid_insert_data
+    etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
 
     # Extract landuse areas from osm data set
