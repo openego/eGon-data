@@ -1047,29 +1047,13 @@ def mv_grid_district_HH_electricity_load(
     return mvgd_profiles
 
 
-mv_HH_electricity_load_2035 = PythonOperator(
-    task_id="MV-hh-electricity-load-2035",
-    python_callable=mv_grid_district_HH_electricity_load,
-    op_args=["eGon2035", 2035, "0.0.0"],
-    op_kwargs={"drop_table": True},
-)
-
-
-mv_HH_electricity_load_2050 = PythonOperator(
-    task_id="MV-hh-electricity-load-2050",
-    python_callable=mv_grid_district_HH_electricity_load,
-    op_args=["eGon100RE", 2050, "0.0.0"],
-)
-
-
 hh_demand_setup = partial(
     Dataset,
     name="HH Demand",
     version="0.0.0",
     dependencies=[],
-    tasks=(
-        houseprofiles_in_census_cells,
-        mv_HH_electricity_load_2035,
-        mv_HH_electricity_load_2050,
-    ),
+    # Tasks are declared in pipeline as function is used multiple time with different args
+    # to differentiate these tasks PythonOperator with specific id-names are used
+    # PythonOperator needs to be declared in pipeline to be mapped to DAG
+    # tasks=[],
 )

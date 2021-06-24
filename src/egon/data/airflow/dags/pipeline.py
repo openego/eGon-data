@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
+# from egon.data.processing import hh_demand
 
 import airflow
 import egon.data.importing.demandregio as import_dr
@@ -36,6 +37,9 @@ import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 from egon.data.processing.hh_demand.hh_demand_profiles import hh_demand_setup
+
+from egon.data.processing.hh_demand.hh_demand_profiles import mv_grid_district_HH_electricity_load
+from egon.data.processing.hh_demand.hh_demand_profiles import houseprofiles_in_census_cells
 
 from egon.data import db
 
@@ -563,13 +567,30 @@ with airflow.DAG(
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # initiate household demand profile dataset and medium voltage load area profiles
+    mv_HH_electricity_load_2035 = PythonOperator(
+        task_id="MV-hh-electricity-load-2035",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon2035", 2035, "0.0.0"],
+        op_kwargs={"drop_table": True},
+    )
+
+    mv_HH_electricity_load_2050 = PythonOperator(
+        task_id="MV-hh-electricity-load-2050",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon100RE", 2050, "0.0.0"],
+    )
+
     hh_demand = hh_demand_setup(dependencies=[
         vg250_clean_and_prepare,
         zensus_misc_import,
         map_zensus_grid_districts,
         zensus_inside_ger,
         demandregio_demand_households,
-        ])
+    ],
+        tasks=(houseprofiles_in_census_cells,
+               mv_HH_electricity_load_2035,
+               mv_HH_electricity_load_2050,)
+    )
     hh_demand.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks["houseprofiles-in-census-cells"]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
