@@ -89,20 +89,19 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
-from egon.data.datasets import Dataset
-from airflow.operators.python_operator import PythonOperator
-
 from itertools import cycle
 from pathlib import Path
 from urllib.request import urlretrieve
 import random
 
+from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.processing.zensus_grid_districts import MapZensusGridDistricts
 
 Base = declarative_base()
@@ -1052,7 +1051,7 @@ mv_HH_electricity_load_2035 = PythonOperator(
     task_id="MV-hh-electricity-load-2035",
     python_callable=mv_grid_district_HH_electricity_load,
     op_args=["eGon2035", 2035, "0.0.0"],
-    op_kwargs={'drop_table': True},
+    op_kwargs={"drop_table": True},
 )
 
 
@@ -1068,7 +1067,9 @@ hh_demand_setup = partial(
     name="HH Demand",
     version="0.0.0",
     dependencies=[],
-    tasks=(houseprofiles_in_census_cells,
-           mv_HH_electricity_load_2035,
-           mv_HH_electricity_load_2050),
+    tasks=(
+        houseprofiles_in_census_cells,
+        mv_HH_electricity_load_2035,
+        mv_HH_electricity_load_2050,
+    ),
 )
