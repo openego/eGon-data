@@ -88,6 +88,9 @@ This module docstring is rather a dataset documentation. Once, a decision
 is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
+from functools import partial
+from egon.data.datasets import Dataset
+from airflow.operators.python_operator import PythonOperator
 
 from itertools import cycle
 from pathlib import Path
@@ -1043,3 +1046,29 @@ def mv_grid_district_HH_electricity_load(
         )
 
     return mvgd_profiles
+
+
+mv_HH_electricity_load_2035 = PythonOperator(
+    task_id="MV-hh-electricity-load-2035",
+    python_callable=mv_grid_district_HH_electricity_load,
+    op_args=["eGon2035", 2035, "0.0.0"],
+    op_kwargs={'drop_table': True},
+)
+
+
+mv_HH_electricity_load_2050 = PythonOperator(
+    task_id="MV-hh-electricity-load-2050",
+    python_callable=mv_grid_district_HH_electricity_load,
+    op_args=["eGon100RE", 2050, "0.0.0"],
+)
+
+
+hh_demand_setup = partial(
+    Dataset,
+    name="HH Demand",
+    version="0.0.0",
+    dependencies=[],
+    tasks=(houseprofiles_in_census_cells,
+           mv_HH_electricity_load_2035,
+           mv_HH_electricity_load_2050),
+)

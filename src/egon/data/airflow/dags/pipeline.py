@@ -8,10 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
-from egon.data.datasets import Dataset
-from egon.data.processing.zensus_vg250 import (
-    zensus_population_inside_germany as zensus_vg250,
-)
+
 import airflow
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
@@ -38,7 +35,7 @@ import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
-import egon.data.processing.hh_demand.hh_demand_profiles as hh_demand_profiles
+from egon.data.processing.hh_demand.hh_demand_profiles import hh_demand_setup
 
 from egon.data import db
 
@@ -565,34 +562,15 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
-    hh_profiles_in_census_cells = PythonOperator(
-        task_id="hh_profiles_in_census_cells",
-        python_callable=hh_demand_profiles.houseprofiles_in_census_cells,
-    )
-
-    mv_HH_electricity_load_2035 = PythonOperator(
-        task_id="mv_HH_electricity_load_2035",
-        python_callable=hh_demand_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon2035", 2035, "0.0.0"],
-        op_kwargs={'drop_table': True},
-    )
-
-    mv_HH_electricity_load_2050 = PythonOperator(
-        task_id="mv_HH_electricity_load_2050",
-        python_callable=hh_demand_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon100RE", 2050, "0.0.0"],
-    )
-
-    hh_demand = Dataset(
-        name="hh_demand",
-        version="0.0.0",
-        dependencies=[vg250_clean_and_prepare,
-                      zensus_misc_import,
-                      map_zensus_grid_districts,
-                      zensus_inside_ger,
-                      demandregio_demand_households],
-        tasks=(hh_profiles_in_census_cells,
-               mv_HH_electricity_load_2035,
-               mv_HH_electricity_load_2050),
-    )
+    # initiate household demand profile dataset and medium voltage load area profiles
+    hh_demand = hh_demand_setup(dependencies=[
+        vg250_clean_and_prepare,
+        zensus_misc_import,
+        map_zensus_grid_districts,
+        zensus_inside_ger,
+        demandregio_demand_households,
+        ])
     hh_demand.insert_into(pipeline)
+    householdprofiles_in_cencus_cells = tasks["houseprofiles-in-census-cells"]
+    mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
+    mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
