@@ -9,7 +9,7 @@ from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.processing.mv_grid_districts import mv_grid_districts_setup
-from egon.data.importing.re_potential_areas import re_potential_areas_setup
+import egon.data.importing.re_potential_areas as re_pot_areas
 from egon.data.importing.mastr import mastr_data_setup
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -361,11 +361,28 @@ with airflow.DAG(
     create_voronoi = tasks["create-voronoi"]
 
     # Import potential areas for wind onshore and ground-mounted PV
-    re_potential_areas = re_potential_areas_setup(dependencies=[setup])
+    download_re_potential_areas = PythonOperator(
+        task_id="re-potential-areas.download-datasets",
+        python_callable=re_pot_areas.download_datasets,
+    )
+    create_re_potential_areas_tables = PythonOperator(
+        task_id="re-potential-areas.create_tables",
+        python_callable=re_pot_areas.create_tables,
+    )
+    insert_re_potential_areas = PythonOperator(
+        task_id="re-potential-areas.insert-data",
+        python_callable=re_pot_areas.insert_data,
+    )
+    re_potential_areas = re_pot_areas.Setup(dependencies=[setup],
+                                            tasks=(download_re_potential_areas,
+                                                   create_re_potential_areas_tables,
+                                                   insert_re_potential_areas,
+                                                   )
+                                            )
     re_potential_areas.insert_into(pipeline)
-    download_re_potential_areas = tasks["download-datasets"]
-    create_re_potential_areas_tables = tasks["create-tables"]
-    insert_re_potential_areas = tasks["insert-data"]
+    download_re_potential_areas = tasks["re-potential-areas.download-datasets"]
+    create_re_potential_areas_tables = tasks["re-potential-areas.create_tables"]
+    insert_re_potential_areas = tasks["re-potential-areas.insert-data"]
 
 
     # Future heat demand calculation based on Peta5_0_1 data
