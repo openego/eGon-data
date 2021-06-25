@@ -27,7 +27,7 @@ class EgonPfHvBus(Base):
     geom = Column(Geometry('POINT', 4326), index=True)
     country = Column(Text, server_default=text("'DE'::text"))
 
-    
+
 class EgonPfHvBusTimeseries(Base):
     __tablename__ = 'egon_pf_hv_bus_timeseries'
     __table_args__ = {'schema': 'grid'}
@@ -65,8 +65,8 @@ class EgonPfHvGenerator(Base):
     shut_down_cost = Column(Float(53))
     min_up_time = Column(BigInteger)
     min_down_time = Column(BigInteger)
-    up_time_before = Column(BigInteger)    
-    down_time_before = Column(BigInteger)    
+    up_time_before = Column(BigInteger)
+    down_time_before = Column(BigInteger)
     ramp_limit_up = Column(Float(53))
     ramp_limit_down = Column(Float(53))
     ramp_limit_start_up = Column(Float(53))
@@ -80,7 +80,7 @@ class EgonPfHvGeneratorTimeseries(Base):
     version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
-    temp_id = Column(Integer, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     p_set = Column(ARRAY(Float(precision=53)))
     q_set = Column(ARRAY(Float(precision=53)))
     p_min_pu = Column(ARRAY(Float(precision=53)))
@@ -98,7 +98,7 @@ class EgonPfHvLine(Base):
     bus0 = Column(BigInteger)
     bus1 = Column(BigInteger)
     type = Column(Text)
-    carrier = Column(Text)    
+    carrier = Column(Text)
     x = Column(Numeric)
     r = Column(Numeric)
     g = Column(Numeric)
@@ -115,6 +115,7 @@ class EgonPfHvLine(Base):
     num_parallel = Column(Float(53))
     v_ang_min = Column(Float(53))
     v_ang_max = Column(Float(53))
+    v_nom = Column(Float(53))
     geom = Column(Geometry('MULTILINESTRING', 4326))
     topo = Column(Geometry('LINESTRING', 4326))
 
@@ -126,6 +127,7 @@ class EgonPfHvLineTimeseries(Base):
     version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
 
 
@@ -162,6 +164,7 @@ class EgonPfHvLinkTimeseries(Base):
     version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     p_set = Column(ARRAY(Float(precision=53)))
     p_min_pu = Column(ARRAY(Float(precision=53)))
     p_max_pu = Column(ARRAY(Float(precision=53)))
@@ -191,7 +194,7 @@ class EgonPfHvLoadTimeseries(Base):
     version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
-    temp_id = Column(Integer, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     p_set = Column(ARRAY(Float(precision=53)))
     q_set = Column(ARRAY(Float(precision=53)))
 
@@ -238,7 +241,7 @@ class EgonPfHvStorage(Base):
     efficiency_dispatch = Column(Float(53))
     standing_loss = Column(Float(53))
     inflow_fixed = Column(Float(53))
-    
+
 
 
 class EgonPfHvStorageTimeseries(Base):
@@ -346,6 +349,7 @@ class EgonPfHvTransformerTimeseries(Base):
     version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
+    temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
 
 
@@ -358,6 +362,26 @@ def create_tables():
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
+    # Drop existing tables
+    EgonPfHvBus.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvBusTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGenerator.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGeneratorTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLine.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLineTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLink.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLinkTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLoad.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvLoadTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvCarrier.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStorage.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStorageTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStore.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvStoreTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvTempResolution.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvTransformer.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvTransformerTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    # Create new tables
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvGenerator.__table__.create(bind=engine, checkfirst=True)
@@ -377,3 +401,29 @@ def create_tables():
     EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
 
+def insert_temp_resolution(version='0.0.0'):
+    """ Insert temporal resolution for etrago
+
+    Returns
+    -------
+    None.
+
+    """
+
+    db.execute_sql(
+        f"""
+        INSERT INTO grid.egon_pf_hv_temp_resolution
+        (version, temp_id, timesteps, resolution, start_time)
+        SELECT '{version}', 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
+        """)
+
+def setup():
+    """ Set up table structure and temporal resolution for etrago
+
+    Returns
+    -------
+    None.
+
+    """
+    create_tables()
+    insert_temp_resolution()

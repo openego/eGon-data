@@ -102,7 +102,7 @@ def insert_capacities_per_federal_state_nep():
 
     # read-in installed capacities per federal state of germany
     target_file = os.path.join(
-        os.path.dirname(__file__),
+        "data_bundle_egon_data/nep2035_version2021",
         scenario_config('eGon2035')['paths']['capacities'])
 
     df = pd.read_excel(target_file, sheet_name='1.Entwurf_NEP2035_V2021',
@@ -221,7 +221,7 @@ def insert_nep_list_powerplants():
 
     # Read-in data from csv-file
     target_file = os.path.join(
-        os.path.dirname(__file__),
+        "data_bundle_egon_data/nep2035_version2021/",
         scenario_config('eGon2035')['paths']['list_conv_pp'])
     kw_liste_nep = pd.read_csv(target_file,
                                delimiter=';', decimal=',')
@@ -284,7 +284,7 @@ def district_heating_input():
     """
     # import data to dataframe
     file = os.path.join(
-        os.path.dirname(__file__),
+        "data_bundle_egon_data/nep2035_version2021/",
         scenario_config('eGon2035')['paths']['capacities'])
     df = pd.read_excel(file, sheet_name='Kurzstudie_KWK', dtype={'Wert':float})
     df.set_index(['Energietraeger', 'Name'], inplace=True)
