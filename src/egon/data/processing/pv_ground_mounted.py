@@ -725,8 +725,6 @@ def regio_of_pv_ground_mounted():
             plt.savefig('pv_per_distr_map_eGon2035.png', dpi=300)
             
             # 2) eGon100RE
-            
-            import pdb; pdb.set_trace()
                       
             # get MV grid districts
             sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
