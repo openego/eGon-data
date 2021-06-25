@@ -5,6 +5,8 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
+from egon.data.datasets.heat_demand_data_foreign_countries_2050 import HeatDemandAbroad
+
 from egon.data.airflow.tasks import initdb
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -24,6 +26,7 @@ import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.pypsaeursec as pypsaeursec
+#import egon.data.importing.heat_demand_data_foreign_countries_2050 as import_heat_hd_abroad
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.loadarea as loadarea
@@ -55,6 +58,8 @@ with airflow.DAG(
     schedule_interval=None,
 ) as pipeline:
     setup = PythonOperator(task_id="initdb", python_callable=initdb)
+
+    tasks = pipeline.task_dict
 
     # Openstreetmap data import
     osm_download = PythonOperator(
@@ -395,6 +400,15 @@ with airflow.DAG(
     zensus_inside_ger_metadata >> heat_demand_import
     scenario_input_import >> heat_demand_import
 
+    # Future national heat demands for foreign countries based on Hotmaps
+    # download only, processing in PyPSA-Eur-Sec fork
+
+
+    hd_abroad = HeatDemandAbroad(dependencies=[setup])
+    hd_abroad.insert_into(pipeline)
+    heat_demands_abroad_download = tasks[
+        "heat-demands-abroad.download_hotmaps_scenario_heat_demands"]
+
     # Power plant setup
     power_plant_tables = PythonOperator(
         task_id="create-power-plant-tables",
@@ -506,16 +520,17 @@ with airflow.DAG(
     )
 
     download_era5 >> run_pypsaeursec
-    
+    heat_demands_abroad_download >> run_pypsaeursec
+
     neighbors = PythonOperator(
         task_id="neighbors",
         python_callable=pypsaeursec.neighbor_reduction,
     )
-    
+
     run_pypsaeursec >> neighbors
     create_tables >> neighbors
-   
-    
+
+
     pypsaeursec_capacities = PythonOperator(
         task_id="pypsaeursec_capacities",
         python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,
@@ -523,7 +538,7 @@ with airflow.DAG(
 
     run_pypsaeursec >> pypsaeursec_capacities
     create_tables >> pypsaeursec_capacities
-    
+
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(
         task_id="create-district-heating-areas-table",
