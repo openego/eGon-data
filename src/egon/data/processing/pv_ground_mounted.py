@@ -10,7 +10,6 @@ import numpy as np
 ###
 import datetime
 
-
 def regio_of_pv_ground_mounted():
     
     
@@ -417,6 +416,9 @@ def regio_of_pv_ground_mounted():
                 pv_rora_i['installed capacity in kW'] = pv_rora_i['installed capacity in kW'] * scale_factor
                 pv_agri_i['installed capacity in kW'] = pv_agri_i['installed capacity in kW'] * scale_factor
 
+                pv_per_distr_i['grid_district'] = pd.Series()
+                pv_per_distr_i['installed capacity in kW'] = pd.Series(0)
+
                 ###
                 print('Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität ist ausreichend.')
                 print('Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:')
@@ -724,6 +726,8 @@ def regio_of_pv_ground_mounted():
             
             # 2) eGon100RE
             
+            import pdb; pdb.set_trace()
+                      
             # get MV grid districts
             sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
@@ -846,7 +850,7 @@ def regio_of_pv_ground_mounted():
     
     # execute methodology
 
-    pv_rora, pv_agri, pv_per_distr, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(con = db.engine, path='', pow_per_area = 0.04, join_buffer = 10, max_dist_hv = 20000, show_map=True) 
+    pv_rora, pv_agri, pv_per_distr, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(con = db.engine(), path='', pow_per_area = 0.04, join_buffer = 10, max_dist_hv = 20000, show_map=True) 
     
     # PARAMETERS:
 
@@ -920,11 +924,22 @@ def regio_of_pv_ground_mounted():
     
     # save to DB
     
-    pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, 'eGon2035')
+    if pv_rora['installed capacity in kW'].sum() > 0  or pv_agri['installed capacity in kW'].sum() > 0 or pv_per_distr['installed capacity in kW'].sum():
     
-    pv_parks_100RE = pv_parks(pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, 'eGon100RE')
+        pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, 'eGon2035')
     
-   
+    else: 
+        
+        pv_parks = gpd.GeoDataFrame()
+    
+    if pv_rora_100RE['installed capacity in kW'].sum() > 0  or pv_agri_100RE['installed capacity in kW'].sum() > 0 or pv_per_distr_100RE['installed capacity in kW'].sum():
+    
+        pv_parks_100RE = pv_parks(pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, 'eGon100RE')
+    
+    else:
+        
+        pv_parks_100RE = gpd.GeoDataFrame()
+    
 
     return pv_parks, pv_parks_100RE
 
