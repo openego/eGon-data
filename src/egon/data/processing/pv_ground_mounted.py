@@ -848,7 +848,7 @@ def regio_of_pv_ground_mounted():
     
     # execute methodology
 
-    pv_rora, pv_agri, pv_per_distr, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(con = db.engine(), path='', pow_per_area = 0.04, join_buffer = 10, max_dist_hv = 20000, show_map=True) 
+    pv_rora, pv_agri, pv_per_distr, pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE = run_methodology(con = db.engine(), path='', pow_per_area = 0.04, join_buffer = 10, max_dist_hv = 20000, show_map=False) 
     
     # PARAMETERS:
 
