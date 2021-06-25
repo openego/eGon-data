@@ -217,10 +217,11 @@ def neighbor_reduction(version="0.0.0"):
                    / "postnetworks" / file )   
     
     network = pypsa.Network(str(target_file))
-        
-    foreign_buses = network.buses[~network.buses.country.isin(
-        ['DE', 'AT', 'CH', 'CZ', 'PL', 'SE', 'NO', 'DK', 'GB', 'NL', 'BE',
-         'FR', 'LU'])]
+    
+    wanted_countries = ['DE', 'AT', 'CH', 'CZ', 'PL', 'SE', 'NO', 'DK', 'GB', 'NL', 'BE',
+         'FR', 'LU']
+    foreign_buses = network.buses[~network.buses.index.str.contains(
+        '|'.join(wanted_countries))]
     network.buses = network.buses.drop(
         network.buses.loc[foreign_buses.index].index)
     
@@ -325,6 +326,29 @@ def neighbor_reduction(version="0.0.0"):
     neighbors = network.buses[~network.buses.country.isin(['DE'])]
     neighbors['new_index']=neighbors.reset_index().index
     
+    # lines
+    
+    neighbor_lines = network.lines[network.lines.bus0.isin(neighbors.index) & network.lines.bus1.isin(neighbors.index)]
+    if not network.lines_t['s_max_pu'].empty:
+        neighbor_lines_t = network.lines_t['s_max_pu'][neighbor_lines.index]
+
+    neighbor_lines.reset_index(inplace=True)
+    neighbor_lines.bus0 = neighbors.loc[neighbor_lines.bus0, 'new_index'].reset_index().new_index
+    neighbor_lines.bus1 = neighbors.loc[neighbor_lines.bus1, 'new_index'].reset_index().new_index
+
+    if not network.lines_t['s_max_pu'].empty:
+        for i in neighbor_lines_t.columns:
+           new_index = neighbor_lines[neighbor_lines['name']==i].index
+           neighbor_lines_t.rename(columns={i:new_index[0]}, inplace=True)
+           
+    # links
+    neighbor_links = network.links[network.links.bus0.isin(neighbors.index) & network.links.bus1.isin(neighbors.index)]
+
+    neighbor_links.reset_index(inplace=True)
+    neighbor_links.bus0 = neighbors.loc[neighbor_links.bus0, 'new_index'].reset_index().new_index
+    neighbor_links.bus1 = neighbors.loc[neighbor_links.bus1, 'new_index'].reset_index().new_index
+
+
     neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
     neighbor_gens_t = network.generators_t['p_max_pu'][neighbor_gens.index]
 
@@ -336,6 +360,9 @@ def neighbor_reduction(version="0.0.0"):
         neighbor_gens_t.rename(columns={i:new_index[0]}, inplace=True)
     
     neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    
+    # Fehler passiert in folgender Zeile, scheinbar weil es in loads welche gibt die in loads_t nicht exitieren, 
+    # aber warum wirft das n Fehler??
     neighbor_loads_t = network.loads_t['p_set'][neighbor_loads.index]
 
 
@@ -371,7 +398,55 @@ def neighbor_reduction(version="0.0.0"):
         index_label="bus_id"
     )
     
+    # prepare and write neighboring crossborder lines to etrago tables
     
+    neighbor_lines["scn_name"] = "eGon100RE"
+    neighbor_lines["version"] = version
+    
+    neighbor_lines = neighbor_lines.rename(columns={'s_max_pu': 's_max_pu_fixed'})
+    neighbor_lines["cables"]= 3*neighbor_lines["num_parallel"]
+    neighbor_lines["s_nom"]= neighbor_lines["s_nom_min"]
+
+
+    
+    for i in ['name', 'x_pu_eff', 'r_pu_eff','sub_network','x_pu', 'r_pu', 'g_pu', 'b_pu', 's_nom_opt']:
+        neighbor_lines = neighbor_lines.drop(i, axis=1)
+        
+    neighbor_lines.to_sql(
+        "egon_pf_hv_line",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="line_id"
+    )
+    
+    # prepare and write neighboring crossborder links to etrago tables
+    
+    neighbor_links["scn_name"] = "eGon100RE"
+    neighbor_links["version"] = version
+    
+    neighbor_links = neighbor_links.rename(
+        columns={'efficiency': 'efficiency_fixed', 'p_min_pu':'p_min_pu_fixed', 
+                 'p_max_pu':'p_max_pu_fixed', 'p_set':'p_set_fixed',
+                 'marginal_cost':'marginal_cost_fixed'})
+    
+    
+    for i in ['name', 'geometry', 'tag','under_construction','underground', 
+              'underwater_fraction', 'g_pu', 'bus2', 'bus3', 'bus4', 
+              'efficiency2', 'efficiency3', 'efficiency4', 'lifetime', 
+              'p_nom_opt']:
+        neighbor_links = neighbor_links.drop(i, axis=1)
+        
+    neighbor_links.to_sql(
+        "egon_pf_hv_link",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="link_id"
+    )    
+
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
     neighbor_gens["version"] = version
@@ -450,3 +525,24 @@ def neighbor_reduction(version="0.0.0"):
     index=True,
     index_label="generator_id"
     )
+    
+    # writing neighboring lines_t s_max_pu to etrago tables
+    if not network.lines_t['s_max_pu'].empty:
+        neighbor_lines_t_etrago = pd.DataFrame(
+        columns=['version', 'scn_name', 's_max_pu'], 
+        index=neighbor_lines_t.columns)
+        neighbor_lines_t_etrago['version']=version
+        neighbor_lines_t_etrago['scn_name']='eGon100RE'
+        
+        for i in neighbor_lines_t.columns:
+            neighbor_lines_t_etrago['s_max_pu'][i] = neighbor_lines_t[i].values.tolist()
+
+        neighbor_lines_t_etrago.to_sql(
+        "egon_pf_hv_line_timeseries",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="line_id"
+        )
+    
