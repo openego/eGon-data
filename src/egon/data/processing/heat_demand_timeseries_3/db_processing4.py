@@ -472,6 +472,11 @@ def profile_selector():
         selected_idp_names = selected_idp_names.append(result_MFH)
         selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
         
+        if  os.path.isfile('selected_profiles.csv'):
+            selected_idp_names.to_csv('selected_profiles.csv', mode ='a', header = False)
+        else:
+            selected_idp_names.to_csv('selected_profiles.csv')
+        
         #new_length = len(selected_idp_names)
         
         # current_idp = selected_idp_names.iloc[length:new_length,:] 
