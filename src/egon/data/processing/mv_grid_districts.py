@@ -44,7 +44,7 @@ follows:
 For finding the nearest substation, as already said, direct adjacency is
 preferred over closest distance. This means, the nearest substation does not
 necessarily have to be the closest substation in the sense of beeline distance.
-But it the substation definitely located in a neighboring polygon. This
+But it is the substation definitely located in a neighboring polygon. This
 prevents the algorithm to find solutions where a MV grid districts consists of
 multi-polygons with some space in between.
 Nevertheless, beeline distance still plays an important role, as the algorithm
