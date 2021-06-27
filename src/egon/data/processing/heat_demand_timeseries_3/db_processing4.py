@@ -431,7 +431,7 @@ def profile_selector():
     #generates a dataframe with the idp index number of the selected profiles for each temperature
 
     selected_idp_names = pd.DataFrame()
-    #length = 0
+    length = 0
     for station in Temperature_interval.index:
         result_SFH =pd.DataFrame(columns=Temperature_interval.columns)
         result_MFH =pd.DataFrame(columns=Temperature_interval.columns)
@@ -472,23 +472,16 @@ def profile_selector():
         selected_idp_names = selected_idp_names.append(result_MFH)
         selected_idp_names = selected_idp_names.apply(lambda x: x.astype(np.int32))
         
+        new_length = len(selected_idp_names)
+        selected_this_station = selected_idp_names.iloc[length:new_length,:] 
+        
+        
         if  os.path.isfile('selected_profiles.csv'):
-            selected_idp_names.to_csv('selected_profiles.csv', mode ='a', header = False)
+            selected_this_station.to_csv('selected_profiles.csv', mode ='a', header = False)
         else:
-            selected_idp_names.to_csv('selected_profiles.csv')
+            selected_this_station.to_csv('selected_profiles.csv')
         
-        #new_length = len(selected_idp_names)
-        
-        # current_idp = selected_idp_names.iloc[length:new_length,:] 
-        # selected_array = pd.DataFrame(index=current_idp.index)
-        # selected_array['selected_idp'] =current_idp.values.tolist()
-        
-        # selected_array.to_sql(
-        #     'selected_idp_names',con=db.engine(),
-        #     schema='demand' ,if_exists ='append', index=True) 
-        
-        #length = new_length
-        
+        length = new_length
     
     return annual_demand, idp_df, selected_idp_names
 
