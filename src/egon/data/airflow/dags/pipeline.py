@@ -379,7 +379,8 @@ with airflow.DAG(
     hd_abroad = HeatDemandAbroad(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks[
-        "heat-demands-abroad.download_hotmaps_scenario_heat_demands"]
+        "heat_demand_data_foreign_countries_2050.download-hotmaps-scenario-heat-demands"]
+    #'heat_demand_data_foreign_countries_2050.download-hotmaps-scenario-heat-demands': <Task(Heat-demands-abroad (versioned)): heat_demand_data_foreign_countries_2050.download-hotmaps-scenario-heat-demands
 
     # Power plant setup
     power_plant_tables = PythonOperator(
