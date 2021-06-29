@@ -139,6 +139,8 @@ Changed
   `#285 <https://github.com/openego/eGon-data/issues/285>`_
 * Migrate VG250 to datasets
   `#283 <https://github.com/openego/eGon-data/issues/283>`_
+* Migrate scenario tables to datasets
+  `#309 <https://github.com/openego/eGon-data/issues/309>`_
 
 Bug fixes
 ---------
