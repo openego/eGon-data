@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
@@ -21,7 +22,6 @@ import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
-import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
@@ -235,20 +235,12 @@ with airflow.DAG(
     map_zensus_vg250 >> elec_household_demands_zensus
 
     # NEP data import
-    create_tables = PythonOperator(
-        task_id="create-scenario-tables",
-        python_callable=nep_input.create_scenario_input_tables,
-    )
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[setup, vg250, data_bundle])
+    scenario_capacities.insert_into(pipeline)
+    nep_insert_data = tasks["scenario_capacities.insert-data-nep"]
 
-    nep_insert_data = PythonOperator(
-        task_id="insert-nep-data",
-        python_callable=nep_input.insert_data_nep,
-    )
-
-    setup >> create_tables >> nep_insert_data
-    vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
-    download_data_bundle >> nep_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(

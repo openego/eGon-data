@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from egon.data import db
 from egon.data.config import settings
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -50,6 +51,20 @@ class NEP2021ConvPowerPlants(Base):
     b2040_chp = Column(String(12))
     b2040_capacity = Column(Float)
 
+class ScenarioCapacities(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ScenarioCapacities",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                create_table,
+                insert_data_nep
+            ),
+        )
+
+
 def scenario_config(scn_name):
     """Get scenario settings from datasets.yml
 
@@ -68,7 +83,7 @@ def scenario_config(scn_name):
 
     return data_config["scenario_input"][scn_name]
 
-def create_scenario_input_tables():
+def create_table():
     """Create input tables for scenario setup
 
     Returns
