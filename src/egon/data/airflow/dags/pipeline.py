@@ -24,6 +24,8 @@ import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.gas_grid as gas_grid
+
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
@@ -33,7 +35,7 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
-import egon.data.importing.gas_grid as gas_grid
+import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
@@ -450,6 +452,14 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
+    
+    # Create gas voronoi
+    create_gas_polygons = PythonOperator(
+        task_id="create-gas-voronoi",
+        python_callable=gas_areas.create_voronoi,
+    )
+    
+    gas_grid_insert_data  >> create_gas_polygons
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
