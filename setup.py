@@ -98,10 +98,6 @@ setup(
         "rtree",
         "sqlalchemy<1.4",
         "xarray",
-        "shapely",
-        "pandas",
-        "numpy",
-        "atlite==0.0.3",
         "rioxarray"
         
         
