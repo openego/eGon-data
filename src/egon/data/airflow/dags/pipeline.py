@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -22,7 +23,6 @@ import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.re_potential_areas as re_potential_areas
-import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
@@ -75,6 +75,12 @@ with airflow.DAG(
     vg250 = Vg250(dependencies=[setup])
     vg250.insert_into(pipeline)
     vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
+
+    # Scenario table
+    scenario_parameters = ScenarioParameters(dependencies=[setup])
+    scenario_parameters.insert_into(pipeline)
+    scenario_input_import = tasks["scenario_parameters.insert-scenarios"]
+
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -137,25 +143,13 @@ with airflow.DAG(
     ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
-    # Scenario table
-    scenario_input_tables = PythonOperator(
-        task_id="create-scenario-parameters-table",
-        python_callable=import_scenarios.create_table
-    )
-
-    scenario_input_import = PythonOperator(
-        task_id="import-scenario-parameters",
-        python_callable=import_scenarios.insert_scenarios
-    )
-    setup >> scenario_input_tables >> scenario_input_import
-
     # DemandRegio data import
     demandregio_tables = PythonOperator(
         task_id="demandregio-tables",
         python_callable=import_dr.create_tables,
     )
 
-    scenario_input_tables >> demandregio_tables
+    scenario_input_import >> demandregio_tables
 
 
     demandregio_installation = PythonOperator(

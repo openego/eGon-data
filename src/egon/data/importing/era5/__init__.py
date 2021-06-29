@@ -9,7 +9,7 @@ from pathlib import Path
 import geopandas as gpd
 import egon.data.config
 from egon.data import db
-from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2 import Geometry

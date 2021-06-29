@@ -6,8 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 import pandas as pd
-import egon.data.importing.scenarios.parameters as parameters
-
+import egon.data.datasets.scenario_parameters.parameters as parameters
+from egon.data.datasets import Dataset
 Base = declarative_base()
 
 
@@ -152,3 +152,16 @@ def get_sector_parameters(sector, scenario=None):
                 )
 
     return values
+
+class ScenarioParameters(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ScenarioParameters",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                create_table,
+                insert_scenarios
+            ),
+        )
