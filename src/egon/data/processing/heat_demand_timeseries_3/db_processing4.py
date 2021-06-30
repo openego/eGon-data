@@ -482,6 +482,42 @@ def profile_selector():
             selected_this_station.to_csv('selected_profiles.csv')
         
         length = new_length
+        
+    ### writting csv to the database
+    heat_selected_profiles = {'schema':'demand', 'table':'heat_selected_profiles'}
+
+    input_file = os.path.join(os.getcwd(),'selected_profiles.csv')
+
+    docker_db_config = db.credentials()
+    
+    selected_profiles_table = (
+       f"{heat_selected_profiles['schema']}"
+       f".{heat_selected_profiles['table']}"
+       )
+    db.execute_sql(
+               f"CREATE TABLE {selected_profiles_table}"
+               f""" (
+               );
+               """
+       )
+
+    filename_insert = 'selected_profiles.csv'
+    
+    host = ["-h", f"{docker_db_config['HOST']}"]
+    port = ["-p", f"{docker_db_config['PORT']}"]
+    pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
+    user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
+    command = [
+        "-c",
+        rf"\copy {selected_profiles_table}"
+        rf" FROM '{filename_insert}' DELIMITER ',' CSV HEADER;",
+    ]
+    
+    
+    subprocess.run(["psql"] + host + port + pgdb + user + command,
+                   env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+                   )
+        
     
     return annual_demand, idp_df, selected_idp_names
 
