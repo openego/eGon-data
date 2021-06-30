@@ -454,6 +454,7 @@ with airflow.DAG(
         python_callable=dlr.Calculate_DLR,
     )
     osmtgmod_pypsa >> calculate_dlr
+    download_data_bundle >> calculate_dlr
 
  # Import weather data
     download_era5 = PythonOperator(

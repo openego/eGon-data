@@ -23,9 +23,11 @@ def Calculate_DLR():
     *No parameters required
 
     """
-    
+
     weather_info_path = "cutouts/europe-2011-era5/201101.nc"
-    regions_shape_path = "DLR_regions/Germany_regions.shp"
+    regions_shape_path = (
+        "data_bundle_egon_data/regions_dynamic_line_rating/Germany_regions.shp"
+    )
 
     # Calculate hourly DLR per region
     dlr_hourly_dic, dlr_hourly = DLR_Regions(weather_info_path, regions_shape_path)
