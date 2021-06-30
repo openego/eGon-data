@@ -163,3 +163,5 @@ Bug fixes
   `#248 <https://github.com/openego/eGon-data/issues/248>`_
 * Change order of osmtgmod tasks
   `#253 <https://github.com/openego/eGon-data/issues/253>`_
+* Fix missing municipalities
+  `#279 <https://github.com/openego/eGon-data/issues/279>`_
