@@ -562,8 +562,7 @@ UPDATE 	boundaries.vg250_gem_clean AS t1
 
 -- remove holes
 DELETE FROM 	boundaries.vg250_gem_clean
-WHERE		is_hole IS TRUE OR
-		id = '9251' OR id = '8362'; -- Two special cases deleted manualy
+WHERE		is_hole IS TRUE;
 
 /*
 -- metadata
