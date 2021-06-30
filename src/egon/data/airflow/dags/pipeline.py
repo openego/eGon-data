@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
@@ -22,8 +23,9 @@ import egon.data.importing.mastr as mastr
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
-import egon.data.importing.vg250 as import_vg250
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.gas_grid as gas_grid
+
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
@@ -33,7 +35,7 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
-import egon.data.importing.gas_grid as gas_grid
+import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
@@ -73,33 +75,9 @@ with airflow.DAG(
     download_data_bundle = tasks["data_bundle.download"]
 
     # VG250 (Verwaltungsgebiete 250) data import
-    vg250_download = PythonOperator(
-        task_id="download-vg250",
-        python_callable=import_vg250.download_vg250_files,
-    )
-    vg250_import = PythonOperator(
-        task_id="import-vg250",
-        python_callable=import_vg250.to_postgres,
-    )
-
-    vg250_nuts_mview = PostgresOperator(
-        task_id="vg250_nuts_mview",
-        sql="vg250_lan_nuts_id_mview.sql",
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
-    vg250_metadata = PythonOperator(
-        task_id="add-vg250-metadata",
-        python_callable=import_vg250.add_metadata,
-    )
-    vg250_clean_and_prepare = PostgresOperator(
-        task_id="vg250_clean_and_prepare",
-        sql="cleaning_and_preparation.sql",
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
-    setup >> vg250_download >> vg250_import >> vg250_nuts_mview
-    vg250_nuts_mview >> vg250_metadata >> vg250_clean_and_prepare
+    vg250 = Vg250(dependencies=[setup])
+    vg250.insert_into(pipeline)
+    vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -451,6 +429,14 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
+    
+    # Create gas voronoi
+    create_gas_polygons = PythonOperator(
+        task_id="create-gas-voronoi",
+        python_callable=gas_areas.create_voronoi,
+    )
+    
+    gas_grid_insert_data  >> create_gas_polygons
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
