@@ -68,7 +68,4 @@ docs/_build
 *.bak
 
 # Mypy Cache
-
 .mypy_cache/
-
-Germany_Weather_2011.nc
