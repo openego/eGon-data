@@ -102,6 +102,8 @@ Added
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
 * Integrate distribution of wind onshore and pv ground mounted generation
   `#146 <https://github.com/openego/eGon-data/issues/146>`_
+* Integrate gas voronoi polygons
+  `#308 <https://github.com/openego/eGon-data/issues/308>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
