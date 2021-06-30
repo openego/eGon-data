@@ -1,4 +1,4 @@
-"""The central module containing all code dealing with importing VG250 data.
+"""The central module containing all code dealing with VG250 data.
 
 This module either directly contains the code dealing with importing VG250
 data, or it re-exports everything needed to handle it. Please refrain
@@ -10,6 +10,7 @@ isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from urllib.request import urlretrieve
+import codecs
 import json
 import os
 
@@ -18,10 +19,11 @@ import geopandas as gpd
 
 from egon.data import db
 from egon.data.config import settings
+from egon.data.datasets import Dataset
 import egon.data.config
 
 
-def download_vg250_files():
+def download_files():
     """Download VG250 (Verwaltungsgebiete) shape files."""
     data_config = egon.data.config.datasets()
     vg250_config = data_config["vg250"]["original_data"]
@@ -57,7 +59,7 @@ def to_postgres():
             f"vg250_ebenen_0101/{filename}"
         )
 
-        boundary = settings()['egon-data']['--dataset-boundary']
+        boundary = settings()["egon-data"]["--dataset-boundary"]
         if boundary != "Everything":
             # read-in borders of federal state Schleswig-Holstein
             data_sta = gpd.read_file(
@@ -270,4 +272,59 @@ def add_metadata():
 
         db.submit_comment(
             meta_json, vg250_config["processed"]["schema"], table
+        )
+
+
+def run_sql_script(script):
+    """Runs SQL script in egon-data database
+
+    Parameters
+    ----------
+    script : str
+        Name of SQL-script
+
+    Returns
+    -------
+    None.
+
+    """
+
+    with codecs.open(script, "r", "utf-8-sig") as fd:
+        sqlfile = fd.read()
+
+    db.execute_sql(sqlfile)
+
+
+def nuts_mview():
+
+    run_sql_script(
+        os.path.join(os.path.dirname(__file__), "vg250_lan_nuts_id_mview.sql")
+    )
+
+
+def cleaning_and_preperation():
+
+    run_sql_script(
+        os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
+    )
+
+
+class Vg250(Dataset):
+
+    filename = egon.data.config.datasets()["vg250"]["original_data"]["source"][
+        "url"
+    ]
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="VG250",
+            version=self.filename + "-0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                download_files,
+                to_postgres,
+                nuts_mview,
+                add_metadata,
+                cleaning_and_preperation,
+            ),
         )

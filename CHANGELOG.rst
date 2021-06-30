@@ -65,26 +65,26 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * Add hydro and biomass power plants eGon2035
   `#127 <https://github.com/openego/eGon-data/issues/127>`_
-* Creation of the ehv/hv grid model with osmTGmod, see 
-  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
+* Creation of the ehv/hv grid model with osmTGmod, see
+  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
 * Identification of medium-voltage grid districts
-  `#10 <https://github.com/openego/eGon-data/pull/10>`_  
+  `#10 <https://github.com/openego/eGon-data/pull/10>`_
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
 * Distribute electrical demands of cts to zensus cells
   `#210 <https://github.com/openego/eGon-data/issues/210>`_
 * Include industrial sites' download, import and merge
   `#117 <https://github.com/openego/eGon-data/issues/117>`_
-* Integrate scenario table with parameters for each sector 
+* Integrate scenario table with parameters for each sector
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
 * The volume of the docker container for the PostgreSQL database
   is saved in the project directory under `docker/database-data`.
   The current user (`$USER`) is owner of the volume.
-  Containers created prior to this change will fail when using the 
+  Containers created prior to this change will fail when using the
   changed code. The container needs to be re-created.
   `#228 <https://github.com/openego/eGon-data/issues/228>`_
-* Extract landuse areas from OSM 
+* Extract landuse areas from OSM
   `#214 <https://github.com/openego/eGon-data/issues/214>`_
 * Integrate weather data and renewable feedin timeseries
   `#19 <https://github.com/openego/eGon-data/issues/19>`_
@@ -135,7 +135,10 @@ Changed
 * Update installation of demandregio's disaggregator
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
-  `#243 <https://github.com/openego/eGon-data/issues/243>`_
+  `#243 <https://github.com/openego/eGon-data/issues/243>`_and
+  `#285 <https://github.com/openego/eGon-data/issues/285>`_
+* Migrate VG250 to datasets
+  `#283 <https://github.com/openego/eGon-data/issues/283>`_
 
 Bug fixes
 ---------
