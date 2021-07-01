@@ -121,6 +121,13 @@ import egon.data.config as config
     ),
     show_default=True,
 )
+@click.option(
+    "--airflow-port",
+    default=8080,
+    metavar="AIRFLOW_PORT",
+    help=("Specify the port on which airflow runs."),
+    show_default=True,
+)
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):

@@ -436,14 +436,15 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
-    
+
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
         task_id="create-gas-voronoi",
         python_callable=gas_areas.create_voronoi,
     )
-    
+
     gas_grid_insert_data  >> create_gas_polygons
+    vg250_clean_and_prepare >> create_gas_polygons
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -461,7 +462,7 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
-    
+   
     # Generate wind power farms
     generate_wind_farms = PythonOperator(
         task_id="generate_wind_farms",
@@ -485,6 +486,7 @@ with airflow.DAG(
     define_mv_grid_districts >> generate_pv_ground_mounted
     
     # Calculate dynamic line rating for HV trans lines
+
     calculate_dlr = PythonOperator(
         task_id="calculate_dlr",
         python_callable=dlr.Calculate_DLR,
