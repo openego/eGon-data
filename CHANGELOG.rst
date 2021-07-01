@@ -167,3 +167,5 @@ Bug fixes
   `#253 <https://github.com/openego/eGon-data/issues/253>`_
 * Fix missing municipalities
   `#279 <https://github.com/openego/eGon-data/issues/279>`_
+* Fix import of hydro power plants
+  `#270 <https://github.com/openego/eGon-data/issues/270>`_
