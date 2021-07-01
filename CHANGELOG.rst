@@ -100,6 +100,8 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Integrate distribution of wind onshore and pv ground mounted generation
+  `#146 <https://github.com/openego/eGon-data/issues/146>`_
 * Integrate dynamic line rating potentials
   `#72 <https://github.com/openego/eGon-data/issues/72>`_
 * Integrate gas voronoi polygons
