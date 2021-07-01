@@ -11,7 +11,7 @@ This module adjustes the national heat demands and district heating shares in
 Germany and other European countries.
 """
 
-import egon.data.config
+# import egon.data.config # egon is currently not available here
 # from urllib.request import urlretrieve
 # import geopandas as gpd
 
@@ -118,7 +118,7 @@ def adjust_heat_demand_column(sector, heat_type, scenario_data, energy_totals):
     return merged
 
 
-def adjust_energy_totals():
+def adjust_energy_totals(energy_totals):
     """
     Adjust future heat demands for scenario generation
 
@@ -127,7 +127,8 @@ def adjust_energy_totals():
 
     Parameters
     ----------
-        None
+        energy_totals: pandas dataframe
+            clean_df from PyPSA-Eur-Sec build_energy_totals to adjusted
 
     Returns
     -------
@@ -145,7 +146,8 @@ def adjust_energy_totals():
 
     Notes
     -----
-        Overwriting 2011 Final energy consumption data with 2050
+        Overwriting 2011 Final energy consumption data stored in
+        the energy_totals.csv of PyPSA-Eur-Sec with 2050
         heat demands for space heating and hot water heating using Hotmaps
         data. The heat demands for domestic hot water heating in an couple of
         countries increase until 2050 compared to 2011 / 2015. Nevertheless,
@@ -175,25 +177,24 @@ def adjust_energy_totals():
         adjust_heat_demand_column using a correction factor.
     """
 
-    # Load the energy_totals (to be adjusted) for the weather year
-    # (here: 2011, FEC)
-    energy_totals = pd.read_csv('/data/energy_totals.csv').set_index('country')
-
     # temp for testing only:
     # energy_totals = pd.read_csv(
-    #     'run-pypsa-eur-sec/pypsa-eur-sec/data/energy_totals.csv'
+    #     'run-pypsa-eur-sec/pypsa-eur-sec/resources/energy_totals.csv'
     #     ).set_index('country')
 
     # Load the hotmaps data for 2050 (current policy scenario)
 
     # Get information from data configuration file about the hotmaps data
-    data_config = egon.data.config.datasets()
-    hotmaps_heatdemands_orig = data_config[
-        "hotmaps_current_policy_scenario_heat_demands_buildings"][
-        "original_data"
-    ]
-    # path to the downloaded heat demand secenario data
-    filepath = hotmaps_heatdemands_orig["target"]["path"]
+    # currently not working this way
+    # data_config = egon.data.config.datasets()
+    # hotmaps_heatdemands_orig = data_config[
+    #     "hotmaps_current_policy_scenario_heat_demands_buildings"][
+    #     "original_data"
+    # ]
+    # # path to the downloaded heat demand secenario data
+    # filepath = hotmaps_heatdemands_orig["target"]["path"]
+
+    filepath = "../../scen_current_building_demand.csv"
 
     # temp for testing only
     # filepath = ('/home/liv/Documents/eGo_n/Code/eGon-data/egon-data-test/scen_current_building_demand.csv')
