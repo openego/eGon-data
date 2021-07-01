@@ -37,9 +37,17 @@ import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.mv_grid_districts as mvgd
+import egon.data.processing.wind_farms as wf
+import egon.data.processing.pv_ground_mounted as pv_gm
+import egon.data.importing.scenarios as import_scenarios
+import egon.data.importing.industrial_sites as industrial_sites
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
+
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 import egon.data.processing.dsm.cts as dsm_cts
+
 
 from egon.data import db
 
@@ -429,14 +437,15 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
-    
+
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
         task_id="create-gas-voronoi",
         python_callable=gas_areas.create_voronoi,
     )
-    
+
     gas_grid_insert_data  >> create_gas_polygons
+    vg250_clean_and_prepare >> create_gas_polygons
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -454,8 +463,39 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
+   
+    # Generate wind power farms
+    generate_wind_farms = PythonOperator(
+        task_id="generate_wind_farms",
+        python_callable=wf.wind_power_parks,
+    )
+    retrieve_mastr_data >> generate_wind_farms
+    insert_re_potential_areas >> generate_wind_farms
+    scenario_input_import >> generate_wind_farms
+    hvmv_substation_extraction >> generate_wind_farms
+    define_mv_grid_districts >> generate_wind_farms
+    
+    # Regionalization of PV ground mounted
+    generate_pv_ground_mounted = PythonOperator(
+        task_id="generate_pv_ground_mounted",
+        python_callable=pv_gm.regio_of_pv_ground_mounted,
+    )
+    retrieve_mastr_data >> generate_pv_ground_mounted
+    insert_re_potential_areas >> generate_pv_ground_mounted
+    scenario_input_import >> generate_pv_ground_mounted
+    hvmv_substation_extraction >> generate_pv_ground_mounted
+    define_mv_grid_districts >> generate_pv_ground_mounted
+    
+    # Calculate dynamic line rating for HV trans lines
 
- # Import weather data
+    calculate_dlr = PythonOperator(
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
+    )
+    osmtgmod_pypsa >> calculate_dlr
+    download_data_bundle >> calculate_dlr
+
+    # Import weather data
     download_era5 = PythonOperator(
         task_id="download-weather-data",
         python_callable=import_era5.download_era5,

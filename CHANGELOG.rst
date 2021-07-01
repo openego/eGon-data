@@ -100,8 +100,13 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Integrate distribution of wind onshore and pv ground mounted generation
+  `#146 <https://github.com/openego/eGon-data/issues/146>`_
+* Integrate dynamic line rating potentials
+  `#72 <https://github.com/openego/eGon-data/issues/72>`_
 * Integrate gas voronoi polygons
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -141,6 +146,8 @@ Changed
   `#285 <https://github.com/openego/eGon-data/issues/285>`_
 * Migrate VG250 to datasets
   `#283 <https://github.com/openego/eGon-data/issues/283>`_
+* Allow configuring the airflow port
+  `#281 <https://github.com/openego/eGon-data/issues/281>`_
 
 Bug fixes
 ---------
@@ -167,3 +174,5 @@ Bug fixes
   `#253 <https://github.com/openego/eGon-data/issues/253>`_
 * Fix missing municipalities
   `#279 <https://github.com/openego/eGon-data/issues/279>`_
+* Fix import of hydro power plants
+  `#270 <https://github.com/openego/eGon-data/issues/270>`_
