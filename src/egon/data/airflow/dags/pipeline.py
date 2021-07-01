@@ -430,13 +430,13 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
-    
+
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
         task_id="create-gas-voronoi",
         python_callable=gas_areas.create_voronoi,
     )
-    
+
     gas_grid_insert_data  >> create_gas_polygons
 
     # Extract landuse areas from osm data set
@@ -555,7 +555,6 @@ with airflow.DAG(
     heat_supply = HeatSupply(
         dependencies=[data_bundle])
 
-    heat_supply.insert_into(pipeline)
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
     heat_supply_tables = tasks["heat_supply.create-tables"]
@@ -573,7 +572,6 @@ with airflow.DAG(
     heat_etrago = HeatEtrago(
         dependencies=[heat_supply])
 
-    heat_etrago.insert_into(pipeline)
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]
 
