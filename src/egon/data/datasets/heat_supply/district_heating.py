@@ -20,8 +20,8 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
 
     Returns
     -------
-    capacity_per_category : TYPE
-        DESCRIPTION.
+    capacity_per_category : pandas.DataFrame
+        Installed capacities per technology and size category
 
     """
     sources = config.datasets()['heat_supply']['sources']
