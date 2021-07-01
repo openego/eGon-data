@@ -94,10 +94,14 @@ def Calculate_DLR():
 
     # Modify column "s_max_pu" to fit the requirement of the table
     trans_lines["s_max_pu"] = trans_lines.apply(lambda x: list(x["s_max_pu"]), axis=1)
-    trans_lines.index.rename("temp_id", inplace=True)
+    trans_lines["temp_id"] = 1
     # Insert into database
     trans_lines.to_sql(
-        "egon_pf_hv_line_timeseries", schema="grid", con=db.engine(), if_exists="append"
+        "egon_pf_hv_line_timeseries",
+        schema="grid",
+        con=db.engine(),
+        if_exists="append",
+        index=False,
     )
     return 0
 
