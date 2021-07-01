@@ -39,6 +39,11 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
+import egon.data.importing.scenarios as import_scenarios
+import egon.data.importing.industrial_sites as industrial_sites
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
+
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 
@@ -479,7 +484,15 @@ with airflow.DAG(
     hvmv_substation_extraction >> generate_pv_ground_mounted
     define_mv_grid_districts >> generate_pv_ground_mounted
     
- # Import weather data
+    # Calculate dynamic line rating for HV trans lines
+    calculate_dlr = PythonOperator(
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
+    )
+    osmtgmod_pypsa >> calculate_dlr
+    download_data_bundle >> calculate_dlr
+
+    # Import weather data
     download_era5 = PythonOperator(
         task_id="download-weather-data",
         python_callable=import_era5.download_era5,
