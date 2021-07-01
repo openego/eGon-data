@@ -97,6 +97,10 @@ setup(
         "rasterio",
         "rtree",
         "sqlalchemy<1.4",
+        "xarray",
+        "rioxarray"
+        
+        
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
