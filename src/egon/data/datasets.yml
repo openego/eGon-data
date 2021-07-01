@@ -496,6 +496,9 @@ chp_location:
       table: 'nep_2021_conv_powerplants'
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
+    mastr_location: 'location_elec_generation_raw.csv'
+    mv_grid_districts: 'grid.mv_grid_districts'
+    ehv_voronoi: "grid.egon_ehv_substation_voronoi"
   targets:
     power_plants:
       table: 'egon_power_plants'
