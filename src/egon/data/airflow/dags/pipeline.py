@@ -37,6 +37,10 @@ import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.mv_grid_districts as mvgd
+import egon.data.importing.scenarios as import_scenarios
+import egon.data.importing.industrial_sites as industrial_sites
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 
@@ -453,6 +457,14 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
+    
+        # Calculate dynamic line rating for HV trans lines
+    calculate_dlr = PythonOperator(
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
+    )
+    osmtgmod_pypsa >> calculate_dlr
+    download_data_bundle >> calculate_dlr
 
  # Import weather data
     download_era5 = PythonOperator(

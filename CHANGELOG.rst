@@ -100,8 +100,11 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Integrate dynamic line rating potentials
+  `#72 <https://github.com/openego/eGon-data/issues/72>`_
 * Integrate gas voronoi polygons
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
