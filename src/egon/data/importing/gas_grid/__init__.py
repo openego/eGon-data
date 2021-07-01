@@ -29,7 +29,7 @@ def next_id(component):
         Next index value
     """
     max_id = db.select_dataframe(
-        """
+        f"""
         SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
         """)['max'][0]
 
@@ -308,9 +308,9 @@ def insert_gas_pipeline_list(gas_nodes_list):
     
     INSERT INTO grid.egon_pf_hv_link (version, scn_name, link_id, bus0,
                                               bus1, p_nom, length,
-                                              geom, topo)
+                                              geom, topo, carrier)
     SELECT
-    version, scn_name, link_id, bus0, bus1, p_nom, length, geom, topo
+    version, scn_name, link_id, bus0, bus1, p_nom, length, geom, topo, carrier
     FROM grid.egon_pf_hv_gas_link;
         
     DROP TABLE grid.egon_pf_hv_gas_link;

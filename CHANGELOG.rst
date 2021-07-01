@@ -102,6 +102,9 @@ Added
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
 * Integrate dynamic line rating potentials
   `#72 <https://github.com/openego/eGon-data/issues/72>`_
+* Integrate gas voronoi polygons
+  `#308 <https://github.com/openego/eGon-data/issues/308>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -165,3 +168,5 @@ Bug fixes
   `#248 <https://github.com/openego/eGon-data/issues/248>`_
 * Change order of osmtgmod tasks
   `#253 <https://github.com/openego/eGon-data/issues/253>`_
+* Fix missing municipalities
+  `#279 <https://github.com/openego/eGon-data/issues/279>`_
