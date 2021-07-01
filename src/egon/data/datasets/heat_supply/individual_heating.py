@@ -117,7 +117,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     1.) all small scale CHP are connected.
     2.) If the supply can not  meet the heat demand, solar thermal collectors
-        (if possible) are attached.
+        are attached. This is not implemented yet, since individual
+        solar thermal plants are not considered in eGon2035 scenario.
     3.) If this is not suitable, the mv grid is also supplied by heat pumps.
     4.) The last option are individual gas boilers.
 
