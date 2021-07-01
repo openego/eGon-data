@@ -8,6 +8,8 @@ from egon.data.datasets.heat_supply.district_heating import (
     cascade_heat_supply)
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv)
+from egon.data.datasets.heat_supply.geothermal import (
+    potential_germany)
 from egon.data.processing.district_heating_areas import DistrictHeatingAreas
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
@@ -109,7 +111,8 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.0",
+            version="0.0.0-25",
             dependencies=dependencies,
-            tasks=(create_tables, {district_heating, individual_heating}),
+            tasks=(create_tables, {
+                district_heating, individual_heating, potential_germany}),
         )

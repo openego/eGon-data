@@ -573,14 +573,15 @@ with airflow.DAG(
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
     heat_supply_tables = tasks["heat_supply.create-tables"]
+    geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
 
     create_district_heating_areas_table >> heat_supply_tables
-
-    import_district_heating_areas >>  import_district_heating_supply
-    power_plant_import >>  import_district_heating_supply
-
-    import_district_heating_areas >>  import_individual_heating_supply
-    power_plant_import >>  import_individual_heating_supply
+    import_district_heating_areas >> import_district_heating_supply
+    map_zensus_grid_districts >> import_district_heating_supply
+    import_district_heating_areas >> geothermal_potential
+    import_district_heating_areas >> import_individual_heating_supply
+    map_zensus_grid_districts >> import_individual_heating_supply
+    power_plant_import >> import_individual_heating_supply
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
