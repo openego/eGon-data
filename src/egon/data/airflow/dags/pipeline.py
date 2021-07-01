@@ -7,6 +7,8 @@ import importlib_resources as resources
 
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.heat_etrago import HeatEtrago
+from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
@@ -588,3 +590,31 @@ with airflow.DAG(
     nep_insert_data >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+
+    # Heat supply
+    heat_supply = HeatSupply(
+        dependencies=[data_bundle])
+
+    import_district_heating_supply = tasks["heat_supply.district-heating"]
+    import_individual_heating_supply = tasks["heat_supply.individual-heating"]
+    heat_supply_tables = tasks["heat_supply.create-tables"]
+    geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
+
+    create_district_heating_areas_table >> heat_supply_tables
+    import_district_heating_areas >> import_district_heating_supply
+    map_zensus_grid_districts >> import_district_heating_supply
+    import_district_heating_areas >> geothermal_potential
+    import_district_heating_areas >> import_individual_heating_supply
+    map_zensus_grid_districts >> import_individual_heating_supply
+    power_plant_import >> import_individual_heating_supply
+
+    # Heat to eTraGo
+    heat_etrago = HeatEtrago(
+        dependencies=[heat_supply])
+
+    heat_etrago_buses = tasks["heat_etrago.buses"]
+    heat_etrago_supply = tasks["heat_etrago.supply"]
+
+    etrago_input_data >> heat_etrago_buses
+    define_mv_grid_districts >> heat_etrago_buses
+    import_district_heating_supply >> heat_etrago_supply

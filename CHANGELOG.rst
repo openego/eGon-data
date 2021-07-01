@@ -106,6 +106,8 @@ Added
   `#72 <https://github.com/openego/eGon-data/issues/72>`_
 * Integrate gas voronoi polygons
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
+* Integrate supply strategies for individual and district heating
+  `#232 <https://github.com/openego/eGon-data/issues/232>`_
 
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
