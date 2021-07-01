@@ -120,7 +120,7 @@ packages are required too. Right now these are:
   :code:`sudo apt install gdal-bin`.
 
 * To download ERA5 weather data you need to register at the CDS
-  registration page and install the CDS API key as descibed
+  registration page and install the CDS API key as described
   `here <https://cds.climate.copernicus.eu/api-how-to>`_
   You also have to agree on the `terms of use 
   <https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products>`_
