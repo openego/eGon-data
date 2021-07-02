@@ -9,8 +9,12 @@ from geoalchemy2 import Geometry
 import pandas as pd
 import geopandas as gpd
 import egon.data.config
+from egon.data.datasets import Dataset
 import numpy as np
-from egon.data.processing.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
+from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
+from egon.data.datasets.power_plants.wind_farms import wind_power_parks
+from egon.data.datasets.power_plants.pv_ground_mounted import (
+    regio_of_pv_ground_mounted)
 Base = declarative_base()
 
 
@@ -30,6 +34,22 @@ class EgonPowerPlants(Base):
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
+class PowerPlants(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="PowerPlants",
+            version="0.0.0-1",
+            dependencies=dependencies,
+            tasks=(
+                create_tables,
+                {insert_hydro_biomass,
+                 wind_power_parks,
+                 regio_of_pv_ground_mounted,
+                 pv_rooftop_per_mv_grid
+                 }
+            ),
+        )
 
 def create_tables():
     """Create tables for power plant data
@@ -455,8 +475,8 @@ def assign_bus_id(power_plants, cfg):
 
     return power_plants
 
-def insert_power_plants():
-    """Insert power plants in database
+def insert_hydro_biomass():
+    """Insert hydro and biomass power plants in database
 
     Returns
     -------
