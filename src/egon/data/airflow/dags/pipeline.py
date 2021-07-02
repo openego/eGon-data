@@ -20,7 +20,6 @@ from egon.data.processing.zensus_vg250 import (
 import airflow
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
-import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
@@ -459,44 +458,13 @@ with airflow.DAG(
     download_data_bundle >> calculate_dlr
 
     # Import weather data
-    download_era5 = PythonOperator(
-        task_id="download-weather-data",
-        python_callable=import_era5.download_era5,
-    )
-    scenario_input_import >> download_era5
+    weather_data = WeatherData(dependencies=[setup])
 
-    create_weather_tables = PythonOperator(
-        task_id="create-weather-tables",
-        python_callable=import_era5.create_tables,
-    )
-    setup >> create_weather_tables
+    renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
 
-    import_weather_cells = PythonOperator(
-        task_id="insert-weather-cells",
-        python_callable=import_era5.insert_weather_cells,
-    )
-    create_weather_tables >> import_weather_cells
-    download_era5 >> import_weather_cells
-
-    feedin_wind_onshore = PythonOperator(
-        task_id="insert-feedin-wind",
-        python_callable=import_feedin.wind_feedin_per_weather_cell,
-    )
-
-    feedin_pv = PythonOperator(
-        task_id="insert-feedin-pv",
-        python_callable=import_feedin.pv_feedin_per_weather_cell,
-    )
-
-    feedin_solar_thermal = PythonOperator(
-        task_id="insert-feedin-solar-thermal",
-        python_callable=import_feedin.solar_thermal_feedin_per_weather_cell,
-    )
-
-    import_weather_cells >> [feedin_wind_onshore,
-                             feedin_pv, feedin_solar_thermal]
-    vg250_clean_and_prepare >> [feedin_wind_onshore,
-                             feedin_pv, feedin_solar_thermal]
+    feedin_wind_onshore = tasks["renewable_feedin.wind"]
+    feedin_pv = tasks["renewable_feedin.pv"]
+    feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
 
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(

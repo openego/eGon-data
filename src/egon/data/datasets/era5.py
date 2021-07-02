@@ -10,11 +10,22 @@ import geopandas as gpd
 import egon.data.config
 from egon.data import db
 from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2 import Geometry
 # will be later imported from another file ###
 Base = declarative_base()
+
+class WeatherData(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Era5",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=({create_tables, download_era5}, insert_weather_cells),
+            )
 
 class EgonEra5Cells(Base):
     __tablename__ = 'egon_era5_weather_cells'

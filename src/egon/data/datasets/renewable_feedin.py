@@ -7,8 +7,19 @@ import geopandas as gpd
 import numpy as np
 import egon.data.config
 from egon.data import db
-from egon.data.importing.era5 import import_cutout
+from egon.data.datasets.era5 import import_cutout
 from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.datasets import Dataset
+
+class RenewableFeedin(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="RenewableFeedin",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=({wind, pv, solar_thermal}),
+            )
 
 def weather_cells_in_germany(geom_column='geom'):
     """ Get weather cells which intersect with Germany
@@ -170,7 +181,7 @@ def feedin_per_turbine():
 
     return gdf
 
-def wind_feedin_per_weather_cell():
+def wind():
     """ Insert feed-in timeseries for wind onshore turbines to database
 
     Returns
@@ -216,7 +227,7 @@ def wind_feedin_per_weather_cell():
               con=db.engine(),
               if_exists='append')
 
-def pv_feedin_per_weather_cell():
+def pv():
     """ Insert feed-in timeseries for pv plants to database
 
     Returns
@@ -244,7 +255,7 @@ def pv_feedin_per_weather_cell():
     insert_feedin(ts_pv, 'pv', weather_year)
 
 
-def solar_thermal_feedin_per_weather_cell():
+def solar_thermal():
     """ Insert feed-in timeseries for pv plants to database
 
     Returns
