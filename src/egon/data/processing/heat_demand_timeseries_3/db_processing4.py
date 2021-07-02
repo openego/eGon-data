@@ -535,6 +535,7 @@ def profile_selector():
                    env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
                    )
         
+    os.remove(filename_insert)
     
     return annual_demand, idp_df, selected_idp_names
 
