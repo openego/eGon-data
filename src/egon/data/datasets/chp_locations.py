@@ -6,8 +6,42 @@ import pandas as pd
 import geopandas
 from egon.data import db, config
 from egon.data.processing.power_plants import (
-    EgonPowerPlants, assign_voltage_level, assign_bus_id)
+    assign_voltage_level, assign_bus_id)
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, String, Float, Integer, Sequence
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import JSONB
+from geoalchemy2 import Geometry
+Base = declarative_base()
+
+class EgonChp(Base):
+    __tablename__ = "egon_chp"
+    __table_args__ = {"schema": "supply"}
+    id = Column(Integer, Sequence("chp_seq"), primary_key=True)
+    sources = Column(JSONB)
+    source_id = Column(JSONB)
+    carrier = Column(String)
+    use_case = Column(String)
+    el_capacity = Column(Float)
+    th_capacity = Column(Float)
+    electrical_bus_id = Column(Integer)
+    heat_bus_id = Column(Integer)
+    gas_bus_id = Column(Integer)
+    voltage_level = Column(Integer)
+    scenario = Column(String)
+    geom = Column(Geometry("POINT", 4326))
+
+def create_tables():
+    """Create tables for chp data
+    Returns
+    -------
+    None.
+    """
+
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
+    engine = db.engine()
+    EgonChp.__table__.drop(bind=engine, checkfirst=True)
+    EgonChp.__table__.create(bind=engine, checkfirst=True)
 
 def map_carrier_nep_mastr():
     """Map carriers from NEP to carriers from MaStR
@@ -405,7 +439,7 @@ def insert_chp_egon2035():
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
     for i, row in insert_chp.iterrows():
-        entry = EgonPowerPlants(
+        entry = EgonChp(
                 sources={
                     "chp": "MaStR",
                     "el_capacity": row.source,
@@ -413,11 +447,10 @@ def insert_chp_egon2035():
                 },
                 source_id={"MastrNummer": row.MaStRNummer},
                 carrier=row.carrier,
-                chp=True,
                 el_capacity=row.el_capacity,
                 th_capacity= row.th_capacity,
                 voltage_level = row.voltage_level,
-                bus_id = row.bus_id,
+                electrical_bus_id = row.bus_id,
                 scenario='eGon2035',
                 geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
             )

@@ -501,5 +501,5 @@ chp_location:
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
   targets:
     power_plants:
-      table: 'egon_power_plants'
+      table: 'egon_chp'
       schema: 'supply'
