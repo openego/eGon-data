@@ -78,9 +78,7 @@ with airflow.DAG(
 
     # Scenario table
     scenario_parameters = ScenarioParameters(dependencies=[setup])
-    scenario_parameters.insert_into(pipeline)
     scenario_input_import = tasks["scenario_parameters.insert-scenarios"]
-
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -237,7 +235,6 @@ with airflow.DAG(
     # NEP data import
     scenario_capacities = ScenarioCapacities(
         dependencies=[setup, vg250, data_bundle])
-    scenario_capacities.insert_into(pipeline)
     nep_insert_data = tasks["scenario_capacities.insert-data-nep"]
 
     population_import >> nep_insert_data
