@@ -7,6 +7,8 @@ import importlib_resources as resources
 
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.heat_etrago import HeatEtrago
+from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
@@ -24,6 +26,8 @@ import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.mastr as mastr
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.zensus as import_zs
+import egon.data.importing.gas_grid as gas_grid
+
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
@@ -33,10 +37,18 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
-import egon.data.importing.gas_grid as gas_grid
+import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.mv_grid_districts as mvgd
+import egon.data.processing.wind_farms as wf
+import egon.data.processing.pv_ground_mounted as pv_gm
+import egon.data.importing.scenarios as import_scenarios
+import egon.data.importing.industrial_sites as industrial_sites
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
+
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
+
 
 from egon.data import db
 
@@ -410,6 +422,15 @@ with airflow.DAG(
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
 
+    # Create gas voronoi
+    create_gas_polygons = PythonOperator(
+        task_id="create-gas-voronoi",
+        python_callable=gas_areas.create_voronoi,
+    )
+
+    gas_grid_insert_data  >> create_gas_polygons
+    vg250_clean_and_prepare >> create_gas_polygons
+
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
         task_id="create-landuse-table",
@@ -426,8 +447,39 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
+   
+    # Generate wind power farms
+    generate_wind_farms = PythonOperator(
+        task_id="generate_wind_farms",
+        python_callable=wf.wind_power_parks,
+    )
+    retrieve_mastr_data >> generate_wind_farms
+    insert_re_potential_areas >> generate_wind_farms
+    scenario_input_import >> generate_wind_farms
+    hvmv_substation_extraction >> generate_wind_farms
+    define_mv_grid_districts >> generate_wind_farms
+    
+    # Regionalization of PV ground mounted
+    generate_pv_ground_mounted = PythonOperator(
+        task_id="generate_pv_ground_mounted",
+        python_callable=pv_gm.regio_of_pv_ground_mounted,
+    )
+    retrieve_mastr_data >> generate_pv_ground_mounted
+    insert_re_potential_areas >> generate_pv_ground_mounted
+    scenario_input_import >> generate_pv_ground_mounted
+    hvmv_substation_extraction >> generate_pv_ground_mounted
+    define_mv_grid_districts >> generate_pv_ground_mounted
+    
+    # Calculate dynamic line rating for HV trans lines
 
- # Import weather data
+    calculate_dlr = PythonOperator(
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
+    )
+    osmtgmod_pypsa >> calculate_dlr
+    download_data_bundle >> calculate_dlr
+
+    # Import weather data
     download_era5 = PythonOperator(
         task_id="download-weather-data",
         python_callable=import_era5.download_era5,
@@ -521,3 +573,31 @@ with airflow.DAG(
     nep_insert_data >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+
+    # Heat supply
+    heat_supply = HeatSupply(
+        dependencies=[data_bundle])
+
+    import_district_heating_supply = tasks["heat_supply.district-heating"]
+    import_individual_heating_supply = tasks["heat_supply.individual-heating"]
+    heat_supply_tables = tasks["heat_supply.create-tables"]
+    geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
+
+    create_district_heating_areas_table >> heat_supply_tables
+    import_district_heating_areas >> import_district_heating_supply
+    map_zensus_grid_districts >> import_district_heating_supply
+    import_district_heating_areas >> geothermal_potential
+    import_district_heating_areas >> import_individual_heating_supply
+    map_zensus_grid_districts >> import_individual_heating_supply
+    power_plant_import >> import_individual_heating_supply
+
+    # Heat to eTraGo
+    heat_etrago = HeatEtrago(
+        dependencies=[heat_supply])
+
+    heat_etrago_buses = tasks["heat_etrago.buses"]
+    heat_etrago_supply = tasks["heat_etrago.supply"]
+
+    etrago_input_data >> heat_etrago_buses
+    define_mv_grid_districts >> heat_etrago_buses
+    import_district_heating_supply >> heat_etrago_supply
