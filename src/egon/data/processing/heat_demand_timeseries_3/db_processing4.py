@@ -6,10 +6,14 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import os
 import glob
-from egon.data import db
+
+from egon.data import db, subprocess
+
 import xarray as xr
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 import egon.data.importing.era5 as era
+
+from sqlalchemy.ext.declarative import declarative_base
 
 import netCDF4
 from netCDF4 import Dataset
@@ -474,6 +478,10 @@ def profile_selector():
         
         new_length = len(selected_idp_names)
         selected_this_station = selected_idp_names.iloc[length:new_length,:] 
+        selected_this_station['selected_idp']=selected_this_station.values.tolist()
+        selected_this_station = selected_this_station.selected_idp
+        selected_this_station = selected_this_station.reset_index()
+        selected_this_station.index=range(length,new_length)
         
         
         if  os.path.isfile('selected_profiles.csv'):
@@ -484,9 +492,26 @@ def profile_selector():
         length = new_length
         
     ### writting csv to the database
-    heat_selected_profiles = {'schema':'demand', 'table':'heat_selected_profiles'}
-
-    input_file = os.path.join(os.getcwd(),'selected_profiles.csv')
+    
+    
+    Base = declarative_base()
+    class EgonHeatTimeseries(Base):
+        __tablename__ = 'heat_timeseries_selected_profiles'
+        __table_args__ = {'schema': 'demand'}
+        ID = Column(Integer, primary_key=True)
+        zensus_population_id = Column(Integer, primary_key=True)
+        # for i in range(365):
+        #    locals()[f'{i}'] = Column(Integer, primary_key=True)
+        selected_idp_profiles = Column(String)
+            
+    engine = db.engine()
+    EgonHeatTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonHeatTimeseries.__table__.create(bind=engine, checkfirst=True)  
+    
+    
+    heat_selected_profiles = {'schema':'demand', 'table':'heat_timeseries_selected_profiles'}
+    
+    filename_insert = 'selected_profiles.csv'
 
     docker_db_config = db.credentials()
     
@@ -494,15 +519,7 @@ def profile_selector():
        f"{heat_selected_profiles['schema']}"
        f".{heat_selected_profiles['table']}"
        )
-    db.execute_sql(
-               f"CREATE TABLE {selected_profiles_table}"
-               f""" (
-               );
-               """
-       )
 
-    filename_insert = 'selected_profiles.csv'
-    
     host = ["-h", f"{docker_db_config['HOST']}"]
     port = ["-p", f"{docker_db_config['PORT']}"]
     pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
