@@ -139,8 +139,10 @@ Changed
 * Update installation of demandregio's disaggregator
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
-  `#243 <https://github.com/openego/eGon-data/issues/243>`_ and
+  `#243 <https://github.com/openego/eGon-data/issues/243>`_and
   `#285 <https://github.com/openego/eGon-data/issues/285>`_
+* Migrate VG250 to datasets
+  `#283 <https://github.com/openego/eGon-data/issues/283>`_
 
 Bug fixes
 ---------

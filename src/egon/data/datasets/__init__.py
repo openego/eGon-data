@@ -202,6 +202,8 @@ class Dataset:
                     [
                         (dataset.name, dataset.version)
                         for dependency in self.dependencies
+                        if isinstance(dependency, Dataset)
+                        or hasattr(dependency, "dataset")
                         for dataset in [
                             dependency.dataset
                             if isinstance(dependency, Operator)
