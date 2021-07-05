@@ -350,7 +350,6 @@ with airflow.DAG(
     )
     osmtgmod_substation >> create_voronoi
 
-
     define_mv_grid_districts = PythonOperator(
         task_id="define_mv_grid_districts",
         python_callable=mvgd.define_mv_grid_districts
@@ -360,9 +359,8 @@ with airflow.DAG(
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
     re_potential_areas.insert_into(pipeline)
-
-
-
+    insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
+    
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
         task_id="import-heat-demand",
