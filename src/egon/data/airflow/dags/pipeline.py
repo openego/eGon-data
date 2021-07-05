@@ -11,6 +11,7 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
+from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -357,20 +358,10 @@ with airflow.DAG(
     create_voronoi >> define_mv_grid_districts
 
     # Import potential areas for wind onshore and ground-mounted PV
-    download_re_potential_areas = PythonOperator(
-        task_id="download_re_potential_area_data",
-        python_callable=re_potential_areas.download_datasets,
-    )
-    create_re_potential_areas_tables = PythonOperator(
-        task_id="create_re_potential_areas_tables",
-        python_callable=re_potential_areas.create_tables,
-    )
-    insert_re_potential_areas = PythonOperator(
-        task_id="insert_re_potential_areas",
-        python_callable=re_potential_areas.insert_data,
-    )
-    setup >> download_re_potential_areas >> create_re_potential_areas_tables
-    create_re_potential_areas_tables >> insert_re_potential_areas
+    re_potential_areas = re_potential_area_setup(dependencies=[setup])
+    re_potential_areas.insert_into(pipeline)
+
+
 
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
