@@ -10,6 +10,7 @@ from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -21,7 +22,7 @@ import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
-import egon.data.importing.mastr as mastr
+
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
@@ -276,11 +277,9 @@ with airflow.DAG(
     setup >> etrago_input_data
 
     # Retrieve MaStR data
-    retrieve_mastr_data = PythonOperator(
-        task_id="retrieve_mastr_data",
-        python_callable=mastr.download_mastr_data,
-    )
-    setup >> retrieve_mastr_data
+    mastr_data = mastr_data_setup(dependencies=[setup])
+    mastr_data.insert_into(pipeline)
+    retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
     # Substation extraction
     substation_tables = PythonOperator(
@@ -464,7 +463,7 @@ with airflow.DAG(
     create_landuse_table >> landuse_extraction
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
-   
+
     # Generate wind power farms
     generate_wind_farms = PythonOperator(
         task_id="generate_wind_farms",
@@ -475,7 +474,7 @@ with airflow.DAG(
     scenario_input_import >> generate_wind_farms
     hvmv_substation_extraction >> generate_wind_farms
     define_mv_grid_districts >> generate_wind_farms
-    
+
     # Regionalization of PV ground mounted
     generate_pv_ground_mounted = PythonOperator(
         task_id="generate_pv_ground_mounted",
@@ -486,7 +485,7 @@ with airflow.DAG(
     scenario_input_import >> generate_pv_ground_mounted
     hvmv_substation_extraction >> generate_pv_ground_mounted
     define_mv_grid_districts >> generate_pv_ground_mounted
-    
+
     # Calculate dynamic line rating for HV trans lines
 
     calculate_dlr = PythonOperator(
