@@ -12,6 +12,7 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
+from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -32,14 +33,12 @@ import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
-import egon.data.processing.loadarea as loadarea
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
 import egon.data.importing.scenarios as import_scenarios
@@ -343,17 +342,9 @@ with airflow.DAG(
     run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
-    create_voronoi = PythonOperator(
-        task_id="create_voronoi",
-        python_callable=substation.create_voronoi
-    )
-    osmtgmod_substation >> create_voronoi
-
-    define_mv_grid_districts = PythonOperator(
-        task_id="define_mv_grid_districts",
-        python_callable=mvgd.define_mv_grid_districts
-    )
-    create_voronoi >> define_mv_grid_districts
+    mv_grid_districts = mv_grid_districts_setup(dependencies=[osmtgmod_substation])
+    mv_grid_districts.insert_into(pipeline)
+    define_mv_grid_districts = tasks["mv_grid_districts.define-mv-grid-districts"]
 
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
