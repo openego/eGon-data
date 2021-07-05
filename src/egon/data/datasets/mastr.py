@@ -1,6 +1,7 @@
+from functools import partial
 from urllib.request import urlretrieve
 import os
-from functools import partial
+
 from egon.data.datasets import Dataset
 import egon.data.config
 
