@@ -25,7 +25,6 @@ import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
 
 import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
@@ -360,7 +359,7 @@ with airflow.DAG(
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
     re_potential_areas.insert_into(pipeline)
     insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
-    
+
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
         task_id="import-heat-demand",
