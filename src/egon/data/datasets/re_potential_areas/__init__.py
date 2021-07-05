@@ -12,6 +12,9 @@ from geoalchemy2 import Geometry
 import egon.data.config
 from egon.data import db
 
+from functools import partial
+from egon.data.datasets import Dataset
+
 Base = declarative_base()
 
 
@@ -121,3 +124,13 @@ def insert_data():
             if_exists="append",
             dtype={"geom": Geometry()},
         )
+
+
+# create re_potential_areas dataset partial object
+re_potential_area_setup = partial(
+    Dataset,
+    name="RePotentialAreas",
+    version="0.0.0",
+    dependencies=[],
+    tasks=(download_datasets, create_tables, insert_data),
+)
