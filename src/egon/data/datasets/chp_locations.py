@@ -6,7 +6,7 @@ import pandas as pd
 import geopandas
 from egon.data import db, config
 from egon.data.processing.power_plants import (
-    assign_voltage_level, assign_bus_id)
+    assign_voltage_level, assign_bus_id, assign_gas_bus_id)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, String, Float, Integer, Sequence
 from sqlalchemy.ext.declarative import declarative_base
@@ -369,7 +369,9 @@ def insert_chp_egon2035():
     None.
 
     """
-
+    
+    create_tables()
+    
     target = config.datasets()["chp_location"]["targets"]["power_plants"]
 
     # Select CHP from NEP list
@@ -425,16 +427,21 @@ def insert_chp_egon2035():
            'MaStRNummer', 'source']].sum(numeric_only=False).reset_index()
     insert_chp.loc[:, 'geometry'] = chp_NEP_matched.set_index('geometry_wkt').loc[
         insert_chp.set_index('geometry_wkt').index, 'geometry'].unique()
-
+    insert_chp.crs = "EPSG:4326"
+    insert_chp_c = insert_chp.copy()
+    
     # Assign bus_id
     insert_chp['bus_id'] = assign_bus_id(
         insert_chp, config.datasets()["chp_location"]).bus_id
+    
+    # Assign gas bus_id
+    insert_chp['gas_bus_id'] = assign_gas_bus_id(insert_chp_c).gas_bus_id
 
-    # Delete existing CHP in the target tabel
+    # Delete existing CHP in the target table
     db.execute_sql(
-        f"""DELETE FROM {target['schema']}.{target['table']}
+        f""" DELETE FROM {target['schema']}.{target['table']}
         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-        AND scenario='eGon2035'""")
+        AND scenario='eGon2035';""")
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
@@ -451,6 +458,7 @@ def insert_chp_egon2035():
                 th_capacity= row.th_capacity,
                 voltage_level = row.voltage_level,
                 electrical_bus_id = row.bus_id,
+                gas_bus_id = row.gas_bus_id,
                 scenario='eGon2035',
                 geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
             )

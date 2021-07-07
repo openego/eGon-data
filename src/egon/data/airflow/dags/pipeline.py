@@ -437,15 +437,7 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
-    
-    # Create gas voronoi
-    create_gas_polygons = PythonOperator(
-        task_id="create-gas-voronoi",
-        python_callable=gas_areas.create_voronoi,
-    )
-    
-    gas_grid_insert_data  >> create_gas_polygons
-    
+        
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
@@ -607,3 +599,4 @@ with airflow.DAG(
 
     nep_insert_data >> chp_locations_nep
     retrieve_mastr_data >> chp_locations_nep
+    create_gas_polygons >> chp_locations_nep
