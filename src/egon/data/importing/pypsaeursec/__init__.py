@@ -348,7 +348,7 @@ def neighbor_reduction(version="0.0.0"):
     neighbor_links.bus0 = neighbors.loc[neighbor_links.bus0, 'new_index'].reset_index().new_index
     neighbor_links.bus1 = neighbors.loc[neighbor_links.bus1, 'new_index'].reset_index().new_index
 
-
+    #generators
     neighbor_gens = network.generators[network.generators.bus.isin(neighbors.index)]
     neighbor_gens_t = network.generators_t['p_max_pu'][neighbor_gens.index]
 
@@ -359,11 +359,11 @@ def neighbor_reduction(version="0.0.0"):
         new_index = neighbor_gens[neighbor_gens['name']==i].index
         neighbor_gens_t.rename(columns={i:new_index[0]}, inplace=True)
     
-    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    #loads
     
-    # Fehler passiert in folgender Zeile, scheinbar weil es in loads welche gibt die in loads_t nicht exitieren, 
-    # aber warum wirft das n Fehler??
-    neighbor_loads_t = network.loads_t['p_set'][neighbor_loads.index]
+    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    neighbor_loads_t_index = neighbor_loads.index[neighbor_loads.index.isin(network.loads_t.p_set.columns)]
+    neighbor_loads_t = network.loads_t['p_set'][neighbor_loads_t_index]
 
 
     neighbor_loads.reset_index(inplace=True)
@@ -373,6 +373,31 @@ def neighbor_reduction(version="0.0.0"):
         new_index = neighbor_loads[neighbor_loads['index']==i].index
         neighbor_loads_t.rename(columns={i:new_index[0]}, inplace=True)
         
+    #stores
+    neighbor_stores = network.stores[network.stores.bus.isin(neighbors.index)]
+    neighbor_stores_t_index = neighbor_stores.index[neighbor_stores.index.isin(network.stores_t.e_min_pu.columns)]
+    neighbor_stores_t = network.stores_t['e_min_pu'][neighbor_stores_t_index]
+
+
+    neighbor_stores.reset_index(inplace=True)
+    neighbor_stores.bus = neighbors.loc[neighbor_stores.bus, 'new_index'].reset_index().new_index
+
+    for i in neighbor_stores_t.columns:
+        new_index = neighbor_stores[neighbor_stores['name']==i].index
+        neighbor_stores_t.rename(columns={i:new_index[0]}, inplace=True)
+        
+    #storage_units
+    neighbor_storage = network.storage_units[network.storage_units.bus.isin(neighbors.index)]
+    neighbor_storage_t_index = neighbor_storage.index[neighbor_storage.index.isin(network.storage_units_t.inflow.columns)]
+    neighbor_storage_t = network.storage_units_t['inflow'][neighbor_storage_t_index]
+    
+    neighbor_storage.reset_index(inplace=True)
+    neighbor_storage.bus = neighbors.loc[neighbor_storage.bus, 'new_index'].reset_index().new_index
+
+    for i in neighbor_storage_t.columns:
+        new_index = neighbor_storage[neighbor_storage['name']==i].index
+        neighbor_storage_t.rename(columns={i:new_index[0]}, inplace=True)
+
 
     # Connect to local database
     engine = db.engine()
@@ -432,8 +457,8 @@ def neighbor_reduction(version="0.0.0"):
                  'marginal_cost':'marginal_cost_fixed'})
     
     
-    for i in ['name', 'geometry', 'tag','under_construction','underground', 
-              'underwater_fraction', 'g_pu', 'bus2', 'bus3', 'bus4', 
+    for i in ['name', 'geometry', 'tags','under_construction','underground', 
+              'underwater_fraction', 'bus2', 'bus3', 'bus4', 
               'efficiency2', 'efficiency3', 'efficiency4', 'lifetime', 
               'p_nom_opt']:
         neighbor_links = neighbor_links.drop(i, axis=1)
@@ -486,6 +511,56 @@ def neighbor_reduction(version="0.0.0"):
         index_label="load_id"
     )
 
+    # prepare neighboring stores for etrago tables
+    neighbor_stores["scn_name"] = "eGon100RE"
+    neighbor_stores["version"] = version
+    neighbor_stores = neighbor_stores.rename(columns={'marginal_cost': 
+                                                  'marginal_cost_fixed', 
+                                                  'e_min_pu':
+                                                  'e_min_pu_fixed',
+                                                  'e_max_pu': 
+                                                  'e_max_pu_fixed'})
+
+    for i in ['name', 'p_set','q_set', 'e_nom_opt', 'lifetime']:
+        neighbor_stores = neighbor_stores.drop(i, axis=1)
+
+    neighbor_stores.to_sql(
+        "egon_pf_hv_store",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="store_id"
+    )
+
+    # prepare neighboring storage_units for etrago tables
+    neighbor_storage["scn_name"] = "eGon100RE"
+    neighbor_storage["version"] = version
+    neighbor_storage = neighbor_storage.rename(columns={'marginal_cost': 
+                                                  'marginal_cost_fixed', 
+                                                  'p_min_pu':
+                                                  'p_min_pu_fixed',
+                                                  'p_max_pu': 
+                                                  'p_max_pu_fixed',
+                                                  'state_of_charge_set': 
+                                                  'state_of_charge_set_fixed',
+                                                  'inflow': 'inflow_fixed',
+                                                  'p_set':'p_set_fixed',
+                                                  'q_set':'q_set_fixed'})
+
+    for i in ['name', 'p_nom_opt']:
+        neighbor_storage = neighbor_storage.drop(i, axis=1)
+
+    neighbor_storage.to_sql(
+        "egon_pf_hv_storage",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="storage_id"
+    )
+
+
     # writing neighboring loads_t p_sets to etrago tables
     
     neighbor_loads_t_etrago = pd.DataFrame(
@@ -507,7 +582,7 @@ def neighbor_reduction(version="0.0.0"):
     )
 
     
-    # writing neighboring generator_t p_mas_pu to etrago tables
+    # writing neighboring generator_t p_max_pu to etrago tables
     neighbor_gens_t_etrago = pd.DataFrame(
         columns=['version', 'scn_name', 'temp_id', 'p_max_pu'], 
         index=neighbor_gens_t.columns)
@@ -525,6 +600,45 @@ def neighbor_reduction(version="0.0.0"):
     index=True,
     index_label="generator_id"
     )
+    
+    # writing neighboring stores_t e_min_pu to etrago tables
+    neighbor_stores_t_etrago = pd.DataFrame(
+        columns=['version', 'scn_name', 'temp_id', 'e_min_pu'], 
+        index=neighbor_stores_t.columns)
+    neighbor_stores_t_etrago['version']=version
+    neighbor_stores_t_etrago['scn_name']='eGon100RE'
+    neighbor_stores_t_etrago['temp_id']=1
+    for i in neighbor_stores_t.columns:
+        neighbor_stores_t_etrago['e_min_pu'][i] = neighbor_stores_t[i].values.tolist()
+
+    neighbor_stores_t_etrago.to_sql(
+    "egon_pf_hv_store_timeseries",
+    engine,
+    schema="grid",
+    if_exists="append",
+    index=True,
+    index_label="store_id"
+    )
+    
+   # writing neighboring storage_units inflow to etrago tables
+    neighbor_storage_t_etrago = pd.DataFrame(
+        columns=['version', 'scn_name', 'temp_id', 'inflow'], 
+        index=neighbor_storage_t.columns)
+    neighbor_storage_t_etrago['version']=version
+    neighbor_storage_t_etrago['scn_name']='eGon100RE'
+    neighbor_storage_t_etrago['temp_id']=1
+    for i in neighbor_storage_t.columns:
+        neighbor_storage_t_etrago['inflow'][i] = neighbor_storage_t[i].values.tolist()
+
+    neighbor_storage_t_etrago.to_sql(
+    "egon_pf_hv_storage_timeseries",
+    engine,
+    schema="grid",
+    if_exists="append",
+    index=True,
+    index_label="storage_id"
+    )
+    
     
     # writing neighboring lines_t s_max_pu to etrago tables
     if not network.lines_t['s_max_pu'].empty:
