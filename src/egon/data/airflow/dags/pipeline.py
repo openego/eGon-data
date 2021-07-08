@@ -514,15 +514,8 @@ with airflow.DAG(
     
     run_pypsaeursec >> neighbors
     create_tables >> neighbors
-   
+    osmtgmod_pypsa >> neighbors
     
-    pypsaeursec_capacities = PythonOperator(
-        task_id="pypsaeursec_capacities",
-        python_callable=pypsaeursec.pypsa_eur_sec_eGon100_capacities,
-    )
-
-    run_pypsaeursec >> pypsaeursec_capacities
-    create_tables >> pypsaeursec_capacities
     
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(

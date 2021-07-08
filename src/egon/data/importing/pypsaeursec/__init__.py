@@ -326,8 +326,8 @@ def neighbor_reduction(version="0.0.0"):
     neighbors = network.buses[~network.buses.country.isin(['DE'])]
     neighbors['new_index']=neighbors.reset_index().index
     
-    # lines
-    
+    # lines, the foreign crossborder lines (without crossborder lines to Germany!)
+
     neighbor_lines = network.lines[network.lines.bus0.isin(neighbors.index) & network.lines.bus1.isin(neighbors.index)]
     if not network.lines_t['s_max_pu'].empty:
         neighbor_lines_t = network.lines_t['s_max_pu'][neighbor_lines.index]
@@ -397,14 +397,15 @@ def neighbor_reduction(version="0.0.0"):
     for i in neighbor_storage_t.columns:
         new_index = neighbor_storage[neighbor_storage['name']==i].index
         neighbor_storage_t.rename(columns={i:new_index[0]}, inplace=True)
+        
 
 
     # Connect to local database
     engine = db.engine()
     
-    db.execute_sql("DELETE FROM grid.egon_pf_hv_bus "
-                   "WHERE scn_name = 'eGon100RE' "
-                   "AND country <> 'DE'")
+    #db.execute_sql("DELETE FROM grid.egon_pf_hv_bus "
+    #               "WHERE scn_name = 'eGon100RE' "
+    #               "AND country <> 'DE'")
     
     neighbors["scn_name"] = "eGon100RE"
     neighbors["version"] = version
