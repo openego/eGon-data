@@ -17,30 +17,6 @@ def run_osmtgmod():
 
     # execute osmTGmod
 
-    osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
-
-    if os.path.exists(osmtgmod_repos):
-        subproc.run(
-            [
-                "git",
-                "pull",
-            ],
-            cwd=osmtgmod_repos,
-        )
-
-    else:
-    	subproc.run(
-            [
-                "git",
-                "clone",
-                "--single-branch",
-                "--branch",
-                "features/egon",
-                "https://github.com/openego/osmTGmod.git",
-            ],
-            cwd=os.path.dirname(__file__),
-        )
-
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
@@ -65,6 +41,30 @@ def run_osmtgmod():
 
 
 def import_osm_data():
+
+    osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
+
+    if os.path.exists(osmtgmod_repos):
+        subproc.run(
+            [
+                "git",
+                "pull",
+            ],
+            cwd=osmtgmod_repos,
+        )
+
+    else:
+    	subproc.run(
+            [
+                "git",
+                "clone",
+                "--single-branch",
+                "--branch",
+                "features/egon",
+                "https://github.com/openego/osmTGmod.git",
+            ],
+            cwd=os.path.dirname(__file__),
+        )
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
@@ -197,18 +197,19 @@ def osmtgmod(
         db.execute_sql(
             """
             UPDATE power_ways
-            SET way = '0102000000160000001612D5004A081E4020A8644A35B349407B0ACA'
-            '7E27071E405F23EE563BB34940287CB60E0E061E4055A4C2D842B34940352FE29'
-            '6EA051E4017940E7B46B34940C0D02346CF051E4042EBE1CB44B34940D67E219A'
-            '2F051E40FECF06054AB349407F964A442F031E40C2F441F471B34940A8A544676'
-            '1021E40AB9412CA8FB349409C4848881E021E40B7BA08C691B34940B22D4E1430'
-            '001E40CE913856BDB34940E2810B122C001E40898CAEAFDBB349402CDAF043480'
-            '11E40ED678C32F0B349402FE640E25C041E405A86F21AF1B3494061D525C46F04'
-            '1E40ABEF60C892B34940DC2F9FAC18061E400D33D9E495B349401FD7868A71061'
-            'E40D2D8A89894B3494083932353F4061E40077360DE88B34940624ED02687071E'
-            '404F08782D7CB349405000C5C892091E403EFBDBAF4CB349403DDBFEF04E091E4'
-            '0658D7A8846B349405AD5928E72081E405BE8EF4A37B349401612D5004A081E40'
-            '20A8644A35B34940'
+            SET way =  (SELECT ST_SetSRID(ST_AsText(
+                '0102000000160000001612D5004A081E4020A8644A35B349407B0ACA'
+                '7E27071E405F23EE563BB34940287CB60E0E061E4055A4C2D842B34940352FE29'
+                '6EA051E4017940E7B46B34940C0D02346CF051E4042EBE1CB44B34940D67E219A'
+                '2F051E40FECF06054AB349407F964A442F031E40C2F441F471B34940A8A544676'
+                '1021E40AB9412CA8FB349409C4848881E021E40B7BA08C691B34940B22D4E1430'
+                '001E40CE913856BDB34940E2810B122C001E40898CAEAFDBB349402CDAF043480'
+                '11E40ED678C32F0B349402FE640E25C041E405A86F21AF1B3494061D525C46F04'
+                '1E40ABEF60C892B34940DC2F9FAC18061E400D33D9E495B349401FD7868A71061'
+                'E40D2D8A89894B3494083932353F4061E40077360DE88B34940624ED02687071E'
+                '404F08782D7CB349405000C5C892091E403EFBDBAF4CB349403DDBFEF04E091E4'
+                '0658D7A8846B349405AD5928E72081E405BE8EF4A37B349401612D5004A081E40'
+                '20A8644A35B34940'), 4326))
             WHERE name = 'Garenfeld'
             AND id = 24667346
             """)
@@ -528,113 +529,134 @@ def osmtgmod(
     logging.info("EXECUTION FINISHED SUCCESSFULLY!")
 
 
-def osmtgmmod_to_pypsa(version="'0.0.0'", scenario_name="'Status Quo'"):
-
+def osmtgmmod_to_pypsa(version="'0.0.0'"):
     db.execute_sql(
-        f"""
+            f"""
             -- CLEAN UP OF TABLES
-        TRUNCATE grid.egon_pf_hv_bus CASCADE;
-        TRUNCATE grid.egon_pf_hv_line CASCADE;
-        TRUNCATE grid.egon_pf_hv_transformer CASCADE;
-
-
-        -- BUS DATA
-        INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
-                                         geom)
-        SELECT
-          {version},
-          {scenario_name},
-          bus_i AS bus_id,
-          base_kv AS v_nom,
-          geom
-          FROM osmtgmod_results.bus_data
-          WHERE result_id = 1;
-
-
-        -- BRANCH DATA
-        INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0,
-                                          bus1, x, r, b, s_nom, cables,
-                                          geom, topo)
-        SELECT
-          {version},
-          {scenario_name},
-          branch_id AS line_id,
-          f_bus AS bus0,
-          t_bus AS bus1,
-          br_x AS x,
-          br_r AS r,
-          br_b as b,
-          rate_a as s_nom,
-          cables,
-          geom,
-          topo
-          FROM osmtgmod_results.branch_data
-          WHERE result_id = 1 and (link_type = 'line' or
-                                   link_type = 'cable');
-
-
-        -- TRANSFORMER DATA
-        INSERT INTO grid.egon_pf_hv_transformer (version, scn_name,
-                                                 trafo_id, bus0, bus1, x,
-                                                 s_nom, tap_ratio,
-                                                 phase_shift, geom, topo)
-        SELECT
-          {version},
-          {scenario_name},
-          branch_id AS trafo_id,
-          f_bus AS bus0,
-          t_bus AS bus1,
-          br_x/100 AS x,
-          rate_a as s_nom,
-          tap AS tap_ratio,
-          shift AS phase_shift,
-          geom,
-          topo
-          FROM osmtgmod_results.branch_data
-          WHERE result_id = 1 and link_type = 'transformer';
-
-
-        -- per unit to absolute values
-
-        UPDATE grid.egon_pf_hv_line a
-        SET
-             r = r * (((SELECT v_nom
-                        FROM grid.egon_pf_hv_bus
-                        WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
-             x = x * (((SELECT v_nom
-                        FROM grid.egon_pf_hv_bus
-                        WHERE bus_id=bus1)*1000)^2 / (100 * 10^6)),
-             b = b * (((SELECT v_nom
-                        FROM grid.egon_pf_hv_bus
-                        WHERE bus_id=bus1)*1000)^2 / (100 * 10^6));
-
-        -- calculate line length (in km) from geoms
-
-        UPDATE grid.egon_pf_hv_line a
-        SET
-             length = result.length
-             FROM
-             (SELECT b.line_id, st_length(b.geom,false)/1000 as length
-              from grid.egon_pf_hv_line b)
-             as result
-        WHERE a.line_id = result.line_id;
-
-
-        -- delete buses without connection to AC grid and generation or
-        -- load assigned
-
-        DELETE FROM grid.egon_pf_hv_bus WHERE scn_name={scenario_name}
-        AND bus_id NOT IN
-        (SELECT bus0 FROM grid.egon_pf_hv_line WHERE
-         scn_name={scenario_name})
-        AND bus_id NOT IN
-        (SELECT bus1 FROM grid.egon_pf_hv_line WHERE
-         scn_name={scenario_name})
-        AND bus_id NOT IN
-        (SELECT bus0 FROM grid.egon_pf_hv_transformer
-         WHERE scn_name={scenario_name})
-        AND bus_id NOT IN
-        (SELECT bus1 FROM grid.egon_pf_hv_transformer
-         WHERE scn_name={scenario_name});
+            DELETE FROM grid.egon_pf_hv_bus
+            WHERE version = {version}
+            AND carrier = 'AC';
+            DELETE FROM grid.egon_pf_hv_line
+            WHERE version = {version};
+            DELETE FROM grid.egon_pf_hv_transformer
+            WHERE version = {version};
             """
-    )
+            )
+
+    for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
+
+        db.execute_sql(
+            f"""
+            -- BUS DATA
+            INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
+                                             geom, x, y, carrier)
+            SELECT
+              {version},
+              {scenario_name},
+              bus_i AS bus_id,
+              base_kv AS v_nom,
+              geom,
+              ST_X(geom) as x,
+              ST_Y(geom) as y,
+              'AC' as carrier
+              FROM osmtgmod_results.bus_data
+              WHERE result_id = 1;
+
+
+            -- BRANCH DATA
+            INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0,
+                                              bus1, x, r, b, s_nom, cables, v_nom,
+                                              geom, topo)
+            SELECT
+              {version},
+              {scenario_name},
+              branch_id AS line_id,
+              f_bus AS bus0,
+              t_bus AS bus1,
+              br_x AS x,
+              br_r AS r,
+              br_b as b,
+              rate_a as s_nom,
+              cables,
+              branch_voltage/1000 as v_nom,
+              geom,
+              topo
+              FROM osmtgmod_results.branch_data
+              WHERE result_id = 1 and (link_type = 'line' or
+                                       link_type = 'cable');
+
+
+            -- TRANSFORMER DATA
+            INSERT INTO grid.egon_pf_hv_transformer (version, scn_name,
+                                                     trafo_id, bus0, bus1, x,
+                                                     s_nom, tap_ratio,
+                                                     phase_shift, geom, topo)
+            SELECT
+              {version},
+              {scenario_name},
+              branch_id AS trafo_id,
+              f_bus AS bus0,
+              t_bus AS bus1,
+              br_x/100 AS x,
+              rate_a as s_nom,
+              tap AS tap_ratio,
+              shift AS phase_shift,
+              geom,
+              topo
+              FROM osmtgmod_results.branch_data
+              WHERE result_id = 1 and link_type = 'transformer';
+
+
+            -- per unit to absolute values
+
+            UPDATE grid.egon_pf_hv_line a
+            SET
+                 r = r * (((SELECT v_nom
+                            FROM grid.egon_pf_hv_bus b
+                            WHERE bus_id=bus1
+                            AND a.scn_name = b.scn_name
+                            )*1000)^2 / (100 * 10^6)),
+                 x = x * (((SELECT v_nom
+                            FROM grid.egon_pf_hv_bus b
+                            WHERE bus_id=bus1
+                            AND a.scn_name = b.scn_name
+                            )*1000)^2 / (100 * 10^6)),
+                 b = b * (((SELECT v_nom
+                            FROM grid.egon_pf_hv_bus b
+                            WHERE bus_id=bus1
+                            AND a.scn_name = b.scn_name
+                            )*1000)^2 / (100 * 10^6));
+
+            -- calculate line length (in km) from geoms
+
+            UPDATE grid.egon_pf_hv_line a
+            SET
+                 length = result.length
+                 FROM
+                 (SELECT b.line_id, st_length(b.geom,false)/1000 as length
+                  from grid.egon_pf_hv_line b)
+                 as result
+            WHERE a.line_id = result.line_id;
+
+
+            -- delete buses without connection to AC grid and generation or
+            -- load assigned
+
+            DELETE FROM grid.egon_pf_hv_bus
+            WHERE scn_name={scenario_name}
+            AND carrier = 'AC'
+            AND version = {version}
+            AND bus_id NOT IN
+            (SELECT bus0 FROM grid.egon_pf_hv_line WHERE
+             scn_name={scenario_name})
+            AND bus_id NOT IN
+            (SELECT bus1 FROM grid.egon_pf_hv_line WHERE
+             scn_name={scenario_name})
+            AND bus_id NOT IN
+            (SELECT bus0 FROM grid.egon_pf_hv_transformer
+             WHERE scn_name={scenario_name})
+            AND bus_id NOT IN
+            (SELECT bus1 FROM grid.egon_pf_hv_transformer
+             WHERE scn_name={scenario_name});
+                """
+        )

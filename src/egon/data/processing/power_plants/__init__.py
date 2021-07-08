@@ -1,7 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from egon.data import db
-from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
+from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import sessionmaker
@@ -10,14 +10,14 @@ import pandas as pd
 import geopandas as gpd
 import egon.data.config
 import numpy as np
-
+from egon.data.processing.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 Base = declarative_base()
 
 
 class EgonPowerPlants(Base):
     __tablename__ = "egon_power_plants"
     __table_args__ = {"schema": "supply"}
-    id = Column(Integer, Sequence("pp_seq"), primary_key=True)
+    id = Column(BigInteger, Sequence("pp_seq"), primary_key=True)
     sources = Column(JSONB)
     source_id = Column(JSONB)
     carrier = Column(String)
@@ -44,6 +44,10 @@ def create_tables():
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
         {cfg['target']['schema']}.{cfg['target']['table']}"""
+    )
+
+    db.execute_sql(
+        """DROP SEQUENCE IF EXISTS pp_seq"""
     )
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
@@ -304,7 +308,7 @@ def insert_hydro_plants(scenario):
         mastr = scale_prox2now(mastr, target, level=level)
 
         # Choose only entries with valid geometries inside DE/test mode
-        mastr_loc = filter_mastr_geometry(mastr)
+        mastr_loc = filter_mastr_geometry(mastr).set_geometry('geometry')
         # TODO: Deal with power plants without geometry
 
         # Assign bus_id and voltage level
@@ -368,6 +372,7 @@ def assign_voltage_level(mastr_loc, cfg):
     # Transfer voltage_level as integer from Spanungsebene
     map_voltage_levels=pd.Series(data={
         'Höchstspannung': 1,
+        'Hoechstspannung': 1,
         'Hochspannung': 3,
         'UmspannungZurMittelspannung': 4,
         'Mittelspannung': 5,
@@ -441,9 +446,12 @@ def assign_bus_id(power_plants, cfg):
 
     if len(power_plants_ehv) > 0:
         power_plants.loc[power_plants_ehv, 'bus_id'] = gpd.sjoin(
-            power_plants[power_plants.index.isin(power_plants_hv)
-                         ], ehv_grid_districts).bus_id
+            power_plants[power_plants.index.isin(power_plants_ehv)
+                         ], ehv_grid_districts).bus_id_right
 
+    # Assert that all power plants have a bus_id
+    assert power_plants.bus_id.notnull().all(), """Some power plants are
+    not attached to a bus."""
 
     return power_plants
 
@@ -457,7 +465,10 @@ def insert_power_plants():
     """
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(
-        f"DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}"
+        f"""
+        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+        WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
+        """
     )
 
     for scenario in ["eGon2035"]:

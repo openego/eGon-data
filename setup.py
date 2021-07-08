@@ -90,6 +90,7 @@ setup(
         "importlib-resources",
         "loguru",
         "matplotlib",
+        "netcdf4",
         "oedialect==0.0.8",
         "psycopg2",
         "pyaml",
@@ -97,7 +98,9 @@ setup(
         "rtree",
         "snakemake",
         "sqlalchemy<1.4",
-        "pypsa"
+        "pypsa",
+        "xarray",
+        "rioxarray",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
