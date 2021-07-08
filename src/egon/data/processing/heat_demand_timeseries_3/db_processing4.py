@@ -309,11 +309,11 @@ def psycop_gdf_AF(table_name):
     return data
 
 def psycop_gdf_AF(table_name,geom_column = 'geom'):
-        conn = db.engine()
-        sql = "SELECT * FROM {}".format(table_name)
-        data = gpd.read_postgis(sql, conn, geom_column)
-        conn = None
-        return data
+    conn = db.engine()
+    sql = "SELECT * FROM {}".format(table_name)
+    data = gpd.read_postgis(sql, conn, geom_column)
+    conn = None
+    return data
 
 ##extracting and adjusting the demand data to obtain desired structure
 ## considering only residential for 2035 scenario
