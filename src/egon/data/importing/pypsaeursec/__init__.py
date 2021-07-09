@@ -402,7 +402,11 @@ def neighbor_reduction(version="0.0.0"):
     # writing components of neighboring countries to etrago tables
 
     neighbors = network.buses[~network.buses.country.isin(["DE"])]
-    neighbors["new_index"] = neighbors.reset_index().index
+    
+    max_index  = db.select_dataframe("select * from grid.egon_pf_hv_bus "
+                   "where version = '0.0.0' and scn_name = 'eGon100RE'", index_col='bus_id')
+    
+    neighbors["new_index"] = max_index.index.max()+ 1 + neighbors.reset_index().index
 
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
