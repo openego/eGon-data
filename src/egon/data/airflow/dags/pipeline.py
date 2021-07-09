@@ -14,6 +14,10 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
+from egon.data.datasets.osmtgmod import Osmtgmod
+import egon.data.datasets.osmtgmod as osmtgmod_for_sql
+
+
 import airflow
 import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
@@ -32,7 +36,6 @@ import egon.data.processing.boundaries_grid_districts as boundaries_grid_distric
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.loadarea as loadarea
-import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
@@ -314,33 +317,21 @@ with airflow.DAG(
     vg250_clean_and_prepare >> ehv_substation_extraction
 
     # osmTGmod ehv/hv grid model generation
-    osmtgmod_osm_import = PythonOperator(
-        task_id="osmtgmod_osm_import",
-        python_callable=osmtgmod.import_osm_data,
-    )
-
-    run_osmtgmod = PythonOperator(
-        task_id="run_osmtgmod",
-        python_callable=osmtgmod.run_osmtgmod,
-    )
-
-    osmtgmod_pypsa = PythonOperator(
-        task_id="osmtgmod_pypsa",
-        python_callable=osmtgmod.osmtgmmod_to_pypsa,
-    )
-
+    osmtgmod = Osmtgmod(dependencies=[osm_download,
+                                         ehv_substation_extraction,
+                                         hvmv_substation_extraction,
+                                         etrago_input_data])
+    osmtgmod.insert_into(pipeline)
+    run_osmtgmod = tasks["osmtgmod.run"]
+    osmtgmod_pypsa = tasks["osmtgmod.to_pypsa"]
+    
     osmtgmod_substation = PostgresOperator(
         task_id="osmtgmod_substation",
-        sql=resources.read_text(osmtgmod, "substation_otg.sql"),
+        sql=resources.read_text(osmtgmod_for_sql, "substation_otg.sql"),
         postgres_conn_id="egon_data",
         autocommit=True,
     )
 
-    osm_download >> osmtgmod_osm_import >> run_osmtgmod
-    ehv_substation_extraction >> run_osmtgmod
-    hvmv_substation_extraction >> run_osmtgmod
-    run_osmtgmod >> osmtgmod_pypsa
-    etrago_input_data >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
@@ -349,7 +340,6 @@ with airflow.DAG(
         python_callable=substation.create_voronoi
     )
     osmtgmod_substation >> create_voronoi
-
 
     define_mv_grid_districts = PythonOperator(
         task_id="define_mv_grid_districts",

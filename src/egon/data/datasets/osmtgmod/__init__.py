@@ -11,9 +11,11 @@ import egon.data.config
 from egon.data.config import settings
 import egon.data.subprocess as subproc
 from egon.data import db
+from egon.data.datasets import Dataset
 
 
-def run_osmtgmod():
+
+def run():
 
     # execute osmTGmod
 
@@ -529,7 +531,7 @@ def osmtgmod(
     logging.info("EXECUTION FINISHED SUCCESSFULLY!")
 
 
-def osmtgmmod_to_pypsa(version="'0.0.0'"):
+def to_pypsa(version="'0.0.0'"):
     db.execute_sql(
             f"""
             -- CLEAN UP OF TABLES
@@ -659,4 +661,13 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
             (SELECT bus1 FROM grid.egon_pf_hv_transformer
              WHERE scn_name={scenario_name});
                 """
+        )
+
+class Osmtgmod(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Osmtgmod",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(import_osm_data, run, to_pypsa),
         )
