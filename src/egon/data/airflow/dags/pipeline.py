@@ -323,7 +323,7 @@ with airflow.DAG(
                                          etrago_input_data])
     osmtgmod.insert_into(pipeline)
     run_osmtgmod = tasks["osmtgmod.run"]
-    osmtgmod_pypsa = tasks["osmtgmod.to_pypsa"]
+    osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
     
     osmtgmod_substation = PostgresOperator(
         task_id="osmtgmod_substation",
