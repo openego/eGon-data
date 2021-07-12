@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import codecs
 import functools
 
 from sqlalchemy import create_engine, text
@@ -94,6 +95,25 @@ def submit_comment(json, schema, table):
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
 
+def execute_sql_script(script, encoding="utf-8-sig"):
+    """Execute a SQL script given as a file name.
+
+    Parameters
+    ----------
+    script : str
+        Path of the SQL-script
+    encoding : str
+        Encoding which is used for the SQL file. The default is "utf-8-sig".
+    Returns
+    -------
+    None.
+
+    """
+
+    with codecs.open(script, "r", encoding) as fd:
+        sqlfile = fd.read()
+
+    execute_sql(sqlfile)
 
 @contextmanager
 def session_scope():
