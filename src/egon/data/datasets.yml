@@ -626,10 +626,7 @@ electrical_load_curves_industry:
       schema: 'grid'
       table: 'mv_grid_districts'
   targets:
-    pf_load:
-      schema: 'grid'
-      table: 'egon_pf_hv_load'
-    pf_load_timeseries:
-      schema: 'grid'
-      table: 'egon_pf_hv_load_timeseries'
+    osm_load:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves'
 
