@@ -508,3 +508,36 @@ distributed_industrial_demand:
       schema: 'demand'
       table: 'egon_demandregio_sites_ind_electricity'
 
+electrical_load_curves_industry:
+  sources:
+    osm:
+      schema: 'demand'
+      table: 'egon_demandregio_osm_ind_electricity'
+    osm_landuse:
+      schema: 'openstreetmap'
+      table: 'osm_landuse'
+    sites:
+      schema: 'demand'
+      table: 'egon_demandregio_sites_ind_electricity'
+    demandregio_industry:
+      schema: 'demand'
+      table: 'egon_demandregio_cts_ind'
+    demandregio_wz:
+      schema: 'demand'
+      table: 'egon_demandregio_wz'
+    demandregio_timeseries:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+  targets:
+    pf_load:
+      schema: 'grid'
+      table: 'egon_pf_hv_load'
+    pf_load_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_load_timeseries'
