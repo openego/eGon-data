@@ -1052,8 +1052,8 @@ hh_demand_setup = partial(
     name="HH Demand",
     version="0.0.0",
     dependencies=[],
-    # Tasks are declared in pipeline as function is used multiple time with different args
-    # to differentiate these tasks PythonOperator with specific id-names are used
+    # Tasks are declared in pipeline as function is used multiple times with different args
+    # To differentiate these tasks PythonOperator with specific id-names are used
     # PythonOperator needs to be declared in pipeline to be mapped to DAG
     # tasks=[],
 )
