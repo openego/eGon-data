@@ -1,20 +1,10 @@
 
 from egon.data import db
 import psycopg2
-import pandas as pd
 import numpy as np
-
-# TODO: temp_id = 1 aus Tabellen auslesen oder ienfach so festlegen?
-
-# TODO: geopandas notwendig für buses-geom?   
-
-# TODO:  delta_t korrekt in Formeln einfügen, so als Parameter nutzbar
-
-# TODO: eindeutige Identifikation mitschleppen, zB original Bus?
-
-# TODO: Alternative zu Arbeit mit Timeseries als Listen?
+import pandas as pd
+import geopandas as gpd
         
-# TODO: Überprüfung der Warnungen...
 
 def dsm_cts_processing():
     
@@ -38,7 +28,6 @@ def dsm_cts_processing():
             if row['load_id'] in load_ids:
                idx.drop(index,inplace=True) 
         t.drop(index=idx, axis=1, inplace=True)
-        # TODO: Selektion der CTS-Daten sowie Nutzung der Indizes korrekt? einfacher möglich?
         
         # get relevant data
         
@@ -54,16 +43,17 @@ def dsm_cts_processing():
             load_id = row['load_id']
             scn_name = row['scn_name']
             x = l[l['load_id']==load_id]
-            dsm['bus'].loc[index] = x[x['scn_name']==scn_name]['bus'].iloc[0]
+            dsm.loc[index,'bus'] = x[x['scn_name']==scn_name]['bus'].iloc[0]
             
         return dsm
+    
     
     def calculate_potentials(cts_share, s_flex, s_util, s_inc, s_dec, dsm):
     
         # timeseries for air conditioning, cooling and ventilation out of CTS-data
     
         # calculate share of timeseries
-        timeseries = dsm['load_p_set']
+        timeseries = dsm['load_p_set'].copy()
         for index, liste in timeseries.iteritems():
             share = []
             for item in liste:
@@ -117,33 +107,23 @@ def dsm_cts_processing():
             p_min.loc[index] = p
             
         # calculation of E_max and E_min
-        
-        # E_max
-        e_max = scheduled_load.copy()
-        
-        # E_min
-        e_min = scheduled_load.copy()
-        for index, liste in scheduled_load.iteritems():
-            e = []
-            for i in range(0,len(liste)):
-                if i == 0:
-                    e.append(liste[len(liste)-1])
-                else:
-                    e.append(liste[i-1])
-            e_min.loc[index] = e
             
-# =============================================================================
-#         e_max = scheduled_load.copy()
-#         e_min = scheduled_load.copy()
-#           
-#         for index, liste in scheduled_load.iteritems():
-#             for i in range(0,len(liste)):
-#                 if i+delta_t >= len(liste)-1:
-#                     e_max.loc[index][i] = sum(liste[i:len(liste)-1]+sum(liste[0:delta_t-(len(liste)-1-i)])
-#                 else:
-#                     e_max.loc[index][i] = sum(liste[i:i+delta_t])
-#                 e_min.loc[index][i] = -1*sum(liste[i-delta_t:i])
-# =============================================================================
+        e_max = scheduled_load.copy()
+        e_min = scheduled_load.copy()
+           
+        for index, liste in scheduled_load.iteritems():
+            emin = []
+            emax = []
+            for i in range(0,len(liste)):
+                if i+delta_t > len(liste):
+                    emax.append(sum(liste[i:len(liste)])+sum(liste[0:delta_t-(len(liste)-i)]))
+                if i-delta_t < 0:
+                    emin.append(-1*(sum(liste[0:i])+sum(liste[len(liste)-delta_t+i:len(liste)])))
+                else:
+                    emax.append(sum(liste[i:i+delta_t]))
+                    emin.append(-1*sum(liste[i-delta_t:i]))
+            e_max.loc[index] = emax
+            e_min.loc[index] = emin
             
         return p_max, p_min, e_max, e_min
 
@@ -151,7 +131,7 @@ def dsm_cts_processing():
     def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
         
         # calculate P_nom and P per unit 
-        p_nom = pd.Series(index=p_max.index)
+        p_nom = pd.Series(index=p_max.index,dtype=float)
         for index, row in p_max.iteritems():
              nom = max(max(row),abs(min(p_min.loc[index])))
              p_nom.loc[index] = nom
@@ -161,7 +141,7 @@ def dsm_cts_processing():
              p_min.loc[index] = new
         
         # calculate E_nom and E per unit
-        e_nom = pd.Series(index=p_min.index)
+        e_nom = pd.Series(index=p_min.index,dtype=float)
         for index, row in e_max.iteritems():
             nom = max(max(row),abs(min(e_min.loc[index])))
             e_nom.loc[index] = nom
@@ -172,19 +152,19 @@ def dsm_cts_processing():
         
         # add DSM-buses to "original" buses
         
-        dsm_buses = pd.DataFrame(index=dsm.index)
+        dsm_buses = gpd.GeoDataFrame(index=dsm.index)
         dsm_buses['original_bus'] = dsm['bus'].copy()
         dsm_buses['scn_name'] = dsm['scn_name'].copy()
         
         # get original buses and add copy relevant information
         sql = "SELECT bus_id, v_nom, scn_name, x, y, geom FROM grid.egon_pf_hv_bus"
-        original_buses = pd.read_sql_query(sql, con)
+        original_buses = gpd.GeoDataFrame.from_postgis(sql,con)
         
         # copy v_nom, x, y and geom 
-        v_nom = pd.Series(index=dsm_buses.index)
-        x = pd.Series(index=dsm_buses.index)
-        y = pd.Series(index=dsm_buses.index)
-        geom = pd.Series(index=dsm_buses.index)
+        v_nom = pd.Series(index=dsm_buses.index,dtype=float)
+        x = pd.Series(index=dsm_buses.index,dtype=float)
+        y = pd.Series(index=dsm_buses.index,dtype=float)
+        geom = gpd.GeoSeries(index=dsm_buses.index)
         
         originals = dsm_buses['original_bus'].unique()
         for i in originals:
@@ -209,7 +189,7 @@ def dsm_cts_processing():
         if np.isnan(max_id):
             max_id = 0
         dsm_id = max_id + 1 
-        bus_id = pd.Series(index=dsm_buses.index)
+        bus_id = pd.Series(index=dsm_buses.index,dtype=int)
         bus_id.iloc[0:int((len(bus_id)/2))] = range(dsm_id,int((dsm_id+len(dsm_buses)/2)))
         bus_id.iloc[int((len(bus_id)/2)):len(bus_id)] = range(dsm_id,int((dsm_id+len(dsm_buses)/2)))
         dsm_buses['bus_id'] = bus_id            
@@ -228,7 +208,7 @@ def dsm_cts_processing():
         if np.isnan(max_id):
             max_id = 0
         dsm_id = max_id + 1 
-        link_id = pd.Series(index=dsm_buses.index)
+        link_id = pd.Series(index=dsm_buses.index,dtype=int)
         link_id.iloc[0:int((len(link_id)/2))] = range(dsm_id,int((dsm_id+len(dsm_links)/2)))
         link_id.iloc[int((len(link_id)/2)):len(link_id)] = range(dsm_id,int((dsm_id+len(dsm_links)/2)))
         dsm_links['link_id'] = link_id   
@@ -251,7 +231,7 @@ def dsm_cts_processing():
         if np.isnan(max_id):
             max_id = 0
         dsm_id = max_id + 1 
-        store_id = pd.Series(index=dsm_buses.index)
+        store_id = pd.Series(index=dsm_buses.index,dtype=int)
         store_id.iloc[0:int((len(store_id)/2))] = range(dsm_id,int((dsm_id+len(dsm_stores)/2)))
         store_id.iloc[int((len(store_id)/2)):len(store_id)] = range(dsm_id,int((dsm_id+len(dsm_stores)/2)))
         dsm_stores['store_id'] = store_id  
@@ -263,11 +243,12 @@ def dsm_cts_processing():
         
         return dsm_buses, dsm_links, dsm_stores
     
+    
     def data_export(con, dsm_buses, dsm_links, dsm_stores):
 
         # dsm_buses
         
-        insert_buses = pd.DataFrame(index=dsm_buses.index)
+        insert_buses = gpd.GeoDataFrame(index=dsm_buses.index)
         insert_buses['version'] = '0.0.0'
         insert_buses['scn_name'] = dsm_buses['scn_name']
         insert_buses['bus_id'] = dsm_buses['bus_id']
@@ -276,7 +257,7 @@ def dsm_cts_processing():
         insert_buses['x'] = dsm_buses['x']
         insert_buses['y'] = dsm_buses['y']
         insert_buses['geom'] = dsm_buses['geom']
-        #insert_buses = insert_buses.set_geometry('geom').to_crs(4326)
+        insert_buses = insert_buses.set_geometry('geom').set_crs(4326)
         
         # insert into database
         insert_buses.to_sql('egon_pf_hv_bus',
@@ -368,7 +349,7 @@ def dsm_cts_processing():
     s_dec = 0
     
     # maximum shift duration
-    # delta_t = 1
+    delta_t = 1
     
     ### PARAMETERS ###
     
