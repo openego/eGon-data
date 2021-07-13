@@ -210,3 +210,29 @@ def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return gdf
+
+def next_etrago_id(component):
+    """ Select next id value for components in etrago tables
+
+    Parameters
+    ----------
+    component : str
+        Name of componenet
+
+    Returns
+    -------
+    next_id : int
+        Next index value
+
+    """
+    max_id = select_dataframe(
+        f"""
+        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        """)['max'][0]
+
+    if max_id:
+        next_id = max_id + 1
+    else:
+        next_id = 1
+
+    return next_id
