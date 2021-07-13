@@ -5,38 +5,6 @@ import geopandas as gpd
 from egon.data import db, config
 from shapely.geometry import LineString
 
-def next_id(component):
-    """ Select next id value for components in pf-tables
-
-    Parameters
-    ----------
-    component : str
-        Name of componenet
-
-    Returns
-    -------
-    next_id : int
-        Next index value
-
-    """
-
-    if component == 'transformer':
-        id_column = 'trafo_id'
-    else:
-        id_column = f'{component}_id'
-
-    max_id = db.select_dataframe(
-        f"""
-        SELECT MAX({id_column}) FROM grid.egon_pf_hv_{component}
-        """)['max'][0]
-
-    if max_id:
-        next_id = max_id + 1
-    else:
-        next_id = 1
-
-    return next_id
-
 def insert_individual_power_to_heat(version = '0.0.0', scenario='eGon2035'):
     """ Insert power to heat into database
 
@@ -194,7 +162,7 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
             lambda x: LineString([x['geom_power'], x['geom_heat']]),axis=1)
 
     # Choose next unused link id
-    next_link_id = next_id('link')
+    next_link_id = db.next_etrago_id('link')
 
     # Initilize dataframe of links
     links = gpd.GeoDataFrame(
