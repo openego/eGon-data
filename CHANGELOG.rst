@@ -33,6 +33,14 @@ Added
   returns the current configuration settings. See `PR #159`_ for more
   details.
 
+* You can now use tasks which are not part of a ``Dataset``, i.e. which are
+  unversioned, as dependencies of a dataset. See `PR #318`_ for more
+  details.
+
+* You can now force the tasks of a ``Dataset`` to be always executed by
+  giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
+  #318`_ for more details.
+
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
