@@ -241,7 +241,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.0-dev",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(buses, supply),
         )
