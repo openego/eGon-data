@@ -8,7 +8,8 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
-# from egon.data.processing import hh_demand
+from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
+    houseprofiles_in_census_cells
 
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
@@ -39,10 +40,7 @@ import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
-from egon.data.processing.hh_demand.hh_demand_profiles import hh_demand_setup
 
-from egon.data.processing.hh_demand.hh_demand_profiles import mv_grid_district_HH_electricity_load
-from egon.data.processing.hh_demand.hh_demand_profiles import houseprofiles_in_census_cells
 
 from egon.data import db
 
