@@ -7,6 +7,35 @@ import pandas as pd
 import egon.data.config
 from egon.data import db
 
+from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class EgonEtragoElectricityCts(Base):
+    __tablename__ = "egon_etrago_electricity_cts"
+    __table_args__ = {"schema": "demand"}
+
+    version = Column(String, primary_key=True)
+    subst_id = Column(Integer, primary_key=True)
+    scn_name = Column(String, primary_key=True)
+    p_set = Column(ARRAY(Float))
+    q_set = Column(ARRAY(Float))
+
+def create_table():
+    """Create tables for demandregio data
+    Returns
+    -------
+    None.
+    """
+    db.execute_sql(
+        "CREATE SCHEMA IF NOT EXISTS demand;")
+    engine = db.engine()
+    EgonEtragoElectricityCts.__table__.drop(
+        bind=engine, checkfirst=True)
+    EgonEtragoElectricityCts.__table__.create(
+        bind=engine, checkfirst=True)
+
 def calc_load_curve(share_wz, annual_demand=1):
     """ Create aggregated demand curve for service sector
 
@@ -151,69 +180,37 @@ def insert_cts_load():
 
     version = '0.0.0'
 
+    create_table()
+
     for scenario in ['eGon2035', 'eGon100RE']:
 
         # Delete existing data from database
         db.execute_sql(
             f"""
             DELETE FROM
-            {targets['pf_load']['schema']}.{targets['pf_load']['table']}
+            {targets['cts_demand_curves']['schema']}
+            .{targets['cts_demand_curves']['table']}
             WHERE version = '{version}'
             AND scn_name = '{scenario}'
-            AND carrier = 'AC-cts'
-            """)
-
-        db.execute_sql(
-            f"""
-            DELETE FROM
-            {targets['pf_load_timeseries']['schema']}.
-            {targets['pf_load_timeseries']['table']}
-            WHERE version = '{version}'
-            AND scn_name = '{scenario}'
-            AND load_id NOT IN (
-                SELECT load_id FROM
-                {targets['pf_load']['schema']}.{targets['pf_load']['table']}
-                  WHERE version = '{version}'
-                  AND scn_name = '{scenario}')
-
             """)
 
 
         # Calculate cts load curves per mv substation (hvmv bus)
         data = calc_load_curves_cts(scenario)
 
-        # Initalize pandas.DataFrame for pf table load
-        load_df = pd.DataFrame(
-            columns=['version', 'scn_name', 'load_id', 'bus',
-                     'carrier', 'sign']).set_index('load_id')
-
-        # Insert data for pf load table
-        load_df.bus = data.columns
-        load_df.carrier = 'AC-cts'
-        load_df.sign = -1
-        load_df.version = version
-        load_df.scn_name = scenario
-
-        # Insert into database
-        load_df.to_sql(targets['pf_load']['table'],
-                       schema=targets['pf_load']['schema'],
-                       con=db.engine(),
-                       if_exists='append')
-
         # Initalize pandas.DataFrame for pf table load timeseries
-        load_ts_df = pd.DataFrame(index=load_df.index,
+        load_ts_df = pd.DataFrame(index=data.columns,
                                   columns=['version', 'scn_name',
-                                           'temp_id', 'p_set'])
+                                           'p_set'])
 
         # Insert data for pf load timeseries table
         load_ts_df.p_set = data.transpose().values.tolist()
         load_ts_df.version = version
         load_ts_df.scn_name = scenario
-        load_ts_df.temp_id = 1
 
         # Insert into database
-        load_ts_df.to_sql(targets['pf_load_timeseries']['table'],
-                       schema=targets['pf_load_timeseries']['schema'],
+        load_ts_df.to_sql(targets['cts_demand_curves']['table'],
+                       schema=targets['cts_demand_curves']['schema'],
                        con=db.engine(),
                        if_exists='append')
 
