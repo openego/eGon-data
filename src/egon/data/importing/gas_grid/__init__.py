@@ -143,7 +143,11 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.reset_index(drop=True)
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
 
-    # Insert data to db
+#     Insert data to db
+    db.execute_sql(
+        """
+    DELETE FROM grid.egon_pf_hv_bus WHERE "carrier" = 'gas';
+    """)
     gas_nodes_list.to_postgis('egon_pf_hv_bus', #egon_gas_
                               engine,
                               schema ='grid',
@@ -293,6 +297,10 @@ def insert_gas_pipeline_list(gas_nodes_list):
                                                           'max_transport_capacity_Gwh/d', 'lat', 'long'])
 
     # Insert data to db
+    db.execute_sql(
+        """DELETE FROM grid.egon_pf_hv_link WHERE "carrier" = 'gas';
+        """)
+
     gas_pipelines_list.to_postgis('egon_pf_hv_link',
                           engine,
                           schema = 'grid',
