@@ -12,6 +12,7 @@ from egon.data.config import settings
 import egon.data.subprocess as subproc
 from egon.data import db
 from egon.data.datasets import Dataset
+from airflow.operators.postgres_operator import PostgresOperator
 
 
 
@@ -669,5 +670,17 @@ class Osmtgmod(Dataset):
             name="Osmtgmod",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(import_osm_data, run, to_pypsa),
+            tasks=(
+                import_osm_data,
+                run,
+                {
+                    PostgresOperator(
+                        task_id="osmtgmod_substation",
+                        sql=resources.read_text(__name__, "substation_otg.sql"),
+                        postgres_conn_id="egon_data",
+                        autocommit=True,
+                    ),
+                    to_pypsa
+                }
+            ),
         )

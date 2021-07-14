@@ -15,7 +15,6 @@ from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
 from egon.data.datasets.osmtgmod import Osmtgmod
-import egon.data.datasets.osmtgmod as osmtgmod_for_sql
 
 
 import airflow
@@ -322,17 +321,9 @@ with airflow.DAG(
                                          hvmv_substation_extraction,
                                          etrago_input_data])
     osmtgmod.insert_into(pipeline)
-    run_osmtgmod = tasks["osmtgmod.run"]
-    osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
-    
-    osmtgmod_substation = PostgresOperator(
-        task_id="osmtgmod_substation",
-        sql=resources.read_text(osmtgmod_for_sql, "substation_otg.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
+    osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]  
+    osmtgmod_substation = tasks["osmtgmod_substation"]
 
-    run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
     create_voronoi = PythonOperator(
