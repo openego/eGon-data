@@ -65,9 +65,9 @@ def insert_power2gas():
         lines.append(line)
         geom.append(geometry.MultiLineString(lines))
         lines.pop()
-        l = (sp_ops.transform(my_transformer.transform, line).length)/1000
-        length.append(l)
-        if l > 0.5:
+        lenght_km = (sp_ops.transform(my_transformer.transform, line).length)/1000
+        length.append(lenght_km)
+        if lenght_km > 0.5:
             p_nom_max.append(1)
         else:
             p_nom_max.append(float('Inf'))
@@ -80,16 +80,18 @@ def insert_power2gas():
     gdf['length'] = length
     gdf['link_id'] = range(new_id, new_id + len(n_gas)) 
     gdf['carrier'] = 'power-to-gas'
-    gdf['efficiency_fixed'] = 0.8   # H2 electrolysis - Brown et al. 2018 "SynergSynergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4 
+    gdf['efficiency_fixed'] = 0.8   # H2 electrolysis - Brown et al. 2018  
+                                    # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4 
     gdf['p_nom'] = 0
     gdf['p_nom_extendable'] = True
-    gdf['capital_cost'] = 350000  # H2 electrolysis [€/MW] Brown et al. 2018 "SynergSynergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
-    
+    gdf['capital_cost'] = 350000    # H2 electrolysis - Brown et al. 2018  
+                                    # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4 
+ 
 
 ######################################## Do we also consider methanisation? ########################################
 
-    # capital_cost_methanation_DAC = 1000000    # [€/MW] Brown et al. 2018 "SynergSynergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
-    # ptch4_efficiency = 0.6 * 0.8              # [€/MW] Brown et al. 2018 "SynergSynergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
+    # capital_cost_methanation_DAC = 1000000    # H2 electrolysis - Brown et al. 2018 
+    # ptch4_efficiency = 0.6 * 0.8              # "Synergies of sector coupling and ...
     
     gdf = gdf.drop(columns=['geom_gas', 'geom_AC', 'dist']) # 
     print('Minimal length (in km): ' + str(gdf['length'].min()))
