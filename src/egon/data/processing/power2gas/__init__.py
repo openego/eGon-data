@@ -16,8 +16,12 @@ from egon.data.importing.gas_grid import next_id
 
 
 def insert_power2gas():
-    sql_AC = "SELECT bus_id, geom FROM grid.egon_pf_hv_bus WHERE carrier = 'AC';"
-    sql_gas = "SELECT bus_id, version, scn_name, geom FROM grid.egon_pf_hv_bus WHERE carrier = 'gas';" 
+    sql_AC = """SELECT bus_id, geom 
+                FROM grid.egon_pf_hv_bus 
+                WHERE carrier = 'AC';"""
+    sql_gas = """SELECT bus_id, version, scn_name, geom 
+                FROM grid.egon_pf_hv_bus 
+                WHERE carrier = 'gas';""" 
     
     # Connect to local database
     engine = db.engine()
@@ -33,9 +37,6 @@ def insert_power2gas():
         print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'AC'")
     elif gdf_gas.size == 0: 
         print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'gas'")
-    
-    print(gdf_AC)
-    print(gdf_gas)
        
     n_gas = np.array(list(gdf_gas.geometry.apply(lambda x: (x.x, x.y))))
     n_AC = np.array(list(gdf_AC.geometry.apply(lambda x: (x.x, x.y))))
@@ -91,8 +92,7 @@ def insert_power2gas():
     # ptch4_efficiency = 0.6 * 0.8              # [€/MW] Brown et al. 2018 "SynergSynergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
     
     gdf = gdf.drop(columns=['geom_gas', 'geom_AC', 'dist']) # 
-    print(gdf)
-    gdf.to_csv('NN.csv')
+    print('Minimal length (in km): ' + str(gdf['length'].min()))
     
     # Insert data to db
     gdf.to_postgis('egon_pf_hv_gas_link',
@@ -111,8 +111,7 @@ def insert_power2gas():
     INSERT INTO grid.egon_pf_hv_link (version, scn_name, link_id, bus0, 
                                               bus1, p_nom, p_nom_extendable, capital_cost,length,
                                               geom, topo, efficiency_fixed, carrier, p_nom_max)
-    SELECT
-    version, scn_name, link_id, bus0, 
+    SELECT version, scn_name, link_id, bus0, 
         bus1, p_nom, p_nom_extendable, capital_cost, length, 
         geom, topo, efficiency_fixed, carrier, p_nom_max
     FROM grid.egon_pf_hv_gas_link;
