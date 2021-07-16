@@ -186,3 +186,5 @@ Bug fixes
   `#279 <https://github.com/openego/eGon-data/issues/279>`_
 * Fix import of hydro power plants
   `#270 <https://github.com/openego/eGon-data/issues/270>`_
+* Fix path to osm-file for osmtgmod_osm_import
+  `#258 <https://github.com/openego/eGon-data/issues/258>`_
