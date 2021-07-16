@@ -6,7 +6,8 @@ import pandas as pd
 import geopandas
 from egon.data import db, config
 from egon.data.processing.power_plants import (
-    assign_voltage_level, assign_bus_id, assign_gas_bus_id)
+    assign_voltage_level, assign_bus_id, assign_gas_bus_id,
+    filter_mastr_geometry, select_target)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, String, Float, Integer, Sequence
 from sqlalchemy.ext.declarative import declarative_base
@@ -361,19 +362,7 @@ def match_chp(chp_NEP, MaStR_konv, chp_NEP_matched, consider_carrier=True):
     return chp_NEP_matched, chp_NEP, MaStR_konv
 
 ################################################### Final table ###################################################
-def insert_chp_egon2035():
-    """ Insert large CHP plants for eGon2035 considering NEP and MaStR
-
-    Returns
-    -------
-    None.
-
-    """
-    
-    create_tables()
-    
-    target = config.datasets()["chp_location"]["targets"]["power_plants"]
-
+def insert_large_chp(target):
     # Select CHP from NEP list
     chp_NEP = select_chp_from_nep()
 
@@ -429,11 +418,11 @@ def insert_chp_egon2035():
         insert_chp.set_index('geometry_wkt').index, 'geometry'].unique()
     insert_chp.crs = "EPSG:4326"
     insert_chp_c = insert_chp.copy()
-    
+
     # Assign bus_id
     insert_chp['bus_id'] = assign_bus_id(
         insert_chp, config.datasets()["chp_location"]).bus_id
-    
+
     # Assign gas bus_id
     insert_chp['gas_bus_id'] = assign_gas_bus_id(insert_chp_c).gas_bus_id
 
@@ -465,3 +454,89 @@ def insert_chp_egon2035():
         session.add(entry)
     session.commit()
 
+    return MaStR_konv
+
+def insert_chp_egon2035():
+    """ Insert large CHP plants for eGon2035 considering NEP and MaStR
+
+    Returns
+    -------
+    None.
+
+    """
+
+    create_tables()
+
+    target = config.datasets()["chp_location"]["targets"]["power_plants"]
+
+    MaStR_konv = insert_large_chp(target)
+
+    # Insert small
+    chp_smaller_10mw(MaStR_konv)
+
+
+
+def chp_smaller_10mw(MaStR_konv):
+
+    existsting_chp_smaller_10mw = MaStR_konv[
+    (MaStR_konv.EinheitBetriebsstatus=='InBetrieb')
+    &(MaStR_konv.ThermischeNutzleistung>100)
+    &(MaStR_konv.ThermischeNutzleistung<10000)
+    &(MaStR_konv.Energietraeger.isin([
+        'AndereGase', 'Erdgas', 'Mineraloelprodukte',
+        'NichtBiogenerAbfall']))]
+
+    mastr_chp = filter_mastr_geometry(existsting_chp_smaller_10mw)
+
+    target = select_target('small_chp', 'eGon2035')['SchleswigHolstein']
+
+
+    if mastr_chp.Nettonennleistung.sum()/1000 > target:
+        # Remove small chp ?
+        additional_capacitiy = 0
+
+    elif mastr_chp.Nettonennleistung.sum()/1000 < target:
+
+        # Keep all existing CHP < 10MW
+        session = sessionmaker(bind=db.engine())()
+        for i, row in mastr_chp.iterrows():
+            entry = EgonChp(
+                    sources={
+                        "chp": "MaStR",
+                        "el_capacity": "MaStR",
+                        "th_capacity": "MaStR",
+                    },
+                    source_id={"MastrNummer": row.EinheitMastrNummer},
+                    carrier=row.Energietraeger,
+                    el_capacity=row.Nettonennleistung/1000,
+                    th_capacity= row.ThermischeNutzleistung/1000,
+                    scenario='eGon2035',
+                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+                )
+            session.add(entry)
+        session.commit()
+
+        # Add new chp
+        additional_capacitiy = target - mastr_chp.Nettonennleistung.sum()/1000
+    else:
+        # Keep all existing CHP < 10MW
+        session = sessionmaker(bind=db.engine())()
+        for i, row in mastr_chp.iterrows():
+            entry = EgonChp(
+                    sources={
+                        "chp": "MaStR",
+                        "el_capacity": "MaStR",
+                        "th_capacity": "MaStR",
+                    },
+                    source_id={"MastrNummer": row.EinheitMastrNummer},
+                    carrier=row.carrier,
+                    el_capacity=row.Nettonennleistung/1000,
+                    th_capacity= row.ThermischeNutzleistung/1000,
+                    scenario='eGon2035',
+                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+                )
+            session.add(entry)
+        session.commit()
+
+        additional_capacitiy = 0
+    return additional_capacitiy
