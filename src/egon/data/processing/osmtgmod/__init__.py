@@ -6,7 +6,6 @@ import csv
 import datetime
 import logging
 import codecs
-import subprocess
 import egon.data.config
 from egon.data.config import settings
 import egon.data.subprocess as subproc
@@ -142,9 +141,7 @@ def import_osm_data():
         {config['osm_data']['osmosis_path_to_binary']}"""
         )
 
-    # BUG: Python continues (and sets osm_metadata)
-    # even in case osmosis fails!!!
-    proc = subprocess.Popen(
+    subproc.run(
             "%s --read-pbf %s --write-pgsql \
                 database=%s host=%s user=%s password=%s"
             % (
@@ -162,7 +159,7 @@ def import_osm_data():
             shell=True,
         )
     logging.info("Importing OSM-Data...")
-    proc.wait()
+
 
     # After updating OSM-Data, power_tables (for editing)
     # have to be updated as well
