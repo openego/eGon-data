@@ -188,3 +188,5 @@ Bug fixes
   `#270 <https://github.com/openego/eGon-data/issues/270>`_
 * Fix path to osm-file for osmtgmod_osm_import
   `#258 <https://github.com/openego/eGon-data/issues/258>`_
+* Fix conflicting docker containers by setting a project name
+  `#289 <https://github.com/openego/eGon-data/issues/289>`_
