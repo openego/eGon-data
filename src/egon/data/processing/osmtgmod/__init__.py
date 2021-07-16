@@ -25,7 +25,7 @@ def run_osmtgmod():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/importing" + "/openstreetmap/"
+        egon.data.__path__[0] + "/datasets" + "/osm/"
         + target_path
     )
     docker_db_config = db.credentials()
@@ -74,7 +74,7 @@ def import_osm_data():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/importing" + "/openstreetmap/"
+        egon.data.__path__[0] + "/datasets" + "/osm/"
         + target_path
     )
 
