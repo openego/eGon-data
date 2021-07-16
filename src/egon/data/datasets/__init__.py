@@ -6,6 +6,7 @@ from collections import abc
 from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Iterable, Set, Tuple, Union
+import re
 
 from airflow import DAG
 from airflow.operators import BaseOperator as Operator
@@ -178,7 +179,9 @@ class Dataset:
         def skip_task(task, *xs, **ks):
             with db.session_scope() as session:
                 datasets = session.query(Model).filter_by(name=self.name).all()
-                if self.version in [ds.version for ds in datasets]:
+                if self.version in [
+                    ds.version for ds in datasets
+                ] and not re.search(r"\.dev$", self.version):
                     logger.info(
                         f"Dataset '{self.name}' version '{self.version}'"
                         f" already executed. Skipping."
