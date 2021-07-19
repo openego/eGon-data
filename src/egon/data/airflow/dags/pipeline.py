@@ -6,7 +6,7 @@ from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
 from egon.data.datasets import database
-from egon.data.datasets.chp import insert_chp_egon2035
+from egon.data.datasets.chp import Chp
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
@@ -599,13 +599,14 @@ with airflow.DAG(
     import_district_heating_supply >> heat_etrago_supply
 
     # CHP locations
-    chp_locations_nep = PythonOperator(
-        task_id="CHP_location_nep",
-        python_callable=insert_chp_egon2035,
-    )
+    chp = Chp(
+        dependencies=[mv_grid_districts,
+                      mastr_data])
+
+    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
+    chp_heat_bus = tasks["chp.assign-heat-bus"]
 
     nep_insert_data >> chp_locations_nep
-    retrieve_mastr_data >> chp_locations_nep
     create_gas_polygons >> chp_locations_nep
-    define_mv_grid_districts >> chp_locations_nep
     import_district_heating_areas >> chp_locations_nep
+    heat_etrago_buses >> chp_heat_bus

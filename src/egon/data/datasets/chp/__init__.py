@@ -31,6 +31,16 @@ class EgonChp(Base):
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
+class Chp(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Chp",
+            version="0.0.0.dev",
+            dependencies=dependencies,
+            tasks=(create_tables, insert_chp_egon2035,
+                   assign_heat_bus),
+        )
+
 def create_tables():
     """Create tables for chp data
     Returns
