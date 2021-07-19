@@ -189,9 +189,9 @@ def dsm_cts_processing():
         for index, row in p_max.iteritems():
             nom = max(max(row), abs(min(p_min.loc[index])))
             p_nom.loc[index] = nom
-            new = [element * nom for element in row]
+            new = [element / nom for element in row]
             p_max.loc[index] = new
-            new = [element * nom for element in p_min.loc[index]]
+            new = [element / nom for element in p_min.loc[index]]
             p_min.loc[index] = new
 
         # calculate E_nom and E per unit
@@ -199,9 +199,9 @@ def dsm_cts_processing():
         for index, row in e_max.iteritems():
             nom = max(max(row), abs(min(e_min.loc[index])))
             e_nom.loc[index] = nom
-            new = [element * nom for element in row]
+            new = [element / nom for element in row]
             e_max.loc[index] = new
-            new = [element * nom for element in e_min.loc[index]]
+            new = [element / nom for element in e_min.loc[index]]
             e_min.loc[index] = new
 
         # add DSM-buses to "original" buses
