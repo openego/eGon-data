@@ -140,18 +140,21 @@ def filter_mastr_geometry(mastr):
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
-    # Drop entries without geometry for insert
-    mastr_loc = mastr[
-        mastr.Laengengrad.notnull() & mastr.Breitengrad.notnull()
-    ]
+    if type(mastr) == pd.core.frame.DataFrame:
+        # Drop entries without geometry for insert
+        mastr_loc = mastr[
+            mastr.Laengengrad.notnull() & mastr.Breitengrad.notnull()
+        ]
 
-    # Create geodataframe
-    mastr_loc = gpd.GeoDataFrame(
-        mastr_loc,
-        geometry=gpd.points_from_xy(
-            mastr_loc.Laengengrad, mastr_loc.Breitengrad, crs=4326
-        ),
-    )
+        # Create geodataframe
+        mastr_loc = gpd.GeoDataFrame(
+            mastr_loc,
+            geometry=gpd.points_from_xy(
+                mastr_loc.Laengengrad, mastr_loc.Breitengrad, crs=4326
+            ),
+        )
+    else:
+        mastr_loc = mastr.copy()
 
     # Drop entries outside of germany
     mastr_loc = (
@@ -479,10 +482,10 @@ def assign_gas_bus_id(power_plants):
         """
         SELECT * FROM grid.egon_gas_voronoi
         """, epsg=4326)
-    
-    res = gpd.sjoin(power_plants, gas_voronoi)  
+
+    res = gpd.sjoin(power_plants, gas_voronoi)
     res['gas_bus_id'] = res['bus_id']
-    
+
     # Assert that all power plants have a gas_bus_id
     assert res.gas_bus_id.notnull().all(), """Some power plants are
     not attached to a gas bus."""
