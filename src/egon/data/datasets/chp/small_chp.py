@@ -101,7 +101,6 @@ def nearest(row, geom_union, df1, df2,
     value = df2[nearest][src_column].values[0]
     return value
 
-
 def assign_use_case(chp):
     # Select osm industrial areas which don't include power or heat supply
     # (name not includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
@@ -182,14 +181,5 @@ def assign_use_case(chp):
 
     # Others get use_case='industrial'
     chp.loc[chp[chp.use_case == ''].index, 'use_case'] = 'industrial'
-
-    # Assign district heating area_id to district_heating_chp
-    # According to nearest centroid of district heating area
-    district_heating['geom_centroid']=district_heating.geom.centroid
-
-    chp['district_heating_area_id'] = chp.apply(
-        nearest, geom_union=district_heating.centroid.unary_union,
-        df1=chp, df2=district_heating, geom1_col='geometry', geom2_col='geom_centroid',
-        src_column='area_id', axis=1)
 
     return chp
