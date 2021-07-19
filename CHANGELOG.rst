@@ -158,6 +158,8 @@ Changed
   `#283 <https://github.com/openego/eGon-data/issues/283>`_
 * Allow configuring the airflow port
   `#281 <https://github.com/openego/eGon-data/issues/281>`_
+* Migrate mastr, mv_grid_districts and re_potential_areas to datasets
+  `#297 <https://github.com/openego/eGon-data/issues/297>`_
 
 Bug fixes
 ---------
@@ -186,3 +188,7 @@ Bug fixes
   `#279 <https://github.com/openego/eGon-data/issues/279>`_
 * Fix import of hydro power plants
   `#270 <https://github.com/openego/eGon-data/issues/270>`_
+* Fix path to osm-file for osmtgmod_osm_import
+  `#258 <https://github.com/openego/eGon-data/issues/258>`_
+* Fix conflicting docker containers by setting a project name
+  `#289 <https://github.com/openego/eGon-data/issues/289>`_

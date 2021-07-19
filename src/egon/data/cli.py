@@ -121,6 +121,19 @@ import egon.data.config as config
     ),
     show_default=True,
 )
+
+@click.option(
+    "--compose-project-name",
+    default="egon-data",
+    metavar="PROJECT",
+    help=(
+        "The name of the Docker project."
+        " Different compose_project_names are needed to run multiple instances"
+        " of egon-data on the same machine."
+    ),
+    show_default=True,
+)
+
 @click.option(
     "--airflow-port",
     default=8080,
@@ -286,7 +299,8 @@ def egon_data(context, **kwargs):
         )
     if code != 0:
         subprocess.run(
-            ["docker-compose", "up", "-d", "--build"],
+            ["docker-compose", "-p", options["--compose-project-name"],
+             "up", "-d", "--build"],
             cwd=str((Path(".") / "docker").absolute()),
         )
         time.sleep(1.5)  # Give the container time to boot.
