@@ -7,10 +7,9 @@ from egon.data import db, config
 from egon.data.processing.power_plants import (
     assign_voltage_level, assign_bus_id, assign_gas_bus_id,
     filter_mastr_geometry, select_target)
-from egon.data.datasets.chp import EgonChp
 from sqlalchemy.orm import sessionmaker
 
-def existing_chp_smaller_10mw(MaStR_konv):
+def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
 
     existsting_chp_smaller_10mw = MaStR_konv[
         (MaStR_konv.Nettonennleistung>0.1)
@@ -18,6 +17,18 @@ def existing_chp_smaller_10mw(MaStR_konv):
 
     mastr_chp =  geopandas.GeoDataFrame(
         filter_mastr_geometry(existsting_chp_smaller_10mw))
+
+    mastr_chp.crs = "EPSG:4326"
+
+    # Assign gas bus_id
+    mastr_chp_c = mastr_chp.copy()
+    mastr_chp['gas_bus_id'] = assign_gas_bus_id(mastr_chp_c).gas_bus_id
+
+    # Assign bus_id
+    mastr_chp['bus_id'] = assign_bus_id(
+        mastr_chp, config.datasets()["chp_location"]).bus_id
+
+
 
     mastr_chp = assign_use_case(mastr_chp)
 
@@ -43,6 +54,8 @@ def existing_chp_smaller_10mw(MaStR_konv):
                     carrier=row.energietraeger_Ma,
                     el_capacity=row.Nettonennleistung,
                     th_capacity= row.ThermischeNutzleistung,
+                    electrical_bus_id = row.bus_id,
+                    gas_bus_id = row.gas_bus_id,
                     use_case=row.use_case,
                     scenario='eGon2035',
                     geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
@@ -64,8 +77,10 @@ def existing_chp_smaller_10mw(MaStR_konv):
                     },
                     source_id={"MastrNummer": row.EinheitMastrNummer},
                     carrier=row.carrier,
-                    el_capacity=row.Nettonennleistung/1000,
-                    th_capacity= row.ThermischeNutzleistung/1000,
+                    el_capacity=row.Nettonennleistung,
+                    th_capacity= row.ThermischeNutzleistung,
+                    electrical_bus_id = row.bus_id,
+                    gas_bus_id = row.gas_bus_id,
                     use_case=row.use_case,
                     scenario='eGon2035',
                     geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
@@ -102,14 +117,16 @@ def assign_use_case(chp):
         OR name NOT LIKE '%%Abfall%%'
         OR name NOT LIKE '%%Kraftwerk%%'
         OR name NOT LIKE '%%Wertstoff%%')
-        """)
+        """,
+        epsg=4326)
 
     # Select osm polygons where a district heating chp is likely
     # (name includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     possible_dh_locations= db.select_geodataframe(
         """
-        SELECT * FROM
-        openstreetmap.osm_polygon
+        SELECT ST_Buffer(geom, 100) as geom,
+         tags::json->>'name' as name
+        FROM openstreetmap.osm_polygon
         WHERE name LIKE '%%Stadtwerke%%'
         OR name LIKE '%%kraftwerk%%'
         OR name LIKE '%%Müllverbrennung%%'
@@ -117,11 +134,12 @@ def assign_use_case(chp):
         OR name LIKE '%%Abfall%%'
         OR name LIKE '%%Kraftwerk%%'
         OR name LIKE '%%Wertstoff%%'
-        """)
+        """,
+        epsg=4326)
 
     # All chp < 150kWel are individual
     chp['use_case'] = ''
-    chp.loc[chp[chp.Nettonennleistung <= 0.15].index, 'use_case'] = 'individual'
+    #chp.loc[chp[chp.Nettonennleistung <= 0.15].index, 'use_case'] = 'individual'
     # Select district heating areas with buffer of 1 km
     district_heating = db.select_geodataframe(
         """
