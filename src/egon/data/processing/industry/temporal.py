@@ -17,7 +17,6 @@ class DemandCurvesOsmIndustry(Base):
     __tablename__ = "egon_osm_ind_load_curves"
     __table_args__ = {"schema": "demand"}
 
-    version = Column(String, primary_key=True)
     bus = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
@@ -178,8 +177,6 @@ def insert_osm_ind_load():
     targets = (egon.data.config.datasets()
                ['electrical_load_curves_industry']['targets'])
 
-    version = '0.0.0'
-
     for scenario in ['eGon2035', 'eGon100RE']:
 
         # Delete existing data from database
@@ -187,18 +184,16 @@ def insert_osm_ind_load():
             f"""
             DELETE FROM
             {targets['osm_load']['schema']}.{targets['osm_load']['table']}
-            WHERE version = '{version}'
             AND scn_name = '{scenario}'
             """)
 
         # Calculate cts load curves per mv substation (hvmv bus)
         data = calc_load_curves_ind_osm(scenario)
         data.index = data.index.rename("bus")
-        data['version'] =  version
         data['scn_name'] = scenario
 
 
-        data.set_index(['version', 'scn_name'], inplace=True, append=True)
+        data.set_index(['scn_name'], inplace=True, append=True)
 
         # Insert into database
         data.to_sql(targets['osm_load']['table'],
