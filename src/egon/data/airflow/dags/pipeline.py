@@ -6,7 +6,7 @@ from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
 from egon.data.datasets import database
-from egon.data.datasets.chp_locations import insert_chp_egon2035
+from egon.data.datasets.chp import insert_chp_egon2035
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
@@ -607,3 +607,5 @@ with airflow.DAG(
     nep_insert_data >> chp_locations_nep
     retrieve_mastr_data >> chp_locations_nep
     create_gas_polygons >> chp_locations_nep
+    define_mv_grid_districts >> chp_locations_nep
+    import_district_heating_areas >> chp_locations_nep
