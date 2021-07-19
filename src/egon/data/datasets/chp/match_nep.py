@@ -8,7 +8,7 @@ from egon.data import db, config
 from egon.data.processing.power_plants import (
     assign_voltage_level, assign_bus_id, assign_gas_bus_id,
     filter_mastr_geometry, select_target)
-from egon.data.datasets.chp import EgonChp
+from egon.data.datasets.chp.small_chp import assign_use_case
 from sqlalchemy.orm import sessionmaker
 
 def map_carrier_nep_mastr():
@@ -329,7 +329,7 @@ def match_chp(chp_NEP, MaStR_konv, chp_NEP_matched, consider_carrier=True):
     return chp_NEP_matched, chp_NEP, MaStR_konv
 
 ################################################### Final table ###################################################
-def insert_large_chp(target):
+def insert_large_chp(target, EgonChp):
     # Select CHP from NEP list
     chp_NEP = select_chp_from_nep()
 
@@ -393,6 +393,8 @@ def insert_large_chp(target):
     # Assign gas bus_id
     insert_chp['gas_bus_id'] = assign_gas_bus_id(insert_chp_c).gas_bus_id
 
+    insert_chp = assign_use_case(insert_chp)
+
     # Delete existing CHP in the target table
     db.execute_sql(
         f""" DELETE FROM {target['schema']}.{target['table']}
@@ -414,7 +416,8 @@ def insert_large_chp(target):
                 th_capacity= row.th_capacity,
                 voltage_level = row.voltage_level,
                 electrical_bus_id = row.bus_id,
-               # gas_bus_id = row.gas_bus_id,
+                gas_bus_id = row.gas_bus_id,
+                use_case = row.use_case,
                 scenario='eGon2035',
                 geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
             )
