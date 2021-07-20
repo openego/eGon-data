@@ -839,7 +839,7 @@ def regio_of_pv_ground_mounted():
             rora_i_hv = rora_i[rora_i["voltage_level"] == 4]
             agri_i_mv = agri_i[agri_i["voltage_level"] == 5]
             agri_i_hv = agri_i[agri_i["voltage_level"] == 4]
-            print("Untersuchung der Spannungslevel pro Bundesland:")
+            print("eGon2035: Untersuchung der Spannungslevel pro Bundesland:")
             print("a) PVs auf Potentialflächen Road & Railway: ")
             print(
                 "Insgesamt installierte Leistung: "
@@ -1135,7 +1135,7 @@ def regio_of_pv_ground_mounted():
     pv_agri_hv = pv_agri[pv_agri["voltage_level"] == 4]
 
     print(" ")
-    print("Untersuchung der Spannungslevel (gesamt):")
+    print("eGon2035: Untersuchung der Spannungslevel (gesamt):")
     print("a) PVs auf Potentialflächen Road & Railway: ")
     print(
         "Insgesamt installierte Leistung: "
