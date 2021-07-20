@@ -10,6 +10,20 @@ from egon.data.processing.power_plants import (
 from sqlalchemy.orm import sessionmaker
 
 def insert_mastr_chp(mastr_chp, EgonChp):
+    """Insert MaStR data from exising CHPs into database table
+
+    Parameters
+    ----------
+    mastr_chp : pandas.DataFrame
+        List of existing CHPs in MaStR.
+    EgonChp : class
+        Class definition of daabase table for CHPs
+
+    Returns
+    -------
+    None.
+
+    """
 
     session = sessionmaker(bind=db.engine())()
     for i, row in mastr_chp.iterrows():
@@ -34,6 +48,21 @@ def insert_mastr_chp(mastr_chp, EgonChp):
     session.commit()
 
 def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
+    """ Insert existing small CHPs based on MaStR and target values
+
+    Parameters
+    ----------
+    MaStR_konv : pandas.DataFrame
+        List of conevntional CHPs in MaStR whoes locateion is not used
+    EgonChp : class
+        Class definition of daabase table for CHPs
+
+    Returns
+    -------
+    additional_capacitiy : pandas.Series
+        Capacity of new locations for small chp per federal state
+
+    """
 
     existsting_chp_smaller_10mw = MaStR_konv[
         (MaStR_konv.Nettonennleistung>0.1)
@@ -81,17 +110,21 @@ def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
 
     return additional_capacitiy
 
-def nearest(row, geom_union, df1, df2,
-            geom1_col='geometry', geom2_col='geometry', src_column=None):
-    """Find the nearest point and return the corresponding value from specified column."""
-    from shapely.ops import nearest_points
-    # Find the geometry that is closest
-    nearest = df2[geom2_col] == nearest_points(row[geom1_col], geom_union)[1]
-    # Get the corresponding value from df2 (matching is based on the geometry)
-    value = df2[nearest][src_column].values[0]
-    return value
-
 def assign_use_case(chp):
+    """ Intentifies CHPs used in district heating areas
+
+    Parameters
+    ----------
+    chp : pandas.DataFrame
+        CHPs without district_heating flag
+
+    Returns
+    -------
+    chp : pandas.DataFrame
+        CHPs with identification of district_heating CHPs
+
+
+    """
     # Select osm industrial areas which don't include power or heat supply
     # (name not includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     landuse_industrial = db.select_geodataframe(

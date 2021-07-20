@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
+from shapely.ops import nearest_points
 Base = declarative_base()
 
 class EgonChp(Base):
@@ -53,17 +54,60 @@ def create_tables():
     EgonChp.__table__.drop(bind=engine, checkfirst=True)
     EgonChp.__table__.create(bind=engine, checkfirst=True)
 
-def nearest(row, geom_union, df1, df2,
-            geom1_col='geometry', geom2_col='geometry', src_column=None):
-    """Find the nearest point and return the corresponding value from specified column."""
-    from shapely.ops import nearest_points
+def nearest(row, df, centroid= False,
+            row_geom_col='geometry', df_geom_col='geometry', src_column=None):
+    """
+    Finds the nearest point and returns the specified column values
+
+    Parameters
+    ----------
+    row : pandas.Series
+        Data to which the nearest data of df is assigned.
+    df : pandas.DataFrame
+        Data which includes all options for the nearest neighbor alogrithm.
+    centroid : boolean
+        Use centroid geoemtry. The default is False.
+    row_geom_col : str, optional
+        Name of row's geometry column. The default is 'geometry'.
+    df_geom_col : str, optional
+        Name of df's geometry column. The default is 'geometry'.
+    src_column : str, optional
+        Name of returned df column. The default is None.
+
+    Returns
+    -------
+    value : pandas.Series
+        Values of specified column of df
+
+    """
+
+    if centroid:
+        unary_union = df.centroid.unary_union
+    else:
+        unary_union = df[df_geom_col].unary_union
+
     # Find the geometry that is closest
-    nearest = df2[geom2_col] == nearest_points(row[geom1_col], geom_union)[1]
-    # Get the corresponding value from df2 (matching is based on the geometry)
-    value = df2[nearest][src_column].values[0]
+    nearest = df[df_geom_col] == nearest_points(
+        row[row_geom_col], unary_union)[1]
+
+    # Get the corresponding value from df (matching is based on the geometry)
+    value = df[nearest][src_column].values[0]
+
     return value
 
 def assign_heat_bus(scenario='eGon2035'):
+    """ Selects heat_bus for chps used in district heating.
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of the corresponding scenario. The default is 'eGon2035'.
+
+    Returns
+    -------
+    None.
+
+    """
     # Select CHP with use_case = 'district_heating'
     chp = db.select_geodataframe(
         f"""
@@ -88,9 +132,8 @@ def assign_heat_bus(scenario='eGon2035'):
     # Assign district heating area_id to district_heating_chp
     # According to nearest centroid of district heating area
     chp['heat_bus_id'] = chp.apply(
-        nearest, geom_union=district_heating.centroid.unary_union,
-        df1=chp, df2=district_heating, geom1_col='geom', geom2_col='geom',
-        src_column='bus_id', axis=1)
+        nearest, df=district_heating, row_geom_col='geom', df_geom_col='geom',
+        centroid=True, src_column='bus_id', axis=1)
 
     # Drop district heating CHP without heat_bus_id
     db.execute_sql(
@@ -114,6 +157,7 @@ def assign_heat_bus(scenario='eGon2035'):
                 gas_bus_id = row.gas_bus_id,
                 heat_bus_id = row.heat_bus_id,
                 district_heating=row.district_heating,
+                voltage_level = row.voltage_level,
                 scenario=scenario,
                 geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
             )
@@ -121,7 +165,7 @@ def assign_heat_bus(scenario='eGon2035'):
     session.commit()
 
 def insert_chp_egon2035():
-    """ Insert large CHP plants for eGon2035 considering NEP and MaStR
+    """ Insert CHP plants for eGon2035 considering NEP and MaStR data
 
     Returns
     -------
