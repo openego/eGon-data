@@ -18,11 +18,11 @@ def dsm_cts_processing():
         # import load data
 
         sql = (
-            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_pf_hv_load"
+            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_etrago_load"
         )
         l = pd.read_sql_query(sql, con)
 
-        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_pf_hv_load_timeseries"
+        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_etrago_load_timeseries"
         t = pd.read_sql_query(sql, con)
 
         # select CTS load
