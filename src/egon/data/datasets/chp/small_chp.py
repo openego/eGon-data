@@ -9,86 +9,75 @@ from egon.data.processing.power_plants import (
     filter_mastr_geometry, select_target)
 from sqlalchemy.orm import sessionmaker
 
+def insert_mastr_chp(mastr_chp, EgonChp):
+
+    session = sessionmaker(bind=db.engine())()
+    for i, row in mastr_chp.iterrows():
+        entry = EgonChp(
+                sources={
+                    "chp": "MaStR",
+                    "el_capacity": "MaStR",
+                    "th_capacity": "MaStR",
+                },
+                source_id={"MastrNummer": row.EinheitMastrNummer},
+                carrier=row.energietraeger_Ma,
+                el_capacity=row.Nettonennleistung,
+                th_capacity= row.ThermischeNutzleistung,
+                electrical_bus_id = row.bus_id,
+                gas_bus_id = row.gas_bus_id,
+                use_case=row.use_case,
+                scenario='eGon2035',
+                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+            )
+        session.add(entry)
+    session.commit()
+
 def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
 
     existsting_chp_smaller_10mw = MaStR_konv[
         (MaStR_konv.Nettonennleistung>0.1)
         &(MaStR_konv.Nettonennleistung<=10)]
 
-    mastr_chp =  geopandas.GeoDataFrame(
-        filter_mastr_geometry(existsting_chp_smaller_10mw))
+    targets = select_target('small_chp', 'eGon2035')
 
-    mastr_chp.crs = "EPSG:4326"
+    additional_capacitiy = pd.Series()
 
-    # Assign gas bus_id
-    mastr_chp_c = mastr_chp.copy()
-    mastr_chp['gas_bus_id'] = assign_gas_bus_id(mastr_chp_c).gas_bus_id
+    for federal_state in targets.index:
+        mastr_chp =  geopandas.GeoDataFrame(
+            filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state))
 
-    # Assign bus_id
-    mastr_chp['bus_id'] = assign_bus_id(
-        mastr_chp, config.datasets()["chp_location"]).bus_id
+        mastr_chp.crs = "EPSG:4326"
 
+        # Assign gas bus_id
+        mastr_chp_c = mastr_chp.copy()
+        mastr_chp['gas_bus_id'] = assign_gas_bus_id(mastr_chp_c).gas_bus_id
 
+        # Assign bus_id
+        mastr_chp['bus_id'] = assign_bus_id(
+            mastr_chp, config.datasets()["chp_location"]).bus_id
 
-    mastr_chp = assign_use_case(mastr_chp)
+        mastr_chp = assign_use_case(mastr_chp)
 
-    target = select_target('small_chp', 'eGon2035')['SchleswigHolstein']
+        target = targets[federal_state]
 
+        if mastr_chp.Nettonennleistung.sum() > target:
+            # Remove small chp ?
+            additional_capacitiy[federal_state] = 0
 
-    if mastr_chp.Nettonennleistung.sum() > target:
-        # Remove small chp ?
-        additional_capacitiy = 0
+        elif mastr_chp.Nettonennleistung.sum()< target:
 
-    elif mastr_chp.Nettonennleistung.sum()< target:
+            # Keep all existing CHP < 10MW
+            insert_mastr_chp(mastr_chp, EgonChp)
 
-        # Keep all existing CHP < 10MW
-        session = sessionmaker(bind=db.engine())()
-        for i, row in mastr_chp.iterrows():
-            entry = EgonChp(
-                    sources={
-                        "chp": "MaStR",
-                        "el_capacity": "MaStR",
-                        "th_capacity": "MaStR",
-                    },
-                    source_id={"MastrNummer": row.EinheitMastrNummer},
-                    carrier=row.energietraeger_Ma,
-                    el_capacity=row.Nettonennleistung,
-                    th_capacity= row.ThermischeNutzleistung,
-                    electrical_bus_id = row.bus_id,
-                    gas_bus_id = row.gas_bus_id,
-                    use_case=row.use_case,
-                    scenario='eGon2035',
-                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-                )
-            session.add(entry)
-        session.commit()
+            # Add new chp
+            additional_capacitiy[federal_state] = (
+                target - mastr_chp.Nettonennleistung.sum())
+        else:
+            # Keep all existing CHP < 10MW
+            insert_mastr_chp(mastr_chp, EgonChp)
 
-        # Add new chp
-        additional_capacitiy = target - mastr_chp.Nettonennleistung.sum()
-    else:
-        # Keep all existing CHP < 10MW
-        session = sessionmaker(bind=db.engine())()
-        for i, row in mastr_chp.iterrows():
-            entry = EgonChp(
-                    sources={
-                        "chp": "MaStR",
-                        "el_capacity": "MaStR",
-                        "th_capacity": "MaStR",
-                    },
-                    source_id={"MastrNummer": row.EinheitMastrNummer},
-                    carrier=row.carrier,
-                    el_capacity=row.Nettonennleistung,
-                    th_capacity= row.ThermischeNutzleistung,
-                    electrical_bus_id = row.bus_id,
-                    gas_bus_id = row.gas_bus_id,
-                    use_case=row.use_case,
-                    scenario='eGon2035',
-                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-                )
-            session.add(entry)
-        session.commit()
+            additional_capacitiy[federal_state] = 0
 
-        additional_capacitiy = 0
     return additional_capacitiy
 
 def nearest(row, geom_union, df1, df2,
