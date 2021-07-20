@@ -124,13 +124,16 @@ def select_target(carrier, scenario):
     )
 
 
-def filter_mastr_geometry(mastr):
+def filter_mastr_geometry(mastr, federal_state=None):
     """Filter data from MaStR by geometry
 
     Parameters
     ----------
     mastr : pandas.DataFrame
         All power plants listed in MaStR
+    federal_state : str or None
+        Name of federal state whoes power plants are returned.
+        If None, data for Germany is returned
 
     Returns
     -------
@@ -156,11 +159,19 @@ def filter_mastr_geometry(mastr):
     else:
         mastr_loc = mastr.copy()
 
-    # Drop entries outside of germany
+    # Drop entries outside of germany or federal state
+    if not federal_state:
+        sql = f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}"
+    else:
+        sql = f"""
+        SELECT geometry as geom
+        FROM boundaries.vg250_lan_union
+        WHERE REPLACE(gen, '-', '') = '{federal_state}'"""
+
     mastr_loc = (
         gpd.sjoin(
             gpd.read_postgis(
-                f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}",
+                sql,
                 con=db.engine(),
             ).to_crs(4326),
             mastr_loc,
