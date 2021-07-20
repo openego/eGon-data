@@ -340,7 +340,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_buses.to_postgis(
-            "egon_pf_hv_bus",
+            "egon_etrago_bus",
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -360,7 +360,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_links.to_sql(
-            "egon_pf_hv_link",
+            "egon_etrago_link",
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -377,7 +377,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_links_timeseries.to_sql(
-            "egon_pf_hv_link_timeseries",
+            "egon_etrago_link_timeseries",
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -396,7 +396,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_stores.to_sql(
-            "egon_pf_hv_store",
+            "egon_etrago_store",
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -413,7 +413,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_stores_timeseries.to_sql(
-            "egon_pf_hv_store_timeseries",
+            "egon_etrago_store_timeseries",
             con=db.engine(),
             schema="grid",
             if_exists="append",
