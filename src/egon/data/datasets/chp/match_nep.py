@@ -73,7 +73,7 @@ def map_carrier_matching():
         'Steinkohle': ['Steinkohle']}))
 
 #####################################   NEP treatment   #################################
-def select_chp_from_nep():
+def select_chp_from_nep(sources):
     """ Select CHP plants with location from NEP's list of power plants
 
     Returns
@@ -82,7 +82,6 @@ def select_chp_from_nep():
         CHP plants from NEP list
 
     """
-    sources = config.datasets()["chp_location"]["sources"]
 
     # Select CHP plants with geolocation from list of conventional power plants
     chp_NEP_data = db.select_dataframe(
@@ -130,7 +129,7 @@ def select_chp_from_nep():
     return chp_NEP.drop('index', axis=1)
 
 #####################################   MaStR treatment   #################################
-def select_chp_from_mastr():
+def select_chp_from_mastr(sources):
     """Select combustion CHP plants from MaStR
 
     Returns
@@ -139,8 +138,6 @@ def select_chp_from_mastr():
         CHP plants from MaStR
 
     """
-
-    sources = config.datasets()["chp_location"]["sources"]
 
     # Read-in data from MaStR
     MaStR_konv = pd.read_csv(
@@ -329,12 +326,12 @@ def match_chp(chp_NEP, MaStR_konv, chp_NEP_matched, consider_carrier=True):
     return chp_NEP_matched, chp_NEP, MaStR_konv
 
 ################################################### Final table ###################################################
-def insert_large_chp(target, EgonChp):
+def insert_large_chp(sources, target, EgonChp):
     # Select CHP from NEP list
-    chp_NEP = select_chp_from_nep()
+    chp_NEP = select_chp_from_nep(sources)
 
     # Select CHP from MaStR
-    MaStR_konv = select_chp_from_mastr()
+    MaStR_konv = select_chp_from_mastr(sources)
 
     # Assign voltage level to MaStR
     MaStR_konv['voltage_level'] = assign_voltage_level(
@@ -393,7 +390,7 @@ def insert_large_chp(target, EgonChp):
     # Assign gas bus_id
     insert_chp['gas_bus_id'] = assign_gas_bus_id(insert_chp_c).gas_bus_id
 
-    insert_chp = assign_use_case(insert_chp)
+    insert_chp = assign_use_case(insert_chp, sources)
 
     # Delete existing CHP in the target table
     db.execute_sql(

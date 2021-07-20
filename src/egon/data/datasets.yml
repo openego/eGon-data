@@ -582,7 +582,19 @@ chp_location:
     mastr_location: 'location_elec_generation_raw.csv'
     mv_grid_districts: 'grid.mv_grid_districts'
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
+    osm_landuse:
+      table: 'osm_landuse'
+      schema: 'openstreetmap'
+    osm_polygon:
+      table: 'osm_polygon'
+      schema: 'openstreetmap'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'district_heating_areas'
   targets:
-    power_plants:
+    chp_table:
       table: 'egon_chp'
       schema: 'supply'

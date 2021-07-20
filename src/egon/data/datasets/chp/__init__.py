@@ -108,11 +108,14 @@ def assign_heat_bus(scenario='eGon2035'):
     None.
 
     """
+    sources = config.datasets()["chp_location"]["sources"]
+    target = config.datasets()["chp_location"]["targets"]["chp_table"]
+
     # Select CHP with use_case = 'district_heating'
     chp = db.select_geodataframe(
         f"""
         SELECT * FROM
-        supply.egon_chp
+        {target['schema']}.{target['table']}
         WHERE scenario = '{scenario}'
         AND district_heating = True
         """,
@@ -121,9 +124,10 @@ def assign_heat_bus(scenario='eGon2035'):
 
     # Select district heating nodes
     district_heating = db.select_geodataframe(
-        """
+        f"""
         SELECT bus_id, geom
-        FROM grid.egon_pf_hv_bus
+        FROM
+        {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
         WHERE scn_name = 'eGon2035'
         AND carrier = 'central_heat'
         """,
@@ -138,7 +142,7 @@ def assign_heat_bus(scenario='eGon2035'):
     # Drop district heating CHP without heat_bus_id
     db.execute_sql(
         f"""
-        DELETE FROM supply.egon_chp
+        DELETE FROM {target['schema']}.{target['table']}
         WHERE scenario = '{scenario}'
         AND district_heating = True
         """)
@@ -175,12 +179,15 @@ def insert_chp_egon2035():
 
     create_tables()
 
-    target = config.datasets()["chp_location"]["targets"]["power_plants"]
+    sources = config.datasets()["chp_location"]["sources"]
+
+    target = config.datasets()["chp_location"]["targets"]["chp_table"]
 
     # Insert large CHPs based on NEP's list of conventional power plants
-    MaStR_konv = insert_large_chp(target, EgonChp)
+    MaStR_konv = insert_large_chp(sources, target, EgonChp)
 
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
-    additional_capacitiy = existing_chp_smaller_10mw(MaStR_konv, EgonChp)
+    additional_capacitiy = existing_chp_smaller_10mw(
+        sources, MaStR_konv, EgonChp)
 
 

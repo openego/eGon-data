@@ -47,7 +47,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
         session.add(entry)
     session.commit()
 
-def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
+def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
     """ Insert existing small CHPs based on MaStR and target values
 
     Parameters
@@ -86,7 +86,7 @@ def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
         mastr_chp['bus_id'] = assign_bus_id(
             mastr_chp, config.datasets()["chp_location"]).bus_id
 
-        mastr_chp = assign_use_case(mastr_chp)
+        mastr_chp = assign_use_case(mastr_chp, sources)
 
         target = targets[federal_state]
 
@@ -110,7 +110,7 @@ def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
 
     return additional_capacitiy
 
-def assign_use_case(chp):
+def assign_use_case(chp, sources):
     """ Intentifies CHPs used in district heating areas
 
     Parameters
@@ -128,10 +128,11 @@ def assign_use_case(chp):
     # Select osm industrial areas which don't include power or heat supply
     # (name not includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     landuse_industrial = db.select_geodataframe(
-        """
+        f"""
         SELECT ST_Buffer(geom, 100) as geom,
          tags::json->>'name' as name
-         FROM openstreetmap.osm_landuse
+         FROM {sources['osm_landuse']['schema']}.
+        {sources['osm_landuse']['table']}
         WHERE tags::json->>'landuse' = 'industrial'
         AND(name NOT LIKE '%%kraftwerk%%'
         OR name NOT LIKE '%%Müllverbrennung%%'
@@ -145,10 +146,11 @@ def assign_use_case(chp):
     # Select osm polygons where a district heating chp is likely
     # (name includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     possible_dh_locations= db.select_geodataframe(
-        """
+        f"""
         SELECT ST_Buffer(geom, 100) as geom,
          tags::json->>'name' as name
-        FROM openstreetmap.osm_polygon
+         FROM {sources['osm_polygon']['schema']}.
+        {sources['osm_polygon']['table']}
         WHERE name LIKE '%%Stadtwerke%%'
         OR name LIKE '%%kraftwerk%%'
         OR name LIKE '%%Müllverbrennung%%'
@@ -164,9 +166,10 @@ def assign_use_case(chp):
     #chp.loc[chp[chp.Nettonennleistung <= 0.15].index, 'use_case'] = 'individual'
     # Select district heating areas with buffer of 1 km
     district_heating = db.select_geodataframe(
-        """
+        f"""
         SELECT area_id, ST_Buffer(geom_polygon, 1000) as geom
-        FROM demand.district_heating_areas
+        FROM {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']}
         WHERE scenario = 'eGon2035'
         """,
         epsg=4326)
