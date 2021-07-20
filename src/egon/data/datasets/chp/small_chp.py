@@ -25,7 +25,8 @@ def insert_mastr_chp(mastr_chp, EgonChp):
                 th_capacity= row.ThermischeNutzleistung,
                 electrical_bus_id = row.bus_id,
                 gas_bus_id = row.gas_bus_id,
-                use_case=row.use_case,
+                district_heating=row.district_heating,
+                voltage_level=row.voltage_level,
                 scenario='eGon2035',
                 geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
             )
@@ -43,7 +44,7 @@ def existing_chp_smaller_10mw(MaStR_konv, EgonChp):
     additional_capacitiy = pd.Series()
 
     for federal_state in targets.index:
-        mastr_chp =  geopandas.GeoDataFrame(
+        mastr_chp = geopandas.GeoDataFrame(
             filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state))
 
         mastr_chp.crs = "EPSG:4326"
@@ -125,8 +126,8 @@ def assign_use_case(chp):
         """,
         epsg=4326)
 
-    # All chp < 150kWel are individual
-    chp['use_case'] = ''
+    # Initilize district_heating argument
+    chp['district_heating'] = False
     #chp.loc[chp[chp.Nettonennleistung <= 0.15].index, 'use_case'] = 'individual'
     # Select district heating areas with buffer of 1 km
     district_heating = db.select_geodataframe(
@@ -141,7 +142,7 @@ def assign_use_case(chp):
     # these are possible district heating chp
     # Chps which are not close to a district heating area get use_case='industrial'
     close_to_dh = chp[chp.index.isin(
-        geopandas.sjoin(chp[chp['use_case'] == ''], district_heating).index)]
+        geopandas.sjoin(chp, district_heating).index)]
 
     # All chp which are close to a district heating grid and intersect with
     # osm polygons whoes name indicates that it could be a district heating location
@@ -157,7 +158,7 @@ def assign_use_case(chp):
     # Select all CHP closer than 100m to a industrial location its name
     # doesn't indicate that it could be a district heating location
     # these chp get use_case='industrial'
-    close_to_industry =  chp[chp.index.isin(
+    close_to_industry = chp[chp.index.isin(
         geopandas.sjoin(close_to_dh, landuse_industrial).index)]
 
     # Chp which are close to a district heating area and not close to an
@@ -165,10 +166,7 @@ def assign_use_case(chp):
     district_heating_chp = district_heating_chp.append(
         close_to_dh[~close_to_dh.index.isin(close_to_industry.index)])
 
-    # Set use_case for all district heating chp
-    chp.loc[district_heating_chp.index, 'use_case'] = 'district_heating'
-
-    # Others get use_case='industrial'
-    chp.loc[chp[chp.use_case == ''].index, 'use_case'] = 'industrial'
+    # Set district_heating = True for all district heating chp
+    chp.loc[district_heating_chp.index, 'district_heating'] = True
 
     return chp

@@ -7,7 +7,7 @@ from egon.data import db, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.chp.match_nep import insert_large_chp
 from egon.data.datasets.chp.small_chp import existing_chp_smaller_10mw
-from sqlalchemy import Column, String, Float, Integer, Sequence
+from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
@@ -21,7 +21,7 @@ class EgonChp(Base):
     sources = Column(JSONB)
     source_id = Column(JSONB)
     carrier = Column(String)
-    use_case = Column(String)
+    district_heating = Column(Boolean)
     el_capacity = Column(Float)
     th_capacity = Column(Float)
     electrical_bus_id = Column(Integer)
@@ -70,7 +70,7 @@ def assign_heat_bus(scenario='eGon2035'):
         SELECT * FROM
         supply.egon_chp
         WHERE scenario = '{scenario}'
-        AND use_case = 'district_heating'
+        AND district_heating = True
         """,
         index_col='id',
         epsg=4326)
@@ -97,7 +97,7 @@ def assign_heat_bus(scenario='eGon2035'):
         f"""
         DELETE FROM supply.egon_chp
         WHERE scenario = '{scenario}'
-        AND use_case = 'district_heating'
+        AND district_heating = True
         """)
 
     # Insert district heating CHP with heat_bus_id
@@ -113,7 +113,7 @@ def assign_heat_bus(scenario='eGon2035'):
                 electrical_bus_id = row.electrical_bus_id,
                 gas_bus_id = row.gas_bus_id,
                 heat_bus_id = row.heat_bus_id,
-                use_case=row.use_case,
+                district_heating=row.district_heating,
                 scenario=scenario,
                 geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
             )
