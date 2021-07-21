@@ -9,10 +9,8 @@
 
 import egon.data.config
 import geopandas as gpd
-import pandas as pd
-import numpy as np
-from egon.data import db, subprocess
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, Sequence
+from egon.data import db
+from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -72,7 +70,6 @@ def create_tables():
     EgonDemandRegioOsmIndElectricity.__table__.create(
         bind=engine, checkfirst=True
     )
-#%%
 
 def industrial_demand_distr():
     """ Distribute electrical demands for industry to osm landuse polygons
@@ -86,7 +83,6 @@ def industrial_demand_distr():
     None.
     """
 
-    #%%
 
     # Read information from configuration file
     sources = egon.data.config.datasets()["distributed_industrial_demand"][
