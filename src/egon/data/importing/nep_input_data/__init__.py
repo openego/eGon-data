@@ -162,7 +162,7 @@ def insert_capacities_per_federal_state_nep():
 
 
         data['carrier'] = data.index.map(rename_carrier)
-        data = data.groupby(data.carrier).sum().reset_index()
+        data = data.groupby(data.carrier).sum(numeric_only=False).reset_index()
         data['component'] = 'generator'
         data['country'] = 'Deutschland'
         data['nuts'] = map_nuts.nuts[bl]

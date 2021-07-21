@@ -192,3 +192,5 @@ Bug fixes
   `#258 <https://github.com/openego/eGon-data/issues/258>`_
 * Fix conflicting docker containers by setting a project name
   `#289 <https://github.com/openego/eGon-data/issues/289>`_
+* Update task insert-nep-data for pandas version 1.3.0
+  `#322 <https://github.com/openego/eGon-data/issues/322>`_
