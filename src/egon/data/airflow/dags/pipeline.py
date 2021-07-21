@@ -569,6 +569,6 @@ with airflow.DAG(
                mv_HH_electricity_load_2050,)
     )
     hh_demand.insert_into(pipeline)
-    householdprofiles_in_cencus_cells = tasks["houseprofiles-in-census-cells"]
+    householdprofiles_in_cencus_cells = tasks["hh_demand_profiles.houseprofiles-in-census-cells"]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
