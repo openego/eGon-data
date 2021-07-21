@@ -610,6 +610,9 @@ electrical_load_curves_industry:
     sites:
       schema: 'demand'
       table: 'egon_demandregio_sites_ind_electricity'
+    sites_geom:
+      schema: 'demand'
+      table: 'industrial_sites'
     demandregio_industry:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
@@ -629,4 +632,7 @@ electrical_load_curves_industry:
     osm_load:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    sites_load:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves'
 
