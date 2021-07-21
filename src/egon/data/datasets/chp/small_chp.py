@@ -34,7 +34,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
                     "th_capacity": "MaStR",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
-                carrier=row.energietraeger_Ma,
+                carrier='gas',
                 el_capacity=row.Nettonennleistung,
                 th_capacity= row.ThermischeNutzleistung,
                 electrical_bus_id = row.bus_id,
