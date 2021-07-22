@@ -6,6 +6,7 @@ import csv
 import datetime
 import logging
 import codecs
+from pathlib import Path
 import egon.data.config
 from egon.data.config import settings
 import egon.data.subprocess as subproc
@@ -142,9 +143,10 @@ def import_osm_data():
         )
 
     subproc.run(
-            "%s --read-pbf %s --write-pgsql \
+            "JAVACMD_OPTIONS='%s' %s --read-pbf %s --write-pgsql \
                 database=%s host=%s user=%s password=%s"
             % (
+                f"-Djava.io.tmpdir={Path('.')}",
                 os.path.join(egon.data.__path__[0],
                                  "processing/osmtgmod/osmTGmod/",
                                  config["osm_data"]["osmosis_path_to_binary"]),
