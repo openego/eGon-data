@@ -142,11 +142,16 @@ def import_osm_data():
         {config['osm_data']['osmosis_path_to_binary']}"""
         )
 
+    # create directory to store osmosis' temp files
+    osmosis_temp_dir = Path('.') / "osmosis_temp/"
+    if not os.path.exists(osmosis_temp_dir):
+        os.mkdir(osmosis_temp_dir)
+
     subproc.run(
             "JAVACMD_OPTIONS='%s' %s --read-pbf %s --write-pgsql \
                 database=%s host=%s user=%s password=%s"
             % (
-                f"-Djava.io.tmpdir={Path('.')}",
+                f"-Djava.io.tmpdir={osmosis_temp_dir}",
                 os.path.join(egon.data.__path__[0],
                                  "processing/osmtgmod/osmTGmod/",
                                  config["osm_data"]["osmosis_path_to_binary"]),
