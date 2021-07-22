@@ -71,6 +71,7 @@ def create_tables():
         bind=engine, checkfirst=True
     )
 
+
 def industrial_demand_distr():
     """ Distribute electrical demands for industry to osm landuse polygons
     and/or industrial sites, identified earlier in the process.
@@ -82,7 +83,6 @@ def industrial_demand_distr():
     -------
     None.
     """
-
 
     # Read information from configuration file
     sources = egon.data.config.datasets()["distributed_industrial_demand"][
@@ -115,7 +115,7 @@ def industrial_demand_distr():
                 {sources['vg250_krs']['table']}""",
             index_col="nuts",
             geom_col="geometry",
-            epsg=3035
+            epsg=3035,
         )
 
         # Select industrial landuse polygons
@@ -125,7 +125,7 @@ def industrial_demand_distr():
                 {sources['osm_landuse']['table']}
                 WHERE sector = 3 """,
             geom_col="geom",
-            epsg=3035
+            epsg=3035,
         )
 
         # Spatially join vg250_krs and industrial landuse areas
@@ -254,7 +254,6 @@ def industrial_demand_distr():
         sites = sites.rename({"id": "industrial_sites_id"}, axis=1)
         sites["scenario"] = scn
         sites.set_index("industrial_sites_id", inplace=True)
-
 
         landuse = landuse.rename({"gid": "osm_id"}, axis=1)
 
