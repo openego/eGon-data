@@ -53,7 +53,7 @@ def import_osm_data():
         )
 
     else:
-    	subproc.run(
+        subproc.run(
             [
                 "git",
                 "clone",
@@ -159,7 +159,6 @@ def import_osm_data():
             shell=True,
         )
     logging.info("Importing OSM-Data...")
-
 
     # After updating OSM-Data, power_tables (for editing)
     # have to be updated as well
