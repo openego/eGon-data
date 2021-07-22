@@ -361,6 +361,64 @@ def create_tables():
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
+    
+    ##################### drop tables with old names #########################
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_bus;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_bus_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;""")    
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_line;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_line_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_link;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_link_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;""")     
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;""")  
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;""")  
+    ##########################################################################
+        
     # Drop existing tables
     EgonPfHvBus.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.drop(bind=engine, checkfirst=True)
