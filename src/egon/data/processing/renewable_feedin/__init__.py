@@ -149,7 +149,7 @@ def feedin_per_turbine():
     ts_e141 = cutout.wind(turbine_e141,
                           per_unit=True, shapes=cutout.grid_cells())
 
-    gdf['E-141'] = ts_e141.to_pandas().values.tolist()
+    gdf['E-141'] = ts_e141.to_pandas().transpose().values.tolist()
 
     # Calculate feedin-timeseries for E-126
     # source: https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
@@ -166,7 +166,7 @@ def feedin_per_turbine():
     ts_e126 = cutout.wind(turbine_e126,
                           per_unit=True, shapes=cutout.grid_cells())
 
-    gdf['E-126'] = ts_e126.to_pandas().values.tolist()
+    gdf['E-126'] = ts_e126.to_pandas().transpose().values.tolist()
 
     return gdf
 
@@ -290,6 +290,8 @@ def insert_feedin(data, carrier, weather_year):
     None.
 
     """
+    # Transpose DataFrame
+    data = data.transpose()
 
     # Load configuration
     cfg = egon.data.config.datasets()['renewable_feedin']
