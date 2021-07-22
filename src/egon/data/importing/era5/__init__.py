@@ -51,6 +51,7 @@ def import_cutout(boundary='Europe'):
         Weather data stored in cutout
 
     """
+    weather_year = get_sector_parameters('global', 'eGon2035')['weather_year']
 
     if boundary == 'Europe':
         xs = slice(-12., 35.1)
@@ -61,7 +62,7 @@ def import_cutout(boundary='Europe'):
             "SELECT geometry as geom FROM boundaries.vg250_sta_bbox",
             db.engine()).to_crs(4623).geom
         xs = slice(geom_de.bounds.minx[0], geom_de.bounds.maxx[0])
-        ys = slice(geom_de.bounds.maxy[0], geom_de.bounds.miny[0])
+        ys = slice(geom_de.bounds.miny[0], geom_de.bounds.maxy[0])
 
     else:
         print(
@@ -70,16 +71,14 @@ def import_cutout(boundary='Europe'):
 
     directory = Path(".") / (
         egon.data.config.datasets()
-        ['era5_weather_data']['targets']['weather_data']['path'])
-
-    weather_year = get_sector_parameters('global', 'eGon2035')['weather_year']
+        ['era5_weather_data']['targets']['weather_data']['path']
+        ) / f"{boundary.lower()}-{str(weather_year)}-era5.nc"
 
     cutout = atlite.Cutout(
-            f"europe-{str(weather_year)}-era5",
-            cutout_dir = directory.absolute(),
+            path = directory.absolute(),
             module="era5",
-            xs=xs,
-            ys=ys,
+            x=xs,
+            y=ys,
             years=slice(weather_year, weather_year)
             )
 
@@ -104,10 +103,19 @@ def download_era5():
 
     cutout = import_cutout()
 
+    print('Europe')
+
     if not cutout.prepared:
 
-        cutout.prepare(nprocesses=1)
+        cutout.prepare()
 
+    print('Germany')
+
+    cutout = import_cutout('Germany')
+
+    if not cutout.prepared:
+
+        cutout.prepare()
 
 def insert_weather_cells():
     """ Insert weather cells from era5 into database table
