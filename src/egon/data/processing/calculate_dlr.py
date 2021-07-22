@@ -2,7 +2,7 @@
 Use the concept of dynamic line rating(DLR) to calculate temporal
 depending capacity for HV transmission lines.
 Inspired mainly on Planungsgrundsaetze-2020
-Available at: 
+Available at:
 <https://www.transnetbw.de/files/pdf/netzentwicklung/netzplanungsgrundsaetze/UENB_PlGrS_Juli2020.pdf>
 """
 import geopandas as gpd
@@ -123,13 +123,8 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     regions = regions.set_index(["Region"])
     regions = regions.sort_values(by=["Region"])
 
-    # The data downloaded using Atlite is divided by months. Paths_weather stores
-    # the paths of the 12 files to be loaded together in 'weather_data_raw'.
-    paths_weather = []
-    for i in range(1, 13):
-        paths_weather.append("cutouts/europe-2011-era5/2011" + str(i).zfill(2) + ".nc")
-
-    weather_data_raw = xr.open_mfdataset(paths_weather)
+    # The data downloaded using Atlite is loaded in 'weather_data_raw'.
+    weather_data_raw = xr.open_mfdataset("cutouts/germany-2011-era5.nc")
     weather_data_raw = weather_data_raw.rio.write_crs(4326)
     weather_data_raw = weather_data_raw.rio.clip_box(
         minx=5.5,
