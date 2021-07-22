@@ -125,7 +125,7 @@ packages are required too. Right now these are:
   You also have to agree on the `terms of use
   <https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products>`_
 
-* Make sure you have enough free disk space (~300 GB) in your working
+* Make sure you have enough free disk space (~350 GB) in your working
   directory.
 
 Installation
@@ -193,7 +193,7 @@ solution.
 
 .. warning::
 
-   A complete run of the workflow needs loads of free disk space (~300 GB) to
+   A complete run of the workflow needs loads of free disk space (~350 GB) to
    store (temporary) files.
 
 Test mode
