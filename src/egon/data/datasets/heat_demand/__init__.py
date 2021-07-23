@@ -37,9 +37,36 @@ import json
 from sqlalchemy import Column, String, Float, Integer, Sequence, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
+from egon.data.datasets import Dataset
+
+# class for airflow task management (and version control)
+class HeatDemandImport(Dataset):
+
+    # data_config = egon.data.config.datasets()
+    # res_heatdemands_config = data_config[
+    #     "peta5_0_1_res_heat_demands"][
+    #     "original_data"
+    # ]
+    # ser_heatdemands_config = data_config[
+    #     "peta5_0_1_ser_heat_demands"][
+    #     "original_data"
+    # ]
+    # target_files = (res_heatdemands_config["target"]["path"] + "_and_" +
+    #                ser_heatdemands_config)
+    # besides the egon_peta_heat dataset is based on vg250 and census data
+    # as you can see below
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="heat-demands",
+            # version=self.target_files + "_0.0",
+            version="0.0.0", # maybe rethink the naming
+            dependencies=dependencies,
+            tasks=(scenario_data_import))
+
 Base = declarative_base()
 
-
+# class for the final dataset in the database
 class EgonPetaHeat(Base):
     __tablename__ = "egon_peta_heat"
     __table_args__ = {"schema": "demand"}
@@ -803,7 +830,7 @@ def add_metadata():
     db.submit_comment(meta_json, "demand", "egon_peta_heat")
 
 
-def future_heat_demand_data_import():
+def scenario_data_import():
     """
     Call all heat demand import related functions.
 

@@ -7,6 +7,7 @@ import importlib_resources as resources
 
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -22,7 +23,7 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
-import egon.data.importing.heat_demand_data as import_hd
+# import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
 
 import egon.data.importing.nep_input_data as nep_input
@@ -69,6 +70,7 @@ with airflow.DAG(
 ) as pipeline:
 
     tasks = pipeline.task_dict
+    # print(tasks)
 
     database_setup = database.Setup()
     database_setup.insert_into(pipeline)
@@ -352,11 +354,17 @@ with airflow.DAG(
     insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
 
     # Future heat demand calculation based on Peta5_0_1 data
-    heat_demand_import = PythonOperator(
-        task_id="import-heat-demand",
-        python_callable=import_hd.future_heat_demand_data_import,
-    )
-    vg250_clean_and_prepare >> heat_demand_import
+    # heat_demand_import = PythonOperator(
+    #     task_id="import-heat-demand",
+    #     python_callable=import_hd.future_heat_demand_data_import,
+    # )
+    heat_demand_Germany = HeatDemandImport(
+        dependencies=[vg250_clean_and_prepare])
+    # task will be added to pipeline automatically
+    heat_demand_import = tasks[
+        "heat_demand.scenario-data-import"]  # foldername.function
+
+    # vg250_clean_and_prepare >> heat_demand_import
     zensus_inside_ger_metadata >> heat_demand_import
     scenario_input_import >> heat_demand_import
 
