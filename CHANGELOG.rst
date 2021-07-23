@@ -194,3 +194,5 @@ Bug fixes
   `#289 <https://github.com/openego/eGon-data/issues/289>`_
 * Fix versioning conflict with mv_grid_districts
   `#340 <https://github.com/openego/eGon-data/issues/340>`_
+* Set current working directory as java's temp dir when executing osmosis
+  `#344 <https://github.com/openego/eGon-data/issues/344>`_
