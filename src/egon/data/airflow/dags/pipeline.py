@@ -12,6 +12,9 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.mastr import mastr_data_setup
+from egon.data.datasets.re_potential_areas import re_potential_area_setup
+from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
@@ -23,9 +26,8 @@ import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
-import egon.data.importing.mastr as mastr
+
 import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.re_potential_areas as re_potential_areas
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
@@ -33,12 +35,10 @@ import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
-import egon.data.processing.loadarea as loadarea
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
@@ -274,11 +274,9 @@ with airflow.DAG(
     setup >> etrago_input_data
 
     # Retrieve MaStR data
-    retrieve_mastr_data = PythonOperator(
-        task_id="retrieve_mastr_data",
-        python_callable=mastr.download_mastr_data,
-    )
-    setup >> retrieve_mastr_data
+    mastr_data = mastr_data_setup(dependencies=[setup])
+    mastr_data.insert_into(pipeline)
+    retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
     # Substation extraction
     substation_tables = PythonOperator(
@@ -342,34 +340,14 @@ with airflow.DAG(
     run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
-    create_voronoi = PythonOperator(
-        task_id="create_voronoi",
-        python_callable=substation.create_voronoi
-    )
-    osmtgmod_substation >> create_voronoi
-
-
-    define_mv_grid_districts = PythonOperator(
-        task_id="define_mv_grid_districts",
-        python_callable=mvgd.define_mv_grid_districts
-    )
-    create_voronoi >> define_mv_grid_districts
+    mv_grid_districts = mv_grid_districts_setup(dependencies=[osmtgmod_substation])
+    mv_grid_districts.insert_into(pipeline)
+    define_mv_grid_districts = tasks["mv_grid_districts.define-mv-grid-districts"]
 
     # Import potential areas for wind onshore and ground-mounted PV
-    download_re_potential_areas = PythonOperator(
-        task_id="download_re_potential_area_data",
-        python_callable=re_potential_areas.download_datasets,
-    )
-    create_re_potential_areas_tables = PythonOperator(
-        task_id="create_re_potential_areas_tables",
-        python_callable=re_potential_areas.create_tables,
-    )
-    insert_re_potential_areas = PythonOperator(
-        task_id="insert_re_potential_areas",
-        python_callable=re_potential_areas.insert_data,
-    )
-    setup >> download_re_potential_areas >> create_re_potential_areas_tables
-    create_re_potential_areas_tables >> insert_re_potential_areas
+    re_potential_areas = re_potential_area_setup(dependencies=[setup])
+    re_potential_areas.insert_into(pipeline)
+    insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
 
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_import = PythonOperator(
@@ -530,6 +508,7 @@ with airflow.DAG(
     retrieve_mastr_data >> power_plant_import
     define_mv_grid_districts >> power_plant_import
     map_boundaries_grid_districts >> solar_rooftop_etrago
+    feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
     nep_insert_data >> solar_rooftop_etrago

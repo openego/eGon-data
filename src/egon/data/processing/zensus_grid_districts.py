@@ -8,7 +8,7 @@ from egon.data import db
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data.processing.zensus_vg250.zensus_population_inside_germany import DestatisZensusPopulationPerHa
-from egon.data.processing.mv_grid_districts import MvGridDistricts
+from egon.data.datasets.mv_grid_districts import MvGridDistricts
 
 
 # will be later imported from another file ###
