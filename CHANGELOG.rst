@@ -121,7 +121,7 @@ Added
 * Integrate supply strategies for individual and district heating
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
 
->>>>>>> dev
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

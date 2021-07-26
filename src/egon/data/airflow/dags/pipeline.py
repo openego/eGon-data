@@ -17,6 +17,7 @@ from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 
+
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -581,7 +582,6 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
-    # initiate household demand profile dataset and medium voltage load area profiles
     mv_HH_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=mv_grid_district_HH_electricity_load,
