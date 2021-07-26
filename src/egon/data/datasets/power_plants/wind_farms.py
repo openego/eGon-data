@@ -6,16 +6,16 @@ from matplotlib import pyplot as plt
 from shapely.geometry import Polygon, LineString, Point, MultiPoint
 
 
-def wind_power_parks():
+def insert():
     """ Main function. Import power objectives generate results calling the
     functions "generate_wind_farms" and  "wind_power_states".
-    
+
     Parameters
     ----------
     *No parameters required
-    
+
     """
-    
+
     con = db.engine()
 
     # federal_std has the shapes of the German states
@@ -94,11 +94,11 @@ def wind_power_parks():
 
 def generate_wind_farms():
     """Generate wind farms based on existing wind farms.
-    
+
     Parameters
     ----------
     *No parameters required
-    
+
     """
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
@@ -224,7 +224,7 @@ def wind_power_states(
     fed_state,
 ):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
-    
+
     Parameters
     ----------
     state_wf: geodataframe, mandatory
@@ -241,9 +241,9 @@ def wind_power_states(
         Type of energy genetor. Always "Wind_onshore" for this script.
     fed_state: str, mandatory
         Name of the state where the wind farms will be allocated
-        
+
     """
-        
+
     def match_district_se(x):
         for sub in hvmv_substation.index:
             if x["geom"].contains(hvmv_substation.at[sub, "point"]):
@@ -441,7 +441,7 @@ def generate_map():
     Parameters
     ----------
     *No parameters required
-    
+
     """
     con = db.engine()
 

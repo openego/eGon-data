@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 
-def regio_of_pv_ground_mounted():
+def insert():
     def mastr_existing_pv(path, pow_per_area):
 
         """Import MaStR data from csv-files.

@@ -12,9 +12,8 @@ import egon.data.config
 from egon.data.datasets import Dataset
 import numpy as np
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
-from egon.data.datasets.power_plants.wind_farms import wind_power_parks
-from egon.data.datasets.power_plants.pv_ground_mounted import (
-    regio_of_pv_ground_mounted)
+import egon.data.datasets.power_plants.wind_farms as wind_onshore
+import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 Base = declarative_base()
 
 
@@ -44,8 +43,8 @@ class PowerPlants(Dataset):
             tasks=(
                 create_tables,
                 {insert_hydro_biomass,
-                 wind_power_parks,
-                 regio_of_pv_ground_mounted,
+                 wind_onshore.insert,
+                 pv_ground_mounted.insert,
                  pv_rooftop_per_mv_grid
                  }
             ),
