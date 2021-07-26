@@ -303,6 +303,7 @@ with airflow.DAG(
         autocommit=True,
     )
 
+
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
@@ -339,8 +340,15 @@ with airflow.DAG(
     etrago_input_data >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
 
+    # create Voronoi for MV grid districts
+    create_voronoi_substation = PythonOperator(
+        task_id="create-voronoi-substations",
+        python_callable=substation.create_voronoi,
+    )
+    osmtgmod_substation >> create_voronoi_substation
+
     # MV grid districts
-    mv_grid_districts = mv_grid_districts_setup(dependencies=[osmtgmod_substation])
+    mv_grid_districts = mv_grid_districts_setup(dependencies=[create_voronoi_substation])
     mv_grid_districts.insert_into(pipeline)
     define_mv_grid_districts = tasks["mv_grid_districts.define-mv-grid-districts"]
 

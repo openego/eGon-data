@@ -35,7 +35,6 @@ from egon.data.db import session_scope
 from egon.data.processing.substation import (
     EgonHvmvSubstation,
     EgonHvmvSubstationVoronoi,
-    create_voronoi,
 )
 
 Base = declarative_base()
@@ -775,5 +774,5 @@ mv_grid_districts_setup = partial(
     name="MvGridDistricts",
     version="0.0.0",
     dependencies=[],
-    tasks=(create_voronoi, define_mv_grid_districts),
+    tasks=(define_mv_grid_districts),
 )
