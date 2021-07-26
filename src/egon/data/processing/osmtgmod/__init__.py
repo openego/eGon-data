@@ -550,7 +550,7 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
             f"""
             -- BUS DATA
             INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
-                                             geom, x, y, carrier)
+                                             geom, x, y, carrier, country)
             SELECT
               {version},
               {scenario_name},
@@ -559,7 +559,8 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
               geom,
               ST_X(geom) as x,
               ST_Y(geom) as y,
-              'AC' as carrier
+              'AC' as carrier,
+              cntr_id
               FROM osmtgmod_results.bus_data
               WHERE result_id = 1;
 
