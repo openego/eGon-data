@@ -114,13 +114,9 @@ def download_era5():
 
     cutout = import_cutout()
 
-    print('Europe')
-
     if not cutout.prepared:
 
         cutout.prepare()
-
-    print('Germany')
 
     cutout = import_cutout('Germany')
 
@@ -146,7 +142,7 @@ def insert_weather_cells():
 
     df.to_postgis(cfg['targets']['weather_cells']['table'],
                   schema=cfg['targets']['weather_cells']['schema'],
-                  con=db.engine(), if_exists='append')
+                  con=db.engine(), if_exists='replace')
 
     db.execute_sql(
         f"""UPDATE {cfg['targets']['weather_cells']['schema']}.
