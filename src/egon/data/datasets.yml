@@ -576,3 +576,14 @@ etrago_heat:
       schema: 'grid'
       table: 'egon_pf_hv_link'
 
+electrical_neighbours:
+  sources:
+    electricity_buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_pf_hv_line'
+    german_borders:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
