@@ -9,6 +9,8 @@ from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.industry import IndustrialDemandCurves
+from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -23,7 +25,6 @@ import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
-import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
@@ -36,12 +37,9 @@ import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
-import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
-import egon.data.importing.scenarios as import_scenarios
-import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
@@ -86,6 +84,7 @@ with airflow.DAG(
     vg250 = Vg250(dependencies=[setup])
     vg250.insert_into(pipeline)
     vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
+
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -375,24 +374,6 @@ with airflow.DAG(
     retrieve_mastr_data >> power_plant_import
     define_mv_grid_districts >> power_plant_import
 
-    # Import and merge data on industrial sites from different sources
-
-    industrial_sites_import = PythonOperator(
-        task_id="download-import-industrial-sites",
-        python_callable=industrial_sites.download_import_industrial_sites
-    )
-
-    industrial_sites_merge = PythonOperator(
-        task_id="merge-industrial-sites",
-        python_callable=industrial_sites.merge_inputs
-    )
-
-    industrial_sites_nuts = PythonOperator(
-        task_id="map-industrial-sites-nuts3",
-        python_callable=industrial_sites.map_nuts3
-    )
-    vg250_clean_and_prepare >> industrial_sites_import
-    industrial_sites_import >> industrial_sites_merge >> industrial_sites_nuts
 
     # Distribute electrical CTS demands to zensus grid
 
@@ -595,3 +576,14 @@ with airflow.DAG(
     etrago_input_data >> heat_etrago_buses
     define_mv_grid_districts >> heat_etrago_buses
     import_district_heating_supply >> heat_etrago_supply
+
+    # Industry
+
+    industrial_sites= MergeIndustrialSites(dependencies=[setup, vg250_clean_and_prepare])
+
+    demand_curves_industry = IndustrialDemandCurves(dependencies=[industrial_sites, demandregio_demand_cts_ind])
+
+
+
+
+

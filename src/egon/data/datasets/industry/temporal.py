@@ -14,52 +14,6 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class DemandCurvesOsmIndustry(Base):
-    __tablename__ = "egon_osm_ind_load_curves"
-    __table_args__ = {"schema": "demand"}
-
-    bus = Column(Integer, primary_key=True)
-    scn_name = Column(String, primary_key=True)
-    p_set = Column(ARRAY(Float))
-
-
-class DemandCurvesSitesIndustry(Base):
-    __tablename__ = "egon_sites_ind_load_curves"
-    __table_args__ = {"schema": "demand"}
-
-    bus = Column(Integer, primary_key=True)
-    scn_name = Column(String, primary_key=True)
-    wz = Column(Integer, primary_key=True)
-    p_set = Column(ARRAY(Float))
-
-
-def create_tables():
-    """Create tables for distributed industrial demand curves
-    Returns
-    -------
-    None.
-    """
-    targets = egon.data.config.datasets()["electrical_load_curves_industry"][
-        "targets"
-    ]
-
-    # Drop tables
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {targets['osm_load']['schema']}.{targets['osm_load']['table']} CASCADE;"""
-    )
-
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {targets['sites_load']['schema']}.{targets['sites_load']['table']} CASCADE;"""
-    )
-
-    engine = db.engine()
-    DemandCurvesOsmIndustry.__table__.create(bind=engine, checkfirst=True)
-
-    DemandCurvesSitesIndustry.__table__.create(bind=engine, checkfirst=True)
-
-
 def identify_bus(load_curves, demand_area):
     """Identify the grid connection point for a consumer by determining its grid level
     based on the time series' peak load and the spatial intersection to mv

@@ -1,17 +1,21 @@
 """The central module containing all code dealing with the spatial
    distribution of industrial electricity demands.
    Industrial demands from DemandRegio are distributed from nuts3 level down
-   to osm landuse polygons and/or industrial sites identified earlier in the
-   workflow.
+   to osm landuse polygons and/or industrial sites also identified within this
+   processing step bringing three different inputs together.
 
 """
 
 
 import egon.data.config
 import geopandas as gpd
+import pandas as pd
 from egon.data import db
-from sqlalchemy import Column, String, Float, Integer
+from egon.data.datasets import Dataset
+from egon.data.datasets.industry.temporal import insert_osm_ind_load, insert_sites_ind_load
+from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
+
 
 Base = declarative_base()
 
@@ -35,39 +39,82 @@ class EgonDemandRegioSitesIndElectricity(Base):
     demand = Column(Float)
 
 
+class DemandCurvesOsmIndustry(Base):
+    __tablename__ = "egon_osm_ind_load_curves"
+    __table_args__ = {"schema": "demand"}
+
+    bus = Column(Integer, primary_key=True)
+    scn_name = Column(String, primary_key=True)
+    p_set = Column(ARRAY(Float))
+
+
+class DemandCurvesSitesIndustry(Base):
+    __tablename__ = "egon_sites_ind_load_curves"
+    __table_args__ = {"schema": "demand"}
+
+    bus = Column(Integer, primary_key=True)
+    scn_name = Column(String, primary_key=True)
+    wz = Column(Integer, primary_key=True)
+    p_set = Column(ARRAY(Float))
+
+
 def create_tables():
-    """Create tables for distributed industrial demands
+    """Create tables for industrial sites and distributed industrial demands
     Returns
     -------
     None.
     """
-    target_sites = egon.data.config.datasets()[
-        "distributed_industrial_demand"
-    ]["targets"]["sites"]
-    target_osm = egon.data.config.datasets()["distributed_industrial_demand"][
-        "targets"
-    ]["osm"]
 
-    # Drop table
+
+    # Get data config
+    targets_spatial = egon.data.config.datasets()["distributed_industrial_demand"]["targets"]
+    targets_temporal = egon.data.config.datasets()["electrical_load_curves_industry"][
+        "targets"
+    ]
+
+    # Create target schema
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
+
+    # Drop tables and sequences before recreating them
+
+
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {target_sites['schema']}.
-            {target_sites['table']} CASCADE;"""
+            {targets_spatial['sites']['schema']}.
+            {targets_spatial['sites']['table']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {target_osm['schema']}.
-            {target_osm['table']} CASCADE;"""
+            {targets_spatial['osm']['schema']}.
+            {targets_spatial['osm']['table']} CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {targets_temporal['osm_load']['schema']}.{targets_temporal['osm_load']['table']} CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {targets_temporal['sites_load']['schema']}.{targets_temporal['sites_load']['table']} CASCADE;"""
     )
 
     engine = db.engine()
+
     EgonDemandRegioSitesIndElectricity.__table__.create(
         bind=engine, checkfirst=True
     )
 
-    engine = db.engine()
     EgonDemandRegioOsmIndElectricity.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    DemandCurvesOsmIndustry.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    DemandCurvesSitesIndustry.__table__.create(
         bind=engine, checkfirst=True
     )
 
@@ -276,4 +323,14 @@ def industrial_demand_distr():
             con=db.engine(),
             schema=target_osm["schema"],
             if_exists="append",
+        )
+
+
+class IndustrialDemandCurves(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Industral_demand_curves",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(create_tables, industrial_demand_distr, insert_osm_ind_load, insert_sites_ind_load),
         )
