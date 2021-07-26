@@ -487,28 +487,21 @@ with airflow.DAG(
     vg250_clean_and_prepare >> map_boundaries_grid_districts
 
     # Power plants
-    power_plants = PowerPlants(dependencies=[setup, renewable_feedin])
+    power_plants = PowerPlants(dependencies=[
+        setup, renewable_feedin, mv_grid_districts, mastr_data,
+        re_potential_areas])
 
     power_plant_import = tasks["power_plants.insert-hydro-biomass"]
-    generate_wind_farms = tasks["power_plants.wind_farms.wind-power-parks"]
-    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.regio-of-pv-ground-mounted"]
+    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
+    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
     solar_rooftop_etrago = tasks["power_plants.pv_rooftop.pv-rooftop-per-mv-grid"]
 
-    retrieve_mastr_data >> generate_wind_farms
-    insert_re_potential_areas >> generate_wind_farms
     scenario_input_import >> generate_wind_farms
     hvmv_substation_extraction >> generate_wind_farms
-    define_mv_grid_districts >> generate_wind_farms
-    retrieve_mastr_data >> generate_pv_ground_mounted
-    insert_re_potential_areas >> generate_pv_ground_mounted
     scenario_input_import >> generate_pv_ground_mounted
     hvmv_substation_extraction >> generate_pv_ground_mounted
-    define_mv_grid_districts >> generate_pv_ground_mounted
     nep_insert_data >> power_plant_import
-    retrieve_mastr_data >> power_plant_import
-    define_mv_grid_districts >> power_plant_import
     map_boundaries_grid_districts >> solar_rooftop_etrago
-    feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
     nep_insert_data >> solar_rooftop_etrago
@@ -534,11 +527,9 @@ with airflow.DAG(
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[heat_supply])
+        dependencies=[heat_supply, mv_grid_districts])
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]
 
     etrago_input_data >> heat_etrago_buses
-    define_mv_grid_districts >> heat_etrago_buses
-    import_district_heating_supply >> heat_etrago_supply
