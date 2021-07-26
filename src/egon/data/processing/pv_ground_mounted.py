@@ -1006,6 +1006,13 @@ def regio_of_pv_ground_mounted():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
+        
+        pv_rora = pv_rora[pv_rora['installed capacity in kW']>0]
+        pv_agri = pv_agri[pv_agri['installed capacity in kW']>0]
+        pv_per_distr = pv_per_distr[pv_per_distr['installed capacity in kW']>0]
+        pv_rora_100RE = pv_rora_100RE[pv_rora_100RE['installed capacity in kW']>0]
+        pv_agri_100RE = pv_agri_100RE[pv_agri_100RE['installed capacity in kW']>0]
+        pv_per_distr_100RE = pv_per_distr_100RE[pv_per_distr_100RE['installed capacity in kW']>0]
 
         return (
             pv_rora,
