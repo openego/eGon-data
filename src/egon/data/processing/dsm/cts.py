@@ -18,11 +18,11 @@ def dsm_cts_processing():
         # import load data
 
         sql = (
-            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_etrago_load"
+            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_pf_hv_load" ### _etrago_ statt _pf_hv_
         )
         l = pd.read_sql_query(sql, con)
 
-        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_etrago_load_timeseries"
+        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_pf_hv_load_timeseries" ### _etrago_ statt _pf_hv_
         t = pd.read_sql_query(sql, con)
 
         # select CTS load
@@ -340,7 +340,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_buses.to_postgis(
-            "egon_etrago_bus",
+            "egon_pf_hv_bus", ### _etrago_ statt _pf_hv_
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -360,7 +360,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_links.to_sql(
-            "egon_etrago_link",
+            "egon_pf_hv_link", ### _etrago_ statt _pf_hv_
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -377,7 +377,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_links_timeseries.to_sql(
-            "egon_etrago_link_timeseries",
+            "egon_pf_hv_link_timeseries", ### _etrago_ statt _pf_hv_
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -396,7 +396,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_stores.to_sql(
-            "egon_etrago_store",
+            "egon_pf_hv_store", ### _etrago_ statt _pf_hv_
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -413,7 +413,7 @@ def dsm_cts_processing():
 
         # insert into database
         insert_stores_timeseries.to_sql(
-            "egon_etrago_store_timeseries",
+            "egon_pf_hv_store_timeseries", ### _etrago_ statt _pf_hv_
             con=db.engine(),
             schema="grid",
             if_exists="append",
