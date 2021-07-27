@@ -7,6 +7,7 @@ import importlib_resources as resources
 
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -530,17 +531,21 @@ with airflow.DAG(
     )
 
     download_era5 >> run_pypsaeursec
-    
+
     neighbors = PythonOperator(
         task_id="neighbors",
         python_callable=pypsaeursec.neighbor_reduction,
     )
-    
+
     run_pypsaeursec >> neighbors
     create_tables >> neighbors
     osmtgmod_pypsa >> neighbors
-    
-    
+    etrago_input_data >> neighbors
+
+    foreign_lines = ElectricalNeighbours(dependencies=[
+        neighbors])
+
+
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(
         task_id="create-district-heating-areas-table",

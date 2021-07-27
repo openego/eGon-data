@@ -587,3 +587,19 @@ electrical_neighbours:
     german_borders:
       schema: 'boundaries'
       table: 'vg250_sta_union'
+    osmtgmod_bus:
+      schema: 'osmtgmod_results'
+      table: 'bus_data'
+    osmtgmod_branch:
+      schema: 'osmtgmod_results'
+      table: 'branch_data'
+  targets:
+    buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_pf_hv_line'
+    transformers:
+      schema: 'grid'
+      table: 'egon_pf_hv_transformer'
