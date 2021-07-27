@@ -40,6 +40,7 @@ import egon.data.processing.substation as substation
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
+import egon.data.importing.scenarios as import_scenarios
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
@@ -160,7 +161,8 @@ with airflow.DAG(
 
     # DemandRegio data import
     demandregio_tables = PythonOperator(
-        task_id="demandregio-tables", python_callable=import_dr.create_tables
+        task_id="demandregio-tables",
+        python_callable=import_dr.create_tables,
     )
 
     scenario_input_tables >> demandregio_tables
@@ -253,7 +255,8 @@ with airflow.DAG(
     )
 
     nep_insert_data = PythonOperator(
-        task_id="insert-nep-data", python_callable=nep_input.insert_data_nep
+        task_id="insert-nep-data",
+        python_callable=nep_input.insert_data_nep,
     )
 
     setup >> create_tables >> nep_insert_data
@@ -263,7 +266,8 @@ with airflow.DAG(
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
-        task_id="setting-etrago-input-tables", python_callable=etrago.setup
+        task_id="setting-etrago-input-tables",
+        python_callable=etrago.setup,
     )
     setup >> etrago_input_data
 
@@ -305,15 +309,18 @@ with airflow.DAG(
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod_osm_import = PythonOperator(
-        task_id="osmtgmod_osm_import", python_callable=osmtgmod.import_osm_data
+        task_id="osmtgmod_osm_import",
+        python_callable=osmtgmod.import_osm_data,
     )
 
     run_osmtgmod = PythonOperator(
-        task_id="run_osmtgmod", python_callable=osmtgmod.run_osmtgmod
+        task_id="run_osmtgmod",
+        python_callable=osmtgmod.run_osmtgmod,
     )
 
     osmtgmod_pypsa = PythonOperator(
-        task_id="osmtgmod_pypsa", python_callable=osmtgmod.osmtgmmod_to_pypsa
+        task_id="osmtgmod_pypsa",
+        python_callable=osmtgmod.osmtgmmod_to_pypsa,
     )
 
     osmtgmod_substation = PostgresOperator(
@@ -330,14 +337,17 @@ with airflow.DAG(
     etrago_input_data >> osmtgmod_pypsa
     run_osmtgmod >> osmtgmod_substation
 
-    # MV grid districts
-    mv_grid_districts = mv_grid_districts_setup(
-        dependencies=[osmtgmod_substation]
+    # create Voronoi for MV grid districts
+    create_voronoi_substation = PythonOperator(
+        task_id="create-voronoi-substations",
+        python_callable=substation.create_voronoi,
     )
+    osmtgmod_substation >> create_voronoi_substation
+
+    # MV grid districts
+    mv_grid_districts = mv_grid_districts_setup(dependencies=[create_voronoi_substation])
     mv_grid_districts.insert_into(pipeline)
-    define_mv_grid_districts = tasks[
-        "mv_grid_districts.define-mv-grid-districts"
-    ]
+    define_mv_grid_districts = tasks["mv_grid_districts.define-mv-grid-districts"]
 
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
@@ -383,7 +393,8 @@ with airflow.DAG(
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
-        task_id="insert-gas-grid", python_callable=gas_grid.insert_gas_data
+        task_id="insert-gas-grid",
+        python_callable=gas_grid.insert_gas_data,
     )
 
     etrago_input_data >> gas_grid_insert_data
@@ -391,16 +402,17 @@ with airflow.DAG(
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
-        task_id="create-gas-voronoi", python_callable=gas_areas.create_voronoi
+        task_id="create-gas-voronoi",
+        python_callable=gas_areas.create_voronoi,
     )
 
-    gas_grid_insert_data >> create_gas_polygons
+    gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
         task_id="create-landuse-table",
-        python_callable=loadarea.create_landuse_table,
+        python_callable=loadarea.create_landuse_table
     )
 
     landuse_extraction = PostgresOperator(
@@ -416,7 +428,8 @@ with airflow.DAG(
 
     # Generate wind power farms
     generate_wind_farms = PythonOperator(
-        task_id="generate_wind_farms", python_callable=wf.wind_power_parks
+        task_id="generate_wind_farms",
+        python_callable=wf.wind_power_parks,
     )
     retrieve_mastr_data >> generate_wind_farms
     insert_re_potential_areas >> generate_wind_farms
@@ -438,7 +451,8 @@ with airflow.DAG(
     # Calculate dynamic line rating for HV trans lines
 
     calculate_dlr = PythonOperator(
-        task_id="calculate_dlr", python_callable=dlr.Calculate_DLR
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
     )
     osmtgmod_pypsa >> calculate_dlr
     download_data_bundle >> calculate_dlr
@@ -478,25 +492,20 @@ with airflow.DAG(
         python_callable=import_feedin.solar_thermal_feedin_per_weather_cell,
     )
 
-    import_weather_cells >> [
-        feedin_wind_onshore,
-        feedin_pv,
-        feedin_solar_thermal,
-    ]
-    vg250_clean_and_prepare >> [
-        feedin_wind_onshore,
-        feedin_pv,
-        feedin_solar_thermal,
-    ]
+    import_weather_cells >> [feedin_wind_onshore,
+                             feedin_pv, feedin_solar_thermal]
+    vg250_clean_and_prepare >> [feedin_wind_onshore,
+                             feedin_pv, feedin_solar_thermal]
 
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(
         task_id="create-district-heating-areas-table",
-        python_callable=district_heating_areas.create_tables,
+        python_callable=district_heating_areas.create_tables
     )
     import_district_heating_areas = PythonOperator(
         task_id="import-district-heating-areas",
-        python_callable=district_heating_areas.district_heating_areas_demarcation,
+        python_callable=district_heating_areas.
+        district_heating_areas_demarcation
     )
     setup >> create_district_heating_areas_table
     create_district_heating_areas_table >> import_district_heating_areas
@@ -544,7 +553,8 @@ with airflow.DAG(
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
-    heat_supply = HeatSupply(dependencies=[data_bundle])
+    heat_supply = HeatSupply(
+        dependencies=[data_bundle])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
@@ -560,7 +570,8 @@ with airflow.DAG(
     power_plant_import >> import_individual_heating_supply
 
     # Heat to eTraGo
-    heat_etrago = HeatEtrago(dependencies=[heat_supply])
+    heat_etrago = HeatEtrago(
+        dependencies=[heat_supply])
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]

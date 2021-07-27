@@ -2,4 +2,4 @@
 Authors
 =======
 
-* Guido Pleßmann, Ilka Cußman, Stephan Günther - https://github.com/openego/eGon-data
+* Guido Pleßmann, Ilka Cußman, Stephan Günther, Jonathan Amme - https://github.com/openego/eGon-data
