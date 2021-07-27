@@ -85,7 +85,6 @@ with airflow.DAG(
     vg250.insert_into(pipeline)
     vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
 
-
     # Zensus import
     zensus_download_population = PythonOperator(
         task_id="download-zensus-population",
@@ -150,23 +149,21 @@ with airflow.DAG(
     # Scenario table
     scenario_input_tables = PythonOperator(
         task_id="create-scenario-parameters-table",
-        python_callable=import_scenarios.create_table
+        python_callable=import_scenarios.create_table,
     )
 
     scenario_input_import = PythonOperator(
         task_id="import-scenario-parameters",
-        python_callable=import_scenarios.insert_scenarios
+        python_callable=import_scenarios.insert_scenarios,
     )
     setup >> scenario_input_tables >> scenario_input_import
 
     # DemandRegio data import
     demandregio_tables = PythonOperator(
-        task_id="demandregio-tables",
-        python_callable=import_dr.create_tables,
+        task_id="demandregio-tables", python_callable=import_dr.create_tables
     )
 
     scenario_input_tables >> demandregio_tables
-
 
     demandregio_installation = PythonOperator(
         task_id="demandregio-installation",
@@ -233,7 +230,6 @@ with airflow.DAG(
     demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
-
     # Distribute electrical demands to zensus cells
     processed_dr_tables = PythonOperator(
         task_id="create-demand-tables",
@@ -257,8 +253,7 @@ with airflow.DAG(
     )
 
     nep_insert_data = PythonOperator(
-        task_id="insert-nep-data",
-        python_callable=nep_input.insert_data_nep,
+        task_id="insert-nep-data", python_callable=nep_input.insert_data_nep
     )
 
     setup >> create_tables >> nep_insert_data
@@ -268,8 +263,7 @@ with airflow.DAG(
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
-        task_id="setting-etrago-input-tables",
-        python_callable=etrago.setup,
+        task_id="setting-etrago-input-tables", python_callable=etrago.setup
     )
     setup >> etrago_input_data
 
@@ -311,18 +305,15 @@ with airflow.DAG(
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod_osm_import = PythonOperator(
-        task_id="osmtgmod_osm_import",
-        python_callable=osmtgmod.import_osm_data,
+        task_id="osmtgmod_osm_import", python_callable=osmtgmod.import_osm_data
     )
 
     run_osmtgmod = PythonOperator(
-        task_id="run_osmtgmod",
-        python_callable=osmtgmod.run_osmtgmod,
+        task_id="run_osmtgmod", python_callable=osmtgmod.run_osmtgmod
     )
 
     osmtgmod_pypsa = PythonOperator(
-        task_id="osmtgmod_pypsa",
-        python_callable=osmtgmod.osmtgmmod_to_pypsa,
+        task_id="osmtgmod_pypsa", python_callable=osmtgmod.osmtgmmod_to_pypsa
     )
 
     osmtgmod_substation = PostgresOperator(
@@ -340,9 +331,13 @@ with airflow.DAG(
     run_osmtgmod >> osmtgmod_substation
 
     # MV grid districts
-    mv_grid_districts = mv_grid_districts_setup(dependencies=[osmtgmod_substation])
+    mv_grid_districts = mv_grid_districts_setup(
+        dependencies=[osmtgmod_substation]
+    )
     mv_grid_districts.insert_into(pipeline)
-    define_mv_grid_districts = tasks["mv_grid_districts.define-mv-grid-districts"]
+    define_mv_grid_districts = tasks[
+        "mv_grid_districts.define-mv-grid-districts"
+    ]
 
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
@@ -374,7 +369,6 @@ with airflow.DAG(
     retrieve_mastr_data >> power_plant_import
     define_mv_grid_districts >> power_plant_import
 
-
     # Distribute electrical CTS demands to zensus grid
 
     elec_cts_demands_zensus = PythonOperator(
@@ -387,11 +381,9 @@ with airflow.DAG(
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
 
-
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
-        task_id="insert-gas-grid",
-        python_callable=gas_grid.insert_gas_data,
+        task_id="insert-gas-grid", python_callable=gas_grid.insert_gas_data
     )
 
     etrago_input_data >> gas_grid_insert_data
@@ -399,17 +391,16 @@ with airflow.DAG(
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
-        task_id="create-gas-voronoi",
-        python_callable=gas_areas.create_voronoi,
+        task_id="create-gas-voronoi", python_callable=gas_areas.create_voronoi
     )
 
-    gas_grid_insert_data  >> create_gas_polygons
+    gas_grid_insert_data >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
         task_id="create-landuse-table",
-        python_callable=loadarea.create_landuse_table
+        python_callable=loadarea.create_landuse_table,
     )
 
     landuse_extraction = PostgresOperator(
@@ -425,8 +416,7 @@ with airflow.DAG(
 
     # Generate wind power farms
     generate_wind_farms = PythonOperator(
-        task_id="generate_wind_farms",
-        python_callable=wf.wind_power_parks,
+        task_id="generate_wind_farms", python_callable=wf.wind_power_parks
     )
     retrieve_mastr_data >> generate_wind_farms
     insert_re_potential_areas >> generate_wind_farms
@@ -448,8 +438,7 @@ with airflow.DAG(
     # Calculate dynamic line rating for HV trans lines
 
     calculate_dlr = PythonOperator(
-        task_id="calculate_dlr",
-        python_callable=dlr.Calculate_DLR,
+        task_id="calculate_dlr", python_callable=dlr.Calculate_DLR
     )
     osmtgmod_pypsa >> calculate_dlr
     download_data_bundle >> calculate_dlr
@@ -489,20 +478,25 @@ with airflow.DAG(
         python_callable=import_feedin.solar_thermal_feedin_per_weather_cell,
     )
 
-    import_weather_cells >> [feedin_wind_onshore,
-                             feedin_pv, feedin_solar_thermal]
-    vg250_clean_and_prepare >> [feedin_wind_onshore,
-                             feedin_pv, feedin_solar_thermal]
+    import_weather_cells >> [
+        feedin_wind_onshore,
+        feedin_pv,
+        feedin_solar_thermal,
+    ]
+    vg250_clean_and_prepare >> [
+        feedin_wind_onshore,
+        feedin_pv,
+        feedin_solar_thermal,
+    ]
 
     # District heating areas demarcation
     create_district_heating_areas_table = PythonOperator(
         task_id="create-district-heating-areas-table",
-        python_callable=district_heating_areas.create_tables
+        python_callable=district_heating_areas.create_tables,
     )
     import_district_heating_areas = PythonOperator(
         task_id="import-district-heating-areas",
-        python_callable=district_heating_areas.
-        district_heating_areas_demarcation
+        python_callable=district_heating_areas.district_heating_areas_demarcation,
     )
     setup >> create_district_heating_areas_table
     create_district_heating_areas_table >> import_district_heating_areas
@@ -550,8 +544,7 @@ with airflow.DAG(
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
-    heat_supply = HeatSupply(
-        dependencies=[data_bundle])
+    heat_supply = HeatSupply(dependencies=[data_bundle])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
@@ -567,8 +560,7 @@ with airflow.DAG(
     power_plant_import >> import_individual_heating_supply
 
     # Heat to eTraGo
-    heat_etrago = HeatEtrago(
-        dependencies=[heat_supply])
+    heat_etrago = HeatEtrago(dependencies=[heat_supply])
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]
@@ -579,11 +571,10 @@ with airflow.DAG(
 
     # Industry
 
-    industrial_sites= MergeIndustrialSites(dependencies=[setup, vg250_clean_and_prepare])
+    industrial_sites = MergeIndustrialSites(
+        dependencies=[setup, vg250_clean_and_prepare]
+    )
 
-    demand_curves_industry = IndustrialDemandCurves(dependencies=[industrial_sites, demandregio_demand_cts_ind])
-
-
-
-
-
+    demand_curves_industry = IndustrialDemandCurves(
+        dependencies=[industrial_sites, demandregio_demand_cts_ind]
+    )

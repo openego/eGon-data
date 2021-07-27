@@ -12,7 +12,10 @@ import geopandas as gpd
 import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.industry.temporal import insert_osm_ind_load, insert_sites_ind_load
+from egon.data.datasets.industry.temporal import (
+    insert_osm_ind_load,
+    insert_sites_ind_load,
+)
 from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -65,18 +68,18 @@ def create_tables():
     None.
     """
 
-
     # Get data config
-    targets_spatial = egon.data.config.datasets()["distributed_industrial_demand"]["targets"]
-    targets_temporal = egon.data.config.datasets()["electrical_load_curves_industry"][
-        "targets"
-    ]
+    targets_spatial = egon.data.config.datasets()[
+        "distributed_industrial_demand"
+    ]["targets"]
+    targets_temporal = egon.data.config.datasets()[
+        "electrical_load_curves_industry"
+    ]["targets"]
 
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
     # Drop tables and sequences before recreating them
-
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
@@ -110,13 +113,9 @@ def create_tables():
         bind=engine, checkfirst=True
     )
 
-    DemandCurvesOsmIndustry.__table__.create(
-        bind=engine, checkfirst=True
-    )
+    DemandCurvesOsmIndustry.__table__.create(bind=engine, checkfirst=True)
 
-    DemandCurvesSitesIndustry.__table__.create(
-        bind=engine, checkfirst=True
-    )
+    DemandCurvesSitesIndustry.__table__.create(bind=engine, checkfirst=True)
 
 
 def industrial_demand_distr():
@@ -329,8 +328,13 @@ def industrial_demand_distr():
 class IndustrialDemandCurves(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="Industral_demand_curves",
+            name="Industrial_demand_curves",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(create_tables, industrial_demand_distr, insert_osm_ind_load, insert_sites_ind_load),
+            tasks=(
+                create_tables,
+                industrial_demand_distr,
+                insert_osm_ind_load,
+                insert_sites_ind_load,
+            ),
         )
