@@ -34,10 +34,20 @@ from sqlalchemy import Column, String, Integer, Sequence, Float, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
 
+from egon.data.datasets import Dataset
+
+# class for airflow task management (and version control)
+class DistrHeatingAreas(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="district-heating-areas",
+            # version=self.target_files + "_0.0",
+            version="0.0.0", # maybe rethink the naming
+            dependencies=dependencies,
+            tasks=(create_tables, demarcation))
 
 Base = declarative_base()
-
-
+# definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
     __tablename__ = "map_zensus_district_heating_areas"
     __table_args__ = {"schema": "demand"}
@@ -1076,7 +1086,7 @@ def study_prospective_district_heating_areas():
     return None
 
 
-def district_heating_areas_demarcation(plotting=True):
+def demarcation(plotting=True):
     """
     Load scenario specific district heating areas with metadata into database.
 

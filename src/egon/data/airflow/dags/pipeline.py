@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_demand import HeatDemandImport
+from egon.data.datasets.district_heating_areas import DistrHeatingAreas
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -33,7 +34,7 @@ import egon.data.importing.gas_grid as gas_grid
 
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
-import egon.data.processing.district_heating_areas as district_heating_areas
+# import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
@@ -523,19 +524,28 @@ with airflow.DAG(
                              feedin_pv, feedin_solar_thermal]
 
     # District heating areas demarcation
-    create_district_heating_areas_table = PythonOperator(
-        task_id="create-district-heating-areas-table",
-        python_callable=district_heating_areas.create_tables
-    )
-    import_district_heating_areas = PythonOperator(
-        task_id="import-district-heating-areas",
-        python_callable=district_heating_areas.
-        district_heating_areas_demarcation
-    )
-    setup >> create_district_heating_areas_table
-    create_district_heating_areas_table >> import_district_heating_areas
+    # create_district_heating_areas_table = PythonOperator(
+    #     task_id="create-district-heating-areas-table",
+    #     python_callable=district_heating_areas.create_tables
+    # )
+    # import_district_heating_areas = PythonOperator(
+    #     task_id="import-district-heating-areas",
+    #     python_callable=district_heating_areas.
+    #     district_heating_areas_demarcation
+    # )
+
+    district_heating_areas = DistrHeatingAreas(
+        dependencies=[heat_demand_import])
+    # task will be added to pipeline automatically
+    create_district_heating_areas_table = tasks[
+        "district_heating_areas.create-tables"]  # foldername.function
+    import_district_heating_areas = tasks[
+        "district_heating_areas.demarcation"]
+
+    # setup >> create_district_heating_areas_table # as "heat_demand_import" (based on setup) is listed in dependencies, not needed anymore
+    # create_district_heating_areas_table >> import_district_heating_areas
     zensus_misc_import >> import_district_heating_areas
-    heat_demand_import >> import_district_heating_areas
+    # heat_demand_import >> import_district_heating_areas # already integrated
     scenario_input_import >> import_district_heating_areas
 
     # Electrical load curves CTS
@@ -579,18 +589,18 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle])
+        dependencies=[data_bundle, import_district_heating_areas])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
     heat_supply_tables = tasks["heat_supply.create-tables"]
     geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
 
-    create_district_heating_areas_table >> heat_supply_tables
-    import_district_heating_areas >> import_district_heating_supply
+    # create_district_heating_areas_table >> heat_supply_tables
+    # import_district_heating_areas >> import_district_heating_supply
     map_zensus_grid_districts >> import_district_heating_supply
-    import_district_heating_areas >> geothermal_potential
-    import_district_heating_areas >> import_individual_heating_supply
+    # import_district_heating_areas >> geothermal_potential
+    # import_district_heating_areas >> import_individual_heating_supply
     map_zensus_grid_districts >> import_individual_heating_supply
     power_plant_import >> import_individual_heating_supply
 
