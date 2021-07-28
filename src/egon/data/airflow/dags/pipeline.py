@@ -13,6 +13,7 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
+from egon.data.datasets.tyndp import Tyndp
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
@@ -89,6 +90,8 @@ with airflow.DAG(
     vg250 = Vg250(dependencies=[setup])
     vg250.insert_into(pipeline)
     vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
+
+    tyndp_data = Tyndp(dependencies=[setup])
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -543,7 +546,7 @@ with airflow.DAG(
     etrago_input_data >> neighbors
 
     foreign_lines = ElectricalNeighbours(dependencies=[
-        neighbors])
+        neighbors, tyndp_data])
 
 
     # District heating areas demarcation

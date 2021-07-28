@@ -2,18 +2,22 @@
 """
 
 import geopandas as gpd
+import pandas as pd
 from egon.data import db, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.heat_etrago import next_id
 from shapely.geometry import LineString
+import zipfile
+from sqlalchemy.orm import sessionmaker
+import egon.data.importing.etrago as etrago
 
 class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.0",
+            version="0.0.0.dev",
             dependencies=dependencies,
-            tasks=(insert_egon2035),
+            tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
 
 def get_cross_border_buses(sources, targets):
@@ -151,7 +155,7 @@ def buses_egon2035(sources, targets):
 
 def cross_border_lines(sources, targets, central_buses):
     db.execute_sql(
-        """
+        f"""
         DELETE FROM {targets['lines']['schema']}.
         {targets['lines']['table']}
         WHERE scn_name = 'eGon2035'
@@ -293,7 +297,7 @@ def central_transformer(sources, targets, central_buses, new_lines):
     trafo['scn_name'] = 'eGon2035'
 
     db.execute_sql(
-        """
+        f"""
         DELETE FROM {targets['transformers']['schema']}.
         {targets['transformers']['table']}
         WHERE scn_name = 'eGon2035'
@@ -311,7 +315,7 @@ def central_transformer(sources, targets, central_buses, new_lines):
         schema=targets['transformers']['schema'],
         if_exists = 'append', con=db.engine(), index=False)
 
-def insert_egon2035():
+def grid():
     # Select sources and targets from dataset configuration
     sources = config.datasets()['electrical_neighbours']['sources']
     targets = config.datasets()['electrical_neighbours']['targets']
@@ -321,3 +325,347 @@ def insert_egon2035():
     foreign_lines = cross_border_lines(sources, targets, central_buses)
 
     central_transformer(sources, targets, central_buses, foreign_lines)
+
+
+def map_carriers_tyndp():
+    """ Map carriers from TYNDP-data to carriers used in eGon
+    Returns
+    -------
+    dict
+        Carrier from TYNDP and eGon
+    """
+    return {
+        'Battery': 'battery',
+        'DSR': 'demand_side_response',
+        'Gas CCGT new': 'gas',
+        'Gas CCGT old 2': 'gas',
+        'Gas CCGT present 1': 'gas',
+        'Gas CCGT present 2': 'gas',
+        'Gas conventional old 1': 'gas',
+        'Gas conventional old 2': 'gas',
+        'Gas OCGT new': 'gas',
+        'Gas OCGT old': 'gas',
+        'Gas CCGT old 1': 'gas',
+        'Gas CCGT old 2 Bio': 'biogas',
+        'Gas conventional old 2 Bio': 'biogas',
+        'Hard coal new': 'coal',
+        'Hard coal old 1': 'coal',
+        'Hard coal old 2': 'coal',
+        'Hard coal old 2 Bio': 'coal',
+        'Heavy oil old 1': 'oil',
+        'Heavy oil old 1 Bio': 'oil',
+        'Heavy oil old 2': 'oil',
+        'Light oil': 'oil',
+        'Lignite new': 'lignite',
+        'Lignite old 1': 'lignite',
+        'Lignite old 2': 'lignite',
+        'Lignite old 1 Bio': 'lignite',
+        'Lignite old 2 Bio': 'lignite',
+        'Nuclear': 'nuclear',
+        'Offshore Wind': 'wind_offshore',
+        'Onshore Wind': 'wind_onshore',
+        'Other non-RES': 'other_non_renewable',
+        'Other RES': 'other_renewable',
+        'P2G': 'power_to_gas',
+        'PS Closed': 'pumped_hydro',
+        'PS Open': 'reservoir',
+        'Reservoir': 'reservoir',
+        'Run-of-River': 'run_of_river',
+        'Solar PV': 'solar',
+        'Solar Thermal':'other_renewable',
+        'Waste': 'Other RES'
+
+
+}
+
+def get_foreign_bus_id():
+
+    sources = config.datasets()['electrical_neighbours']['sources']
+
+    bus_id = db.select_geodataframe(
+        """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
+        FROM grid.egon_pf_hv_bus
+        WHERE version = '0.0.0'
+        AND scn_name = 'eGon2035'
+        AND carrier = 'AC'
+        AND v_nom = 380.
+        AND country != 'DE'
+        AND bus_id NOT IN (
+            SELECT bus_i
+            FROM osmtgmod_results.bus_data)
+        """, epsg=3035)
+
+    # insert installed capacities
+    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+
+    # Select buses in neighbouring countries
+    buses = pd.read_excel(
+        file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
+        sheet_name='Nodes - Dict').query("longitude==longitude")
+
+    buses = gpd.GeoDataFrame(
+        buses, crs = 4326,
+        geometry=gpd.points_from_xy(
+            buses.longitude, buses.latitude)).to_crs(3035)
+
+    buses['bus_id'] = 0
+
+    for i, row in buses.iterrows():
+        distance = bus_id.set_index('bus_id').geom.distance(row.geometry)
+        buses.loc[i, 'bus_id'] = distance[
+            distance==distance.min()].index.values[0]
+
+
+    return buses.set_index('node_id').bus_id
+
+def calc_capacities():
+
+    sources = config.datasets()['electrical_neighbours']['sources']
+
+    countries = ["AT", "BE", "CH", "CZ", "DK", "FR", "NL",
+                 "NO", "SE", "PL", "UK"]
+
+    # insert installed capacities
+    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    df = pd.read_excel(
+        file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
+        sheet_name='Capacity')
+
+    # differneces between different climate years are very small (<1MW)
+    # choose 1984 because it is the mean value
+    df_2030 = df.rename(
+        {'Climate Year':'Climate_Year'}, axis = 'columns').query(
+            'Scenario == "Distributed Energy" & Year == 2030 & '
+            'Climate_Year == 1984'
+            ).set_index(['Node/Line', 'Generator_ID'])
+
+    df_2040 =  df.rename(
+        {'Climate Year':'Climate_Year'}, axis = 'columns').query(
+            'Scenario == "Distributed Energy" & Year == 2040 & '
+            'Climate_Year == 1984'
+            ).set_index(['Node/Line', 'Generator_ID'])
+
+    # interpolate linear between 2030 and 2040 for 2035 accordning to
+    # scenario report of TSO's and the approval by BNetzA
+    df_2035 = pd.DataFrame(index=df_2030.index)
+    df_2035['cap_2030'] = df_2030.Value
+    df_2035['cap_2040'] = df_2040.Value
+    df_2035['cap_2035'] = df_2035['cap_2030'] + (
+        df_2035['cap_2040']-df_2035['cap_2030'])/2
+    df_2035 = df_2035.reset_index()
+    df_2035['carrier'] = df_2035.Generator_ID.map(map_carriers_tyndp())
+
+    # group capacities by new carriers
+    grouped_capacities = df_2035.groupby(
+        ['carrier', 'Node/Line']).cap_2035.sum().reset_index()
+
+    # choose capacities for considered countries
+    return grouped_capacities[
+        grouped_capacities['Node/Line'].str[:2].isin(countries)]
+
+def insert_generators(capacities, map_buses):
+
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_pf_hv_generator
+        WHERE bus IN (
+            SELECT bus_id FROM
+            grid.egon_pf_hv_bus
+            WHERE country != 'DE'
+            AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+        """)
+
+    gen = capacities[capacities.carrier.isin([
+        'other_non_renewable', 'wind_offshore',
+       'wind_onshore', 'solar', 'other_renewable', 'reservoir',
+       'run_of_river', 'lignite', 'coal',
+       'oil', 'nuclear'])]
+
+    # Set bus_id
+    gen.loc[
+        gen[gen['Node/Line'].isin(map_buses.keys())].index, 'Node/Line'
+        ] = gen.loc[
+            gen[gen['Node/Line'].isin(map_buses.keys())].index,
+            'Node/Line'].map(map_buses)
+
+    gen.loc[:, 'bus'] = get_foreign_bus_id().loc[gen.loc[:,'Node/Line']].values
+
+    # insert data
+    session = sessionmaker(bind=db.engine())()
+    for i, row in gen.iterrows():
+        entry = etrago.EgonPfHvGenerator(
+            version = '0.0.0',
+            scn_name = 'eGon2035',
+            generator_id = int(next_id('generator')),
+            bus = row.bus,
+            carrier = row.carrier,
+            p_nom = row.cap_2035)
+
+        session.add(entry)
+        session.commit()
+
+def insert_storage(capacities, map_buses):
+
+    store = capacities[capacities.carrier.isin([
+        'battery', 'pumped_hydro'])]
+
+    # Set bus_id
+    store.loc[
+        store[store['Node/Line'].isin(map_buses.keys())].index, 'Node/Line'
+        ] = store.loc[
+            store[store['Node/Line'].isin(map_buses.keys())].index,
+            'Node/Line'].map(map_buses)
+
+    store.loc[:, 'bus'] = get_foreign_bus_id().loc[
+        store.loc[:,'Node/Line']].values
+
+    # insert data
+    session = sessionmaker(bind=db.engine())()
+    for i, row in store.iterrows():
+        entry = etrago.EgonPfHvStorage(
+            version = '0.0.0',
+            scn_name = 'eGon2035',
+            storage_id = int(next_id('storage')),
+            bus = row.bus,
+            max_hours = (6 if row.carrier=='battery' else 168),
+            carrier = row.carrier,
+            p_nom = row.cap_2035)
+
+        session.add(entry)
+        session.commit()
+
+def insert_links(capacities, map_buses):
+
+    link = capacities[capacities.carrier.isin([
+        'power_to_gas', 'gas', 'biogas'])]
+
+def get_map_buses():
+    return {
+        'DK00': 'DKW1',
+        'DKKF': 'DKE1',
+        'FR15': 'FR00',
+        'NON1': 'NOM1',
+        'NOS0': 'NOM1',
+        'NOS1': 'NOM1',
+        'PLE0': 'PL00',
+        'PLI0': 'PL00',
+        'SE00': 'SE02',
+        'SE01': 'SE02',
+        'SE03': 'SE02',
+        'SE04': 'SE02'
+        }
+def tyndp_generation():
+    """Insert data from TYNDP 2020 accordning to NEP 2021
+    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+    Returns
+    -------
+    None.
+    """
+    map_buses = get_map_buses()
+
+    capacities = calc_capacities()
+
+    insert_generators(capacities, map_buses)
+
+    insert_storage(capacities, map_buses)
+
+    #insert_links(capacities, map_buses)
+
+def tyndp_demand():
+    """Copy load timeseries data from TYNDP 2020.
+    According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
+
+    Returns
+    -------
+    None.
+
+    """
+    map_buses = get_map_buses()
+
+
+    sources = config.datasets()['electrical_neighbours']['sources']
+    targets = config.datasets()['electrical_neighbours']['targets']
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_pf_hv_load
+        WHERE
+        scn_name = 'eGon2035'
+        AND carrier = 'AC'
+        AND bus NOT IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']})
+        """)
+    # Connect to database
+    engine = db.engine()
+    session = sessionmaker(bind=engine)()
+
+    nodes = ['AT00', 'BE00', 'CH00', 'CZ00', 'DKE1', 'DKW1', 'FR00', 'NL00',
+              'LUB1', 'LUF1', 'LUG1', 'NOM1', 'NON1', 'NOS0', 'SE01', 'SE02',
+              'SE03', 'SE04', 'PL00', 'UK00', 'UKNI']
+
+    buses = pd.DataFrame({'nodes':nodes})
+    # Set bus_id
+    buses.loc[
+        buses[buses.nodes.isin(map_buses.keys())].index, 'nodes'] = buses[
+        buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+
+    buses.loc[:, 'bus'] = get_foreign_bus_id().loc[buses.loc[:,'nodes']].values
+
+    buses.set_index('nodes', inplace=True)
+    buses = buses[~buses.index.duplicated(keep='first')]
+
+    dataset_2030 = pd.read_excel(f"tyndp/{sources['tyndp_demand_2030']}",
+         sheet_name=nodes, skiprows=10)
+
+    dataset_2040 = pd.read_excel(f"tyndp/{sources['tyndp_demand_2040']}",
+         sheet_name=None, skiprows=10)
+
+    map_series = pd.Series(map_buses)
+    map_series = map_series[map_series.index.isin(nodes)]
+    for bus in buses.index:
+
+        nodes = [bus]
+
+        if bus in map_series.values:
+            nodes.extend(list(map_series[map_series==bus].index.values))
+
+        load_id = next_id('load')
+
+        data_2030 = pd.Series(index = range(8760), data = 0.)
+
+        for node in nodes :
+            data_2030 = dataset_2030[node][2011]+data_2030
+
+       # data_2030 = pd.read_excel(f"tyndp/{sources['tyndp_demand_2030']}",
+       # sheet_name=node, skiprows=10, engine='openpyxl')[2011]
+
+        try:
+            data_2040 = pd.Series(index = range(8760), data = 0.)
+
+            for node in nodes :
+                data_2040 = dataset_2040[node][2011]+data_2040
+        except:
+            data_2040 = data_2030
+
+        data_2035 = ((data_2030+data_2040)/2)[:8760]*1e-3
+
+        entry = etrago.EgonPfHvLoad(
+            version = '0.0.0',
+            scn_name = 'eGon2035',
+            load_id = int(load_id),
+            carrier = 'AC',
+            bus = int(buses.bus[bus]))
+
+        entry_ts = etrago.EgonPfHvLoadTimeseries(
+            version = '0.0.0',
+            scn_name = 'eGon2035',
+            load_id = int(load_id),
+            temp_id = 1,
+            p_set = list(data_2035.values))
+
+        session.add(entry)
+        session.add(entry_ts)
+        session.commit()
