@@ -45,7 +45,7 @@ The electricity demand time series produced by demand profile generator offer
 To use most of them, the spatial information about the number of households
 per cell (5 categories) needs to be enriched by supplementary data to match
 the household demand profile categories specifications. Hence, 10 out of 12
-different household profile categories can be distinguished and by increasing
+different household profile categories can be distinguished by increasing
 the number of categories of cell-level household data.
 
 **How are these datasets combined?**
@@ -79,6 +79,8 @@ the number of categories of cell-level household data.
   each federal state
 * Household profiles aggregated annual demand matches Demand Regio demand at
   NUTS-3 level, but it is not matching the demand regio time series profile
+* Due to secrecy, some census data are highly modified under certain attributes
+ (quantity_q = 2). This cell data is not corrected, but excluded.
 
 
 Notes
@@ -806,7 +808,7 @@ def houseprofiles_in_census_cells():
         sql="""
                         SELECT characteristics_text, SUM(quantity) as summe
                         FROM society.egon_destatis_zensus_household_per_ha as egon_d
-                        WHERE attribute = 'HHGROESS_KLASS'
+                        WHERE attribute = 'HHGROESS_KLASS' AND quantity_q < 2
                         GROUP BY characteristics_text """,
         index_col="characteristics_text",
     )
@@ -842,11 +844,12 @@ def houseprofiles_in_census_cells():
         )
 
     # Retrieve information about households for each census cell
+    # Only use cell-data which quality (quantity_q<2) is acceptable
     df_households_typ = db.select_dataframe(
         sql="""
                     SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
                     FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'HHTYP_FAM' """
+                    WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
     )
     df_households_typ = df_households_typ.drop(
         columns=["attribute", "characteristics_text"]
