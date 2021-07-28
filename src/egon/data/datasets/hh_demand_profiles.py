@@ -548,7 +548,9 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     """
     Generates tuple of hh_type and zensus cell ids
 
-    Takes a random sample (without replacement) of profile ids for given cell.
+    Takes a random sample of profile ids for given cell:
+      * if pool size >= sample size: without replacement
+      * if pool size < sample size: with replacement
     The number of households are rounded to the nearest integer if float.
 
     Parameters
@@ -566,10 +568,12 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     """
     # maybe use instead
     # np.random.default_rng().integers(low=0, high=pool_size[hh_type], size=sq) instead of random.sample
-    # use random.choice() if with replacement
+    # use random.choices() if with replacement
     # list of sample ids per hh_type in cell
     cell_profile_ids = [
         (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
+        if pool_size[hh_type] >= sq
+        else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
         for hh_type, sq in zip(
             df_cell["hh_type"],
             np.rint(df_cell["hh_10types"].values).astype(int),
@@ -636,9 +640,10 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
 
         # random sampling of household profiles for each cell
-        # without replacement within cell but after
-        # number of households are rounded to the nearest integer if float
-        # this results in a small deviation for the course of the aggregated profiles
+        # with or without replacement (see :func:`get_cell_demand_profile_ids`)
+        # within cell but after number of households are rounded to the nearest
+        # integer if float this results in a small deviation for the course of
+        # the aggregated profiles.
         cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size)
 
         df_cell_demand_metadata.at[grid_id, "cell_id"] = df_cell.loc[
