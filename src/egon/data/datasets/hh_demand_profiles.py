@@ -858,7 +858,8 @@ def houseprofiles_in_census_cells():
                             LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
                             ON (pop.gid=vg250.zensus_population_id)
                             LEFT JOIN boundaries.vg250_lan as lan
-                            ON (LEFT(vg250.vg250_nuts3, 3)=lan.nuts) """
+                            ON (LEFT(vg250.vg250_nuts3, 3)=lan.nuts)
+                            WHERE lan.gf = 4 """
     )
     df_grid_id = df_grid_id.drop_duplicates()
     df_grid_id = df_grid_id.reset_index(drop=True)
