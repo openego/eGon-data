@@ -1086,6 +1086,7 @@ def regio_of_pv_ground_mounted():
 
         # copy relevant columns from pv_parks
         insert_pv_parks = pv_parks[["el_capacity", "voltage_level", "geometry"]]
+        insert_pv_parks = insert_pv_parks.set_geometry('geometry')
 
         # set static column values
         insert_pv_parks["carrier"] = "solar"
@@ -1097,7 +1098,7 @@ def regio_of_pv_ground_mounted():
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
-            .to_crs(4326)
+            .set_crs(4326)
         )
 
         # reset index
