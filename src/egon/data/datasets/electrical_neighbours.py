@@ -140,7 +140,7 @@ def buses_egon2035(sources, targets):
             {sources['osmtgmod_bus']['table']})
         """)
 
-    central_buses = central_buses_egon100(sources, targets)
+    central_buses = central_buses_egon100(sources)
 
     next_bus_id = next_id('bus')+1
 
@@ -160,7 +160,7 @@ def buses_egon2035(sources, targets):
         next_bus_id += 1
 
     # Add buses for other voltage levels
-    foreign_buses = get_cross_border_buses(sources, targets)
+    foreign_buses = get_cross_border_buses(sources)
     vnom_per_country = foreign_buses.groupby('country').v_nom.unique().copy()
     for cntr in vnom_per_country.index:
         if 110. in vnom_per_country[cntr]:
@@ -243,8 +243,8 @@ def cross_border_lines(sources, targets, central_buses):
         )
 
     # Calculate cross-border busses and lines from osmtgmod
-    foreign_buses = get_cross_border_buses(sources, targets)
-    lines = get_cross_border_lines(sources, targets)
+    foreign_buses = get_cross_border_buses(sources)
+    lines = get_cross_border_lines(sources)
 
     # Select bus outside of Germany from border-crossing lines
     lines.loc[
@@ -611,15 +611,17 @@ def insert_generators(capacities):
     None.
 
     """
+    targets = config.datasets()['electrical_neighbours']['targets']
     map_buses = get_map_buses()
 
     # Delete existing data
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_pf_hv_generator
+        f"""
+        DELETE FROM
+        {targets['generators']['schema']}.{targets['generators']['table']}
         WHERE bus IN (
             SELECT bus_id FROM
-            grid.egon_pf_hv_bus
+            {targets['buses']['schema']}.{targets['buses']['table']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
@@ -669,16 +671,16 @@ def insert_storage(capacities):
     None.
 
     """
-
+    targets = config.datasets()['electrical_neighbours']['targets']
     map_buses = get_map_buses()
 
     # Delete existing data
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_pf_hv_storage
+        f"""
+        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE bus IN (
             SELECT bus_id FROM
-            grid.egon_pf_hv_bus
+            {targets['buses']['schema']}.{targets['buses']['table']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
@@ -776,7 +778,8 @@ def tyndp_demand():
     # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_pf_hv_load
+        DELETE FROM {targets['loads']['schema']}.
+        {targets['loads']['table']}
         WHERE
         scn_name = 'eGon2035'
         AND carrier = 'AC'

@@ -615,6 +615,9 @@ electrical_neighbours:
     generators:
       schema: 'grid'
       table: 'egon_pf_hv_generator'
+    storage:
+      schema: 'grid'
+      table: 'egon_pf_hv_storage'
 
 tyndp:
   sources:
