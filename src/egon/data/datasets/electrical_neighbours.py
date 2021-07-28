@@ -20,7 +20,20 @@ class ElectricalNeighbours(Dataset):
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
 
-def get_cross_border_buses(sources, targets):
+def get_cross_border_buses(sources):
+    """Returns buses from osmTGmod which are outside of Germany.
+
+    Parameters
+    ----------
+    sources : dict
+        List of sources
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Electricity buses outside of Germany
+
+    """
     return db.select_geodataframe(
         f"""
         SELECT *
@@ -42,7 +55,20 @@ def get_cross_border_buses(sources, targets):
         """,
         epsg=4326)
 
-def get_cross_border_lines(sources, targets):
+def get_cross_border_lines(sources):
+    """Returns lines from osmTGmod which end or start outside of Germany.
+
+    Parameters
+    ----------
+    sources : dict
+        List of sources
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        AC-lines outside of Germany
+
+    """
     return db.select_geodataframe(
     f"""
     SELECT *
@@ -57,7 +83,20 @@ def get_cross_border_lines(sources, targets):
     """,
     epsg=4326)
 
-def central_buses_egon100(sources, targets):
+def central_buses_egon100(sources):
+    """Returns buses in the middle of foreign countries based on eGon100RE
+
+    Parameters
+    ----------
+    sources : dict
+        List of sources
+
+    Returns
+    -------
+    pandas.DataFrame
+        Buses in the center of foreign countries
+
+    """
     return db.select_dataframe(
         f"""
         SELECT *
@@ -73,6 +112,21 @@ def central_buses_egon100(sources, targets):
         """)
 
 def buses_egon2035(sources, targets):
+    """ Insert central buses in foreign countries for eGon2035
+
+    Parameters
+    ----------
+    sources : dict
+        List of dataset sources
+    targets : dict
+        List of dataset targets
+
+    Returns
+    -------
+    central_buses : geoapndas.GeoDataFrame
+        Buses in the center of foreign countries
+
+    """
 
     # Delete existing buses
     db.execute_sql(
@@ -145,7 +199,7 @@ def buses_egon2035(sources, targets):
     central_buses = central_buses.set_geometry('geom').drop(
         'geometry', axis='columns')
 
-    # insert central buses for eGon2035 based on pypsa-eur-sec
+    # insert central buses for eGon2035 based on eGon100RE
     central_buses.scn_name='eGon2035'
     central_buses.to_postgis(
         targets['buses']['table'], schema=targets['buses']['schema'],
@@ -154,6 +208,26 @@ def buses_egon2035(sources, targets):
     return central_buses
 
 def cross_border_lines(sources, targets, central_buses):
+    """Adds lines which connect border-crossing lines from osmtgmod
+    to the central buses in the corresponding neigbouring country
+
+    Parameters
+    ----------
+    sources : dict
+        List of dataset sources
+    targets : dict
+        List of dataset targets
+    central_buses : geopandas.GeoDataFrame
+        Buses in the center of foreign countries
+
+    Returns
+    -------
+    new_lines : geopandas.GeoDataFrame
+        Lines that connect cross-border lines to central bus per country
+
+    """
+
+    # Delete existing data
     db.execute_sql(
         f"""
         DELETE FROM {targets['lines']['schema']}.
@@ -167,37 +241,45 @@ def cross_border_lines(sources, targets, central_buses):
                                        link_type = 'cable'))
         """
         )
-    foreign_buses = get_cross_border_buses(sources, targets)
 
+    # Calculate cross-border busses and lines from osmtgmod
+    foreign_buses = get_cross_border_buses(sources, targets)
     lines = get_cross_border_lines(sources, targets)
 
-    lines.loc[lines[lines.bus0.isin(foreign_buses.bus_id)].index, 'foreign_bus'] = \
+    # Select bus outside of Germany from border-crossing lines
+    lines.loc[
+        lines[lines.bus0.isin(foreign_buses.bus_id)].index, 'foreign_bus'] = \
       lines.loc[lines[lines.bus0.isin(foreign_buses.bus_id)].index, 'bus0']
-
-    lines.loc[lines[lines.bus1.isin(foreign_buses.bus_id)].index, 'foreign_bus'] = \
+    lines.loc[
+        lines[lines.bus1.isin(foreign_buses.bus_id)].index, 'foreign_bus'] = \
       lines.loc[lines[lines.bus1.isin(foreign_buses.bus_id)].index, 'bus1']
 
     # Drop lines with start and endpoint in Germany
     lines = lines[lines.foreign_bus.notnull()]
     lines.loc[:, 'foreign_bus'] = lines.loc[:, 'foreign_bus'].astype(int)
 
+    # Copy all parameters from border-crossing lines
     new_lines = lines.copy()
 
+    # Set bus0 as foreign_bus from osmtgmod
     new_lines.bus0 = new_lines.foreign_bus.copy()
 
+    # Add country tag and set index
     new_lines['country'] = foreign_buses.set_index('bus_id').loc[
         lines.foreign_bus, 'country'].values
-
     new_lines.line_id = range(next_id('line'), next_id('line')+len(lines))
 
+    # Set bus in center of foreogn countries as bus1
     for i, row in new_lines.iterrows():
         new_lines.loc[i, 'bus1'] = central_buses.bus_id[
             (central_buses.country==row.country)
             & (central_buses.v_nom==row.v_nom)].values[0]
 
-    # Create geoemtry for new lines
-    new_lines['geom_bus0'] = foreign_buses.set_index('bus_id').geom[new_lines.bus0].values
-    new_lines['geom_bus1'] = central_buses.set_index('bus_id').geom[new_lines.bus1].values
+    # Create geometry for new lines
+    new_lines['geom_bus0'] = foreign_buses.set_index('bus_id').geom[
+        new_lines.bus0].values
+    new_lines['geom_bus1'] = central_buses.set_index('bus_id').geom[
+        new_lines.bus1].values
     new_lines['topo']=new_lines.apply(
             lambda x: LineString([x['geom_bus0'], x['geom_bus1']]),axis=1)
 
@@ -220,8 +302,6 @@ def cross_border_lines(sources, targets, central_buses):
         ['foreign_bus', 'country', 'geom_bus0', 'geom_bus1', 'geom'],
         axis='columns', inplace=True)
 
-
-
     # Insert lines to the database
     new_lines.to_postgis(
         targets['lines']['table'], schema=targets['lines']['schema'],
@@ -230,6 +310,21 @@ def cross_border_lines(sources, targets, central_buses):
     return new_lines
 
 def choose_transformer(s_nom):
+    """ Select representative transformer from existing data model
+
+    Parameters
+    ----------
+    s_nom : float
+        Minimal sum of nominal power of lines at one side
+
+    Returns
+    -------
+    int
+        Selected transformer nominal power
+    float
+        Selected transformer nominal impedance
+
+    """
 
     if s_nom <= 600:
         return 600, 0.0002
@@ -260,12 +355,44 @@ def choose_transformer(s_nom):
 
 
 def central_transformer(sources, targets, central_buses, new_lines):
+    """ Connect central foreign buses with different voltage levels
 
-    trafo = gpd.GeoDataFrame(columns=['trafo_id', 'bus0', 'bus1', 's_nom'],
-                             dtype=int)
+    Parameters
+    ----------
+    sources : dict
+        List of dataset sources
+    targets : dict
+        List of dataset targets
+    central_buses : geopandas.GeoDataFrame
+        Buses in the center of foreign countries
+    new_lines : geopandas.GeoDataFrame
+        Lines that connect cross-border lines to central bus per country
 
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing transformers in foreign countries
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['transformers']['schema']}.
+        {targets['transformers']['table']}
+        WHERE scn_name = 'eGon2035'
+        AND trafo_id IN (
+            SELECT branch_id
+            FROM {sources['osmtgmod_branch']['schema']}.
+            {sources['osmtgmod_branch']['table']}
+              WHERE result_id = 1 and link_type = 'transformer')
+        """
+        )
+
+    # Initalize the dataframe for transformers
+    trafo = gpd.GeoDataFrame(
+        columns=['trafo_id', 'bus0', 'bus1', 's_nom'],dtype=int)
     trafo_id = next_id('transformer')
 
+    # Add one transformer per central foreign bus with v_nom != 380
     for i, row in central_buses[central_buses.v_nom!=380].iterrows():
 
         s_nom_0 = new_lines[new_lines.bus0==row.bus_id].s_nom.sum()
@@ -290,24 +417,10 @@ def central_transformer(sources, targets, central_buses, new_lines):
              }, ignore_index=True)
         trafo_id +=1
 
-    trafo = trafo.astype({'trafo_id': 'int',
-                          'bus0': 'int', 'bus1': 'int'})
-
+    # Set data type
+    trafo = trafo.astype({'trafo_id': 'int','bus0': 'int', 'bus1': 'int'})
     trafo['version'] = '0.0.0'
     trafo['scn_name'] = 'eGon2035'
-
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['transformers']['schema']}.
-        {targets['transformers']['table']}
-        WHERE scn_name = 'eGon2035'
-        AND trafo_id IN (
-            SELECT branch_id
-            FROM {sources['osmtgmod_branch']['schema']}.
-            {sources['osmtgmod_branch']['table']}
-              WHERE result_id = 1 and link_type = 'transformer')
-        """
-        )
 
     # Insert transformers to the database
     trafo.to_sql(
@@ -316,6 +429,13 @@ def central_transformer(sources, targets, central_buses, new_lines):
         if_exists = 'append', con=db.engine(), index=False)
 
 def grid():
+    """ Insert electrical grid compoenents for neighbouring countries
+
+    Returns
+    -------
+    None.
+
+    """
     # Select sources and targets from dataset configuration
     sources = config.datasets()['electrical_neighbours']['sources']
     targets = config.datasets()['electrical_neighbours']['targets']
@@ -379,6 +499,14 @@ def map_carriers_tyndp():
 }
 
 def get_foreign_bus_id():
+    """Calculte the etrago bus id from Nodes of TYNDP based on the geometry
+
+    Returns
+    -------
+    pandas.Series
+        List of mapped node_ids from TYNDP and etragos bus_id
+
+    """
 
     sources = config.datasets()['electrical_neighbours']['sources']
 
@@ -398,11 +526,10 @@ def get_foreign_bus_id():
     # insert installed capacities
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
 
-    # Select buses in neighbouring countries
+    # Select buses in neighbouring countries as geodataframe
     buses = pd.read_excel(
         file.open('TYNDP-2020-Scenario-Datafile.xlsx').read(),
         sheet_name='Nodes - Dict').query("longitude==longitude")
-
     buses = gpd.GeoDataFrame(
         buses, crs = 4326,
         geometry=gpd.points_from_xy(
@@ -410,15 +537,23 @@ def get_foreign_bus_id():
 
     buses['bus_id'] = 0
 
+    # Select bus_id from etrago with shortest distance to TYNDP node
     for i, row in buses.iterrows():
         distance = bus_id.set_index('bus_id').geom.distance(row.geometry)
         buses.loc[i, 'bus_id'] = distance[
             distance==distance.min()].index.values[0]
 
-
     return buses.set_index('node_id').bus_id
 
 def calc_capacities():
+    """ Calculates installed capacities from TYNDP data
+
+    Returns
+    -------
+    pandas.DataFrame
+        Installed capacities per foreign node and energy carrier
+
+    """
 
     sources = config.datasets()['electrical_neighbours']['sources']
 
@@ -463,8 +598,22 @@ def calc_capacities():
     return grouped_capacities[
         grouped_capacities['Node/Line'].str[:2].isin(countries)]
 
-def insert_generators(capacities, map_buses):
+def insert_generators(capacities):
+    """Insert generators for foreign countries based on TYNDP-data
 
+    Parameters
+    ----------
+    capacities : pandas.DataFrame
+        Installed capacities per foreign node and energy carrier
+
+    Returns
+    -------
+    None.
+
+    """
+    map_buses = get_map_buses()
+
+    # Delete existing data
     db.execute_sql(
         """
         DELETE FROM grid.egon_pf_hv_generator
@@ -476,6 +625,7 @@ def insert_generators(capacities, map_buses):
         AND scn_name = 'eGon2035'
         """)
 
+    # Select generators from TYNDP capacities
     gen = capacities[capacities.carrier.isin([
         'other_non_renewable', 'wind_offshore',
        'wind_onshore', 'solar', 'other_renewable', 'reservoir',
@@ -505,8 +655,36 @@ def insert_generators(capacities, map_buses):
         session.add(entry)
         session.commit()
 
-def insert_storage(capacities, map_buses):
+def insert_storage(capacities):
+    """ Insert storage units for foreign countries based on TYNDP-data
 
+    Parameters
+    ----------
+    capacities : pandas.DataFrame
+        Installed capacities per foreign node and energy carrier
+
+
+    Returns
+    -------
+    None.
+
+    """
+
+    map_buses = get_map_buses()
+
+    # Delete existing data
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_pf_hv_storage
+        WHERE bus IN (
+            SELECT bus_id FROM
+            grid.egon_pf_hv_bus
+            WHERE country != 'DE'
+            AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+        """)
+
+    # Select storage capacities from TYNDP-data
     store = capacities[capacities.carrier.isin([
         'battery', 'pumped_hydro'])]
 
@@ -541,6 +719,14 @@ def insert_links(capacities, map_buses):
         'power_to_gas', 'gas', 'biogas'])]
 
 def get_map_buses():
+    """ Returns a dictonary of foreign regions which are aggregated to another
+
+    Returns
+    -------
+    Combination of aggregated regions
+
+
+    """
     return {
         'DK00': 'DKW1',
         'DKKF': 'DKE1',
@@ -555,20 +741,21 @@ def get_map_buses():
         'SE03': 'SE02',
         'SE04': 'SE02'
         }
+
 def tyndp_generation():
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+
     Returns
     -------
     None.
     """
-    map_buses = get_map_buses()
 
     capacities = calc_capacities()
 
-    insert_generators(capacities, map_buses)
+    insert_generators(capacities)
 
-    insert_storage(capacities, map_buses)
+    insert_storage(capacities)
 
     #insert_links(capacities, map_buses)
 
@@ -583,10 +770,10 @@ def tyndp_demand():
     """
     map_buses = get_map_buses()
 
-
     sources = config.datasets()['electrical_neighbours']['sources']
     targets = config.datasets()['electrical_neighbours']['targets']
 
+    # Delete existing data
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_pf_hv_load
@@ -598,6 +785,7 @@ def tyndp_demand():
             FROM  {sources['osmtgmod_bus']['schema']}.
             {sources['osmtgmod_bus']['table']})
         """)
+
     # Connect to database
     engine = db.engine()
     session = sessionmaker(bind=engine)()
@@ -605,28 +793,28 @@ def tyndp_demand():
     nodes = ['AT00', 'BE00', 'CH00', 'CZ00', 'DKE1', 'DKW1', 'FR00', 'NL00',
               'LUB1', 'LUF1', 'LUG1', 'NOM1', 'NON1', 'NOS0', 'SE01', 'SE02',
               'SE03', 'SE04', 'PL00', 'UK00', 'UKNI']
-
+    # Assign etrago bus_id to TYNDP nodes
     buses = pd.DataFrame({'nodes':nodes})
-    # Set bus_id
     buses.loc[
         buses[buses.nodes.isin(map_buses.keys())].index, 'nodes'] = buses[
         buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
-
     buses.loc[:, 'bus'] = get_foreign_bus_id().loc[buses.loc[:,'nodes']].values
-
     buses.set_index('nodes', inplace=True)
     buses = buses[~buses.index.duplicated(keep='first')]
 
+    # Read in data from TYNDP for 2030 and 2040
     dataset_2030 = pd.read_excel(f"tyndp/{sources['tyndp_demand_2030']}",
          sheet_name=nodes, skiprows=10)
 
     dataset_2040 = pd.read_excel(f"tyndp/{sources['tyndp_demand_2040']}",
          sheet_name=None, skiprows=10)
 
+    # Transform map_buses to pandas.Series and select only used values
     map_series = pd.Series(map_buses)
     map_series = map_series[map_series.index.isin(nodes)]
-    for bus in buses.index:
 
+    # Calculate and insert demand timeseries per etrago bus_id
+    for bus in buses.index:
         nodes = [bus]
 
         if bus in map_series.values:
@@ -634,13 +822,11 @@ def tyndp_demand():
 
         load_id = next_id('load')
 
+        # Some etrago bus_ids represent multiple TYNDP nodes,
+        # in this cases the loads are summed
         data_2030 = pd.Series(index = range(8760), data = 0.)
-
         for node in nodes :
             data_2030 = dataset_2030[node][2011]+data_2030
-
-       # data_2030 = pd.read_excel(f"tyndp/{sources['tyndp_demand_2030']}",
-       # sheet_name=node, skiprows=10, engine='openpyxl')[2011]
 
         try:
             data_2040 = pd.Series(index = range(8760), data = 0.)
@@ -650,6 +836,7 @@ def tyndp_demand():
         except:
             data_2040 = data_2030
 
+        # According to the NEP, data for 2030 and 2040 is linear interpolated
         data_2035 = ((data_2030+data_2040)/2)[:8760]*1e-3
 
         entry = etrago.EgonPfHvLoad(
