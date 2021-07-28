@@ -434,17 +434,9 @@ with airflow.DAG(
     osm_add_metadata >> landuse_extraction
     vg250_clean_and_prepare >> landuse_extraction
 
-    # Calculate dynamic line rating for HV trans lines
-
-    calculate_dlr = PythonOperator(
-        task_id="calculate_dlr",
-        python_callable=dlr.Calculate_DLR,
-    )
-    osmtgmod_pypsa >> calculate_dlr
-    download_data_bundle >> calculate_dlr
-
     # Import weather data
     weather_data = WeatherData(dependencies=[setup])
+    download_weather_data = tasks["era5.download-era5"]
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
 
@@ -467,6 +459,15 @@ with airflow.DAG(
     zensus_misc_import >> import_district_heating_areas
     heat_demand_import >> import_district_heating_areas
     scenario_input_import >> import_district_heating_areas
+
+    # Calculate dynamic line rating for HV trans lines
+    calculate_dlr = PythonOperator(
+        task_id="calculate_dlr",
+        python_callable=dlr.Calculate_DLR,
+    )
+    osmtgmod_pypsa >> calculate_dlr
+    download_data_bundle >> calculate_dlr
+    download_weather_data >> calculate_dlr
 
     # Electrical load curves CTS
     map_zensus_grid_districts = PythonOperator(
