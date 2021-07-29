@@ -48,7 +48,7 @@ import egon.data.processing.calculate_dlr as dlr
 
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
-import egon.data.processing.dsm.cts as dsm_cts
+import egon.data.processing.dsm.cts as dsm
 
 
 from egon.data import db
@@ -578,13 +578,16 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
     
-    # DSM for CTS
-    components_dsm_cts =  PythonOperator(
-        task_id="components_dsm_cts",
-        python_callable=dsm_cts.dsm_cts_processing,
+    # DSM 
+    components_dsm =  PythonOperator(
+        task_id="components_dsm",
+        python_callable=dsm.dsm_cts_ind_processing,
     )
-    electrical_load_curves_cts >> components_dsm_cts
-    osmtgmod_pypsa >> components_dsm_cts
+    electrical_load_curves_cts >> components_dsm
+    industry.temporal.insert-osm-ind-load >> components_dsm
+    industry.temporal.insert-sites-ind-load >> components_dsm
+    osmtgmod_pypsa >> components_dsm
+    
 
     # Heat supply
     heat_supply = HeatSupply(
