@@ -25,9 +25,9 @@ The following datasets are used for creating the data:
   (see :func:`get_household_demand_profiles_raw`)
 * Spatial information about people living in households by Zensus 2011 at
   federal state level
-    * type of household (family status)
-    * age
-    * size
+    * Type of household (family status)
+    * Age
+    * Size
 * Spatial information about number of households per ha, categorized by type
   of household (family status) with 5 categories (also from Zensus 2011)
 * Demand-Regio annual household demand at NUTS3 level
@@ -64,23 +64,26 @@ the number of categories of cell-level household data.
 
 **What are central assumptions during the data processing?**
 
-* mapping zensus data to IEE household categories is not trivial. In
+* Mapping zensus data to IEE household categories is not trivial. In
   conversion from persons in household to number of
   households, number of inhabitants for multi-person households is estimated
   as weighted average in :var:`OO_factor`
-* the distribution to refine household types at cell level are the same for each federal state
-* refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
+* The distribution to refine household types at cell level are the same for each federal state
+* Refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
 * 100 x 100 m cells are matched to NUTS via centroid location
-* cells with households in unpopulated areas are removed
+* Cells with households in unpopulated areas are removed
 
 **Drawbacks and limitations of the data**
 
-* the distribution to refine household types at cell level are the same for
+* The distribution to refine household types at cell level are the same for
   each federal state
 * Household profiles aggregated annual demand matches Demand Regio demand at
   NUTS-3 level, but it is not matching the demand regio time series profile
 * Due to secrecy, some census data are highly modified under certain attributes
  (quantity_q = 2). This cell data is not corrected, but excluded.
+* Census data with attribute 'HHTYP_FAM' is missing for some cells with small
+ amount of households. This data is generated using the average share of household types
+  for cells with similar household number
 
 
 Notes
