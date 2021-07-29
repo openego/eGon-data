@@ -357,7 +357,7 @@ with airflow.DAG(
     #     python_callable=import_hd.future_heat_demand_data_import,
     # )
     heat_demand_Germany = HeatDemandImport(
-        dependencies=[vg250_clean_and_prepare])
+        dependencies=[vg250])
     # task will be added to pipeline automatically
     heat_demand_import = tasks[
         "heat_demand.scenario-data-import"]  # foldername.function
@@ -532,17 +532,14 @@ with airflow.DAG(
     # )
 
     district_heating_areas = DistrHeatingAreas(
-        dependencies=[heat_demand_import])
+        dependencies=[heat_demand_Germany])
     # task will be added to pipeline automatically
     create_district_heating_areas_table = tasks[
         "district_heating_areas.create-tables"]  # foldername.function
     import_district_heating_areas = tasks[
         "district_heating_areas.demarcation"]
 
-    # setup >> create_district_heating_areas_table # as "heat_demand_import" (based on setup) is listed in dependencies, not needed anymore
-    # create_district_heating_areas_table >> import_district_heating_areas
     zensus_misc_import >> import_district_heating_areas
-    # heat_demand_import >> import_district_heating_areas # already integrated
     scenario_input_import >> import_district_heating_areas
 
     # Electrical load curves CTS
@@ -586,18 +583,15 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle, import_district_heating_areas])
+        dependencies=[data_bundle, district_heating_areas,
+                      map_zensus_grid_districts, power_plant_import])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
     heat_supply_tables = tasks["heat_supply.create-tables"]
     geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
 
-    # create_district_heating_areas_table >> heat_supply_tables
-    # import_district_heating_areas >> import_district_heating_supply
     map_zensus_grid_districts >> import_district_heating_supply
-    # import_district_heating_areas >> geothermal_potential
-    # import_district_heating_areas >> import_individual_heating_supply
     map_zensus_grid_districts >> import_individual_heating_supply
     power_plant_import >> import_individual_heating_supply
 
@@ -610,4 +604,3 @@ with airflow.DAG(
 
     etrago_input_data >> heat_etrago_buses
     define_mv_grid_districts >> heat_etrago_buses
-    import_district_heating_supply >> heat_etrago_supply
