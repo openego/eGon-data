@@ -21,7 +21,7 @@ from egon.data.datasets import Dataset
 import os
 
 
-class HeatDemandAbroad(Dataset):
+class HeatDemandEurope(Dataset):
 
     data_config = egon.data.config.datasets()
 
@@ -34,14 +34,13 @@ class HeatDemandAbroad(Dataset):
 
     def __init__(self, dependencies):
         super().__init__(
-            name="heat-demands-abroad",
+            name="heat-demands-europe",
             version=self.target_file + "_hotmaps.0.0",
             dependencies=dependencies,
-            tasks=(download_hotmaps_scenario_heat_demands))
+            tasks=(download))
 
 
-
-def download_hotmaps_scenario_heat_demands():
+def download():
     """
     Download Hotmaps current policy scenario for building heat demands.
 

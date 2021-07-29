@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
-from egon.data.datasets.heat_demand_data_foreign_countries_2050 import HeatDemandAbroad
+from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.osm import OpenStreetMap
@@ -374,13 +374,10 @@ with airflow.DAG(
 
     # Future national heat demands for foreign countries based on Hotmaps
     # download only, processing in PyPSA-Eur-Sec fork
-
-
-    hd_abroad = HeatDemandAbroad(dependencies=[setup])
+    hd_abroad = HeatDemandEurope(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks[
-        "heat_demand_data_foreign_countries_2050.download-hotmaps-scenario-heat-demands"]
-    #'heat_demand_data_foreign_countries_2050.download-hotmaps-scenario-heat-demands': <Task(Heat-demands-abroad (versioned)): heat_demand_data_foreign_countries_2050.download-hotmaps-scenario-heat-demands
+        "heat_demand_europe.download"]
 
     # Power plant setup
     power_plant_tables = PythonOperator(
