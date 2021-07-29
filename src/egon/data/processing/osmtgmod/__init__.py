@@ -6,6 +6,7 @@ import csv
 import datetime
 import logging
 import codecs
+from pathlib import Path
 import egon.data.config
 from egon.data.config import settings
 import egon.data.subprocess as subproc
@@ -25,8 +26,7 @@ def run_osmtgmod():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/datasets" + "/osm/"
-        + target_path
+        egon.data.__path__[0], "datasets", "osm", target_path
     )
     docker_db_config = db.credentials()
 
@@ -53,7 +53,7 @@ def import_osm_data():
         )
 
     else:
-    	subproc.run(
+        subproc.run(
             [
                 "git",
                 "clone",
@@ -74,8 +74,7 @@ def import_osm_data():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/datasets" + "/osm/"
-        + target_path
+        egon.data.__path__[0], "datasets", "osm", target_path
     )
 
     docker_db_config=db.credentials()
@@ -141,13 +140,19 @@ def import_osm_data():
         {config['osm_data']['osmosis_path_to_binary']}"""
         )
 
+    # create directory to store osmosis' temp files
+    osmosis_temp_dir = Path('.') / "osmosis_temp/"
+    if not os.path.exists(osmosis_temp_dir):
+        os.mkdir(osmosis_temp_dir)
+
     subproc.run(
-            "%s --read-pbf %s --write-pgsql \
+            "JAVACMD_OPTIONS='%s' %s --read-pbf %s --write-pgsql \
                 database=%s host=%s user=%s password=%s"
             % (
+                f"-Djava.io.tmpdir={osmosis_temp_dir}",
                 os.path.join(egon.data.__path__[0],
-                                 "processing/osmtgmod/osmTGmod/",
-                                 config["osm_data"]["osmosis_path_to_binary"]),
+                             "processing/osmtgmod/osmTGmod/",
+                             config["osm_data"]["osmosis_path_to_binary"]),
                 filtered_osm_pbf_path_to_file,
                 config_database,
                 config["postgres_server"]["host"]
@@ -159,7 +164,6 @@ def import_osm_data():
             shell=True,
         )
     logging.info("Importing OSM-Data...")
-
 
     # After updating OSM-Data, power_tables (for editing)
     # have to be updated as well

@@ -122,8 +122,11 @@ packages are required too. Right now these are:
 * To download ERA5 weather data you need to register at the CDS
   registration page and install the CDS API key as described
   `here <https://cds.climate.copernicus.eu/api-how-to>`_
-  You also have to agree on the `terms of use 
+  You also have to agree on the `terms of use
   <https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products>`_
+
+* Make sure you have enough free disk space (~350 GB) in your working
+  directory.
 
 Installation
 ============
@@ -188,6 +191,10 @@ solution.
    can't be run on laptop. Use the :ref:`test mode <Test mode>` for
    experimenting.
 
+.. warning::
+
+   A complete run of the workflow needs loads of free disk space (~350 GB) to
+   store (temporary) files.
 
 Test mode
 ---------
@@ -206,4 +213,4 @@ Data is reduced during execution of the workflow to represent only this area.
 Further Reading
 ===============
 
-You can find more in depth documentation at https://eGon-data.readthedocs.io.
+You can find more in-depth documentation at https://eGon-data.readthedocs.io.
