@@ -8,7 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_demand import HeatDemandImport
-from egon.data.datasets.district_heating_areas import DistrHeatingAreas
+from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -24,7 +24,6 @@ import egon.data.importing.demandregio as import_dr
 import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
-# import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.industrial_sites as industrial_sites
 
 import egon.data.importing.nep_input_data as nep_input
@@ -34,7 +33,6 @@ import egon.data.importing.gas_grid as gas_grid
 
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
-# import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
@@ -515,7 +513,7 @@ with airflow.DAG(
                              feedin_pv, feedin_solar_thermal]
 
     # District heating areas demarcation
-    district_heating_areas = DistrHeatingAreas(
+    district_heating_areas = DistrictHeatingAreas(
         dependencies=[heat_demand_Germany])
     create_district_heating_areas_table = tasks[
         "district_heating_areas.create-tables"]  # foldername.function

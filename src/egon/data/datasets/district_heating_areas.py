@@ -37,7 +37,7 @@ from geoalchemy2.types import Geometry
 from egon.data.datasets import Dataset
 
 # class for airflow task management (and version control)
-class DistrHeatingAreas(Dataset):
+class DistrictHeatingAreas(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="district-heating-areas",
@@ -49,7 +49,7 @@ class DistrHeatingAreas(Dataset):
 Base = declarative_base()
 # definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
-    __tablename__ = "map_zensus_district_heating_areas"
+    __tablename__ = "egon_map_zensus_district_heating_areas"
     __table_args__ = {"schema": "demand"}
     id = Column(
         Integer,
@@ -65,8 +65,8 @@ class MapZensusDistrictHeatingAreas(Base):
     zensus_population_id = Column(Integer)
 
 
-class DistrictHeatingAreas(Base):
-    __tablename__ = "district_heating_areas"
+class EgonDistrictHeatingAreas(Base):
+    __tablename__ = "egon_district_heating_areas"
     __table_args__ = {"schema": "demand"}
     id = Column(
         Integer,
@@ -97,12 +97,12 @@ def create_tables():
     # Drop tables
     db.execute_sql(
         """DROP TABLE IF EXISTS
-            demand.district_heating_areas CASCADE;"""
+            demand.egon_district_heating_areas CASCADE;"""
     )
 
     db.execute_sql(
         """DROP TABLE IF EXISTS
-            demand.map_zensus_district_heating_areas CASCADE;"""
+            demand.egon_map_zensus_district_heating_areas CASCADE;"""
     )
 
     # Drop sequences
@@ -113,11 +113,11 @@ def create_tables():
 
     db.execute_sql(
         """DROP SEQUENCE IF EXISTS
-            demand.map_zensus_district_heating_areas_seq CASCADE;"""
+            demand.egon_map_zensus_district_heating_areas_seq CASCADE;"""
     )
 
     engine = db.engine()
-    DistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
+    EgonDistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
     MapZensusDistrictHeatingAreas.__table__.create(
         bind=engine, checkfirst=True
     )
@@ -594,11 +594,11 @@ def district_heating_areas(scenario_name, plotting=False):
     scenario_dh_area["version"] = "0.0.0"
 
     db.execute_sql(
-        f"""DELETE FROM demand.map_zensus_district_heating_areas
+        f"""DELETE FROM demand.egon_map_zensus_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
     scenario_dh_area[["version", "scenario", "area_id"]].to_sql(
-        "map_zensus_district_heating_areas",
+        "egon_map_zensus_district_heating_areas",
         schema="demand",
         con=db.engine(),
         if_exists="append",
@@ -635,11 +635,11 @@ def district_heating_areas(scenario_name, plotting=False):
         #           )].index.values}""")
 
     db.execute_sql(
-        f"""DELETE FROM demand.district_heating_areas
+        f"""DELETE FROM demand.egon_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
     areas_dissolved.reset_index().to_postgis(
-        "district_heating_areas",
+        "egon_district_heating_areas",
         schema="demand",
         con=db.engine(),
         if_exists="append",
@@ -736,7 +736,7 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "district_heating_areas",
+                "name": "egon_district_heating_areas",
                 "path": "",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -814,7 +814,7 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "district_heating_areas")
+    db.submit_comment(meta_json, "demand", "egon_district_heating_areas")
 
     # Metadata creation for "id mapping" table
     meta = {
@@ -852,7 +852,7 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "map_zensus_district_heating_areas",
+                "name": "egon_map_zensus_district_heating_areas",
                 "path": "",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -925,7 +925,7 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "map_zensus_district_heating_areas")
+    db.submit_comment(meta_json, "demand", "egon_map_zensus_district_heating_areas")
 
     return None
 
