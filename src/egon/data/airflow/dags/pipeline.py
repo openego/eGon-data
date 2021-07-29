@@ -564,8 +564,7 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle, district_heating_areas,
-                      map_zensus_grid_districts, power_plant_import])
+        dependencies=[data_bundle, district_heating_areas])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
@@ -575,6 +574,7 @@ with airflow.DAG(
     map_zensus_grid_districts >> import_district_heating_supply
     map_zensus_grid_districts >> import_individual_heating_supply
     power_plant_import >> import_individual_heating_supply
+    power_plant_import >> import_district_heating_supply
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
@@ -585,3 +585,4 @@ with airflow.DAG(
 
     etrago_input_data >> heat_etrago_buses
     define_mv_grid_districts >> heat_etrago_buses
+    import_district_heating_supply >> heat_etrago_supply
