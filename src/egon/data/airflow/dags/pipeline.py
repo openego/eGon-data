@@ -39,12 +39,9 @@ import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
-import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
-import egon.data.importing.scenarios as import_scenarios
-import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
