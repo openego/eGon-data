@@ -94,12 +94,11 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
-from itertools import cycle
+from itertools import cycle, product
 from pathlib import Path
 from urllib.request import urlretrieve
 import random
 
-from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
@@ -359,6 +358,73 @@ def download_process_zensus_households():
     households_nuts1 = process_nuts1_zensus_data(households)
 
     return households_nuts1
+
+
+def create_missing_zensus_data(df_households_typ, df_missing_data, missing_cells):
+    """
+    There is missing data for specific attributes in the zensus dataset because of secrecy reasons.
+    Some cells with only small amount of households are missing with the attribute HHTYP_FAM.
+    However the total amount of households is known with attribute INSGESAMT.
+    The missing data is generated as average share of the household types for cell groups
+    with the same amount of households.
+
+    Parameters
+    ----------
+    df_households_typ: pd.DataFrame
+        Zensus households data
+    df_missing_data: pd.DataFrame
+        number of missing cells of group of amount of households
+    missing_cells: dict
+        dictionary with lists of grids of the missing cells grouped by amount of
+        households in cell
+
+    Returns
+    ----------
+    df_average_split: pd.DataFrame
+        generated dataset of missing cells
+
+    """
+    # grid_ids of missing cells grouped by amount of households
+    missing_grid_ids = {group: list(df.grid_id) for group, df in missing_cells.groupby('quantity')}
+
+    # Grid ids for cells with low household numbers
+    df_households_typ = df_households_typ.set_index('grid_id', drop=True)
+    hh_in_cells = df_households_typ.groupby('grid_id')['quantity'].sum()
+    hh_index = {i: hh_in_cells.loc[hh_in_cells == i].index for i in df_missing_data.households.values}
+
+    df_average_split = pd.DataFrame()
+    for hh_size, index in hh_index.items():
+        # average split of household types in cells with low household numbers
+        split = df_households_typ.loc[index].groupby('characteristics_code').sum() / df_households_typ.loc[
+            index].quantity.sum()
+        split = split.quantity * hh_size
+
+        # correct rounding
+        difference = int(split.sum() - split.round().sum())
+        if difference > 0:
+            # add to any row
+            split = split.round()
+            random_row = split.sample()
+            split[random_row.index] = random_row + difference
+        elif difference < 0:
+            # subtract only from rows > 0
+            split = split.round()
+            random_row = split[split > 0].sample()
+            split[random_row.index] = random_row + difference
+        else:
+            split = split.round()
+
+        # Dataframe with average split for each cell
+        temp = pd.DataFrame(product(zip(split, range(1, 6)), missing_grid_ids[hh_size]), columns=['tuple', 'grid_id'])
+        temp = pd.DataFrame(temp.tuple.tolist()).join(temp.grid_id)
+        temp = temp.rename(columns={0: 'hh_5types', 1: 'characteristics_code'})
+        temp = temp.dropna()
+        temp = temp[(temp['hh_5types'] != 0)]
+        # append for each cell group of households
+        df_average_split = pd.concat([df_average_split, temp], ignore_index=True)
+    df_average_split['hh_5types'] = df_average_split['hh_5types'].astype(int)
+
+    return df_average_split
 
 
 def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
@@ -857,9 +923,53 @@ def houseprofiles_in_census_cells():
     df_households_typ = df_households_typ.drop(
         columns=["attribute", "characteristics_text"]
     )
+    df_missing_data = db.select_dataframe(
+        sql="""
+                SELECT count(joined.quantity_gesamt) as amount, joined.quantity_gesamt as households
+                FROM(
+                    SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
+                     (quantity_gesamt-(case when quantity_sum_fam isnull then 0 else quantity_sum_fam end))
+                     as insgesamt_minus_fam
+                FROM (
+                    SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                    FROM society.egon_destatis_zensus_household_per_ha
+                    WHERE attribute = 'HHTYP_FAM'
+                    GROUP BY grid_id) as t1
+                Full JOIN (
+                    SELECT grid_id, sum(quantity) as quantity_gesamt
+                    FROM society.egon_destatis_zensus_household_per_ha
+                    WHERE attribute = 'INSGESAMT'
+                    GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                    ) as joined
+                WHERE quantity_sum_fam isnull
+                Group by quantity_gesamt """
+    )
+    missing_cells = db.select_dataframe(
+        sql="""
+                    SELECT t12.grid_id, t12.quantity
+                    FROM (
+                    SELECT t2.grid_id, (case when quantity_sum_fam isnull then quantity_gesamt end) as quantity
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as t12
+                    WHERE quantity is not null"""
+    )
+
+    df_average_split = create_missing_zensus_data(df_households_typ, df_missing_data, missing_cells)
+
     df_households_typ = df_households_typ.rename(
         columns={"quantity": "hh_5types"}
     )
+
+    df_households_typ = pd.concat([df_households_typ, df_average_split], ignore_index=True)
 
     # Census cells with nuts3 and nuts1 information
     df_grid_id = db.select_dataframe(
