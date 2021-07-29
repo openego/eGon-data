@@ -352,17 +352,11 @@ with airflow.DAG(
     insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
 
     # Future heat demand calculation based on Peta5_0_1 data
-    # heat_demand_import = PythonOperator(
-    #     task_id="import-heat-demand",
-    #     python_callable=import_hd.future_heat_demand_data_import,
-    # )
     heat_demand_Germany = HeatDemandImport(
         dependencies=[vg250])
-    # task will be added to pipeline automatically
     heat_demand_import = tasks[
-        "heat_demand.scenario-data-import"]  # foldername.function
+        "heat_demand.scenario-data-import"]
 
-    # vg250_clean_and_prepare >> heat_demand_import
     zensus_inside_ger_metadata >> heat_demand_import
     scenario_input_import >> heat_demand_import
 
@@ -521,19 +515,8 @@ with airflow.DAG(
                              feedin_pv, feedin_solar_thermal]
 
     # District heating areas demarcation
-    # create_district_heating_areas_table = PythonOperator(
-    #     task_id="create-district-heating-areas-table",
-    #     python_callable=district_heating_areas.create_tables
-    # )
-    # import_district_heating_areas = PythonOperator(
-    #     task_id="import-district-heating-areas",
-    #     python_callable=district_heating_areas.
-    #     district_heating_areas_demarcation
-    # )
-
     district_heating_areas = DistrHeatingAreas(
         dependencies=[heat_demand_Germany])
-    # task will be added to pipeline automatically
     create_district_heating_areas_table = tasks[
         "district_heating_areas.create-tables"]  # foldername.function
     import_district_heating_areas = tasks[
