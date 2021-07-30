@@ -324,6 +324,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
                 bus0, bus1, 
                 p_nom, length, 
                 geom, topo
+                
     FROM grid.egon_pf_hv_gas_link;
         
     DROP TABLE grid.egon_pf_hv_gas_link;
