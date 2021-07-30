@@ -1,6 +1,8 @@
+from functools import partial
 from urllib.request import urlretrieve
 import os
 
+from egon.data.datasets import Dataset
 import egon.data.config
 
 
@@ -43,3 +45,12 @@ def download_mastr_data(data_stages=None):
     for filename in files:
         if not os.path.isfile(filename):
             urlretrieve(zenodo_files_url + filename, filename)
+
+
+mastr_data_setup = partial(
+    Dataset,
+    name="MastrData",
+    version="0.0.0",
+    dependencies=[],
+    tasks=(download_mastr_data,),
+)
