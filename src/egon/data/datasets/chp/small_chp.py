@@ -2,12 +2,12 @@
 The module containing all code dealing with chp < 10MW.
 """
 import pandas as pd
-import geopandas
 from egon.data import db, config
 from egon.data.processing.power_plants import (
-    assign_voltage_level, assign_bus_id, assign_gas_bus_id,
-    filter_mastr_geometry, select_target)
+    assign_bus_id, assign_gas_bus_id, filter_mastr_geometry, select_target)
 from sqlalchemy.orm import sessionmaker
+import geopandas as gpd
+import numpy as np
 
 def insert_mastr_chp(mastr_chp, EgonChp):
     """Insert MaStR data from exising CHPs into database table
@@ -73,7 +73,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
     additional_capacitiy = pd.Series()
 
     for federal_state in targets.index:
-        mastr_chp = geopandas.GeoDataFrame(
+        mastr_chp = gpd.GeoDataFrame(
             filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state))
 
         mastr_chp.crs = "EPSG:4326"
@@ -102,6 +102,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
             # Add new chp
             additional_capacitiy[federal_state] = (
                 target - mastr_chp.Nettonennleistung.sum())
+
         else:
             # Keep all existing CHP < 10MW
             insert_mastr_chp(mastr_chp, EgonChp)
@@ -109,6 +110,151 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
             additional_capacitiy[federal_state] = 0
 
     return additional_capacitiy
+
+
+
+def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
+
+    existing_chp = db.select_dataframe(
+        f"""
+        SELECT el_capacity, th_capacity, voltage_level
+        FROM
+        supply.egon_chp a,
+        demand.district_heating_areas b,
+        grid.egon_pf_hv_bus c
+        WHERE a.scenario = 'eGon2035'
+        AND b.scenario = 'eGon2035'
+        AND district_heating = True
+        AND c.scn_name = 'eGon2035'
+        AND c.carrier = 'central_heat'
+        AND ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
+        AND ST_Intersects(c.geom, (
+            SELECT ST_Union(geometry) FROM boundaries.vg250_lan
+            WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+        ORDER BY el_capacity, residential_and_service_demand
+
+        """)
+
+    # Select all district heating areas without CHP
+    dh_areas = db.select_geodataframe(
+        f"""
+        SELECT
+        b.residential_and_service_demand as demand, b.area_id, c.bus_id, c.geom
+        FROM
+        demand.district_heating_areas b,
+        grid.egon_pf_hv_bus c
+        WHERE b.scenario = 'eGon2035'
+        AND c.scn_name = 'eGon2035'
+        AND ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
+        AND b.residential_and_service_demand > 2400
+        AND ST_Intersects(c.geom, (
+            SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
+            WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+        AND c.bus_id NOT IN (SELECT heat_bus_id FROM
+                             supply.egon_chp
+                             WHERE scenario = 'eGon2035'
+                             AND district_heating = TRUE)
+        """)
+
+    # Append district heating areas with CHP
+    # assumed dispatch of existing CHP is substracted from remaining demand
+    dh_areas = dh_areas.append(
+            db.select_geodataframe(
+                f"""
+                SELECT
+                b.residential_and_service_demand - sum(a.el_capacity)*8000
+                as demand, b.area_id, c.bus_id, c.geom
+                FROM
+                supply.egon_chp a,
+                demand.district_heating_areas b,
+                grid.egon_pf_hv_bus c
+                WHERE b.scenario = 'eGon2035'
+                AND c.scn_name = 'eGon2035'
+                AND a.scenario = 'eGon2035'
+                AND ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
+                AND b.residential_and_service_demand > 2400
+                AND ST_Intersects(c.geom, (
+                    SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
+                    WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+                AND a.heat_bus_id = c.bus_id
+                GROUP BY (
+                    b.residential_and_service_demand,
+                    b.area_id, c.bus_id, c.geom)
+                """),ignore_index=True
+                )
+
+    # extended_chp = gpd.GeoDataFrame(
+    #     columns = ['heat_bus_id', 'voltage_level',
+    #                 'el_capacity', 'th_capacity'])
+
+    session = sessionmaker(bind=db.engine())()
+
+    np.random.seed(seed=123456)
+
+    n = 0
+    # Add new CHP as long as the additional capacity is not reached
+    while additional_capacity > existing_chp.el_capacity.min():
+
+        # Break loop after 300 iterations without a fitting CHP
+        if n > 300:
+            print(
+                f'{additional_capacity} MW are matched to a district heating grid.')
+            break
+
+        # Select random new build CHP from list of existing CHP
+        # which is smaller than the remaining capacity to distribute
+        id_chp = np.random.choice(range(len(existing_chp[
+            existing_chp.el_capacity <= additional_capacity])))
+        selected_chp = existing_chp[
+            existing_chp.el_capacity <= additional_capacity].iloc[id_chp]
+
+        # Select district heatung areas whoes remaining demand, which is not
+        # covered by another CHP, fits to the selected CHP
+        possible_dh = dh_areas[
+                dh_areas.demand > selected_chp.th_capacity*8000].to_crs(4326)
+
+        # If there is no district heating area whoes demand (not covered by
+        # another CHP) fit to the CHP, quit and select another CHP
+        if len(possible_dh) > 0:
+
+            # Select randomly one district heating area from the list
+            # of possible district heating areas
+            id_dh = np.random.choice(range(len(possible_dh)))
+            selected_area = possible_dh.iloc[id_dh]
+            entry = EgonChp(
+                        sources={
+                            "chp": "MaStR",
+                            "el_capacity": "MaStR",
+                            "th_capacity": "MaStR",
+                            "CHP extension algorithm" : ""
+                        },
+                        carrier='gas extended',
+                        el_capacity=selected_chp.el_capacity,
+                        th_capacity= selected_chp.th_capacity,
+                        district_heating=True,
+                        voltage_level=selected_chp.voltage_level,
+                        heat_bus_id = int(selected_area.bus_id),
+                        scenario='eGon2035',
+                        geom=f"SRID=4326;POINT({selected_area.geom.x} {selected_area.geom.y})",
+                    )
+            session.add(entry)
+            session.commit()
+            # extended_chp = extended_chp.append({
+            #     'heat_bus_id': int(selected_area.bus_id),
+            #     'voltage_level': selected_chp.voltage_level,
+            #     'el_capacity': selected_chp.el_capacity,
+            #     'th_capacity': selected_chp.th_capacity},
+            #     ignore_index=True)
+
+            # Reduce additional capacity and district heating demand
+            additional_capacity -= selected_chp.el_capacity
+            dh_areas.loc[
+                dh_areas.index[dh_areas.area_id == selected_area.area_id],
+                'demand'] -= selected_chp.th_capacity*8000
+            dh_areas = dh_areas[dh_areas.demand > 0]
+        else:
+            print('Selected CHP can not be assigned to a district heating area.')
+            n+= 1
 
 def assign_use_case(chp, sources):
     """ Intentifies CHPs used in district heating areas
@@ -178,14 +324,14 @@ def assign_use_case(chp, sources):
     # these are possible district heating chp
     # Chps which are not close to a district heating area get use_case='industrial'
     close_to_dh = chp[chp.index.isin(
-        geopandas.sjoin(chp, district_heating).index)]
+        gpd.sjoin(chp, district_heating).index)]
 
     # All chp which are close to a district heating grid and intersect with
     # osm polygons whoes name indicates that it could be a district heating location
     # (e.g. Stadtwerke, Heizraftwerk, Müllverbrennung)
     # are assigned as district heating chp
     district_heating_chp = chp[chp.index.isin(
-        geopandas.sjoin(close_to_dh, possible_dh_locations).index)]
+        gpd.sjoin(close_to_dh, possible_dh_locations).index)]
 
     # Assigned district heating chps are dropped from list of possible
     # district heating chp
@@ -195,7 +341,7 @@ def assign_use_case(chp, sources):
     # doesn't indicate that it could be a district heating location
     # these chp get use_case='industrial'
     close_to_industry = chp[chp.index.isin(
-        geopandas.sjoin(close_to_dh, landuse_industrial).index)]
+        gpd.sjoin(close_to_dh, landuse_industrial).index)]
 
     # Chp which are close to a district heating area and not close to an
     # industrial location are assigned as district_heating_chp

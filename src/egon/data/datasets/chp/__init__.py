@@ -6,7 +6,7 @@ The central module containing all code dealing with chp.
 from egon.data import db, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.chp.match_nep import insert_large_chp
-from egon.data.datasets.chp.small_chp import existing_chp_smaller_10mw
+from egon.data.datasets.chp.small_chp import existing_chp_smaller_10mw, extension_per_federal_state, select_target
 from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -39,7 +39,7 @@ class Chp(Dataset):
             version="0.0.0.dev",
             dependencies=dependencies,
             tasks=(create_tables, insert_chp_egon2035,
-                   assign_heat_bus),
+                   assign_heat_bus, extension),
         )
 
 def create_tables():
@@ -190,4 +190,23 @@ def insert_chp_egon2035():
     additional_capacitiy = existing_chp_smaller_10mw(
         sources, MaStR_konv, EgonChp)
 
+def extension():
+
+    targets = select_target('small_chp', 'eGon2035')
+
+    for federal_state in targets.index:
+
+        existing_capacity = db.select_dataframe(
+            f"""
+            SELECT SUM(el_capacity) as capacity
+            FROM supply.egon_chp
+            WHERE sources::json->>'el_capacity' = 'MaStR'
+            AND ST_Intersects(geom, (
+            SELECT ST_Union(geometry) FROM boundaries.vg250_lan
+            WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+            """).capacity[0]
+
+        additional_capacity = targets[federal_state] - existing_capacity
+        extension_per_federal_state(
+            additional_capacity, federal_state, EgonChp)
 

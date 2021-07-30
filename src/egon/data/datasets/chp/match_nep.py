@@ -162,7 +162,8 @@ def select_chp_from_mastr(sources):
                                       'Breitengrad': 'latitude'})
 
     # Select only CHP plants which are in operation
-    MaStR_konv = MaStR_konv[MaStR_konv.EinheitBetriebsstatus=='InBetrieb']
+    MaStR_konv = MaStR_konv[(MaStR_konv.EinheitBetriebsstatus=='InBetrieb')
+                            &(MaStR_konv.ThermischeNutzleistung > 0)]
 
     # Insert geometry column
     MaStR_konv = MaStR_konv[ ~ ( MaStR_konv['longitude'].isnull()) ]
