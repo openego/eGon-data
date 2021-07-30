@@ -29,6 +29,7 @@ import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
+import egon.data.importing.gas_prod as gas_prod
 
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.demandregio as process_dr
@@ -433,6 +434,14 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
+    
+    # Gas prod import
+    gas_prod_insert_data = PythonOperator(
+        task_id="insert-gas-prod",
+        python_callable=gas_prod.import_gas_generators(),
+    )    
+    
+    create_gas_polygons >> gas_prod_insert_data
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(

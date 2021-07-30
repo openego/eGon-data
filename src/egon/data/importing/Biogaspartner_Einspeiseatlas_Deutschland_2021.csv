@@ -1,0 +1,245 @@
+Land;Bundesland;Stadt/Region;lat;long;Status;Einspeisung Biomethan [(N*m^3)/h)];Betriebsaufnahme;Gasaufbereitung
+Deutschland;Baden-Württemberg;Achstetten (bei Laupheim);48.259197;9.898481;in Betrieb;300;2012;DWW
+Deutschland;Hessen;Allendorf-Eder;51.033406;8.681889;in Betrieb;110;2013;PSA
+Deutschland;Niedersachsen;Altena ;52.372036;11.042976;in Betrieb;380;2011;chemische Wäsche
+Deutschland;Schleswig-Holstein;Altenhof;53.3526;12.357559;in Betrieb;700;2013;chemische Wäsche
+Deutschland;Bayern;Altenstadt Schongau;47.816841;10.896034;in Betrieb;650;2009;DWW
+Deutschland;Hessen;Altenstadt/Hessen;50.288902;8.943901;in Betrieb;700;2012;chemisch/physikalische Wäsche
+Deutschland;Brandenburg;Angermünde;52.981312;13.958602;in Betrieb;650;2009;DWW
+Deutschland;Mecklenburg-Vorpommern;Anklam;53.851311;13.703384;in Betrieb;2400;2013;DWW
+Deutschland;Niedersachsen;Apensen/Grundoldendorf;53.425491;9.620934;in Betrieb;350;2014;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Arneburg;52.675861;12.000504;in Betrieb;700;2013;chemische Wäsche
+Deutschland;Bayern;Arnschwang;49.276318;12.818642;in Betrieb;690;2010;DWW
+Deutschland;Bayern;Augsburg;48.375408;10.878983;in Betrieb;610;2014;Membran
+Deutschland;Nordrhein-Westfalen;Badbergen;52.635482;7.964726;in Betrieb;220;2005;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Badeleben;52.14592;11.126275;in Betrieb;700;2013;DWW
+Deutschland;Sachsen-Anhalt;Barby;51.965635;11.866207;in Betrieb;700;2015;DWW
+Deutschland;Sachsen-Anhalt;Barleben;52.184669;11.580276;in Betrieb;350;2012;chemisch/physikalische Wäsche
+Deutschland;Brandenburg;Barsikow;52.850475;12.537117;in Betrieb;700;2011;chemische Wäsche
+Deutschland;Brandenburg;Beerfelde;52.435006;14.049805;in Betrieb;750;2016;DWW
+Deutschland;Sachsen-Anhalt;Beetzendorf;52.691571;11.088929;in Betrieb;350;2015;Membran
+Deutschland;Nordrhein-Westfalen;Bergheim/Paffendorf;50.961994;6.609306;in Betrieb;700;2016;DWW
+Deutschland;Berlin;Berlin-Ruhleben;52.533218;13.225265;in Betrieb;510;2013;chemische Wäsche
+Deutschland;Bayern;Biburg;48.788745;11.85236;in Betrieb;350;2013;DWW
+Deutschland;Rheinland-Pfalz;Bitburg ;49.947689;6.555598;in Betrieb;5000;2020;PSA
+Deutschland;Sachsen-Anhalt;Bitterfeld-Wolfen;51.629921;12.315085;in Betrieb;550;2019;keine Angaben
+Deutschland;Thüringen;Blankenhain;50.865398;11.345959;in Betrieb;650;2011;PSA
+Deutschland;Baden-Württemberg;Blaufelden - Emmertsbühl;49.288971;10.00906;in Betrieb;260;2010;PSA
+Deutschland;Niedersachsen;Börger;52.913044;7.548981;in Betrieb;500;2011;PSA
+Deutschland;Sachsen;Brandis Waldpolenz;51.335869;12.612133;in Betrieb;700;2013;PSA
+Deutschland;Niedersachsen;Bruchhausen-Vilsen;52.822475;8.989563;in Betrieb;370;2011;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Brumby;51.895138;11.717863;in Betrieb;700;2013;DWW
+Deutschland;Brandenburg;Brunne;52.77494;12.722511;in Betrieb;300;2011;DWW
+Deutschland;Baden-Württemberg;Burgrieden (bei Laupheim);48.239765;9.931297;in Betrieb;350;2008;PSA
+Deutschland;Baden-Württemberg;Burgrieden (bei Laupheim) Erweiterung;48.239765;9.931297;in Betrieb;350;2011;PSA
+Deutschland;Nordrhein-Westfalen;Coesfeld / Höven;51.938293;7.167583;in Betrieb;250;2014;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Dannenberg ;53.081448;11.084175;in Betrieb;200;2010;chemische Wäsche
+Deutschland;Thüringen;Dannheim/Arnstadt/Ilmenau;50.796551;10.980699;in Betrieb;300;2014;Membran
+Deutschland;Mecklenburg-Vorpommern;Dargun;53.897156;12.862415;in Betrieb;1366;2011;DWW
+Deutschland;Hessen;Darmstadt-Wixhausen;49.925144;8.649673;in Betrieb;150;2008;DWW
+Deutschland;Hessen;Darmstadt-Wixhausen 2;49.92498;8.650789;in Betrieb;700;2012;DWW
+Deutschland;Sachsen-Anhalt;Dessau-Roßlau (Zschornewitz?);51.8205;12.233849;in Betrieb;700;2014;DWW
+Deutschland;Nordrhein-Westfalen;Dorsten;51.653389;6.945419;in Betrieb;700;2013;DWW
+Deutschland;Niedersachsen;Drögennindorf;53.152382;10.294962;in Betrieb;250;2010;chemische Wäsche
+Deutschland;Nordrhein-Westfalen;Dülmen;51.827823;7.281032;in Betrieb;700;2020;DWW
+Deutschland;Mecklenburg-Vorpommern;Dümmer;53.558126;11.18048;in Betrieb;630;2018;keine Angaben
+Deutschland;Hessen;Ebsdorfergrund;50.745579;8.833694;in Betrieb;500;2012;chemische Wäsche
+Deutschland;Bayern;Eggertshofen bei Freising;48.36298;11.718893;in Betrieb;220;2010;chemische Wäsche
+Deutschland;Bayern;Eggolsheim (Kreis Forchheim);49.773727;11.058083;in Betrieb;350;2013;keine Angaben
+Deutschland;Bayern;Eich in Kallmünz;49.176991;11.975784;in Betrieb;600;2011;keine Angaben
+Deutschland;Nordrhein-Westfalen;Eimbeckhausen  ;52.232845;9.425497;in Betrieb;350;2011;PSA
+Deutschland;Niedersachsen;Einbeck;51.805641;9.851303;in Betrieb;560;2009;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Erdeborn  ;51.474327;11.635895;in Betrieb;550;2017;DWW
+Deutschland;Baden-Württemberg;Eschbach/Breisgau (Heitersheim);47.901154;7.618504;in Betrieb;450;2012;chemische Wäsche
+Deutschland;Baden-Württemberg;Ettlingen;48.945953;8.414154;in Betrieb;330;2008;PSA
+Deutschland;Mecklenburg-Vorpommern;Feldberg;53.339687;13.430786;in Betrieb;350;2014;Membran
+Deutschland;Baden-Württemberg;Forchheim im Breisgau;48.161964;7.702789;in Betrieb;530;2010;chemisch/physikalische Wäsche
+Deutschland;Brandenburg;Forst (Lausitz);51.742089;14.645988;in Betrieb;700;2014;Membrantechnologie
+Deutschland;Hessen;Frankfurt;50.092834;8.53363;in Betrieb;1000;2011;chemische Wäsche
+Deutschland;Hessen;Frankfurt am Main;50.10889;8.713654;in Betrieb;600;2018;keine Angaben
+Deutschland;Niedersachsen;Friesoythe (Heinfelde);53.023044;7.805557;in Betrieb;350;2015;chemische Wäsche
+Deutschland;Niedersachsen;Fuhsetal;52.347505;10.188246;in Betrieb;700;2014;DWW
+Deutschland;Bayern;Fürth/Seckendorf/Codalzburg;49.48558;10.850973;in Betrieb;630;2011;DWW
+Deutschland;Sachsen-Anhalt;Gardelegen;52.523743;11.406555;in Betrieb;350;2013;keine Angaben
+Deutschland;Baden-Württemberg;Geislingen;48.622471;9.82933;in Betrieb;350;2014;PSA
+Deutschland;Niedersachsen;Gellersen  (Kirchgellersen);53.21991;10.285234;in Betrieb;350;2013;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Genthin;52.410796;12.152674;in Betrieb;1100;2016;DWW
+Deutschland;Sachsen-Anhalt;Genthin II;52.410796;12.152674;in Bau;700;2020;Membrantechnologie
+Deutschland;Niedersachsen;Giesen;52.226959;9.864349;in Betrieb;350;2012;PSA
+Deutschland;Niedersachsen;Glentorf;52.326187;10.80157;in Betrieb;350;2014;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Godenstedt;53.324928;9.223366;in Betrieb;300;2009;chemische Wäsche
+Deutschland;Bayern;Gollhofen-Ippesheim;49.598362;10.21986;in Betrieb;620;2011;PSA
+Deutschland;Sachsen-Anhalt;Gommern;52.10539;11.834207;in Betrieb;700;2017;DWW
+Deutschland;Sachsen-Anhalt;Gommern II;52.10539;11.834207;in Betrieb;350;2017;DWW
+Deutschland;Sachsen;Gordemitz;51.417461;12.546201;in Betrieb;700;2015;DWW
+Deutschland;Bayern;Graben/Lechfeld;48.187149;10.823593;in Betrieb;500;2008;PSA
+Deutschland;Bayern;Graben/Lechfeld 2;48.200504;10.85185;in Betrieb;500;2019;
+Deutschland;Thüringen;Grabsleben;50.941555;10.843506;in Betrieb;700;2010;chemische Wäsche
+Deutschland;Sachsen;Gröbern;51.198098;13.553545;in Betrieb;550;2014;physikalische Wäsche
+Deutschland;Brandenburg;Gröden;51.406059;13.570862;in Betrieb;450;2012;Membran
+Deutschland;Mecklenburg-Vorpommern;Groß Kelle / Malchow;53.405334;12.547073;in Betrieb;250;2011;chemische Wäsche
+Deutschland;Mecklenburg-Vorpommern;Güstrow;53.794971;12.175255;in Betrieb;5500;2009;DWW
+Deutschland;Sachsen-Anhalt;Güterglück;51.987839;11.994495;in Betrieb;650;2009;PSA
+Deutschland;Sachsen-Anhalt;Hadmersleben;51.994183;11.304188;in Betrieb;700;2013;DWW
+Deutschland;Niedersachsen;Hage;53.602589;7.294407;in Betrieb;400;2013;DWW
+Deutschland;Baden-Württemberg;Hahnennest;47.918297;9.324646;in Betrieb;350;2012;chemisch/physikalische Wäsche
+Deutschland;Sachsen-Anhalt;Haldensleben / Ohretal / Satuelle;52.293152;11.426811;in Betrieb;700;2013;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Haldensleben / Ohretal / Satuelle II;52.293152;11.426811;in Betrieb;700;2014;DWW
+Deutschland;Nordrhein-Westfalen;Halle/Westfalen;52.059677;8.360136;in Betrieb;350;2014;DWW
+Deutschland;Hamburg;Hamburg;53.53153;9.942064;in Betrieb;300;2011;chemische Wäsche
+Deutschland;Hamburg;Hamburg/Köhlbrandhöft II;53.53153;9.942064;in Bau;750;2020;chemische Wäsche
+Deutschland;Niedersachsen;Hankensbüttel / Emmen;52.714874;10.626869;in Betrieb;350;2011;chemische Wäsche
+Deutschland;Niedersachsen;Hardegsen;51.649261;9.851775;in Betrieb;500;2009;chemische Wäsche
+Deutschland;Niedersachsen;Heidenau (Heidkoppel);53.316723;9.658012;in Betrieb;380;2013;chemische Wäsche
+Deutschland;Rheinland-Pfalz;Hellerwald / Boppard;50.210197;7.56752;in Betrieb;680;2012;DWW
+Deutschland;Thüringen;Heygendorf;51.35506;11.363969;in Betrieb;450;2014;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Hohenhameln-Mehrum;52.312256;10.102873;in Betrieb;700;2012;PSA
+Deutschland;Sachsen-Anhalt;Holleben II;51.44537;11.899953;in Betrieb;700;2011;DWW
+Deutschland;Hessen;Homberg/Efze;51.031895;9.398117;in Betrieb;350;2010;DWW
+Deutschland;Nordrhein-Westfalen;Horn - Bad Meinberg;51.896412;8.988876;in Betrieb;1000;2009;chemische Wäsche
+Deutschland;Niedersachsen;Ilsede Solschen;52.266634;10.174527;in Betrieb;700;2017;Membran
+Deutschland;Niedersachsen;Jameln;53.043075;11.067317;in Betrieb;50;2006;keine Angaben
+Deutschland;Mecklenburg-Vorpommern;Jürgenshagen  (bei Rostock);53.956894;11.893387;in Betrieb;350;2012;chemische Wäsche
+Deutschland;Thüringen;Kannawurf;51.270508;11.136017;in Betrieb;700;2013;PSA
+Deutschland;Hessen;Karben;50.228321;8.771896;in Betrieb;350;2012;chemische Wäsche
+Deutschland;Mecklenburg-Vorpommern;Karft;53.536736;11.04598;in Betrieb;550;2011;chemische Wäsche
+Deutschland;Nordrhein-Westfalen;Kerpen;50.870762;6.69342;in Betrieb;550;2009;PSA
+Deutschland;Brandenburg;Ketzin;52.47818;12.841644;in Betrieb;200;2008;PSA
+Deutschland;Hessen;Kirchhain-Stausebach;50.841286;8.90233;in Betrieb;648;2014;DWW
+Deutschland;Baden-Württemberg;Kißlegg-Rahmhaus;47.834736;9.899025;in Betrieb;350;2010;Membran
+Deutschland;Brandenburg;Klein Schulzendorf;52.194561;13.251228;in Betrieb;350;2012;PSA
+Deutschland;Sachsen-Anhalt;Klein Wanzleben;52.071697;11.370506;in Betrieb;700;2012;chemische Wäsche
+Deutschland;Hessen;Kleinlüder bei Fulda;50.550961;9.517593;in Betrieb;280;2012;PSA
+Deutschland;Hessen;Kleinlüder bei Fulda 2. Stufe;50.550961;9.517593;in Betrieb;310;2013;PSA
+Deutschland;Rheinland-Pfalz;Koblenz;50.357392;7.561082;in Bau;300;2017;Membran
+Deutschland;Sachsen-Anhalt;Köckte;52.519566;11.127777;in Betrieb;350;2013;Membran
+Deutschland;Sachsen;Kodersdorf;51.235697;14.891853;in Betrieb;800;2015;PSA
+Deutschland;Nordrhein-Westfalen;Köln;51.005;6.954;in Betrieb;150;2020;
+Deutschland;Sachsen-Anhalt;Könnern 1;51.670853;11.767044;in Betrieb;2100;2007;DWW
+Deutschland;Sachsen-Anhalt;Könnern 2;51.669998;11.771851;in Betrieb;700;2009;chemische Wäsche
+Deutschland;Mecklenburg-Vorpommern;Krackow;53.298056;14.239798;in Betrieb;700;2016;Membran
+Deutschland;Sachsen-Anhalt;Kroppenstedt;51.94109;11.308851;in Betrieb;700;2014;keine Angaben
+Deutschland;Rheinland-Pfalz;Lambsborn;49.366166;7.429132;in Betrieb;350;2014;chemisch/physikalische Wäsche
+Deutschland;Thüringen;Langenwetzendorf;50.688767;12.113937;in Betrieb;700;2016;
+Deutschland;Schleswig-Holstein;Lanken/Wotersen;53.542118;10.598974;in Betrieb;410;2009;chemische Wäsche
+Deutschland;Bayern;Lauterhofen;49.386936;11.559156;in Betrieb;485;2013;PSA
+Deutschland;Thüringen;Lehma;51.038155;12.427254;in Betrieb;600;2012;chemisch/physikalische Wäsche
+Deutschland;Mecklenburg-Vorpommern;Leizen;53.362026;12.476349;in Betrieb;350;2013;chemische Wäsche
+Deutschland;Brandenburg;Lenzen (Elbe);53.093456;11.476078;in Betrieb;700;2015;chemisch/physikalische Wäsche
+Deutschland;Sachsen;Lichtensee ;51.380237;13.373854;in Betrieb;700;2012;chemisch/physikalische Wäsche
+Deutschland;Sachsen-Anhalt;Loitsche;52.297813;11.699872;in Bau;1050;2020;physikalische Wäsche
+Deutschland;Schleswig-Holstein;Loop;54.147102;9.967647;in Betrieb;450;2014;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Lüchow;52.970558;11.144257;in Betrieb;650;2009;DWW
+Deutschland;Brandenburg;Luckau;51.862713;13.813934;in Betrieb;400;2014;DWW
+Deutschland;Mecklenburg-Vorpommern;Lüdershagen / Stralsund;54.305382;12.611232;in Betrieb;350;2013;chemische Wäsche
+Deutschland;Bayern;Maihingen;48.926785;10.496063;in Betrieb;600;2008;DWW
+Deutschland;Brandenburg;Malchin;53.749922;12.772703;in Betrieb;700;2018;
+Deutschland;Niedersachsen;Malstedt;53.427742;9.270401;in Betrieb;350;2011;chemische Wäsche
+Deutschland;Bayern;Mammendorf;48.205227;11.160049;in Betrieb;380;2014;PSA
+Deutschland;Schleswig-Holstein;Marienthal ;54.441746;9.841518;in Betrieb;380;2013;chemische Wäsche
+Deutschland;Bayern;Marktoffingen;48.924587;10.47349;in Betrieb;350;2013;DWW
+Deutschland;Thüringen;Menteroda;51.309048;10.562639;in Betrieb;700;2015;PSA
+Deutschland;Saarland;Merzig;49.444469;6.641922;in Betrieb;550;2011;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Müden (Aller);52.531994;10.356503;in Betrieb;350;2012;chemische Wäsche
+Deutschland;Baden-Württemberg;Mühlacker;48.946407;8.841934;in Betrieb;500;2007;PSA
+Deutschland;Brandenburg;Neubrandenburg / Neuhardenberg;53.507243;13.274517;in Betrieb;350;2016;Membran
+Deutschland;Mecklenburg-Vorpommern;Neuburg-Steinhausen;53.943321;11.604161;in Betrieb;700;2014;DWW
+Deutschland;Brandenburg;Neukammer 2 (Nauen);52.604717;12.873917;in Betrieb;700;2011;chemische Wäsche
+Deutschland;Nordrhein-Westfalen;Neuss am Niederrhein;51.205162;6.692734;in Betrieb;160;2010;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Niederndodeleben;52.137703;11.518478;in Betrieb;700;2009;DWW
+Deutschland;Sachsen-Anhalt;Niederndodeleben 2;52.15;11.522;in Betrieb;700;2014;
+Deutschland;Sachsen-Anhalt;Niederröblingen;51.429183;11.339207;in Betrieb;620;2014;chemische Wäsche
+Deutschland;Brandenburg;Nonnendorf;51.908648;13.257199;in Betrieb;700;2014;PSA
+Deutschland;Thüringen;Nordhausen (Bielen);51.490322;10.83535;in Betrieb;350;2015;chemisch/physikalische Wäsche
+Deutschland;Baden-Württemberg;Oberriexingen ;48.929379;9.028187;in Betrieb;380;2012;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Oebisfelde-Weferlingen BGAA 1;52.442097;10.977745;in Betrieb;700;2013;
+Deutschland;Sachsen-Anhalt;Oebisfelde-Weferlingen BGAA 2;52.442097;10.977745;in Betrieb;700;2013;chemische Wäsche
+Deutschland;Sachsen;Oschatz (Leuben);51.302071;13.109436;in Betrieb;700;2012;PSA
+Deutschland;Sachsen-Anhalt;Oschersleben;52.026448;11.226889;in Planung;800;0;Membran
+Deutschland;Schleswig-Holstein;Osterby;54.793594;9.215878;in Betrieb;700;2011;DWW
+Deutschland;Niedersachsen;Ottersberg ;53.109692;9.142513;in Betrieb;650;2012;DWW
+Deutschland;Nordrhein-Westfalen;Palmersheim-Euskirchen;50.636181;6.859589;in Betrieb;350;2011;chemisch/physikalische Wäsche
+Deutschland;Mecklenburg-Vorpommern;Parum Parchim;53.558133;11.180984;in Betrieb;600;2017;Aminwäsche
+Deutschland;Brandenburg;Pessin;52.63973;12.665462;in Betrieb;800;2015;PSA
+Deutschland;Brandenburg;Pillgram (Jacobsdorf);52.319701;14.379491;in Betrieb ;700;2020;DWW
+Deutschland;Brandenburg;Pinnow ;53.06322;14.088287;in Betrieb;1000;2019;
+Deutschland;Rheinland-Pfalz;Pirmasens;49.19715;7.598081;in Betrieb;150;2016;keine Angaben
+Deutschland;Rheinland-Pfalz;Plaidt;50.389689;7.38614;In Betrieb;600;2018;
+Deutschland;Rheinland-Pfalz;Platten;49.952075;6.953061;in Betrieb;700;2016;PSA
+Deutschland;Bayern;Pliening;48.194702;11.802406;in Betrieb;700;2006;PSA
+Deutschland;Nordrhein-Westfalen;Pohlsche Heide;52.332401;8.773956;in Betrieb;350;2010;PSA
+Deutschland;Brandenburg;Pritzwalk-Neudorf (Wolfshagen) (Neudorf-Helle);53.17065;12.071228;in Betrieb;700;2011;chemische Wäsche
+Deutschland;Sachsen;Quesitz;51.298851;12.209816;in Betrieb;700;2009;keine Angaben
+Deutschland;Sachsen;Rackwitz;51.439885;12.376685;in Betrieb;700;2013;chemische Wäsche
+Deutschland;Sachsen;Raitzen;51.259928;13.187809;In Betrieb;810;2015;keine Angaben
+Deutschland;Rheinland-Pfalz;Ramstein;49.443352;7.544518;in Betrieb;350;2011;DWW
+Deutschland;Brandenburg;Rathenow;52.6068;12.336617;in Betrieb;520;2009;chemisch/physikalische Wäsche
+Deutschland;Sachsen-Anhalt;Rätzlingen ;52.403572;11.112499;in Betrieb;380;2014;chemische Wäsche
+Deutschland;Bayern;Reimlingen;48.821335;10.518723;in Betrieb;700;2015;Membran
+Deutschland;Nordrhein-Westfalen;Rhede;51.843624;6.6996;in Betrieb;500;2010;chemische Wäsche
+Deutschland;Nordrhein-Westfalen;Rheine;52.281441;7.44345;in Planung;850;;Aminwäsche
+Deutschland;Baden-Württemberg;Riedlingen-Daugendorf;48.174099;9.48369;in Betrieb;600;2012;PSA
+Deutschland;Sachsen-Anhalt;Röblingen am See / Stedten;51.453526;11.685677;in Betrieb;650;2012;DWW
+Deutschland;Niedersachsen;Ronnenberg;52.316875;9.655609;in Betrieb;325;2008;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Rosche ;52.988235;10.751324;in Betrieb;380;2012;chemische Wäsche
+Deutschland;Sachsen;Roßwein/Haßlau;51.087997;13.120422;in Betrieb;700;2011;DWW
+Deutschland;Mecklenburg-Vorpommern;Rostock;54.144265;12.104735;in Betrieb;350;2011;chemische Wäsche
+Deutschland;Brandenburg;Sachsendorf ;51.866501;11.883473;in Betrieb;350;2011;DWW
+Deutschland;Brandenburg;Sachsendorf II;51.866501;11.883473;in Betrieb;430;2012;Membran
+Deutschland;Mecklenburg-Vorpommern;Sagard (Rügen) ;54.526562;13.559361;in Betrieb;700;2012;PSA
+Deutschland;Brandenburg;Schöllnitz/ Luckaitztal;51.685276;13.986025;in Betrieb;700;2012;keine Angaben
+Deutschland;Sachsen;Schöpstal;51.164059;14.928532;in Betrieb;700;2011;chemisch/physikalische Wäsche
+Deutschland;Schleswig-Holstein;Schuby;54.518143;9.479828;in Betrieb;1000;2011;DWW
+Deutschland;Baden-Württemberg;Schwaigern;49.140392;9.058914;in Betrieb;350;2014;Membran
+Deutschland;Bayern;Schwandorf II;49.328255;12.11174;in Betrieb;1000;2008;PSA
+Deutschland;Niedersachsen;Schwarme ;52.898132;9.022522;in Betrieb;350;2011;DWW
+Deutschland;Brandenburg;Schwedt;53.061852;14.264374;in Betrieb;3500;2010;chemische Wäsche
+Deutschland;Brandenburg;Schwedt (2. Ausbaustufe);53.065254;14.27742;in Betrieb;3500;2014;chemische Wäsche
+Deutschland;Brandenburg;Schwedt (Neuer Hafen);47.831711;13.138103;in Betrieb;700;2011;chemische Wäsche
+Deutschland;Mecklenburg-Vorpommern;Schwenzin/Jabel;53.540307;12.604873;in Betrieb;400;2015;physikalische Wäsche
+Deutschland;Brandenburg;Seelow 2;52.535854;14.381676;in Betrieb;700;2011;keine Angaben
+Deutschland;Hessen;Semd (Groß Umstadt);49.872623;8.887253;in Betrieb;210;2010;DWW
+Deutschland;Baden-Württemberg;Sinsheim;49.27122;8.887226;in Betrieb;400;2019;keine Angaben
+Deutschland;Sachsen-Anhalt;Staßfurt;51.86144;11.578846;in Betrieb;700;2015;DWW
+Deutschland;Sachsen-Anhalt;Stegelitz;52.190024;11.907712;in Bau;800;2020;physikalische Wäsche
+Deutschland;Nordrhein-Westfalen;Straelen;51.443096;6.26461;in Betrieb;550;2006;PSA
+Deutschland;Sachsen-Anhalt;Stresow;52.257755;12.015266;in Betrieb;650;2011;DWW
+Deutschland;Brandenburg;Stülpe;52.113674;13.212433;in Betrieb;520;2014;keine Angaben
+Deutschland;Schleswig-Holstein;Tangstedt/Bützberg;53.725918;10.095491;in Betrieb;350;2011;keine Angaben
+Deutschland;Sachsen;Thierbach;51.171491;12.53043;in Betrieb;700;2016;keine Angaben
+Deutschland;Mecklenburg-Vorpommern;Torgelow;53.634703;13.997857;in Betrieb;700;2018;keine Angaben
+Deutschland;Mecklenburg-Vorpommern;Torgelow 2;53.634703;13.997857;in Planung;700;2020;keine Angaben
+Deutschland;Sachsen;Trebsen;51.285314;12.751817;in Betrieb;550;2018;DWW
+Deutschland;Niedersachsen;Uchte;52.50034;8.906937;in Betrieb;650;2011;DWW
+Deutschland;Brandenburg;Uckermark;53.21764;13.869788;in Planung;1500;;Aminwäsche
+Deutschland;Bayern;Unsleben;50.378914;10.258741;in Betrieb;350;2010;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Vahldorf;52.247803;11.497846;in Betrieb;700;2019;
+Deutschland;Sachsen-Anhalt;Vahldorf/Jersleben;52.255401;11.500212;in Betrieb;700;2019;DWW
+Deutschland;Brandenburg;Vehlefanz;52.720048;13.099215;in Betrieb;700;2013;keine Angaben
+Deutschland;Brandenburg;Vettin;53.029594;12.173389;in Betrieb;700;2016;keine Angaben
+Deutschland;Nordrhein-Westfalen;Vettweiß;50.736019;6.600723;in Betrieb;550;2012;DWW
+Deutschland;Niedersachsen;Vierden;53.321;9.502;in Betrieb;125;2010;
+Deutschland;Niedersachsen;Walchum;52.930534;7.274144;in Planung;220;;Membran
+Deutschland;Baden-Württemberg;Weikersheim;49.480282;9.903116;in Betrieb;400;2015;PSA
+Deutschland;Thüringen;Weißenborn-Lüderode;51.531281;10.420103;in Betrieb;600;2013;chemische Wäsche
+Deutschland;Niedersachsen;Werlte;52.850475;7.679443;in Betrieb;350;2007;PSA
+Deutschland;Rheinland-Pfalz;Westheim;49.228078;8.320889;in Betrieb;500;2020;
+Deutschland;Niedersachsen;Wetschen;52.611908;8.45295;in Betrieb;700;2010;DWW
+Deutschland;Hessen;Willingshausen/Ransbach;50.888199;9.230404;in Betrieb;350;2009;DWW
+Deutschland;Mecklenburg-Vorpommern;Wittenburg;53.513165;11.077309;in Betrieb;350;2015;Membran
+Deutschland;Mecklenburg-Vorpommern;Wittendörp;53.53;11.052;in Betrieb;700;2002;
+Deutschland;Hessen;Wölfersheim;50.398014;8.817902;in Betrieb;640;2012;DWW
+Deutschland;Bayern;Wolnzach (Hallertau);48.623039;11.663189;in Betrieb;1000;2012;DWW
+Deutschland;Baden-Württemberg;Aalen;48.823866;10.117615;in Planung;1300;2021;
+Deutschland;Rheinland-Pfalz;Wörth;49.067804;8.301969;in Betrieb;500;2016;
+Deutschland;Brandenburg;Wriezen;52.727142;14.142838;in Betrieb;650;2011;PSA
+Deutschland;Niedersachsen;Wüsting;53.120609;8.331413;in Betrieb;700;2009;PSA
+Deutschland;Sachsen-Anhalt;Zeitz Elsteraue;51.076162;12.196019;in Betrieb;700;2012;DWW
+Deutschland;Sachsen-Anhalt;Zerbst;51.969791;12.097303;in Betrieb;700;2014;DWW
+Deutschland;Mecklenburg-Vorpommern;Zernin;53.777531;12.016182;in Betrieb;700;2014;chemisch/physikalische Wäsche
+Deutschland;Niedersachsen;Zeven;53.294979;9.284477;in Betrieb;120;2009;chemische Wäsche
+Deutschland;Niedersachsen;Zeven II;53.294567;9.284978;in Betrieb;120;2012;Membran
+Deutschland;Sachsen;Zittau ;50.913857;14.841156;in Betrieb;550;2012;DWW
+Deutschland;Sachsen-Anhalt;Zörbig;51.633362;12.12822;in Betrieb;2500;2010;chemische Wäsche
+Deutschland;Sachsen-Anhalt;Zörbig (2. Ausbaustufe);51.633362;12.12822;in Betrieb;2500;2012;chemische Wäsche
+Deutschland;Nordrhein-Westfalen;Zülpich;50.695587;6.663895;in Betrieb;350;2014;keine Angaben
