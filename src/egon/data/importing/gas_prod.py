@@ -24,8 +24,11 @@ def load_NG_generators():
         
     """
     # Read-in data from csv-file
+#    target_file = os.path.join(
+#        Path(os.path.dirname(__file__)).parent, 'egon/data/importing/gas_grid/data/IGGIELGN_Productions.csv')
     target_file = os.path.join(
-        Path(os.path.dirname(__file__)).parent, 'gas_grid/data/IGGIELGN_Productions.csv')
+        "gas_data/",
+        'data/IGGIELGN_Productions.csv')
     
     NG_generators_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',

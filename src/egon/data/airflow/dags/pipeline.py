@@ -438,7 +438,7 @@ with airflow.DAG(
     # Gas prod import
     gas_prod_insert_data = PythonOperator(
         task_id="insert-gas-prod",
-        python_callable=gas_prod.import_gas_generators(),
+        python_callable=gas_prod.insert_gas_prod(),
     )    
     
     create_gas_polygons >> gas_prod_insert_data
