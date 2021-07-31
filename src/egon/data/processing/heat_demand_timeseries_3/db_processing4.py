@@ -78,7 +78,7 @@ class IdpProfiles:
 
 def temperature_profile_extract():
     '''
-
+    Description: Extract temperature data from atlite
     Returns
     -------
     temperature_profile : pandas.DataFrame
@@ -112,7 +112,7 @@ def temperature_profile_extract():
 
 def temp_interval():
     '''
-    
+    Description: Create Dataframe with temperature data for TRY Climate Zones
     Returns
     -------
     temperature_interval : pandas.DataFrame
@@ -133,7 +133,7 @@ def temp_interval():
 
 def idp_pool_generator():
     '''
-   
+   Description: Create List of Dataframes for each temperature class for each household stock
         
     Returns
     -------
@@ -171,7 +171,7 @@ def idp_pool_generator():
 
     def round_temperature(station):
         '''
-        
+        Description: Create dataframe to assign temperature class to each day of TRY climate zones 
 
         Parameters
         ----------
@@ -311,7 +311,7 @@ def idp_pool_generator():
 
 def idp_df_generator():
     '''
-    
+    Description: Create dataframe with all temprature classes, 24hr. profiles and household stock
 
     Returns
     -------
@@ -356,7 +356,7 @@ def idp_df_generator():
 
 def psycop_df_AF(table_name):
     '''
-
+    Description: Read tables from database into pandas dataframe
     Parameters
     ----------
     table_name : str
@@ -378,7 +378,7 @@ def psycop_df_AF(table_name):
 def psycop_gdf_AF(table_name,geom_column = 'geom'):
     '''
     
-
+    Description: Read tables from database into geopandas dataframe
     Parameters
     ----------
     table_name : str
@@ -402,7 +402,7 @@ def psycop_gdf_AF(table_name,geom_column = 'geom'):
 def annual_demand_generator():
     '''
     
-
+    Description: Create dataframe with annual demand and household count for each zensus cell
     Returns
     -------
     demand_count: pandas.DataFrame
@@ -505,7 +505,9 @@ def annual_demand_generator():
 def profile_selector():
     '''
     
-
+    Description: Random assignment of profiles to each day based on their temeprature class 
+    and household stock count
+    
     Returns
     -------
     annual_demand : pandas.DataFrame
@@ -642,7 +644,7 @@ def profile_selector():
 
 def h_value():
     '''
-    
+    Description: Assignment of daily demand scaling factor to each day of all TRY Climate Zones
 
     Returns
     -------
@@ -677,7 +679,9 @@ def h_value():
 def profile_generator(aggregation_level):
     '''
     
-
+    Descriptiion: Aggregation of profiles either based on district heating network and medium voltage 
+    grid or zensus cell
+    
     Parameters
     ----------
     aggregation_level : str
@@ -767,6 +771,7 @@ def profile_generator(aggregation_level):
 def residential_demand_scale(aggregation_level):
     '''
     
+    Description: Scaling the demand curves to the annual demand of the respective aggregation level
 
     Parameters
     ----------
@@ -919,6 +924,8 @@ def residential_demand_scale(aggregation_level):
 def cts_demand_per_aggregation_level(aggregation_level):
     '''
     
+    Description: Create dataframe assigining the CTS demand curve to individual zensus cell
+    based on their respective NUTS3 CTS curve
 
     Parameters
     ----------
@@ -1043,6 +1050,8 @@ def cts_demand_per_aggregation_level(aggregation_level):
 def CTS_demand_scale(aggregation_level):
     '''
     
+    Description: caling the demand curves to the annual demand of the respective aggregation level
+    
 
     Parameters
     ----------
@@ -1140,6 +1149,7 @@ def CTS_demand_scale(aggregation_level):
 def demand_profile_generator(aggregation_level = 'district'):
     '''
     
+    Description: Creating final demand profiles
 
     Parameters
     ----------
