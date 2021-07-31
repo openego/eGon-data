@@ -1,6 +1,0 @@
-
-The HTS_generation.py file is the primary file with the db_processing.py file consisting of all the background functions for the profile generation.
-
-Data for running the code are availabe in the following link:
-				https://next.rl-institut.de/index.php/apps/files?dir=/Heat_demand_time_series%20data
-				
