@@ -119,8 +119,7 @@ def assign_heat_bus(scenario='eGon2035'):
         WHERE scenario = '{scenario}'
         AND district_heating = True
         """,
-        index_col='id',
-        epsg=4326)
+        index_col='id')
 
     # Select district heating areas and their centroid
     district_heating = db.select_geodataframe(
@@ -129,9 +128,8 @@ def assign_heat_bus(scenario='eGon2035'):
         FROM
         {sources['district_heating_areas']['schema']}.
         {sources['district_heating_areas']['table']}
-        WHERE scenario = 'eGon2035'
-        """,
-        epsg=4326)
+        WHERE scenario = '{scenario}'
+        """)
 
     # Assign district heating area_id to district_heating_chp
     # According to nearest centroid of district heating area
@@ -191,9 +189,22 @@ def insert_chp_egon2035():
         sources, MaStR_konv, EgonChp)
 
 def extension():
+    """ Build additional CHP for district heating.
 
+    Existing CHPs are randomly seected from MaStR list and assigned to a
+    district heating area considering the demand and the estimated feedin
+    from the selected CHP.
+    For more details see small_chp.extension_per_federal_state
+
+    Returns
+    -------
+    None.
+
+    """
+    # Select target values per federal state
     targets = select_target('small_chp', 'eGon2035')
 
+    # Run methodology for each federal state
     for federal_state in targets.index:
 
         existing_capacity = db.select_dataframe(

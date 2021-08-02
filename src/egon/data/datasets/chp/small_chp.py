@@ -91,7 +91,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         target = targets[federal_state]
 
         if mastr_chp.Nettonennleistung.sum() > target:
-            # Remove small chp ?
+
             additional_capacitiy[federal_state] = 0
 
         elif mastr_chp.Nettonennleistung.sum()< target:
@@ -114,6 +114,31 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
 
 def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
+    """Adds new CHP plants to meet target value per federal state.
+
+    The additional capacity for CHPs < 10 MW is distributed discretly.
+    Therefore, existing CHPs and their parameters from Marktstammdatenregister
+    are randomly selected and allocated in a district heating grid.
+    In order to generate a reasonable distribution, new CHPs can only
+    be assigned to a district heating grid which needs additional supply
+    technologies. This is estimated by the substraction of demand, and the
+    assumed dispatch oof a CHP considering the capacitiy and full load hours
+    of each CHPs.
+
+    Parameters
+    ----------
+    additional_capacity : float
+        Capacity to distribute.
+    federal_state : str
+        Name of the federal state
+    EgonChp : class
+        ORM-class definition of CHP table
+
+    Returns
+    -------
+    None.
+
+    """
 
     existing_chp = db.select_dataframe(
         f"""
@@ -157,15 +182,17 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
                 f"""
                 SELECT
                 b.residential_and_service_demand - sum(a.el_capacity)*8000
-                as demand, b.area_id, ST_Transform(ST_Centroid(geom_polygon), 4326)  as geom
+                as demand, b.area_id,
+                ST_Transform(ST_Centroid(geom_polygon), 4326) as geom
                 FROM
                 supply.egon_chp a,
                 demand.district_heating_areas b
                 WHERE b.scenario = 'eGon2035'
                 AND a.scenario = 'eGon2035'
                 AND b.residential_and_service_demand > 2400
-                AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
-                    SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
+                AND ST_Intersects(
+                    ST_Transform(ST_Centroid(geom_polygon), 4326),
+                    (SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
                     WHERE REPLACE(gen, '-', '') ='{federal_state}'))
                 AND a.district_heating_area_id = b.area_id
                 GROUP BY (
