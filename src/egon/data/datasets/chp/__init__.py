@@ -26,7 +26,7 @@ class EgonChp(Base):
     el_capacity = Column(Float)
     th_capacity = Column(Float)
     electrical_bus_id = Column(Integer)
-    heat_bus_id = Column(Integer)
+    district_heating_area_id = Column(Integer)
     gas_bus_id = Column(Integer)
     voltage_level = Column(Integer)
     scenario = Column(String)
@@ -122,22 +122,22 @@ def assign_heat_bus(scenario='eGon2035'):
         index_col='id',
         epsg=4326)
 
-    # Select district heating nodes
+    # Select district heating areas and their centroid
     district_heating = db.select_geodataframe(
         f"""
-        SELECT bus_id, geom
+        SELECT area_id, ST_Centroid(geom_polygon) as geom
         FROM
-        {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
-        WHERE scn_name = 'eGon2035'
-        AND carrier = 'central_heat'
+        {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']}
+        WHERE scenario = 'eGon2035'
         """,
         epsg=4326)
 
     # Assign district heating area_id to district_heating_chp
     # According to nearest centroid of district heating area
-    chp['heat_bus_id'] = chp.apply(
+    chp['district_heating_area_id'] = chp.apply(
         nearest, df=district_heating, row_geom_col='geom', df_geom_col='geom',
-        centroid=True, src_column='bus_id', axis=1)
+        centroid=True, src_column='area_id', axis=1)
 
     # Drop district heating CHP without heat_bus_id
     db.execute_sql(
@@ -159,7 +159,7 @@ def assign_heat_bus(scenario='eGon2035'):
                 th_capacity= row.th_capacity,
                 electrical_bus_id = row.electrical_bus_id,
                 gas_bus_id = row.gas_bus_id,
-                heat_bus_id = row.heat_bus_id,
+                district_heating_area_id = row.district_heating_area_id,
                 district_heating=row.district_heating,
                 voltage_level = row.voltage_level,
                 scenario=scenario,

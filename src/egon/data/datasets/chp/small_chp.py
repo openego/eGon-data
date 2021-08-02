@@ -117,18 +117,14 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
 
     existing_chp = db.select_dataframe(
         f"""
-        SELECT el_capacity, th_capacity, voltage_level
+        SELECT el_capacity, th_capacity, voltage_level, b.area_id
         FROM
         supply.egon_chp a,
-        demand.district_heating_areas b,
-        grid.egon_pf_hv_bus c
+        demand.district_heating_areas b
         WHERE a.scenario = 'eGon2035'
         AND b.scenario = 'eGon2035'
         AND district_heating = True
-        AND c.scn_name = 'eGon2035'
-        AND c.carrier = 'central_heat'
-        AND ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
-        AND ST_Intersects(c.geom, (
+        AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
             SELECT ST_Union(geometry) FROM boundaries.vg250_lan
             WHERE REPLACE(gen, '-', '') ='{federal_state}'))
         ORDER BY el_capacity, residential_and_service_demand
@@ -139,18 +135,16 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
     dh_areas = db.select_geodataframe(
         f"""
         SELECT
-        b.residential_and_service_demand as demand, b.area_id, c.bus_id, c.geom
+        residential_and_service_demand as demand, area_id,
+        ST_Transform(ST_Centroid(geom_polygon), 4326)  as geom
         FROM
-        demand.district_heating_areas b,
-        grid.egon_pf_hv_bus c
-        WHERE b.scenario = 'eGon2035'
-        AND c.scn_name = 'eGon2035'
-        AND ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
-        AND b.residential_and_service_demand > 2400
-        AND ST_Intersects(c.geom, (
+        demand.district_heating_areas
+        WHERE scenario = 'eGon2035'
+        AND residential_and_service_demand > 2400
+        AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
             SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
             WHERE REPLACE(gen, '-', '') ='{federal_state}'))
-        AND c.bus_id NOT IN (SELECT heat_bus_id FROM
+        AND area_id NOT IN (SELECT district_heating_area_id FROM
                              supply.egon_chp
                              WHERE scenario = 'eGon2035'
                              AND district_heating = TRUE)
@@ -163,23 +157,20 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
                 f"""
                 SELECT
                 b.residential_and_service_demand - sum(a.el_capacity)*8000
-                as demand, b.area_id, c.bus_id, c.geom
+                as demand, b.area_id, ST_Transform(ST_Centroid(geom_polygon), 4326)  as geom
                 FROM
                 supply.egon_chp a,
-                demand.district_heating_areas b,
-                grid.egon_pf_hv_bus c
+                demand.district_heating_areas b
                 WHERE b.scenario = 'eGon2035'
-                AND c.scn_name = 'eGon2035'
                 AND a.scenario = 'eGon2035'
-                AND ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
                 AND b.residential_and_service_demand > 2400
-                AND ST_Intersects(c.geom, (
+                AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
                     SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
                     WHERE REPLACE(gen, '-', '') ='{federal_state}'))
-                AND a.heat_bus_id = c.bus_id
+                AND a.district_heating_area_id = b.area_id
                 GROUP BY (
                     b.residential_and_service_demand,
-                    b.area_id, c.bus_id, c.geom)
+                    b.area_id, geom_polygon)
                 """),ignore_index=True
                 )
 
@@ -233,7 +224,7 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
                         th_capacity= selected_chp.th_capacity,
                         district_heating=True,
                         voltage_level=selected_chp.voltage_level,
-                        heat_bus_id = int(selected_area.bus_id),
+                        district_heating_area_id = int(selected_area.area_id),
                         scenario='eGon2035',
                         geom=f"SRID=4326;POINT({selected_area.geom.x} {selected_area.geom.y})",
                     )
