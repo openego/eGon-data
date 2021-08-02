@@ -1176,7 +1176,7 @@ def demand_profile_generator(aggregation_level = 'district'):
         
         final_heat_profiles_dist = pd.DataFrame(index= total_demands_dist.index)
         final_heat_profiles_dist['dist_aggregated_mw'] = total_demands_dist.values.tolist()
-        final_heat_profiles_dist.to_sql('egon_heat_time_series_dist',con=db.engine(),schema='demand' ,
+        final_heat_profiles_dist.to_sql('egon_timeseries_district_heating',con=db.engine(),schema='demand' ,
                                     if_exists ='replace',index=True, dtype=ARRAY(Float()))
         
         total_demands_grid = pd.concat([residential_demand_grid,CTS_demand_grid])
@@ -1186,7 +1186,7 @@ def demand_profile_generator(aggregation_level = 'district'):
         
         final_heat_profiles_grid = pd.DataFrame(index= total_demands_grid.index)
         final_heat_profiles_grid['grid_aggregated_mw'] = total_demands_grid.values.tolist()
-        final_heat_profiles_grid.to_sql('egon_heat_time_series_grid',con=db.engine(),schema='demand' ,
+        final_heat_profiles_grid.to_sql('egon_etrago_timeseries_individual_heating',con=db.engine(),schema='demand' ,
                                     if_exists ='replace',index=True, dtype=ARRAY(Float()))
     else:
         total_demands_zensus = pd.concat([residential_demand_zensus,CTS_demand_zensus])
