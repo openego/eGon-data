@@ -277,7 +277,7 @@ def dsm_cts_ind_processing():
         x = pd.Series(index=dsm_buses.index, dtype=float)
         y = pd.Series(index=dsm_buses.index, dtype=float)
         geom = gpd.GeoSeries(index=dsm_buses.index)
-        import pdb; pdb.set_trace()
+
         originals = dsm_buses["original_bus"].unique()
         for i in originals:
             o_bus = original_buses[original_buses["bus_id"] == i]
@@ -617,5 +617,7 @@ def dsm_cts_ind_processing():
         )
 
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
+
+    # TODO: Parameter überprüfen
 
     dsm_cts_ind()
