@@ -13,6 +13,8 @@ around a polygon with a substation inside.
 See :func:`define_mv_grid_districts` for more details.
 """
 
+from functools import partial
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import (
     ARRAY,
@@ -28,9 +30,12 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.db import session_scope
-from egon.data.processing.substation import (EgonHvmvSubstationVoronoi,
-                                             EgonHvmvSubstation)
+from egon.data.processing.substation import (
+    EgonHvmvSubstation,
+    EgonHvmvSubstationVoronoi,
+)
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -694,11 +699,11 @@ def nearest_polygon_with_substation(
             func.ST_Distance(
                 without_substation.c.geom, with_substation.c.geom
             ),
-            #with_substation.c.id
+            # with_substation.c.id
             func.ST_Distance(
                 func.ST_Centroid(without_substation.c.geom),
-                func.ST_Centroid(with_substation.c.geom)
-            )
+                func.ST_Centroid(with_substation.c.geom),
+            ),
         )
         .subquery()
     )
@@ -762,3 +767,12 @@ def define_mv_grid_districts():
         bind=engine, checkfirst=True
     )
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
+
+
+mv_grid_districts_setup = partial(
+    Dataset,
+    name="MvGridDistricts",
+    version="0.0.0",
+    dependencies=[],
+    tasks=(define_mv_grid_districts),
+)

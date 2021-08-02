@@ -33,6 +33,14 @@ Added
   returns the current configuration settings. See `PR #159`_ for more
   details.
 
+* You can now use tasks which are not part of a ``Dataset``, i.e. which are
+  unversioned, as dependencies of a dataset. See `PR #318`_ for more
+  details.
+
+* You can now force the tasks of a ``Dataset`` to be always executed by
+  giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
+  #318`_ for more details.
+
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
@@ -65,26 +73,26 @@ Added
   `#9 <https://github.com/openego/eGon-data/issues/9>`_
 * Add hydro and biomass power plants eGon2035
   `#127 <https://github.com/openego/eGon-data/issues/127>`_
-* Creation of the ehv/hv grid model with osmTGmod, see 
-  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and 
+* Creation of the ehv/hv grid model with osmTGmod, see
+  `issue #4 <https://github.com/openego/eGon-data/issues/4>`_ and
   `PR #164 <https://github.com/openego/eGon-data/pull/164>`_
 * Identification of medium-voltage grid districts
-  `#10 <https://github.com/openego/eGon-data/pull/10>`_  
+  `#10 <https://github.com/openego/eGon-data/pull/10>`_
 * Distribute electrical demands of households to zensus cells
   `#181 <https://github.com/openego/eGon-data/issues/181>`_
 * Distribute electrical demands of cts to zensus cells
   `#210 <https://github.com/openego/eGon-data/issues/210>`_
 * Include industrial sites' download, import and merge
   `#117 <https://github.com/openego/eGon-data/issues/117>`_
-* Integrate scenario table with parameters for each sector 
+* Integrate scenario table with parameters for each sector
   `#177 <https://github.com/openego/eGon-data/issues/177>`_
 * The volume of the docker container for the PostgreSQL database
   is saved in the project directory under `docker/database-data`.
   The current user (`$USER`) is owner of the volume.
-  Containers created prior to this change will fail when using the 
+  Containers created prior to this change will fail when using the
   changed code. The container needs to be re-created.
   `#228 <https://github.com/openego/eGon-data/issues/228>`_
-* Extract landuse areas from OSM 
+* Extract landuse areas from OSM
   `#214 <https://github.com/openego/eGon-data/issues/214>`_
 * Integrate weather data and renewable feedin timeseries
   `#19 <https://github.com/openego/eGon-data/issues/19>`_
@@ -94,6 +102,21 @@ Added
   `#109 <https://github.com/openego/eGon-data/issues/109>`_
 * Assign voltage level and bus_id to power plants
   `#15 <https://github.com/openego/eGon-data/issues/15>`_
+* Integrate solar rooftop for etrago tables
+  `#255 <https://github.com/openego/eGon-data/issues/255>`_
+* Integrate gas bus and link tables
+  `#198 <https://github.com/openego/eGon-data/issues/198>`_
+* Integrate data bundle
+  `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Integrate distribution of wind onshore and pv ground mounted generation
+  `#146 <https://github.com/openego/eGon-data/issues/146>`_
+* Integrate dynamic line rating potentials
+  `#72 <https://github.com/openego/eGon-data/issues/72>`_
+* Integrate gas voronoi polygons
+  `#308 <https://github.com/openego/eGon-data/issues/308>`_
+* Integrate supply strategies for individual and district heating
+  `#232 <https://github.com/openego/eGon-data/issues/232>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -128,6 +151,15 @@ Changed
   `#196 <https://github.com/openego/eGon-data/issues/196>`_
 * Update installation of demandregio's disaggregator
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
+* Update etrago tables
+  `#243 <https://github.com/openego/eGon-data/issues/243>`_and
+  `#285 <https://github.com/openego/eGon-data/issues/285>`_
+* Migrate VG250 to datasets
+  `#283 <https://github.com/openego/eGon-data/issues/283>`_
+* Allow configuring the airflow port
+  `#281 <https://github.com/openego/eGon-data/issues/281>`_
+* Migrate mastr, mv_grid_districts and re_potential_areas to datasets
+  `#297 <https://github.com/openego/eGon-data/issues/297>`_
 
 Bug fixes
 ---------
@@ -145,9 +177,22 @@ Bug fixes
   `#204 <https://github.com/openego/eGon-data/issues/204>`_
 * Replace wrong table name in SQL function used in substation extraction
   `#236 <https://github.com/openego/eGon-data/issues/236>`_
-* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld 
+* Fix osmtgmod for osm data from 2021 by updating substation in Garenfeld and set srid
   `#241 <https://github.com/openego/eGon-data/issues/241>`_
+  `#258 <https://github.com/openego/eGon-data/issues/258>`_
 * Adjust format of voltage levels in hvmv substation
   `#248 <https://github.com/openego/eGon-data/issues/248>`_
 * Change order of osmtgmod tasks
   `#253 <https://github.com/openego/eGon-data/issues/253>`_
+* Fix missing municipalities
+  `#279 <https://github.com/openego/eGon-data/issues/279>`_
+* Fix import of hydro power plants
+  `#270 <https://github.com/openego/eGon-data/issues/270>`_
+* Fix path to osm-file for osmtgmod_osm_import
+  `#258 <https://github.com/openego/eGon-data/issues/258>`_
+* Fix conflicting docker containers by setting a project name
+  `#289 <https://github.com/openego/eGon-data/issues/289>`_
+* Fix versioning conflict with mv_grid_districts
+  `#340 <https://github.com/openego/eGon-data/issues/340>`_
+* Set current working directory as java's temp dir when executing osmosis
+  `#344 <https://github.com/openego/eGon-data/issues/344>`_
