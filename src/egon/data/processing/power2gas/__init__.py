@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Definition of the power-to-gas installations
+The central module containing all code dealing with the definition of the power-to-gas installations
 """
-import geopandas as gpd
+#import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely.ops as sp_ops
@@ -16,12 +16,12 @@ from egon.data.importing.gas_grid import next_id
 
 
 def insert_power2gas():
-    sql_AC = """SELECT bus_id, geom 
-                FROM grid.egon_pf_hv_bus 
-                WHERE carrier = 'AC';"""
-    sql_gas = """SELECT bus_id, version, scn_name, geom 
-                FROM grid.egon_pf_hv_bus 
-                WHERE carrier = 'gas';""" 
+    """Function defining the potential power-to-gas capacities and inserting them in the etrago_link table.
+    The power-to-gas capacities potentials are created between each gas bus and its closest HV power bus.
+    Returns
+    -------
+    None.
+    """
     
     # Connect to local database
     engine = db.engine()
@@ -29,15 +29,27 @@ def insert_power2gas():
     # Select next id value
     new_id = next_id('link')
         
-    gdf_AC = gpd.read_postgis(sql_AC, engine, crs=4326)
-    gdf_gas = gpd.read_postgis(sql_gas, engine, crs=4326)
-
+#    gdf_AC = gpd.read_postgis(sql_AC, engine, crs=4326)
+#    gdf_gas = gpd.read_postgis(sql_gas, engine, crs=4326)
+#       
+#    if gdf_AC.size == 0:
+#        print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'AC'")
+#    elif gdf_gas.size == 0: 
+#        print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'gas'")
     
-    if gdf_AC.size == 0:
-        print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'AC'")
-    elif gdf_gas.size == 0: 
-        print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'gas'")
-       
+    
+    # Create dataframes containing all gas buses and all the HV power buses
+    sql_AC = """SELECT bus_id, geom 
+                FROM grid.egon_pf_hv_bus 
+                WHERE carrier = 'AC';"""
+    sql_gas = """SELECT bus_id, version, scn_name, geom 
+                FROM grid.egon_pf_hv_bus 
+                WHERE carrier = 'gas';"""     
+    
+    gdf_AC = db.select_geodataframe(sql_AC)
+    gdf_gas = db.select_geodataframe(sql_gas)
+    
+    # Associate each gas bus to its nearest HV power bus
     n_gas = np.array(list(gdf_gas.geometry.apply(lambda x: (x.x, x.y))))
     n_AC = np.array(list(gdf_AC.geometry.apply(lambda x: (x.x, x.y))))
     btree = cKDTree(n_AC)
@@ -53,7 +65,8 @@ def insert_power2gas():
     
     gdf = gdf.rename(columns={'bus_id': 'bus0','geom': 'geom_gas'})
     my_transformer = Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True)
-        
+    
+    # Add missing columns
     geom = []
     topo = []
     length = []
@@ -65,9 +78,9 @@ def insert_power2gas():
         lines.append(line)
         geom.append(geometry.MultiLineString(lines))
         lines.pop()
-        lenght_km = (sp_ops.transform(my_transformer.transform, line).length)/1000
+        lenght_km = (sp_ops.transform(my_transformer.transform, line).length)/1000 # Calculate the distance between the power and the gas buses (lenght of the link)
         length.append(lenght_km)
-        if lenght_km > 0.5:
+        if lenght_km > 0.5: # If the distance is>500m, the max capacity of the power-to-gas installation is limited to 1 MW
             p_nom_max.append(1)
         else:
             p_nom_max.append(float('Inf'))

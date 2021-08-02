@@ -46,7 +46,8 @@ def download_SciGRID_gas_data():
     Download SciGRID_gas IGGIELGN data from Zenodo
 
     """
-    path = os.path.dirname(__file__) + '/'
+    os.makedirs('gas_data', exist_ok=True)
+    path = "gas_data/"
     
     zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/IGGIELGN.zip")
     if not os.path.isfile(zenodo_zip_file_url):
@@ -74,11 +75,11 @@ def define_gas_nodes_list():
         
     """
     # Select next id value
-    new_id = next_id('bus')
+    new_id = next_id('bus')   
     
-    # Read-in data from csv-file
     target_file = os.path.join(
-        os.path.dirname(__file__), 'data/IGGIELGN_Nodes.csv')
+        "gas_data/data/", 
+        'IGGIELGN_Nodes.csv')
     
     gas_nodes_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -179,10 +180,10 @@ def insert_gas_pipeline_list(gas_nodes_list):
     classification = pd.read_csv(classifiaction_file,
                                delimiter=',',
                                usecols = ['classification', 'max_transport_capacity_Gwh/d'])
-
-    # Read-in data from csv-file
+                
     target_file = os.path.join(
-        os.path.dirname(__file__), 'data/IGGIELGN_PipeSegments.csv')
+        "gas_data/data/", 
+        'IGGIELGN_PipeSegments.csv')
     
     gas_pipelines_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
