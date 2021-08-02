@@ -977,7 +977,8 @@ def cts_demand_per_aggregation_level(aggregation_level):
         df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(use_nuts3code=True, year=2011)
         df_CTS_gas_2011.to_csv('CTS_heat_demand_profile_nuts3.csv')
            
-    ags_lk = pd.read_csv(os.path.join(os.getcwd(),'t_nuts3_lk.csv'),index_col =0)
+    ags_lk = pd.read_csv(os.path.join(os.getcwd(),'demandregio-disaggregator/disaggregator/disaggregator/data_in/regional',
+                                      't_nuts3_lk.csv'),index_col =0)
     ags_lk =ags_lk.drop(ags_lk.columns.difference(['natcode_nuts3', 'ags_lk']),axis=1)
 
     CTS_profile = df_CTS_gas_2011.transpose()
