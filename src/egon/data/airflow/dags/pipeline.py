@@ -578,9 +578,21 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
+    # CHP locations
+    chp = Chp(
+        dependencies=[mv_grid_districts,
+                      mastr_data])
+
+    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
+    chp_heat_bus = tasks["chp.assign-heat-bus"]
+
+    nep_insert_data >> chp_locations_nep
+    create_gas_polygons >> chp_locations_nep
+    import_district_heating_areas >> chp_locations_nep
+
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle])
+        dependencies=[data_bundle, chp])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
@@ -606,15 +618,4 @@ with airflow.DAG(
     define_mv_grid_districts >> heat_etrago_buses
     import_district_heating_supply >> heat_etrago_supply
 
-    # CHP locations
-    chp = Chp(
-        dependencies=[mv_grid_districts,
-                      mastr_data])
 
-    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
-    chp_heat_bus = tasks["chp.assign-heat-bus"]
-
-    nep_insert_data >> chp_locations_nep
-    create_gas_polygons >> chp_locations_nep
-    import_district_heating_areas >> chp_locations_nep
-    heat_etrago_buses >> chp_heat_bus

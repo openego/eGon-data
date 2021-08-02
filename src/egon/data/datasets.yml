@@ -498,9 +498,9 @@ heat_supply:
     district_heating_areas:
       schema: 'demand'
       table: 'district_heating_areas'
-    power_plants:
+    chp:
       schema: 'supply'
-      table: 'egon_power_plants'
+      table: 'egon_chp'
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
@@ -519,6 +519,9 @@ heat_supply:
     map_dh:
       schema: 'demand'
       table: 'map_zensus_district_heating_areas'
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
   targets:
     district_heating_supply:
       schema: 'supply'
