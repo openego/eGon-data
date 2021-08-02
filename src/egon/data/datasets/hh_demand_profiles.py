@@ -98,6 +98,7 @@ from itertools import cycle, product
 from pathlib import Path
 from urllib.request import urlretrieve
 import random
+import os
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -274,11 +275,18 @@ def get_household_demand_profiles_raw():
     hh_profiles_url = data_config["sources"][
         "household_electricity_demand_profiles"
     ]["url"]
-    hh_profiles_file = Path(".") / Path(hh_profiles_url).name
+
+    download_directory = "hh_demand_profiles"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
+
+    hh_profiles_file = Path(".") / download_directory / Path(hh_profiles_url).name
 
     if not hh_profiles_file.is_file():
         urlretrieve(hh_profiles_url, hh_profiles_file)
 
+    # hh_profiles_file = Path(".") /
     hh_profiles = pd.read_hdf(hh_profiles_file)
 
     # set multiindex to HH_types
@@ -331,7 +339,13 @@ def download_process_zensus_households():
     data_config = egon.data.config.datasets()["household_electricity_demand"]
 
     households_url = data_config["sources"]["zensus_household_types"]["url"]
-    households_file = Path(".") / Path(households_url).name
+
+    download_directory = "hh_demand_profiles"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
+
+    households_file = Path(".") / download_directory / Path(households_url).name
 
     # Download prepared data file from nextcloud
     if not households_file.is_file():
