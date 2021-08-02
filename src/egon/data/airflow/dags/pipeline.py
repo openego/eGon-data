@@ -35,7 +35,7 @@ import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zen
 import egon.data.processing.mv_grid_districts as mvgd
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
-import egon.data.processing.heat_demand_timeseries_3.db_processing4 as heat_time_series
+import egon.data.processing.heat_demand_timeseries.HTS as heat_time_series
 
 from egon.data import db
 
