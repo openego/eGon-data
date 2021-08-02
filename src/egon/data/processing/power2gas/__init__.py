@@ -2,18 +2,15 @@
 """
 The central module containing all code dealing with the definition of the power-to-gas installations
 """
-#import geopandas as gpd
 import numpy as np
 import pandas as pd
-import shapely.ops as sp_ops
 
+from pyproj import Geod
 from shapely import geometry
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
-from pyproj import Transformer
 from egon.data import db
 from egon.data.importing.gas_grid import next_id
-
 
 def insert_power2gas():
     """Function defining the potential power-to-gas capacities and inserting them in the etrago_link table.
@@ -28,15 +25,6 @@ def insert_power2gas():
     
     # Select next id value
     new_id = next_id('link')
-        
-#    gdf_AC = gpd.read_postgis(sql_AC, engine, crs=4326)
-#    gdf_gas = gpd.read_postgis(sql_gas, engine, crs=4326)
-#       
-#    if gdf_AC.size == 0:
-#        print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'AC'")
-#    elif gdf_gas.size == 0: 
-#        print("WARNING: No data returned in grid.egon_pf_hv_bus WHERE carrier = 'gas'")
-    
     
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = """SELECT bus_id, geom 
@@ -44,10 +32,10 @@ def insert_power2gas():
                 WHERE carrier = 'AC';"""
     sql_gas = """SELECT bus_id, version, scn_name, geom 
                 FROM grid.egon_pf_hv_bus 
-                WHERE carrier = 'gas';"""     
+                WHERE carrier = 'gas';"""   
     
-    gdf_AC = db.select_geodataframe(sql_AC)
-    gdf_gas = db.select_geodataframe(sql_gas)
+    gdf_AC = db.select_geodataframe(sql_AC, epsg=4326)
+    gdf_gas = db.select_geodataframe(sql_gas, epsg=4326)
     
     # Associate each gas bus to its nearest HV power bus
     n_gas = np.array(list(gdf_gas.geometry.apply(lambda x: (x.x, x.y))))
@@ -64,7 +52,7 @@ def insert_power2gas():
         axis=1)
     
     gdf = gdf.rename(columns={'bus_id': 'bus0','geom': 'geom_gas'})
-    my_transformer = Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True)
+    geod = Geod(ellps="WGS84")    
     
     # Add missing columns
     geom = []
@@ -73,12 +61,13 @@ def insert_power2gas():
     lines = []
     p_nom_max = []
     for index, row in gdf.iterrows():
-        line = geometry.LineString([row['geom_gas'], row['geom_AC']])
+        line = geometry.LineString([row['geom_gas'], row['geom_AC']])#, srid=4326)
+#        line.transform(4326)
         topo.append(line)
         lines.append(line)
         geom.append(geometry.MultiLineString(lines))
         lines.pop()
-        lenght_km = (sp_ops.transform(my_transformer.transform, line).length)/1000 # Calculate the distance between the power and the gas buses (lenght of the link)
+        lenght_km = geod.geometry_length(line)/1000  # Calculate the distance between the power and the gas buses (lenght of the link) 
         length.append(lenght_km)
         if lenght_km > 0.5: # If the distance is>500m, the max capacity of the power-to-gas installation is limited to 1 MW
             p_nom_max.append(1)
