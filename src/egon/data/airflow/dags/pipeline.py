@@ -48,7 +48,7 @@ import egon.data.processing.calculate_dlr as dlr
 
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
-import egon.data.processing.heat_demand_timeseries.HTS as heat_time_series
+from egon.data.processing.heat_demand_timeseries.HTS import HeatTimeSeries
 
 
 from egon.data import db
@@ -606,4 +606,10 @@ with airflow.DAG(
     etrago_input_data >> heat_etrago_buses
     define_mv_grid_districts >> heat_etrago_buses
     import_district_heating_supply >> heat_etrago_supply
+    
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies = [heat_demand_import, import_district_heating_areas,  
+                        import_district_heating_areas,vg250_population_metadata,
+                        map_zensus_grid_districts])
 

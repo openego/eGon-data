@@ -22,6 +22,8 @@ from disaggregator import config, data, spatial, temporal, plot
 
 from math import ceil
 
+from egon.data.datasets import Dataset
+
 
 class IdpProfiles:
     def __init__(self,df_index, **kwargs):
@@ -1201,4 +1203,14 @@ def demand_profile_generator(aggregation_level = 'district'):
     return None
 
 
+
+
+class HeatTimeSeries(Dataset):
+     def __init__(self, dependencies):
+        super().__init__(
+            name="HeatTimeSeries",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(demand_profile_generator),
+        )
 
