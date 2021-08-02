@@ -194,7 +194,7 @@ MAPPING_ZENSUS_HH_SUBGROUPS = {
 
 
 class HouseholdElectricityProfilesInCensusCells(Base):
-    __tablename__ = "household_electricity_profiles_in_census_cells"
+    __tablename__ = "egon_household_electricity_profile_in_census_cell"
     __table_args__ = {"schema": "demand"}
 
     cell_id = Column(Integer, primary_key=True)
