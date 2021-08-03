@@ -166,7 +166,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
         sql = f"""
         SELECT geometry as geom
         FROM boundaries.vg250_lan_union
-        WHERE REPLACE(gen, '-', '') = '{federal_state}'"""
+        WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') = '{federal_state}'"""
 
     mastr_loc = (
         gpd.sjoin(
@@ -469,8 +469,8 @@ def assign_bus_id(power_plants, cfg):
                          ], ehv_grid_districts).bus_id_right
 
     # Assert that all power plants have a bus_id
-    assert power_plants.bus_id.notnull().all(), """Some power plants are
-    not attached to a bus."""
+    assert power_plants.bus_id.notnull().all(), f"""Some power plants are
+    not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
 
     return power_plants
 
@@ -498,8 +498,8 @@ def assign_gas_bus_id(power_plants):
     res['gas_bus_id'] = res['bus_id']
 
     # Assert that all power plants have a gas_bus_id
-    assert res.gas_bus_id.notnull().all(), """Some power plants are
-    not attached to a gas bus."""
+    assert res.gas_bus_id.notnull().all(), f"""Some power plants are
+    not attached to a gas bus: {res[res.gas_bus_id.isnull()]}"""
 
     return res
 
