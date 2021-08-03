@@ -1097,6 +1097,15 @@ def demarcation(plotting=True):
     as shapefiles including the creation of a figure showing the comparison
     of sorted heat demand densities.
 
+    The method was executed for 2015, 2035 and 2050 to find out which
+    scenario year defines the PSDs. The year 2035 was selected and
+    the function was adjusted accordingly.
+    If you need the 2015 scenario heat demand data, please have a look at
+    the heat demand script commit 270bea50332016447e869f69d51e96113073b8a0,
+    where the 2015 scenario was deactivated. You can study the 2015 PSDs in
+    the study_prospective_district_heating_areas function after
+    un-commenting some lines.
+
     Parameters
     ----------
     plotting: boolean
@@ -1112,14 +1121,6 @@ def demarcation(plotting=True):
 
     TODO
     ----
-        Run the model for 20150, 2035 and 2050 to find out which scenario year
-        defines the PSDs -> 2035; implement it accordingly and remove the 2015
-        data, if they are not needed anymore.
-
-        Run the model for Germany and see if there are created large district
-        heating systems in the Ruhr area which need to be split by the
-        municiplality boundaries for example
-
         Create diagrams/curves, make better curves with matplotlib
 
         Make PSD and DH system statistics
@@ -1129,7 +1130,6 @@ def demarcation(plotting=True):
 
         Add datasets to datasets configuration
 
-        Check which tasks need to run (according to version number)
     """
 
     # load the census district heat data on apartments, and group them
