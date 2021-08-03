@@ -7,6 +7,7 @@ import importlib_resources as resources
 
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -18,8 +19,6 @@ from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
 )
 import airflow
-import egon.data.importing.demandregio as import_dr
-import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
@@ -162,51 +161,10 @@ with airflow.DAG(
     setup >> scenario_input_tables >> scenario_input_import
 
     # DemandRegio data import
-    demandregio_tables = PythonOperator(
-        task_id="demandregio-tables",
-        python_callable=import_dr.create_tables,
-    )
+    demandregio = DemandRegio(dependencies=[
+        setup, vg250, scenario_input_import, data_bundle])
+    demandregio_demand_cts_ind = tasks['demandregio.insert-cts-ind-demands']
 
-    scenario_input_tables >> demandregio_tables
-
-
-    demandregio_installation = PythonOperator(
-        task_id="demandregio-installation",
-        python_callable=install_dr.clone_and_install,
-    )
-
-    setup >> demandregio_installation
-
-    demandregio_society = PythonOperator(
-        task_id="demandregio-society",
-        python_callable=import_dr.insert_society_data,
-    )
-
-    demandregio_installation >> demandregio_society
-    vg250_clean_and_prepare >> demandregio_society
-    demandregio_tables >> demandregio_society
-    scenario_input_import >> demandregio_society
-
-    demandregio_demand_households = PythonOperator(
-        task_id="demandregio-household-demands",
-        python_callable=import_dr.insert_household_demand,
-    )
-
-    demandregio_installation >> demandregio_demand_households
-    vg250_clean_and_prepare >> demandregio_demand_households
-    demandregio_tables >> demandregio_demand_households
-    scenario_input_import >> demandregio_demand_households
-
-    demandregio_demand_cts_ind = PythonOperator(
-        task_id="demandregio-cts-industry-demands",
-        python_callable=import_dr.insert_cts_ind_demands,
-    )
-
-    demandregio_installation >> demandregio_demand_cts_ind
-    vg250_clean_and_prepare >> demandregio_demand_cts_ind
-    demandregio_tables >> demandregio_demand_cts_ind
-    scenario_input_import >> demandregio_demand_cts_ind
-    download_data_bundle >> demandregio_demand_cts_ind
 
     # Society prognosis
     prognosis_tables = PythonOperator(

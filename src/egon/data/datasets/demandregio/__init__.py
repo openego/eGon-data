@@ -8,9 +8,12 @@ import numpy as np
 import egon.data.config
 import egon.data.importing.scenarios.parameters as scenario_parameters
 from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
+from egon.data.datasets.demandregio.install_disaggregator import (
+    clone_and_install)
 
 try:
     from disaggregator import data, spatial, config
@@ -21,6 +24,16 @@ except:
 # will be later imported from another file ###
 Base = declarative_base()
 
+class DemandRegio(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="DemandRegio",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(clone_and_install, create_tables,
+                   {insert_society_data, insert_household_demand,
+                    insert_cts_ind_demands}),
+        )
 
 class EgonDemandRegioHH(Base):
     __tablename__ = 'egon_demandregio_hh'
