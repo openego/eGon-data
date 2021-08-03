@@ -209,30 +209,23 @@ def cutout_heat_demand_germany():
         None
 
     Notes
-    -----
-        None
-
-    TODO
     ----
-        It would be better to cutout Germany from the pan-European raster
+        The alternative of cutting out Germany from the pan-European raster
         based on German census cells, instead of using state boundaries with
-        low resolution, to avoid inaccuracies. All attempts to read, (union)
-        and load cells from the local database failed, but were documented
-        as commented code within this function and afterwards removed. If you
-        want to have a look at the comments, please check out commit
+        low resolution (to avoid inaccuracies), was not implemented in order to
+        achieve consistency with other datasets (e.g. mv_grid_districts).
+        Besides, all attempts to read, (union) and load cells from the local
+        database failed, but were documented as commented code within this
+        function and afterwards removed.
+        If you want to have a look at the comments, please check out commit
         ec3391e182215b32cd8b741557a747118ab61664, which is the last commit
         still containing them.
 
-        Depending on the process afterwards also a buffer around the boundaries
+        Also the usage of a buffer around the boundaries and the subsequent
+        selection of German cells was not implemented.
         could be used, but then it must be ensured that later only heat demands
         of cells belonging to Germany are used.
 
-        Specify the crs of the created heat demand tiffs: EPSG 3035
-
-        Check if cutcuts already exists, according to version number and
-        selected boundaries (test mode or not).
-
-        Check if we want to delete (some of) the tiff files after use.
     """
 
     # Load the German boundaries from the local database using a dissolved
