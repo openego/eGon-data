@@ -157,19 +157,16 @@ def select_chp_from_mastr(sources):
     # Rename columns
     MaStR_konv = MaStR_konv.rename(columns={ 'Kraftwerksnummer': 'bnetza_id',
                                       'Energietraeger': 'energietraeger_Ma',
-                                      'Postleitzahl': 'plz_Ma',
-                                      'Laengengrad': 'longitude',
-                                      'Breitengrad': 'latitude'})
+                                      'Postleitzahl': 'plz_Ma'})
 
     # Select only CHP plants which are in operation
-    MaStR_konv = MaStR_konv[(MaStR_konv.EinheitBetriebsstatus=='InBetrieb')
-                            &(MaStR_konv.ThermischeNutzleistung > 0)]
+    MaStR_konv = MaStR_konv[MaStR_konv.EinheitBetriebsstatus=='InBetrieb']
 
     # Insert geometry column
-    MaStR_konv = MaStR_konv[ ~ ( MaStR_konv['longitude'].isnull()) ]
+    MaStR_konv = MaStR_konv[ ~ ( MaStR_konv['Laengengrad'].isnull()) ]
     MaStR_konv = geopandas.GeoDataFrame(
         MaStR_konv, geometry=geopandas.points_from_xy(
-            MaStR_konv['longitude'], MaStR_konv['latitude']))
+            MaStR_konv['Laengengrad'], MaStR_konv['Breitengrad']))
 
     # Drop individual CHP
     MaStR_konv = MaStR_konv[(MaStR_konv['Nettonennleistung'] >= 100)]
@@ -181,6 +178,9 @@ def select_chp_from_mastr(sources):
     # Calculate power in MW
     MaStR_konv.loc[:, 'Nettonennleistung'] *=1e-3
     MaStR_konv.loc[:, 'ThermischeNutzleistung'] *=1e-3
+
+    # Drop CHP outside of Germany
+    MaStR_konv = filter_mastr_geometry(MaStR_konv, federal_state=None)
 
     return MaStR_konv
 
@@ -350,11 +350,11 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Aggregate units from MaStR to one power plant
     MaStR_konv = MaStR_konv.groupby(
-        ['plz_Ma', 'longitude', 'latitude','energietraeger_Ma', 'voltage_level']
+        ['plz_Ma', 'Laengengrad', 'Breitengrad','energietraeger_Ma', 'voltage_level']
         )[['Nettonennleistung', 'ThermischeNutzleistung', 'EinheitMastrNummer'
            ]].sum(numeric_only=False).reset_index()
     MaStR_konv['geometry'] = geopandas.points_from_xy(
-        MaStR_konv['longitude'], MaStR_konv['latitude'])
+        MaStR_konv['Laengengrad'], MaStR_konv['Breitengrad'])
 
     # Match CHP from NEP list with aggregated MaStR units
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -379,8 +379,9 @@ def insert_large_chp(sources, target, EgonChp):
     insert_chp = chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
         ['el_capacity', 'th_capacity', 'geometry',
            'MaStRNummer', 'source']].sum(numeric_only=False).reset_index()
-    insert_chp.loc[:, 'geometry'] = chp_NEP_matched.set_index('geometry_wkt').loc[
-        insert_chp.set_index('geometry_wkt').index, 'geometry'].unique()
+    insert_chp.loc[:, 'geometry'] = chp_NEP_matched.drop_duplicates(
+        subset='geometry_wkt').set_index('geometry_wkt').loc[
+            insert_chp.set_index('geometry_wkt').index, 'geometry'].values
     insert_chp.crs = "EPSG:4326"
     insert_chp_c = insert_chp.copy()
 
