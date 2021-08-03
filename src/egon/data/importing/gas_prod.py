@@ -9,7 +9,7 @@ import geopandas as gpd
 import numpy as np
 import geopandas
 
-from pathlib import Path
+#from pathlib import Path
 from egon.data import db
 from egon.data.importing.gas_grid import next_id
 from egon.data.config import settings                     
@@ -108,6 +108,10 @@ def load_biogas_generators():
     # Cut data to federal state if in testmode
     boundary = settings()['egon-data']['--dataset-boundary']
     if boundary != 'Everything':
+        db.execute_sql(
+            """
+              DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
+            """)
         biogas_generators_list.to_postgis('egon_biogas_generator',
                               engine,
                               schema ='grid',
@@ -196,7 +200,7 @@ def import_gas_generators():
     CH4_generators_list = assign_gas_bus_id(CH4_generators_list)
     
     # Remove useless columns
-    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id'])
+    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id', 'point'])
     
     # Insert data to db    
     CH4_generators_list.to_sql('egon_pf_hv_generator', #to_postgis
@@ -206,7 +210,6 @@ def import_gas_generators():
                               if_exists = 'append')
         
 # marginal_cost_fixed = Column(Float(53))
-
 
 def insert_gas_generators_time_serie():
     """Insert gas production time series in database
