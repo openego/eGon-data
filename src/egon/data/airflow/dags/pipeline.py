@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
+from egon.data.datasets.electricity_demand import ElectricityDemand
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -31,22 +32,17 @@ import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
 
 import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
-import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
-import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
-import egon.data.importing.scenarios as import_scenarios
-import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
-import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 
 
@@ -174,21 +170,21 @@ with airflow.DAG(
         population_import,
         zensus_misc_import])
 
+    population_prognosis = tasks['society_prognosis.zensus-population']
+
     # Distribute electrical demands to zensus cells
-    processed_dr_tables = PythonOperator(
-        task_id="create-demand-tables",
-        python_callable=process_dr.create_tables,
-    )
+    electricity_demand_annual = ElectricityDemand(dependencies=[
+        demandregio, map_zensus_vg250, zensus_tables])
 
-    elec_household_demands_zensus = PythonOperator(
-        task_id="electrical-household-demands-zensus",
-        python_callable=process_dr.distribute_household_demands,
-    )
+    elec_household_demands_zensus = tasks[
+        'electricity_demand.distribute-household-demands']
+    elec_cts_demands_zensus = tasks[
+        'electricity_demand.distribute-cts-demands']
+    electrical_load_curves_cts = tasks[
+        'electricity_demand.temporal.insert-cts-load']
 
-    zensus_tables >> processed_dr_tables >> elec_household_demands_zensus
     population_prognosis >> elec_household_demands_zensus
-    demandregio_demand_households >> elec_household_demands_zensus
-    map_zensus_vg250 >> elec_household_demands_zensus
+
 
     # NEP data import
     create_tables = PythonOperator(
@@ -341,18 +337,8 @@ with airflow.DAG(
     vg250_clean_and_prepare >> industrial_sites_import
     industrial_sites_import >> industrial_sites_merge >> industrial_sites_nuts
 
-    # Distribute electrical CTS demands to zensus grid
-
-    elec_cts_demands_zensus = PythonOperator(
-        task_id="electrical-cts-demands-zensus",
-        python_callable=process_dr.distribute_cts_demands,
-    )
-
-    processed_dr_tables >> elec_cts_demands_zensus
+    # Set dependency for CTS electricity demands
     heat_demand_import >> elec_cts_demands_zensus
-    demandregio_demand_cts_ind >> elec_cts_demands_zensus
-    map_zensus_vg250 >> elec_cts_demands_zensus
-
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
@@ -484,14 +470,6 @@ with airflow.DAG(
     population_import >> map_zensus_grid_districts
     define_mv_grid_districts >> map_zensus_grid_districts
 
-    electrical_load_curves_cts = PythonOperator(
-        task_id="electrical-load-curves-cts",
-        python_callable=process_dr.insert_cts_load,
-    )
-    map_zensus_grid_districts >> electrical_load_curves_cts
-    elec_cts_demands_zensus >> electrical_load_curves_cts
-    demandregio_demand_cts_ind >> electrical_load_curves_cts
-    map_zensus_vg250 >> electrical_load_curves_cts
     etrago_input_data >> electrical_load_curves_cts
 
     # Map federal states to mv_grid_districts
