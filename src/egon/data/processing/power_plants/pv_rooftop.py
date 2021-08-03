@@ -17,7 +17,7 @@ def next_id(component):
     """
     max_id = db.select_dataframe(
         f"""
-        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
         """)['max'][0]
 
     if max_id:
@@ -70,7 +70,7 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id FROM
-            grid.egon_pf_hv_generator
+            grid.egon_etrago_generator
             WHERE version = '{version}'
             AND scn_name = '{scenario}')
         """)
