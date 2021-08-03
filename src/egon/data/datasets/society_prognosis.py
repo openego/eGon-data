@@ -8,10 +8,20 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
-
+from egon.data.datasets import Dataset
 # will be later imported from another file ###
 Base = declarative_base()
 
+class SocietyPrognosis(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="SocietyPrognosis",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(create_tables,
+                   {zensus_population,
+                    zensus_household}),
+        )
 
 class EgonPopulationPrognosis(Base):
     __tablename__ = "egon_population_prognosis"
@@ -36,7 +46,7 @@ def create_tables():
     EgonHouseholdPrognosis.__table__.create(bind=engine, checkfirst=True)
 
 
-def population_prognosis_to_zensus():
+def zensus_population():
     """Bring population prognosis from DemandRegio to Zensus grid"""
 
     cfg = egon.data.config.datasets()["society_prognosis"]
@@ -110,7 +120,7 @@ def population_prognosis_to_zensus():
         )
 
 
-def household_prognosis_per_year(prognosis_nuts3, zensus, year):
+def zensus_household_prognosis_per_year(prognosis_nuts3, zensus, year):
     """Calculate household prognosis for a specitic year"""
 
     prognosis_total = prognosis_nuts3.groupby(
@@ -145,7 +155,7 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
     return prognosis
 
 
-def household_prognosis_to_zensus():
+def zensus_household():
     """Bring household prognosis from DemandRegio to Zensus grid"""
     cfg = egon.data.config.datasets()["society_prognosis"]
 

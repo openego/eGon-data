@@ -13,6 +13,7 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
+from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
@@ -167,32 +168,11 @@ with airflow.DAG(
 
 
     # Society prognosis
-    prognosis_tables = PythonOperator(
-        task_id="create-prognosis-tables",
-        python_callable=process_zs.create_tables,
-    )
-
-    setup >> prognosis_tables
-
-    population_prognosis = PythonOperator(
-        task_id="zensus-population-prognosis",
-        python_callable=process_zs.population_prognosis_to_zensus,
-    )
-
-    prognosis_tables >> population_prognosis
-    map_zensus_vg250 >> population_prognosis
-    demandregio_society >> population_prognosis
-    population_import >> population_prognosis
-
-    household_prognosis = PythonOperator(
-        task_id="zensus-household-prognosis",
-        python_callable=process_zs.household_prognosis_to_zensus,
-    )
-    prognosis_tables >> household_prognosis
-    map_zensus_vg250 >> household_prognosis
-    demandregio_society >> household_prognosis
-    zensus_misc_import >> household_prognosis
-
+    society_prognosis = SocietyPrognosis(dependencies=[
+        demandregio,
+        map_zensus_vg250,
+        population_import,
+        zensus_misc_import])
 
     # Distribute electrical demands to zensus cells
     processed_dr_tables = PythonOperator(
