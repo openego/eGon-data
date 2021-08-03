@@ -48,7 +48,7 @@ import egon.data.processing.calculate_dlr as dlr
 
 import egon.data.processing.zensus as process_zs
 import egon.data.processing.zensus_grid_districts as zensus_grid_districts
-from egon.data.processing.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 
 
 from egon.data import db
