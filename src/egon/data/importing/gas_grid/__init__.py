@@ -30,7 +30,7 @@ def next_id(component):
     """
     max_id = db.select_dataframe(
         f"""
-        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
         """)['max'][0]
 
     if max_id:
@@ -143,14 +143,15 @@ def insert_gas_nodes_list(gas_nodes_list):
     
     gas_nodes_list = gas_nodes_list.reset_index(drop=True)
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
-   
+
     # Insert data to db   
     db.execute_sql(
         """
-    DELETE FROM grid.egon_pf_hv_bus WHERE "carrier" = 'gas';
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'gas';
     """)
     
-    gas_nodes_list.to_postgis('egon_pf_hv_bus',
+    # Insert data to db    
+    gas_nodes_list.to_postgis('egon_etrago_bus',
                               engine,
                               schema ='grid',
                               index = False,
@@ -301,10 +302,10 @@ def insert_gas_pipeline_list(gas_nodes_list):
     
     # Insert data to db
     db.execute_sql(
-        """DELETE FROM grid.egon_pf_hv_link WHERE "carrier" = 'gas';
+        """DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'gas';
         """)
         
-    gas_pipelines_list.to_postgis('egon_pf_hv_gas_link',
+    gas_pipelines_list.to_postgis('egon_etrago_gas_link',
                           engine,
                           schema = 'grid',
                           index = False,
@@ -313,9 +314,9 @@ def insert_gas_pipeline_list(gas_nodes_list):
     
     db.execute_sql(
         """
-    select UpdateGeometrySRID('grid', 'egon_pf_hv_gas_link', 'topo', 4326) ;
+    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
     
-    INSERT INTO grid.egon_pf_hv_link (version, scn_name, 
+    INSERT INTO grid.egon_etrago_link (version, scn_name, 
                                               link_id, carrier, 
                                               bus0, bus1, 
                                               p_nom, length,
@@ -326,9 +327,9 @@ def insert_gas_pipeline_list(gas_nodes_list):
                 p_nom, length, 
                 geom, topo
                 
-    FROM grid.egon_pf_hv_gas_link;
+    FROM grid.egon_etrago_gas_link;
         
-    DROP TABLE grid.egon_pf_hv_gas_link;
+    DROP TABLE grid.egon_etrago_gas_link;
         """)
         
     

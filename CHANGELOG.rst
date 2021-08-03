@@ -161,6 +161,8 @@ Changed
   `#281 <https://github.com/openego/eGon-data/issues/281>`_
 * Migrate mastr, mv_grid_districts and re_potential_areas to datasets
   `#297 <https://github.com/openego/eGon-data/issues/297>`_
+* Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc. 
+  `#334 <https://github.com/openego/eGon-data/issues/334>`_
 
 Bug fixes
 ---------
