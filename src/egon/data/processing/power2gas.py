@@ -28,10 +28,10 @@ def insert_power2gas():
     
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = """SELECT bus_id, geom 
-                FROM grid.egon_pf_hv_bus 
+                FROM grid.egon_etrago_bus 
                 WHERE carrier = 'AC';"""
     sql_gas = """SELECT bus_id, version, scn_name, geom 
-                FROM grid.egon_pf_hv_bus 
+                FROM grid.egon_etrago_bus 
                 WHERE carrier = 'gas';"""   
     
     gdf_AC = db.select_geodataframe(sql_AC, epsg=4326)
@@ -99,7 +99,7 @@ def insert_power2gas():
     print('Minimal length (in km): ' + str(gdf['length'].min()))
     
     # Insert data to db
-    gdf.to_postgis('egon_pf_hv_gas_link',
+    gdf.to_postgis('egon_etrago_gas_link',
                           engine,
                           schema = 'grid',
                           index = False,
@@ -108,17 +108,17 @@ def insert_power2gas():
     
     db.execute_sql(
         """
-    DELETE FROM grid.egon_pf_hv_link WHERE "carrier" = 'power-to-gas';
+    DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'power-to-gas';
     
-    select UpdateGeometrySRID('grid', 'egon_pf_hv_gas_link', 'topo', 4326) ;
+    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
     
-    INSERT INTO grid.egon_pf_hv_link (version, scn_name, link_id, bus0, 
+    INSERT INTO grid.egon_etrago_link (version, scn_name, link_id, bus0, 
                                               bus1, p_nom, p_nom_extendable, capital_cost,length,
                                               geom, topo, efficiency_fixed, carrier, p_nom_max)
     SELECT version, scn_name, link_id, bus0, 
         bus1, p_nom, p_nom_extendable, capital_cost, length, 
         geom, topo, efficiency_fixed, carrier, p_nom_max
-    FROM grid.egon_pf_hv_gas_link;
+    FROM grid.egon_etrago_gas_link;
         
-    DROP TABLE grid.egon_pf_hv_gas_link;
+    DROP TABLE grid.egon_etrago_gas_link;
         """)

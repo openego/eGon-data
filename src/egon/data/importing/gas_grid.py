@@ -45,20 +45,21 @@ def download_SciGRID_gas_data():
     """
     Download SciGRID_gas IGGIELGN data from Zenodo
 
-    """
-    os.makedirs('gas_data', exist_ok=True)
-    path = "gas_data/"
+    """    
+    path = "datasets/gas_data/"
+    os.makedirs(path, exist_ok=True)
     
-    zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/IGGIELGN.zip")
-    if not os.path.isfile(zenodo_zip_file_url):
-        urlretrieve(zenodo_zip_file_url, path + 'IGGIELGN.zip')
+    basename = "IGGIELGN"
+    zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/"+ basename + ".zip")
+    if not os.path.isfile(path + basename + ".zip"):
+        urlretrieve(zenodo_zip_file_url, path + basename + ".zip")
         
     components = ['Nodes', 'PipeSegments', 'Productions', 'Storages'] #'Compressors'
     files = []
     for i in components:
-        files.append('data/IGGIELGN_' + i + '.csv')
+        files.append('data/'+ basename + "_" + i + ".csv")
     
-    with ZipFile(path + 'IGGIELGN.zip', 'r') as zipObj:
+    with ZipFile(path + basename + ".zip", 'r') as zipObj:
         listOfFileNames = zipObj.namelist()
         for fileName in listOfFileNames:
             if fileName in files:
@@ -78,7 +79,7 @@ def define_gas_nodes_list():
     new_id = next_id('bus')   
     
     target_file = os.path.join(
-        "gas_data/data/", 
+        "datasets/gas_data/data/", 
         'IGGIELGN_Nodes.csv')
     
     gas_nodes_list = pd.read_csv(target_file,
@@ -183,7 +184,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
                                usecols = ['classification', 'max_transport_capacity_Gwh/d'])
                 
     target_file = os.path.join(
-        "gas_data/data/", 
+        "datasets/gas_data/data/", 
         'IGGIELGN_PipeSegments.csv')
     
     gas_pipelines_list = pd.read_csv(target_file,
