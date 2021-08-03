@@ -20,11 +20,11 @@ def dsm_cts_ind_processing():
         # import load data
 
         sql = (
-            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_pf_hv_load" ### _etrago_ statt _pf_hv_
+            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_etrago_load" 
         )
         l = pd.read_sql_query(sql, con)
 
-        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_pf_hv_load_timeseries" ### _etrago_ statt _pf_hv_
+        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_etrago_load_timeseries" 
         t = pd.read_sql_query(sql, con)
 
         # select CTS load
@@ -269,7 +269,7 @@ def dsm_cts_ind_processing():
         dsm_buses["scn_name"] = dsm["scn_name"].copy()
 
         # get original buses and add copy relevant information
-        sql = "SELECT bus_id, v_nom, scn_name, x, y, geom FROM grid.egon_pf_hv_bus" ### _etrago_ statt _pf_hv_
+        sql = "SELECT bus_id, v_nom, scn_name, x, y, geom FROM grid.egon_etrago_bus" 
         original_buses = gpd.GeoDataFrame.from_postgis(sql, con)
 
         # copy v_nom, x, y and geom
@@ -318,7 +318,7 @@ def dsm_cts_ind_processing():
         dsm_links["scn_name"] = dsm_buses["scn_name"].copy()
 
         # set link_id
-        sql = "SELECT link_id FROM grid.egon_pf_hv_link" ### _etrago_ statt _pf_hv_
+        sql = "SELECT link_id FROM grid.egon_etrago_link" 
         max_id = pd.read_sql_query(sql, con)
         max_id = max_id["link_id"].max()
         if np.isnan(max_id):
@@ -345,7 +345,7 @@ def dsm_cts_ind_processing():
         dsm_stores["scn_name"] = dsm_buses["scn_name"].copy()
 
         # set store_id
-        sql = "SELECT store_id FROM grid.egon_pf_hv_store" ### _etrago_ statt _pf_hv_
+        sql = "SELECT store_id FROM grid.egon_etrago_store" 
         max_id = pd.read_sql_query(sql, con)
         max_id = max_id["store_id"].max()
         if np.isnan(max_id):
@@ -400,7 +400,7 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_buses.to_postgis(
-            "egon_pf_hv_bus", ### _etrago_ statt _pf_hv_
+            "egon_etrago_bus", 
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -420,7 +420,7 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_links.to_sql(
-            "egon_pf_hv_link", ### _etrago_ statt _pf_hv_
+            "egon_etrago_link", 
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -437,7 +437,7 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_links_timeseries.to_sql(
-            "egon_pf_hv_link_timeseries", ### _etrago_ statt _pf_hv_
+            "egon_etrago_link_timeseries", 
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -456,7 +456,7 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_stores.to_sql(
-            "egon_pf_hv_store", ### _etrago_ statt _pf_hv_
+            "egon_etrago_store", 
             con=db.engine(),
             schema="grid",
             if_exists="append",
@@ -473,7 +473,7 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_stores_timeseries.to_sql(
-            "egon_pf_hv_store_timeseries", ### _etrago_ statt _pf_hv_
+            "egon_etrago_store_timeseries", 
             con=db.engine(),
             schema="grid",
             if_exists="append",
