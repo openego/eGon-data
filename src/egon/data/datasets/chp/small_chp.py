@@ -231,14 +231,26 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
         possible_dh = dh_areas[
                 dh_areas.demand > selected_chp.th_capacity*8000].to_crs(4326)
 
+
         # If there is no district heating area whoes demand (not covered by
         # another CHP) fit to the CHP, quit and select another CHP
         if len(possible_dh) > 0:
+
+            # Assign gas bus_id
+            possible_dh['gas_bus_id'] = assign_gas_bus_id(possible_dh.copy()).gas_bus_id
+
+            # Assign bus_id
+            possible_dh['voltage_level'] = selected_chp.voltage_level
+            # TODO: Fix promplem in Kappeln (centroid on river, no mv grid)
+            #possible_dh['bus_id'] = assign_bus_id(
+            #possible_dh, config.datasets()["chp_location"]).bus_id
+
 
             # Select randomly one district heating area from the list
             # of possible district heating areas
             id_dh = np.random.choice(range(len(possible_dh)))
             selected_area = possible_dh.iloc[id_dh]
+
             entry = EgonChp(
                         sources={
                             "chp": "MaStR",
@@ -251,6 +263,8 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
                         th_capacity= selected_chp.th_capacity,
                         district_heating=True,
                         voltage_level=selected_chp.voltage_level,
+                        electrical_bus_id = int(selected_area.bus_id),
+                        gas_bus_id = int(selected_area.gas_bus_id),
                         district_heating_area_id = int(selected_area.area_id),
                         scenario='eGon2035',
                         geom=f"SRID=4326;POINT({selected_area.geom.x} {selected_area.geom.y})",
