@@ -31,7 +31,7 @@ def insert():
     mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
 
     # Delete all the water bodies from the federal states shapes
-    federal_std = federal_std[federal_std["gf"] != 1]
+    federal_std = federal_std[federal_std["gf"] == 4]
     federal_std.drop(columns=["gf"], inplace=True)
     # Filter the potential expected from wind_onshore
     target_power_df = target_power_df[target_power_df["carrier"] == "wind_onshore"]
