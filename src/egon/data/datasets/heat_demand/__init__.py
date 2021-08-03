@@ -345,7 +345,6 @@ def future_heat_demand_germany(scenario_name):
 
     TODO
     ----
-        Check if future heat demands already exists: data version management.
 
         Specify the crs of the created heat demand tiffs: EPSG 3035
 
@@ -844,9 +843,6 @@ def scenario_data_import():
     -----
         None
 
-    TODO
-    ----
-        check which tasks need to run (according to version number)
     """
     # drop table if exists
     # can be removed when table structure doesn't change anymore
