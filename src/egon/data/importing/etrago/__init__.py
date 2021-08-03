@@ -10,7 +10,7 @@ metadata = Base.metadata
 
 
 class EgonPfHvBus(Base):
-    __tablename__ = 'egon_pf_hv_bus'
+    __tablename__ = 'egon_etrago_bus'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -28,7 +28,7 @@ class EgonPfHvBus(Base):
 
 
 class EgonPfHvBusTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_bus_timeseries'
+    __tablename__ = 'egon_etrago_bus_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -37,7 +37,7 @@ class EgonPfHvBusTimeseries(Base):
     v_mag_pu_set = Column(ARRAY(Float(precision=53)))
 
 class EgonPfHvGenerator(Base):
-    __tablename__ = 'egon_pf_hv_generator'
+    __tablename__ = 'egon_etrago_generator'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -73,7 +73,7 @@ class EgonPfHvGenerator(Base):
 
 
 class EgonPfHvGeneratorTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_generator_timeseries'
+    __tablename__ = 'egon_etrago_generator_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -88,7 +88,7 @@ class EgonPfHvGeneratorTimeseries(Base):
 
 
 class EgonPfHvLine(Base):
-    __tablename__ = 'egon_pf_hv_line'
+    __tablename__ = 'egon_etrago_line'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -120,7 +120,7 @@ class EgonPfHvLine(Base):
 
 
 class EgonPfHvLineTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_line_timeseries'
+    __tablename__ = 'egon_etrago_line_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = version = Column(Text, primary_key=True, nullable=False)
@@ -131,7 +131,7 @@ class EgonPfHvLineTimeseries(Base):
 
 
 class EgonPfHvLink(Base):
-    __tablename__ = 'egon_pf_hv_link'
+    __tablename__ = 'egon_etrago_link'
     __table_args__ = {'schema': 'grid'}
 
     version = version = Column(Text, primary_key=True, nullable=False)
@@ -157,7 +157,7 @@ class EgonPfHvLink(Base):
     topo = Column(Geometry('LINESTRING', 4326))
 
 class EgonPfHvLinkTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_link_timeseries'
+    __tablename__ = 'egon_etrago_link_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = version = Column(Text, primary_key=True, nullable=False)
@@ -172,7 +172,7 @@ class EgonPfHvLinkTimeseries(Base):
 
 
 class EgonPfHvLoad(Base):
-    __tablename__ = 'egon_pf_hv_load'
+    __tablename__ = 'egon_etrago_load'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -187,7 +187,7 @@ class EgonPfHvLoad(Base):
 
 
 class EgonPfHvLoadTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_load_timeseries'
+    __tablename__ = 'egon_etrago_load_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -199,7 +199,7 @@ class EgonPfHvLoadTimeseries(Base):
 
 
 class EgonPfHvCarrier(Base):
-    __tablename__ = 'egon_pf_hv_carrier'
+    __tablename__ = 'egon_etrago_carrier'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -211,7 +211,7 @@ class EgonPfHvCarrier(Base):
 
 
 class EgonPfHvStorage(Base):
-    __tablename__ = 'egon_pf_hv_storage'
+    __tablename__ = 'egon_etrago_storage'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -244,7 +244,7 @@ class EgonPfHvStorage(Base):
 
 
 class EgonPfHvStorageTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_storage_timeseries'
+    __tablename__ = 'egon_etrago_storage_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -260,7 +260,7 @@ class EgonPfHvStorageTimeseries(Base):
     marginal_cost = Column(ARRAY(Float(precision=53)))
 
 class EgonPfHvStore(Base):
-    __tablename__ = 'egon_pf_hv_store'
+    __tablename__ = 'egon_etrago_store'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -285,7 +285,7 @@ class EgonPfHvStore(Base):
     standing_loss = Column(Float(53))
 
 class EgonPfHvStoreTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_store_timeseries'
+    __tablename__ = 'egon_etrago_store_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -299,7 +299,7 @@ class EgonPfHvStoreTimeseries(Base):
     marginal_cost = Column(ARRAY(Float(precision=53)))
 
 class EgonPfHvTempResolution(Base):
-    __tablename__ = 'egon_pf_hv_temp_resolution'
+    __tablename__ = 'egon_etrago_temp_resolution'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -310,7 +310,7 @@ class EgonPfHvTempResolution(Base):
 
 
 class EgonPfHvTransformer(Base):
-    __tablename__ = 'egon_pf_hv_transformer'
+    __tablename__ = 'egon_etrago_transformer'
     __table_args__ = {'schema': 'grid'}
 
     version = Column(Text, primary_key=True, nullable=False)
@@ -342,7 +342,7 @@ class EgonPfHvTransformer(Base):
 
 
 class EgonPfHvTransformerTimeseries(Base):
-    __tablename__ = 'egon_pf_hv_transformer_timeseries'
+    __tablename__ = 'egon_etrago_transformer_timeseries'
     __table_args__ = {'schema': 'grid'}
 
     version = version = Column(Text, primary_key=True, nullable=False)
@@ -361,6 +361,64 @@ def create_tables():
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
+    
+    ##################### drop tables with old names #########################
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_bus;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_bus_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;""")    
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_line;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_line_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_link;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_link_timeseries;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load;""")
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;""")     
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;""") 
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;""")  
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;""")  
+    ##########################################################################
+        
     # Drop existing tables
     EgonPfHvBus.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.drop(bind=engine, checkfirst=True)
@@ -411,7 +469,7 @@ def insert_temp_resolution(version='0.0.0'):
 
     db.execute_sql(
         f"""
-        INSERT INTO grid.egon_pf_hv_temp_resolution
+        INSERT INTO grid.egon_etrago_temp_resolution
         (version, temp_id, timesteps, resolution, start_time)
         SELECT '{version}', 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
         """)

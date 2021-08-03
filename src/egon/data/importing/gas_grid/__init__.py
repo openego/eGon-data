@@ -30,7 +30,7 @@ def next_id(component):
     """
     max_id = db.select_dataframe(
         f"""
-        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
         """)['max'][0]
 
     if max_id:
@@ -144,7 +144,7 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
 
     # Insert data to db    
-    gas_nodes_list.to_postgis('egon_pf_hv_bus',
+    gas_nodes_list.to_postgis('egon_etrago_bus',
                               engine,
                               schema ='grid',
                               index = False,
@@ -295,7 +295,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
                                                           'max_transport_capacity_Gwh/d', 'lat', 'long'])
     
     # Insert data to db
-    gas_pipelines_list.to_postgis('egon_pf_hv_gas_link',
+    gas_pipelines_list.to_postgis('egon_etrago_gas_link',
                           engine,
                           schema = 'grid',
                           index = False,
@@ -304,16 +304,16 @@ def insert_gas_pipeline_list(gas_nodes_list):
     
     db.execute_sql(
         """
-    select UpdateGeometrySRID('grid', 'egon_pf_hv_gas_link', 'topo', 4326) ;
+    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
     
-    INSERT INTO grid.egon_pf_hv_link (version, scn_name, link_id, bus0,
+    INSERT INTO grid.egon_etrago_link (version, scn_name, link_id, bus0,
                                               bus1, p_nom, length,
                                               geom, topo, carrier)
     SELECT
     version, scn_name, link_id, bus0, bus1, p_nom, length, geom, topo, carrier
-    FROM grid.egon_pf_hv_gas_link;
+    FROM grid.egon_etrago_gas_link;
         
-    DROP TABLE grid.egon_pf_hv_gas_link;
+    DROP TABLE grid.egon_etrago_gas_link;
         """)
         
     
