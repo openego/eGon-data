@@ -9,7 +9,18 @@ from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data.processing.zensus_vg250.zensus_population_inside_germany import DestatisZensusPopulationPerHa
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+from egon.data.datasets import Dataset
 
+class ZensusMvGridDistricts(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ZensusMvGridDistricts",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                mapping
+                )
+        )
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -24,7 +35,7 @@ class MapZensusGridDistricts(Base):
     subst_id = Column(Integer, ForeignKey(MvGridDistricts.subst_id))
 
 
-def map_zensus_mv_grid_districts():
+def mapping():
     """Perform mapping between mv grid districts and zensus grid"""
 
     MapZensusGridDistricts.__table__.drop(bind=db.engine(), checkfirst=True)

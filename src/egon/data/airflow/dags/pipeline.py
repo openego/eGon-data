@@ -18,6 +18,7 @@ from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.vg250 import Vg250
+from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 import airflow
 import egon.data.importing.era5 as import_era5
@@ -437,12 +438,10 @@ with airflow.DAG(
     scenario_input_import >> import_district_heating_areas
 
     # Map zensus grid districts
-    map_zensus_grid_districts = PythonOperator(
-        task_id="map_zensus_grid_districts",
-        python_callable=zensus_grid_districts.map_zensus_mv_grid_districts,
-    )
-    population_import >> map_zensus_grid_districts
-    define_mv_grid_districts >> map_zensus_grid_districts
+    zensus_mv_grid_districts = ZensusMvGridDistricts(
+        dependencies=[population_import, mv_grid_districts])
+
+    map_zensus_grid_districts = tasks['zensus_mv_grid_districts.mapping']
 
     # Map federal states to mv_grid_districts
     map_boundaries_grid_districts = PythonOperator(
@@ -467,7 +466,7 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle])
+        dependencies=[data_bundle, zensus_grid_districts])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
@@ -476,10 +475,8 @@ with airflow.DAG(
 
     create_district_heating_areas_table >> heat_supply_tables
     import_district_heating_areas >> import_district_heating_supply
-    map_zensus_grid_districts >> import_district_heating_supply
     import_district_heating_areas >> geothermal_potential
     import_district_heating_areas >> import_individual_heating_supply
-    map_zensus_grid_districts >> import_individual_heating_supply
     power_plant_import >> import_individual_heating_supply
 
     # Heat to eTraGo
