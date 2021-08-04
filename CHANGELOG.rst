@@ -108,6 +108,8 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Integrate power-to-gas installation potential links
+  `#293 <https://github.com/openego/eGon-data/issues/293>`_
 * Integrate distribution of wind onshore and pv ground mounted generation
   `#146 <https://github.com/openego/eGon-data/issues/146>`_
 * Integrate dynamic line rating potentials
@@ -116,7 +118,6 @@ Added
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
 * Integrate supply strategies for individual and district heating
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
-
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -160,6 +161,8 @@ Changed
   `#281 <https://github.com/openego/eGon-data/issues/281>`_
 * Migrate mastr, mv_grid_districts and re_potential_areas to datasets
   `#297 <https://github.com/openego/eGon-data/issues/297>`_
+* Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc. 
+  `#334 <https://github.com/openego/eGon-data/issues/334>`_
 
 Bug fixes
 ---------

@@ -21,7 +21,7 @@ def next_id(component):
     """
     max_id = db.select_dataframe(
         f"""
-        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
         """)['max'][0]
 
     if max_id:

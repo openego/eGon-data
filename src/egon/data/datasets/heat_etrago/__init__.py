@@ -112,7 +112,8 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id FROM
-            grid.egon_pf_hv_generator
+            {targets['heat_generators']['schema']}.
+            {targets['heat_generators']['table']}
             WHERE version = '{version}'
             AND scn_name = '{scenario}')
         """)
