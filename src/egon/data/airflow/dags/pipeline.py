@@ -399,6 +399,7 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
+    osmtgmod_pypsa >> gas_grid_insert_data
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
