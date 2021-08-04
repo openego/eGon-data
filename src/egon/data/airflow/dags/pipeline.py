@@ -18,9 +18,7 @@ from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.vg250 import Vg250
-from egon.data.processing.zensus_vg250 import (
-    zensus_population_inside_germany as zensus_vg250,
-)
+from egon.data.datasets.zensus_vg250 import ZensusVg250
 import airflow
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
@@ -116,35 +114,11 @@ with airflow.DAG(
     population_import >> zensus_misc_import
 
     # Combine Zensus and VG250 data
-    map_zensus_vg250 = PythonOperator(
-        task_id="map_zensus_vg250",
-        python_callable=zensus_vg250.map_zensus_vg250,
-    )
+    zensus_vg250 = ZensusVg250(
+        dependencies=[vg250, population_import])
 
-    zensus_inside_ger = PythonOperator(
-        task_id="zensus-inside-germany",
-        python_callable=zensus_vg250.inside_germany,
-    )
-
-    zensus_inside_ger_metadata = PythonOperator(
-        task_id="zensus-inside-germany-metadata",
-        python_callable=zensus_vg250.add_metadata_zensus_inside_ger,
-    )
-
-    vg250_population = PythonOperator(
-        task_id="population-in-municipalities",
-        python_callable=zensus_vg250.population_in_municipalities,
-    )
-
-    vg250_population_metadata = PythonOperator(
-        task_id="population-in-municipalities-metadata",
-        python_callable=zensus_vg250.add_metadata_vg250_gem_pop,
-    )
-    [
-        vg250_clean_and_prepare,
-        population_import,
-    ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
-    zensus_inside_ger >> vg250_population >> vg250_population_metadata
+    zensus_inside_ger_metadata = tasks[
+        'zensus_vg250.add_metadata_zensus_inside_ger']
 
     # Scenario table
     scenario_input_tables = PythonOperator(
@@ -167,7 +141,7 @@ with airflow.DAG(
     # Society prognosis
     society_prognosis = SocietyPrognosis(dependencies=[
         demandregio,
-        map_zensus_vg250,
+        zensus_vg250,
         population_import,
         zensus_misc_import])
 
@@ -175,7 +149,7 @@ with airflow.DAG(
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
-        dependencies=[demandregio, map_zensus_vg250, zensus_tables,
+        dependencies=[demandregio, zensus_vg250, zensus_tables,
                       society_prognosis])
 
     elec_household_demands_zensus = tasks[
@@ -334,7 +308,7 @@ with airflow.DAG(
 
      # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
-        dependencies=[demandregio, map_zensus_vg250, heat_demand_import,
+        dependencies=[demandregio, zensus_vg250, heat_demand_import,
                       etrago_input_data])
 
     elec_cts_demands_zensus = tasks[
