@@ -42,7 +42,6 @@ import egon.data.processing.pv_ground_mounted as pv_gm
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
-import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 
 
 from egon.data import db
@@ -118,7 +117,7 @@ with airflow.DAG(
         dependencies=[vg250, population_import])
 
     zensus_inside_ger_metadata = tasks[
-        'zensus_vg250.add_metadata_zensus_inside_ger']
+        'zensus_vg250.add-metadata-zensus-inside-ger']
 
     # Scenario table
     scenario_input_tables = PythonOperator(
@@ -309,7 +308,7 @@ with airflow.DAG(
      # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[demandregio, zensus_vg250, heat_demand_import,
-                      etrago_input_data])
+                      etrago_input_data, household_electricity_demand_annual])
 
     elec_cts_demands_zensus = tasks[
         'electricity_demand.distribute-cts-demands']
@@ -446,7 +445,7 @@ with airflow.DAG(
     vg250_mv_grid_districts = Vg250MvGridDistricts(
         dependencies=[vg250, mv_grid_districts])
 
-    map_boundaries_grid_districts = tasks['vg250_mv_gid_districts.mapping']
+    map_boundaries_grid_districts = tasks['vg250_mv_grid_districts.mapping']
 
 
     # Solar rooftop per mv grid district
@@ -464,7 +463,7 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle, zensus_grid_districts])
+        dependencies=[data_bundle, zensus_mv_grid_districts])
 
     import_district_heating_supply = tasks["heat_supply.district-heating"]
     import_individual_heating_supply = tasks["heat_supply.individual-heating"]
