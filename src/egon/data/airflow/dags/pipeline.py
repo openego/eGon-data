@@ -18,6 +18,7 @@ from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.vg250 import Vg250
+from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 import airflow
@@ -30,8 +31,6 @@ import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
-
-import egon.data.processing.boundaries_grid_districts as boundaries_grid_districts
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
@@ -444,12 +443,11 @@ with airflow.DAG(
     map_zensus_grid_districts = tasks['zensus_mv_grid_districts.mapping']
 
     # Map federal states to mv_grid_districts
-    map_boundaries_grid_districts = PythonOperator(
-        task_id="map_vg250_grid_districts",
-        python_callable=boundaries_grid_districts.map_mvgriddistricts_vg250,
-    )
-    define_mv_grid_districts >> map_boundaries_grid_districts
-    vg250_clean_and_prepare >> map_boundaries_grid_districts
+    vg250_mv_grid_districts = Vg250MvGridDistricts(
+        dependencies=[vg250, mv_grid_districts])
+
+    map_boundaries_grid_districts = tasks['vg250_mv_gid_districts.mapping']
+
 
     # Solar rooftop per mv grid district
     solar_rooftop_etrago = PythonOperator(
