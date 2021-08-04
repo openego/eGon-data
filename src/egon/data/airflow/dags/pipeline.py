@@ -35,6 +35,7 @@ import egon.data.processing.demandregio as process_dr
 import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.osmtgmod as osmtgmod
 import egon.data.processing.power_plants as power_plants
+import egon.data.processing.power2gas as power2gas
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
 import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
@@ -424,6 +425,24 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
+    
+     # Power-to-gas installations creation
+    insert_power2gas_installations = PythonOperator(
+        task_id="insert-power-to-gas-installations",
+        python_callable=power2gas.insert_power2gas,
+    )
+
+    gas_grid_insert_data >> insert_power2gas_installations
+    osmtgmod_pypsa >> insert_power2gas_installations
+
+    # Create gas voronoi
+    create_gas_polygons = PythonOperator(
+        task_id="create-gas-voronoi",
+        python_callable=gas_areas.create_voronoi,
+    )
+
+    gas_grid_insert_data  >> create_gas_polygons
+    vg250_clean_and_prepare >> create_gas_polygons
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
