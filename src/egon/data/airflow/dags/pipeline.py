@@ -588,5 +588,5 @@ with airflow.DAG(
     )
 
     demand_curves_industry = IndustrialDemandCurves(
-        dependencies=[industrial_sites, demandregio_demand_cts_ind, osm, landuse_extraction]
+        dependencies=[define_mv_grid_districts, industrial_sites, demandregio_demand_cts_ind, osm, landuse_extraction]
     )
