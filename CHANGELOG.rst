@@ -163,6 +163,8 @@ Changed
   `#297 <https://github.com/openego/eGon-data/issues/297>`_
 * Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc. 
   `#334 <https://github.com/openego/eGon-data/issues/334>`_
+* Move functions used by multiple datasets
+  `#323 <https://github.com/openego/eGon-data/issues/323>`_
 
 Bug fixes
 ---------
