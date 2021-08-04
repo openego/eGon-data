@@ -12,17 +12,26 @@ from egon.data.processing.zensus_vg250.zensus_population_inside_germany import D
 # will be later imported from another file ###
 Base = declarative_base()
 
-class ElectricityDemand(Dataset):
+class HouseholdElectricityDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="SocietyPrognosis",
+            name="HouseholdElectricityDemand",
             version="0.0.0",
             dependencies=dependencies,
             tasks=(create_tables,
-                   {distribute_household_demands,
-                   distribute_cts_demands},
+                   distribute_household_demands)
+        )
+
+class CtsElectricityDemand(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="CtsElectricityDemand",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(distribute_cts_demands,
                    insert_cts_load)
         )
+
 
 class EgonDemandRegioZensusElectricity(Base):
     __tablename__ = 'egon_demandregio_zensus_electricity'
