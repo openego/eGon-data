@@ -120,7 +120,7 @@ def zensus_population():
         )
 
 
-def zensus_household_prognosis_per_year(prognosis_nuts3, zensus, year):
+def household_prognosis_per_year(prognosis_nuts3, zensus, year):
     """Calculate household prognosis for a specitic year"""
 
     prognosis_total = prognosis_nuts3.groupby(
