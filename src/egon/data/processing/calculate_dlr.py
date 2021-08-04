@@ -38,7 +38,7 @@ def Calculate_DLR():
     # Connect to the data base
     con = db.engine()
 
-    sql = "SELECT version, scn_name, line_id, geom, s_nom FROM grid.egon_pf_hv_line"
+    sql = "SELECT version, scn_name, line_id, geom, s_nom FROM grid.egon_etrago_line"
     df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
     trans_lines_R = {}
@@ -97,7 +97,7 @@ def Calculate_DLR():
     trans_lines["temp_id"] = 1
     # Insert into database
     trans_lines.to_sql(
-        "egon_pf_hv_line_timeseries",
+        "egon_etrago_line_timeseries",
         schema="grid",
         con=db.engine(),
         if_exists="append",

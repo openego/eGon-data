@@ -22,7 +22,7 @@ def create_voronoi():
                 
         SELECT bus_id, bus_id as id, geom as point
         INTO grid.egon_gas_voronoi
-        FROM grid.egon_pf_hv_bus 
+        FROM grid.egon_etrago_bus 
         WHERE carrier = 'gas';
         
         ALTER TABLE grid.egon_gas_voronoi ADD geom Geometry('Multipolygon', 4326);     
@@ -31,7 +31,7 @@ def create_voronoi():
         
         SELECT bus_id, bus_id as id, geom as point 
         INTO grid.egon_gas_bus
-        FROM grid.egon_pf_hv_bus 
+        FROM grid.egon_etrago_bus 
         WHERE carrier = 'gas';
         """
                     )
