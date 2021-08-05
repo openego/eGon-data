@@ -20,7 +20,7 @@ class ElectricalNeighbours(Dataset):
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
 
-def get_cross_border_buses(sources):
+def get_cross_border_buses(scenario, sources):
     """Returns buses from osmTGmod which are outside of Germany.
 
     Parameters
@@ -51,11 +51,11 @@ def get_cross_border_buses(sources):
             OR bus_id IN (
             SELECT bus1 FROM
             {sources['lines']['schema']}.{sources['lines']['table']}))
-        AND scn_name = 'eGon2035';
+        AND scn_name = '{scenario}';
         """,
         epsg=4326)
 
-def get_cross_border_lines(sources):
+def get_cross_border_lines(scenario, sources):
     """Returns lines from osmTGmod which end or start outside of Germany.
 
     Parameters
@@ -79,7 +79,7 @@ def get_cross_border_lines(sources):
         (SELECT ST_Transform(ST_boundary(geometry), 4326)
          FROM {sources['german_borders']['schema']}.
         {sources['german_borders']['table']}))
-    AND scn_name = 'eGon2035';
+    AND scn_name = '{scenario}';
     """,
     epsg=4326)
 
@@ -111,8 +111,8 @@ def central_buses_egon100(sources):
         AND carrier = 'AC'
         """)
 
-def buses_egon2035(sources, targets):
-    """ Insert central buses in foreign countries for eGon2035
+def buses(scenario, sources, targets):
+    """ Insert central buses in foreign countries per scenario
 
     Parameters
     ----------
@@ -127,18 +127,23 @@ def buses_egon2035(sources, targets):
         Buses in the center of foreign countries
 
     """
-
-    # Delete existing buses
-    db.execute_sql(
-        f"""
+    sql_delete = f"""
         DELETE FROM {sources['electricity_buses']['schema']}.
             {sources['electricity_buses']['table']}
-        WHERE country != 'DE' AND scn_name = 'eGon2035' AND carrier = 'AC'
+        WHERE country != 'DE' AND scn_name = '{scenario}'
+        AND carrier = 'AC'
         AND bus_id NOT IN (
             SELECT bus_i
             FROM  {sources['osmtgmod_bus']['schema']}.
             {sources['osmtgmod_bus']['table']})
-        """)
+        """
+    # Drop only buses with v_nom != 380 for eGon100RE
+    # to keep buses from pypsa-eur-sec
+    if scenario == 'eGon100RE':
+        sql_delete += "AND v_nom < 380"
+
+    # Delete existing buses
+    db.execute_sql(sql_delete)
 
     central_buses = central_buses_egon100(sources)
 
@@ -147,8 +152,8 @@ def buses_egon2035(sources, targets):
     # if in test mode, add bus in center of Germany
     if config.settings()['egon-data']['--dataset-boundary'] != 'Everything':
         central_buses = central_buses.append({
-                'version': '0.0.0',
-             'scn_name': 'eGon2035',
+            'version': '0.0.0',
+             'scn_name': scenario,
              'bus_id': next_bus_id,
              'x': 10.4234469,
              'y': 51.0834196,
@@ -160,13 +165,13 @@ def buses_egon2035(sources, targets):
         next_bus_id += 1
 
     # Add buses for other voltage levels
-    foreign_buses = get_cross_border_buses(sources)
+    foreign_buses = get_cross_border_buses(scenario, sources)
     vnom_per_country = foreign_buses.groupby('country').v_nom.unique().copy()
     for cntr in vnom_per_country.index:
         if 110. in vnom_per_country[cntr]:
             central_buses = central_buses.append({
             'version': '0.0.0',
-             'scn_name': 'eGon2035',
+             'scn_name': scenario,
              'bus_id': next_bus_id,
              'x': central_buses[central_buses.country==cntr].x.unique()[0],
              'y': central_buses[central_buses.country==cntr].y.unique()[0],
@@ -179,7 +184,7 @@ def buses_egon2035(sources, targets):
         if 220. in vnom_per_country[cntr]:
             central_buses = central_buses.append({
             'version': '0.0.0',
-             'scn_name': 'eGon2035',
+             'scn_name': scenario,
              'bus_id': next_bus_id,
              'x': central_buses[central_buses.country==cntr].x.unique()[0],
              'y': central_buses[central_buses.country==cntr].y.unique()[0],
@@ -198,16 +203,28 @@ def buses_egon2035(sources, targets):
     central_buses['geom'] = central_buses.geometry.copy()
     central_buses = central_buses.set_geometry('geom').drop(
         'geometry', axis='columns')
+    central_buses.scn_name=scenario
 
-    # insert central buses for eGon2035 based on eGon100RE
-    central_buses.scn_name='eGon2035'
-    central_buses.to_postgis(
-        targets['buses']['table'], schema=targets['buses']['schema'],
-        if_exists = 'append', con=db.engine(), index=False)
+    # Insert all central buses for eGon2035
+    if scenario == 'eGon2035':
+        central_buses.to_postgis(
+            targets['buses']['table'], schema=targets['buses']['schema'],
+            if_exists = 'append', con=db.engine(), index=False)
+    # Insert only buses for eGon100RE that are not coming from pypsa-eur-sec
+    # (buses with another voltage_level or inside Germany in test mode)
+    else:
+        central_buses[(central_buses.v_nom!=380) |
+                      (central_buses.country=='DE')].to_postgis(
+                          targets['buses']['table'],
+                          schema=targets['buses']['schema'],
+                          if_exists ='append',
+                          con=db.engine(),
+                          index=False)
 
     return central_buses
 
-def cross_border_lines(sources, targets, central_buses):
+
+def cross_border_lines(scenario, sources, targets, central_buses):
     """Adds lines which connect border-crossing lines from osmtgmod
     to the central buses in the corresponding neigbouring country
 
@@ -226,25 +243,32 @@ def cross_border_lines(sources, targets, central_buses):
         Lines that connect cross-border lines to central bus per country
 
     """
-
     # Delete existing data
     db.execute_sql(
         f"""
         DELETE FROM {targets['lines']['schema']}.
         {targets['lines']['table']}
-        WHERE scn_name = 'eGon2035'
+        WHERE scn_name = '{scenario}'
         AND line_id NOT IN (
             SELECT branch_id
             FROM  {sources['osmtgmod_branch']['schema']}.
             {sources['osmtgmod_branch']['table']}
               WHERE result_id = 1 and (link_type = 'line' or
                                        link_type = 'cable'))
+        AND bus0 IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']})
+        AND bus1 NOT IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']})
         """
         )
 
     # Calculate cross-border busses and lines from osmtgmod
-    foreign_buses = get_cross_border_buses(sources)
-    lines = get_cross_border_lines(sources)
+    foreign_buses = get_cross_border_buses(scenario, sources)
+    lines = get_cross_border_lines(scenario, sources)
 
     # Select bus outside of Germany from border-crossing lines
     lines.loc[
@@ -302,6 +326,8 @@ def cross_border_lines(sources, targets, central_buses):
         ['foreign_bus', 'country', 'geom_bus0', 'geom_bus1', 'geom'],
         axis='columns', inplace=True)
 
+    # Set scn_name
+
     # Insert lines to the database
     new_lines.to_postgis(
         targets['lines']['table'], schema=targets['lines']['schema'],
@@ -354,7 +380,7 @@ def choose_transformer(s_nom):
         return 33000, 0.00000409091
 
 
-def central_transformer(sources, targets, central_buses, new_lines):
+def central_transformer(scenario, sources, targets, central_buses, new_lines):
     """ Connect central foreign buses with different voltage levels
 
     Parameters
@@ -378,7 +404,7 @@ def central_transformer(sources, targets, central_buses, new_lines):
         f"""
         DELETE FROM {targets['transformers']['schema']}.
         {targets['transformers']['table']}
-        WHERE scn_name = 'eGon2035'
+        WHERE scn_name = '{scenario}'
         AND trafo_id IN (
             SELECT branch_id
             FROM {sources['osmtgmod_branch']['schema']}.
@@ -420,7 +446,7 @@ def central_transformer(sources, targets, central_buses, new_lines):
     # Set data type
     trafo = trafo.astype({'trafo_id': 'int','bus0': 'int', 'bus1': 'int'})
     trafo['version'] = '0.0.0'
-    trafo['scn_name'] = 'eGon2035'
+    trafo['scn_name'] = scenario
 
     # Insert transformers to the database
     trafo.to_sql(
@@ -440,11 +466,15 @@ def grid():
     sources = config.datasets()['electrical_neighbours']['sources']
     targets = config.datasets()['electrical_neighbours']['targets']
 
-    central_buses = buses_egon2035(sources, targets)
+    for scenario in ['eGon2035', 'eGon100RE']:
 
-    foreign_lines = cross_border_lines(sources, targets, central_buses)
+        central_buses = buses(scenario, sources, targets)
 
-    central_transformer(sources, targets, central_buses, foreign_lines)
+        foreign_lines = cross_border_lines(
+            scenario, sources, targets, central_buses)
+
+        central_transformer(
+            scenario, sources, targets, central_buses, foreign_lines)
 
 
 def map_carriers_tyndp():
