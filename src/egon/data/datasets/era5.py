@@ -132,8 +132,13 @@ def insert_weather_cells():
     None.
 
     """
-
     cfg = egon.data.config.datasets()['era5_weather_data']
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {cfg['targets']['weather_cells']['schema']}.
+        {cfg['targets']['weather_cells']['table']}
+        """)
 
     cutout = import_cutout()
 
@@ -142,7 +147,7 @@ def insert_weather_cells():
 
     df.to_postgis(cfg['targets']['weather_cells']['table'],
                   schema=cfg['targets']['weather_cells']['schema'],
-                  con=db.engine(), if_exists='replace')
+                  con=db.engine(), if_exists='append')
 
     db.execute_sql(
         f"""UPDATE {cfg['targets']['weather_cells']['schema']}.
