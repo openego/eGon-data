@@ -3,8 +3,9 @@
 """
 import os
 import egon.data.config
-from egon.data import  subprocess
+from egon.data import subprocess
 from pathlib import Path
+import shutil
 
 
 def clone_and_install():
@@ -21,25 +22,32 @@ def clone_and_install():
     repo_path = Path(".") / (egon.data.config.datasets()
                    ['demandregio_installation']['targets']["path"])
 
-    if not os.path.exists(repo_path):
-        os.mkdir(repo_path)
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--single-branch",
-                "--branch",
-                source["branch"],
-                source["git-repository"],
-            ],
-            cwd=repo_path
-        )
+    # Delete repository if it already exists
+    if repo_path.exists() and repo_path.is_dir():
+        shutil.rmtree(repo_path)
 
-        subprocess.run(
-            [
-                "pip",
-                "install",
-                "-e",
-                (repo_path/'disaggregator').absolute(),
-            ],
-        )
+    # Create subfolder
+    os.mkdir(repo_path)
+
+    # Clone from GitHub repository
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "--single-branch",
+            "--branch",
+            source["branch"],
+            source["git-repository"],
+        ],
+        cwd=repo_path
+    )
+
+    # Install disaggregator from path
+    subprocess.run(
+        [
+            "pip",
+            "install",
+            "-e",
+            (repo_path/'disaggregator').absolute(),
+        ],
+    )
