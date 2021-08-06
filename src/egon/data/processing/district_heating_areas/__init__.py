@@ -13,7 +13,7 @@ end it saves them in the database.
 """
 import os
 from egon.data import db
-from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
+from egon.data.datasets.scenario_parameters import get_sector_parameters, EgonScenario
 
 import pandas as pd
 import geopandas as gpd

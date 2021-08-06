@@ -6,14 +6,14 @@ import csv
 import datetime
 import logging
 import codecs
-import subprocess
+from pathlib import Path
 import egon.data.config
 from egon.data.config import settings
 import egon.data.subprocess as subproc
 from egon.data import db
 from egon.data.datasets import Dataset
 from airflow.operators.postgres_operator import PostgresOperator
-
+import importlib_resources as resources
 
 
 def run():
@@ -29,8 +29,7 @@ def run():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/importing" + "/openstreetmap/"
-        + target_path
+        egon.data.__path__[0], "datasets", "osm", target_path
     )
     docker_db_config = db.credentials()
 
@@ -57,7 +56,7 @@ def import_osm_data():
         )
 
     else:
-    	subproc.run(
+        subproc.run(
             [
                 "git",
                 "clone",
@@ -78,8 +77,7 @@ def import_osm_data():
         target_path = osm_config["target"]["path_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0] + "/importing" + "/openstreetmap/"
-        + target_path
+        egon.data.__path__[0], "datasets", "osm", target_path
     )
 
     docker_db_config=db.credentials()
@@ -145,15 +143,19 @@ def import_osm_data():
         {config['osm_data']['osmosis_path_to_binary']}"""
         )
 
-    # BUG: Python continues (and sets osm_metadata)
-    # even in case osmosis fails!!!
-    proc = subprocess.Popen(
-            "%s --read-pbf %s --write-pgsql \
+    # create directory to store osmosis' temp files
+    osmosis_temp_dir = Path('.') / "osmosis_temp/"
+    if not os.path.exists(osmosis_temp_dir):
+        os.mkdir(osmosis_temp_dir)
+
+    subproc.run(
+            "JAVACMD_OPTIONS='%s' %s --read-pbf %s --write-pgsql \
                 database=%s host=%s user=%s password=%s"
             % (
+                f"-Djava.io.tmpdir={osmosis_temp_dir}",
                 os.path.join(egon.data.__path__[0],
-                                 "processing/osmtgmod/osmTGmod/",
-                                 config["osm_data"]["osmosis_path_to_binary"]),
+                             "processing/osmtgmod/osmTGmod/",
+                             config["osm_data"]["osmosis_path_to_binary"]),
                 filtered_osm_pbf_path_to_file,
                 config_database,
                 config["postgres_server"]["host"]
@@ -165,7 +167,6 @@ def import_osm_data():
             shell=True,
         )
     logging.info("Importing OSM-Data...")
-    proc.wait()
 
     # After updating OSM-Data, power_tables (for editing)
     # have to be updated as well
@@ -536,12 +537,12 @@ def to_pypsa(version="'0.0.0'"):
     db.execute_sql(
             f"""
             -- CLEAN UP OF TABLES
-            DELETE FROM grid.egon_pf_hv_bus
+            DELETE FROM grid.egon_etrago_bus
             WHERE version = {version}
             AND carrier = 'AC';
-            DELETE FROM grid.egon_pf_hv_line
+            DELETE FROM grid.egon_etrago_line
             WHERE version = {version};
-            DELETE FROM grid.egon_pf_hv_transformer
+            DELETE FROM grid.egon_etrago_transformer
             WHERE version = {version};
             """
             )
@@ -551,7 +552,7 @@ def to_pypsa(version="'0.0.0'"):
         db.execute_sql(
             f"""
             -- BUS DATA
-            INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
+            INSERT INTO grid.egon_etrago_bus (version, scn_name, bus_id, v_nom,
                                              geom, x, y, carrier)
             SELECT
               {version},
@@ -567,7 +568,7 @@ def to_pypsa(version="'0.0.0'"):
 
 
             -- BRANCH DATA
-            INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0,
+            INSERT INTO grid.egon_etrago_line (version, scn_name, line_id, bus0,
                                               bus1, x, r, b, s_nom, cables, v_nom,
                                               geom, topo)
             SELECT
@@ -590,7 +591,7 @@ def to_pypsa(version="'0.0.0'"):
 
 
             -- TRANSFORMER DATA
-            INSERT INTO grid.egon_pf_hv_transformer (version, scn_name,
+            INSERT INTO grid.egon_etrago_transformer (version, scn_name,
                                                      trafo_id, bus0, bus1, x,
                                                      s_nom, tap_ratio,
                                                      phase_shift, geom, topo)
@@ -612,32 +613,32 @@ def to_pypsa(version="'0.0.0'"):
 
             -- per unit to absolute values
 
-            UPDATE grid.egon_pf_hv_line a
+            UPDATE grid.egon_etrago_line a
             SET
                  r = r * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus b
+                            FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
                             )*1000)^2 / (100 * 10^6)),
                  x = x * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus b
+                            FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
                             )*1000)^2 / (100 * 10^6)),
                  b = b * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus b
+                            FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
                             )*1000)^2 / (100 * 10^6));
 
             -- calculate line length (in km) from geoms
 
-            UPDATE grid.egon_pf_hv_line a
+            UPDATE grid.egon_etrago_line a
             SET
                  length = result.length
                  FROM
                  (SELECT b.line_id, st_length(b.geom,false)/1000 as length
-                  from grid.egon_pf_hv_line b)
+                  from grid.egon_etrago_line b)
                  as result
             WHERE a.line_id = result.line_id;
 
@@ -645,21 +646,21 @@ def to_pypsa(version="'0.0.0'"):
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
-            DELETE FROM grid.egon_pf_hv_bus
+            DELETE FROM grid.egon_etrago_bus
             WHERE scn_name={scenario_name}
             AND carrier = 'AC'
             AND version = {version}
             AND bus_id NOT IN
-            (SELECT bus0 FROM grid.egon_pf_hv_line WHERE
+            (SELECT bus0 FROM grid.egon_etrago_line WHERE
              scn_name={scenario_name})
             AND bus_id NOT IN
-            (SELECT bus1 FROM grid.egon_pf_hv_line WHERE
+            (SELECT bus1 FROM grid.egon_etrago_line WHERE
              scn_name={scenario_name})
             AND bus_id NOT IN
-            (SELECT bus0 FROM grid.egon_pf_hv_transformer
+            (SELECT bus0 FROM grid.egon_etrago_transformer
              WHERE scn_name={scenario_name})
             AND bus_id NOT IN
-            (SELECT bus1 FROM grid.egon_pf_hv_transformer
+            (SELECT bus1 FROM grid.egon_etrago_transformer
              WHERE scn_name={scenario_name});
                 """
         )
