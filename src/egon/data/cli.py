@@ -141,6 +141,7 @@ import egon.data.config as config
     help=("Specify the port on which airflow runs."),
     show_default=True,
 )
+
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
