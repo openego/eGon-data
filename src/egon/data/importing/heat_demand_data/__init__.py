@@ -16,7 +16,8 @@ from jinja2 import Template
 
 from egon.data import db, subprocess
 import egon.data.config
-from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
+from egon.data.datasets.scenario_parameters import (
+    get_sector_parameters, EgonScenario)
 from urllib.request import urlretrieve
 import os
 import zipfile

@@ -120,6 +120,8 @@ Added
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
 * Integrate gas production
   `#321 <https://github.com/openego/eGon-data/issues/321>`_
+* Integrate industrial time series creation
+  `#237 <https://github.com/openego/eGon-data/issues/237>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -163,8 +165,14 @@ Changed
   `#281 <https://github.com/openego/eGon-data/issues/281>`_
 * Migrate mastr, mv_grid_districts and re_potential_areas to datasets
   `#297 <https://github.com/openego/eGon-data/issues/297>`_
+* Migrate industrial sites to datasets
+  `#237 <https://github.com/openego/eGon-data/issues/237>`_
 * Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc. 
   `#334 <https://github.com/openego/eGon-data/issues/334>`_
+* Move functions used by multiple datasets
+  `#323 <https://github.com/openego/eGon-data/issues/323>`_
+* Migrate scenario tables to datasets
+  `#309 <https://github.com/openego/eGon-data/issues/309>`_
 
 Bug fixes
 ---------
@@ -201,3 +209,5 @@ Bug fixes
   `#340 <https://github.com/openego/eGon-data/issues/340>`_
 * Set current working directory as java's temp dir when executing osmosis
   `#344 <https://github.com/openego/eGon-data/issues/344>`_
+* Fix border gas voronoi polygons which had no bus_id
+`#362 <https://github.com/openego/eGon-data/issues/362>`_

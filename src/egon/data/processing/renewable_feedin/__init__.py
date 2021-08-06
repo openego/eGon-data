@@ -8,7 +8,7 @@ import numpy as np
 import egon.data.config
 from egon.data import db
 from egon.data.importing.era5 import import_cutout
-from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 def weather_cells_in_germany(geom_column='geom'):
     """ Get weather cells which intersect with Germany
