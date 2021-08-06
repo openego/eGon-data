@@ -435,7 +435,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> landuse_extraction
 
     # Import weather data
-    weather_data = WeatherData(dependencies=[setup])
+    weather_data = WeatherData(dependencies=[setup, scenario_input_import])
     download_weather_data = tasks["era5.download-era5"]
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
