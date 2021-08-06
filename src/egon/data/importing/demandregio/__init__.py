@@ -6,9 +6,9 @@ import os
 import pandas as pd
 import numpy as np
 import egon.data.config
-import egon.data.importing.scenarios.parameters as scenario_parameters
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import db
-from egon.data.importing.scenarios import get_sector_parameters, EgonScenario
+from egon.data.datasets.scenario_parameters import get_sector_parameters, EgonScenario
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 

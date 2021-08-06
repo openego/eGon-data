@@ -15,6 +15,8 @@ from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
+from egon.data.datasets.scenario_capacities import ScenarioCapacities
+from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.vg250 import Vg250
 from egon.data.processing.zensus_vg250 import (
     zensus_population_inside_germany as zensus_vg250,
@@ -25,8 +27,6 @@ import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
-import egon.data.importing.nep_input_data as nep_input
-import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
 
@@ -86,6 +86,10 @@ with airflow.DAG(
     vg250 = Vg250(dependencies=[setup])
     vg250.insert_into(pipeline)
     vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
+
+    # Scenario table
+    scenario_parameters = ScenarioParameters(dependencies=[setup])
+    scenario_input_import = tasks["scenario_parameters.insert-scenarios"]
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -148,25 +152,13 @@ with airflow.DAG(
     ] >> map_zensus_vg250 >> zensus_inside_ger >> zensus_inside_ger_metadata
     zensus_inside_ger >> vg250_population >> vg250_population_metadata
 
-    # Scenario table
-    scenario_input_tables = PythonOperator(
-        task_id="create-scenario-parameters-table",
-        python_callable=import_scenarios.create_table,
-    )
-
-    scenario_input_import = PythonOperator(
-        task_id="import-scenario-parameters",
-        python_callable=import_scenarios.insert_scenarios,
-    )
-    setup >> scenario_input_tables >> scenario_input_import
-
     # DemandRegio data import
     demandregio_tables = PythonOperator(
         task_id="demandregio-tables",
         python_callable=import_dr.create_tables,
     )
 
-    scenario_input_tables >> demandregio_tables
+    scenario_input_import >> demandregio_tables
 
     demandregio_installation = PythonOperator(
         task_id="demandregio-installation",
@@ -233,6 +225,7 @@ with airflow.DAG(
     demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
 
+
     # Distribute electrical demands to zensus cells
     processed_dr_tables = PythonOperator(
         task_id="create-demand-tables",
@@ -250,20 +243,11 @@ with airflow.DAG(
     map_zensus_vg250 >> elec_household_demands_zensus
 
     # NEP data import
-    create_tables = PythonOperator(
-        task_id="create-scenario-tables",
-        python_callable=nep_input.create_scenario_input_tables,
-    )
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[setup, vg250, data_bundle])
+    nep_insert_data = tasks["scenario_capacities.insert-data-nep"]
 
-    nep_insert_data = PythonOperator(
-        task_id="insert-nep-data",
-        python_callable=nep_input.insert_data_nep,
-    )
-
-    setup >> create_tables >> nep_insert_data
-    vg250_clean_and_prepare >> nep_insert_data
     population_import >> nep_insert_data
-    download_data_bundle >> nep_insert_data
 
     # setting etrago input tables
     etrago_input_data = PythonOperator(
