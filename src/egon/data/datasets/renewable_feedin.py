@@ -7,8 +7,19 @@ import geopandas as gpd
 import numpy as np
 import egon.data.config
 from egon.data import db
-from egon.data.importing.era5 import import_cutout
-from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.datasets.era5 import import_cutout
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets import Dataset
+
+class RenewableFeedin(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="RenewableFeedin",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(wind, pv, solar_thermal),
+            )
 
 def weather_cells_in_germany(geom_column='geom'):
     """ Get weather cells which intersect with Germany
@@ -149,7 +160,7 @@ def feedin_per_turbine():
     ts_e141 = cutout.wind(turbine_e141,
                           per_unit=True, shapes=cutout.grid_cells())
 
-    gdf['E-141'] = ts_e141.to_pandas().values.tolist()
+    gdf['E-141'] = ts_e141.to_pandas().transpose().values.tolist()
 
     # Calculate feedin-timeseries for E-126
     # source: https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
@@ -166,11 +177,11 @@ def feedin_per_turbine():
     ts_e126 = cutout.wind(turbine_e126,
                           per_unit=True, shapes=cutout.grid_cells())
 
-    gdf['E-126'] = ts_e126.to_pandas().values.tolist()
+    gdf['E-126'] = ts_e126.to_pandas().transpose().values.tolist()
 
     return gdf
 
-def wind_feedin_per_weather_cell():
+def wind():
     """ Insert feed-in timeseries for wind onshore turbines to database
 
     Returns
@@ -216,7 +227,7 @@ def wind_feedin_per_weather_cell():
               con=db.engine(),
               if_exists='append')
 
-def pv_feedin_per_weather_cell():
+def pv():
     """ Insert feed-in timeseries for pv plants to database
 
     Returns
@@ -244,7 +255,7 @@ def pv_feedin_per_weather_cell():
     insert_feedin(ts_pv, 'pv', weather_year)
 
 
-def solar_thermal_feedin_per_weather_cell():
+def solar_thermal():
     """ Insert feed-in timeseries for pv plants to database
 
     Returns
@@ -290,6 +301,8 @@ def insert_feedin(data, carrier, weather_year):
     None.
 
     """
+    # Transpose DataFrame
+    data = data.transpose()
 
     # Load configuration
     cfg = egon.data.config.datasets()['renewable_feedin']
