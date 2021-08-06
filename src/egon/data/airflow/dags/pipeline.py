@@ -404,6 +404,15 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
+    
+    # Gas prod import
+    gas_prod_insert_data = PythonOperator(
+        task_id="insert-gas-prod",
+        python_callable=gas_prod.insert_gas_prod,
+    )    
+    
+    create_gas_polygons >> gas_prod_insert_data
+
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(

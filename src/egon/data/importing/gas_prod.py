@@ -9,7 +9,6 @@ import geopandas as gpd
 import numpy as np
 import geopandas
 
-#from pathlib import Path
 from egon.data import db
 from egon.data.importing.gas_grid import next_id
 from egon.data.config import settings                     
@@ -23,11 +22,8 @@ def load_NG_generators():
         Dataframe containing the natural gas producion units in Germany
         
     """
-    # Read-in data from csv-file
-#    target_file = os.path.join(
-#        Path(os.path.dirname(__file__)).parent, 'egon/data/importing/gas_grid/data/IGGIELGN_Productions.csv')
     target_file = os.path.join(
-        "gas_data/",
+        "datasets/gas_data/",
         'data/IGGIELGN_Productions.csv')
     
     NG_generators_list = pd.read_csv(target_file,
@@ -62,9 +58,11 @@ def load_NG_generators():
     NG_generators_list = NG_generators_list.rename(columns={'geometry': 'geom'}).set_geometry('geom', crs=4326)
     
     # Insert p_nom
+    # Total production in Germany
     Total_NG_extracted_2035 = 36 # [TWh] Netzentwicklungsplan Gas 2020–2030
     Total_NG_capacity_2035 = Total_NG_extracted_2035 * 1000000 / (24 * 365)
     
+    # Regionalization of the production
     share = []
     for index, row in NG_generators_list.iterrows():
         param = ast.literal_eval(row['param'])
@@ -130,9 +128,11 @@ def load_biogas_generators():
             """)
 
     # Insert p_nom
+    # Total production in Germany
     Total_biogas_extracted_2035 = 10 # [TWh] Netzentwicklungsplan Gas 2020–2030
     Total_biogas_capacity_2035 = Total_biogas_extracted_2035 * 1000000 / (24 * 365)
-        
+    
+    # Regionalization of the production
     biogas_generators_list['p_nom'] = (biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]'] 
                                        / biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]'].sum() 
                                        * Total_biogas_capacity_2035)  
@@ -163,13 +163,12 @@ def assign_gas_bus_id(dataframe):
     print(gas_voronoi)
     res = gpd.sjoin(dataframe, gas_voronoi)
     print(res)
-    res['bus'] = res['bus_id']
-    print(res)    
+    res['bus'] = res['bus_id']   
     res = res.drop(columns=['index_right', 'id'])
     print(res)
     
     # Assert that all power plants have a bus_id
-    assert res.bus_id.notnull().all(), "Some points are not attached to a gas bus."
+    assert res.bus.notnull().all(), "Some points are not attached to a gas bus."
 
     return res
 
@@ -200,7 +199,7 @@ def import_gas_generators():
     CH4_generators_list = assign_gas_bus_id(CH4_generators_list)
     
     # Remove useless columns
-    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id', 'point'])
+    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id' , 'point']) 
     
     # Insert data to db    
     CH4_generators_list.to_sql('egon_pf_hv_generator', #to_postgis
