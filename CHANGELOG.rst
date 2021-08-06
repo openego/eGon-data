@@ -172,6 +172,8 @@ Changed
   `#323 <https://github.com/openego/eGon-data/issues/323>`_
 * Migrate scenario tables to datasets
   `#309 <https://github.com/openego/eGon-data/issues/309>`_
+* Migrate weather data and power plants to datasets
+  `#314 <https://github.com/openego/eGon-data/issues/314>`_
 
 Bug fixes
 ---------
