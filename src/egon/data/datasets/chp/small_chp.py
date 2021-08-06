@@ -3,7 +3,7 @@ The module containing all code dealing with chp < 10MW.
 """
 import pandas as pd
 from egon.data import db, config
-from egon.data.processing.power_plants import (
+from egon.data.datasets.power_plants import (
     assign_bus_id, assign_gas_bus_id, filter_mastr_geometry, select_target)
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd

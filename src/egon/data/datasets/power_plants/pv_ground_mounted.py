@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 
-def regio_of_pv_ground_mounted():
+def insert():
     def mastr_existing_pv(path, pow_per_area):
 
         """Import MaStR data from csv-files.
@@ -839,7 +839,7 @@ def regio_of_pv_ground_mounted():
             rora_i_hv = rora_i[rora_i["voltage_level"] == 4]
             agri_i_mv = agri_i[agri_i["voltage_level"] == 5]
             agri_i_hv = agri_i[agri_i["voltage_level"] == 4]
-            print("Untersuchung der Spannungslevel pro Bundesland:")
+            print("eGon2035: Untersuchung der Spannungslevel pro Bundesland:")
             print("a) PVs auf Potentialflächen Road & Railway: ")
             print(
                 "Insgesamt installierte Leistung: "
@@ -1006,6 +1006,13 @@ def regio_of_pv_ground_mounted():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
+        
+        pv_rora = pv_rora[pv_rora['installed capacity in kW']>0]
+        pv_agri = pv_agri[pv_agri['installed capacity in kW']>0]
+        pv_per_distr = pv_per_distr[pv_per_distr['installed capacity in kW']>0]
+        pv_rora_100RE = pv_rora_100RE[pv_rora_100RE['installed capacity in kW']>0]
+        pv_agri_100RE = pv_agri_100RE[pv_agri_100RE['installed capacity in kW']>0]
+        pv_per_distr_100RE = pv_per_distr_100RE[pv_per_distr_100RE['installed capacity in kW']>0]
 
         return (
             pv_rora,
@@ -1079,6 +1086,7 @@ def regio_of_pv_ground_mounted():
 
         # copy relevant columns from pv_parks
         insert_pv_parks = pv_parks[["el_capacity", "voltage_level", "geometry"]]
+        insert_pv_parks = insert_pv_parks.set_geometry('geometry')
 
         # set static column values
         insert_pv_parks["carrier"] = "solar"
@@ -1090,7 +1098,7 @@ def regio_of_pv_ground_mounted():
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
-            .to_crs(4326)
+            .set_crs(4326)
         )
 
         # reset index
@@ -1135,7 +1143,7 @@ def regio_of_pv_ground_mounted():
     pv_agri_hv = pv_agri[pv_agri["voltage_level"] == 4]
 
     print(" ")
-    print("Untersuchung der Spannungslevel (gesamt):")
+    print("eGon2035: Untersuchung der Spannungslevel (gesamt):")
     print("a) PVs auf Potentialflächen Road & Railway: ")
     print(
         "Insgesamt installierte Leistung: "

@@ -5,7 +5,7 @@ The module containing all code dealing with large chp from NEP list.
 import pandas as pd
 import geopandas
 from egon.data import db, config
-from egon.data.processing.power_plants import (
+from egon.data.datasets.power_plants import (
     assign_voltage_level, assign_bus_id, assign_gas_bus_id,
     filter_mastr_geometry, select_target)
 from egon.data.datasets.chp.small_chp import assign_use_case

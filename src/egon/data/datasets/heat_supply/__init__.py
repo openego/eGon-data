@@ -136,6 +136,6 @@ class HeatSupply(Dataset):
             name="HeatSupply",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(create_tables, {
-                district_heating, individual_heating, potential_germany}),
+            tasks=(create_tables,
+                district_heating, individual_heating, potential_germany),
         )

@@ -16,9 +16,22 @@ import geopandas as gpd
 
 from egon.data import db
 import egon.data.config
+from egon.data.datasets import Dataset
 
 Base = declarative_base()
 
+class ZensusVg250(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ZensusVg250",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                map_zensus_vg250, inside_germany,
+                add_metadata_zensus_inside_ger, population_in_municipalities,
+                add_metadata_vg250_gem_pop
+                )
+        )
 
 class Vg250Sta(Base):
     __tablename__ = "vg250_sta"

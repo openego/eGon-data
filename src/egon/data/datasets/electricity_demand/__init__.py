@@ -4,12 +4,34 @@
 """
 import egon.data.config
 from egon.data import db
-from egon.data.processing.demandregio.temporal import insert_cts_load
+from egon.data.datasets.electricity_demand.temporal import insert_cts_load
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from egon.data.processing.zensus_vg250.zensus_population_inside_germany import DestatisZensusPopulationPerHa
+from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 # will be later imported from another file ###
 Base = declarative_base()
+
+class HouseholdElectricityDemand(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HouseholdElectricityDemand",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(create_tables,
+                   distribute_household_demands)
+        )
+
+class CtsElectricityDemand(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="CtsElectricityDemand",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(distribute_cts_demands,
+                   insert_cts_load)
+        )
+
 
 class EgonDemandRegioZensusElectricity(Base):
     __tablename__ = 'egon_demandregio_zensus_electricity'
