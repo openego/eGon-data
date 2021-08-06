@@ -217,6 +217,9 @@ def extension():
             WHERE REPLACE(gen, '-', '') ='{federal_state}'))
             """).capacity[0]
 
+        print(f"Target capacity in {federal_state}: {targets[federal_state]}")
+        print(f"Existing capacity in {federal_state}: {existing_capacity}")
+
         additional_capacity = targets[federal_state] - existing_capacity
         extension_per_federal_state(
             additional_capacity, federal_state, EgonChp)
