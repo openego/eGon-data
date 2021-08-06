@@ -174,6 +174,8 @@ Changed
   `#309 <https://github.com/openego/eGon-data/issues/309>`_
 * Migrate weather data and power plants to datasets
   `#314 <https://github.com/openego/eGon-data/issues/314>`_
+* Create and fill table for CTS electricity demand per bus
+  `#326 <https://github.com/openego/eGon-data/issues/326>`_
 
 Bug fixes
 ---------
