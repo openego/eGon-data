@@ -64,9 +64,11 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
     """
 
+
     existsting_chp_smaller_10mw = MaStR_konv[
-        (MaStR_konv.Nettonennleistung>0.1)
-        &(MaStR_konv.Nettonennleistung<=10)]
+        #(MaStR_konv.Nettonennleistung>0.1)
+        (MaStR_konv.Nettonennleistung<=1000)
+        &(MaStR_konv.ThermischeNutzleistung>0)]
 
     targets = select_target('small_chp', 'eGon2035')
 
@@ -139,7 +141,8 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
     None.
 
     """
-
+    flh_chp = 4000
+    print(f"Distributing {additional_capacity} MW in {federal_state}")
     existing_chp = db.select_dataframe(
         f"""
         SELECT el_capacity, th_capacity, voltage_level, b.area_id
@@ -152,6 +155,7 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
         AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
             SELECT ST_Union(geometry) FROM boundaries.vg250_lan
             WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+        AND el_capacity < 10
         ORDER BY el_capacity, residential_and_service_demand
 
         """)
@@ -165,7 +169,7 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
         FROM
         demand.district_heating_areas
         WHERE scenario = 'eGon2035'
-        AND residential_and_service_demand > 2400
+      ---  AND residential_and_service_demand > 2400
         AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
             SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
             WHERE REPLACE(gen, '-', '') ='{federal_state}'))
@@ -181,7 +185,7 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
             db.select_geodataframe(
                 f"""
                 SELECT
-                b.residential_and_service_demand - sum(a.el_capacity)*8000
+                b.residential_and_service_demand - sum(a.el_capacity)*{flh_chp}
                 as demand, b.area_id,
                 ST_Transform(ST_Centroid(geom_polygon), 4326) as geom
                 FROM
@@ -189,7 +193,7 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
                 demand.district_heating_areas b
                 WHERE b.scenario = 'eGon2035'
                 AND a.scenario = 'eGon2035'
-                AND b.residential_and_service_demand > 2400
+               --- AND b.residential_and_service_demand > 2400
                 AND ST_Intersects(
                     ST_Transform(ST_Centroid(geom_polygon), 4326),
                     (SELECT ST_Union(d.geometry) FROM boundaries.vg250_lan d
@@ -213,10 +217,10 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
     # Add new CHP as long as the additional capacity is not reached
     while additional_capacity > existing_chp.el_capacity.min():
 
-        # Break loop after 300 iterations without a fitting CHP
-        if n > 300:
+        # Break loop after 500 iterations without a fitting CHP
+        if n > 500:
             print(
-                f'{additional_capacity} MW are matched to a district heating grid.')
+                f'{additional_capacity} MW are not matched to a district heating grid.')
             break
 
         # Select random new build CHP from list of existing CHP
@@ -229,7 +233,7 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
         # Select district heatung areas whoes remaining demand, which is not
         # covered by another CHP, fits to the selected CHP
         possible_dh = dh_areas[
-                dh_areas.demand > selected_chp.th_capacity*8000].to_crs(4326)
+                dh_areas.demand > selected_chp.th_capacity*flh_chp].to_crs(4326)
 
 
         # If there is no district heating area whoes demand (not covered by
@@ -263,8 +267,8 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
                         th_capacity= selected_chp.th_capacity,
                         district_heating=True,
                         voltage_level=selected_chp.voltage_level,
-                        electrical_bus_id = int(selected_area.bus_id),
-                        gas_bus_id = int(selected_area.gas_bus_id),
+                        #electrical_bus_id = int(selected_area.bus_id),
+                        #gas_bus_id = int(selected_area.gas_bus_id),
                         district_heating_area_id = int(selected_area.area_id),
                         scenario='eGon2035',
                         geom=f"SRID=4326;POINT({selected_area.geom.x} {selected_area.geom.y})",
@@ -282,10 +286,10 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
             additional_capacity -= selected_chp.el_capacity
             dh_areas.loc[
                 dh_areas.index[dh_areas.area_id == selected_area.area_id],
-                'demand'] -= selected_chp.th_capacity*8000
+                'demand'] -= selected_chp.th_capacity*flh_chp
             dh_areas = dh_areas[dh_areas.demand > 0]
         else:
-            print('Selected CHP can not be assigned to a district heating area.')
+           # print('Selected CHP can not be assigned to a district heating area.')
             n+= 1
 
 def assign_use_case(chp, sources):
