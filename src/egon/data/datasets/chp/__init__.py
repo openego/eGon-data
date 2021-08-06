@@ -119,7 +119,8 @@ def assign_heat_bus(scenario='eGon2035'):
         WHERE scenario = '{scenario}'
         AND district_heating = True
         """,
-        index_col='id')
+        index_col='id',
+        epsg=4326)
 
     # Select district heating areas and their centroid
     district_heating = db.select_geodataframe(
