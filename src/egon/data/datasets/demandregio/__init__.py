@@ -24,6 +24,18 @@ except:
 # will be later imported from another file ###
 Base = declarative_base()
 
+# class DemandRegio(Dataset):
+#     def __init__(self, dependencies):
+#         super().__init__(
+#             name="DemandRegio",
+#             version="0.0.0",
+#             dependencies=dependencies,
+#             tasks=(clone_and_install, create_tables,
+#                    {insert_society_data, insert_household_demand,
+#                     insert_cts_ind_demands}),
+#         )
+
+# Avoid parallel tasks as long as the dependencies are not set correctly
 class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -31,9 +43,10 @@ class DemandRegio(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(clone_and_install, create_tables,
-                   {insert_society_data, insert_household_demand,
-                    insert_cts_ind_demands}),
+                   insert_society_data, insert_household_demand,
+                    insert_cts_ind_demands),
         )
+
 
 class EgonDemandRegioHH(Base):
     __tablename__ = 'egon_demandregio_hh'

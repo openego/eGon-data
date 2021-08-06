@@ -12,6 +12,18 @@ from egon.data.datasets import Dataset
 # will be later imported from another file ###
 Base = declarative_base()
 
+# class SocietyPrognosis(Dataset):
+#     def __init__(self, dependencies):
+#         super().__init__(
+#             name="SocietyPrognosis",
+#             version="0.0.0",
+#             dependencies=dependencies,
+#             tasks=(create_tables,
+#                    {zensus_population,
+#                     zensus_household}),
+#         )
+
+# Avoid parallel tasks as long as the dependencies are not set correctly
 class SocietyPrognosis(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -19,9 +31,10 @@ class SocietyPrognosis(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(create_tables,
-                   {zensus_population,
-                    zensus_household}),
+                   zensus_population,
+                    zensus_household),
         )
+
 
 class EgonPopulationPrognosis(Base):
     __tablename__ = "egon_population_prognosis"
