@@ -534,12 +534,12 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
     db.execute_sql(
             f"""
             -- CLEAN UP OF TABLES
-            DELETE FROM grid.egon_pf_hv_bus
+            DELETE FROM grid.egon_etrago_bus
             WHERE version = {version}
             AND carrier = 'AC';
-            DELETE FROM grid.egon_pf_hv_line
+            DELETE FROM grid.egon_etrago_line
             WHERE version = {version};
-            DELETE FROM grid.egon_pf_hv_transformer
+            DELETE FROM grid.egon_etrago_transformer
             WHERE version = {version};
             """
             )
@@ -549,7 +549,7 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
         db.execute_sql(
             f"""
             -- BUS DATA
-            INSERT INTO grid.egon_pf_hv_bus (version, scn_name, bus_id, v_nom,
+            INSERT INTO grid.egon_etrago_bus (version, scn_name, bus_id, v_nom,
                                              geom, x, y, carrier)
             SELECT
               {version},
@@ -565,7 +565,7 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
 
 
             -- BRANCH DATA
-            INSERT INTO grid.egon_pf_hv_line (version, scn_name, line_id, bus0,
+            INSERT INTO grid.egon_etrago_line (version, scn_name, line_id, bus0,
                                               bus1, x, r, b, s_nom, cables, v_nom,
                                               geom, topo)
             SELECT
@@ -588,7 +588,7 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
 
 
             -- TRANSFORMER DATA
-            INSERT INTO grid.egon_pf_hv_transformer (version, scn_name,
+            INSERT INTO grid.egon_etrago_transformer (version, scn_name,
                                                      trafo_id, bus0, bus1, x,
                                                      s_nom, tap_ratio,
                                                      phase_shift, geom, topo)
@@ -610,32 +610,32 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
 
             -- per unit to absolute values
 
-            UPDATE grid.egon_pf_hv_line a
+            UPDATE grid.egon_etrago_line a
             SET
                  r = r * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus b
+                            FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
                             )*1000)^2 / (100 * 10^6)),
                  x = x * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus b
+                            FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
                             )*1000)^2 / (100 * 10^6)),
                  b = b * (((SELECT v_nom
-                            FROM grid.egon_pf_hv_bus b
+                            FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
                             )*1000)^2 / (100 * 10^6));
 
             -- calculate line length (in km) from geoms
 
-            UPDATE grid.egon_pf_hv_line a
+            UPDATE grid.egon_etrago_line a
             SET
                  length = result.length
                  FROM
                  (SELECT b.line_id, st_length(b.geom,false)/1000 as length
-                  from grid.egon_pf_hv_line b)
+                  from grid.egon_etrago_line b)
                  as result
             WHERE a.line_id = result.line_id;
 
@@ -643,21 +643,21 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
-            DELETE FROM grid.egon_pf_hv_bus
+            DELETE FROM grid.egon_etrago_bus
             WHERE scn_name={scenario_name}
             AND carrier = 'AC'
             AND version = {version}
             AND bus_id NOT IN
-            (SELECT bus0 FROM grid.egon_pf_hv_line WHERE
+            (SELECT bus0 FROM grid.egon_etrago_line WHERE
              scn_name={scenario_name})
             AND bus_id NOT IN
-            (SELECT bus1 FROM grid.egon_pf_hv_line WHERE
+            (SELECT bus1 FROM grid.egon_etrago_line WHERE
              scn_name={scenario_name})
             AND bus_id NOT IN
-            (SELECT bus0 FROM grid.egon_pf_hv_transformer
+            (SELECT bus0 FROM grid.egon_etrago_transformer
              WHERE scn_name={scenario_name})
             AND bus_id NOT IN
-            (SELECT bus1 FROM grid.egon_pf_hv_transformer
+            (SELECT bus1 FROM grid.egon_etrago_transformer
              WHERE scn_name={scenario_name});
                 """
         )
