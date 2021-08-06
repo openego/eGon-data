@@ -674,7 +674,7 @@ class Osmtgmod(Dataset):
             tasks=(
                 import_osm_data,
                 run,
-                {
+               # {
                     PostgresOperator(
                         task_id="osmtgmod_substation",
                         sql=resources.read_text(__name__, "substation_otg.sql"),
@@ -682,6 +682,6 @@ class Osmtgmod(Dataset):
                         autocommit=True,
                     ),
                     to_pypsa
-                }
+              #  }
             ),
         )
