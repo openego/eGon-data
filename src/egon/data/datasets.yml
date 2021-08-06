@@ -576,3 +576,55 @@ etrago_heat:
       schema: 'grid'
       table: 'egon_pf_hv_link'
 
+electrical_neighbours:
+  sources:
+    electricity_buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_pf_hv_line'
+    german_borders:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+    osmtgmod_bus:
+      schema: 'osmtgmod_results'
+      table: 'bus_data'
+    osmtgmod_branch:
+      schema: 'osmtgmod_results'
+      table: 'branch_data'
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    tyndp_demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+    tyndp_demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+    buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_pf_hv_line'
+    transformers:
+      schema: 'grid'
+      table: 'egon_pf_hv_transformer'
+    loads:
+      schema: 'grid'
+      table: 'egon_pf_hv_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_load_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator'
+    storage:
+      schema: 'grid'
+      table: 'egon_pf_hv_storage'
+
+tyndp:
+  sources:
+      capacities: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+      capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"

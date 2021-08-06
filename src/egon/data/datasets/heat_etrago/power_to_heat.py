@@ -19,9 +19,15 @@ def next_id(component):
         Next index value
 
     """
+
+    if component == 'transformer':
+        id_column = 'trafo_id'
+    else:
+        id_column = f'{component}_id'
+
     max_id = db.select_dataframe(
         f"""
-        SELECT MAX({component}_id) FROM grid.egon_pf_hv_{component}
+        SELECT MAX({id_column}) FROM grid.egon_pf_hv_{component}
         """)['max'][0]
 
     if max_id:

@@ -99,6 +99,21 @@ The container and its data can be kept by renaming the docker container.
 
   docker rename egon-data-local-database NEW_CONTAINER_NAME
 
+
+``Working with multiple instances of egon-data``
+----------------------------------------------------------------------------
+
+To make sure parallel installations of egon-data are not conflicting each other
+users have to set different values for the following options in the configuration:
+
+.. code-block:: none
+
+    --airflow-port
+    --compose-project-name
+    --database-port
+    --docker-container-name
+
+
 Other import or incompatible package version errors
 ===================================================
 
