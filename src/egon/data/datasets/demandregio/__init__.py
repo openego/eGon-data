@@ -13,6 +13,7 @@ from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install)
+from egon.data.datasets import Dataset
 
 try:
     from disaggregator import data, spatial, config

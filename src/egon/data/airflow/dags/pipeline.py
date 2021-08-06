@@ -354,7 +354,8 @@ with airflow.DAG(
     # Power plants
     power_plants = PowerPlants(dependencies=[
         setup, renewable_feedin, mv_grid_districts, mastr_data,
-        re_potential_areas, scenario_parameters, scenario_capacities])
+        re_potential_areas, scenario_parameters, scenario_capacities,
+        Vg250MvGridDistricts])
 
     power_plant_import = tasks["power_plants.insert-hydro-biomass"]
     generate_wind_farms = tasks["power_plants.wind_farms.insert"]
@@ -363,7 +364,6 @@ with airflow.DAG(
 
     hvmv_substation_extraction >> generate_wind_farms
     hvmv_substation_extraction >> generate_pv_ground_mounted
-    map_boundaries_grid_districts >> solar_rooftop_etrago
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
