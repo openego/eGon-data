@@ -8,7 +8,7 @@ import numpy as np
 import egon.data.config
 from egon.data import db
 from egon.data.datasets.era5 import import_cutout
-from egon.data.datasets.scenarios import get_sector_parameters
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import Dataset
 
 class RenewableFeedin(Dataset):
