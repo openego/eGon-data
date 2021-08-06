@@ -551,38 +551,40 @@ def neighbor_reduction(version="0.0.0"):
     )
 
     # prepare and write neighboring crossborder lines to etrago tables
-
-    neighbor_lines["scn_name"] = "eGon100RE"
-    neighbor_lines["version"] = version
-
-    neighbor_lines = neighbor_lines.rename(
-        columns={"s_max_pu": "s_max_pu_fixed"}
-    )
-    neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"]
-    neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
-
-    for i in [
-        "name",
-        "x_pu_eff",
-        "r_pu_eff",
-        "sub_network",
-        "x_pu",
-        "r_pu",
-        "g_pu",
-        "b_pu",
-        "s_nom_opt",
-    ]:
-        neighbor_lines = neighbor_lines.drop(i, axis=1)
-
-    neighbor_lines.to_sql(
-        "egon_pf_hv_line",
-        engine,
-        schema="grid",
-        if_exists="append",
-        index=True,
-        index_label="line_id",
-    )
-
+    def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE", version=version):
+        neighbor_lines["scn_name"] = scn
+        neighbor_lines["version"] = version
+    
+        neighbor_lines = neighbor_lines.rename(
+            columns={"s_max_pu": "s_max_pu_fixed"}
+        )
+        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"]
+        neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
+    
+        for i in [
+            "name",
+            "x_pu_eff",
+            "r_pu_eff",
+            "sub_network",
+            "x_pu",
+            "r_pu",
+            "g_pu",
+            "b_pu",
+            "s_nom_opt",
+        ]:
+            neighbor_lines = neighbor_lines.drop(i, axis=1)
+    
+        neighbor_lines.to_sql(
+            "egon_pf_hv_line",
+            engine,
+            schema="grid",
+            if_exists="append",
+            index=True,
+            index_label="line_id",
+        )
+    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE", version=version)
+    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035", version=version)
+   
     # prepare and write neighboring crossborder links to etrago tables
 
     neighbor_links["scn_name"] = "eGon100RE"
