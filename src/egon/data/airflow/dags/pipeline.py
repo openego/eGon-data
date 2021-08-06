@@ -9,6 +9,8 @@ from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.industry import IndustrialDemandCurves
+from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -23,8 +25,6 @@ import egon.data.importing.demandregio.install_disaggregator as install_dr
 import egon.data.importing.era5 as import_era5
 import egon.data.importing.etrago as etrago
 import egon.data.importing.heat_demand_data as import_hd
-import egon.data.importing.industrial_sites as industrial_sites
-
 import egon.data.importing.nep_input_data as nep_input
 import egon.data.importing.scenarios as import_scenarios
 import egon.data.importing.zensus as import_zs
@@ -38,12 +38,10 @@ import egon.data.processing.power_plants as power_plants
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.renewable_feedin as import_feedin
 import egon.data.processing.substation as substation
-import egon.data.processing.zensus_vg250.zensus_population_inside_germany as zensus_vg250
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.wind_farms as wf
 import egon.data.processing.pv_ground_mounted as pv_gm
 import egon.data.importing.scenarios as import_scenarios
-import egon.data.importing.industrial_sites as industrial_sites
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
@@ -153,12 +151,12 @@ with airflow.DAG(
     # Scenario table
     scenario_input_tables = PythonOperator(
         task_id="create-scenario-parameters-table",
-        python_callable=import_scenarios.create_table
+        python_callable=import_scenarios.create_table,
     )
 
     scenario_input_import = PythonOperator(
         task_id="import-scenario-parameters",
-        python_callable=import_scenarios.insert_scenarios
+        python_callable=import_scenarios.insert_scenarios,
     )
     setup >> scenario_input_tables >> scenario_input_import
 
@@ -169,7 +167,6 @@ with airflow.DAG(
     )
 
     scenario_input_tables >> demandregio_tables
-
 
     demandregio_installation = PythonOperator(
         task_id="demandregio-installation",
@@ -235,7 +232,6 @@ with airflow.DAG(
     map_zensus_vg250 >> household_prognosis
     demandregio_society >> household_prognosis
     zensus_misc_import >> household_prognosis
-
 
     # Distribute electrical demands to zensus cells
     processed_dr_tables = PythonOperator(
@@ -305,7 +301,6 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
-
 
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
@@ -385,25 +380,6 @@ with airflow.DAG(
     retrieve_mastr_data >> power_plant_import
     define_mv_grid_districts >> power_plant_import
 
-    # Import and merge data on industrial sites from different sources
-
-    industrial_sites_import = PythonOperator(
-        task_id="download-import-industrial-sites",
-        python_callable=industrial_sites.download_import_industrial_sites
-    )
-
-    industrial_sites_merge = PythonOperator(
-        task_id="merge-industrial-sites",
-        python_callable=industrial_sites.merge_inputs
-    )
-
-    industrial_sites_nuts = PythonOperator(
-        task_id="map-industrial-sites-nuts3",
-        python_callable=industrial_sites.map_nuts3
-    )
-    vg250_clean_and_prepare >> industrial_sites_import
-    industrial_sites_import >> industrial_sites_merge >> industrial_sites_nuts
-
     # Distribute electrical CTS demands to zensus grid
 
     elec_cts_demands_zensus = PythonOperator(
@@ -416,7 +392,6 @@ with airflow.DAG(
     demandregio_demand_cts_ind >> elec_cts_demands_zensus
     map_zensus_vg250 >> elec_cts_demands_zensus
 
-
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
         task_id="insert-gas-grid",
@@ -425,7 +400,8 @@ with airflow.DAG(
 
     etrago_input_data >> gas_grid_insert_data
     download_data_bundle >> gas_grid_insert_data
-    
+    osmtgmod_pypsa >> gas_grid_insert_data
+
      # Power-to-gas installations creation
     insert_power2gas_installations = PythonOperator(
         task_id="insert-power-to-gas-installations",
@@ -434,15 +410,6 @@ with airflow.DAG(
 
     gas_grid_insert_data >> insert_power2gas_installations
     osmtgmod_pypsa >> insert_power2gas_installations
-
-    # Create gas voronoi
-    create_gas_polygons = PythonOperator(
-        task_id="create-gas-voronoi",
-        python_callable=gas_areas.create_voronoi,
-    )
-
-    gas_grid_insert_data  >> create_gas_polygons
-    vg250_clean_and_prepare >> create_gas_polygons
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
@@ -623,3 +590,13 @@ with airflow.DAG(
     etrago_input_data >> heat_etrago_buses
     define_mv_grid_districts >> heat_etrago_buses
     import_district_heating_supply >> heat_etrago_supply
+
+    # Industry
+
+    industrial_sites = MergeIndustrialSites(
+        dependencies=[setup, vg250_clean_and_prepare]
+    )
+
+    demand_curves_industry = IndustrialDemandCurves(
+        dependencies=[define_mv_grid_districts, industrial_sites, demandregio_demand_cts_ind, osm, landuse_extraction]
+    )
