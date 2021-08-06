@@ -405,7 +405,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> landuse_extraction
 
     # Import weather data
-    weather_data = WeatherData(dependencies=[setup, scenario_input_import])
+    weather_data = WeatherData(dependencies=[setup, scenario_parameters])
     download_weather_data = tasks["era5.download-era5"]
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
@@ -468,23 +468,19 @@ with airflow.DAG(
     # Power plants
     power_plants = PowerPlants(dependencies=[
         setup, renewable_feedin, mv_grid_districts, mastr_data,
-        re_potential_areas])
+        re_potential_areas, scenario_parameters, scenario_capacities])
 
     power_plant_import = tasks["power_plants.insert-hydro-biomass"]
     generate_wind_farms = tasks["power_plants.wind_farms.insert"]
     generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
     solar_rooftop_etrago = tasks["power_plants.pv_rooftop.pv-rooftop-per-mv-grid"]
 
-    scenario_input_import >> generate_wind_farms
     hvmv_substation_extraction >> generate_wind_farms
-    scenario_input_import >> generate_pv_ground_mounted
     hvmv_substation_extraction >> generate_pv_ground_mounted
-    nep_insert_data >> power_plant_import
     map_boundaries_grid_districts >> solar_rooftop_etrago
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
-    nep_insert_data >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
