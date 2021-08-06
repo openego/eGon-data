@@ -291,12 +291,12 @@ def match_chp(chp_NEP, MaStR_konv, chp_NEP_matched, consider_carrier=True):
                             (MaStR_konv.energietraeger_Ma.isin(
                                 map_carrier[row.carrier]))
                             &(MaStR_konv.plz_Ma==int(row.postcode))
-                            &(MaStR_konv.Nettonennleistung>50)]
+                            &(MaStR_konv.Nettonennleistung>0.05)]
         else:
             # Select MaStR power plants with the same PLZ
             selected_plants = MaStR_konv[
                             (MaStR_konv.plz_Ma==int(row.postcode))
-                            &(MaStR_konv.Nettonennleistung>50)]
+                            &(MaStR_konv.Nettonennleistung>0.05)]
 
         selected_plants.loc[:, 'Nettonennleistung'] = (
                         row.c2035_capacity * selected_plants.Nettonennleistung/
@@ -334,7 +334,7 @@ def insert_large_chp(sources, target, EgonChp):
     # Select CHP from MaStR
     MaStR_konv = select_chp_from_mastr(sources)
 
-    # Assign voltage level to MaStR
+    #Assign voltage level to MaStR
     MaStR_konv['voltage_level'] = assign_voltage_level(
         MaStR_konv, config.datasets()["chp_location"])
 
@@ -350,11 +350,13 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Aggregate units from MaStR to one power plant
     MaStR_konv = MaStR_konv.groupby(
-        ['plz_Ma', 'Laengengrad', 'Breitengrad','energietraeger_Ma', 'voltage_level']
+        ['plz_Ma', 'Laengengrad', 'Breitengrad','energietraeger_Ma']
         )[['Nettonennleistung', 'ThermischeNutzleistung', 'EinheitMastrNummer'
            ]].sum(numeric_only=False).reset_index()
     MaStR_konv['geometry'] = geopandas.points_from_xy(
         MaStR_konv['Laengengrad'], MaStR_konv['Breitengrad'])
+    MaStR_konv['voltage_level'] = assign_voltage_level(
+        MaStR_konv, config.datasets()["chp_location"])
 
     # Match CHP from NEP list with aggregated MaStR units
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
