@@ -208,3 +208,5 @@ Bug fixes
   `#340 <https://github.com/openego/eGon-data/issues/340>`_
 * Set current working directory as java's temp dir when executing osmosis
   `#344 <https://github.com/openego/eGon-data/issues/344>`_
+* Fix border gas voronoi polygons which had no bus_id
+`#362 <https://github.com/openego/eGon-data/issues/362>`_
