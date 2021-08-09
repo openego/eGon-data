@@ -6,6 +6,18 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
 Base = declarative_base()
+from egon.data.datasets import Dataset
+
+class Vg250MvGridDistricts(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Vg250MvGridDistricts",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                mapping
+                )
+        )
 
 class MapMvgriddistrictsVg250(Base):
     __tablename__ = "egon_map_mvgriddistrict_vg250"
@@ -27,7 +39,7 @@ def create_tables():
     MapMvgriddistrictsVg250.__table__.create(bind=engine, checkfirst=True)
 
 
-def map_mvgriddistricts_vg250():
+def mapping():
     """ Map mv grid distrcits to federal states
 
     Returns

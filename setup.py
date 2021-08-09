@@ -83,7 +83,7 @@ setup(
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         "apache-airflow>=1.10.14,<2.0",
-        "atlite==0.0.3",
+        "atlite==0.2.5",
         "cdsapi",
         "click",
         "geopandas>=0.9.0",

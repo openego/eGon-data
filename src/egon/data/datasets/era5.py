@@ -10,11 +10,22 @@ import geopandas as gpd
 import egon.data.config
 from egon.data import db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2 import Geometry
 # will be later imported from another file ###
 Base = declarative_base()
+
+class WeatherData(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Era5",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=({create_tables, download_era5}, insert_weather_cells),
+            )
 
 class EgonEra5Cells(Base):
     __tablename__ = 'egon_era5_weather_cells'
@@ -51,6 +62,7 @@ def import_cutout(boundary='Europe'):
         Weather data stored in cutout
 
     """
+    weather_year = get_sector_parameters('global', 'eGon2035')['weather_year']
 
     if boundary == 'Europe':
         xs = slice(-12., 35.1)
@@ -61,7 +73,7 @@ def import_cutout(boundary='Europe'):
             "SELECT geometry as geom FROM boundaries.vg250_sta_bbox",
             db.engine()).to_crs(4623).geom
         xs = slice(geom_de.bounds.minx[0], geom_de.bounds.maxx[0])
-        ys = slice(geom_de.bounds.maxy[0], geom_de.bounds.miny[0])
+        ys = slice(geom_de.bounds.miny[0], geom_de.bounds.maxy[0])
 
     else:
         print(
@@ -70,16 +82,14 @@ def import_cutout(boundary='Europe'):
 
     directory = Path(".") / (
         egon.data.config.datasets()
-        ['era5_weather_data']['targets']['weather_data']['path'])
-
-    weather_year = get_sector_parameters('global', 'eGon2035')['weather_year']
+        ['era5_weather_data']['targets']['weather_data']['path']
+        ) / f"{boundary.lower()}-{str(weather_year)}-era5.nc"
 
     cutout = atlite.Cutout(
-            f"europe-{str(weather_year)}-era5",
-            cutout_dir = directory.absolute(),
+            path = directory.absolute(),
             module="era5",
-            xs=xs,
-            ys=ys,
+            x=xs,
+            y=ys,
             years=slice(weather_year, weather_year)
             )
 
@@ -106,8 +116,13 @@ def download_era5():
 
     if not cutout.prepared:
 
-        cutout.prepare(nprocesses=1)
+        cutout.prepare()
 
+    cutout = import_cutout('Germany')
+
+    if not cutout.prepared:
+
+        cutout.prepare()
 
 def insert_weather_cells():
     """ Insert weather cells from era5 into database table
@@ -117,8 +132,13 @@ def insert_weather_cells():
     None.
 
     """
-
     cfg = egon.data.config.datasets()['era5_weather_data']
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {cfg['targets']['weather_cells']['schema']}.
+        {cfg['targets']['weather_cells']['table']}
+        """)
 
     cutout = import_cutout()
 

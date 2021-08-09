@@ -11,6 +11,9 @@ from egon.data import db
 from egon.data.datasets.scenario_parameters import get_sector_parameters, EgonScenario
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
+from egon.data.datasets.demandregio.install_disaggregator import (
+    clone_and_install)
+from egon.data.datasets import Dataset
 
 try:
     from disaggregator import data, spatial, config
@@ -20,6 +23,29 @@ except:
         "Please run task 'demandregio-installation'")
 # will be later imported from another file ###
 Base = declarative_base()
+
+# class DemandRegio(Dataset):
+#     def __init__(self, dependencies):
+#         super().__init__(
+#             name="DemandRegio",
+#             version="0.0.0",
+#             dependencies=dependencies,
+#             tasks=(clone_and_install, create_tables,
+#                    {insert_society_data, insert_household_demand,
+#                     insert_cts_ind_demands}),
+#         )
+
+# Avoid parallel tasks as long as the dependencies are not set correctly
+class DemandRegio(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="DemandRegio",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(clone_and_install, create_tables,
+                   insert_society_data, insert_household_demand,
+                    insert_cts_ind_demands),
+        )
 
 
 class EgonDemandRegioHH(Base):

@@ -392,12 +392,9 @@ electrical_load_curves_cts:
       schema: 'grid'
       table: 'egon_hvmv_substation'
   targets:
-    pf_load:
-      schema: 'grid'
-      table: 'egon_etrago_load'
-    pf_load_timeseries:
-      schema: 'grid'
-      table: 'egon_etrago_load_timeseries'
+    cts_demand_curves:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_cts'
 
 map_mvgrid_vg250:
   sources:
