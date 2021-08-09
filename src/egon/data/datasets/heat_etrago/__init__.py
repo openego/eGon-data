@@ -4,7 +4,7 @@ import pandas as pd
 import geopandas as gpd
 from egon.data import db, config
 from egon.data.datasets.heat_etrago.power_to_heat import (
-    insert_central_power_to_heat,insert_individual_power_to_heat, next_id)
+    insert_central_power_to_heat,insert_individual_power_to_heat)
 from egon.data.datasets import Dataset
 
 def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
@@ -34,7 +34,7 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
         """)
 
     # Select unused index of buses
-    next_bus_id = next_id('bus')
+    next_bus_id = db.next_etrago_id('bus')
 
     # initalize dataframe for heat buses
     heat_buses = gpd.GeoDataFrame(columns = [
@@ -112,7 +112,8 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id FROM
-            grid.egon_pf_hv_generator
+            {targets['heat_generators']['schema']}.
+            {targets['heat_generators']['table']}
             WHERE version = '{version}'
             AND scn_name = '{scenario}')
         """)
@@ -142,7 +143,7 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         """,
         index_col='id')
 
-    new_id = next_id('generator')
+    new_id = db.next_etrago_id('generator')
 
     generator = pd.DataFrame(
         data = {'version': version,
@@ -241,7 +242,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(buses, supply),
         )

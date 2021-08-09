@@ -45,19 +45,21 @@ def download_SciGRID_gas_data():
     """
     Download SciGRID_gas IGGIELGN data from Zenodo
 
-    """
-    path = os.path.dirname(__file__) + '/'
+    """    
+    path = "datasets/gas_data/"
+    os.makedirs(path, exist_ok=True)
     
-    zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/IGGIELGN.zip")
-    if not os.path.isfile(zenodo_zip_file_url):
-        urlretrieve(zenodo_zip_file_url, path + 'IGGIELGN.zip')
+    basename = "IGGIELGN"
+    zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/"+ basename + ".zip")
+    if not os.path.isfile(path + basename + ".zip"):
+        urlretrieve(zenodo_zip_file_url, path + basename + ".zip")
         
     components = ['Nodes', 'PipeSegments', 'Productions', 'Storages'] #'Compressors'
     files = []
     for i in components:
-        files.append('data/IGGIELGN_' + i + '.csv')
+        files.append('data/'+ basename + "_" + i + ".csv")
     
-    with ZipFile(path + 'IGGIELGN.zip', 'r') as zipObj:
+    with ZipFile(path + basename + ".zip", 'r') as zipObj:
         listOfFileNames = zipObj.namelist()
         for fileName in listOfFileNames:
             if fileName in files:
@@ -74,11 +76,11 @@ def define_gas_nodes_list():
         
     """
     # Select next id value
-    new_id = next_id('bus')
+    new_id = next_id('bus')   
     
-    # Read-in data from csv-file
     target_file = os.path.join(
-        os.path.dirname(__file__), 'data/IGGIELGN_Nodes.csv')
+        "datasets/gas_data/data/", 
+        'IGGIELGN_Nodes.csv')
     
     gas_nodes_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -143,6 +145,12 @@ def insert_gas_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list.reset_index(drop=True)
     gas_nodes_list = gas_nodes_list.drop(columns=['NUTS1', 'param', 'country_code' ])
 
+    # Insert data to db   
+    db.execute_sql(
+        """
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'gas';
+    """)
+    
     # Insert data to db    
     gas_nodes_list.to_postgis('egon_etrago_bus',
                               engine,
@@ -151,7 +159,6 @@ def insert_gas_nodes_list(gas_nodes_list):
                               if_exists = 'append',
                               dtype = {"geom": Geometry()})
 
-    
 def insert_gas_pipeline_list(gas_nodes_list):
     """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
     Parameters
@@ -175,10 +182,10 @@ def insert_gas_pipeline_list(gas_nodes_list):
     classification = pd.read_csv(classifiaction_file,
                                delimiter=',',
                                usecols = ['classification', 'max_transport_capacity_Gwh/d'])
-
-    # Read-in data from csv-file
+                
     target_file = os.path.join(
-        os.path.dirname(__file__), 'data/IGGIELGN_PipeSegments.csv')
+        "datasets/gas_data/data/", 
+        'IGGIELGN_PipeSegments.csv')
     
     gas_pipelines_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -295,6 +302,10 @@ def insert_gas_pipeline_list(gas_nodes_list):
                                                           'max_transport_capacity_Gwh/d', 'lat', 'long'])
     
     # Insert data to db
+    db.execute_sql(
+        """DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'gas';
+        """)
+        
     gas_pipelines_list.to_postgis('egon_etrago_gas_link',
                           engine,
                           schema = 'grid',
@@ -306,11 +317,17 @@ def insert_gas_pipeline_list(gas_nodes_list):
         """
     select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
     
-    INSERT INTO grid.egon_etrago_link (version, scn_name, link_id, bus0,
-                                              bus1, p_nom, length,
-                                              geom, topo, carrier)
-    SELECT
-    version, scn_name, link_id, bus0, bus1, p_nom, length, geom, topo, carrier
+    INSERT INTO grid.egon_etrago_link (version, scn_name, 
+                                              link_id, carrier, 
+                                              bus0, bus1, 
+                                              p_nom, length,
+                                              geom, topo)
+    SELECT version, scn_name, 
+                link_id, carrier,
+                bus0, bus1, 
+                p_nom, length, 
+                geom, topo
+                
     FROM grid.egon_etrago_gas_link;
         
     DROP TABLE grid.egon_etrago_gas_link;
