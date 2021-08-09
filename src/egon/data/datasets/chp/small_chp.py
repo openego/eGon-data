@@ -90,6 +90,112 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
         insert_mastr_chp(mastr_chp, EgonChp)
 
+def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
+                       district_heating = True):
+    session = sessionmaker(bind=db.engine())()
+
+    np.random.seed(seed=123456)
+
+    n = 0
+    # Add new CHP as long as the additional capacity is not reached
+    while additional_capacity > existing_chp.el_capacity.min():
+
+        # Break loop after 500 iterations without a fitting CHP
+        if n > 500:
+            print(
+                f'{additional_capacity} MW are not matched to a district heating grid.')
+            break
+
+        # Select random new build CHP from list of existing CHP
+        # which is smaller than the remaining capacity to distribute
+        id_chp = np.random.choice(range(len(existing_chp[
+            existing_chp.el_capacity <= additional_capacity])))
+        selected_chp = existing_chp[
+            existing_chp.el_capacity <= additional_capacity].iloc[id_chp]
+
+        # Select areas whoes remaining demand, which is not
+        # covered by another CHP, fits to the selected CHP
+        if district_heating:
+            possible_areas = areas[
+                    areas.demand
+                    > selected_chp.th_capacity*flh].to_crs(4326)
+        else:
+            possible_areas = areas[
+                    areas.demand
+                    > selected_chp.el_capacity*flh].to_crs(4326)
+
+
+        # If there is no district heating area whoes demand (not covered by
+        # another CHP) fit to the CHP, quit and select another CHP
+        if len(possible_areas) > 0:
+
+            # Assign gas bus_id
+            possible_areas['gas_bus_id'] = assign_gas_bus_id(
+                possible_areas.copy()).gas_bus_id
+
+            # Assign bus_id
+            possible_areas['voltage_level'] = selected_chp.voltage_level
+            # TODO: Fix promplem in Kappeln (centroid on river, no mv grid)
+            possible_areas['bus_id'] = assign_bus_id(
+                possible_areas, config.datasets()["chp_location"]).bus_id
+
+            # Select randomly one area from the list of possible areas
+            # weighted by the share of demand
+            id_area = np.random.choice(
+                range(len(possible_areas)),
+                p = possible_areas.demand/possible_areas.demand.sum())
+            selected_area = possible_areas.iloc[id_area]
+
+            entry = EgonChp(
+                        sources={
+                            "chp": "MaStR",
+                            "el_capacity": "MaStR",
+                            "th_capacity": "MaStR",
+                            "CHP extension algorithm" : ""
+                        },
+                        carrier='gas extended',
+                        el_capacity=selected_chp.el_capacity,
+                        th_capacity= selected_chp.th_capacity,
+                        district_heating=district_heating,
+                        voltage_level=selected_chp.voltage_level,
+                        electrical_bus_id = int(selected_area.bus_id),
+                        gas_bus_id = int(selected_area.gas_bus_id),
+                        scenario='eGon2035',
+                        geom=f"""
+                        SRID=4326;
+                        POINT({selected_area.geom.x} {selected_area.geom.y})
+                        """,
+                    )
+            if district_heating:
+                entry.district_heating_area_id = int(selected_area.area_id)
+
+            session.add(entry)
+            session.commit()
+
+            # Store data in dataframe, only used for debugging
+            # extended_chp = extended_chp.append({
+            #     'heat_bus_id': int(selected_area.bus_id),
+            #     'voltage_level': selected_chp.voltage_level,
+            #     'el_capacity': selected_chp.el_capacity,
+            #     'th_capacity': selected_chp.th_capacity},
+            #     ignore_index=True)
+
+            # Reduce additional capacity and demand
+            additional_capacity -= selected_chp.el_capacity
+
+            if district_heating:
+                areas.loc[
+                    areas.index[areas.area_id == selected_area.area_id],
+                    'demand'] -= selected_chp.th_capacity*flh
+            else:
+                areas.loc[
+                areas.index[areas.osm_id == selected_area.osm_id],
+                'demand'] -= selected_chp.th_capacity*flh
+
+            areas = areas[areas.demand > 0]
+        else:
+            n+= 1
+
 def extension_district_heating(
         federal_state, additional_capacity, flh_chp, EgonChp):
 
@@ -129,6 +235,9 @@ def extension_district_heating(
                              AND district_heating = TRUE)
         """)
 
+    extension_to_areas(dh_areas, additional_capacity, existing_chp, flh_chp,
+                       EgonChp, district_heating = True)
+
     # Append district heating areas with CHP
     # assumed dispatch of existing CHP is substracted from remaining demand
     # dh_areas = dh_areas.append(
@@ -155,94 +264,6 @@ def extension_district_heating(
     #             """),ignore_index=True
     #             )
 
-    # extended_chp = gpd.GeoDataFrame(
-    #     columns = ['heat_bus_id', 'voltage_level',
-    #                 'el_capacity', 'th_capacity'])
-
-    session = sessionmaker(bind=db.engine())()
-
-    np.random.seed(seed=123456)
-
-    n = 0
-    # Add new CHP as long as the additional capacity is not reached
-    while additional_capacity > existing_chp.el_capacity.min():
-
-        # Break loop after 500 iterations without a fitting CHP
-        if n > 500:
-            print(
-                f'{additional_capacity} MW are not matched to a district heating grid.')
-            break
-
-        # Select random new build CHP from list of existing CHP
-        # which is smaller than the remaining capacity to distribute
-        id_chp = np.random.choice(range(len(existing_chp[
-            existing_chp.el_capacity <= additional_capacity])))
-        selected_chp = existing_chp[
-            existing_chp.el_capacity <= additional_capacity].iloc[id_chp]
-
-        # Select district heatung areas whoes remaining demand, which is not
-        # covered by another CHP, fits to the selected CHP
-        possible_dh = dh_areas[
-                dh_areas.demand > selected_chp.th_capacity*flh_chp].to_crs(4326)
-
-
-        # If there is no district heating area whoes demand (not covered by
-        # another CHP) fit to the CHP, quit and select another CHP
-        if len(possible_dh) > 0:
-
-            # Assign gas bus_id
-            possible_dh['gas_bus_id'] = assign_gas_bus_id(possible_dh.copy()).gas_bus_id
-
-            # Assign bus_id
-            possible_dh['voltage_level'] = selected_chp.voltage_level
-            # TODO: Fix promplem in Kappeln (centroid on river, no mv grid)
-            #possible_dh['bus_id'] = assign_bus_id(
-            #possible_dh, config.datasets()["chp_location"]).bus_id
-
-
-            # Select randomly one district heating area from the list
-            # of possible district heating areas
-            id_dh = np.random.choice(range(len(possible_dh)),
-                                     p = possible_dh.demand/possible_dh.demand.sum())
-            selected_area = possible_dh.iloc[id_dh]
-
-            entry = EgonChp(
-                        sources={
-                            "chp": "MaStR",
-                            "el_capacity": "MaStR",
-                            "th_capacity": "MaStR",
-                            "CHP extension algorithm" : ""
-                        },
-                        carrier='gas extended',
-                        el_capacity=selected_chp.el_capacity,
-                        th_capacity= selected_chp.th_capacity,
-                        district_heating=True,
-                        voltage_level=selected_chp.voltage_level,
-                        #electrical_bus_id = int(selected_area.bus_id),
-                        #gas_bus_id = int(selected_area.gas_bus_id),
-                        district_heating_area_id = int(selected_area.area_id),
-                        scenario='eGon2035',
-                        geom=f"SRID=4326;POINT({selected_area.geom.x} {selected_area.geom.y})",
-                    )
-            session.add(entry)
-            session.commit()
-            # extended_chp = extended_chp.append({
-            #     'heat_bus_id': int(selected_area.bus_id),
-            #     'voltage_level': selected_chp.voltage_level,
-            #     'el_capacity': selected_chp.el_capacity,
-            #     'th_capacity': selected_chp.th_capacity},
-            #     ignore_index=True)
-
-            # Reduce additional capacity and district heating demand
-            additional_capacity -= selected_chp.el_capacity
-            dh_areas.loc[
-                dh_areas.index[dh_areas.area_id == selected_area.area_id],
-                'demand'] -= selected_chp.th_capacity*flh_chp
-            dh_areas = dh_areas[dh_areas.demand > 0]
-        else:
-           # print('Selected CHP can not be assigned to a district heating area.')
-            n+= 1
-
 
 def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
 
@@ -259,7 +280,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         """)
     sources = config.datasets()["chp_location"]["sources"]
     # Select all industrial areas without CHP
-    industry = db.select_geodataframe(
+    industry_areas = db.select_geodataframe(
         f"""
         SELECT
         SUM(demand) as demand, a.osm_id, ST_Centroid(b.geom) as geom, b.name
@@ -288,77 +309,9 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         ORDER BY SUM(demand)
         """)
 
-    session = sessionmaker(bind=db.engine())()
+    extension_to_areas(industry_areas, additional_capacity, existing_chp,
+                       flh_chp, EgonChp, district_heating = False)
 
-    np.random.seed(seed=123456)
-
-    n = 0
-    # Add new CHP as long as the additional capacity is not reached
-    while additional_capacity > existing_chp.el_capacity.min():
-
-        # Break loop after 500 iterations without a fitting CHP
-        if n > 500:
-            print(
-                f'{additional_capacity} MW are not matched to a industrial site.')
-            break
-
-        # Select random new build CHP from list of existing CHP
-        # which is smaller than the remaining capacity to distribute
-        id_chp = np.random.choice(range(len(existing_chp[
-            existing_chp.el_capacity <= additional_capacity])))
-        selected_chp = existing_chp[
-            existing_chp.el_capacity <= additional_capacity].iloc[id_chp]
-
-        # Select district industrial areas whoes remaining demand, which is not
-        # covered by another CHP, fits to the selected CHP
-        possible_industry = industry[
-                industry.demand > selected_chp.el_capacity*flh_chp].to_crs(4326)
-
-
-        # If there is no industrial area whoes demand (not covered by
-        # another CHP) fit to the CHP, quit and select another CHP
-        if len(possible_industry) > 0:
-
-            # Assign gas bus_id
-            possible_industry['gas_bus_id'] = assign_gas_bus_id(possible_industry.copy()).gas_bus_id
-
-            # Assign bus_id
-            possible_industry['voltage_level'] = selected_chp.voltage_level
-
-            # Select randomly one industrial area from the list
-            # of possible industrial areas
-            id_industry = np.random.choice(range(len(possible_industry)),
-                                           p=possible_industry.demand/possible_industry.demand.sum())
-            selected_area = possible_industry.iloc[id_industry]
-
-            entry = EgonChp(
-                        sources={
-                            "chp": "MaStR",
-                            "el_capacity": "MaStR",
-                            "th_capacity": "MaStR",
-                            "CHP extension algorithm" : ""
-                        },
-                        carrier='gas extended',
-                        el_capacity=selected_chp.el_capacity,
-                        th_capacity= selected_chp.th_capacity,
-                        district_heating=False,
-                        voltage_level=selected_chp.voltage_level,
-                        #electrical_bus_id = int(selected_area.bus_id),
-                        #gas_bus_id = int(selected_area.gas_bus_id),
-                        scenario='eGon2035',
-                        geom=f"SRID=4326;POINT({selected_area.geom.x} {selected_area.geom.y})",
-                    )
-            session.add(entry)
-            session.commit()
-
-            # Reduce additional capacity and district heating demand
-            additional_capacity -= selected_chp.el_capacity
-            industry.loc[
-                industry.index[industry.osm_id == selected_area.osm_id],
-                'demand'] -= selected_chp.th_capacity*flh_chp
-            industry = industry[industry.demand > 0]
-        else:
-            n+= 1
 
 def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
     """Adds new CHP plants to meet target value per federal state.
