@@ -186,8 +186,7 @@ def insert_chp_egon2035():
     MaStR_konv = insert_large_chp(sources, target, EgonChp)
 
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
-    additional_capacitiy = existing_chp_smaller_10mw(
-        sources, MaStR_konv, EgonChp)
+    existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
 
 def extension():
     """ Build additional CHP for district heating.

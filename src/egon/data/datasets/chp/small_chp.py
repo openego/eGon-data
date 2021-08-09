@@ -72,8 +72,6 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
     targets = select_target('small_chp', 'eGon2035')
 
-    additional_capacitiy = pd.Series()
-
     for federal_state in targets.index:
         mastr_chp = gpd.GeoDataFrame(
             filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state))
@@ -90,30 +88,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
         mastr_chp = assign_use_case(mastr_chp, sources)
 
-        target = targets[federal_state]
-
-        if mastr_chp.Nettonennleistung.sum() > target:
-
-            additional_capacitiy[federal_state] = 0
-
-        elif mastr_chp.Nettonennleistung.sum()< target:
-
-            # Keep all existing CHP < 10MW
-            insert_mastr_chp(mastr_chp, EgonChp)
-
-            # Add new chp
-            additional_capacitiy[federal_state] = (
-                target - mastr_chp.Nettonennleistung.sum())
-
-        else:
-            # Keep all existing CHP < 10MW
-            insert_mastr_chp(mastr_chp, EgonChp)
-
-            additional_capacitiy[federal_state] = 0
-
-    return additional_capacitiy
-
-
+        insert_mastr_chp(mastr_chp, EgonChp)
 
 def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
     """Adds new CHP plants to meet target value per federal state.
