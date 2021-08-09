@@ -6,6 +6,7 @@ import csv
 import datetime
 import logging
 import codecs
+import shutil
 from pathlib import Path
 import egon.data.config
 from egon.data.config import settings
@@ -44,28 +45,22 @@ def run():
 
 def import_osm_data():
 
-    osmtgmod_repos = "osmTGmod"
+    osmtgmod_repos = Path(".") / "osmTGmod"
 
-    if os.path.exists(osmtgmod_repos):
-        subproc.run(
-            [
-                "git",
-                "pull",
-            ],
-            cwd=osmtgmod_repos,
-        )
+    # Delete repository if it already exists
+    if osmtgmod_repos.exists() and osmtgmod_repos.is_dir():
+        shutil.rmtree(osmtgmod_repos)
 
-    else:
-        subproc.run(
-            [
-                "git",
-                "clone",
-                "--single-branch",
-                "--branch",
-                "features/egon",
-                "https://github.com/openego/osmTGmod.git",
-            ]
-        )
+    subproc.run(
+        [
+            "git",
+            "clone",
+            "--single-branch",
+            "--branch",
+            "features/egon",
+            "https://github.com/openego/osmTGmod.git",
+        ]
+    )
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
