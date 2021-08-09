@@ -84,7 +84,6 @@ with airflow.DAG(
 
     # Scenario table
     scenario_parameters = ScenarioParameters(dependencies=[setup])
-    scenario_input_import = tasks["scenario_parameters.insert-scenarios"]
 
     # Zensus import
     zensus_download_population = PythonOperator(
@@ -120,15 +119,10 @@ with airflow.DAG(
     zensus_vg250 = ZensusVg250(
         dependencies=[vg250, population_import])
 
-    zensus_inside_ger_metadata = tasks[
-        'zensus_vg250.add-metadata-zensus-inside-ger']
-
-
     # DemandRegio data import
     demandregio = DemandRegio(dependencies=[
-        setup, vg250, scenario_input_import, data_bundle])
+        setup, vg250, scenario_parameters, data_bundle])
     demandregio_demand_cts_ind = tasks['demandregio.insert-cts-ind-demands']
-
 
     # Society prognosis
     society_prognosis = SocietyPrognosis(dependencies=[
@@ -136,8 +130,6 @@ with airflow.DAG(
         zensus_vg250,
         population_import,
         zensus_misc_import])
-
-    population_prognosis = tasks['society_prognosis.zensus-population']
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -243,20 +235,14 @@ with airflow.DAG(
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
     re_potential_areas.insert_into(pipeline)
-    insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
 
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_Germany = HeatDemandImport(
-        dependencies=[vg250])
-    heat_demand_import = tasks[
-        "heat_demand.scenario-data-import"]
-
-    zensus_inside_ger_metadata >> heat_demand_import
-    scenario_input_import >> heat_demand_import
+        dependencies=[vg250, scenario_parameters, zensus_vg250])
 
      # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
-        dependencies=[demandregio, zensus_vg250, heat_demand_import,
+        dependencies=[demandregio, zensus_vg250, heat_demand_Germany,
                       etrago_input_data, household_electricity_demand_annual])
 
     elec_cts_demands_zensus = tasks[
@@ -319,14 +305,11 @@ with airflow.DAG(
 
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
-        dependencies=[heat_demand_Germany])
-    create_district_heating_areas_table = tasks[
-        "district_heating_areas.create-tables"]  # foldername.function
+        dependencies=[heat_demand_Germany, scenario_parameters])
     import_district_heating_areas = tasks[
         "district_heating_areas.demarcation"]
 
     zensus_misc_import >> import_district_heating_areas
-    scenario_input_import >> import_district_heating_areas
 
     # Calculate dynamic line rating for HV trans lines
     calculate_dlr = PythonOperator(
@@ -368,17 +351,9 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle, zensus_mv_grid_districts, district_heating_areas])
-
-    import_district_heating_supply = tasks["heat_supply.district-heating"]
-    import_individual_heating_supply = tasks["heat_supply.individual-heating"]
-    heat_supply_tables = tasks["heat_supply.create-tables"]
-    geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
-
-    map_zensus_grid_districts >> import_district_heating_supply
-    map_zensus_grid_districts >> import_individual_heating_supply
-    power_plant_import >> import_individual_heating_supply
-    power_plant_import >> import_district_heating_supply
+        dependencies=[data_bundle, zensus_mv_grid_districts,
+                      district_heating_areas, power_plants,
+                      zensus_mv_grid_districts])
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
