@@ -35,7 +35,7 @@ def run():
 
     osmtgmod(
         config_database=docker_db_config["POSTGRES_DB"],
-        config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
+        config_basepath="osmTGmod/egon-data",
         config_continue_run=False,
         filtered_osm_pbf_path_to_file=filtered_osm_pbf_path_to_file,
         docker_db_config=docker_db_config,
@@ -44,7 +44,7 @@ def run():
 
 def import_osm_data():
 
-    osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
+    osmtgmod_repos = "osmTGmod"
 
     if os.path.exists(osmtgmod_repos):
         subproc.run(
@@ -64,8 +64,7 @@ def import_osm_data():
                 "--branch",
                 "features/egon",
                 "https://github.com/openego/osmTGmod.git",
-            ],
-            cwd=os.path.dirname(__file__),
+            ]
         )
 
     data_config = egon.data.config.datasets()
@@ -82,7 +81,7 @@ def import_osm_data():
 
     docker_db_config=db.credentials()
     config_database=docker_db_config["POSTGRES_DB"]
-    config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data"
+    config_basepath="osmTGmod/egon-data"
 
     config = configparser.ConfigParser()
     config.read(config_basepath + ".cfg")
@@ -120,8 +119,7 @@ def import_osm_data():
     for script in scripts:
             logging.info("Running script {0} ...".format(script))
             with codecs.open(
-                    os.path.join(egon.data.__path__[0],
-                                 "processing/osmtgmod/osmTGmod/",
+                    os.path.join("osmTGmod",
                                  script), "r", "utf-8-sig") as fd:
                 sqlfile = fd.read()
             db.execute_sql(sqlfile)
@@ -144,7 +142,7 @@ def import_osm_data():
         )
 
     # create directory to store osmosis' temp files
-    osmosis_temp_dir = Path('.') / "osmosis_temp/"
+    osmosis_temp_dir = Path('osmTGmod') / "osmosis_temp/"
     if not os.path.exists(osmosis_temp_dir):
         os.mkdir(osmosis_temp_dir)
 
@@ -153,8 +151,7 @@ def import_osm_data():
                 database=%s host=%s user=%s password=%s"
             % (
                 f"-Djava.io.tmpdir={osmosis_temp_dir}",
-                os.path.join(egon.data.__path__[0],
-                             "processing/osmtgmod/osmTGmod/",
+                os.path.join("osmTGmod",
                              config["osm_data"]["osmosis_path_to_binary"]),
                 filtered_osm_pbf_path_to_file,
                 config_database,
@@ -182,7 +179,7 @@ def import_osm_data():
 
 def osmtgmod(
     config_database="egon-data",
-    config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
+    config_basepath="osmTGmod/egon-data",
     config_continue_run=False,
     filtered_osm_pbf_path_to_file=None,
     docker_db_config=None,
@@ -218,7 +215,6 @@ def osmtgmod(
             AND id = 24667346
             """)
 
-    os.chdir(egon.data.__path__[0] + "/processing/osmtgmod/osmTGmod/")
     # ==============================================================
     # Setup logging
     # ==============================================================
@@ -427,7 +423,7 @@ def osmtgmod(
             "'sql-scripts/power_script.sql' ..."
         )
     )
-    with codecs.open("sql-scripts/power_script.sql", "r",
+    with codecs.open("osmTGmod/sql-scripts/power_script.sql", "r",
                      "utf-8-sig") as fd:
         sqlfile = fd.read()
     # remove lines starting with "--" (comments), tabulators and empty line
