@@ -160,12 +160,9 @@ def assign_gas_bus_id(dataframe):
         SELECT * FROM grid.egon_gas_voronoi
         """, epsg=4326)
     
-    print(gas_voronoi)
     res = gpd.sjoin(dataframe, gas_voronoi)
-    print(res)
     res['bus'] = res['bus_id']   
     res = res.drop(columns=['index_right', 'id'])
-    print(res)
     
     # Assert that all power plants have a bus_id
     assert res.bus.notnull().all(), "Some points are not attached to a gas bus."
@@ -183,6 +180,13 @@ def import_gas_generators():
     # Connect to local database
     engine = db.engine()
     
+    # Clean table
+    db.execute_sql(
+        """
+    DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'gas';
+    """
+    )
+    
     # Select next id value
     new_id = next_id('generator')
     
@@ -199,16 +203,15 @@ def import_gas_generators():
     CH4_generators_list = assign_gas_bus_id(CH4_generators_list)
     
     # Remove useless columns
-    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id' , 'point']) 
+    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id']) #, 'point',  
     
-    # Insert data to db    
-    CH4_generators_list.to_sql('egon_pf_hv_generator', #to_postgis
+    # Insert data to db
+    CH4_generators_list.to_sql('egon_etrago_generator', #to_postgis
                               engine,
                               schema ='grid',
                               index = False,
                               if_exists = 'append')
-        
-# marginal_cost_fixed = Column(Float(53))
+
 
 def insert_gas_generators_time_serie():
     """Insert gas production time series in database
@@ -221,26 +224,25 @@ def insert_gas_generators_time_serie():
     engine = db.engine()
     
 
-    sql = "SELECT generator_id, scn_name, p_nom, version FROM grid.egon_pf_hv_generator;"
+    sql = "SELECT generator_id, scn_name, p_nom, version FROM grid.egon_etrago_generator;"
     df = pd.read_sql(sql, con = engine)
     
     p_set = []
     for index, row in df.iterrows():
-        p_set.append([row['p_nom']] * (365*24)) #Verify length
+        p_set.append([row['p_nom']] * 8760)
+    df['temp_id'] = 1
     df['p_set'] = p_set
     
     # Remove useless columns
     df = df.drop(columns=['p_nom'])
 
-    # Insert data to db    
-    df.to_sql('egon_pf_hv_generator_timeseries',
+    # Insert data to db 
+    df.to_sql('egon_etrago_generator_timeseries',
                               engine,
                               schema ='grid',
                               index = False,
                               if_exists = 'append')
-    
-# #     temp_id = Column(Integer, primary_key=True, nullable=False)
-# #     marginal_cost = Column(ARRAY(Float(precision=53)))
+
 
 def insert_gas_prod():
     """Overall function for importing gas production data
@@ -250,5 +252,5 @@ def insert_gas_prod():
     """
     import_gas_generators()
     
-#    insert_gas_generators_time_serie()
+    insert_gas_generators_time_serie()
     
