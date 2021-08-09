@@ -11,6 +11,7 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand, HouseholdElectricityDemand)
 from egon.data.datasets.era5 import WeatherData
+from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -30,7 +31,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 import airflow
-import egon.data.importing.etrago as etrago
+
 import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
@@ -154,11 +155,10 @@ with airflow.DAG(
     population_import >> nep_insert_data
 
     # setting etrago input tables
-    etrago_input_data = PythonOperator(
-        task_id="setting-etrago-input-tables",
-        python_callable=etrago.setup,
-    )
-    setup >> etrago_input_data
+
+    setup_etrago = EtragoSetup(
+        dependencies=[setup])
+    etrago_input_data = tasks["etrago_setup.create-tables"]
 
     # Retrieve MaStR data
     mastr_data = mastr_data_setup(dependencies=[setup])
@@ -201,9 +201,9 @@ with airflow.DAG(
     osmtgmod = Osmtgmod(dependencies=[osm_download,
                                          ehv_substation_extraction,
                                          hvmv_substation_extraction,
-                                         etrago_input_data])
+                                         setup_etrago])
     osmtgmod.insert_into(pipeline)
-    osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]  
+    osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
     osmtgmod_substation = tasks["osmtgmod_substation"]
 
     # create Voronoi for MV grid districts
@@ -235,7 +235,7 @@ with airflow.DAG(
      # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[demandregio, zensus_vg250, heat_demand_import,
-                      etrago_input_data, household_electricity_demand_annual])
+                      setup_etrago, household_electricity_demand_annual])
 
     elec_cts_demands_zensus = tasks[
         'electricity_demand.distribute-cts-demands']
@@ -334,7 +334,7 @@ with airflow.DAG(
     power_plants = PowerPlants(dependencies=[
         setup, renewable_feedin, mv_grid_districts, mastr_data,
         re_potential_areas, scenario_parameters, scenario_capacities,
-        Vg250MvGridDistricts])
+        Vg250MvGridDistricts, setup_etrago])
 
     power_plant_import = tasks["power_plants.insert-hydro-biomass"]
     generate_wind_farms = tasks["power_plants.wind_farms.insert"]
@@ -346,7 +346,6 @@ with airflow.DAG(
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
-    etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
@@ -366,12 +365,10 @@ with airflow.DAG(
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[heat_supply, mv_grid_districts])
+        dependencies=[heat_supply, mv_grid_districts, setup_etrago])
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]
-
-    etrago_input_data >> heat_etrago_buses
 
     # Industry
 
