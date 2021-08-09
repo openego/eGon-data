@@ -95,6 +95,13 @@ def Calculate_DLR():
     # Modify column "s_max_pu" to fit the requirement of the table
     trans_lines["s_max_pu"] = trans_lines.apply(lambda x: list(x["s_max_pu"]), axis=1)
     trans_lines["temp_id"] = 1
+
+    # Delete existing data
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_etrago_line_timeseries;
+        """)
+
     # Insert into database
     trans_lines.to_sql(
         "egon_etrago_line_timeseries",
