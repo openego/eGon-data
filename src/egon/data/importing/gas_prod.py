@@ -194,6 +194,7 @@ def import_gas_generators():
     CH4_generators_list['generator_id'] = range(new_id, new_id + len(CH4_generators_list))
      
     # Add missing columns
+    CH4_generators_list['p_set_fixed'] = CH4_generators_list['p_nom'] 
     c = {'version':'0.0.0', 'scn_name':'eGon2035', 'carrier':'gas'}
     CH4_generators_list = CH4_generators_list.assign(**c)
     
@@ -203,41 +204,10 @@ def import_gas_generators():
     CH4_generators_list = assign_gas_bus_id(CH4_generators_list)
     
     # Remove useless columns
-    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id']) #, 'point',  
+    CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id'])  
     
     # Insert data to db
-    CH4_generators_list.to_sql('egon_etrago_generator', #to_postgis
-                              engine,
-                              schema ='grid',
-                              index = False,
-                              if_exists = 'append')
-
-
-def insert_gas_generators_time_serie():
-    """Insert gas production time series in database
-    
-    Returns
-    -------
-        
-    """
-    # Connect to local database
-    engine = db.engine()
-    
-
-    sql = "SELECT generator_id, scn_name, p_nom, version FROM grid.egon_etrago_generator;"
-    df = pd.read_sql(sql, con = engine)
-    
-    p_set = []
-    for index, row in df.iterrows():
-        p_set.append([row['p_nom']] * 8760)
-    df['temp_id'] = 1
-    df['p_set'] = p_set
-    
-    # Remove useless columns
-    df = df.drop(columns=['p_nom'])
-
-    # Insert data to db 
-    df.to_sql('egon_etrago_generator_timeseries',
+    CH4_generators_list.to_sql('egon_etrago_generator',
                               engine,
                               schema ='grid',
                               index = False,
@@ -251,6 +221,4 @@ def insert_gas_prod():
     None.
     """
     import_gas_generators()
-    
-    insert_gas_generators_time_serie()
     
