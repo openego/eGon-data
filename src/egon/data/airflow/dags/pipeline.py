@@ -280,7 +280,6 @@ with airflow.DAG(
     )
 
     gas_grid_insert_data >> insert_power2gas_installations
-    osmtgmod_pypsa >> insert_power2gas_installations
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
