@@ -6,14 +6,18 @@ import csv
 import datetime
 import logging
 import codecs
+import shutil
 from pathlib import Path
 import egon.data.config
 from egon.data.config import settings
 import egon.data.subprocess as subproc
 from egon.data import db
+from egon.data.datasets import Dataset
+from airflow.operators.postgres_operator import PostgresOperator
+import importlib_resources as resources
 
 
-def run_osmtgmod():
+def run():
 
     # execute osmTGmod
 
@@ -32,7 +36,7 @@ def run_osmtgmod():
 
     osmtgmod(
         config_database=docker_db_config["POSTGRES_DB"],
-        config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
+        config_basepath="osmTGmod/egon-data",
         config_continue_run=False,
         filtered_osm_pbf_path_to_file=filtered_osm_pbf_path_to_file,
         docker_db_config=docker_db_config,
@@ -41,29 +45,22 @@ def run_osmtgmod():
 
 def import_osm_data():
 
-    osmtgmod_repos = os.path.dirname(__file__) + "/osmTGmod"
+    osmtgmod_repos = Path(".") / "osmTGmod"
 
-    if os.path.exists(osmtgmod_repos):
-        subproc.run(
-            [
-                "git",
-                "pull",
-            ],
-            cwd=osmtgmod_repos,
-        )
+    # Delete repository if it already exists
+    if osmtgmod_repos.exists() and osmtgmod_repos.is_dir():
+        shutil.rmtree(osmtgmod_repos)
 
-    else:
-        subproc.run(
-            [
-                "git",
-                "clone",
-                "--single-branch",
-                "--branch",
-                "features/egon",
-                "https://github.com/openego/osmTGmod.git",
-            ],
-            cwd=os.path.dirname(__file__),
-        )
+    subproc.run(
+        [
+            "git",
+            "clone",
+            "--single-branch",
+            "--branch",
+            "features/egon",
+            "https://github.com/openego/osmTGmod.git",
+        ]
+    )
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
@@ -79,7 +76,7 @@ def import_osm_data():
 
     docker_db_config=db.credentials()
     config_database=docker_db_config["POSTGRES_DB"]
-    config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data"
+    config_basepath="osmTGmod/egon-data"
 
     config = configparser.ConfigParser()
     config.read(config_basepath + ".cfg")
@@ -117,8 +114,7 @@ def import_osm_data():
     for script in scripts:
             logging.info("Running script {0} ...".format(script))
             with codecs.open(
-                    os.path.join(egon.data.__path__[0],
-                                 "processing/osmtgmod/osmTGmod/",
+                    os.path.join("osmTGmod",
                                  script), "r", "utf-8-sig") as fd:
                 sqlfile = fd.read()
             db.execute_sql(sqlfile)
@@ -141,7 +137,7 @@ def import_osm_data():
         )
 
     # create directory to store osmosis' temp files
-    osmosis_temp_dir = Path('.') / "osmosis_temp/"
+    osmosis_temp_dir = Path('osmTGmod') / "osmosis_temp/"
     if not os.path.exists(osmosis_temp_dir):
         os.mkdir(osmosis_temp_dir)
 
@@ -150,8 +146,7 @@ def import_osm_data():
                 database=%s host=%s user=%s password=%s"
             % (
                 f"-Djava.io.tmpdir={osmosis_temp_dir}",
-                os.path.join(egon.data.__path__[0],
-                             "processing/osmtgmod/osmTGmod/",
+                os.path.join("osmTGmod",
                              config["osm_data"]["osmosis_path_to_binary"]),
                 filtered_osm_pbf_path_to_file,
                 config_database,
@@ -179,7 +174,7 @@ def import_osm_data():
 
 def osmtgmod(
     config_database="egon-data",
-    config_basepath=os.path.dirname(__file__) + "/osmTGmod/egon-data",
+    config_basepath="osmTGmod/egon-data",
     config_continue_run=False,
     filtered_osm_pbf_path_to_file=None,
     docker_db_config=None,
@@ -215,7 +210,6 @@ def osmtgmod(
             AND id = 24667346
             """)
 
-    os.chdir(egon.data.__path__[0] + "/processing/osmtgmod/osmTGmod/")
     # ==============================================================
     # Setup logging
     # ==============================================================
@@ -424,7 +418,7 @@ def osmtgmod(
             "'sql-scripts/power_script.sql' ..."
         )
     )
-    with codecs.open("sql-scripts/power_script.sql", "r",
+    with codecs.open("osmTGmod/sql-scripts/power_script.sql", "r",
                      "utf-8-sig") as fd:
         sqlfile = fd.read()
     # remove lines starting with "--" (comments), tabulators and empty line
@@ -530,7 +524,7 @@ def osmtgmod(
     logging.info("EXECUTION FINISHED SUCCESSFULLY!")
 
 
-def osmtgmmod_to_pypsa(version="'0.0.0'"):
+def to_pypsa(version="'0.0.0'"):
     db.execute_sql(
             f"""
             -- CLEAN UP OF TABLES
@@ -660,4 +654,25 @@ def osmtgmmod_to_pypsa(version="'0.0.0'"):
             (SELECT bus1 FROM grid.egon_etrago_transformer
              WHERE scn_name={scenario_name});
                 """
+        )
+
+class Osmtgmod(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Osmtgmod",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                import_osm_data,
+                run,
+               # {
+                    PostgresOperator(
+                        task_id="osmtgmod_substation",
+                        sql=resources.read_text(__name__, "substation_otg.sql"),
+                        postgres_conn_id="egon_data",
+                        autocommit=True,
+                    ),
+                    to_pypsa
+              #  }
+            ),
         )

@@ -3,10 +3,21 @@ from sqlalchemy import ARRAY, BigInteger, Boolean, Column, DateTime, Float, Inte
 from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
+from egon.data.datasets import Dataset
 
 Base = declarative_base()
 metadata = Base.metadata
 
+class EtragoSetup(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="EtragoSetup",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(create_tables,
+                   temp_resolution
+                   ),
+            )
 
 
 class EgonPfHvBus(Base):
@@ -359,66 +370,66 @@ def create_tables():
     None.
     """
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS grid;")
+        "CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
-    
+
     ##################### drop tables with old names #########################
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_bus;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_bus_timeseries;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;""")    
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;""") 
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_generator_timeseries;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_line;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_line_timeseries;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_link;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_link_timeseries;""")
     db.execute_sql(
-        f"""
+        """
         DROP TABLE IF EXISTS grid.egon_pf_hv_load;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;""")     
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;""") 
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;""") 
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_store;""") 
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;""") 
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;""") 
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;""")  
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;""")
     db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;""")  
+        """
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;""")
     ##########################################################################
-        
+
     # Drop existing tables
     EgonPfHvBus.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.drop(bind=engine, checkfirst=True)
@@ -458,7 +469,7 @@ def create_tables():
     EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
 
-def insert_temp_resolution(version='0.0.0'):
+def temp_resolution(version='0.0.0'):
     """ Insert temporal resolution for etrago
 
     Returns
@@ -473,14 +484,3 @@ def insert_temp_resolution(version='0.0.0'):
         (version, temp_id, timesteps, resolution, start_time)
         SELECT '{version}', 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
         """)
-
-def setup():
-    """ Set up table structure and temporal resolution for etrago
-
-    Returns
-    -------
-    None.
-
-    """
-    create_tables()
-    insert_temp_resolution()
