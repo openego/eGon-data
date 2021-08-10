@@ -130,7 +130,8 @@ def assign_heat_bus(scenario='eGon2035'):
         {sources['district_heating_areas']['schema']}.
         {sources['district_heating_areas']['table']}
         WHERE scenario = '{scenario}'
-        """)
+        """,
+        epsg=4326)
 
     # Assign district heating area_id to district_heating_chp
     # According to nearest centroid of district heating area
