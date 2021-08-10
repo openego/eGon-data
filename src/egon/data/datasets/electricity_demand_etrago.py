@@ -29,43 +29,39 @@ def demands_per_bus(scenario):
     """
 
     # Read information from configuration file
-    sources = egon.data.config.datasets()["etrago_electricity"][
-        "sources"
-    ]
-
+    sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
 
     # Select data on CTS electricity demands per bus
     cts_curves = db.select_dataframe(
-            f"""SELECT subst_id, p_set FROM
+        f"""SELECT subst_id, p_set FROM
                 {sources['cts_curves']['schema']}.
                 {sources['cts_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-            index_col='subst_id',
-        )
+        index_col="subst_id",
+    )
 
     # Rename index
     cts_curves.index.rename("bus", inplace=True)
 
-
     # Select data on industrial demands assigned to osm landuse areas
 
     ind_curves_osm = db.select_dataframe(
-            f"""SELECT bus, p_set FROM
+        f"""SELECT bus, p_set FROM
                 {sources['osm_curves']['schema']}.
                 {sources['osm_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-            index_col='bus',
-        )
+        index_col="bus",
+    )
 
     # Select data on industrial demands assigned to industrial sites
 
     ind_curves_sites = db.select_dataframe(
-            f"""SELECT bus, p_set FROM
+        f"""SELECT bus, p_set FROM
                 {sources['sites_curves']['schema']}.
                 {sources['sites_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-            index_col='bus',
-        )
+        index_col="bus",
+    )
 
     # Create one df by appending all imported dataframes
 
@@ -74,10 +70,14 @@ def demands_per_bus(scenario):
     # Split array to single columns in the dataframe
     demand_curves_split = demand_curves
 
-    demand_curves_split = pd.DataFrame(demand_curves.p_set.tolist(), index=demand_curves_split.index)
+    demand_curves_split = pd.DataFrame(
+        demand_curves.p_set.tolist(), index=demand_curves_split.index
+    )
 
     # Group all rows with the same bus
-    demand_curves_bus = demand_curves_split.groupby(demand_curves_split.index).sum()
+    demand_curves_bus = demand_curves_split.groupby(
+        demand_curves_split.index
+    ).sum()
 
     # Initzialize and fill resulsting dataframe
     curves = pd.DataFrame(columns=["bus", "p_set"])
@@ -97,9 +97,7 @@ def export_to_db():
 
     """
 
-    targets = egon.data.config.datasets()["etrago_electricity"][
-        "targets"
-    ]
+    targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
 
     for scenario in ["eGon2035", "eGon100RE"]:
 
@@ -124,34 +122,58 @@ def export_to_db():
 
         # Initialize dataframes equivalent to database tables
 
-        load = pd.DataFrame(columns=["version", "scn_name", "load_id", "bus", "type", "carrier", "p_set_fixed", "q_set_fixed", "sign", "p_set"])
-        load_timeseries = pd.DataFrame(columns=["version", "scn_name", "load_id", "temp_id", "p_set", "q_set"])
+        load = pd.DataFrame(
+            columns=[
+                "version",
+                "scn_name",
+                "load_id",
+                "bus",
+                "type",
+                "carrier",
+                "p_set_fixed",
+                "q_set_fixed",
+                "sign",
+                "p_set",
+            ]
+        )
+        load_timeseries = pd.DataFrame(
+            columns=[
+                "version",
+                "scn_name",
+                "load_id",
+                "temp_id",
+                "p_set",
+                "q_set",
+            ]
+        )
 
         # Choose next unused load_id
-        next_load_id= db.next_etrago_id('load')
+        next_load_id = db.next_etrago_id("load")
 
         # Insert values into load df
         load.bus = curves.bus
-        load.version = '0.0.0'
+        load.version = "0.0.0"
         load.scn_name = scenario
         load.sign = -1
-        load.carrier = 'AC'
-        load.load_id = range(next_load_id, next_load_id+len(load))
+        load.carrier = "AC"
+        load.load_id = range(next_load_id, next_load_id + len(load))
         load.p_set = curves.p_set
 
         # Insert values into load timeseries df
-        load_timeseries[['load_id', 'p_set']] = load[['load_id', 'p_set']]
-        load_timeseries.version = '0.0.0'
+        load_timeseries[["load_id", "p_set"]] = load[["load_id", "p_set"]]
+        load_timeseries.version = "0.0.0"
         load_timeseries.scn_name = scenario
         load_timeseries.temp_id = 1
 
         # Delete p_set column from load df
-        load.drop(columns=['p_set'], inplace=True)
+        load.drop(columns=["p_set"], inplace=True)
 
         # Set index
 
         load = load.set_index(["version", "scn_name", "load_id"])
-        load_timeseries = load_timeseries.set_index(["version", "scn_name", "load_id", "temp_id"])
+        load_timeseries = load_timeseries.set_index(
+            ["version", "scn_name", "load_id", "temp_id"]
+        )
 
         # Insert data into database
         load.to_sql(
@@ -175,7 +197,5 @@ class ElectricalLoadEtrago(Dataset):
             name="Electrical_load_etrago",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                export_to_db,
-            ),
+            tasks=(export_to_db,),
         )
