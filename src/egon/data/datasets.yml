@@ -634,10 +634,10 @@ etrago_electricity:
       table: 'egon_etrago_electricity_cts'
   targets:
     etrago_load:
-      schema: 'demand'
+      schema: 'grid'
       table: 'egon_etrago_load'
     etrago_load_curves:
-      schema: 'demand'
+      schema: 'grid'
       table: 'egon_etrago_load_timeseries'
 
 
