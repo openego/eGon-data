@@ -645,6 +645,12 @@ chp_location:
     district_heating_areas:
       schema: 'demand'
       table: 'district_heating_areas'
+    industrial_demand_osm:
+      schema: 'demand'
+      table: 'egon_demandregio_osm_ind_electricity'
+    vg250_lan:
+      schema: 'boundaries'
+      table: 'vg250_lan'
   targets:
     chp_table:
       table: 'egon_chp'
