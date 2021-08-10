@@ -135,7 +135,6 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
 
             # Assign bus_id
             possible_areas['voltage_level'] = selected_chp.voltage_level
-            # TODO: Fix promplem in Kappeln (centroid on river, no mv grid)
             possible_areas['bus_id'] = assign_bus_id(
                 possible_areas, config.datasets()["chp_location"]).bus_id
 
@@ -221,7 +220,7 @@ def extension_district_heating(
         f"""
         SELECT
         residential_and_service_demand as demand, area_id,
-        ST_Transform(ST_Centroid(geom_polygon), 4326)  as geom
+        ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
         FROM
         demand.district_heating_areas
         WHERE scenario = 'eGon2035'
