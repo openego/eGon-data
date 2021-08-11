@@ -634,6 +634,7 @@ def neighbor_reduction(version="0.0.0"):
     neighbor_gens["scn_name"] = "eGon100RE"
     neighbor_gens["version"] = version
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
+    neighbor_gens["p_nom_extendable"] = False
     neighbor_gens = neighbor_gens.rename(
         columns={
             "marginal_cost": "marginal_cost_fixed",
