@@ -80,6 +80,9 @@ def calc_load_curve(share_wz, annual_demand=1):
     # demand curves are created for each row
     if type(share_wz) == pd.core.frame.DataFrame:
 
+        # Replace NaN values with 0
+        share_wz = share_wz.fillna(0.)
+
         result = pd.DataFrame(columns = df.index, index=share_wz.index)
 
         # Group by share_wz to reduce number of iterations
