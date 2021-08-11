@@ -8,10 +8,6 @@ import egon.data.config
 import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
-from sqlalchemy.ext.declarative import declarative_base
-
-
-Base = declarative_base()
 
 
 def demands_per_bus(scenario):
