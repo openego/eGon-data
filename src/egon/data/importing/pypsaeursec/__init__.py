@@ -403,11 +403,8 @@ def neighbor_reduction(version="0.0.0"):
 
     neighbors = network.buses[~network.buses.country.isin(["DE"])]
     
-    max_index  = db.select_dataframe("select * from grid.egon_pf_hv_bus "
-                   "where version = '0.0.0' and scn_name = 'eGon100RE'", index_col='bus_id')
+    neighbors["new_index"] = db.next_etrago_id('bus') + neighbors.reset_index().index
     
-    neighbors["new_index"] = max_index.index.max()+ 1 + neighbors.reset_index().index
-
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
 
@@ -427,6 +424,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbors.loc[neighbor_lines.bus1,
                       "new_index"].reset_index().new_index
     )
+    neighbor_lines.index += db.next_etrago_id('line')
 
     if not network.lines_t["s_max_pu"].empty:
         for i in neighbor_lines_t.columns:
@@ -448,6 +446,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbors.loc[neighbor_links.bus1,
                       "new_index"].reset_index().new_index
     )
+    neighbor_links.index += db.next_etrago_id('link')
 
     # generators
     neighbor_gens = network.generators[
@@ -460,6 +459,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbors.loc[neighbor_gens.bus,
                       "new_index"].reset_index().new_index
     )
+    neighbor_gens.index += db.next_etrago_id('generator')
 
     for i in neighbor_gens_t.columns:
         new_index = neighbor_gens[neighbor_gens["name"] == i].index
@@ -478,6 +478,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbors.loc[neighbor_loads.bus,
                       "new_index"].reset_index().new_index
     )
+    neighbor_loads.index += db.next_etrago_id('load')
 
     for i in neighbor_loads_t.columns:
         new_index = neighbor_loads[neighbor_loads["index"] == i].index
@@ -496,6 +497,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbors.loc[neighbor_stores.bus,
                       "new_index"].reset_index().new_index
     )
+    neighbor_stores.index += db.next_etrago_id('store')
 
     for i in neighbor_stores_t.columns:
         new_index = neighbor_stores[neighbor_stores["name"] == i].index
@@ -518,6 +520,7 @@ def neighbor_reduction(version="0.0.0"):
         .reset_index()
         .new_index
     )
+    neighbor_storage.index += db.next_etrago_id('storage')
 
     for i in neighbor_storage_t.columns:
         new_index = neighbor_storage[neighbor_storage["name"] == i].index

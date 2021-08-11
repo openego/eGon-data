@@ -5,7 +5,6 @@ import geopandas as gpd
 import pandas as pd
 from egon.data import db, config
 from egon.data.datasets import Dataset
-from egon.data.datasets.heat_etrago import next_id
 from shapely.geometry import LineString
 import zipfile
 from sqlalchemy.orm import sessionmaker
@@ -147,7 +146,7 @@ def buses(scenario, sources, targets):
 
     central_buses = central_buses_egon100(sources)
 
-    next_bus_id = next_id('bus')+1
+    next_bus_id = db.next_etrago_id('bus')+1
 
     # if in test mode, add bus in center of Germany
     if config.settings()['egon-data']['--dataset-boundary'] != 'Everything':
@@ -291,7 +290,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
     # Add country tag and set index
     new_lines['country'] = foreign_buses.set_index('bus_id').loc[
         lines.foreign_bus, 'country'].values
-    new_lines.line_id = range(next_id('line'), next_id('line')+len(lines))
+    new_lines.line_id = range(db.next_etrago_id('line'), db.next_etrago_id('line')+len(lines))
 
     # Set bus in center of foreogn countries as bus1
     for i, row in new_lines.iterrows():
@@ -416,7 +415,7 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
     # Initalize the dataframe for transformers
     trafo = gpd.GeoDataFrame(
         columns=['trafo_id', 'bus0', 'bus1', 's_nom'],dtype=int)
-    trafo_id = next_id('transformer')
+    trafo_id = db.next_etrago_id('transformer')
 
     # Add one transformer per central foreign bus with v_nom != 380
     for i, row in central_buses[central_buses.v_nom!=380].iterrows():
@@ -679,7 +678,7 @@ def insert_generators(capacities):
         entry = etrago.EgonPfHvGenerator(
             version = '0.0.0',
             scn_name = 'eGon2035',
-            generator_id = int(next_id('generator')),
+            generator_id = int(db.next_etrago_id('generator')),
             bus = row.bus,
             carrier = row.carrier,
             p_nom = row.cap_2035)
@@ -736,7 +735,7 @@ def insert_storage(capacities):
         entry = etrago.EgonPfHvStorage(
             version = '0.0.0',
             scn_name = 'eGon2035',
-            storage_id = int(next_id('storage')),
+            storage_id = int(db.next_etrago_id('storage')),
             bus = row.bus,
             max_hours = (6 if row.carrier=='battery' else 168),
             carrier = row.carrier,
@@ -853,7 +852,7 @@ def tyndp_demand():
         if bus in map_series.values:
             nodes.extend(list(map_series[map_series==bus].index.values))
 
-        load_id = next_id('load')
+        load_id = db.next_etrago_id('load')
 
         # Some etrago bus_ids represent multiple TYNDP nodes,
         # in this cases the loads are summed
