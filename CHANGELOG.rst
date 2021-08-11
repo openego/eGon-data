@@ -120,6 +120,8 @@ Added
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
 * Integrate industrial time series creation
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
+* Merge electrical loads per bus and export to etrago tables
+  `#328 <https://github.com/openego/eGon-data/issues/328>`_
 
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
@@ -166,7 +168,7 @@ Changed
   `#297 <https://github.com/openego/eGon-data/issues/297>`_
 * Migrate industrial sites to datasets
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
-* Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc. 
+* Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc.
   `#334 <https://github.com/openego/eGon-data/issues/334>`_
 * Move functions used by multiple datasets
   `#323 <https://github.com/openego/eGon-data/issues/323>`_
