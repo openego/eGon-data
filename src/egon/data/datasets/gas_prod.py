@@ -223,13 +223,4 @@ def import_gas_generators():
                               schema ='grid',
                               index = False,
                               if_exists = 'append')
-
-
-#def insert_gas_prod():
-#    """Overall function for importing gas production data
-#    Returns
-#    -------
-#    None.
-#    """
-#    import_gas_generators()
     
