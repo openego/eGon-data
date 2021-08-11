@@ -1,7 +1,6 @@
 """
 The module containing all code dealing with chp < 10MW.
 """
-import pandas as pd
 from egon.data import db, config
 from egon.data.datasets.power_plants import (
     assign_bus_id, assign_gas_bus_id, filter_mastr_geometry, select_target)
@@ -92,6 +91,54 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
 def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
                        district_heating = True):
+    """ Builds new CHPs on potential industry or district heating areas.
+
+    This method can be used to distrectly extend and spatial allocate CHP
+    for industry or district heating areas.
+    The following steps are running in a loop until the additional
+    capacity is reached:
+
+        1. Randomly select an existing CHP < 10MW and its parameters.
+
+        2. Select possible areas where the CHP can be located.
+        It is assumed that CHPs are only build if the demand of the industry
+        or district heating grid exceeds the annual energy output of the CHP.
+        The energy output is calculated using the installed capacity and
+        estimated full load hours.
+        The thermal output is used for district heating areas. Since there are
+        no explicit heat demands for industry, the electricity output and
+        demands are used.
+
+        3. Randomly select one of the possible areas.
+        The areas are weighted by the annal demand, assuming that the
+        possibility of building a CHP plant is higher when for large consumers.
+
+        4. Insert allocated CHP plant into the database
+
+        5. Substract capacity of new build CHP from the additional capacity.
+        The energy demands of the areas are reduced by the estimated energy
+        output of the CHP plant.
+
+    Parameters
+    ----------
+    areas : geopandas.GeoDataFrame
+        Possible areas for a new CHP plant, including their energy demand
+    additional_capacity : float
+        Overall eletcrical capacity of CHPs that should be build in MW.
+    existing_chp : pandas.DataFrame
+        List of existing CHP plants including electrical and thermal capacity
+    flh : int
+        Assumed electrical or thermal full load hours.
+    EgonChp : class
+        ORM-class definition of CHP database-table.
+    district_heating : boolean, optional
+        State if the areas are district heating areas. The default is True.
+
+    Returns
+    -------
+    None.
+
+    """
     session = sessionmaker(bind=db.engine())()
 
     np.random.seed(seed=123456)
@@ -171,9 +218,11 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
             session.add(entry)
             session.commit()
 
-            # Reduce additional capacity and demand
+            # Reduce additional capacity by newly build CHP
             additional_capacity -= selected_chp.el_capacity
 
+            # Reduce the demand of the selected area by the estimated
+            # enrgy output of the CHP
             if district_heating:
                 areas.loc[
                     areas.index[areas.area_id == selected_area.area_id],
@@ -182,14 +231,39 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
                 areas.loc[
                 areas.index[areas.osm_id == selected_area.osm_id],
                 'demand'] -= selected_chp.th_capacity*flh
-
             areas = areas[areas.demand > 0]
+
         else:
             n+= 1
 
 def extension_district_heating(
         federal_state, additional_capacity, flh_chp, EgonChp,
         areas_without_chp_only=True):
+    """ Build new CHP < 10 MW for district areas considering existing CHP
+    and the heat demand.
+
+    For more details on the placement alogrithm have a look at the description
+    of extension_to_areas().
+
+    Parameters
+    ----------
+    federal_state : str
+        Name of the federal state.
+    additional_capacity : float
+        Additional electrical capacity of new CHP plants in district heating
+    flh_chp : int
+        Assumed number of full load hours of heat output.
+    EgonChp : class
+        ORM-class definition of CHP database-table.
+    areas_without_chp_only : boolean, optional
+        Set if CHPs are only assigned to district heating areas which don't
+        have an existing CHP. The default is True.
+
+    Returns
+    -------
+    None.
+
+    """
 
     sources = config.datasets()["chp_location"]["sources"]
     targets = config.datasets()["chp_location"]["targets"]
@@ -274,6 +348,28 @@ def extension_district_heating(
 
 
 def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
+    """ Build new CHP < 10 MW for industry considering existing CHP,
+    osm landuse areas and electricity demands.
+
+    For more details on the placement alogrithm have a look at the description
+    of extension_to_areas().
+
+    Parameters
+    ----------
+    federal_state : str
+        Name of the federal state.
+    additional_capacity : float
+        Additional electrical capacity of new CHP plants in indsutry.
+    flh_chp : int
+        Assumed number of full load hours of electricity output.
+    EgonChp : class
+        ORM-class definition of CHP database-table.
+
+    Returns
+    -------
+    None.
+
+    """
 
     sources = config.datasets()["chp_location"]["sources"]
     targets = config.datasets()["chp_location"]["targets"]
@@ -367,7 +463,13 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
 
 
 def assign_use_case(chp, sources):
-    """ Intentifies CHPs used in district heating areas
+    """Identifies CHPs used in district heating areas.
+
+    A CHP plant is assigned to a district heating area if
+    - it is closer than 1km to the borders of the district heating area
+    - the name of the osm landuse area where the CHP is located indicates
+    that it feeds in to a district heating area (e.g. 'Stadtwerke')
+    - it is not closer than 100m to an industrial area
 
     Parameters
     ----------
