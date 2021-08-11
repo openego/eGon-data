@@ -11,7 +11,18 @@ import geopandas
 
 from egon.data import db
 from egon.data.importing.gas_grid import next_id
-from egon.data.config import settings                     
+from egon.data.config import settings
+from egon.data.datasets import Dataset               
+
+class GasProduction(Dataset): 
+     def __init__(self, dependencies): 
+         super().__init__( 
+             name="GasProduction", 
+             version="0.0.0", 
+             dependencies=dependencies, 
+             tasks=(import_gas_generators), 
+         ) 
+
 
 def load_NG_generators():
     """Define the natural gas producion units in Germany
@@ -175,7 +186,7 @@ def import_gas_generators():
     
     Returns
     -------
-        
+     None.    
     """
     # Connect to local database
     engine = db.engine()
@@ -214,11 +225,11 @@ def import_gas_generators():
                               if_exists = 'append')
 
 
-def insert_gas_prod():
-    """Overall function for importing gas production data
-    Returns
-    -------
-    None.
-    """
-    import_gas_generators()
+#def insert_gas_prod():
+#    """Overall function for importing gas production data
+#    Returns
+#    -------
+#    None.
+#    """
+#    import_gas_generators()
     
