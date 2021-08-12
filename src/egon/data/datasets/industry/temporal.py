@@ -164,14 +164,13 @@ def calc_load_curves_ind_osm(scenario):
     curves_da = identify_bus(load_curves, demand_area)
 
     # Group all load curves per bus
-    curves_bus = curves_da.groupby("subst_id").sum().drop(["id"], axis=1)
+    curves_bus = curves_da.drop(["id"], axis=1).groupby("subst_id").sum()
 
     # Initalize pandas.DataFrame for export to database
     load_ts_df = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
 
     # Insert time series data to df as an array
     load_ts_df.p_set = curves_bus.values.tolist()
-
     return load_ts_df
 
 
