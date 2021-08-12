@@ -16,7 +16,7 @@ class HouseholdElectricityDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HouseholdElectricityDemand",
-            version="0.0.0.dev",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(create_tables,
                    distribute_household_demands)
