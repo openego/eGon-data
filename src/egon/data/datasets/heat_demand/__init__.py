@@ -82,7 +82,6 @@ class EgonPetaHeat(Base):
     demand = Column(Float)
     sector = Column(String)
     scenario = Column(String, ForeignKey(EgonScenario.name))
-    version = Column(String)
     zensus_population_id = Column(Integer)
 
 
@@ -500,8 +499,7 @@ def heat_demand_to_db_table():
                 connection.execute(f'ANALYZE "{rasters}"')
                 with open(sql_script) as convert:
                     connection.execute(
-                        Template(convert.read()).render(version="0.0.0",
-                                                        source=rasters)
+                        Template(convert.read()).render(source=rasters)
                     )
     return None
 
@@ -761,12 +759,6 @@ def add_metadata():
                         {
                             "name": "scenario",
                             "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "version",
-                            "description": "data version number",
                             "type": "text",
                             "unit": "none",
                         },

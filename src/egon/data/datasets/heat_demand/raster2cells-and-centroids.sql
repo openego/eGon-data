@@ -1,10 +1,9 @@
 INSERT INTO demand.egon_peta_heat (
-  demand, sector, scenario, version, zensus_population_id
+  demand, sector, scenario, zensus_population_id
 ) SELECT
   (demands.centroid).val AS demand,
   sector,
   (regexp_matches(filename, '(ser|res)_hd_([^.]*).*', 'i'))[2] AS scenario,
-  '{{ version }}' AS version,
   population.id AS zensus_population_id
 FROM (
   SELECT

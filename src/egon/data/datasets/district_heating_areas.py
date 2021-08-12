@@ -61,7 +61,6 @@ class MapZensusDistrictHeatingAreas(Base):
     )
     area_id = Column(Integer)
     scenario = Column(String, ForeignKey(EgonScenario.name))
-    version = Column(String)
     zensus_population_id = Column(Integer)
 
 
@@ -78,7 +77,6 @@ class EgonDistrictHeatingAreas(Base):
     )
     area_id = Column(Integer)
     scenario = Column(String, ForeignKey(EgonScenario.name))
-    version = Column(String)
     geom_polygon = Column(Geometry("MULTIPOLYGON", 3035))
     residential_and_service_demand = Column(Float)
 
@@ -237,7 +235,6 @@ def load_heat_demands(scenario_name):
         FROM demand.egon_peta_heat AS demand
         JOIN society.destatis_zensus_population_per_ha AS pop
         ON demand.zensus_population_id = pop.id
-        AND demand.version = '0.0.0'
         AND demand.scenario = '{scenario_name}'
         GROUP BY demand.zensus_population_id, pop.geom;""",
         index_col="zensus_population_id",
@@ -591,13 +588,12 @@ def district_heating_areas(scenario_name, plotting=False):
 
     # store the results in the database
     scenario_dh_area["scenario"] = scenario_name
-    scenario_dh_area["version"] = "0.0.0"
 
     db.execute_sql(
         f"""DELETE FROM demand.egon_map_zensus_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    scenario_dh_area[["version", "scenario", "area_id"]].to_sql(
+    scenario_dh_area[["scenario", "area_id"]].to_sql(
         "egon_map_zensus_district_heating_areas",
         schema="demand",
         con=db.engine(),
@@ -608,7 +604,6 @@ def district_heating_areas(scenario_name, plotting=False):
     # join.dissolve(columnname).convex_hull.plot() # without holes, too big
     areas_dissolved = scenario_dh_area.dissolve("area_id", aggfunc="sum")
     areas_dissolved["scenario"] = scenario_name
-    areas_dissolved["version"] = "0.0.0"
 
     areas_dissolved["geom_polygon"] = [
         MultiPolygon([feature]) if type(feature) == Polygon else feature
@@ -761,12 +756,6 @@ def add_metadata():
                             "unit": "none",
                         },
                         {
-                            "name": "version",
-                            "description": "data version number",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
                             "name": "residential_and_service_demand",
                             "description": "annual heat demand",
                             "type": "double precision",
@@ -873,12 +862,6 @@ def add_metadata():
                         {
                             "name": "scenario",
                             "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "version",
-                            "description": "data version number",
                             "type": "text",
                             "unit": "none",
                         },
