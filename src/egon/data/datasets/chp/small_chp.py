@@ -284,7 +284,7 @@ def extension_district_heating(
             (SELECT ST_Union(geometry)
              FROM {sources['vg250_lan']['schema']}.
              {sources['vg250_lan']['table']}
-            WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
         AND el_capacity < 10
         ORDER BY el_capacity, residential_and_service_demand
 
@@ -304,7 +304,7 @@ def extension_district_heating(
             SELECT ST_Union(d.geometry)
             FROM
             {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} d
-            WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
         AND area_id NOT IN (
             SELECT district_heating_area_id
             FROM {targets['chp_table']['schema']}.
@@ -338,7 +338,7 @@ def extension_district_heating(
                     (SELECT ST_Union(d.geometry)
                      FROM {sources['vg250_lan']['schema']}.
                       {sources['vg250_lan']['table']} d
-                    WHERE REPLACE(gen, '-', '') ='{federal_state}'))
+                    WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
                 AND a.district_heating_area_id = b.area_id
                 GROUP BY (
                     b.residential_and_service_demand,
@@ -418,8 +418,16 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         AND b.name NOT LIKE '%%olarpark%%'
         AND b.name NOT LIKE '%%Gewerbegebiet%%'
         AND b.name NOT LIKE '%%Gewerbepark%%'
+        AND ST_Intersects(
+            ST_Transform(ST_Centroid(b.geom), 4326),
+            (SELECT ST_Union(d.geometry)
+             FROM {sources['vg250_lan']['schema']}.
+             {sources['vg250_lan']['table']} d
+             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
+
         GROUP BY (a.osm_id, b.geom, b.name)
         ORDER BY SUM(demand)
+
         """)
 
     extension_to_areas(industry_areas, additional_capacity, existing_chp,
