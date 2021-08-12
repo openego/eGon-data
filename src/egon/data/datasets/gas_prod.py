@@ -12,7 +12,8 @@ import geopandas
 from egon.data import db
 from egon.data.importing.gas_grid import next_id
 from egon.data.config import settings
-from egon.data.datasets import Dataset               
+from egon.data.datasets import Dataset         
+from urllib.request import urlretrieve      
 
 class GasProduction(Dataset): 
      def __init__(self, dependencies): 
@@ -96,16 +97,26 @@ def load_biogas_generators():
         Dataframe containing the biogas producion units in Germany
         
     """
+    # Download file
+    basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+    url = "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/" + basename
+    target_file = "datasets/gas_data/" + basename
     
-    # Read-in data from csv-file
-    target_file = os.path.join(
-        os.path.dirname(__file__), 'Biogaspartner_Einspeiseatlas_Deutschland_2021.csv')  # path to be changed when the data will be downloaded from Zenodo repository
+    urlretrieve(url, target_file)
     
-    biogas_generators_list = pd.read_csv(target_file,
-                               delimiter=';', decimal='.',
-                               usecols = ['lat', 'long', 'Einspeisung Biomethan [(N*m^3)/h)]'])
+    # Read-in data from csv-file   
+    biogas_generators_list = pd.read_excel(target_file,
+                               usecols = ['Koordinaten', 'Einspeisung Biomethan [(N*m^3)/h)]'])
+                               
+    x = []
+    y = []
+    for index, row in biogas_generators_list.iterrows():
+        coordinates = row['Koordinaten'].split(',')
+        y.append(coordinates[0])
+        x.append(coordinates[1])
+    biogas_generators_list['x'] = x
+    biogas_generators_list['y'] = y
     
-    biogas_generators_list = biogas_generators_list.rename(columns={'lat': 'y','long': 'x'})
     biogas_generators_list = geopandas.GeoDataFrame(biogas_generators_list, 
                                                     geometry=geopandas.points_from_xy(biogas_generators_list['x'], 
                                                                                       biogas_generators_list['y']))
@@ -148,8 +159,8 @@ def load_biogas_generators():
                                        / biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]'].sum() 
                                        * Total_biogas_capacity_2035)  
     # Remove useless columns
-    biogas_generators_list = biogas_generators_list.drop(columns=['x', 'y', 'gid', 'bez', 
-                                                                  'area_ha', 'geometry',
+    biogas_generators_list = biogas_generators_list.drop(columns=['x', 'y', 'gid', 'bez', 'Koordinaten',
+                                                                  'area_ha', 'geometry', 
                                                                   'Einspeisung Biomethan [(N*m^3)/h)]'])
     return biogas_generators_list
     
