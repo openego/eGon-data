@@ -118,11 +118,12 @@ Added
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
 * Integrate supply strategies for individual and district heating
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
+* Integrate gas production
+  `#321 <https://github.com/openego/eGon-data/issues/321>`_
 * Integrate industrial time series creation
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
 * Merge electrical loads per bus and export to etrago tables
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
-
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
