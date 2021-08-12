@@ -14,7 +14,7 @@ The resulting data is stored in two separate tables
   demand profiles on MV grid level or for determining the peak load at load
   area level. The table is created by :func:`houseprofiles_in_census_cells`.
 * `demand.household_electricity_profiles_hvmv_substation`:
-  Household electricity demand profiles aggregated at MV grid district level.
+  Household electricity demand profiles aggregated at MV grid district level in MWh.
   Primarily used to create the eTraGo data model.
   The table is created with :func:`mv_grid_district_HH_electricity_load`.
 
@@ -1162,7 +1162,7 @@ def mv_grid_district_HH_electricity_load(
             year=scenario_year,
             peak_load_only=False,
         )
-        mvgd_profiles_dict[grid_district] = [mvgd_profile.to_list()]
+        mvgd_profiles_dict[grid_district] = [(mvgd_profile / 1e3).round(3).to_list()]  # to MWh
     mvgd_profiles = pd.DataFrame.from_dict(mvgd_profiles_dict, orient="index")
 
     # Reshape data: put MV grid ids in columns to a single index column
