@@ -118,11 +118,12 @@ Added
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
 * Integrate supply strategies for individual and district heating
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
+* Integrate gas production
+  `#321 <https://github.com/openego/eGon-data/issues/321>`_
 * Integrate industrial time series creation
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
 * Merge electrical loads per bus and export to etrago tables
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
-
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -220,4 +221,7 @@ Bug fixes
 * Set current working directory as java's temp dir when executing osmosis
   `#344 <https://github.com/openego/eGon-data/issues/344>`_
 * Fix border gas voronoi polygons which had no bus_id
-`#362 <https://github.com/openego/eGon-data/issues/362>`_
+  `#362 <https://github.com/openego/eGon-data/issues/362>`_
+* Add dependency from WeatherData to Vg250
+  `#387 <https://github.com/openego/eGon-data/issues/387>`_
+
