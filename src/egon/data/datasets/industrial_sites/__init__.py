@@ -24,7 +24,7 @@ Base = declarative_base()
 
 
 class HotmapsIndustrialSites(Base):
-    __tablename__ = "hotmaps_industrial_sites"
+    __tablename__ = "egon_hotmaps_industrial_sites"
     __table_args__ = {"schema": "demand"}
     siteid = Column(Integer, primary_key=True)
     sitename = Column(String)
@@ -49,7 +49,7 @@ class HotmapsIndustrialSites(Base):
 
 
 class SeenergiesIndustrialSites(Base):
-    __tablename__ = "seenergies_industrial_sites"
+    __tablename__ = "egon_seenergies_industrial_sites"
     __table_args__ = {"schema": "demand"}
     objectid = Column(Integer, primary_key=True)
     siteid = Column(Integer)
@@ -83,7 +83,7 @@ class SeenergiesIndustrialSites(Base):
 
 
 class SchmidtIndustrialSites(Base):
-    __tablename__ = "schmidt_industrial_sites"
+    __tablename__ = "egon_schmidt_industrial_sites"
     __table_args__ = {"schema": "demand"}
     id = Column(Integer, primary_key=True)
     application = Column(String(50))
@@ -98,7 +98,7 @@ class SchmidtIndustrialSites(Base):
 
 
 class IndustrialSites(Base):
-    __tablename__ = "industrial_sites"
+    __tablename__ = "egon_industrial_sites"
     __table_args__ = {"schema": "demand"}
     id = Column(
         Integer,
@@ -130,6 +130,24 @@ def create_tables():
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
+    # Drop outdated tables if still present, might be removed later
+    db.execute_sql(
+        """DROP TABLE IF EXISTS demand.industrial_sites CASCADE;"""
+    )
+    
+    db.execute_sql(
+        """DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"""
+    )
+    
+    db.execute_sql(
+        """DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"""
+    )
+    
+    db.execute_sql(
+        """DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"""
+    )
+   
+    
     # Drop tables and sequences before recreating them
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
@@ -671,7 +689,7 @@ class MergeIndustrialSites(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(download_import_industrial_sites, merge_inputs, map_nuts3),
         )

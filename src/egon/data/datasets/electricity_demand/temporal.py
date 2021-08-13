@@ -78,10 +78,22 @@ def calc_load_curve(share_wz, annual_demand=1):
     # If shares per cts branch is a DataFrame (e.g. shares per substation)
     # demand curves are created for each row
     if type(share_wz) == pd.core.frame.DataFrame:
-        result = pd.DataFrame(columns=share_wz.index)
-        for i, row in share_wz.iterrows():
-            result[i] = df[row.index].mul(row).sum(axis=1).mul(
-                annual_demand[i])
+
+        # Replace NaN values with 0
+        share_wz = share_wz.fillna(0.)
+
+        result = pd.DataFrame(columns = df.index, index=share_wz.index)
+
+        # Group by share_wz to reduce number of iterations
+        for name, group in share_wz.groupby(share_wz.columns.tolist()):
+            # Calulate normalized load curve
+            data = df[group.columns].mul(
+                group.head(1).transpose().squeeze()).sum(axis=1)
+            # Assign load curve to all entrys in group
+            result.loc[group.index, :] = [data.transpose().values]*len(group)
+        # Transpose and multiply with annual demand
+        result = result.transpose().mul(annual_demand)
+
     else:
         result = df[share_wz.index].mul(share_wz).sum(axis=1).mul(
             annual_demand)
