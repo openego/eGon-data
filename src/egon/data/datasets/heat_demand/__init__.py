@@ -43,20 +43,6 @@ from egon.data.datasets import Dataset
 # class for airflow task management (and version control)
 class HeatDemandImport(Dataset):
 
-    # data_config = egon.data.config.datasets()
-    # res_heatdemands_config = data_config[
-    #     "peta5_0_1_res_heat_demands"][
-    #     "original_data"
-    # ]
-    # ser_heatdemands_config = data_config[
-    #     "peta5_0_1_ser_heat_demands"][
-    #     "original_data"
-    # ]
-    # target_files = (res_heatdemands_config["target"]["path"] + "_and_" +
-    #                ser_heatdemands_config)
-    # besides the egon_peta_heat dataset is based on vg250 and census data
-    # as you can see below
-
     def __init__(self, dependencies):
         super().__init__(
             name="heat-demands",
