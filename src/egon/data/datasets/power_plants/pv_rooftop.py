@@ -28,7 +28,7 @@ def next_id(component):
     return next_id
 
 
-def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
+def pv_rooftop_per_mv_grid(scenario='eGon2035',
                            level='federal_state'):
     """ Intergate solar rooftop per mv grid district
 
@@ -37,8 +37,6 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
 
     Parameters
     ----------
-    version : str, optional
-        Version number. The default is '0.0.0'.
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
     level : str, optional
@@ -60,7 +58,6 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
         {targets['generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
-        AND version = '{version}'
         """)
 
     db.execute_sql(
@@ -71,8 +68,7 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
         AND generator_id NOT IN (
             SELECT generator_id FROM
             grid.egon_etrago_generator
-            WHERE version = '{version}'
-            AND scn_name = '{scenario}')
+            WHERE scn_name = '{scenario}')
         """)
 
     # Select demand per mv grid district
@@ -136,8 +132,7 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
 
     # Store data in dataframe
     pv_rooftop = pd.DataFrame(
-        data = {'version': version,
-                'scn_name': scenario,
+        data = {'scn_name': scenario,
                 'carrier': 'solar_rooftop',
                 'bus': demand.index,
                 'p_nom': capacities,
@@ -179,8 +174,7 @@ def pv_rooftop_per_mv_grid(version='0.0.0', scenario='eGon2035',
     join = join[join.index_right.isin(pv_rooftop.generator_id)]
 
     timeseries =  pd.DataFrame(
-            data = {'version': version,
-                    'scn_name': scenario,
+            data = {'scn_name': scenario,
                     'temp_id': 1,
                     'p_max_pu': feedin.feedin[join.index].values,
                     'generator_id':pv_rooftop.generator_id[join.index_right].values
