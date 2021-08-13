@@ -113,7 +113,7 @@ def select_chp_from_nep(sources):
     # Initalize DataFrame
     chp_NEP = pd.DataFrame(
         columns = ['name', 'postcode', 'carrier', 'capacity',
-                   'c2035_capacity', 'c2035_chp'])
+                   'c2035_capacity', 'c2035_chp', 'city'])
 
     # Insert rows from list without a name
     chp_NEP = chp_NEP.append(
