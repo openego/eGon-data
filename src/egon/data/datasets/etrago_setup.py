@@ -12,7 +12,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(create_tables,
                    temp_resolution
@@ -203,7 +203,7 @@ class EgonPfHvCarrier(Base):
     __tablename__ = 'egon_etrago_carrier'
     __table_args__ = {'schema': 'grid'}
 
-    name = Column(Text)
+    name = Column(Text, primary_key=True, nullable=False)
     co2_emissions = Column(Float(53))
     color = Column(Text)
     nice_name = Column(Text)
