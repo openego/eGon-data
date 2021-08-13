@@ -26,7 +26,7 @@ class CtsElectricityDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsElectricityDemand",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(distribute_cts_demands,
                    insert_cts_load)

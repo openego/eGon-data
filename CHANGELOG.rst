@@ -181,6 +181,9 @@ Changed
   `#326 <https://github.com/openego/eGon-data/issues/326>`_
 * Migrate osmTGmod to datasets
   `#305 <https://github.com/openego/eGon-data/issues/305>`_
+* Filter osm landuse areas, rename industrial sites tables and update load curve function
+  `#378 <https://github.com/openego/eGon-data/issues/378>`_
+
 
 Bug fixes
 ---------

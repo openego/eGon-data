@@ -169,10 +169,32 @@ def industrial_demand_distr():
             f"""SELECT gid, area_ha, geom FROM
                 {sources['osm_landuse']['schema']}.
                 {sources['osm_landuse']['table']}
-                WHERE sector = 3 """,
+                WHERE sector = 3
+                AND NOT ST_Intersects(
+                    geom,
+                    (SELECT ST_UNION(ST_Transform(geom,3035)) FROM {sources['industrial_sites']['schema']}.{sources['industrial_sites']['table']}))
+                AND name NOT LIKE '%%kraftwerk%%'
+                AND name NOT LIKE '%%Stadtwerke%%'
+                AND name NOT LIKE '%%Müllverbrennung%%'
+                AND name NOT LIKE '%%Müllverwertung%%'
+                AND name NOT LIKE '%%Abfall%%'
+                AND name NOT LIKE '%%Kraftwerk%%'
+                AND name NOT LIKE '%%Wertstoff%%'
+                AND name NOT LIKE '%%olarpark%%'
+                AND name NOT LIKE '%%Gewerbegebiet%%'
+                AND name NOT LIKE '%%Gewerbepark%%'
+                AND name NOT LIKE '%%heizwerk%%'
+                AND name NOT LIKE '%%Heizwerk%%'
+                AND name NOT LIKE '%%Kläranlage%%'
+                AND name NOT LIKE '%%Klärwerk%%'
+                AND name NOT LIKE '%%Biogasanlage%%'
+                AND name NOT LIKE '%%Wasserwerk%%'
+                AND name NOT LIKE '%%Recyclinghof%%'
+                AND name NOT LIKE '%%Recyclingpark%%'""",
             geom_col="geom",
             epsg=3035,
         )
+
 
         # Spatially join vg250_krs and industrial landuse areas
         landuse = gpd.sjoin(landuse, boundaries, how="inner", op="intersects")
@@ -329,7 +351,7 @@ class IndustrialDemandCurves(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Industrial_demand_curves",
-            version="0.0.0",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_tables,
