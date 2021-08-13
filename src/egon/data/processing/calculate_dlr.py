@@ -38,7 +38,7 @@ def Calculate_DLR():
     # Connect to the data base
     con = db.engine()
 
-    sql = "SELECT version, scn_name, line_id, geom, s_nom FROM grid.egon_etrago_line"
+    sql = "SELECT scn_name, line_id, geom, s_nom FROM grid.egon_etrago_line"
     df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
     trans_lines_R = {}
@@ -48,8 +48,8 @@ def Calculate_DLR():
     trans_lines = df[["s_nom"]]
     trans_lines["in_regions"] = [[] for i in range(len(df))]
 
-    trans_lines[["line_id", "geometry", "version", "scn_name"]] = df[
-        ["line_id", "geom", "version", "scn_name"]
+    trans_lines[["line_id", "geometry", "scn_name"]] = df[
+        ["line_id", "geom", "scn_name"]
     ]
 
     # Assign to each transmission line the region to which it belongs

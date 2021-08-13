@@ -107,7 +107,7 @@ def insert_central_direct_heat(scenario='eGon2035'):
             SELECT generator_id FROM
             {targets['heat_generators']['schema']}.
             {targets['heat_generators']['table']}
-            AND scn_name = '{scenario}')
+            WHERE scn_name = '{scenario}')
         """)
 
     central_thermal = db.select_geodataframe(
