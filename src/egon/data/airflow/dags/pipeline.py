@@ -35,6 +35,7 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.gas_prod import GasProduction
 import airflow
 
 import egon.data.importing.zensus as import_zs
@@ -265,7 +266,6 @@ with airflow.DAG(
     )
 
     gas_grid_insert_data >> insert_power2gas_installations
-    osmtgmod_pypsa >> insert_power2gas_installations
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
@@ -275,6 +275,10 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
+    
+    # Gas prod import
+    gas_production_insert_data = GasProduction(
+        dependencies=[create_gas_polygons])
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
