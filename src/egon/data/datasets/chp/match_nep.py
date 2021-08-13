@@ -392,6 +392,8 @@ def insert_large_chp(sources, target, EgonChp):
     print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
     print(f"{chp_NEP.c2035_capacity.sum()} MW not matched")
 
+    chp_NEP.to_csv('not_matched_chp.csv')
+
     # Aggregate chp per location and carrier
     insert_chp = chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
         ['el_capacity', 'th_capacity', 'geometry',
