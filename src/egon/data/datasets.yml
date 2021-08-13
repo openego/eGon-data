@@ -547,16 +547,16 @@ industrial_sites:
   targets:
     hotmaps:
       schema: "demand"
-      table: "hotmaps_industrial_sites"
+      table: "egon_hotmaps_industrial_sites"
     seenergies:
       schema: "demand"
-      table: "seenergies_industrial_sites"
+      table: "egon_seenergies_industrial_sites"
     schmidt:
       schema: "demand"
-      table: "schmidt_industrial_sites"
+      table: "egon_schmidt_industrial_sites"
     sites:
       schema: "demand"
-      table: "industrial_sites"
+      table: "egon_industrial_sites"
 
 distributed_industrial_demand:
   sources:
@@ -572,7 +572,7 @@ distributed_industrial_demand:
       table: 'osm_landuse'
     industrial_sites:
       schema: 'demand'
-      table: 'industrial_sites'
+      table: 'egon_industrial_sites'
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
@@ -597,7 +597,7 @@ electrical_load_curves_industry:
       table: 'egon_demandregio_sites_ind_electricity'
     sites_geom:
       schema: 'demand'
-      table: 'industrial_sites'
+      table: 'egon_industrial_sites'
     demandregio_industry:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
