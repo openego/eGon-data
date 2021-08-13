@@ -66,7 +66,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
     existsting_chp_smaller_10mw = MaStR_konv[
         #(MaStR_konv.Nettonennleistung>0.1)
-        (MaStR_konv.Nettonennleistung<=1000)
+        (MaStR_konv.Nettonennleistung<=10)
         &(MaStR_konv.ThermischeNutzleistung>0)]
 
     targets = select_target('small_chp', 'eGon2035')
