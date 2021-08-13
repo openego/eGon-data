@@ -24,7 +24,6 @@ class EgonPfHvBus(Base):
     __tablename__ = 'egon_etrago_bus'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
     v_nom = Column(Float(53))
@@ -42,7 +41,6 @@ class EgonPfHvBusTimeseries(Base):
     __tablename__ = 'egon_etrago_bus_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
     v_mag_pu_set = Column(ARRAY(Float(precision=53)))
@@ -51,7 +49,6 @@ class EgonPfHvGenerator(Base):
     __tablename__ = 'egon_etrago_generator'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(BigInteger, primary_key=True, nullable=False)
     bus = Column(BigInteger)
@@ -87,7 +84,6 @@ class EgonPfHvGeneratorTimeseries(Base):
     __tablename__ = 'egon_etrago_generator_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -102,7 +98,6 @@ class EgonPfHvLine(Base):
     __tablename__ = 'egon_etrago_line'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
     bus0 = Column(BigInteger)
@@ -134,7 +129,6 @@ class EgonPfHvLineTimeseries(Base):
     __tablename__ = 'egon_etrago_line_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -145,7 +139,6 @@ class EgonPfHvLink(Base):
     __tablename__ = 'egon_etrago_link'
     __table_args__ = {'schema': 'grid'}
 
-    version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
     bus0 = Column(BigInteger)
@@ -171,7 +164,6 @@ class EgonPfHvLinkTimeseries(Base):
     __tablename__ = 'egon_etrago_link_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -186,7 +178,6 @@ class EgonPfHvLoad(Base):
     __tablename__ = 'egon_etrago_load'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
     bus = Column(BigInteger)
@@ -201,7 +192,6 @@ class EgonPfHvLoadTimeseries(Base):
     __tablename__ = 'egon_etrago_load_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -213,7 +203,6 @@ class EgonPfHvCarrier(Base):
     __tablename__ = 'egon_etrago_carrier'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     name = Column(Text)
     co2_emissions = Column(Float(53))
     color = Column(Text)
@@ -225,7 +214,6 @@ class EgonPfHvStorage(Base):
     __tablename__ = 'egon_etrago_storage'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
     bus = Column(BigInteger)
@@ -258,7 +246,6 @@ class EgonPfHvStorageTimeseries(Base):
     __tablename__ = 'egon_etrago_storage_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -274,7 +261,6 @@ class EgonPfHvStore(Base):
     __tablename__ = 'egon_etrago_store'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
     bus = Column(BigInteger)
@@ -299,7 +285,6 @@ class EgonPfHvStoreTimeseries(Base):
     __tablename__ = 'egon_etrago_store_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -313,7 +298,6 @@ class EgonPfHvTempResolution(Base):
     __tablename__ = 'egon_etrago_temp_resolution'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     temp_id = Column(BigInteger, primary_key=True, nullable=False)
     timesteps = Column(BigInteger, nullable=False)
     resolution = Column(Text)
@@ -324,7 +308,6 @@ class EgonPfHvTransformer(Base):
     __tablename__ = 'egon_etrago_transformer'
     __table_args__ = {'schema': 'grid'}
 
-    version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     bus0 = Column(BigInteger)
@@ -356,7 +339,6 @@ class EgonPfHvTransformerTimeseries(Base):
     __tablename__ = 'egon_etrago_transformer_timeseries'
     __table_args__ = {'schema': 'grid'}
 
-    version = version = Column(Text, primary_key=True, nullable=False)
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -469,7 +451,7 @@ def create_tables():
     EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
 
-def temp_resolution(version='0.0.0'):
+def temp_resolution():
     """ Insert temporal resolution for etrago
 
     Returns
@@ -479,8 +461,8 @@ def temp_resolution(version='0.0.0'):
     """
 
     db.execute_sql(
-        f"""
+        """
         INSERT INTO grid.egon_etrago_temp_resolution
-        (version, temp_id, timesteps, resolution, start_time)
-        SELECT '{version}', 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
+        (temp_id, timesteps, resolution, start_time)
+        SELECT 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
         """)

@@ -5,13 +5,11 @@ import geopandas as gpd
 from egon.data import db, config
 from shapely.geometry import LineString
 
-def insert_individual_power_to_heat(version = '0.0.0', scenario='eGon2035'):
+def insert_individual_power_to_heat(scenario='eGon2035'):
     """ Insert power to heat into database
 
     Parameters
     ----------
-    version : str, optional
-        Version number. The default is '0.0.0'.
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
 
@@ -58,16 +56,14 @@ def insert_individual_power_to_heat(version = '0.0.0', scenario='eGon2035'):
         heat_pumps,
         carrier = 'individual_heat_pump',
         multiple_per_mv_grid=False,
-        version = '0.0.0', scenario='eGon2035')
+        scenario='eGon2035')
 
 
-def insert_central_power_to_heat(version = '0.0.0', scenario='eGon2035'):
+def insert_central_power_to_heat(scenario='eGon2035'):
     """ Insert power to heat in district heating areas into database
 
     Parameters
     ----------
-    version : str, optional
-        Version number. The default is '0.0.0'.
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
 
@@ -105,18 +101,18 @@ def insert_central_power_to_heat(version = '0.0.0', scenario='eGon2035'):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level>3],
         multiple_per_mv_grid=False,
-        version = '0.0.0', scenario='eGon2035')
+        scenario='eGon2035')
     # Insert heat pumps in hv grid
     # (as many hvmv substations as intersect with district heating grid)
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level<3],
         multiple_per_mv_grid=True,
-        version = '0.0.0', scenario='eGon2035')
+        scenario='eGon2035')
 
 
 def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
                                    carrier = 'central_heat_pump',
-                                   version = '0.0.0', scenario='eGon2035'):
+                                   scenario='eGon2035'):
     """ Insert power to heat plants per grid level
 
     Parameters
@@ -125,8 +121,6 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
         Heat pumps in selected grid level
     multiple_per_mv_grid : boolean
         Choose if one district heating areas is supplied by one hvmv substation
-    version : str, optional
-        Version number. The default is '0.0.0'.
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
 
@@ -168,9 +162,9 @@ def insert_power_to_heat_per_level(heat_pumps, multiple_per_mv_grid,
     links = gpd.GeoDataFrame(
         index = range(len(gdf)),
         columns = [
-            'version', 'scn_name', 'bus0', 'bus1',
+            'scn_name', 'bus0', 'bus1',
             'carrier', 'link_id', 'p_nom', 'topo'],
-        data = {'version': version, 'scn_name': scenario,
+        data = {'scn_name': scenario,
                 'carrier': carrier}
         ).set_geometry('topo').set_crs(epsg=4326)
 

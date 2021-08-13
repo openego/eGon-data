@@ -16,7 +16,6 @@ class EgonEtragoElectricityCts(Base):
     __tablename__ = "egon_etrago_electricity_cts"
     __table_args__ = {"schema": "demand"}
 
-    version = Column(String, primary_key=True)
     subst_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
@@ -178,8 +177,6 @@ def insert_cts_load():
     targets = (egon.data.config.datasets()
                ['electrical_load_curves_cts']['targets'])
 
-    version = '0.0.0'
-
     create_table()
 
     for scenario in ['eGon2035', 'eGon100RE']:
@@ -190,8 +187,7 @@ def insert_cts_load():
             DELETE FROM
             {targets['cts_demand_curves']['schema']}
             .{targets['cts_demand_curves']['table']}
-            WHERE version = '{version}'
-            AND scn_name = '{scenario}'
+            WHERE scn_name = '{scenario}'
             """)
 
 
@@ -200,12 +196,11 @@ def insert_cts_load():
 
         # Initalize pandas.DataFrame for pf table load timeseries
         load_ts_df = pd.DataFrame(index=data.columns,
-                                  columns=['version', 'scn_name',
+                                  columns=['scn_name',
                                            'p_set'])
 
         # Insert data for pf load timeseries table
         load_ts_df.p_set = data.transpose().values.tolist()
-        load_ts_df.version = version
         load_ts_df.scn_name = scenario
 
         # Insert into database
