@@ -179,6 +179,8 @@ def select_chp_from_mastr(sources):
     MaStR_konv.loc[:, 'Nettonennleistung'] *=1e-3
     MaStR_konv.loc[:, 'ThermischeNutzleistung'] *=1e-3
 
+    MaStR_konv = MaStR_konv.set_crs(4326)
+
     # Drop CHP outside of Germany
     MaStR_konv = filter_mastr_geometry(MaStR_konv, federal_state=None)
 
@@ -186,7 +188,8 @@ def select_chp_from_mastr(sources):
 
 
 # ############################################   Match with plz and K   ############################################
-def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1):
+def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
+                  plz_accurancy=5):
     """ Match CHP plants from MaStR to list of power plants from NEP
 
     Parameters
@@ -228,7 +231,8 @@ def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1):
                  * (1+buffer_capacity))
                 & (MaStR_konv.Nettonennleistung>= row['capacity']
                    * (1-buffer_capacity))
-                & (MaStR_konv.plz_Ma==int(row['postcode']))
+                & (MaStR_konv.plz_Ma.astype(str).str[:plz_accurancy]
+                   ==str(row['postcode'])[:plz_accurancy])
                 & MaStR_konv.energietraeger_Ma.isin(map_carrier[ET])]
 
             # If a plant could be matched, add this to chp_NEP_matched
@@ -298,9 +302,9 @@ def match_chp(chp_NEP, MaStR_konv, chp_NEP_matched, consider_carrier=True):
                             (MaStR_konv.plz_Ma==int(row.postcode))
                             &(MaStR_konv.Nettonennleistung>0.05)]
 
-        selected_plants.loc[:, 'Nettonennleistung'] = (
-                        row.c2035_capacity * selected_plants.Nettonennleistung/
-                        selected_plants.Nettonennleistung.sum())
+        selected_plants.loc[:, 'Nettonennleistung'] *= (
+                        row.c2035_capacity /
+                        selected_plants.loc[:, 'Nettonennleistung'].sum())
 
         # If a plant could be matched, add this to chp_NEP_matched
         chp_NEP_matched = chp_NEP_matched.append(
@@ -348,6 +352,12 @@ def insert_large_chp(sources, target, EgonChp):
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
         chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1)
 
+    # Match CHP from NEP list using first 4 numbers of PLZ,
+    # carrier and capacity
+    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
+        plz_accurancy=4)
+
     # Aggregate units from MaStR to one power plant
     MaStR_konv = MaStR_konv.groupby(
         ['plz_Ma', 'Laengengrad', 'Breitengrad','energietraeger_Ma']
@@ -361,6 +371,11 @@ def insert_large_chp(sources, target, EgonChp):
     # Match CHP from NEP list with aggregated MaStR units
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
         chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1)
+
+    # Match CHP from NEP list with aggregated MaStR units
+    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
+        plz_accurancy=4)
 
     # If some CHP's are not matched, drop capacity constraint
     chp_NEP_matched, chp_NEP, MaStR_konv = match_chp(
