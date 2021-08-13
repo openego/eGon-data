@@ -34,12 +34,22 @@ from sqlalchemy import Column, String, Integer, Sequence, Float, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
 
+from egon.data.datasets import Dataset
+
+# class for airflow task management (and version control)
+class DistrictHeatingAreas(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="district-heating-areas",
+            # version=self.target_files + "_0.0",
+            version="0.0.0", # maybe rethink the naming
+            dependencies=dependencies,
+            tasks=(create_tables, demarcation))
 
 Base = declarative_base()
-
-
+# definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
-    __tablename__ = "map_zensus_district_heating_areas"
+    __tablename__ = "egon_map_zensus_district_heating_areas"
     __table_args__ = {"schema": "demand"}
     id = Column(
         Integer,
@@ -51,12 +61,11 @@ class MapZensusDistrictHeatingAreas(Base):
     )
     area_id = Column(Integer)
     scenario = Column(String, ForeignKey(EgonScenario.name))
-    version = Column(String)
     zensus_population_id = Column(Integer)
 
 
-class DistrictHeatingAreas(Base):
-    __tablename__ = "district_heating_areas"
+class EgonDistrictHeatingAreas(Base):
+    __tablename__ = "egon_district_heating_areas"
     __table_args__ = {"schema": "demand"}
     id = Column(
         Integer,
@@ -68,7 +77,6 @@ class DistrictHeatingAreas(Base):
     )
     area_id = Column(Integer)
     scenario = Column(String, ForeignKey(EgonScenario.name))
-    version = Column(String)
     geom_polygon = Column(Geometry("MULTIPOLYGON", 3035))
     residential_and_service_demand = Column(Float)
 
@@ -87,6 +95,16 @@ def create_tables():
     # Drop tables
     db.execute_sql(
         """DROP TABLE IF EXISTS
+            demand.egon_district_heating_areas CASCADE;"""
+    )
+
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.egon_map_zensus_district_heating_areas CASCADE;"""
+    )
+
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
             demand.district_heating_areas CASCADE;"""
     )
 
@@ -103,11 +121,11 @@ def create_tables():
 
     db.execute_sql(
         """DROP SEQUENCE IF EXISTS
-            demand.map_zensus_district_heating_areas_seq CASCADE;"""
+            demand.egon_map_zensus_district_heating_areas_seq CASCADE;"""
     )
 
     engine = db.engine()
-    DistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
+    EgonDistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
     MapZensusDistrictHeatingAreas.__table__.create(
         bind=engine, checkfirst=True
     )
@@ -227,7 +245,6 @@ def load_heat_demands(scenario_name):
         FROM demand.egon_peta_heat AS demand
         JOIN society.destatis_zensus_population_per_ha AS pop
         ON demand.zensus_population_id = pop.id
-        AND demand.version = '0.0.0'
         AND demand.scenario = '{scenario_name}'
         GROUP BY demand.zensus_population_id, pop.geom;""",
         index_col="zensus_population_id",
@@ -581,14 +598,13 @@ def district_heating_areas(scenario_name, plotting=False):
 
     # store the results in the database
     scenario_dh_area["scenario"] = scenario_name
-    scenario_dh_area["version"] = "0.0.0"
 
     db.execute_sql(
-        f"""DELETE FROM demand.map_zensus_district_heating_areas
+        f"""DELETE FROM demand.egon_map_zensus_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    scenario_dh_area[["version", "scenario", "area_id"]].to_sql(
-        "map_zensus_district_heating_areas",
+    scenario_dh_area[["scenario", "area_id"]].to_sql(
+        "egon_map_zensus_district_heating_areas",
         schema="demand",
         con=db.engine(),
         if_exists="append",
@@ -598,7 +614,6 @@ def district_heating_areas(scenario_name, plotting=False):
     # join.dissolve(columnname).convex_hull.plot() # without holes, too big
     areas_dissolved = scenario_dh_area.dissolve("area_id", aggfunc="sum")
     areas_dissolved["scenario"] = scenario_name
-    areas_dissolved["version"] = "0.0.0"
 
     areas_dissolved["geom_polygon"] = [
         MultiPolygon([feature]) if type(feature) == Polygon else feature
@@ -625,11 +640,11 @@ def district_heating_areas(scenario_name, plotting=False):
         #           )].index.values}""")
 
     db.execute_sql(
-        f"""DELETE FROM demand.district_heating_areas
+        f"""DELETE FROM demand.egon_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
     areas_dissolved.reset_index().to_postgis(
-        "district_heating_areas",
+        "egon_district_heating_areas",
         schema="demand",
         con=db.engine(),
         if_exists="append",
@@ -726,7 +741,7 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "district_heating_areas",
+                "name": "egon_district_heating_areas",
                 "path": "",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -747,12 +762,6 @@ def add_metadata():
                         {
                             "name": "scenario",
                             "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "version",
-                            "description": "data version number",
                             "type": "text",
                             "unit": "none",
                         },
@@ -804,7 +813,7 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "district_heating_areas")
+    db.submit_comment(meta_json, "demand", "egon_district_heating_areas")
 
     # Metadata creation for "id mapping" table
     meta = {
@@ -842,7 +851,7 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "map_zensus_district_heating_areas",
+                "name": "egon_map_zensus_district_heating_areas",
                 "path": "",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -863,12 +872,6 @@ def add_metadata():
                         {
                             "name": "scenario",
                             "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "version",
-                            "description": "data version number",
                             "type": "text",
                             "unit": "none",
                         },
@@ -915,7 +918,7 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "map_zensus_district_heating_areas")
+    db.submit_comment(meta_json, "demand", "egon_map_zensus_district_heating_areas")
 
     return None
 
@@ -1076,7 +1079,7 @@ def study_prospective_district_heating_areas():
     return None
 
 
-def district_heating_areas_demarcation(plotting=True):
+def demarcation(plotting=True):
     """
     Load scenario specific district heating areas with metadata into database.
 
@@ -1086,6 +1089,15 @@ def district_heating_areas_demarcation(plotting=True):
     scenario specific Prospective Supply Districts for district heating (PSDs)
     as shapefiles including the creation of a figure showing the comparison
     of sorted heat demand densities.
+
+    The method was executed for 2015, 2035 and 2050 to find out which
+    scenario year defines the PSDs. The year 2035 was selected and
+    the function was adjusted accordingly.
+    If you need the 2015 scenario heat demand data, please have a look at
+    the heat demand script commit 270bea50332016447e869f69d51e96113073b8a0,
+    where the 2015 scenario was deactivated. You can study the 2015 PSDs in
+    the study_prospective_district_heating_areas function after
+    un-commenting some lines.
 
     Parameters
     ----------
@@ -1102,14 +1114,6 @@ def district_heating_areas_demarcation(plotting=True):
 
     TODO
     ----
-        Run the model for 20150, 2035 and 2050 to find out which scenario year
-        defines the PSDs -> 2035; implement it accordingly and remove the 2015
-        data, if they are not needed anymore.
-
-        Run the model for Germany and see if there are created large district
-        heating systems in the Ruhr area which need to be split by the
-        municiplality boundaries for example
-
         Create diagrams/curves, make better curves with matplotlib
 
         Make PSD and DH system statistics
@@ -1119,7 +1123,6 @@ def district_heating_areas_demarcation(plotting=True):
 
         Add datasets to datasets configuration
 
-        Check which tasks need to run (according to version number)
     """
 
     # load the census district heat data on apartments, and group them
