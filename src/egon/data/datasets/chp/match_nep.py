@@ -86,7 +86,7 @@ def select_chp_from_nep(sources):
     # Select CHP plants with geolocation from list of conventional power plants
     chp_NEP_data = db.select_dataframe(
         f"""
-        SELECT bnetza_id, name, carrier, chp, postcode, capacity,
+        SELECT bnetza_id, name, carrier, chp, postcode, capacity, city,
            c2035_chp, c2035_capacity
         FROM {sources['list_conv_pp']['schema']}.
         {sources['list_conv_pp']['table']}
@@ -119,12 +119,12 @@ def select_chp_from_nep(sources):
     chp_NEP = chp_NEP.append(
         chp_NEP_data[chp_NEP_data.name.isnull()].loc[:, [
             'name', 'postcode', 'carrier', 'capacity',
-            'c2035_capacity',  'c2035_chp']])
+            'c2035_capacity',  'c2035_chp', 'city']])
     # Insert rows from list with a name
     chp_NEP = chp_NEP.append(
         chp_NEP_data.groupby(
             ['carrier', 'name', 'postcode', 'c2035_chp']
-            )['capacity','c2035_capacity'].sum().reset_index()).reset_index()
+            )['capacity','c2035_capacity', 'city'].sum().reset_index()).reset_index()
 
     return chp_NEP.drop('index', axis=1)
 
@@ -152,12 +152,13 @@ def select_chp_from_mastr(sources):
                     'Breitengrad',
                     'ThermischeNutzleistung',
                     'EinheitBetriebsstatus',
-                    'LokationMastrNummer'])
+                    'LokationMastrNummer',
+                    'Ort'])
 
     # Rename columns
     MaStR_konv = MaStR_konv.rename(columns={ 'Kraftwerksnummer': 'bnetza_id',
                                       'Energietraeger': 'energietraeger_Ma',
-                                      'Postleitzahl': 'plz_Ma'})
+                                      'Postleitzahl': 'plz_Ma', 'Ort': 'ort'})
 
     # Select only CHP plants which are in operation
     MaStR_konv = MaStR_konv[MaStR_konv.EinheitBetriebsstatus=='InBetrieb']
@@ -189,7 +190,7 @@ def select_chp_from_mastr(sources):
 
 # ############################################   Match with plz and K   ############################################
 def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
-                  plz_accurancy=5):
+                  plz=True):
     """ Match CHP plants from MaStR to list of power plants from NEP
 
     Parameters
@@ -231,10 +232,14 @@ def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
                  * (1+buffer_capacity))
                 & (MaStR_konv.Nettonennleistung>= row['capacity']
                    * (1-buffer_capacity))
-                & (MaStR_konv.plz_Ma.astype(str).str[:plz_accurancy]
-                   ==str(row['postcode'])[:plz_accurancy])
+               # & (MaStR_konv.plz_Ma.astype(str).str[:plz_accurancy]
+                 #  ==str(row['postcode'])[:plz_accurancy])
                 & MaStR_konv.energietraeger_Ma.isin(map_carrier[ET])]
 
+            if plz:
+                selected = selected[selected.plz_Ma.astype(str) == row['postcode']]
+            else:
+                selected = selected[selected.ort == row.city]
             # If a plant could be matched, add this to chp_NEP_matched
             if len(selected) > 0:
                 chp_NEP_matched = chp_NEP_matched.append(
@@ -356,11 +361,11 @@ def insert_large_chp(sources, target, EgonChp):
     # carrier and capacity
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
         chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
-        plz_accurancy=4)
+        plz = False)
 
     # Aggregate units from MaStR to one power plant
     MaStR_konv = MaStR_konv.groupby(
-        ['plz_Ma', 'Laengengrad', 'Breitengrad','energietraeger_Ma']
+        ['plz_Ma', 'Laengengrad', 'Breitengrad','energietraeger_Ma', 'ort']
         )[['Nettonennleistung', 'ThermischeNutzleistung', 'EinheitMastrNummer'
            ]].sum(numeric_only=False).reset_index()
     MaStR_konv['geometry'] = geopandas.points_from_xy(
@@ -375,7 +380,7 @@ def insert_large_chp(sources, target, EgonChp):
     # Match CHP from NEP list with aggregated MaStR units
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
         chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
-        plz_accurancy=4)
+        plz= False)
 
     # If some CHP's are not matched, drop capacity constraint
     chp_NEP_matched, chp_NEP, MaStR_konv = match_chp(
