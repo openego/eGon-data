@@ -206,10 +206,14 @@ def extension():
     # Select target values per federal state
     targets = select_target('small_chp', 'eGon2035')
 
+    # Temporary drop Hamburg and Bremen
+    targets = targets.drop(['Hamburg', 'Bremen'])
+
+
     list_federal_states = pd.Series(
             {"Hamburg": "HH",
              "Sachsen": "SN",
-             "MecklemburgVorpommern": "MV",
+             "MecklenburgVorpommern": "MV",
              "Thueringen": "TH",
              "SchleswigHolstein": "SH",
              "Bremen": "HB",
