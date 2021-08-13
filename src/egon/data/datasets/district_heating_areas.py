@@ -103,6 +103,16 @@ def create_tables():
             demand.egon_map_zensus_district_heating_areas CASCADE;"""
     )
 
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.district_heating_areas CASCADE;"""
+    )
+
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.map_zensus_district_heating_areas CASCADE;"""
+    )
+
     # Drop sequences
     db.execute_sql(
         """DROP SEQUENCE IF EXISTS
