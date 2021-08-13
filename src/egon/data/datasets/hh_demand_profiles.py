@@ -1125,13 +1125,6 @@ def mv_grid_district_HH_electricity_load(
         Demand is given in kWh.
     """
     engine = db.engine()
-    if drop_table:
-        EgonEtragoElectricityHouseholds.__table__.drop(
-            bind=engine, checkfirst=True
-        )
-    EgonEtragoElectricityHouseholds.__table__.create(
-        bind=engine, checkfirst=True
-    )
 
     with db.session_scope() as session:
         cells_query = session.query(
@@ -1173,12 +1166,17 @@ def mv_grid_district_HH_electricity_load(
     mvgd_profiles["version"] = version
     mvgd_profiles["scn_name"] = scenario_name
 
-    # Insert data into respective database table
-    with db.session_scope() as session:
-        session.bulk_insert_mappings(
-            EgonEtragoElectricityHouseholds,
-            mvgd_profiles.to_dict(orient="records"),
+    if drop_table:
+        EgonEtragoElectricityHouseholds.__table__.drop(
+            bind=engine, checkfirst=True
         )
+    EgonEtragoElectricityHouseholds.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    # Insert data into respective database table
+    mvgd_profiles.to_sql(name=EgonEtragoElectricityHouseholds.__table__.name,
+                         schema=EgonEtragoElectricityHouseholds.__table__.schema,
+                         con=engine, if_exists='append', method='multi', chunksize=10000, index=False)
 
     return mvgd_profiles
 
