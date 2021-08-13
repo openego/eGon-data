@@ -458,7 +458,7 @@ heat_supply:
       table: 'egon_scenario_capacities'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
@@ -479,7 +479,7 @@ heat_supply:
       table: 'mv_grid_districts'
     map_dh:
       schema: 'demand'
-      table: 'map_zensus_district_heating_areas'
+      table: 'egon_map_zensus_district_heating_areas'
   targets:
     district_heating_supply:
       schema: 'supply'
@@ -495,10 +495,10 @@ etrago_heat:
       table: 'egon_scenario_capacities'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     map_district_heating_areas:
       schema: 'demand'
-      table: 'map_zensus_district_heating_areas'
+      table: 'egon_map_zensus_district_heating_areas'
     mv_grids:
       schema: 'grid'
       table: 'mv_grid_districts'
