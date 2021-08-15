@@ -10,7 +10,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from egon.data import db
+from egon.data import db, config
 
 
 def calc_geothermal_potentials():
@@ -105,15 +105,17 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
         Geothermal potential close to district heating areas in MW
 
     """
+    sources = config.datasets()['heat_supply']['sources']
 
     # Select 1km buffer arround large district heating areas as possible areas
     district_heating = db.select_geodataframe(
-        """
+        f"""
         SELECT area_id,
         residential_and_service_demand as demand,
         ST_Difference(
             ST_Buffer(geom_polygon, 1000), geom_polygon) as geom
-        FROM demand.district_heating_areas
+        FROM {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']}
         WHERE scenario = 'eGon100RE'
         AND residential_and_service_demand > 96000
         """,
