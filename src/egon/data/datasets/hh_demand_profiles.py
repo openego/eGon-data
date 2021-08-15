@@ -22,7 +22,7 @@ The following datasets are used for creating the data:
 
 * Electricity demand time series for household categories
   produced by demand profile generator (DPG) from Fraunhofer IEE
-  (see :func:`get_household_demand_profiles_raw`)
+  (see :func:`download_process_household_demand_profiles_raw`)
 * Spatial information about people living in households by Zensus 2011 at
   federal state level
     * Type of household (family status)
