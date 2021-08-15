@@ -1197,9 +1197,13 @@ def mv_grid_district_HH_electricity_load(
         lambda x: [(cat, int(profile_id)) for cat, profile_id in x]
     )
 
-    # Create aggregated load profile for each MV grid district
-    df_profiles = get_household_demand_profiles_raw()
+    # Download demand profiles
+    df_profiles = download_process_household_demand_profiles_raw()
 
+    # Process profiles for further use
+    df_profiles = process_household_demand_profiles(df_profiles)
+
+    # Create aggregated load profile for each MV grid district
     mvgd_profiles_dict = {}
     for grid_district, data in cells.groupby("subst_id"):
         mvgd_profile = get_load_timeseries(
