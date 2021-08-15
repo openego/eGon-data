@@ -321,8 +321,12 @@ def get_household_demand_profiles_raw():
     if not hh_profiles_file.is_file():
         urlretrieve(hh_profiles_url, hh_profiles_file)
 
-    # hh_profiles_file = Path(".") /
     hh_profiles = pd.read_hdf(hh_profiles_file)
+
+    return hh_profiles
+
+
+def process_household_demand_profiles(hh_profiles):
 
     # set multiindex to HH_types
     hh_profiles.columns = pd.MultiIndex.from_arrays(
@@ -913,6 +917,13 @@ def houseprofiles_in_census_cells():
     """
     # Get demand profiles and zensus household type x age category data
     df_profiles = get_household_demand_profiles_raw()
+
+    # Write raw profiles into db
+    write_hh_profiles_to_db(df_profiles)
+
+    # process profiles for further use
+    df_profiles = process_household_demand_profiles(df_profiles)
+
     df_zensus = download_process_zensus_households()
 
     # hh_tools.get_hh_dist without eurostat adjustment for O1-03 Groups in absolute values
@@ -1087,7 +1098,7 @@ def houseprofiles_in_census_cells():
     )
     df_cell_demand_metadata = df_cell_demand_metadata.reset_index(drop=False)
 
-    # Insert data into respective database table
+    # Insert Zensus-cell-profile metadata-table into respective database table
     engine = db.engine()
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
         bind=engine, checkfirst=True
