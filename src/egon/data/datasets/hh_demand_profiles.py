@@ -101,6 +101,7 @@ import random
 import os
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.dialects.postgresql import INTEGER, CHAR, REAL
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
@@ -193,6 +194,15 @@ MAPPING_ZENSUS_HH_SUBGROUPS = {
 }
 
 
+class IeeHouseholdLoadProfiles(Base):
+    __tablename__ = "iee_household_load_profiles"
+    __table_args__ = {"schema": "demand"}
+
+    id = Column(INTEGER, primary_key=True)
+    type = Column(CHAR(7))
+    load = Column(ARRAY(REAL))#, dimensions=2))
+
+
 class HouseholdElectricityProfilesInCensusCells(Base):
     __tablename__ = "egon_household_electricity_profile_in_census_cell"
     __table_args__ = {"schema": "demand"}
@@ -241,6 +251,31 @@ def clean(x):
     x = str(x).replace(".", str(0))
     x = x.strip("()")
     return x
+
+
+def write_hh_profiles_to_db(hh_profiles):
+
+    engine = db.engine()
+
+    hh_profiles = hh_profiles.rename_axis('type', axis=1)
+    hh_profiles = hh_profiles.rename_axis('timestep', axis=0)
+    hh_profiles = hh_profiles.stack().rename('load')
+    hh_profiles = hh_profiles.to_frame().reset_index()
+    hh_profiles = hh_profiles.groupby('type').load.apply(tuple)
+    # hh_profiles = hh_profiles.groupby('type').load.apply(list)
+    hh_profiles = hh_profiles.reset_index()
+
+    IeeHouseholdLoadProfiles.__table__.drop(bind=engine, checkfirst=True)
+    IeeHouseholdLoadProfiles.__table__.create(bind=engine)
+
+    hh_profiles.to_sql(name=IeeHouseholdLoadProfiles.__table__.name,
+                       schema=IeeHouseholdLoadProfiles.__table__.schema,
+                       con=engine, if_exists='append',
+                       method='multi', chunksize=100, index=False,
+                       dtype={'load': IeeHouseholdLoadProfiles.load.type,
+                              'type': IeeHouseholdLoadProfiles.type.type,
+                              'id': IeeHouseholdLoadProfiles.id.type}
+                       )
 
 
 def get_household_demand_profiles_raw():
