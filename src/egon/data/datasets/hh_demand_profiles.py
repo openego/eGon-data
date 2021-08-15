@@ -254,6 +254,22 @@ def clean(x):
 
 
 def write_hh_profiles_to_db(hh_profiles):
+    """Write HH demand profiles of IEE into db. One row per profile type.
+    The annual load profile timeseries is an array.
+
+    schema: demand
+    tablename: iee_household_load_profiles
+
+
+
+    Parameters
+    ----------
+    hh_profiles: pd.DataFrame
+        It is meant to be used with :code:`df.applymap()`
+
+    Returns
+    -------
+    """
 
     engine = db.engine()
 
@@ -262,7 +278,6 @@ def write_hh_profiles_to_db(hh_profiles):
     hh_profiles = hh_profiles.stack().rename('load')
     hh_profiles = hh_profiles.to_frame().reset_index()
     hh_profiles = hh_profiles.groupby('type').load.apply(tuple)
-    # hh_profiles = hh_profiles.groupby('type').load.apply(list)
     hh_profiles = hh_profiles.reset_index()
 
     IeeHouseholdLoadProfiles.__table__.drop(bind=engine, checkfirst=True)
@@ -327,6 +342,19 @@ def download_process_household_demand_profiles_raw():
 
 
 def process_household_demand_profiles(hh_profiles):
+    """Process household demand profiles in a more easy to use format.
+    The profile type is splitted into type and number and set as multiindex.
+
+    Parameters
+    ----------
+    hh_profiles: pd.DataFrame
+        Profiles
+    Returns
+    -------
+    hh_profiles: pd.DataFrame
+        Profiles with Multiindex
+    """
+
 
     # set multiindex to HH_types
     hh_profiles.columns = pd.MultiIndex.from_arrays(
@@ -669,6 +697,17 @@ def process_nuts1_zensus_data(df_zensus):
 
 
 def process_zensus_data(df_zensus):
+    """The zensus data is processed to define the number and type of households per zensus cell.
+    Two subsets of the zensus data are merged to fit the IEE profiles specifications.
+    For this, the dataset 'HHGROESS_KLASS' is converted from people living in households to number of households
+    of specific size. Missing data in 'HHTYP_FAM' is substituted in :func:`create_missing_zensus_data`.
+
+
+    Returns
+    -------
+    pd.DataFrame
+        Number of hh types per census cell and scaling factors
+    """
 
     # hh_tools.get_hh_dist without eurostat adjustment for O1-03 Groups in absolute values
     df_hh_types_nad_abs = get_hh_dist(
@@ -824,6 +863,7 @@ def process_zensus_data(df_zensus):
     ).reset_index(drop=True)
 
     return df_zensus_cells
+
 
 def get_cell_demand_profile_ids(df_cell, pool_size):
     """
