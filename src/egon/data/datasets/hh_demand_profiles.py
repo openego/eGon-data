@@ -278,7 +278,7 @@ def write_hh_profiles_to_db(hh_profiles):
                        )
 
 
-def get_household_demand_profiles_raw():
+def download_process_household_demand_profiles_raw():
     """
     Downloads and returns household electricity demand profiles
 
@@ -341,7 +341,7 @@ def process_household_demand_profiles(hh_profiles):
     return hh_profiles
 
 
-def download_process_zensus_households():
+def download_process_zensus_households_raw():
     """
     Downloads and pre-processes zensus age x household type data
 
@@ -915,13 +915,13 @@ def houseprofiles_in_census_cells():
     the database as pandas
 
     """
-    # Get demand profiles and zensus household type x age category data
-    df_profiles = get_household_demand_profiles_raw()
+    # Download demand profiles
+    df_profiles = download_process_household_demand_profiles_raw()
 
     # Write raw profiles into db
     write_hh_profiles_to_db(df_profiles)
 
-    # process profiles for further use
+    # Process profiles for further use
     df_profiles = process_household_demand_profiles(df_profiles)
 
     df_zensus = download_process_zensus_households()
@@ -1030,54 +1030,11 @@ def houseprofiles_in_census_cells():
     )
 
     df_households_typ = pd.concat([df_households_typ, df_average_split], ignore_index=True)
+    # Download zensus household type x age category data
+    df_zensus = download_process_zensus_households_raw()
 
-    # Census cells with nuts3 and nuts1 information
-    df_grid_id = db.select_dataframe(
-        sql="""
-                            SELECT pop.grid_id, pop.gid as cell_id, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
-                            FROM society.destatis_zensus_population_per_ha_inside_germany as pop
-                            LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
-                            ON (pop.gid=vg250.zensus_population_id)
-                            LEFT JOIN boundaries.vg250_lan as lan
-                            ON (LEFT(vg250.vg250_nuts3, 3)=lan.nuts)
-                            WHERE lan.gf = 4 """
-    )
-    df_grid_id = df_grid_id.drop_duplicates()
-    df_grid_id = df_grid_id.reset_index(drop=True)
-
-    # Merge household type and size data with considered (populated) census cells
-    # how='inner' is used as ids of unpopulated areas are removed df_grid_id or earliers tables. see here:
-    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
-    df_households_typ = pd.merge(
-        df_households_typ,
-        df_grid_id,
-        left_on="grid_id",
-        right_on="grid_id",
-        how="inner",
-    )
-
-    # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
-    # by refining hh-groups with MAPPING_ZENSUS_HH_SUBGROUPS
-    df_zensus_cells = pd.DataFrame()
-    for (country, code), df_country_type in df_households_typ.groupby(
-        ["gen", "characteristics_code"]
-    ):
-
-        # iterate over zenus_country subgroups
-        for typ in MAPPING_ZENSUS_HH_SUBGROUPS[code]:
-            df_country_type["hh_type"] = typ
-            df_country_type["factor"] = df_dist_households.loc[typ, country]
-            df_country_type["hh_10types"] = (
-                df_country_type["hh_5types"]
-                * df_dist_households.loc[typ, country]
-            )
-            df_zensus_cells = df_zensus_cells.append(
-                df_country_type, ignore_index=True
-            )
-
-    df_zensus_cells = df_zensus_cells.sort_values(
-        by=["grid_id", "characteristics_code"]
-    ).reset_index(drop=True)
+    # Process zensus data for further use
+    df_zensus_cells = process_zensus_data(df_zensus)
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
