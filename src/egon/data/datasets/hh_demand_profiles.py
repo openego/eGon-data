@@ -97,11 +97,11 @@ from functools import partial
 from itertools import cycle, product
 from pathlib import Path
 from urllib.request import urlretrieve
-import random
 import os
+import random
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String
-from sqlalchemy.dialects.postgresql import INTEGER, CHAR, REAL
+from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
@@ -200,7 +200,7 @@ class IeeHouseholdLoadProfiles(Base):
 
     id = Column(INTEGER, primary_key=True)
     type = Column(CHAR(7))
-    load = Column(ARRAY(REAL))#, dimensions=2))
+    load = Column(ARRAY(REAL))  # , dimensions=2))
 
 
 class HouseholdElectricityProfilesInCensusCells(Base):
@@ -273,24 +273,30 @@ def write_hh_profiles_to_db(hh_profiles):
 
     engine = db.engine()
 
-    hh_profiles = hh_profiles.rename_axis('type', axis=1)
-    hh_profiles = hh_profiles.rename_axis('timestep', axis=0)
-    hh_profiles = hh_profiles.stack().rename('load')
+    hh_profiles = hh_profiles.rename_axis("type", axis=1)
+    hh_profiles = hh_profiles.rename_axis("timestep", axis=0)
+    hh_profiles = hh_profiles.stack().rename("load")
     hh_profiles = hh_profiles.to_frame().reset_index()
-    hh_profiles = hh_profiles.groupby('type').load.apply(tuple)
+    hh_profiles = hh_profiles.groupby("type").load.apply(tuple)
     hh_profiles = hh_profiles.reset_index()
 
     IeeHouseholdLoadProfiles.__table__.drop(bind=engine, checkfirst=True)
     IeeHouseholdLoadProfiles.__table__.create(bind=engine)
 
-    hh_profiles.to_sql(name=IeeHouseholdLoadProfiles.__table__.name,
-                       schema=IeeHouseholdLoadProfiles.__table__.schema,
-                       con=engine, if_exists='append',
-                       method='multi', chunksize=100, index=False,
-                       dtype={'load': IeeHouseholdLoadProfiles.load.type,
-                              'type': IeeHouseholdLoadProfiles.type.type,
-                              'id': IeeHouseholdLoadProfiles.id.type}
-                       )
+    hh_profiles.to_sql(
+        name=IeeHouseholdLoadProfiles.__table__.name,
+        schema=IeeHouseholdLoadProfiles.__table__.schema,
+        con=engine,
+        if_exists="append",
+        method="multi",
+        chunksize=100,
+        index=False,
+        dtype={
+            "load": IeeHouseholdLoadProfiles.load.type,
+            "type": IeeHouseholdLoadProfiles.type.type,
+            "id": IeeHouseholdLoadProfiles.id.type,
+        },
+    )
 
 
 def download_process_household_demand_profiles_raw():
@@ -331,7 +337,9 @@ def download_process_household_demand_profiles_raw():
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    hh_profiles_file = Path(".") / download_directory / Path(hh_profiles_url).name
+    hh_profiles_file = (
+        Path(".") / download_directory / Path(hh_profiles_url).name
+    )
 
     if not hh_profiles_file.is_file():
         urlretrieve(hh_profiles_url, hh_profiles_file)
@@ -354,7 +362,6 @@ def process_household_demand_profiles(hh_profiles):
     hh_profiles: pd.DataFrame
         Profiles with Multiindex
     """
-
 
     # set multiindex to HH_types
     hh_profiles.columns = pd.MultiIndex.from_arrays(
@@ -412,7 +419,9 @@ def download_process_zensus_households_raw():
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    households_file = Path(".") / download_directory / Path(households_url).name
+    households_file = (
+        Path(".") / download_directory / Path(households_url).name
+    )
 
     # Download prepared data file from nextcloud
     if not households_file.is_file():
@@ -441,7 +450,9 @@ def download_process_zensus_households_raw():
     return households_nuts1
 
 
-def create_missing_zensus_data(df_households_typ, df_missing_data, missing_cells):
+def create_missing_zensus_data(
+    df_households_typ, df_missing_data, missing_cells
+):
     """
     There is missing data for specific attributes in the zensus dataset because of secrecy reasons.
     Some cells with only small amount of households are missing with the attribute HHTYP_FAM.
@@ -466,18 +477,26 @@ def create_missing_zensus_data(df_households_typ, df_missing_data, missing_cells
 
     """
     # grid_ids of missing cells grouped by amount of households
-    missing_grid_ids = {group: list(df.grid_id) for group, df in missing_cells.groupby('quantity')}
+    missing_grid_ids = {
+        group: list(df.grid_id)
+        for group, df in missing_cells.groupby("quantity")
+    }
 
     # Grid ids for cells with low household numbers
-    df_households_typ = df_households_typ.set_index('grid_id', drop=True)
-    hh_in_cells = df_households_typ.groupby('grid_id')['quantity'].sum()
-    hh_index = {i: hh_in_cells.loc[hh_in_cells == i].index for i in df_missing_data.households.values}
+    df_households_typ = df_households_typ.set_index("grid_id", drop=True)
+    hh_in_cells = df_households_typ.groupby("grid_id")["quantity"].sum()
+    hh_index = {
+        i: hh_in_cells.loc[hh_in_cells == i].index
+        for i in df_missing_data.households.values
+    }
 
     df_average_split = pd.DataFrame()
     for hh_size, index in hh_index.items():
         # average split of household types in cells with low household numbers
-        split = df_households_typ.loc[index].groupby('characteristics_code').sum() / df_households_typ.loc[
-            index].quantity.sum()
+        split = (
+            df_households_typ.loc[index].groupby("characteristics_code").sum()
+            / df_households_typ.loc[index].quantity.sum()
+        )
         split = split.quantity * hh_size
 
         # correct rounding
@@ -496,14 +515,19 @@ def create_missing_zensus_data(df_households_typ, df_missing_data, missing_cells
             split = split.round()
 
         # Dataframe with average split for each cell
-        temp = pd.DataFrame(product(zip(split, range(1, 6)), missing_grid_ids[hh_size]), columns=['tuple', 'grid_id'])
+        temp = pd.DataFrame(
+            product(zip(split, range(1, 6)), missing_grid_ids[hh_size]),
+            columns=["tuple", "grid_id"],
+        )
         temp = pd.DataFrame(temp.tuple.tolist()).join(temp.grid_id)
-        temp = temp.rename(columns={0: 'hh_5types', 1: 'characteristics_code'})
+        temp = temp.rename(columns={0: "hh_5types", 1: "characteristics_code"})
         temp = temp.dropna()
-        temp = temp[(temp['hh_5types'] != 0)]
+        temp = temp[(temp["hh_5types"] != 0)]
         # append for each cell group of households
-        df_average_split = pd.concat([df_average_split, temp], ignore_index=True)
-    df_average_split['hh_5types'] = df_average_split['hh_5types'].astype(int)
+        df_average_split = pd.concat(
+            [df_average_split, temp], ignore_index=True
+        )
+    df_average_split["hh_5types"] = df_average_split["hh_5types"].astype(int)
 
     return df_average_split
 
@@ -806,13 +830,17 @@ def process_zensus_data(df_zensus):
                     WHERE quantity is not null"""
     )
 
-    df_average_split = create_missing_zensus_data(df_households_typ, df_missing_data, missing_cells)
+    df_average_split = create_missing_zensus_data(
+        df_households_typ, df_missing_data, missing_cells
+    )
 
     df_households_typ = df_households_typ.rename(
         columns={"quantity": "hh_5types"}
     )
 
-    df_households_typ = pd.concat([df_households_typ, df_average_split], ignore_index=True)
+    df_households_typ = pd.concat(
+        [df_households_typ, df_average_split], ignore_index=True
+    )
 
     # Census cells with nuts3 and nuts1 information
     df_grid_id = db.select_dataframe(
@@ -1253,7 +1281,9 @@ def mv_grid_district_HH_electricity_load(
             year=scenario_year,
             peak_load_only=False,
         )
-        mvgd_profiles_dict[grid_district] = [(mvgd_profile / 1e3).round(3).to_list()]  # to MWh
+        mvgd_profiles_dict[grid_district] = [
+            (mvgd_profile / 1e3).round(3).to_list()
+        ]  # to MWh
     mvgd_profiles = pd.DataFrame.from_dict(mvgd_profiles_dict, orient="index")
 
     # Reshape data: put MV grid ids in columns to a single index column
@@ -1272,9 +1302,15 @@ def mv_grid_district_HH_electricity_load(
         bind=engine, checkfirst=True
     )
     # Insert data into respective database table
-    mvgd_profiles.to_sql(name=EgonEtragoElectricityHouseholds.__table__.name,
-                         schema=EgonEtragoElectricityHouseholds.__table__.schema,
-                         con=engine, if_exists='append', method='multi', chunksize=10000, index=False)
+    mvgd_profiles.to_sql(
+        name=EgonEtragoElectricityHouseholds.__table__.name,
+        schema=EgonEtragoElectricityHouseholds.__table__.schema,
+        con=engine,
+        if_exists="append",
+        method="multi",
+        chunksize=10000,
+        index=False,
+    )
 
     return mvgd_profiles
 
