@@ -277,7 +277,7 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
-    
+
     # Gas prod import
     gas_production_insert_data = GasProduction(
         dependencies=[create_gas_polygons])
@@ -385,7 +385,7 @@ with airflow.DAG(
         zensus_misc_import,
         map_zensus_grid_districts,
         zensus_inside_ger,
-        demandregio_demand_households,
+        demandregio,
     ],
         tasks=(houseprofiles_in_census_cells,
                mv_HH_electricity_load_2035,

@@ -108,8 +108,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.processing.zensus_grid_districts import MapZensusGridDistricts
-
+from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 Base = declarative_base()
 
 import egon.data.config
