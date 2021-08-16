@@ -439,14 +439,7 @@ def download_process_zensus_households_raw():
         engine="python",
     )
 
-    # Clean data
-    households = households_raw.applymap(clean).applymap(int)
-
-    # Make data compatible with household demand profile categories
-    # Use less age interval and aggregate data to NUTS-1 level
-    households_nuts1 = process_nuts1_zensus_data(households)
-
-    return households_nuts1
+    return households_raw
 
 
 def create_missing_zensus_data(
@@ -719,7 +712,7 @@ def process_nuts1_zensus_data(df_zensus):
     return df_zensus
 
 
-def process_zensus_data(df_zensus):
+def enrich_zensus_data_at_cell_level(df_zensus):
     """The zensus data is processed to define the number and type of households per zensus cell.
     Two subsets of the zensus data are merged to fit the IEE profiles specifications.
     For this, the dataset 'HHGROESS_KLASS' is converted from people living in households to number of households
@@ -1149,10 +1142,17 @@ def houseprofiles_in_census_cells():
     df_profiles = process_household_demand_profiles(df_profiles)
 
     # Download zensus household type x age category data
-    df_zensus = download_process_zensus_households_raw()
+    df_households_raw = download_process_zensus_households_raw()
 
-    # Process zensus data for further use
-    df_zensus_cells = process_zensus_data(df_zensus)
+    # Clean data
+    df_households = df_households_raw.applymap(clean).applymap(int)
+
+    # Make data compatible with household demand profile categories
+    # Use less age interval and aggregate data to NUTS-1 level
+    df_zensus_nuts1 = process_nuts1_zensus_data(df_households)
+
+    # Enrich census cell data with nuts1 level attributes
+    df_zensus_cells = enrich_zensus_data_at_cell_level(df_zensus_nuts1)
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
