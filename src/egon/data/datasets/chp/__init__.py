@@ -4,6 +4,7 @@ The central module containing all code dealing with chp.
 """
 
 import pandas as pd
+import geopandas as gpd
 from egon.data import db, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.chp.match_nep import insert_large_chp
@@ -33,6 +34,16 @@ class EgonChp(Base):
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
+class EgonMaStRConventinalWithoutChp(Base):
+    __tablename__ = "egon_mastr_conventinal_without_chp"
+    __table_args__ = {"schema": "supply"}
+    id = Column(Integer, Sequence("mastr_conventional_seq"), primary_key=True)
+    EinheitMastrNummer = Column(String)
+    carrier = Column(String)
+    el_capacity = Column(Float)
+    geometry = Column(Geometry("POINT", 4326))
+
+
 class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -54,6 +65,10 @@ def create_tables():
     engine = db.engine()
     EgonChp.__table__.drop(bind=engine, checkfirst=True)
     EgonChp.__table__.create(bind=engine, checkfirst=True)
+    EgonMaStRConventinalWithoutChp.__table__.drop(bind=engine, checkfirst=True)
+    EgonMaStRConventinalWithoutChp.__table__.create(
+        bind=engine, checkfirst=True)
+
 
 def nearest(row, df, centroid= False,
             row_geom_col='geometry', df_geom_col='geometry', src_column=None):
@@ -189,6 +204,13 @@ def insert_chp_egon2035():
 
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
     existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
+
+    gpd.GeoDataFrame(MaStR_konv[['EinheitMastrNummer', 'el_capacity',
+                'geometry', 'carrier']]).to_postgis(
+                    "egon_mastr_conventinal_without_chp",
+                    schema="supply",
+                    con=db.engine(),
+                    if_exists = 'replace')
 
 def extension():
     """ Build additional CHP for district heating.
