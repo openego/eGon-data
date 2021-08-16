@@ -34,8 +34,8 @@ def insert_mastr_chp(mastr_chp, EgonChp):
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier='gas',
-                el_capacity=row.Nettonennleistung,
-                th_capacity= row.ThermischeNutzleistung,
+                el_capacity=row.el_capacity,
+                th_capacity= row.th_capacity,
                 electrical_bus_id = row.bus_id,
                 gas_bus_id = row.gas_bus_id,
                 district_heating=row.district_heating,
@@ -66,8 +66,8 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
     existsting_chp_smaller_10mw = MaStR_konv[
         #(MaStR_konv.Nettonennleistung>0.1)
-        (MaStR_konv.Nettonennleistung<=10)
-        &(MaStR_konv.ThermischeNutzleistung>0)]
+        (MaStR_konv.el_capacity<=10)
+        &(MaStR_konv.th_capacity>0)]
 
     targets = select_target('small_chp', 'eGon2035')
 
