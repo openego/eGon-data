@@ -484,7 +484,9 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
             AND district_heating = TRUE)
         """).demand[0]
 
-    industry_areas = db.select_dataframe(
+    heat_elec_ratio_industry = 2.5 # According to Flexibilisierung der Kraft-Wärme-Kopplung, figure 6-3
+
+    industry_heat_demand = db.select_dataframe(
         f"""
         SELECT
         SUM(demand) as demand
@@ -518,9 +520,11 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
              FROM {sources['vg250_lan']['schema']}.
              {sources['vg250_lan']['table']} d
              WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-        """).demand[0]
+        """).demand[0]*heat_elec_ratio_industry
 
-    share_dh = dh_areas_demand /(dh_areas_demand+industry_areas)
+
+
+    share_dh = dh_areas_demand /(dh_areas_demand+industry_heat_demand)
     print(f"Distributing {additional_capacity} MW in {federal_state}")
     print(f"Distributing {additional_capacity*share_dh} MW to district heating")
     extension_district_heating(
