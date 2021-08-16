@@ -460,14 +460,74 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp):
     None.
 
     """
-    flh_chp = 8000
+    sources = config.datasets()["chp_location"]["sources"]
+    targets = config.datasets()["chp_location"]["targets"]
+
+    flh_chp = 6000
+    dh_areas_demand = db.select_dataframe(
+        f"""
+        SELECT SUM(residential_and_service_demand) as demand
+        FROM
+        {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']}
+        WHERE scenario = 'eGon2035'
+        AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
+            SELECT ST_Union(d.geometry)
+            FROM
+            {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} d
+            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
+        AND area_id NOT IN (
+            SELECT district_heating_area_id
+            FROM {targets['chp_table']['schema']}.
+            {targets['chp_table']['table']}
+            WHERE scenario = 'eGon2035'
+            AND district_heating = TRUE)
+        """).demand[0]
+
+    industry_areas = db.select_dataframe(
+        f"""
+        SELECT
+        SUM(demand) as demand
+        FROM
+        {sources['industrial_demand_osm']['schema']}.
+        {sources['industrial_demand_osm']['table']} a,
+        {sources['osm_landuse']['schema']}.
+        {sources['osm_landuse']['table']} b
+        WHERE a.scenario = 'eGon2035'
+        AND b.gid = a.osm_id
+        AND NOT ST_Intersects(
+            ST_Transform(b.geom, 4326),
+            (SELECT ST_Union(geom) FROM
+              {targets['chp_table']['schema']}.
+              {targets['chp_table']['table']}
+              ))
+        AND b.tags::json->>'landuse' = 'industrial'
+        AND b.name NOT LIKE '%%kraftwerk%%'
+        AND b.name NOT LIKE '%%Stadtwerke%%'
+        AND b.name NOT LIKE '%%Müllverbrennung%%'
+        AND b.name NOT LIKE '%%Müllverwertung%%'
+        AND b.name NOT LIKE '%%Abfall%%'
+        AND b.name NOT LIKE '%%Kraftwerk%%'
+        AND b.name NOT LIKE '%%Wertstoff%%'
+        AND b.name NOT LIKE '%%olarpark%%'
+        AND b.name NOT LIKE '%%Gewerbegebiet%%'
+        AND b.name NOT LIKE '%%Gewerbepark%%'
+        AND ST_Intersects(
+            ST_Transform(ST_Centroid(b.geom), 4326),
+            (SELECT ST_Union(d.geometry)
+             FROM {sources['vg250_lan']['schema']}.
+             {sources['vg250_lan']['table']} d
+             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
+        """).demand[0]
+
+    share_dh = dh_areas_demand /(dh_areas_demand+industry_areas)
     print(f"Distributing {additional_capacity} MW in {federal_state}")
-    print(f"Distributing {additional_capacity*0.5} MW to district heating")
+    print(f"Distributing {additional_capacity*share_dh} MW to district heating")
     extension_district_heating(
-        federal_state, additional_capacity*0.5, flh_chp, EgonChp)
-    print(f"Distributing {additional_capacity*0.5} MW to industry")
+        federal_state, additional_capacity*share_dh, flh_chp, EgonChp)
+    print(f"Distributing {additional_capacity*(1-share_dh)} MW to industry")
     extension_industrial(
-        federal_state, additional_capacity*0.5, flh_chp, EgonChp)
+        federal_state, additional_capacity*(1-share_dh), flh_chp, EgonChp)
 
 
 def assign_use_case(chp, sources):
