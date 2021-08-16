@@ -226,6 +226,18 @@ class EgonEtragoElectricityHouseholds(Base):
     q_set = Column(ARRAY(Float))
 
 
+hh_demand_setup = partial(
+    Dataset,
+    name="HH Demand",
+    version="0.0.0",
+    dependencies=[],
+    # Tasks are declared in pipeline as function is used multiple times with different args
+    # To differentiate these tasks PythonOperator with specific id-names are used
+    # PythonOperator needs to be declared in pipeline to be mapped to DAG
+    # tasks=[],
+)
+
+
 def clean(x):
     """Clean zensus household data row-wise
 
@@ -1313,14 +1325,3 @@ def mv_grid_district_HH_electricity_load(
 
     return mvgd_profiles
 
-
-hh_demand_setup = partial(
-    Dataset,
-    name="HH Demand",
-    version="0.0.0",
-    dependencies=[],
-    # Tasks are declared in pipeline as function is used multiple times with different args
-    # To differentiate these tasks PythonOperator with specific id-names are used
-    # PythonOperator needs to be declared in pipeline to be mapped to DAG
-    # tasks=[],
-)
