@@ -45,7 +45,7 @@ import egon.data.processing.substation as substation
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
-import egon.data.processing.dsm.cts as dsm
+import egon.data.processing.DSM_cts_ind as dsm
 
 
 from egon.data import db
