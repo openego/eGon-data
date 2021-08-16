@@ -370,12 +370,10 @@ with airflow.DAG(
         task_id="components_dsm",
         python_callable=dsm.dsm_cts_ind_processing,
     )
-    electrical_load_curves_cts >> components_dsm
-    industry.temporal.insert-osm-ind-load >> components_dsm
-    industry.temporal.insert-sites-ind-load >> components_dsm
+    cts_electricity_demand_annual >> components_dsm
+    demand_curves_industry >> components_dsm
     osmtgmod_pypsa >> components_dsm
     
-
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[data_bundle, zensus_mv_grid_districts,
