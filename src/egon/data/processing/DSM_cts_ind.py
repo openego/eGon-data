@@ -483,8 +483,7 @@ def dsm_cts_ind_processing():
     def dsm_cts_ind(
         con=db.engine(),
         cts_share=0.22,
-        ind_cool_share=0.022,
-        ind_vent_share=0.017,
+        ind_osm_share=0.039,
         # TODO: Festlegen der Anteile der Anwendungen an den WZ
         #ind_paper_share=1,
         #ind_cement_share=1,
@@ -524,37 +523,19 @@ def dsm_cts_ind_processing():
 
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-cts")
         
-        # industry per osm-area: cooling
+        # industry per osm-area: cooling and ventilation
         
         print(' ')
-        print('industry per osm-area: cooling')
+        print('industry per osm-area: cooling and ventilation')
         print(' ')
         
-        dsm = ind_osm_data_import(con,ind_cool_share)
+        dsm = ind_osm_data_import(con,ind_osm_share)
 
         p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.63, s_util=0.67, s_inc=0.9, s_dec=0.5, delta_t=2, dsm=dsm
+            s_flex=0.5, s_util=0.67, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
         )
-
-        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
-            con, p_max, p_min, e_max, e_min, dsm
-        )
-
-        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-osm")
         
-        # TODO: Überprüfung der Unterscheidung von cooling und ventilation in osm-areas
-        
-        # industry per osm-area: ventilation
-        
-        print(' ')
-        print('industry per osm-area: ventilation')
-        print(' ')
-        
-        dsm = ind_osm_data_import(con,ind_vent_share)
-
-        p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.5, s_util=0.8, s_inc=1, s_dec=0.5, delta_t=1, dsm=dsm
-        )
+        # TODO: Überprüfung der Parameter nach Zusammenführung cool & vent
 
         dsm_buses, dsm_links, dsm_stores = create_dsm_components(
             con, p_max, p_min, e_max, e_min, dsm
