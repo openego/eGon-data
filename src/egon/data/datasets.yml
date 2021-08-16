@@ -399,9 +399,13 @@ electrical_load_curves_cts:
 household_electricity_demand:
   sources:
     household_electricity_demand_profiles:
-      url: "https://next.rl-institut.de/s/BTx6cAKdDNYM9yL/download/hh_el_load_profiles_2400.hdf"
+      url_testmode: "https://next.rl-institut.de/s/BTx6cAKdDNYM9yL/download/hh_el_load_profiles_2400.hdf"
+      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
+      path: "household_electricity_demand_profiles_100k.hdf5"
+
     zensus_household_types:
       url: "https://next.rl-institut.de/s/Eg3iGJPSiyczQeb/download/Zensus2011_Personen.csv"
+      path: "Zensus2011_Personen.csv"
 
 
 map_mvgrid_vg250:
