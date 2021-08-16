@@ -125,6 +125,7 @@ with airflow.DAG(
     # Combine Zensus and VG250 data
     zensus_vg250 = ZensusVg250(
         dependencies=[vg250, population_import])
+    zensus_inside_ger = tasks['zensus_vg250.inside-germany']
 
     # DemandRegio data import
     demandregio = DemandRegio(dependencies=[
