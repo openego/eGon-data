@@ -229,7 +229,8 @@ def extension():
     targets = select_target('small_chp', 'eGon2035')
 
     # Temporary drop Hamburg and Bremen
-    targets = targets.drop(['Hamburg', 'Bremen'])
+    if 'Hamburg' in targets:
+        targets = targets.drop(['Hamburg', 'Bremen'])
 
 
     list_federal_states = pd.Series(
@@ -264,32 +265,11 @@ def extension():
             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
             """).capacity[0]
 
-        large_chp_build = db.select_dataframe(
-            f"""
-            SELECT SUM(el_capacity)  as capacity
-            FROM supply.egon_chp
-            WHERE sources::json->>'el_capacity' != 'MaStR'
-            AND ST_Intersects(geom, (
-            SELECT ST_Union(geometry) FROM boundaries.vg250_lan
-            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-            """).capacity[0]
-
-        large_chp_target = db.select_dataframe(
-            f"""
-            SELECT SUM(c2035_capacity) as capacity
-            FROM supply.nep_2021_conv_powerplants
-            WHERE federal_state = '{list_federal_states[federal_state]}'
-            AND bnetza_id != 'KW<10 MW'
-            AND (chp = 'Ja' OR c2035_chp = 'Ja')
-            """).capacity[0]
-
-        difference_large_chp = large_chp_target - large_chp_build
-
         print(f"Target capacity in {federal_state}: {targets[federal_state]}")
         print(f"Existing capacity in {federal_state}: {existing_capacity}")
-        print(f"Missing large scale CHPs added: {difference_large_chp}")
 
-        additional_capacity = targets[federal_state] - existing_capacity + difference_large_chp
+
+        additional_capacity = targets[federal_state] - existing_capacity
         extension_per_federal_state(
             additional_capacity, federal_state, EgonChp)
 
