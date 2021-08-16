@@ -8,7 +8,7 @@
 Module containing all code creating with plots of district heating areas
 """
 import os
-from egon.data.importing.scenarios import get_sector_parameters
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import pandas as pd
 from matplotlib import pyplot as plt
 
