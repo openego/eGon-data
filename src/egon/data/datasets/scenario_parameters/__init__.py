@@ -45,7 +45,7 @@ def insert_scenarios():
 
     """
 
-    db.execute_sql("DELETE FROM scenario.egon_scenario_parameters")
+    db.execute_sql("DELETE FROM scenario.egon_scenario_parameters CASCADE;")
 
     session = sessionmaker(bind=db.engine())()
 
@@ -158,7 +158,7 @@ class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 create_table,
