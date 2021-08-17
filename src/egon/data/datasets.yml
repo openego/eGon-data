@@ -346,14 +346,8 @@ hotmaps_current_policy_scenario_heat_demands_buildings:
   original_data:
     source:
       url: "https://gitlab.com/hotmaps/scen_current_building_demand/-/raw/master/data/scen_current_building_demand.csv?inline=false"
-      # url: "https://gitlab.com/hotmaps/scen_current_building_demand/-/archive/master"
     target:
       path: "scen_current_building_demand.csv"
-      # path: "scen_current_building_demand-master.zip"
-  processed:
-    schema: "demand"
-    table: # hotmaps future heat demand data not stored in database,
-            # for PyPSA-Eur-Sec only
 
 power_plants:
   sources:
