@@ -51,7 +51,9 @@ class Chp(Dataset):
             version="0.0.0.dev",
             dependencies=dependencies,
             tasks=(create_tables, insert_chp_egon2035,
-                   assign_heat_bus, extension),
+                   assign_heat_bus,
+                   #extension
+                   ),
         )
 
 def create_tables():
