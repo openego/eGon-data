@@ -199,7 +199,7 @@ class IeeHouseholdLoadProfiles(Base):
 
     id = Column(INTEGER, primary_key=True)
     type = Column(CHAR(7))
-    load = Column(ARRAY(REAL))  # , dimensions=2))
+    load_in_wh = Column(ARRAY(REAL))  # , dimensions=2))
 
 
 class HouseholdElectricityProfilesInCensusCells(Base):
@@ -286,9 +286,9 @@ def write_hh_profiles_to_db(hh_profiles):
 
     hh_profiles = hh_profiles.rename_axis("type", axis=1)
     hh_profiles = hh_profiles.rename_axis("timestep", axis=0)
-    hh_profiles = hh_profiles.stack().rename("load")
+    hh_profiles = hh_profiles.stack().rename("load_in_wh")
     hh_profiles = hh_profiles.to_frame().reset_index()
-    hh_profiles = hh_profiles.groupby("type").load.apply(tuple)
+    hh_profiles = hh_profiles.groupby("type").load_in_wh.apply(tuple)
     hh_profiles = hh_profiles.reset_index()
 
     IeeHouseholdLoadProfiles.__table__.drop(bind=engine, checkfirst=True)
@@ -303,7 +303,7 @@ def write_hh_profiles_to_db(hh_profiles):
         chunksize=100,
         index=False,
         dtype={
-            "load": IeeHouseholdLoadProfiles.load.type,
+            "load_in_wh": IeeHouseholdLoadProfiles.load_in_wh.type,
             "type": IeeHouseholdLoadProfiles.type.type,
             "id": IeeHouseholdLoadProfiles.id.type,
         },
@@ -1094,7 +1094,7 @@ def get_load_timeseries(
     df_profiles, df_cell_demand_metadata, cell_ids, year, peak_load_only=False
 ):
     """
-    Get peak load for one load area
+    Get peak load for one load area in MWh
 
     The peak load is calculated in aggregated manner for a group of zensus
     cells that belong to one load area (defined by `cell_ids`).
@@ -1102,7 +1102,7 @@ def get_load_timeseries(
     Parameters
     ----------
     df_profiles: pd.DataFrame
-        Household load profile data
+        Household load profile data in Wh
 
         * Index: Times steps as serial integers
         * Columns: pd.MultiIndex with (`HH_TYPE`, `id`)
@@ -1125,7 +1125,7 @@ def get_load_timeseries(
     -------
     pd.Series or float
         Aggregated time series for given `cell_ids` or peak load of this time
-        series.
+        series in MWh.
     """
     timesteps = len(df_profiles)
     full_load = pd.Series(
@@ -1140,8 +1140,8 @@ def get_load_timeseries(
         part_load = (
             df_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
             * factor
-            / 1e3
-        )  # profiles in Wh
+            / 1e6
+        )  # from Wh to MWh
         full_load = full_load.add(part_load)
     if peak_load_only:
         return full_load.max()
@@ -1309,8 +1309,8 @@ def mv_grid_district_HH_electricity_load(
             peak_load_only=False,
         )
         mvgd_profiles_dict[grid_district] = [
-            (mvgd_profile / 1e3).round(3).to_list()
-        ]  # to MWh
+            mvgd_profile.round(3).to_list()
+        ]
     mvgd_profiles = pd.DataFrame.from_dict(mvgd_profiles_dict, orient="index")
 
     # Reshape data: put MV grid ids in columns to a single index column
