@@ -98,7 +98,9 @@ setup(
         "rtree",
         "snakemake",
         "sqlalchemy<1.4",
-        "pypsa"
+        "pypsa",
+        "xarray",
+        "rioxarray",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]

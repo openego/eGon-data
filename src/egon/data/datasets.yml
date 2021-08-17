@@ -505,3 +505,139 @@ data-bundle:
   targets:
     file:
       'data_bundle_egon_data.zip'
+
+heat_supply:
+  sources:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'district_heating_areas'
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    heat_demand:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+    map_zensus_grid:
+      schema: 'boundaries'
+      table: 'egon_map_zensus_grid_districts'
+    map_vg250_grid:
+      schema: 'boundaries'
+      table: 'egon_map_mvgriddistrict_vg250'
+    mv_grids:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    map_dh:
+      schema: 'demand'
+      table: 'map_zensus_district_heating_areas'
+  targets:
+    district_heating_supply:
+      schema: 'supply'
+      table: 'egon_district_heating'
+    individual_heating_supply:
+      schema: 'supply'
+      table: 'egon_individual_heating'
+
+etrago_heat:
+  sources:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'district_heating_areas'
+    map_district_heating_areas:
+      schema: 'demand'
+      table: 'map_zensus_district_heating_areas'
+    mv_grids:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    district_heating_supply:
+      schema: 'supply'
+      table: 'egon_district_heating'
+    individual_heating_supply:
+      schema: 'supply'
+      table: 'egon_individual_heating'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    solar_thermal_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    mv_grid_districts:
+      schema: 'grid'
+      table: 'mv_grid_districts'
+    heat_demand:
+      schema: 'demand'
+      table: 'egon_peta_heat'
+  targets:
+    heat_buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    heat_generators:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator'
+    heat_generator_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator_timeseries'
+    heat_links:
+      schema: 'grid'
+      table: 'egon_pf_hv_link'
+
+electrical_neighbours:
+  sources:
+    electricity_buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_pf_hv_line'
+    german_borders:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+    osmtgmod_bus:
+      schema: 'osmtgmod_results'
+      table: 'bus_data'
+    osmtgmod_branch:
+      schema: 'osmtgmod_results'
+      table: 'branch_data'
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    tyndp_demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+    tyndp_demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+    buses:
+      schema: 'grid'
+      table: 'egon_pf_hv_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_pf_hv_line'
+    transformers:
+      schema: 'grid'
+      table: 'egon_pf_hv_transformer'
+    loads:
+      schema: 'grid'
+      table: 'egon_pf_hv_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_pf_hv_load_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_pf_hv_generator'
+    storage:
+      schema: 'grid'
+      table: 'egon_pf_hv_storage'
+
+tyndp:
+  sources:
+      capacities: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+      capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
