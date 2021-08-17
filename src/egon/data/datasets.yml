@@ -675,4 +675,7 @@ chp_location:
     chp_table:
       table: 'egon_chp'
       schema: 'supply'
+    mastr_conventional_without_chp:
+      table: 'egon_mastr_conventional_without_chp'
+      schema: 'supply'
 

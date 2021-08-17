@@ -35,7 +35,7 @@ class EgonChp(Base):
     geom = Column(Geometry("POINT", 4326))
 
 class EgonMaStRConventinalWithoutChp(Base):
-    __tablename__ = "egon_mastr_conventinal_without_chp"
+    __tablename__ = "egon_mastr_conventional_without_chp"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, Sequence("mastr_conventional_seq"), primary_key=True)
     EinheitMastrNummer = Column(String)
@@ -209,10 +209,10 @@ def insert_chp_egon2035():
 
     gpd.GeoDataFrame(MaStR_konv[['EinheitMastrNummer', 'el_capacity',
                 'geometry', 'carrier']]).to_postgis(
-                    "egon_mastr_conventinal_without_chp",
-                    schema="supply",
+                    target["mastr_conventional_without_chp"]["table"],
+                    schema=target["mastr_conventional_without_chp"]["schema"],
                     con=db.engine(),
-                    if_exists = 'replace')
+                    if_exists = "replace")
 
 def extension():
     """ Build additional CHP for district heating.
@@ -233,25 +233,6 @@ def extension():
     # Temporary drop Hamburg and Bremen
     if 'Hamburg' in targets:
         targets = targets.drop(['Hamburg', 'Bremen'])
-
-
-    list_federal_states = pd.Series(
-            {"Hamburg": "HH",
-             "Sachsen": "SN",
-             "MecklenburgVorpommern": "MV",
-             "Thueringen": "TH",
-             "SchleswigHolstein": "SH",
-             "Bremen": "HB",
-             "Saarland": "SL",
-             "Bayern": "BY",
-             "BadenWuerttemberg": "BW",
-             "Brandenburg": "BB",
-             "Hessen": "HE",
-             "NordrheinWestfalen": "NW",
-             "Berlin": "BE",
-             "Niedersachsen": "NI",
-             "SachsenAnhalt": "ST",
-             "RheinlandPfalz": "RP"})
 
     # Run methodology for each federal state
     for federal_state in targets.index:
@@ -274,6 +255,3 @@ def extension():
         additional_capacity = targets[federal_state] - existing_capacity
         extension_per_federal_state(
             additional_capacity, federal_state, EgonChp)
-
-
-
