@@ -15,14 +15,14 @@ from egon.data.config import settings
 from egon.data.datasets import Dataset         
 from urllib.request import urlretrieve      
 
-class GasProduction(Dataset): 
-     def __init__(self, dependencies): 
-         super().__init__( 
-             name="GasProduction", 
-             version="0.0.0", 
-             dependencies=dependencies, 
-             tasks=(import_gas_generators), 
-         ) 
+class GasProduction(Dataset):
+     def __init__(self, dependencies):
+         super().__init__(
+             name="GasProduction",
+             version="0.0.1.dev",
+             dependencies=dependencies,
+             tasks=(import_gas_generators),
+         )
 
 
 def load_NG_generators():
@@ -144,6 +144,7 @@ def load_biogas_generators():
             AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)'''
         
         biogas_generators_list = gpd.GeoDataFrame.from_postgis(sql, con=engine, geom_col="geom", crs=4326)
+        biogas_generators_list = biogas_generators_list.drop(columns=['gid', 'bez', 'area_ha', 'geometry'])
         db.execute_sql(
             """
               DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
@@ -155,12 +156,11 @@ def load_biogas_generators():
     Total_biogas_capacity_2035 = Total_biogas_extracted_2035 * 1000000 / (24 * 365)
     
     # Regionalization of the production
-    biogas_generators_list['p_nom'] = (biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]'] 
-                                       / biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]'].sum() 
-                                       * Total_biogas_capacity_2035)  
-    # Remove useless columns
-    biogas_generators_list = biogas_generators_list.drop(columns=['x', 'y', 'gid', 'bez', 'Koordinaten',
-                                                                  'area_ha', 'geometry', 
+    biogas_generators_list['p_nom'] = (biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]']
+                                       / biogas_generators_list['Einspeisung Biomethan [(N*m^3)/h)]'].sum()
+                                       * Total_biogas_capacity_2035)
+    # Remove useless columns                              
+    biogas_generators_list = biogas_generators_list.drop(columns=['x', 'y', 'Koordinaten',
                                                                   'Einspeisung Biomethan [(N*m^3)/h)]'])
     return biogas_generators_list
     
