@@ -16,7 +16,6 @@ class EgonEtragoElectricityCts(Base):
     __tablename__ = "egon_etrago_electricity_cts"
     __table_args__ = {"schema": "demand"}
 
-    version = Column(String, primary_key=True)
     subst_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
@@ -79,10 +78,22 @@ def calc_load_curve(share_wz, annual_demand=1):
     # If shares per cts branch is a DataFrame (e.g. shares per substation)
     # demand curves are created for each row
     if type(share_wz) == pd.core.frame.DataFrame:
-        result = pd.DataFrame(columns=share_wz.index)
-        for i, row in share_wz.iterrows():
-            result[i] = df[row.index].mul(row).sum(axis=1).mul(
-                annual_demand[i])
+
+        # Replace NaN values with 0
+        share_wz = share_wz.fillna(0.)
+
+        result = pd.DataFrame(columns = df.index, index=share_wz.index)
+
+        # Group by share_wz to reduce number of iterations
+        for name, group in share_wz.groupby(share_wz.columns.tolist()):
+            # Calulate normalized load curve
+            data = df[group.columns].mul(
+                group.head(1).transpose().squeeze()).sum(axis=1)
+            # Assign load curve to all entrys in group
+            result.loc[group.index, :] = [data.transpose().values]*len(group)
+        # Transpose and multiply with annual demand
+        result = result.transpose().mul(annual_demand)
+
     else:
         result = df[share_wz.index].mul(share_wz).sum(axis=1).mul(
             annual_demand)
@@ -178,8 +189,6 @@ def insert_cts_load():
     targets = (egon.data.config.datasets()
                ['electrical_load_curves_cts']['targets'])
 
-    version = '0.0.0'
-
     create_table()
 
     for scenario in ['eGon2035', 'eGon100RE']:
@@ -190,8 +199,7 @@ def insert_cts_load():
             DELETE FROM
             {targets['cts_demand_curves']['schema']}
             .{targets['cts_demand_curves']['table']}
-            WHERE version = '{version}'
-            AND scn_name = '{scenario}'
+            WHERE scn_name = '{scenario}'
             """)
 
 
@@ -200,12 +208,11 @@ def insert_cts_load():
 
         # Initalize pandas.DataFrame for pf table load timeseries
         load_ts_df = pd.DataFrame(index=data.columns,
-                                  columns=['version', 'scn_name',
+                                  columns=['scn_name',
                                            'p_set'])
 
         # Insert data for pf load timeseries table
         load_ts_df.p_set = data.transpose().values.tolist()
-        load_ts_df.version = version
         load_ts_df.scn_name = scenario
 
         # Insert into database

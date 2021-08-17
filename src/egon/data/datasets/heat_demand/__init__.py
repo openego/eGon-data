@@ -38,9 +38,22 @@ import json
 from sqlalchemy import Column, String, Float, Integer, Sequence, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
+from egon.data.datasets import Dataset
+
+# class for airflow task management (and version control)
+class HeatDemandImport(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="heat-demands",
+            # version=self.target_files + "_0.0",
+            version="0.0.0", # maybe rethink the naming
+            dependencies=dependencies,
+            tasks=(scenario_data_import))
+
 Base = declarative_base()
 
-
+# class for the final dataset in the database
 class EgonPetaHeat(Base):
     __tablename__ = "egon_peta_heat"
     __table_args__ = {"schema": "demand"}
@@ -55,7 +68,6 @@ class EgonPetaHeat(Base):
     demand = Column(Float)
     sector = Column(String)
     scenario = Column(String, ForeignKey(EgonScenario.name))
-    version = Column(String)
     zensus_population_id = Column(Integer)
 
 
@@ -183,30 +195,23 @@ def cutout_heat_demand_germany():
         None
 
     Notes
-    -----
-        None
-
-    TODO
     ----
-        It would be better to cutout Germany from the pan-European raster
+        The alternative of cutting out Germany from the pan-European raster
         based on German census cells, instead of using state boundaries with
-        low resolution, to avoid inaccuracies. All attempts to read, (union)
-        and load cells from the local database failed, but were documented
-        as commented code within this function and afterwards removed. If you
-        want to have a look at the comments, please check out commit
+        low resolution (to avoid inaccuracies), was not implemented in order to
+        achieve consistency with other datasets (e.g. mv_grid_districts).
+        Besides, all attempts to read, (union) and load cells from the local
+        database failed, but were documented as commented code within this
+        function and afterwards removed.
+        If you want to have a look at the comments, please check out commit
         ec3391e182215b32cd8b741557a747118ab61664, which is the last commit
         still containing them.
 
-        Depending on the process afterwards also a buffer around the boundaries
+        Also the usage of a buffer around the boundaries and the subsequent
+        selection of German cells was not implemented.
         could be used, but then it must be ensured that later only heat demands
         of cells belonging to Germany are used.
 
-        Specify the crs of the created heat demand tiffs: EPSG 3035
-
-        Check if cutcuts already exists, according to version number and
-        selected boundaries (test mode or not).
-
-        Check if we want to delete (some of) the tiff files after use.
     """
 
     # Load the German boundaries from the local database using a dissolved
@@ -326,7 +331,6 @@ def future_heat_demand_germany(scenario_name):
 
     TODO
     ----
-        Check if future heat demands already exists: data version management.
 
         Specify the crs of the created heat demand tiffs: EPSG 3035
 
@@ -481,8 +485,7 @@ def heat_demand_to_db_table():
                 connection.execute(f'ANALYZE "{rasters}"')
                 with open(sql_script) as convert:
                     connection.execute(
-                        Template(convert.read()).render(version="0.0.0",
-                                                        source=rasters)
+                        Template(convert.read()).render(source=rasters)
                     )
     return None
 
@@ -746,12 +749,6 @@ def add_metadata():
                             "unit": "none",
                         },
                         {
-                            "name": "version",
-                            "description": "data version number",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
                             "name": "zensus_population_id",
                             "description": "census cell id",
                             "type": "integer",
@@ -804,7 +801,7 @@ def add_metadata():
     db.submit_comment(meta_json, "demand", "egon_peta_heat")
 
 
-def future_heat_demand_data_import():
+def scenario_data_import():
     """
     Call all heat demand import related functions.
 
@@ -825,9 +822,6 @@ def future_heat_demand_data_import():
     -----
         None
 
-    TODO
-    ----
-        check which tasks need to run (according to version number)
     """
     # drop table if exists
     # can be removed when table structure doesn't change anymore

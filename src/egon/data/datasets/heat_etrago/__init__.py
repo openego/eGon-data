@@ -7,7 +7,7 @@ from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_central_power_to_heat,insert_individual_power_to_heat)
 from egon.data.datasets import Dataset
 
-def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
+def insert_buses(carrier, scenario='eGon2035'):
     """ Insert heat buses to etrago table
 
     Heat buses are divided into central and individual heating
@@ -16,8 +16,6 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
     ----------
     carrier : str
         Name of the carrier, either 'central_heat' or 'rural_heat'
-    version : str, optional
-        Version number. The default is '0.0.0'.
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
 
@@ -30,7 +28,6 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
         DELETE FROM {target['schema']}.{target['table']}
         WHERE scn_name = '{scenario}'
         AND carrier = '{carrier}'
-        AND version = '{version}'
         """)
 
     # Select unused index of buses
@@ -38,7 +35,7 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
 
     # initalize dataframe for heat buses
     heat_buses = gpd.GeoDataFrame(columns = [
-        'version', 'scn_name', 'bus_id', 'carrier',
+        'scn_name', 'bus_id', 'carrier',
         'x', 'y', 'geom']).set_geometry('geom').set_crs(epsg=4326)
 
     # If central heat, create one bus per district heating area
@@ -65,7 +62,6 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
         heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
 
     # Insert values into dataframe
-    heat_buses.version = '0.0.0'
     heat_buses.scn_name = scenario
     heat_buses.carrier = carrier
     heat_buses.x = heat_buses.geom.x
@@ -78,13 +74,11 @@ def insert_buses(carrier, version='0.0.0', scenario='eGon2035'):
                         if_exists='append',
                         con=db.engine())
 
-def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
+def insert_central_direct_heat(scenario='eGon2035'):
     """ Insert renewable heating technologies (solar and geo thermal)
 
     Parameters
     ----------
-    version : str, optional
-        Version number. The default is '0.0.0'.
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
 
@@ -102,7 +96,6 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         {targets['heat_generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
-        AND version = '{version}'
         """)
 
     db.execute_sql(
@@ -114,8 +107,7 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
             SELECT generator_id FROM
             {targets['heat_generators']['schema']}.
             {targets['heat_generators']['table']}
-            WHERE version = '{version}'
-            AND scn_name = '{scenario}')
+            WHERE scn_name = '{scenario}')
         """)
 
     central_thermal = db.select_geodataframe(
@@ -146,8 +138,7 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
     new_id = db.next_etrago_id('generator')
 
     generator = pd.DataFrame(
-        data = {'version': version,
-                'scn_name': scenario,
+        data = {'scn_name': scenario,
                 'carrier': central_thermal.carrier,
                 'bus': map_dh_id_bus_id.bus_id[central_thermal.index],
                 'p_nom': central_thermal.capacity,
@@ -180,8 +171,7 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         index_col='w_id')
 
     timeseries =  pd.DataFrame(
-        data = {'version': version,
-                'scn_name': scenario,
+        data = {'scn_name': scenario,
                 'temp_id': 1,
                 'p_max_pu': feedin.feedin[join.index].values,
                 'generator_id': generator.generator_id[
@@ -203,13 +193,11 @@ def insert_central_direct_heat(version = '0.0.0', scenario='eGon2035'):
         if_exists='append',
         con=db.engine())
 
-def buses(version='0.0.0'):
+def buses():
     """ Insert individual and district heat buses into eTraGo-tables
 
     Parameters
     ----------
-    version : str, optional
-        Version number. The default is '0.0.0'.
 
     Returns
     -------
@@ -217,16 +205,14 @@ def buses(version='0.0.0'):
 
     """
 
-    insert_buses('central_heat', version=version, scenario='eGon2035')
-    insert_buses('rural_heat', version=version, scenario='eGon2035')
+    insert_buses('central_heat', scenario='eGon2035')
+    insert_buses('rural_heat', scenario='eGon2035')
 
-def supply(version='0.0.0'):
+def supply():
     """ Insert individual and district heat supply into eTraGo-tables
 
     Parameters
     ----------
-    version : str, optional
-        Version number. The default is '0.0.0'.
 
     Returns
     -------
@@ -234,15 +220,15 @@ def supply(version='0.0.0'):
 
     """
 
-    insert_central_direct_heat(version = '0.0.0', scenario='eGon2035')
-    insert_central_power_to_heat(version, scenario='eGon2035')
-    insert_individual_power_to_heat(version, scenario='eGon2035')
+    insert_central_direct_heat(scenario='eGon2035')
+    insert_central_power_to_heat(scenario='eGon2035')
+    insert_individual_power_to_heat(scenario='eGon2035')
 
 class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(buses, supply),
         )

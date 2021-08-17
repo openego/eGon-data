@@ -458,7 +458,7 @@ heat_supply:
       table: 'egon_scenario_capacities'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     chp:
       schema: 'supply'
       table: 'egon_chp'
@@ -479,7 +479,7 @@ heat_supply:
       table: 'mv_grid_districts'
     map_dh:
       schema: 'demand'
-      table: 'map_zensus_district_heating_areas'
+      table: 'egon_map_zensus_district_heating_areas'
     etrago_buses:
       table: 'egon_pf_hv_bus'
       schema: 'grid'
@@ -498,10 +498,10 @@ etrago_heat:
       table: 'egon_scenario_capacities'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     map_district_heating_areas:
       schema: 'demand'
-      table: 'map_zensus_district_heating_areas'
+      table: 'egon_map_zensus_district_heating_areas'
     mv_grids:
       schema: 'grid'
       table: 'mv_grid_districts'
@@ -550,16 +550,16 @@ industrial_sites:
   targets:
     hotmaps:
       schema: "demand"
-      table: "hotmaps_industrial_sites"
+      table: "egon_hotmaps_industrial_sites"
     seenergies:
       schema: "demand"
-      table: "seenergies_industrial_sites"
+      table: "egon_seenergies_industrial_sites"
     schmidt:
       schema: "demand"
-      table: "schmidt_industrial_sites"
+      table: "egon_schmidt_industrial_sites"
     sites:
       schema: "demand"
-      table: "industrial_sites"
+      table: "egon_industrial_sites"
 
 distributed_industrial_demand:
   sources:
@@ -575,7 +575,7 @@ distributed_industrial_demand:
       table: 'osm_landuse'
     industrial_sites:
       schema: 'demand'
-      table: 'industrial_sites'
+      table: 'egon_industrial_sites'
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
@@ -600,7 +600,7 @@ electrical_load_curves_industry:
       table: 'egon_demandregio_sites_ind_electricity'
     sites_geom:
       schema: 'demand'
-      table: 'industrial_sites'
+      table: 'egon_industrial_sites'
     demandregio_industry:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
@@ -624,6 +624,26 @@ electrical_load_curves_industry:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
 
+etrago_electricity:
+  sources:
+    osm_curves:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves'
+    sites_curves:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves'
+    cts_curves:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_cts'
+  targets:
+    etrago_load:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    etrago_load_curves:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+
+
 chp_location:
   sources:
     list_conv_pp:
@@ -644,7 +664,7 @@ chp_location:
       schema: 'openstreetmap'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     industrial_demand_osm:
       schema: 'demand'
       table: 'egon_demandregio_osm_ind_electricity'
@@ -655,3 +675,4 @@ chp_location:
     chp_table:
       table: 'egon_chp'
       schema: 'supply'
+

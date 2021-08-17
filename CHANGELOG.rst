@@ -118,9 +118,12 @@ Added
   `#308 <https://github.com/openego/eGon-data/issues/308>`_
 * Integrate supply strategies for individual and district heating
   `#232 <https://github.com/openego/eGon-data/issues/232>`_
+* Integrate gas production
+  `#321 <https://github.com/openego/eGon-data/issues/321>`_
 * Integrate industrial time series creation
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
-
+* Merge electrical loads per bus and export to etrago tables
+  `#328 <https://github.com/openego/eGon-data/issues/328>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -166,7 +169,7 @@ Changed
   `#297 <https://github.com/openego/eGon-data/issues/297>`_
 * Migrate industrial sites to datasets
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
-* Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc. 
+* Rename etrago tables from e.g. egon_pf_hv_bus to egon_etrago bus etc.
   `#334 <https://github.com/openego/eGon-data/issues/334>`_
 * Move functions used by multiple datasets
   `#323 <https://github.com/openego/eGon-data/issues/323>`_
@@ -178,6 +181,12 @@ Changed
   `#326 <https://github.com/openego/eGon-data/issues/326>`_
 * Migrate osmTGmod to datasets
   `#305 <https://github.com/openego/eGon-data/issues/305>`_
+* Filter osm landuse areas, rename industrial sites tables and update load curve function
+  `#378 <https://github.com/openego/eGon-data/issues/378>`_
+* Remove version columns from eTraGo tables and related code
+  `#384 <https://github.com/openego/eGon-data/issues/384>`_
+* Remove country column from scenario capacities table
+  `#391 <https://github.com/openego/eGon-data/issues/391>`_
 
 Bug fixes
 ---------
@@ -215,4 +224,9 @@ Bug fixes
 * Set current working directory as java's temp dir when executing osmosis
   `#344 <https://github.com/openego/eGon-data/issues/344>`_
 * Fix border gas voronoi polygons which had no bus_id
-`#362 <https://github.com/openego/eGon-data/issues/362>`_
+  `#362 <https://github.com/openego/eGon-data/issues/362>`_
+* Add dependency from WeatherData to Vg250
+  `#387 <https://github.com/openego/eGon-data/issues/387>`_
+* Fix unnecessary columns in normal mode for inserting the gas production
+  `#387 <https://github.com/openego/eGon-data/issues/390>`_
+
