@@ -527,7 +527,7 @@ def adjust_residential_heat_to_zensus(scenario):
         FROM  demand.egon_peta_heat
         WHERE scenario = {'scenario'} and sector = 'residential'
         AND zensus_population_id IN (
-            SELECT gid
+            SELECT id
             FROM society.destatis_zensus_population_per_ha_inside_germany
             )""",
         index_col="id",

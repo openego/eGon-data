@@ -126,11 +126,11 @@ def calc_load_curves_ind_osm(scenario):
 
     # Select industrial landuse polygons as demand area
     demand_area = db.select_geodataframe(
-        f"""SELECT gid, geom FROM
+        f"""SELECT id, geom FROM
                 {sources['osm_landuse']['schema']}.
                 {sources['osm_landuse']['table']}
                 WHERE sector = 3 """,
-        index_col="gid",
+        index_col="id",
         geom_col="geom",
         epsg=3035,
     )
