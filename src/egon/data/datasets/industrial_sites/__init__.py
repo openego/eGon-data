@@ -406,7 +406,7 @@ def seenergies_to_postgres():
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        [id", "bez", "area_ha", "index_right"], axis=1
+        ["id", "bez", "area_ha", "index_right"], axis=1
     )
 
     # Remove duplicates on columns 'plant' and 'geom'
