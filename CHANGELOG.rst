@@ -187,6 +187,8 @@ Changed
   `#384 <https://github.com/openego/eGon-data/issues/384>`_
 * Remove country column from scenario capacities table
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
+* Update version of zenodo download
+  `#397 <https://github.com/openego/eGon-data/issues/397>`_
 
 Bug fixes
 ---------
