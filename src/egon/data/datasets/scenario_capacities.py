@@ -177,11 +177,10 @@ def insert_capacities_per_federal_state_nep():
 
 
         data['carrier'] = data.index.map(rename_carrier)
-        data = data.groupby(data.carrier).sum().reset_index()
+        data = data.groupby(data.carrier)[bl].sum().reset_index()
         data['component'] = 'generator'
         data['nuts'] = map_nuts.nuts[bl]
         data['scenario_name'] = 'eGon2035'
-
 
         # According to NEP, each heatpump has 3kW_el installed capacity
         data.loc[data.carrier == 'residential_rural_heat_pump', bl] *= 3e-6
