@@ -190,6 +190,8 @@ Changed
   `#378 <https://github.com/openego/eGon-data/issues/378>`_
 * Remove version columns from eTraGo tables and related code
   `#384 <https://github.com/openego/eGon-data/issues/384>`_
+* Remove country column from scenario capacities table
+  `#391 <https://github.com/openego/eGon-data/issues/391>`_
 
 Bug fixes
 ---------
@@ -230,4 +232,6 @@ Bug fixes
   `#362 <https://github.com/openego/eGon-data/issues/362>`_
 * Add dependency from WeatherData to Vg250
   `#387 <https://github.com/openego/eGon-data/issues/387>`_
+* Fix unnecessary columns in normal mode for inserting the gas production
+  `#387 <https://github.com/openego/eGon-data/issues/390>`_
 
