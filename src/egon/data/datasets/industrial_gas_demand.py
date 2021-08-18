@@ -200,7 +200,7 @@ def import_industrial_gas_demand():
     industrial_gas_demand['load_id'] = range(new_id, new_id + len(industrial_gas_demand))
      
     # Add missing columns
-    c = {'version':'0.0.0','scn_name':'eGon2035', 'carrier':'gas'}
+    c = {'scn_name':'eGon2035', 'carrier':'gas'}
     industrial_gas_demand = industrial_gas_demand.assign(**c)
     
     industrial_gas_demand =  industrial_gas_demand.reset_index(drop=True)
