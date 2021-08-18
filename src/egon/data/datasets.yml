@@ -458,7 +458,7 @@ heat_supply:
       table: 'egon_scenario_capacities'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
@@ -479,7 +479,7 @@ heat_supply:
       table: 'mv_grid_districts'
     map_dh:
       schema: 'demand'
-      table: 'map_zensus_district_heating_areas'
+      table: 'egon_map_zensus_district_heating_areas'
   targets:
     district_heating_supply:
       schema: 'supply'
@@ -495,10 +495,10 @@ etrago_heat:
       table: 'egon_scenario_capacities'
     district_heating_areas:
       schema: 'demand'
-      table: 'district_heating_areas'
+      table: 'egon_district_heating_areas'
     map_district_heating_areas:
       schema: 'demand'
-      table: 'map_zensus_district_heating_areas'
+      table: 'egon_map_zensus_district_heating_areas'
     mv_grids:
       schema: 'grid'
       table: 'mv_grid_districts'
@@ -547,16 +547,16 @@ industrial_sites:
   targets:
     hotmaps:
       schema: "demand"
-      table: "hotmaps_industrial_sites"
+      table: "egon_hotmaps_industrial_sites"
     seenergies:
       schema: "demand"
-      table: "seenergies_industrial_sites"
+      table: "egon_seenergies_industrial_sites"
     schmidt:
       schema: "demand"
-      table: "schmidt_industrial_sites"
+      table: "egon_schmidt_industrial_sites"
     sites:
       schema: "demand"
-      table: "industrial_sites"
+      table: "egon_industrial_sites"
 
 distributed_industrial_demand:
   sources:
@@ -572,7 +572,7 @@ distributed_industrial_demand:
       table: 'osm_landuse'
     industrial_sites:
       schema: 'demand'
-      table: 'industrial_sites'
+      table: 'egon_industrial_sites'
     vg250_krs:
       schema: 'boundaries'
       table: 'vg250_krs'
@@ -597,7 +597,7 @@ electrical_load_curves_industry:
       table: 'egon_demandregio_sites_ind_electricity'
     sites_geom:
       schema: 'demand'
-      table: 'industrial_sites'
+      table: 'egon_industrial_sites'
     demandregio_industry:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'

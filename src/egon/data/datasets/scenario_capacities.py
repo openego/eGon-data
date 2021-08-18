@@ -56,7 +56,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 create_table,
@@ -130,7 +130,7 @@ def insert_capacities_per_federal_state_nep():
     # sort NEP-carriers:
     rename_carrier = {'Wind onshore': 'wind_onshore',
                      'Wind offshore': 'wind_offshore',
-                     'Sonstige Konventionelle': 'other_non_renewable',
+                     'sonstige Konventionelle': 'other_non_renewable',
                      'Speicherwasser': 'reservoir',
                      'Laufwasser': 'run_of_river',
                      'Biomasse': 'biomass',
@@ -139,7 +139,7 @@ def insert_capacities_per_federal_state_nep():
                      'PV (Aufdach)': 'solar_rooftop',
                      'PV (Freiflaeche)': 'solar',
                      'Pumpspeicher': 'pumped_hydro',
-                     'Sonstige EE': 'other_renewable',
+                     'sonstige EE': 'other_renewable',
                      'Oel': 'oil',
                      'Haushaltswaermepumpen': 'residential_rural_heat_pump',
                      'KWK < 10 MW': 'small_chp'}
@@ -179,7 +179,6 @@ def insert_capacities_per_federal_state_nep():
         data['carrier'] = data.index.map(rename_carrier)
         data = data.groupby(data.carrier).sum().reset_index()
         data['component'] = 'generator'
-        data['country'] = 'Deutschland'
         data['nuts'] = map_nuts.nuts[bl]
         data['scenario_name'] = 'eGon2035'
 
@@ -299,7 +298,7 @@ def district_heating_input():
     """
     # import data to dataframe
     file = os.path.join(
-        "data_bundle_egon_data/nep2035_version2021/",
+        "data_bundle_egon_data/nep2035_version2021",
         scenario_config('eGon2035')['paths']['capacities'])
     df = pd.read_excel(file, sheet_name='Kurzstudie_KWK', dtype={'Wert':float})
     df.set_index(['Energietraeger', 'Name'], inplace=True)
@@ -319,7 +318,7 @@ def district_heating_input():
         entry = EgonScenarioCapacities(
             component = 'link',
             scenario_name = 'eGon2035',
-            country = 'Deutschland',
+            nuts = 'DE',
             carrier = 'urban_central_'+ (
                 'heat_pump' if c=='Grosswaermepumpe' else 'resistive_heater'),
             capacity = df.loc[(c, 'Fernwaermeerzeugung'), 'Wert']*1e6/
@@ -333,7 +332,7 @@ def district_heating_input():
         entry = EgonScenarioCapacities(
         component = 'generator',
         scenario_name = 'eGon2035',
-        country = 'Deutschland',
+        nuts = 'DE',
         carrier = 'urban_central_'+ (
                 'solar_thermal_collector' if c =='Solarthermie'
                                 else 'geo_thermal'),

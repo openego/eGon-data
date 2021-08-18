@@ -92,6 +92,7 @@ setup(
         "matplotlib",
         "netcdf4",
         "oedialect==0.0.8",
+        "pandas>1.2.0,<1.3.0",
         "psycopg2",
         "pyaml",
         "rasterio",

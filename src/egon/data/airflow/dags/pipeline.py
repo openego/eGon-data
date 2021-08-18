@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
+from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -15,6 +16,7 @@ from egon.data.datasets.electricity_demand import (
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
+from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -37,11 +39,8 @@ from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 import airflow
 
-import egon.data.importing.heat_demand_data as import_hd
 import egon.data.importing.zensus as import_zs
 import egon.data.importing.gas_grid as gas_grid
-
-import egon.data.processing.district_heating_areas as district_heating_areas
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
 import egon.data.processing.gas_areas as gas_areas
@@ -126,13 +125,9 @@ with airflow.DAG(
     zensus_vg250 = ZensusVg250(
         dependencies=[vg250, population_import])
 
-    zensus_inside_ger_metadata = tasks[
-        'zensus_vg250.add-metadata-zensus-inside-ger']
-
-
     # DemandRegio data import
     demandregio = DemandRegio(dependencies=[
-        setup, vg250, scenario_input_import, data_bundle])
+        setup, vg250, scenario_parameters, data_bundle])
     demandregio_demand_cts_ind = tasks['demandregio.insert-cts-ind-demands']
 
 
@@ -142,8 +137,6 @@ with airflow.DAG(
         zensus_vg250,
         population_import,
         zensus_misc_import])
-
-    population_prognosis = tasks['society_prognosis.zensus-population']
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -238,23 +231,17 @@ with airflow.DAG(
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
     re_potential_areas.insert_into(pipeline)
-    insert_re_potential_areas = tasks["re_potential_areas.insert-data"]
 
     # Future heat demand calculation based on Peta5_0_1 data
-    heat_demand_import = PythonOperator(
-        task_id="import-heat-demand",
-        python_callable=import_hd.future_heat_demand_data_import,
-    )
-    vg250_clean_and_prepare >> heat_demand_import
-    zensus_inside_ger_metadata >> heat_demand_import
-    scenario_input_import >> heat_demand_import
+    heat_demand_Germany = HeatDemandImport(
+        dependencies=[vg250, scenario_parameters, zensus_vg250])
 
     # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
             demandregio,
             zensus_vg250,
-            heat_demand_import,
+            heat_demand_Germany,
             etrago_input_data,
             household_electricity_demand_annual,
         ]
@@ -316,7 +303,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> landuse_extraction
 
     # Import weather data
-    weather_data = WeatherData(dependencies=[setup, scenario_parameters])
+    weather_data = WeatherData(dependencies=[setup, scenario_parameters, vg250])
     download_weather_data = tasks["era5.download-era5"]
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
@@ -326,19 +313,12 @@ with airflow.DAG(
     feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
 
     # District heating areas demarcation
-    create_district_heating_areas_table = PythonOperator(
-        task_id="create-district-heating-areas-table",
-        python_callable=district_heating_areas.create_tables,
-    )
-    import_district_heating_areas = PythonOperator(
-        task_id="import-district-heating-areas",
-        python_callable=district_heating_areas.district_heating_areas_demarcation,
-    )
-    setup >> create_district_heating_areas_table
-    create_district_heating_areas_table >> import_district_heating_areas
+    district_heating_areas = DistrictHeatingAreas(
+        dependencies=[heat_demand_Germany, scenario_parameters])
+    import_district_heating_areas = tasks[
+        "district_heating_areas.demarcation"]
+
     zensus_misc_import >> import_district_heating_areas
-    heat_demand_import >> import_district_heating_areas
-    scenario_input_import >> import_district_heating_areas
 
     # Calculate dynamic line rating for HV trans lines
     calculate_dlr = PythonOperator(
@@ -387,23 +367,14 @@ with airflow.DAG(
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
+    etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle, zensus_mv_grid_districts]
-    )
-
-    import_district_heating_supply = tasks["heat_supply.district-heating"]
-    import_individual_heating_supply = tasks["heat_supply.individual-heating"]
-    heat_supply_tables = tasks["heat_supply.create-tables"]
-    geothermal_potential = tasks["heat_supply.geothermal.potential-germany"]
-
-    create_district_heating_areas_table >> heat_supply_tables
-    import_district_heating_areas >> import_district_heating_supply
-    import_district_heating_areas >> geothermal_potential
-    import_district_heating_areas >> import_individual_heating_supply
-    power_plant_import >> import_individual_heating_supply
+        dependencies=[data_bundle, zensus_mv_grid_districts,
+                      district_heating_areas, power_plants,
+                      zensus_mv_grid_districts])
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(

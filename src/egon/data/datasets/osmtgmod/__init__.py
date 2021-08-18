@@ -524,17 +524,14 @@ def osmtgmod(
     logging.info("EXECUTION FINISHED SUCCESSFULLY!")
 
 
-def to_pypsa(version="'0.0.0'"):
+def to_pypsa():
     db.execute_sql(
-            f"""
+            """
             -- CLEAN UP OF TABLES
             DELETE FROM grid.egon_etrago_bus
-            WHERE version = {version}
-            AND carrier = 'AC';
-            DELETE FROM grid.egon_etrago_line
-            WHERE version = {version};
-            DELETE FROM grid.egon_etrago_transformer
-            WHERE version = {version};
+            WHERE carrier = 'AC';
+            DELETE FROM grid.egon_etrago_line;
+            DELETE FROM grid.egon_etrago_transformer;
             """
             )
 
@@ -543,10 +540,9 @@ def to_pypsa(version="'0.0.0'"):
         db.execute_sql(
             f"""
             -- BUS DATA
-            INSERT INTO grid.egon_etrago_bus (version, scn_name, bus_id, v_nom,
+            INSERT INTO grid.egon_etrago_bus (scn_name, bus_id, v_nom,
                                              geom, x, y, carrier)
             SELECT
-              {version},
               {scenario_name},
               bus_i AS bus_id,
               base_kv AS v_nom,
@@ -559,11 +555,10 @@ def to_pypsa(version="'0.0.0'"):
 
 
             -- BRANCH DATA
-            INSERT INTO grid.egon_etrago_line (version, scn_name, line_id, bus0,
+            INSERT INTO grid.egon_etrago_line (scn_name, line_id, bus0,
                                               bus1, x, r, b, s_nom, cables, v_nom,
                                               geom, topo)
             SELECT
-              {version},
               {scenario_name},
               branch_id AS line_id,
               f_bus AS bus0,
@@ -582,12 +577,11 @@ def to_pypsa(version="'0.0.0'"):
 
 
             -- TRANSFORMER DATA
-            INSERT INTO grid.egon_etrago_transformer (version, scn_name,
+            INSERT INTO grid.egon_etrago_transformer (scn_name,
                                                      trafo_id, bus0, bus1, x,
                                                      s_nom, tap_ratio,
                                                      phase_shift, geom, topo)
             SELECT
-              {version},
               {scenario_name},
               branch_id AS trafo_id,
               f_bus AS bus0,
@@ -640,7 +634,6 @@ def to_pypsa(version="'0.0.0'"):
             DELETE FROM grid.egon_etrago_bus
             WHERE scn_name={scenario_name}
             AND carrier = 'AC'
-            AND version = {version}
             AND bus_id NOT IN
             (SELECT bus0 FROM grid.egon_etrago_line WHERE
              scn_name={scenario_name})

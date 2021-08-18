@@ -187,6 +187,8 @@ Changed
   `#378 <https://github.com/openego/eGon-data/issues/378>`_
 * Remove version columns from eTraGo tables and related code
   `#384 <https://github.com/openego/eGon-data/issues/384>`_
+* Remove country column from scenario capacities table
+  `#391 <https://github.com/openego/eGon-data/issues/391>`_
 
 Bug fixes
 ---------

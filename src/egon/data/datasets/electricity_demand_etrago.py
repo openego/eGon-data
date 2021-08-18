@@ -120,7 +120,6 @@ def export_to_db():
 
         load = pd.DataFrame(
             columns=[
-                "version",
                 "scn_name",
                 "load_id",
                 "bus",
@@ -134,7 +133,6 @@ def export_to_db():
         )
         load_timeseries = pd.DataFrame(
             columns=[
-                "version",
                 "scn_name",
                 "load_id",
                 "temp_id",
@@ -148,7 +146,6 @@ def export_to_db():
 
         # Insert values into load df
         load.bus = curves.bus
-        load.version = "0.0.0"
         load.scn_name = scenario
         load.sign = -1
         load.carrier = "AC"
@@ -157,7 +154,6 @@ def export_to_db():
 
         # Insert values into load timeseries df
         load_timeseries[["load_id", "p_set"]] = load[["load_id", "p_set"]]
-        load_timeseries.version = "0.0.0"
         load_timeseries.scn_name = scenario
         load_timeseries.temp_id = 1
 
@@ -166,9 +162,9 @@ def export_to_db():
 
         # Set index
 
-        load = load.set_index(["version", "scn_name", "load_id"])
+        load = load.set_index(["scn_name", "load_id"])
         load_timeseries = load_timeseries.set_index(
-            ["version", "scn_name", "load_id", "temp_id"]
+            ["scn_name", "load_id", "temp_id"]
         )
 
         # Insert data into database
@@ -191,7 +187,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )
