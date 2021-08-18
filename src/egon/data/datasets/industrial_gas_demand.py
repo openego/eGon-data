@@ -3,16 +3,12 @@
 The central module containing all code dealing with importing gas industrial demand
 """
 import requests
-import os
-import ast
 import pandas as pd
-import geopandas as gpd
 import numpy as np
-import geopandas
 
-from shapely import geometry, wkt
+
+from shapely import wkt 
 from egon.data import db
-from egon.data.importing.gas_grid import next_id
 from egon.data.datasets.gas_prod import assign_gas_bus_id
 from egon.data.config import settings
 from egon.data.datasets import Dataset
@@ -21,7 +17,7 @@ class IndustrialGasDemand(Dataset):
      def __init__(self, dependencies): 
          super().__init__( 
              name="IndustrialGasDemand", 
-             version="0.0.0.dev", 
+             version="0.0.0", 
              dependencies=dependencies, 
              tasks=(insert_industrial_gas_demand), 
          )       
@@ -194,7 +190,7 @@ def import_industrial_gas_demand():
     )
     
     # Select next id value
-    new_id = next_id('load')
+    new_id = db.next_etrago_id('load')
     
     industrial_gas_demand = pd.concat([download_CH4_industrial_demand(), download_H2_industrial_demand()])
     industrial_gas_demand['load_id'] = range(new_id, new_id + len(industrial_gas_demand))

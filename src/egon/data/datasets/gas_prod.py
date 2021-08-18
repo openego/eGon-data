@@ -10,7 +10,6 @@ import numpy as np
 import geopandas
 
 from egon.data import db
-from egon.data.importing.gas_grid import next_id
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from urllib.request import urlretrieve
@@ -210,7 +209,7 @@ def import_gas_generators():
     )
 
     # Select next id value
-    new_id = next_id('generator')
+    new_id = db.next_etrago_id('generator')
 
     CH4_generators_list = pd.concat([load_NG_generators(), load_biogas_generators()])
     CH4_generators_list['generator_id'] = range(new_id, new_id + len(CH4_generators_list))
