@@ -657,10 +657,10 @@ electrical_neighbours:
   sources:
     electricity_buses:
       schema: 'grid'
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
     lines:
       schema: 'grid'
-      table: 'egon_pf_hv_line'
+      table: 'egon_etrago_line'
     german_borders:
       schema: 'boundaries'
       table: 'vg250_sta_union'
@@ -676,25 +676,25 @@ electrical_neighbours:
   targets:
     buses:
       schema: 'grid'
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
     lines:
       schema: 'grid'
-      table: 'egon_pf_hv_line'
+      table: 'egon_etrago_line'
     transformers:
       schema: 'grid'
-      table: 'egon_pf_hv_transformer'
+      table: 'egon_etrago_transformer'
     loads:
       schema: 'grid'
-      table: 'egon_pf_hv_load'
+      table: 'egon_etrago_load'
     load_timeseries:
       schema: 'grid'
-      table: 'egon_pf_hv_load_timeseries'
+      table: 'egon_etrago_load_timeseries'
     generators:
       schema: 'grid'
-      table: 'egon_pf_hv_generator'
+      table: 'egon_etrago_generator'
     storage:
       schema: 'grid'
-      table: 'egon_pf_hv_storage'
+      table: 'egon_etrago_storage'
 
 tyndp:
   sources:

@@ -184,7 +184,7 @@ def pypsa_eur_sec_eGon100_capacities(version="0.0.0"):
     df_gens["sign"] = 1
 
     df_gens.to_sql(
-        "egon_pf_hv_generator",
+        "egon_etrago_generator",
         engine,
         schema="grid",
         if_exists="append",
@@ -402,9 +402,9 @@ def neighbor_reduction(version="0.0.0"):
     # writing components of neighboring countries to etrago tables
 
     neighbors = network.buses[~network.buses.country.isin(["DE"])]
-    
+
     neighbors["new_index"] = db.next_etrago_id('bus') + neighbors.reset_index().index
-    
+
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
 
@@ -529,7 +529,7 @@ def neighbor_reduction(version="0.0.0"):
     # Connect to local database
     engine = db.engine()
 
-    # db.execute_sql("DELETE FROM grid.egon_pf_hv_bus "
+    # db.execute_sql("DELETE FROM grid.egon_etrago_bus "
     #               "WHERE scn_name = 'eGon100RE' "
     #               "AND country <> 'DE'")
 
@@ -545,7 +545,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbors = neighbors.drop(i, axis=1)
 
     neighbors.to_sql(
-        "egon_pf_hv_bus",
+        "egon_etrago_bus",
         engine,
         schema="grid",
         if_exists="append",
@@ -557,13 +557,13 @@ def neighbor_reduction(version="0.0.0"):
     def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE", version=version):
         neighbor_lines["scn_name"] = scn
         neighbor_lines["version"] = version
-    
+
         neighbor_lines = neighbor_lines.rename(
             columns={"s_max_pu": "s_max_pu_fixed"}
         )
         neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"]
         neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
-    
+
         for i in [
             "name",
             "x_pu_eff",
@@ -576,9 +576,9 @@ def neighbor_reduction(version="0.0.0"):
             "s_nom_opt",
         ]:
             neighbor_lines = neighbor_lines.drop(i, axis=1)
-    
+
         neighbor_lines.to_sql(
-            "egon_pf_hv_line",
+            "egon_etrago_line",
             engine,
             schema="grid",
             if_exists="append",
@@ -587,7 +587,7 @@ def neighbor_reduction(version="0.0.0"):
         )
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE", version=version)
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035", version=version)
-   
+
     # prepare and write neighboring crossborder links to etrago tables
 
     neighbor_links["scn_name"] = "eGon100RE"
@@ -622,7 +622,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbor_links = neighbor_links.drop(i, axis=1)
 
     neighbor_links.to_sql(
-        "egon_pf_hv_link",
+        "egon_etrago_link",
         engine,
         schema="grid",
         if_exists="append",
@@ -647,7 +647,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbor_gens = neighbor_gens.drop(i, axis=1)
 
     neighbor_gens.to_sql(
-        "egon_pf_hv_generator",
+        "egon_etrago_generator",
         engine,
         schema="grid",
         if_exists="append",
@@ -663,7 +663,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbor_loads = neighbor_loads.drop(i, axis=1)
 
     neighbor_loads.to_sql(
-        "egon_pf_hv_load",
+        "egon_etrago_load",
         engine,
         schema="grid",
         if_exists="append",
@@ -686,7 +686,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbor_stores = neighbor_stores.drop(i, axis=1)
 
     neighbor_stores.to_sql(
-        "egon_pf_hv_store",
+        "egon_etrago_store",
         engine,
         schema="grid",
         if_exists="append",
@@ -713,7 +713,7 @@ def neighbor_reduction(version="0.0.0"):
         neighbor_storage = neighbor_storage.drop(i, axis=1)
 
     neighbor_storage.to_sql(
-        "egon_pf_hv_storage",
+        "egon_etrago_storage",
         engine,
         schema="grid",
         if_exists="append",
@@ -736,7 +736,7 @@ def neighbor_reduction(version="0.0.0"):
         ].values.tolist()
 
     neighbor_loads_t_etrago.to_sql(
-        "egon_pf_hv_load_timeseries",
+        "egon_etrago_load_timeseries",
         engine,
         schema="grid",
         if_exists="append",
@@ -758,7 +758,7 @@ def neighbor_reduction(version="0.0.0"):
         ].values.tolist()
 
     neighbor_gens_t_etrago.to_sql(
-        "egon_pf_hv_generator_timeseries",
+        "egon_etrago_generator_timeseries",
         engine,
         schema="grid",
         if_exists="append",
@@ -780,7 +780,7 @@ def neighbor_reduction(version="0.0.0"):
         ].values.tolist()
 
     neighbor_stores_t_etrago.to_sql(
-        "egon_pf_hv_store_timeseries",
+        "egon_etrago_store_timeseries",
         engine,
         schema="grid",
         if_exists="append",
@@ -802,7 +802,7 @@ def neighbor_reduction(version="0.0.0"):
         ].values.tolist()
 
     neighbor_storage_t_etrago.to_sql(
-        "egon_pf_hv_storage_timeseries",
+        "egon_etrago_storage_timeseries",
         engine,
         schema="grid",
         if_exists="append",
@@ -825,7 +825,7 @@ def neighbor_reduction(version="0.0.0"):
             ].values.tolist()
 
         neighbor_lines_t_etrago.to_sql(
-            "egon_pf_hv_line_timeseries",
+            "egon_etrago_line_timeseries",
             engine,
             schema="grid",
             if_exists="append",

@@ -541,7 +541,7 @@ def get_foreign_bus_id():
 
     bus_id = db.select_geodataframe(
         """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
-        FROM grid.egon_pf_hv_bus
+        FROM grid.egon_etrago_bus
         WHERE version = '0.0.0'
         AND scn_name = 'eGon2035'
         AND carrier = 'AC'
