@@ -275,36 +275,16 @@ def add_metadata():
         )
 
 
-def run_sql_script(script):
-    """Runs SQL script in egon-data database
-
-    Parameters
-    ----------
-    script : str
-        Name of SQL-script
-
-    Returns
-    -------
-    None.
-
-    """
-
-    with codecs.open(script, "r", "utf-8-sig") as fd:
-        sqlfile = fd.read()
-
-    db.execute_sql(sqlfile)
-
-
 def nuts_mview():
 
-    run_sql_script(
+    db.execute_sql_script(
         os.path.join(os.path.dirname(__file__), "vg250_lan_nuts_id_mview.sql")
     )
 
 
 def cleaning_and_preperation():
 
-    run_sql_script(
+    db.execute_sql_script(
         os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
     )
 
