@@ -20,7 +20,6 @@ class EgonScenarioCapacities(Base):
     __tablename__ = 'egon_scenario_capacities'
     __table_args__ = {'schema': 'supply'}
     index = Column(Integer, primary_key=True)
-    country = Column(String(50))
     component = Column(String(25))
     carrier = Column(String(50))
     capacity = Column(Float)
@@ -56,7 +55,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_table,
@@ -94,8 +93,11 @@ def create_table():
 
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
+    EgonScenarioCapacities.__table__.drop(bind=engine, checkfirst=True)
+    NEP2021ConvPowerPlants.__table__.drop(bind=engine, checkfirst=True)
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
+
 
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state accordning to
@@ -113,7 +115,7 @@ def insert_capacities_per_federal_state_nep():
     # Delete rows if already exist
     db.execute_sql("DELETE FROM supply.egon_scenario_capacities "
                    "WHERE scenario_name = 'eGon2035' "
-                   "AND country = 'Deutschland'")
+                   "AND nuts != 'DE'")
 
     # read-in installed capacities per federal state of germany
     target_file = os.path.join(
@@ -177,11 +179,10 @@ def insert_capacities_per_federal_state_nep():
 
 
         data['carrier'] = data.index.map(rename_carrier)
-        data = data.groupby(data.carrier).sum().reset_index()
+        data = data.groupby(data.carrier)[bl].sum().reset_index()
         data['component'] = 'generator'
         data['nuts'] = map_nuts.nuts[bl]
         data['scenario_name'] = 'eGon2035'
-
 
         # According to NEP, each heatpump has 3kW_el installed capacity
         data.loc[data.carrier == 'residential_rural_heat_pump', bl] *= 3e-6
