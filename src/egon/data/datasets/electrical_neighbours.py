@@ -151,7 +151,6 @@ def buses(scenario, sources, targets):
     # if in test mode, add bus in center of Germany
     if config.settings()['egon-data']['--dataset-boundary'] != 'Everything':
         central_buses = central_buses.append({
-            'version': '0.0.0',
              'scn_name': scenario,
              'bus_id': next_bus_id,
              'x': 10.4234469,
@@ -169,7 +168,6 @@ def buses(scenario, sources, targets):
     for cntr in vnom_per_country.index:
         if 110. in vnom_per_country[cntr]:
             central_buses = central_buses.append({
-            'version': '0.0.0',
              'scn_name': scenario,
              'bus_id': next_bus_id,
              'x': central_buses[central_buses.country==cntr].x.unique()[0],
@@ -182,7 +180,6 @@ def buses(scenario, sources, targets):
             next_bus_id += 1
         if 220. in vnom_per_country[cntr]:
             central_buses = central_buses.append({
-            'version': '0.0.0',
              'scn_name': scenario,
              'bus_id': next_bus_id,
              'x': central_buses[central_buses.country==cntr].x.unique()[0],
@@ -444,7 +441,6 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Set data type
     trafo = trafo.astype({'trafo_id': 'int','bus0': 'int', 'bus1': 'int'})
-    trafo['version'] = '0.0.0'
     trafo['scn_name'] = scenario
 
     # Insert transformers to the database
@@ -542,8 +538,7 @@ def get_foreign_bus_id():
     bus_id = db.select_geodataframe(
         """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
         FROM grid.egon_etrago_bus
-        WHERE version = '0.0.0'
-        AND scn_name = 'eGon2035'
+        WHERE scn_name = 'eGon2035'
         AND carrier = 'AC'
         AND v_nom = 380.
         AND country != 'DE'
@@ -676,7 +671,6 @@ def insert_generators(capacities):
     session = sessionmaker(bind=db.engine())()
     for i, row in gen.iterrows():
         entry = etrago.EgonPfHvGenerator(
-            version = '0.0.0',
             scn_name = 'eGon2035',
             generator_id = int(db.next_etrago_id('generator')),
             bus = row.bus,
@@ -733,7 +727,6 @@ def insert_storage(capacities):
     session = sessionmaker(bind=db.engine())()
     for i, row in store.iterrows():
         entry = etrago.EgonPfHvStorage(
-            version = '0.0.0',
             scn_name = 'eGon2035',
             storage_id = int(db.next_etrago_id('storage')),
             bus = row.bus,
@@ -872,14 +865,12 @@ def tyndp_demand():
         data_2035 = ((data_2030+data_2040)/2)[:8760]*1e-3
 
         entry = etrago.EgonPfHvLoad(
-            version = '0.0.0',
             scn_name = 'eGon2035',
             load_id = int(load_id),
             carrier = 'AC',
             bus = int(buses.bus[bus]))
 
         entry_ts = etrago.EgonPfHvLoadTimeseries(
-            version = '0.0.0',
             scn_name = 'eGon2035',
             load_id = int(load_id),
             temp_id = 1,

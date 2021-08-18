@@ -116,7 +116,7 @@ def run_pypsa_eur_sec():
     )
 
 
-def pypsa_eur_sec_eGon100_capacities(version="0.0.0"):
+def pypsa_eur_sec_eGon100_capacities():
     """Inserts installed capacities for the eGon100 scenario
 
     Returns
@@ -147,7 +147,7 @@ def pypsa_eur_sec_eGon100_capacities(version="0.0.0"):
     df = pd.read_csv(target_file, skiprows=5)
     df.columns = ["component", "country", "carrier", "p_nom"]
     df["scn_name"] = "eGon100RE"
-    df["version"] = version
+
     # Todo: connection to bus!
 
     desired_countries = [
@@ -193,7 +193,7 @@ def pypsa_eur_sec_eGon100_capacities(version="0.0.0"):
     )
 
 
-def neighbor_reduction(version="0.0.0"):
+def neighbor_reduction():
 
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
@@ -534,7 +534,7 @@ def neighbor_reduction(version="0.0.0"):
     #               "AND country <> 'DE'")
 
     neighbors["scn_name"] = "eGon100RE"
-    neighbors["version"] = version
+
     neighbors = neighbors.rename(
         columns={"v_mag_pu_set": "v_mag_pu_set_fixed"}
     )
@@ -554,9 +554,8 @@ def neighbor_reduction(version="0.0.0"):
     )
 
     # prepare and write neighboring crossborder lines to etrago tables
-    def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE", version=version):
+    def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE"):
         neighbor_lines["scn_name"] = scn
-        neighbor_lines["version"] = version
 
         neighbor_lines = neighbor_lines.rename(
             columns={"s_max_pu": "s_max_pu_fixed"}
@@ -585,13 +584,12 @@ def neighbor_reduction(version="0.0.0"):
             index=True,
             index_label="line_id",
         )
-    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE", version=version)
-    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035", version=version)
+    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
+    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
 
     # prepare and write neighboring crossborder links to etrago tables
 
     neighbor_links["scn_name"] = "eGon100RE"
-    neighbor_links["version"] = version
 
     neighbor_links = neighbor_links.rename(
         columns={
@@ -632,7 +630,6 @@ def neighbor_reduction(version="0.0.0"):
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
-    neighbor_gens["version"] = version
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
     neighbor_gens["p_nom_extendable"] = False
     neighbor_gens = neighbor_gens.rename(
@@ -657,7 +654,6 @@ def neighbor_reduction(version="0.0.0"):
 
     # prepare neighboring loads for etrago tables
     neighbor_loads["scn_name"] = "eGon100RE"
-    neighbor_loads["version"] = version
 
     for i in ["index", "p_set", "q_set"]:
         neighbor_loads = neighbor_loads.drop(i, axis=1)
@@ -673,7 +669,6 @@ def neighbor_reduction(version="0.0.0"):
 
     # prepare neighboring stores for etrago tables
     neighbor_stores["scn_name"] = "eGon100RE"
-    neighbor_stores["version"] = version
     neighbor_stores = neighbor_stores.rename(
         columns={
             "marginal_cost": "marginal_cost_fixed",
@@ -696,7 +691,6 @@ def neighbor_reduction(version="0.0.0"):
 
     # prepare neighboring storage_units for etrago tables
     neighbor_storage["scn_name"] = "eGon100RE"
-    neighbor_storage["version"] = version
     neighbor_storage = neighbor_storage.rename(
         columns={
             "marginal_cost": "marginal_cost_fixed",
@@ -724,10 +718,9 @@ def neighbor_reduction(version="0.0.0"):
     # writing neighboring loads_t p_sets to etrago tables
 
     neighbor_loads_t_etrago = pd.DataFrame(
-        columns=["version", "scn_name", "temp_id", "p_set"],
+        columns=["scn_name", "temp_id", "p_set"],
         index=neighbor_loads_t.columns,
     )
-    neighbor_loads_t_etrago["version"] = version
     neighbor_loads_t_etrago["scn_name"] = "eGon100RE"
     neighbor_loads_t_etrago["temp_id"] = 1
     for i in neighbor_loads_t.columns:
@@ -746,10 +739,9 @@ def neighbor_reduction(version="0.0.0"):
 
     # writing neighboring generator_t p_max_pu to etrago tables
     neighbor_gens_t_etrago = pd.DataFrame(
-        columns=["version", "scn_name", "temp_id", "p_max_pu"],
+        columns=["scn_name", "temp_id", "p_max_pu"],
         index=neighbor_gens_t.columns,
     )
-    neighbor_gens_t_etrago["version"] = version
     neighbor_gens_t_etrago["scn_name"] = "eGon100RE"
     neighbor_gens_t_etrago["temp_id"] = 1
     for i in neighbor_gens_t.columns:
@@ -768,10 +760,9 @@ def neighbor_reduction(version="0.0.0"):
 
     # writing neighboring stores_t e_min_pu to etrago tables
     neighbor_stores_t_etrago = pd.DataFrame(
-        columns=["version", "scn_name", "temp_id", "e_min_pu"],
+        columns=["scn_name", "temp_id", "e_min_pu"],
         index=neighbor_stores_t.columns,
     )
-    neighbor_stores_t_etrago["version"] = version
     neighbor_stores_t_etrago["scn_name"] = "eGon100RE"
     neighbor_stores_t_etrago["temp_id"] = 1
     for i in neighbor_stores_t.columns:
@@ -790,10 +781,9 @@ def neighbor_reduction(version="0.0.0"):
 
     # writing neighboring storage_units inflow to etrago tables
     neighbor_storage_t_etrago = pd.DataFrame(
-        columns=["version", "scn_name", "temp_id", "inflow"],
+        columns=["scn_name", "temp_id", "inflow"],
         index=neighbor_storage_t.columns,
     )
-    neighbor_storage_t_etrago["version"] = version
     neighbor_storage_t_etrago["scn_name"] = "eGon100RE"
     neighbor_storage_t_etrago["temp_id"] = 1
     for i in neighbor_storage_t.columns:
@@ -813,10 +803,9 @@ def neighbor_reduction(version="0.0.0"):
     # writing neighboring lines_t s_max_pu to etrago tables
     if not network.lines_t["s_max_pu"].empty:
         neighbor_lines_t_etrago = pd.DataFrame(
-            columns=["version", "scn_name", "s_max_pu"],
+            columns=["scn_name", "s_max_pu"],
             index=neighbor_lines_t.columns,
         )
-        neighbor_lines_t_etrago["version"] = version
         neighbor_lines_t_etrago["scn_name"] = "eGon100RE"
 
         for i in neighbor_lines_t.columns:
