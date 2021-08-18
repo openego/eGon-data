@@ -8,6 +8,7 @@ import importlib_resources as resources
 from egon.data.datasets import database
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
+from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.osm import OpenStreetMap
@@ -373,6 +374,13 @@ with airflow.DAG(
     zensus_inside_ger_metadata >> heat_demand_import
     scenario_input_import >> heat_demand_import
 
+    # Future national heat demands for foreign countries based on Hotmaps
+    # download only, processing in PyPSA-Eur-Sec fork
+    hd_abroad = HeatDemandEurope(dependencies=[setup])
+    hd_abroad.insert_into(pipeline)
+    heat_demands_abroad_download = tasks[
+        "heat_demand_europe.download"]
+
     # Power plant setup
     power_plant_tables = PythonOperator(
         task_id="create-power-plant-tables",
@@ -534,6 +542,7 @@ with airflow.DAG(
     )
 
     download_era5 >> run_pypsaeursec
+    heat_demands_abroad_download >> run_pypsaeursec
 
     neighbors = PythonOperator(
         task_id="neighbors",

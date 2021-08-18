@@ -342,6 +342,13 @@ peta5_0_1_ser_heat_demands:
     file_table_map:
     table: # 2015 heat demand data not stored in database
 
+hotmaps_current_policy_scenario_heat_demands_buildings:
+  original_data:
+    source:
+      url: "https://gitlab.com/hotmaps/scen_current_building_demand/-/raw/master/data/scen_current_building_demand.csv?inline=false"
+    target:
+      path: "scen_current_building_demand.csv"
+
 power_plants:
   sources:
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
