@@ -7,7 +7,8 @@ import zipfile
 
 import egon.data.config
 from egon.data.datasets import Dataset
-
+from pathlib import Path
+import shutil
 
 def download():
     """
@@ -16,6 +17,10 @@ def download():
     ----------
 
     """
+    data_bundle_path = Path(".") / 'data_bundle_egon_data'
+    # Delete folder if it already exists
+    if data_bundle_path.exists() and data_bundle_path.is_dir():
+        shutil.rmtree(data_bundle_path)
     # Get parameters from config and set download URL
     sources = egon.data.config.datasets()["data-bundle"]["sources"]["zenodo"]
     url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/data_bundle_egon_data.zip"""
