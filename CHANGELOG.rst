@@ -190,6 +190,10 @@ Changed
   `#378 <https://github.com/openego/eGon-data/issues/378>`_
 * Remove version columns from eTraGo tables and related code
   `#384 <https://github.com/openego/eGon-data/issues/384>`_
+* Remove country column from scenario capacities table
+  `#391 <https://github.com/openego/eGon-data/issues/391>`_
+* Update version of zenodo download
+  `#397 <https://github.com/openego/eGon-data/issues/397>`_
 
 Bug fixes
 ---------
@@ -222,6 +226,8 @@ Bug fixes
   `#258 <https://github.com/openego/eGon-data/issues/258>`_
 * Fix conflicting docker containers by setting a project name
   `#289 <https://github.com/openego/eGon-data/issues/289>`_
+* Update task insert-nep-data for pandas version 1.3.0
+  `#322 <https://github.com/openego/eGon-data/issues/322>`_
 * Fix versioning conflict with mv_grid_districts
   `#340 <https://github.com/openego/eGon-data/issues/340>`_
 * Set current working directory as java's temp dir when executing osmosis
@@ -230,4 +236,6 @@ Bug fixes
   `#362 <https://github.com/openego/eGon-data/issues/362>`_
 * Add dependency from WeatherData to Vg250
   `#387 <https://github.com/openego/eGon-data/issues/387>`_
+* Fix unnecessary columns in normal mode for inserting the gas production
+  `#387 <https://github.com/openego/eGon-data/issues/390>`_
 
