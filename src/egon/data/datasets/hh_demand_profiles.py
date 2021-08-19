@@ -96,7 +96,6 @@ docs attribute of the respective dataset class.
 from functools import partial
 from itertools import cycle, product
 from pathlib import Path
-from urllib.request import urlretrieve
 import os
 import random
 
@@ -106,12 +105,12 @@ from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
+import egon.data.config
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 Base = declarative_base()
 
-import egon.data.config
 
 # Define mapping of zensus household categories to eurostat categories
 # - Adults living in househould type
@@ -1130,9 +1129,8 @@ def get_load_timeseries(
         )  # from Wh to MWh
         full_load = full_load.add(part_load)
     if peak_load_only:
-        return full_load.max()
-    else:
-        return full_load
+        full_load = full_load.max()
+    return full_load
 
 
 def houseprofiles_in_census_cells():
@@ -1480,4 +1478,3 @@ def mv_grid_district_HH_electricity_load(
     )
 
     return mvgd_profiles
-
