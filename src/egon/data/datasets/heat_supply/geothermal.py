@@ -9,6 +9,7 @@ Februar 2017
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 from egon.data import db, config
 
@@ -24,8 +25,12 @@ def calc_geothermal_potentials():
         data={'NDB': 35, 'ORG': 90, 'SMB': 125}, name = 'm_flow')
 
     ## geothermal potentials per temperature (p. 94)
-    potentials = gpd.read_file(
-        'data_bundle_egon_data/geothermal_potential/geothermal_potential_germany.shp')
+    file_path = (
+        Path(".") /
+        "data_bundle_egon_data" /
+        "geothermal_potential" /
+        "geothermal_potential_germany.shp")
+    potentials = gpd.read_file(file_path)
     ## temperature heating system in °C (p. 95)
     sys_temp = 60
     ## temeprature losses heat recuperator in °C (p. 95)
