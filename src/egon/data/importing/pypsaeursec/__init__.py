@@ -401,7 +401,10 @@ def neighbor_reduction():
 
     # writing components of neighboring countries to etrago tables
 
-    neighbors = network.buses[~network.buses.country.isin(["DE"])]
+    # Set country tag for all buses
+    network.buses.country = network.buses.index.str[:2]
+    neighbors = network.buses[network.buses.country!='DE']
+
 
     neighbors["new_index"] = db.next_etrago_id('bus') + neighbors.reset_index().index
 
