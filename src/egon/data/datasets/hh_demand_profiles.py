@@ -1198,7 +1198,7 @@ def houseprofiles_in_census_cells():
 
 def get_houseprofiles_in_census_cells():
     """
-    Retrieve household demand time profile mapping
+    Retrieve household electricity demand profile mapping
 
     See Also
     --------
@@ -1223,6 +1223,159 @@ def get_houseprofiles_in_census_cells():
     return census_profile_mapping
 
 
+def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
+    """
+    Retrieve selection of household electricity demand profile mapping
+
+    Parameters
+    ----------
+    attribute: str
+        attribute to filter the table
+
+        * nuts3
+        * nuts1
+        * cell_id
+
+    list_of_identifiers: list of str/int
+        nuts3/nuts1 need to be str
+        cell_id need to be int
+
+    See Also
+    --------
+    :func:`houseprofiles_in_census_cells`
+
+    Returns
+    -------
+    pd.DataFrame
+        Selection of mapping of household demand profiles to zensus cells
+    """
+    attribute_options = ['nuts3', 'nuts1', 'cell_id']
+    if attribute not in attribute_options:
+        raise ValueError(f'attribute has to be one of: {attribute_options}')
+
+    # Query profile ids and scaling factors for specific attributes
+    with db.session_scope() as session:
+        if attribute == 'nuts3':
+            cells_query = session.query(
+                HouseholdElectricityProfilesInCensusCells.cell_id,
+                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
+                HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.nuts1,
+                HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2050). \
+                filter(HouseholdElectricityProfilesInCensusCells.nuts3.in_(list_of_identifiers))
+        elif attribute == 'nuts1':
+            cells_query = session.query(
+                HouseholdElectricityProfilesInCensusCells.cell_id,
+                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
+                HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.nuts1,
+                HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2050). \
+                filter(HouseholdElectricityProfilesInCensusCells.nuts1.in_(list_of_identifiers))
+        elif attribute == 'cell_id':
+            cells_query = session.query(
+                HouseholdElectricityProfilesInCensusCells.cell_id,
+                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
+                HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.nuts1,
+                HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2050). \
+                filter(HouseholdElectricityProfilesInCensusCells.cell_id.in_(list_of_identifiers))
+
+    cell_demand_metadata = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col='cell_id')
+    cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata["cell_profile_ids"].apply(
+        lambda x: [(cat, int(profile_id)) for cat, profile_id in x]
+    )
+    return cell_demand_metadata
+
+
+def get_hh_profiles_from_db(profile_ids):
+    """
+    Retrieve selection of household electricity demand profiles
+
+    Parameters
+    ----------
+    profile_ids: list of tuple (str, int)
+        tuple consists of (category, profile number)
+
+    See Also
+    --------
+    :func:`houseprofiles_in_census_cells`
+
+    Returns
+    -------
+    pd.DataFrame
+         Selection of household demand profiles
+    """
+    def gen_profile_names(n):
+        """Join from Format (str),(int) to (str)a000(int)"""
+        a = f"{n[0]}a{int(n[1]):04d}"
+        return a
+
+    # Format profile ids to query
+    profile_ids = list(map(gen_profile_names, profile_ids))
+
+    # Query load profiles
+    with db.session_scope() as session:
+        cells_query = session.query(
+            IeeHouseholdLoadProfiles.load_in_wh,
+            IeeHouseholdLoadProfiles.type). \
+            filter(IeeHouseholdLoadProfiles.type.in_(profile_ids))
+
+    df_profile_loads = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col="type")
+
+    df_profile_loads = pd.DataFrame.from_records(df_profile_loads['load_in_wh'],
+                                                 index=df_profile_loads.index).T
+
+    return df_profile_loads
+
+
+def get_scaled_profiles_from_db(attribute, list_of_identifiers, year):
+    """Retrieve selection of scaled household electricity demand profiles
+
+       Parameters
+       ----------
+       attribute: str
+           attribute to filter the table
+
+           * nuts3
+           * nuts1
+           * cell_id
+
+       list_of_identifiers: list of str/int
+           nuts3/nuts1 need to be str
+           cell_id need to be int
+
+        year: int
+            * 2035
+            * 2050
+
+       See Also
+       --------
+       :func:`houseprofiles_in_census_cells`
+
+       Returns
+       -------
+       pd.DataFrame
+           Selection of scaled household electricity demand profiles
+       """
+    cell_demand_metadata = get_cell_demand_metadata_from_db(attribute=attribute,
+                                                            list_of_identifiers=list_of_identifiers)
+    profile_ids = cell_demand_metadata.cell_profile_ids.sum()
+
+    df_profiles = get_hh_profiles_from_db(profile_ids)
+    df_profiles = process_household_demand_profiles(df_profiles)
+
+    df_scaled_profiles = get_load_timeseries(df_profiles=df_profiles,
+                                             df_cell_demand_metadata=cell_demand_metadata,
+                                             cell_ids=cell_demand_metadata.index.to_list(),
+                                             year=year)
+    return df_scaled_profiles
+
+
 def mv_grid_district_HH_electricity_load(
     scenario_name, scenario_year, version, drop_table=False
 ):
@@ -1230,7 +1383,8 @@ def mv_grid_district_HH_electricity_load(
     Aggregated household demand time series at HV/MV substation level
 
     Calculate the aggregated demand time series based on the demand profiles
-    of each zensus cell inside each MV grid district.
+    of each zensus cell inside each MV grid district. Profiles are read from
+    local hdf5-file.
 
     Parameters
     ----------
