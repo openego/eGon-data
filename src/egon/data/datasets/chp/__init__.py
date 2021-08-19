@@ -48,7 +48,7 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.0",
+            version="0.0.0.dev",
             dependencies=dependencies,
             tasks=(create_tables, insert_chp_egon2035,
                    assign_heat_bus,
@@ -199,18 +199,18 @@ def insert_chp_egon2035():
 
     sources = config.datasets()["chp_location"]["sources"]
 
-    target = config.datasets()["chp_location"]["targets"]["chp_table"]
+    targets = config.datasets()["chp_location"]["targets"]
 
     # Insert large CHPs based on NEP's list of conventional power plants
-    MaStR_konv = insert_large_chp(sources, target, EgonChp)
+    MaStR_konv = insert_large_chp(sources, targets["chp_table"], EgonChp)
 
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
     existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
 
     gpd.GeoDataFrame(MaStR_konv[['EinheitMastrNummer', 'el_capacity',
                 'geometry', 'carrier']]).to_postgis(
-                    target["mastr_conventional_without_chp"]["table"],
-                    schema=target["mastr_conventional_without_chp"]["schema"],
+                    targets["mastr_conventional_without_chp"]["table"],
+                    schema=targets["mastr_conventional_without_chp"]["schema"],
                     con=db.engine(),
                     if_exists = "replace")
 
