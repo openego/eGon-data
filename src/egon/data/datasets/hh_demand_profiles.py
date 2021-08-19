@@ -662,6 +662,11 @@ def process_nuts1_zensus_data(df_zensus):
     * Adults (15<65)
     * Seniors (<65)
 
+    Parameters
+    ----------
+    df_zensus: pd.DataFrame
+        cleaned zensus household type x age category data
+
     Returns
     -------
     pd.DataFrame
@@ -722,6 +727,10 @@ def enrich_zensus_data_at_cell_level(df_zensus):
     For this, the dataset 'HHGROESS_KLASS' is converted from people living in households to number of households
     of specific size. Missing data in 'HHTYP_FAM' is substituted in :func:`create_missing_zensus_data`.
 
+    Parameters
+    ----------
+    df_zensus: pd.DataFrame
+        Aggregated zensus household data on NUTS-1 level
 
     Returns
     -------
