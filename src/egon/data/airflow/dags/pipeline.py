@@ -241,6 +241,13 @@ with airflow.DAG(
     heat_demand_Germany = HeatDemandImport(
         dependencies=[vg250, scenario_parameters, zensus_vg250])
 
+    # Future national heat demands for foreign countries based on Hotmaps
+    # download only, processing in PyPSA-Eur-Sec fork
+    hd_abroad = HeatDemandEurope(dependencies=[setup])
+    hd_abroad.insert_into(pipeline)
+    heat_demands_abroad_download = tasks[
+        "heat_demand_europe.download"]
+
     # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
@@ -377,7 +384,7 @@ with airflow.DAG(
         python_callable=pypsaeursec.run_pypsa_eur_sec,
     )
 
-    download_era5 >> run_pypsaeursec
+    download_weather_data >> run_pypsaeursec
     heat_demands_abroad_download >> run_pypsaeursec
 
     neighbors = PythonOperator(
@@ -386,7 +393,6 @@ with airflow.DAG(
     )
 
     run_pypsaeursec >> neighbors
-    create_tables >> neighbors
     osmtgmod_pypsa >> neighbors
     etrago_input_data >> neighbors
 

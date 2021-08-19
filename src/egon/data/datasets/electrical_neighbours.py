@@ -8,7 +8,7 @@ from egon.data.datasets import Dataset
 from shapely.geometry import LineString
 import zipfile
 from sqlalchemy.orm import sessionmaker
-import egon.data.importing.etrago as etrago
+import egon.data.datasets.etrago_setup as etrago
 
 class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
