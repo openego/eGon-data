@@ -1134,6 +1134,7 @@ def get_load_timeseries(
     load_area_meta = df_cell_demand_metadata.loc[
         cell_ids, ["cell_profile_ids", "nuts3", f"factor_{year}"]
     ]
+    # loop over nuts3 (part_load) and sum (full_load) as the scaling factor applies at nuts3 level
     for (nuts3, factor), df in load_area_meta.groupby(
         by=["nuts3", f"factor_{year}"]
     ):
