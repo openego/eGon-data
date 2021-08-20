@@ -624,45 +624,59 @@ def neighbor_reduction():
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
 
     # prepare and write neighboring crossborder links to etrago tables
+    def links_to_etrago(neighbor_links, scn="eGon100RE"):
+        neighbor_links["scn_name"] = scn
 
-    neighbor_links["scn_name"] = "eGon100RE"
+        neighbor_links = neighbor_links.rename(
+            columns={
+                "efficiency": "efficiency_fixed",
+                "p_min_pu": "p_min_pu_fixed",
+                "p_max_pu": "p_max_pu_fixed",
+                "p_set": "p_set_fixed",
+                "marginal_cost": "marginal_cost_fixed",
+            }
+        )
 
-    neighbor_links = neighbor_links.rename(
-        columns={
-            "efficiency": "efficiency_fixed",
-            "p_min_pu": "p_min_pu_fixed",
-            "p_max_pu": "p_max_pu_fixed",
-            "p_set": "p_set_fixed",
-            "marginal_cost": "marginal_cost_fixed",
-        }
-    )
+        for i in [
+            "name",
+            "geometry",
+            "tags",
+            "under_construction",
+            "underground",
+            "underwater_fraction",
+            "bus2",
+            "bus3",
+            "bus4",
+            "efficiency2",
+            "efficiency3",
+            "efficiency4",
+            "lifetime",
+            "p_nom_opt",
+        ]:
+            neighbor_links = neighbor_links.drop(i, axis=1)
 
-    for i in [
-        "name",
-        "geometry",
-        "tags",
-        "under_construction",
-        "underground",
-        "underwater_fraction",
-        "bus2",
-        "bus3",
-        "bus4",
-        "efficiency2",
-        "efficiency3",
-        "efficiency4",
-        "lifetime",
-        "p_nom_opt",
-    ]:
-        neighbor_links = neighbor_links.drop(i, axis=1)
+        # Define geometry and add to lines dataframe as 'topo'
+        gdf = gpd.GeoDataFrame(index=neighbor_links.index)
+        gdf['geom_bus0'] = neighbors.geom[neighbor_links.bus0].values
+        gdf['geom_bus1'] = neighbors.geom[neighbor_links.bus1].values
+        gdf['geometry']=gdf.apply(
+                lambda x: LineString([x['geom_bus0'], x['geom_bus1']]),axis=1)
 
-    neighbor_links.to_sql(
-        "egon_etrago_link",
-        engine,
-        schema="grid",
-        if_exists="append",
-        index=True,
-        index_label="link_id",
-    )
+        neighbor_links = gpd.GeoDataFrame(
+            neighbor_links, geometry = gdf['geometry']).rename_geometry(
+                'topo').set_crs(4326)
+
+        neighbor_links.to_postgis(
+            "egon_etrago_link",
+            engine,
+            schema="grid",
+            if_exists="append",
+            index=True,
+            index_label="link_id",
+        )
+
+    links_to_etrago(neighbor_links, "eGon100RE")
+    links_to_etrago(neighbor_links[neighbor_links.carrier=='DC'], "eGon2035")
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
