@@ -130,7 +130,8 @@ Added
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
 * Insert industial gas demand
   `#321 <https://github.com/openego/eGon-data/issues/358>`_
-
+* Integrate existing CHP and extdended CHP > 10MW_el
+  `#266 <https://github.com/openego/eGon-data/issues/266>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
