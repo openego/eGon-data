@@ -15,8 +15,21 @@ from egon.data import __path__
 import egon.data.config
 import egon.data.subprocess as subproc
 import yaml
+from egon.data.datasets import Dataset
 
 import pypsa
+
+class PypsaEurSec(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="PypsaEurSec",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                run_pypsa_eur_sec, neighbor_reduction
+            ),
+        )
 
 
 def run_pypsa_eur_sec():

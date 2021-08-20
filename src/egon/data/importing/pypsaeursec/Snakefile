@@ -1,9 +1,0 @@
-rule Main:
-    conda:
-        "pypsa-eur/envs/environment.yaml"
-    shell:
-        ( "snakemake"
-          " --directory=pypsa-eur-sec/"
-          " --snakefile=pypsa-eur-sec/Snakefile"
-          " -j1"
-        )

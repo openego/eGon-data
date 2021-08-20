@@ -32,6 +32,7 @@ from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.tyndp import Tyndp
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.power_plants import PowerPlants
+from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.vg250 import Vg250
@@ -42,7 +43,7 @@ from egon.data.datasets.gas_prod import GasProduction
 import airflow
 
 import egon.data.importing.zensus as import_zs
-import egon.data.importing.pypsaeursec as pypsaeursec
+import egon.data.datasets.pypsaeursec as pypsaeursec
 import egon.data.importing.gas_grid as gas_grid
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
@@ -288,7 +289,7 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
-    
+
     # Gas prod import
     gas_production_insert_data = GasProduction(
         dependencies=[create_gas_polygons])
@@ -379,25 +380,15 @@ with airflow.DAG(
     map_zensus_grid_districts >> solar_rooftop_etrago
 
     # run pypsa-eur-sec
-    run_pypsaeursec = PythonOperator(
-        task_id="run_pypsaeursec",
-        python_callable=pypsaeursec.run_pypsa_eur_sec,
-    )
+    run_pypsaeursec = PypsaEurSec(
+        dependencies=[weather_data, hd_abroad])
 
-    download_weather_data >> run_pypsaeursec
-    heat_demands_abroad_download >> run_pypsaeursec
-
-    neighbors = PythonOperator(
-        task_id="neighbors",
-        python_callable=pypsaeursec.neighbor_reduction,
-    )
-
-    run_pypsaeursec >> neighbors
+    neighbors = tasks["pypsaeursec.neighbor-reduction"]
     osmtgmod_pypsa >> neighbors
     etrago_input_data >> neighbors
 
     foreign_lines = ElectricalNeighbours(dependencies=[
-        neighbors, tyndp_data])
+        run_pypsaeursec, tyndp_data])
 
     # Heat supply
     heat_supply = HeatSupply(
