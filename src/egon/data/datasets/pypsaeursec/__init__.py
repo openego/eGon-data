@@ -9,6 +9,8 @@ import os
 
 import importlib_resources as resources
 import pandas as pd
+import geopandas as gpd
+from shapely.geometry import LineString
 
 from egon.data import db
 from egon.data import __path__
@@ -560,7 +562,14 @@ def neighbor_reduction():
               "location", "sub_network"]:
         neighbors = neighbors.drop(i, axis=1)
 
-    neighbors.to_sql(
+    # Add geometry column
+
+    neighbors = gpd.GeoDataFrame(
+        neighbors,
+        geometry=gpd.points_from_xy(neighbors.x, neighbors.y)
+        ).rename_geometry('geom').set_crs(4326)
+
+    neighbors.to_postgis(
         "egon_etrago_bus",
         engine,
         schema="grid",
@@ -576,7 +585,7 @@ def neighbor_reduction():
         neighbor_lines = neighbor_lines.rename(
             columns={"s_max_pu": "s_max_pu_fixed"}
         )
-        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"]
+        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(int)
         neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
 
         for i in [
@@ -592,7 +601,18 @@ def neighbor_reduction():
         ]:
             neighbor_lines = neighbor_lines.drop(i, axis=1)
 
-        neighbor_lines.to_sql(
+        # Define geometry and add to lines dataframe as 'topo'
+        gdf = gpd.GeoDataFrame(index=neighbor_lines.index)
+        gdf['geom_bus0'] = neighbors.geom[neighbor_lines.bus0].values
+        gdf['geom_bus1'] = neighbors.geom[neighbor_lines.bus1].values
+        gdf['geometry']=gdf.apply(
+                lambda x: LineString([x['geom_bus0'], x['geom_bus1']]),axis=1)
+
+        neighbor_lines = gpd.GeoDataFrame(
+            neighbor_lines, geometry = gdf['geometry']).rename_geometry(
+                'topo').set_crs(4326)
+
+        neighbor_lines.to_postgis(
             "egon_etrago_line",
             engine,
             schema="grid",
