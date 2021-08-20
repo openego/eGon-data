@@ -241,4 +241,7 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/387>`_
 * Fix unnecessary columns in normal mode for inserting the gas production
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
+* Add xlrd and openpyxl to installation setup
+  `#400 <https://github.com/openego/eGon-data/issues/400>`_
+
 
