@@ -92,6 +92,7 @@ setup(
         "matplotlib",
         "netcdf4",
         "oedialect==0.0.8",
+        "openpyxl",
         "pandas>1.2.0,<1.3.0",
         "psycopg2",
         "pyaml",
@@ -99,6 +100,7 @@ setup(
         "rtree",
         "sqlalchemy<1.4",
         "xarray",
+        "xlrd",
         "rioxarray",
     ],
     extras_require={
