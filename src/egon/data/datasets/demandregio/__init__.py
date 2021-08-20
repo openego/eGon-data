@@ -174,7 +174,7 @@ def insert_cts_ind_wz_definitions():
             delimiter=','
         df = pd.read_csv(
             os.path.join(
-                "data_bundle_egon_data/wz_definition/",
+                "data_bundle_egon_data/WZ_definition/",
                 source['wz_definitions'][sector]),
             delimiter=delimiter,
             header=None).rename(

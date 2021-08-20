@@ -23,6 +23,8 @@ from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
+    houseprofiles_in_census_cells
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -124,6 +126,7 @@ with airflow.DAG(
     # Combine Zensus and VG250 data
     zensus_vg250 = ZensusVg250(
         dependencies=[vg250, population_import])
+    zensus_inside_ger = tasks['zensus_vg250.inside-germany']
 
     # DemandRegio data import
     demandregio = DemandRegio(dependencies=[
@@ -276,7 +279,7 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
-    
+
     # Gas prod import
     gas_production_insert_data = GasProduction(
         dependencies=[create_gas_polygons])
@@ -369,6 +372,35 @@ with airflow.DAG(
     elec_household_demands_zensus >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+
+    mv_hh_electricity_load_2035 = PythonOperator(
+        task_id="MV-hh-electricity-load-2035",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon2035", 2035, "0.0.0"],
+        op_kwargs={"drop_table": True},
+    )
+
+    mv_hh_electricity_load_2050 = PythonOperator(
+        task_id="MV-hh-electricity-load-2050",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon100RE", 2050, "0.0.0"],
+    )
+
+    hh_demand = hh_demand_setup(dependencies=[
+        vg250_clean_and_prepare,
+        zensus_misc_import,
+        map_zensus_grid_districts,
+        zensus_inside_ger,
+        demandregio,
+    ],
+        tasks=(houseprofiles_in_census_cells,
+               mv_hh_electricity_load_2035,
+               mv_hh_electricity_load_2050,)
+    )
+    hh_demand.insert_into(pipeline)
+    householdprofiles_in_cencus_cells = tasks["hh_demand_profiles.houseprofiles-in-census-cells"]
+    mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
+    mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
     # Heat supply
     heat_supply = HeatSupply(
