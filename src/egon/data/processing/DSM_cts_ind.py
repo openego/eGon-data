@@ -3,10 +3,12 @@ import psycopg2
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+from egon.data.datasets.electricity_demand.temporal import calc_load_curve
+from egon.data.datasets.industry.temporal import identify_bus
 
 
 def dsm_cts_ind_processing():
-    def cts_data_import(con,cts_share):
+    def cts_data_import(con,cts_cool_vent_ac_share):
 
         """
         Import CTS data necessary to identify DSM-potential.
@@ -60,13 +62,13 @@ def dsm_cts_ind_processing():
         for index, liste in timeseries.iteritems():
             share = []
             for item in liste:
-                share.append(float(item) * cts_share)
+                share.append(float(item) * cts_cool_vent_ac_share)
             timeseries.loc[index] = share
         dsm["p_set"] = timeseries.copy()
 
         return dsm
     
-    def ind_osm_data_import(con,ind_share):
+    def ind_osm_data_import(con,ind_vent_cool_share):
 
         """
         Import industry data per osm-area necessary to identify DSM-potential.
@@ -91,24 +93,23 @@ def dsm_cts_ind_processing():
         for index, liste in timeseries.iteritems():
             share = []
             for item in liste:
-                share.append(float(item) * ind_share)
+                share.append(float(item) * ind_vent_cool_share)
             timeseries.loc[index] = share
         dsm["p_set"] = timeseries.copy()
 
         return dsm
     
-    def ind_sites_data_import(con,wz):
+    def ind_sites_data_import(con):
 
         """
         Import industry sites data necessary to identify DSM-potential.
             ----------
         con :
             Connection to database
-        wz: int
-            Wirtschaftszweig of considered industry application
         """
 
-        # import load data
+        # TODO: nutzbar für cooling und ventilation für sites?
+        '''# import load data
 
         sql = (
             "SELECT scn_name, bus, p_set, wz FROM demand.egon_sites_ind_load_curves"
@@ -117,7 +118,86 @@ def dsm_cts_ind_processing():
         
         # select load for considered applications
         
-        dsm = dsm[dsm['wz']==wz]
+        dsm = dsm[dsm['wz']==wz]'''
+        
+        def calc_ind_site_timeseries(scenario):
+        
+            # calculate timeseries per site 
+            # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
+        
+            # Select demands per industrial site including the subsector information
+            demands_ind_sites = db.select_dataframe(
+                f"""SELECT industrial_sites_id, wz, demand
+                    FROM demand.egon_demandregio_sites_ind_electricity
+                    WHERE scenario = '{scenario}',
+                    AND demand > 0
+                    """
+            ).set_index(["industrial_sites_id"])
+        
+            # Select industrial sites as demand_areas from database
+            demand_area = db.select_geodataframe(
+                f"""SELECT id, geom FROM
+                    demand.egon_industrial_sites""",
+                index_col="id",
+                geom_col="geom",
+                epsg=3035,
+            )
+        
+            # Replace entries to bring it in line with demandregio's subsector definitions
+            demands_ind_sites.replace(1718, 17, inplace=True)
+            share_wz_sites = demands_ind_sites.copy()
+        
+            # Create additional df on wz_share per industrial site, which is always set to one
+            # as the industrial demand per site is subsector specific
+            share_wz_sites.demand = 1
+            share_wz_sites.reset_index(inplace=True)
+        
+            share_transpose = pd.DataFrame(
+                index=share_wz_sites.industrial_sites_id.unique(),
+                columns=share_wz_sites.wz.unique(),
+            )
+            share_transpose.index.rename("industrial_sites_id", inplace=True)
+            for wz in share_transpose.columns:
+                share_transpose[wz] = (
+                    share_wz_sites[share_wz_sites.wz == wz]
+                    .set_index("industrial_sites_id")
+                    .demand
+                )
+        
+            load_curves = calc_load_curve(share_transpose, demands_ind_sites["demand"])  
+            
+            # identify bus per industrial site
+            load_curves = identify_bus(load_curves, demand_area)
+            
+            # initialize dataframe to be returned
+            ts = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
+            
+            # timeseries as a list
+            
+            
+            # Initalize pandas.DataFrame for pf table load timeseries
+            ts = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
+        
+            # Insert data for pf load timeseries table
+            ts.p_set = curves_bus.values.tolist()
+            
+            # ts: scenario_name, bus, p_set, geom
+            
+            return ts
+        
+        def relate_to_Schmidt_sites(): 
+            
+            # ts: scenario_name, bus, p_set, anwendung
+            
+            return 
+        
+        dsm_2035 = calc_ind_site_timeseries('eGon2035')
+        
+        dsm_100 = calc_ind_site_timeseries('eGon100RE')
+        
+        # dsm: scenario name, bus, p_set, geom
+        
+        dsm = 
         
         return dsm
 
@@ -482,12 +562,8 @@ def dsm_cts_ind_processing():
 
     def dsm_cts_ind(
         con=db.engine(),
-        cts_share=0.22,
-        ind_osm_share=0.039,
-        # TODO: Festlegen der Anteile der Anwendungen an den WZ
-        #ind_paper_share=1,
-        #ind_cement_share=1,
-        #ind_air_share=1
+        cts_cool_vent_ac_share=0.22,
+        ind_cool_vent_share=0.039
     ):
 
         """
@@ -511,7 +587,7 @@ def dsm_cts_ind_processing():
         print('CTS: cooling, ventilation and air conditioning')
         print(' ')
 
-        dsm = cts_data_import(con,cts_share)
+        dsm = cts_data_import(con,cts_cool_vent_ac_share)
 
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.67, s_inc=1, s_dec=0, delta_t=1, dsm=dsm
@@ -529,7 +605,7 @@ def dsm_cts_ind_processing():
         print('industry per osm-area: cooling and ventilation')
         print(' ')
         
-        dsm = ind_osm_data_import(con,ind_osm_share)
+        dsm = ind_osm_data_import(con,ind_cool_vent_share)
 
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.67, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
@@ -543,22 +619,58 @@ def dsm_cts_ind_processing():
 
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-osm")
         
-        # industry sites: paper
+        # industry sites
+        
+        # TODO: cooling & ventialation für sites 
+        
+        dsm = ind_sites_data_import(con)
         
         print(' ')
         print('industry sites: paper')
         print(' ')
         
-        dsm = ind_sites_data_import(con,wz=17)
+        # TODO: Auswahl der Papieranwendungen
         
-        # TODO: Parameter festlegen für Pulp, Paper & Recycled Paper zusammengefasst als Anwendung Paper
-
+        # dsm_paper = dsm[dsm['application']=]
+        
         p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.5, s_util=0.85, s_inc=0.95, s_dec=0, delta_t=3, dsm=dsm
+            s_flex=0.15, s_util=0.86, s_inc=0.95, s_dec=0, delta_t=3, dsm=dsm_paper
         )
 
         dsm_buses, dsm_links, dsm_stores = create_dsm_components(
-            con, p_max, p_min, e_max, e_min, dsm
+            con, p_max, p_min, e_max, e_min, dsm_paper
+        )
+
+        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
+        
+        print(' ')
+        print('industry sites: recycled paper')
+        print(' ')
+        
+        # dsm_recycled_paper = dsm[dsm['application']=]
+        
+        p_max, p_min, e_max, e_min = calculate_potentials(
+            s_flex=0.7, s_util=0.85, s_inc=0.95, s_dec=0, delta_t=3, dsm=dsm_recycled_paper
+        )
+
+        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
+            con, p_max, p_min, e_max, e_min, dsm_recycled_paper
+        )
+
+        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
+        
+        print(' ')
+        print('industry sites: pulp')
+        print(' ')
+        
+        # dsm_pulp = dsm[dsm['application']=]
+
+        p_max, p_min, e_max, e_min = calculate_potentials(
+            s_flex=0.7, s_util=0.83, s_inc=0.95, s_dec=0, delta_t=2, dsm=dsm_pulp
+        )
+
+        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
+            con, p_max, p_min, e_max, e_min, dsm_pulp
         )
 
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
@@ -569,32 +681,14 @@ def dsm_cts_ind_processing():
         print('industry sites: cement')
         print(' ')
         
-        dsm = ind_sites_data_import(con,wz=23)
+        dsm_cement = dsm[dsm['application']='Cement Mill']
 
         p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.61, s_util=0.65, s_inc=0.95, s_dec=0, delta_t=4, dsm=dsm
+            s_flex=0.61, s_util=0.65, s_inc=0.95, s_dec=0, delta_t=4, dsm=dsm_cement
         )
 
         dsm_buses, dsm_links, dsm_stores = create_dsm_components(
-            con, p_max, p_min, e_max, e_min, dsm
-        )
-
-        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
-        
-        # industry sites: air separation
-        
-        print(' ')
-        print('industry sites: air separation')
-        print(' ')
-        
-        dsm = ind_sites_data_import(con,wz=20)
-
-        p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.3, s_util=0.86, s_inc=0.95, s_dec=0.4, delta_t=4, dsm=dsm
-        )
-
-        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
-            con, p_max, p_min, e_max, e_min, dsm
+            con, p_max, p_min, e_max, e_min, dsm_cement
         )
 
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
