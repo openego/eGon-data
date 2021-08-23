@@ -6,6 +6,14 @@ import geopandas as gpd
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
 
+class dsm_Potential(Dataset):
+    
+    def __init__(self, dependencies):
+        super().__init__(
+            name='DSM_potentials',
+            version='0.0.0',
+            dependencies = dependencies,
+            tasks = (dsm_cts_ind_processing))
 
 def dsm_cts_ind_processing():
     def cts_data_import(con,cts_cool_vent_ac_share):
@@ -129,7 +137,7 @@ def dsm_cts_ind_processing():
             demands_ind_sites = db.select_dataframe(
                 f"""SELECT industrial_sites_id, wz, demand
                     FROM demand.egon_demandregio_sites_ind_electricity
-                    WHERE scenario = '{scenario}',
+                    WHERE scenario = '{scenario}'
                     AND demand > 0
                     """
             ).set_index(["industrial_sites_id"])
