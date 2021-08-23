@@ -2,7 +2,7 @@
 """
 The central module containing all code dealing with importing gas production data
 """
-import os
+#import os
 import ast
 import pandas as pd
 import geopandas as gpd
@@ -14,12 +14,13 @@ from egon.data.importing.gas_grid import next_id
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from urllib.request import urlretrieve
+from pathlib import Path
 
 class GasProduction(Dataset):
      def __init__(self, dependencies):
          super().__init__(
              name="GasProduction",
-             version="0.0.2",
+             version="0.0.3",
              dependencies=dependencies,
              tasks=(import_gas_generators),
          )
@@ -34,9 +35,12 @@ def load_NG_generators():
         Dataframe containing the natural gas producion units in Germany
 
     """
-    target_file = os.path.join(
-        "datasets/gas_data/",
-        'data/IGGIELGN_Productions.csv')
+    target_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            "data" /
+            "IGGIELGN_Productions.csv")
 
     NG_generators_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -100,7 +104,11 @@ def load_biogas_generators():
     # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
     url = "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/" + basename
-    target_file = "datasets/gas_data/" + basename
+    target_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            basename)
 
     urlretrieve(url, target_file)
 
