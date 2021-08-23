@@ -143,13 +143,16 @@ def select_target(carrier, scenario):
     )
 
 
-def filter_mastr_geometry(mastr):
+def filter_mastr_geometry(mastr, federal_state=None):
     """Filter data from MaStR by geometry
 
     Parameters
     ----------
     mastr : pandas.DataFrame
         All power plants listed in MaStR
+    federal_state : str or None
+        Name of federal state whoes power plants are returned.
+        If None, data for Germany is returned
 
     Returns
     -------
@@ -159,24 +162,35 @@ def filter_mastr_geometry(mastr):
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
-    # Drop entries without geometry for insert
-    mastr_loc = mastr[
-        mastr.Laengengrad.notnull() & mastr.Breitengrad.notnull()
-    ]
+    if type(mastr) == pd.core.frame.DataFrame:
+        # Drop entries without geometry for insert
+        mastr_loc = mastr[
+            mastr.Laengengrad.notnull() & mastr.Breitengrad.notnull()
+        ]
 
-    # Create geodataframe
-    mastr_loc = gpd.GeoDataFrame(
-        mastr_loc,
-        geometry=gpd.points_from_xy(
-            mastr_loc.Laengengrad, mastr_loc.Breitengrad, crs=4326
-        ),
-    )
+        # Create geodataframe
+        mastr_loc = gpd.GeoDataFrame(
+            mastr_loc,
+            geometry=gpd.points_from_xy(
+                mastr_loc.Laengengrad, mastr_loc.Breitengrad, crs=4326
+            ),
+        )
+    else:
+        mastr_loc = mastr.copy()
 
-    # Drop entries outside of germany
+    # Drop entries outside of germany or federal state
+    if not federal_state:
+        sql = f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}"
+    else:
+        sql = f"""
+        SELECT geometry as geom
+        FROM boundaries.vg250_lan_union
+        WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') = '{federal_state}'"""
+
     mastr_loc = (
         gpd.sjoin(
             gpd.read_postgis(
-                f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}",
+                sql,
                 con=db.engine(),
             ).to_crs(4326),
             mastr_loc,
@@ -377,32 +391,37 @@ def assign_voltage_level(mastr_loc, cfg):
     mastr_loc['Spannungsebene'] = np.nan
     mastr_loc['voltage_level'] = np.nan
 
-    location = pd.read_csv(cfg['sources']['mastr_location'], usecols=[
-            'LokationMastrNummer', 'Spannungsebene']).set_index(
-                'LokationMastrNummer')
+    if 'LokationMastrNummer' in mastr_loc.columns:
+        location = pd.read_csv(cfg['sources']['mastr_location'], usecols=[
+                'LokationMastrNummer', 'Spannungsebene']).set_index(
+                    'LokationMastrNummer')
 
-    location = location[~location.index.duplicated(keep='first')]
+        location = location[~location.index.duplicated(keep='first')]
 
-    mastr_loc.loc[mastr_loc[mastr_loc.LokationMastrNummer.isin(
-        location.index)].index,'Spannungsebene'] = location.Spannungsebene[
-        mastr_loc[mastr_loc.LokationMastrNummer.isin(
-        location.index)].LokationMastrNummer].values
+        mastr_loc.loc[mastr_loc[mastr_loc.LokationMastrNummer.isin(
+            location.index)].index,'Spannungsebene'] = location.Spannungsebene[
+            mastr_loc[mastr_loc.LokationMastrNummer.isin(
+            location.index)].LokationMastrNummer].values
 
-    # Transfer voltage_level as integer from Spanungsebene
-    map_voltage_levels=pd.Series(data={
-        'Höchstspannung': 1,
-        'Hoechstspannung': 1,
-        'Hochspannung': 3,
-        'UmspannungZurMittelspannung': 4,
-        'Mittelspannung': 5,
-        'UmspannungZurNiederspannung': 6,
-        'Niederspannung':7})
+        # Transfer voltage_level as integer from Spanungsebene
+        map_voltage_levels=pd.Series(data={
+            'Höchstspannung': 1,
+            'Hoechstspannung': 1,
+            'UmspannungZurHochspannung': 2,
+            'Hochspannung': 3,
+            'UmspannungZurMittelspannung': 4,
+            'Mittelspannung': 5,
+            'UmspannungZurNiederspannung': 6,
+            'Niederspannung':7})
 
-    mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
-              'voltage_level'] = map_voltage_levels[
         mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
-              'Spannungsebene'].values].values
+                  'voltage_level'] = map_voltage_levels[
+            mastr_loc.loc[mastr_loc[mastr_loc['Spannungsebene'].notnull()].index,
+                  'Spannungsebene'].values].values
 
+    else:
+        print("No information about MaStR location available. "
+              "All voltage levels are assigned using threshold values.")
 
     # If no voltage level is available from mastr, choose level according
     # to threshold values
@@ -469,10 +488,39 @@ def assign_bus_id(power_plants, cfg):
                          ], ehv_grid_districts).bus_id_right
 
     # Assert that all power plants have a bus_id
-    assert power_plants.bus_id.notnull().all(), """Some power plants are
-    not attached to a bus."""
+    assert power_plants.bus_id.notnull().all(), f"""Some power plants are
+    not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
 
     return power_plants
+
+def assign_gas_bus_id(power_plants):
+    """Assigns gas_bus_ids to power plants according to location
+
+    Parameters
+    ----------
+    power_plants : pandas.DataFrame
+        Power plants (including voltage level)
+
+    Returns
+    -------
+    power_plants : pandas.DataFrame
+        Power plants (including voltage level) and gas_bus_id
+
+    """
+
+    gas_voronoi = db.select_geodataframe(
+        """
+        SELECT * FROM grid.egon_gas_voronoi
+        """, epsg=4326)
+
+    res = gpd.sjoin(power_plants, gas_voronoi)
+    res['gas_bus_id'] = res['bus_id']
+
+    # Assert that all power plants have a gas_bus_id
+    assert res.gas_bus_id.notnull().all(), f"""Some power plants are
+    not attached to a gas bus: {res[res.gas_bus_id.isnull()]}"""
+
+    return res
 
 def insert_hydro_biomass():
     """Insert hydro and biomass power plants in database

@@ -6,6 +6,7 @@ from airflow.utils.dates import days_ago
 import importlib_resources as resources
 
 from egon.data.datasets import database
+from egon.data.datasets.chp import Chp
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
@@ -373,12 +374,24 @@ with airflow.DAG(
     cts_electricity_demand_annual >> components_dsm
     demand_curves_industry >> components_dsm
     osmtgmod_pypsa >> components_dsm
-    
+
+    # CHP locations
+    chp = Chp(
+        dependencies=[mv_grid_districts,
+                      mastr_data])
+
+    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
+    chp_heat_bus = tasks["chp.assign-heat-bus"]
+
+    nep_insert_data >> chp_locations_nep
+    create_gas_polygons >> chp_locations_nep
+    import_district_heating_areas >> chp_locations_nep
+
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[data_bundle, zensus_mv_grid_districts,
                       district_heating_areas, power_plants,
-                      zensus_mv_grid_districts])
+                      zensus_mv_grid_districts, chp])
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
