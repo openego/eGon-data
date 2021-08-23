@@ -6,7 +6,7 @@ import geopandas as gpd
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
 
-class dsm_Potential(Dataset):
+class dsm_Potential():
     
     def __init__(self, dependencies):
         super().__init__(
@@ -26,6 +26,8 @@ def dsm_cts_ind_processing():
         cts_share: float
             Share of cooling, ventilation and AC in CTS demand
         """
+
+        # TODO: Daten aus demand.egon_etrago_electricity_demand importieren?
 
         # import load data
 
@@ -133,7 +135,7 @@ def dsm_cts_ind_processing():
             # calculate timeseries per site 
             # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
         
-            # Select demands per industrial site including the subsector information
+            # select demands per industrial site including the subsector information
             demands_ind_sites = db.select_dataframe(
                 f"""SELECT industrial_sites_id, wz, demand
                     FROM demand.egon_demandregio_sites_ind_electricity
@@ -142,7 +144,7 @@ def dsm_cts_ind_processing():
                     """
             ).set_index(["industrial_sites_id"])
         
-            # Select industrial sites as demand_areas from database
+            # select industrial sites as demand_areas from database
             demand_area = db.select_geodataframe(
                 f"""SELECT id, geom FROM
                     demand.egon_industrial_sites""",
@@ -151,11 +153,11 @@ def dsm_cts_ind_processing():
                 epsg=3035,
             )
         
-            # Replace entries to bring it in line with demandregio's subsector definitions
+            # replace entries to bring it in line with demandregio's subsector definitions
             demands_ind_sites.replace(1718, 17, inplace=True)
             share_wz_sites = demands_ind_sites.copy()
         
-            # Create additional df on wz_share per industrial site, which is always set to one
+            # create additional df on wz_share per industrial site, which is always set to one
             # as the industrial demand per site is subsector specific
             share_wz_sites.demand = 1
             share_wz_sites.reset_index(inplace=True)
@@ -171,41 +173,52 @@ def dsm_cts_ind_processing():
                     .set_index("industrial_sites_id")
                     .demand
                 )
-        
+            
+            # calculate load curves
             load_curves = calc_load_curve(share_transpose, demands_ind_sites["demand"])  
             
             # identify bus per industrial site
-            load_curves = identify_bus(load_curves, demand_area)
+            curves_bus = identify_bus(load_curves, demand_area)
+            curves_bus.index = curves_bus['id'].astype(int)
             
             # initialize dataframe to be returned
-            ts = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
-            
-            # timeseries as a list
-            
-            
-            # Initalize pandas.DataFrame for pf table load timeseries
-            ts = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
-        
-            # Insert data for pf load timeseries table
-            ts.p_set = curves_bus.values.tolist()
-            
-            # ts: scenario_name, bus, p_set, geom
+            ts = gpd.GeoDataFrame(index=curves_bus['id'].astype(int), data=demand_area['geom'])
+            ts['subst_id'] = curves_bus['subst_id'].astype(int)
+            curves_bus.drop({'id','subst_id'},axis=1,inplace=True)
+            ts['scenario_name'] = scenario
+            ts['p_set'] = curves_bus.values.tolist()            
             
             return ts
         
-        def relate_to_Schmidt_sites(): 
+        def relate_to_Schmidt_sites(dsm): 
             
-            # ts: scenario_name, bus, p_set, anwendung
+            # import industrial sites by Schmidt
+            schmidt = db.select_geodataframe(
+                f"""SELECT application, geom FROM
+                    demand.egon_schmidt_industrial_sites""",
+                geom_col="geom",
+                epsg=3035,
+            )
             
-            return 
+            dsm.set_geometry('geom',inplace=True)
+            dsm.to_crs(3035)
+            
+            dsm = gpd.overlay(dsm, schmidt)
+            
+            dsm.rename(columns={"scenario_name": "scn_name", "subst_id": "bus"})
+            
+            return dsm
         
         dsm_2035 = calc_ind_site_timeseries('eGon2035')
+        dsm_2035.reset_index(inplace=True)
         
         dsm_100 = calc_ind_site_timeseries('eGon100RE')
+        dsm_100.reset_index(inplace=True)
+        dsm_100.index=range(len(dsm_2035),(len(dsm_2035)+len((dsm_100))))
         
-        # dsm: scenario name, bus, p_set, geom
+        dsm = dsm_2035.append(dsm_100)
         
-        dsm = 
+        dsm = relate_to_Schmidt_sites(dsm)
         
         return dsm
 
@@ -629,7 +642,7 @@ def dsm_cts_ind_processing():
         
         # industry sites
         
-        # TODO: cooling & ventialation für sites 
+        # TODO: cooling & ventilation für sites 
         
         dsm = ind_sites_data_import(con)
         
@@ -637,9 +650,8 @@ def dsm_cts_ind_processing():
         print('industry sites: paper')
         print(' ')
         
-        # TODO: Auswahl der Papieranwendungen
-        
-        # dsm_paper = dsm[dsm['application']=]
+        dsm_paper = gpd.GeoDataFrame(dsm[dsm['application'].isin(['Graphic Paper', 'Packing Paper and Board',
+        'Hygiene Paper', 'Technical/Special Paper and Board'])])
         
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.15, s_util=0.86, s_inc=0.95, s_dec=0, delta_t=3, dsm=dsm_paper
@@ -655,7 +667,7 @@ def dsm_cts_ind_processing():
         print('industry sites: recycled paper')
         print(' ')
         
-        # dsm_recycled_paper = dsm[dsm['application']=]
+        dsm_recycled_paper = gpd.GeoDataFrame(dsm[dsm['application']=='Recycled Paper'])
         
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.7, s_util=0.85, s_inc=0.95, s_dec=0, delta_t=3, dsm=dsm_recycled_paper
@@ -671,7 +683,7 @@ def dsm_cts_ind_processing():
         print('industry sites: pulp')
         print(' ')
         
-        # dsm_pulp = dsm[dsm['application']=]
+        dsm_pulp = gpd.GeoDataFrame(dsm[dsm['application']=='Mechanical Pulp'])
 
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.7, s_util=0.83, s_inc=0.95, s_dec=0, delta_t=2, dsm=dsm_pulp
@@ -689,7 +701,7 @@ def dsm_cts_ind_processing():
         print('industry sites: cement')
         print(' ')
         
-        dsm_cement = dsm[dsm['application']='Cement Mill']
+        dsm_cement = gpd.GeoDataFrame(dsm[dsm['application']=='Cement Mill'])
 
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.61, s_util=0.65, s_inc=0.95, s_dec=0, delta_t=4, dsm=dsm_cement
@@ -702,5 +714,7 @@ def dsm_cts_ind_processing():
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
 
     # TODO: Parameter überprüfen
+    
+    # TODO: Validierung / Überprüfung der Ergebnisse Schritt für Schritt
 
     dsm_cts_ind()
