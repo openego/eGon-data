@@ -46,7 +46,7 @@ import egon.data.processing.substation as substation
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
-import egon.data.processing.DSM_cts_ind as dsm
+from egon.data.processing.DSM_cts_ind import dsm_Potential
 
 
 from egon.data import db
@@ -365,15 +365,6 @@ with airflow.DAG(
     elec_household_demands_zensus >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
-    
-    # DSM 
-    components_dsm =  PythonOperator(
-        task_id="components_dsm",
-        python_callable=dsm.dsm_cts_ind_processing,
-    )
-    cts_electricity_demand_annual >> components_dsm
-    demand_curves_industry >> components_dsm
-    osmtgmod_pypsa >> components_dsm
 
     # CHP locations
     chp = Chp(
@@ -415,6 +406,12 @@ with airflow.DAG(
             landuse_extraction,
         ]
     )
+    
+    # DSM 
+    components_dsm =  dsm_Potential(
+        dependencies = [cts_electricity_demand_annual, 
+                        demand_curves_industry,
+                        osmtgmod_pypsa])
 
     # Electrical loads to eTraGo
 
