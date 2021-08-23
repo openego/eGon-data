@@ -188,7 +188,7 @@ def map_zensus_vg250():
     join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op="intersects")
 
     # Deal with cells that don't interect with boundaries (e.g. at borders)
-    missing_cells = gdf[(~gdf.id.isin(join.id)) & (gdf.population > 0)]
+    missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
 
     # start with buffer
     buffer = 0
