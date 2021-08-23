@@ -37,23 +37,6 @@ def cascade_per_technology(
 
     tech = technologies[technologies.priority==technologies.priority.max()]
 
-    if tech.index == 'CHP':
-
-        gdf_chp = db.select_geodataframe(
-            f"""SELECT id, geom, th_capacity as capacity
-            FROM {sources['power_plants']['schema']}.
-            {sources['power_plants']['table']}
-            WHERE chp = True
-            AND el_capacity < {max_size_individual_chp}
-            """)
-
-        join = gpd.sjoin(gdf_chp.to_crs(3035), heat_per_mv,
-                         rsuffix='mv')
-
-        append_df = pd.DataFrame(
-            join.groupby('index_mv').capacity.sum()).reset_index().rename(
-                {'index_mv': 'mv_grid_id'}, axis=1)
-
     # Distribute heat pumps linear to remaining demand.
     if tech.index == 'heat_pump':
 
@@ -175,11 +158,11 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     # http://www.wbzu.de/seminare/infopool/infopool-bhkw
     # TODO: Add gas boilers and solar themal (eGon100RE)
     technologies = pd.DataFrame(
-        index = ['CHP', 'heat_pump'],
+        index = ['heat_pump'],
         columns = ['estimated_flh', 'priority'],
         data = {
-            'estimated_flh': [4000, 4000],
-            'priority': [3, 1]})
+            'estimated_flh': [4000],
+            'priority': [1]})
 
     # In the beginning, the remaining demand equals demand
     heat_per_mv['remaining_demand'] = heat_per_mv['demand']
