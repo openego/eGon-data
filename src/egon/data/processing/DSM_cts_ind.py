@@ -14,6 +14,14 @@ class dsm_Potential():
             version='0.0.0',
             dependencies = dependencies,
             tasks = (dsm_cts_ind_processing))
+        
+# TODO: Klassenerstellung überprüfen
+
+# TODO: hartkodierte Tabellenbezüge abändern (siehe datasets.yml)
+    
+# TODO: Parameter überprüfen
+    
+# TODO: Validierung / Überprüfung der Ergebnisse Schritt für Schritt
 
 def dsm_cts_ind_processing():
     def cts_data_import(con,cts_cool_vent_ac_share):
@@ -109,17 +117,20 @@ def dsm_cts_ind_processing():
 
         return dsm
     
-    def ind_sites_data_import(con):
-
+    def ind_sites_vent_data_import(con,ind_vent_share, wz):
+        
         """
-        Import industry sites data necessary to identify DSM-potential.
+        Import industry sites necessary to identify DSM-potential.
             ----------
         con :
             Connection to database
+        ind_vent_share: float
+            Share of considered application in industry demand
+        wz: int
+            Wirtschaftszweig to be considered within industry sites
         """
-
-        # TODO: nutzbar für cooling und ventilation für sites?
-        '''# import load data
+        
+        # import load data
 
         sql = (
             "SELECT scn_name, bus, p_set, wz FROM demand.egon_sites_ind_load_curves"
@@ -128,7 +139,27 @@ def dsm_cts_ind_processing():
         
         # select load for considered applications
         
-        dsm = dsm[dsm['wz']==wz]'''
+        dsm = dsm[dsm['wz']==wz]
+        
+        # calculate share of timeseries
+        timeseries = dsm["p_set"].copy()
+        for index, liste in timeseries.iteritems():
+            share = []
+            for item in liste:
+                share.append(float(item) * ind_vent_share)
+            timeseries.loc[index] = share
+        dsm["p_set"] = timeseries.copy()
+        
+        return dsm
+    
+    def ind_sites_data_import(con):
+
+        """
+        Import industry sites data necessary to identify DSM-potential.
+            ----------
+        con :
+            Connection to database
+        """
         
         def calc_ind_site_timeseries(scenario):
         
@@ -584,7 +615,8 @@ def dsm_cts_ind_processing():
     def dsm_cts_ind(
         con=db.engine(),
         cts_cool_vent_ac_share=0.22,
-        ind_cool_vent_share=0.039
+        ind_cool_vent_share=0.039,
+        ind_vent_share=0.017
     ):
 
         """
@@ -602,10 +634,10 @@ def dsm_cts_ind_processing():
 
         """
 
-        # CTS: cooling, ventilation and air conditioning
+        # CTS per osm-area: cooling, ventilation and air conditioning
         
         print(' ')
-        print('CTS: cooling, ventilation and air conditioning')
+        print('CTS per osm-area: cooling, ventilation and air conditioning')
         print(' ')
 
         dsm = cts_data_import(con,cts_cool_vent_ac_share)
@@ -631,8 +663,6 @@ def dsm_cts_ind_processing():
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.67, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
         )
-        
-        # TODO: Überprüfung der Parameter nach Zusammenführung cool & vent
 
         dsm_buses, dsm_links, dsm_stores = create_dsm_components(
             con, p_max, p_min, e_max, e_min, dsm
@@ -642,7 +672,25 @@ def dsm_cts_ind_processing():
         
         # industry sites
         
-        # TODO: cooling & ventilation für sites 
+        # industry sites: ventilation in WZ23
+        
+        print(' ')
+        print('industry sites: ventilation in WZ23')
+        print(' ')
+        
+        dsm = ind_sites_vent_data_import(con,ind_vent_share, wz=23)
+
+        p_max, p_min, e_max, e_min = calculate_potentials(
+            s_flex=0.5, s_util=0.8, s_inc=1, s_dec=0.5, delta_t=1, dsm=dsm
+        )
+
+        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
+            con, p_max, p_min, e_max, e_min, dsm
+        )
+
+        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")        
+        
+        # industry sites: different applications
         
         dsm = ind_sites_data_import(con)
         
@@ -712,9 +760,5 @@ def dsm_cts_ind_processing():
         )
 
         data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites")
-
-    # TODO: Parameter überprüfen
-    
-    # TODO: Validierung / Überprüfung der Ergebnisse Schritt für Schritt
 
     dsm_cts_ind()
