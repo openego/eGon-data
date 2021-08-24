@@ -47,11 +47,17 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 
+<<<<<<< HEAD
 
 # import egon.data.processing.zensus as process_zs
 # import egon.data.processing.zensus_grid_districts as zensus_grid_districts
 # from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 
+=======
+import egon.data.processing.zensus as process_zs
+import egon.data.processing.zensus_grid_districts as zensus_grid_districts
+from egon.data.processing.heat_demand_timeseries.HTS import HeatTimeSeries
+>>>>>>> parent of c717512... directory changed in pipeline
 
 
 from egon.data import db
