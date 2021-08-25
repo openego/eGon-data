@@ -121,7 +121,7 @@ def add_metadata():
     for table in osm_config["processed"]["tables"]:
         table_suffix = table.split("_")[1]
         meta = {
-            "name": ".".join([osm_config["processed"]["tables"], table]),
+            "name": table,
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
             "description": (
                 "OpenStreetMap is a free, editable map of the"
