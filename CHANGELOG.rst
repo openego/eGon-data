@@ -128,6 +128,8 @@ Added
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
 * Merge electrical loads per bus and export to etrago tables
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
+* Integrate existing CHP and extdended CHP > 10MW_el
+  `#266 <https://github.com/openego/eGon-data/issues/266>`_
 
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
@@ -238,4 +240,7 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/387>`_
 * Fix unnecessary columns in normal mode for inserting the gas production
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
+* Add xlrd and openpyxl to installation setup
+  `#400 <https://github.com/openego/eGon-data/issues/400>`_
+
 

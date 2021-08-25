@@ -468,9 +468,9 @@ heat_supply:
     district_heating_areas:
       schema: 'demand'
       table: 'egon_district_heating_areas'
-    power_plants:
+    chp:
       schema: 'supply'
-      table: 'egon_power_plants'
+      table: 'egon_chp'
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
@@ -489,6 +489,9 @@ heat_supply:
     map_dh:
       schema: 'demand'
       table: 'egon_map_zensus_district_heating_areas'
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
   targets:
     district_heating_supply:
       schema: 'supply'
@@ -649,4 +652,38 @@ etrago_electricity:
       schema: 'grid'
       table: 'egon_etrago_load_timeseries'
 
+chp_location:
+  sources:
+    list_conv_pp:
+      table: 'nep_2021_conv_powerplants'
+      schema: 'supply'
+    mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
+    mastr_location: 'location_elec_generation_raw.csv'
+    mv_grid_districts: 'grid.mv_grid_districts'
+    ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
+    osm_landuse:
+      table: 'osm_landuse'
+      schema: 'openstreetmap'
+    osm_polygon:
+      table: 'osm_polygon'
+      schema: 'openstreetmap'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
+    industrial_demand_osm:
+      schema: 'demand'
+      table: 'egon_demandregio_osm_ind_electricity'
+    vg250_lan:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+  targets:
+    chp_table:
+      table: 'egon_chp'
+      schema: 'supply'
+    mastr_conventional_without_chp:
+      table: 'egon_mastr_conventional_without_chp'
+      schema: 'supply'
 
