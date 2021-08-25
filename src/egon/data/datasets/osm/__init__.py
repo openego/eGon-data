@@ -154,7 +154,7 @@ def add_metadata():
                     "title": ("OpenStreetMap Data Extracts (Geofabrik)"),
                     "description": (
                         "Full data extract of OpenStreetMap data for defined "
-                        "spatial extent at 'referenceDate'"
+                        "spatial extent at ''referenceDate''"
                     ),
                     "path": f"{osm_url}",
                     "licenses": licenses,
