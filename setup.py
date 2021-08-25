@@ -83,19 +83,23 @@ setup(
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         "apache-airflow>=1.10.14,<2.0",
+        "atlite==0.2.5",
+        "cdsapi",
         "click",
-        "disaggregator"
-        "@git+https://github.com/openego/disaggregator.git"
-        "@features/pip_install",
-        "geopandas",
+        "geopandas>=0.9.0",
         "importlib-resources",
         "loguru",
+        "matplotlib",
+        "netcdf4",
         "oedialect==0.0.8",
+        "pandas>1.2.0,<1.3.0",
         "psycopg2",
         "pyaml",
         "rasterio",
         "rtree",
         "sqlalchemy<1.4",
+        "xarray",
+        "rioxarray",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
