@@ -1476,5 +1476,3 @@ def mv_grid_district_HH_electricity_load(
         chunksize=10000,
         index=False,
     )
-
-    return mvgd_profiles
