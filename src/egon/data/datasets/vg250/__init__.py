@@ -10,6 +10,7 @@ isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from urllib.request import urlretrieve
+import time
 import datetime
 import codecs
 import json
