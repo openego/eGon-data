@@ -126,8 +126,8 @@ Added
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
 * Insert industial gas demand
   `#321 <https://github.com/openego/eGon-data/issues/358>`_
-
-.. _PR #159: https://github.com/openego/eGon-data/pull/159
+* Integrate existing CHP and extdended CHP > 10MW_el
+  `#266 <https://github.com/openego/eGon-data/issues/266>`_
 
 
 Changed
@@ -189,6 +189,8 @@ Changed
   `#384 <https://github.com/openego/eGon-data/issues/384>`_
 * Remove country column from scenario capacities table
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
+* Update version of zenodo download
+  `#397 <https://github.com/openego/eGon-data/issues/397>`_
 
 Bug fixes
 ---------
@@ -221,6 +223,8 @@ Bug fixes
   `#258 <https://github.com/openego/eGon-data/issues/258>`_
 * Fix conflicting docker containers by setting a project name
   `#289 <https://github.com/openego/eGon-data/issues/289>`_
+* Update task insert-nep-data for pandas version 1.3.0
+  `#322 <https://github.com/openego/eGon-data/issues/322>`_
 * Fix versioning conflict with mv_grid_districts
   `#340 <https://github.com/openego/eGon-data/issues/340>`_
 * Set current working directory as java's temp dir when executing osmosis
@@ -231,4 +235,7 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/387>`_
 * Fix unnecessary columns in normal mode for inserting the gas production
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
+* Add xlrd and openpyxl to installation setup
+  `#400 <https://github.com/openego/eGon-data/issues/400>`_
+
 
