@@ -10,12 +10,6 @@ from egon.data import logger
 import egon
 
 
-# Random seed to be used on init in any script that uses random
-# to ensure reproducibility. Take special care in multiprocessing
-# tasks! (cf. #351)
-RANDOM_SEED = 42
-
-
 def paths(pid=None):
     """Obtain configuration file paths.
 
