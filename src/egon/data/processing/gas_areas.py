@@ -20,7 +20,7 @@ class EgonGasVoronoiTmp(Base):
     bus_id = Column(Integer)
     geom = Column(Geometry('Polygon', 4326))
 
-    
+
 def create_voronoi():
     '''
     Creates voronoi polygons for gas buses
@@ -30,46 +30,46 @@ def create_voronoi():
     None.
 
     '''
-    
+
     db.execute_sql(
     """
     DROP TABLE IF EXISTS grid.egon_gas_voronoi_tmp CASCADE;
-    DROP SEQUENCE IF EXISTS grid.egon_gas_voronoi_tmp_id_seq CASCADE;       
+    DROP SEQUENCE IF EXISTS grid.egon_gas_voronoi_tmp_id_seq CASCADE;
     """)
-    
+
     engine = db.engine()
     EgonGasVoronoiTmp.__table__.create(bind=engine, checkfirst=True)
-    
+
     db.execute_sql(
     """
-    DROP TABLE IF EXISTS grid.egon_gas_voronoi CASCADE;    
+    DROP TABLE IF EXISTS grid.egon_gas_voronoi CASCADE;
     CREATE TABLE grid.egon_gas_voronoi (
         id Integer,
         bus_id Integer,
         geom Geometry('Multipolygon', 4326)
         );
-    """)    
-    
+    """)
+
     db.execute_sql(
         """
         DROP TABLE IF EXISTS grid.egon_gas_bus CASCADE;
-                
+
         SELECT bus_id, bus_id as id, geom as point
         INTO grid.egon_gas_bus
-        FROM grid.egon_etrago_bus 
+        FROM grid.egon_etrago_bus
         WHERE carrier = 'gas';
-        
+
         """
                     )
-                    
+
     schema = 'grid'
     substation_table = 'egon_gas_bus'
     voronoi_table = 'egon_gas_voronoi_tmp'
     voronoi_table_f = 'egon_gas_voronoi'
     view = 'grid.egon_voronoi_no_borders'
     boundary = 'boundaries.vg250_sta_union'
-    
-    
+
+
     # Create view for Voronoi polygons without taking borders into account
     db.execute_sql(
         f"DROP VIEW IF EXISTS {schema}.egon_voronoi_no_borders CASCADE;"
@@ -78,7 +78,11 @@ def create_voronoi():
     db.execute_sql(
         f"""
         CREATE VIEW {view} AS
-           SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom
+           SELECT (ST_Dump(ST_VoronoiPolygons(
+               ST_collect(a.point),
+               0.0,
+               (SELECT ST_Transform(geometry, 4326) FROM {boundary})
+               ))).geom
            FROM {schema}.{substation_table} a;
         """
         )
@@ -114,7 +118,7 @@ def create_voronoi():
             ON          {schema}.{voronoi_table} USING gist (geom);
         """
         )
-        
+
     # Clip Voronoi with boundaries
     db.execute_sql(
         f"""
