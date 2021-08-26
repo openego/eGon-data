@@ -1,3 +1,4 @@
+import egon.data.config
 from egon.data import db
 import psycopg2
 import numpy as np
@@ -5,8 +6,9 @@ import pandas as pd
 import geopandas as gpd
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
+from egon.data.datasets import Dataset
 
-class dsm_Potential():
+class dsm_Potential(Dataset):
     
     def __init__(self, dependencies):
         super().__init__(
@@ -14,10 +16,6 @@ class dsm_Potential():
             version='0.0.0',
             dependencies = dependencies,
             tasks = (dsm_cts_ind_processing))
-        
-# TODO: Klassenerstellung überprüfen
-
-# TODO: hartkodierte Tabellenbezüge abändern (siehe datasets.yml)
     
 # TODO: Parameter überprüfen
     
@@ -35,43 +33,22 @@ def dsm_cts_ind_processing():
             Share of cooling, ventilation and AC in CTS demand
         """
 
-        # TODO: Daten aus demand.egon_etrago_electricity_demand importieren?
-
         # import load data
+        
+        sources = (egon.data.config.datasets()
+               ['DSM_CTS_industry']['sources']['cts_loadcurves'])
 
-        sql = (
-            "SELECT scn_name, load_id, bus, carrier FROM grid.egon_etrago_load" 
-        )
-        l = pd.read_sql_query(sql, con)
-
-        sql = "SELECT scn_name, load_id, p_set FROM grid.egon_etrago_load_timeseries" 
-        t = pd.read_sql_query(sql, con)
-
-        # select CTS load
-
-        l = l[l["carrier"] == "AC-cts"]
-        load_ids = list(l["load_id"])
-        idx = pd.Series(t.index)
-        for index, row in t.iterrows():
-            if row["load_id"] in load_ids:
-                idx.drop(index, inplace=True)
-        t.drop(index=idx, axis=1, inplace=True)
+        ts = db.select_dataframe(
+            f"""SELECT subst_id, scn_name, p_set FROM
+            {sources['schema']}.{sources['table']}""")
 
         # get relevant data
 
-        dsm = pd.DataFrame(index=t.index)
+        dsm = pd.DataFrame(index=ts.index)
 
-        dsm["load_id"] = t["load_id"].copy()
-        dsm["scn_name"] = t["scn_name"].copy()
-        dsm["load_p_set"] = t["p_set"].copy()
-        # q_set is empty
-
-        dsm["bus"] = pd.Series(dtype=int)
-        for index, row in dsm.iterrows():
-            load_id = row["load_id"]
-            scn_name = row["scn_name"]
-            x = l[l["load_id"] == load_id]
-            dsm.loc[index, "bus"] = x[x["scn_name"] == scn_name]["bus"].iloc[0]
+        dsm["bus"] = ts["subst_id"].copy()
+        dsm["scn_name"] = ts["scn_name"].copy()
+        dsm["p_set"] = ts["p_set"].copy()
             
         # timeseries for air conditioning, cooling and ventilation out of CTS-data
 
@@ -98,11 +75,13 @@ def dsm_cts_ind_processing():
         """
 
         # import load data
+        
+        sources = (egon.data.config.datasets()
+               ['DSM_CTS_industry']['sources']['ind_osm_loadcurves'])
 
-        sql = (
-            "SELECT scn_name, bus, p_set FROM demand.egon_osm_ind_load_curves"
-        )
-        dsm = pd.read_sql_query(sql, con)
+        dsm = db.select_dataframe(
+            f"""SELECT bus, scn_name, p_set FROM
+            {sources['schema']}.{sources['table']}""")
         
         # timeseries for cooling or ventilation out of industry-data
 
@@ -131,11 +110,13 @@ def dsm_cts_ind_processing():
         """
         
         # import load data
+        
+        sources = (egon.data.config.datasets()
+               ['DSM_CTS_industry']['sources']['ind_sites_loadcurves'])
 
-        sql = (
-            "SELECT scn_name, bus, p_set, wz FROM demand.egon_sites_ind_load_curves"
-        )
-        dsm = pd.read_sql_query(sql, con)
+        dsm = db.select_dataframe(
+            f"""SELECT bus, scn_name, p_set FROM
+            {sources['schema']}.{sources['table']}""")
         
         # select load for considered applications
         
@@ -165,20 +146,28 @@ def dsm_cts_ind_processing():
         
             # calculate timeseries per site 
             # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
-        
+            
             # select demands per industrial site including the subsector information
+            
+            source1 = (egon.data.config.datasets()
+               ['DSM_CTS_industry']['sources']['demandregio_ind_sites'])
+        
             demands_ind_sites = db.select_dataframe(
                 f"""SELECT industrial_sites_id, wz, demand
-                    FROM demand.egon_demandregio_sites_ind_electricity
+                    FROM {source1['schema']}.{source1['table']}
                     WHERE scenario = '{scenario}'
                     AND demand > 0
                     """
             ).set_index(["industrial_sites_id"])
-        
+            
             # select industrial sites as demand_areas from database
+            
+            source2 = (egon.data.config.datasets()
+               ['DSM_CTS_industry']['sources']['ind_sites'])
+        
             demand_area = db.select_geodataframe(
                 f"""SELECT id, geom FROM
-                    demand.egon_industrial_sites""",
+                    {source2['schema']}.{source2['table']}""",
                 index_col="id",
                 geom_col="geom",
                 epsg=3035,
@@ -224,9 +213,13 @@ def dsm_cts_ind_processing():
         def relate_to_Schmidt_sites(dsm): 
             
             # import industrial sites by Schmidt
+            
+            source = (egon.data.config.datasets()
+               ['DSM_CTS_industry']['sources']['ind_sites_schmidt'])
+        
             schmidt = db.select_geodataframe(
                 f"""SELECT application, geom FROM
-                    demand.egon_schmidt_industrial_sites""",
+                    {source['schema']}.{source['table']}""",
                 geom_col="geom",
                 epsg=3035,
             )
@@ -517,6 +510,9 @@ def dsm_cts_ind_processing():
             Remark to be filled in column 'carrier' identifying DSM-potential
         """
 
+        targets = (egon.data.config.datasets()
+              ['DSM_CTS_industry']['targets'])
+
         # dsm_buses
 
         insert_buses = gpd.GeoDataFrame(index=dsm_buses.index)
@@ -530,11 +526,11 @@ def dsm_cts_ind_processing():
         insert_buses["geom"] = dsm_buses["geom"]
         insert_buses = insert_buses.set_geometry("geom").set_crs(4326)
 
-        # insert into database
+        # insert into database  
         insert_buses.to_postgis(
-            "egon_etrago_bus", 
+            targets['bus']['table'], 
             con=db.engine(),
-            schema="grid",
+            schema=targets['bus']['schema'],
             if_exists="append",
             index=False,
         )
@@ -550,11 +546,11 @@ def dsm_cts_ind_processing():
         insert_links["carrier"] = carrier
         insert_links["p_nom"] = dsm_links["p_nom"]
 
-        # insert into database
+        # insert into database        
         insert_links.to_sql(
-            "egon_etrago_link", 
+            targets['link']['table'], 
             con=db.engine(),
-            schema="grid",
+            schema=targets['link']['schema'],
             if_exists="append",
             index=False,
         )
@@ -569,9 +565,9 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_links_timeseries.to_sql(
-            "egon_etrago_link_timeseries", 
+            targets['link_timeseries']['table'], 
             con=db.engine(),
-            schema="grid",
+            schema=targets['link_timeseries']['schema'],
             if_exists="append",
             index=False,
         )
@@ -588,9 +584,9 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_stores.to_sql(
-            "egon_etrago_store", 
+            targets['store']['table'], 
             con=db.engine(),
-            schema="grid",
+            schema=targets['store']['schema'],
             if_exists="append",
             index=False,
         )
@@ -605,9 +601,9 @@ def dsm_cts_ind_processing():
 
         # insert into database
         insert_stores_timeseries.to_sql(
-            "egon_etrago_store_timeseries", 
+            targets['store_timeseries']['table'], 
             con=db.engine(),
-            schema="grid",
+            schema=targets['store_timeseries']['schema'],
             if_exists="append",
             index=False,
         )
