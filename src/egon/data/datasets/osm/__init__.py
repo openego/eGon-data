@@ -13,6 +13,7 @@ from urllib.request import urlretrieve
 import json
 import os
 import time
+from pathlib import Path
 
 from egon.data import db
 from egon.data.config import settings
@@ -26,14 +27,19 @@ def download():
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
+    download_directory = Path(".") / "openstreetmap"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
+
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         source_url = osm_config["source"]["url"]
-        target_path = osm_config["target"]["path"]
+        target_filename = osm_config["target"]["file"]
     else:
         source_url = osm_config["source"]["url_testmode"]
-        target_path = osm_config["target"]["path_testmode"]
+        target_filename = osm_config["target"]["file_testmode"]
 
-    target_file = os.path.join(os.path.dirname(__file__), target_path)
+    target_file = (download_directory / target_filename)
 
     if not os.path.isfile(target_file):
         urlretrieve(source_url, target_file)
@@ -58,11 +64,11 @@ def to_postgres(num_processes=4, cache_size=4096):
     osm_config = data_config["openstreetmap"]["original_data"]
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        target_path = osm_config["target"]["path"]
+        input_filename = osm_config["target"]["file"]
     else:
-        target_path = osm_config["target"]["path_testmode"]
+        input_filename = osm_config["target"]["file_testmode"]
 
-    input_file = os.path.join(os.path.dirname(__file__), target_path)
+    input_file = (Path(".") / "openstreetmap" / input_filename)
 
     # Prepare osm2pgsql command
     cmd = [
@@ -96,11 +102,12 @@ def add_metadata():
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         osm_url = osm_config["original_data"]["source"]["url"]
-        target_path = osm_config["original_data"]["target"]["path"]
+        input_filename = osm_config["original_data"]["target"]["file"]
     else:
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
-        target_path = osm_config["original_data"]["target"]["path_testmode"]
-    spatial_and_date = os.path.basename(target_path).split("-")
+        input_filename = osm_config["original_data"]["target"]["file_testmode"]
+
+    spatial_and_date = os.path.basename(input_filename).split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"

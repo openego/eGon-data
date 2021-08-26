@@ -6,8 +6,8 @@ openstreetmap:
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      path: "germany-210101.osm.pbf"
-      path_testmode: "schleswig-holstein-210101.osm.pbf"
+      file: "germany-210101.osm.pbf"
+      file_testmode: "schleswig-holstein-210101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
