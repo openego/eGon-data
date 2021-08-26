@@ -171,17 +171,22 @@ def cascade_per_technology(
 
         # Select chp plants from database
         gdf_chp = db.select_geodataframe(
-            f"""SELECT id, geom, th_capacity as capacity
-            FROM {sources['power_plants']['schema']}.
-            {sources['power_plants']['table']}
-            WHERE chp = True""")
+            f"""SELECT a.geom, th_capacity as capacity, c.area_id
+            FROM {sources['chp']['schema']}.
+            {sources['chp']['table']} a,
+            {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']} c
+            WHERE a.district_heating = True
+            AND a.district_heating_area_id = c.area_id
+            AND a.scenario = 'eGon2035'
+            AND c.scenario = 'eGon2035'
+            """)
 
-        # Choose chp plants that intersect with district heating areas
-        join = gpd.sjoin(gdf_chp.to_crs(4326), areas, rsuffix='area')
+        gdf_chp = gdf_chp[gdf_chp.area_id.isin(areas.index)]
 
         append_df = pd.DataFrame(
-            join.groupby('index_area').capacity.sum()).reset_index().rename(
-                {'index_area': 'district_heating_id'}, axis=1)
+            gdf_chp.groupby('area_id').capacity.sum()).reset_index().rename(
+                {'area_id': 'district_heating_id'}, axis=1)
 
     # Distribute solar thermal and heatpumps linear to remaining demand.
     # Geothermal plants are distributed to areas with geothermal potential.
