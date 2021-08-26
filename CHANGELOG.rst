@@ -237,5 +237,5 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
 * Add xlrd and openpyxl to installation setup
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
-
-
+* Store files of OSM and VG250 in working dir
+  `#341 <https://github.com/openego/eGon-data/issues/341>`_
