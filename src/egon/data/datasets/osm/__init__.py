@@ -267,7 +267,7 @@ class OpenStreetMap(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OpenStreetMap",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(download, to_postgres, modify_tables, add_metadata),
         )

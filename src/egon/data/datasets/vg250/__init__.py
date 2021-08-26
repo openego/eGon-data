@@ -300,7 +300,7 @@ class Vg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="VG250",
-            version=self.filename + "-0.0.1",
+            version=self.filename + "-0.0.2",
             dependencies=dependencies,
             tasks=(
                 download_files,
