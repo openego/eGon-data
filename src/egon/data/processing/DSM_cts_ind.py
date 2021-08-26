@@ -16,10 +16,6 @@ class dsm_Potential(Dataset):
             version='0.0.0',
             dependencies = dependencies,
             tasks = (dsm_cts_ind_processing))
-    
-# TODO: Parameter überprüfen
-    
-# TODO: Validierung / Überprüfung der Ergebnisse Schritt für Schritt
 
 def dsm_cts_ind_processing():
     def cts_data_import(con,cts_cool_vent_ac_share):
@@ -53,7 +49,7 @@ def dsm_cts_ind_processing():
         # timeseries for air conditioning, cooling and ventilation out of CTS-data
 
         # calculate share of timeseries
-        timeseries = dsm["load_p_set"].copy()
+        timeseries = dsm["p_set"].copy()
         for index, liste in timeseries.iteritems():
             share = []
             for item in liste:
@@ -115,7 +111,7 @@ def dsm_cts_ind_processing():
                ['DSM_CTS_industry']['sources']['ind_sites_loadcurves'])
 
         dsm = db.select_dataframe(
-            f"""SELECT bus, scn_name, p_set FROM
+            f"""SELECT bus, scn_name, p_set, wz FROM
             {sources['schema']}.{sources['table']}""")
         
         # select load for considered applications
@@ -229,7 +225,7 @@ def dsm_cts_ind_processing():
             
             dsm = gpd.overlay(dsm, schmidt)
             
-            dsm.rename(columns={"scenario_name": "scn_name", "subst_id": "bus"})
+            dsm.rename(columns={"scenario_name": "scn_name", "subst_id": "bus"},inplace=True)
             
             return dsm
         
@@ -388,7 +384,6 @@ def dsm_cts_ind_processing():
             e_min.loc[index] = new
 
         # add DSM-buses to "original" buses
-
         dsm_buses = gpd.GeoDataFrame(index=dsm.index)
         dsm_buses["original_bus"] = dsm["bus"].copy()
         dsm_buses["scn_name"] = dsm["scn_name"].copy()
@@ -516,7 +511,6 @@ def dsm_cts_ind_processing():
         # dsm_buses
 
         insert_buses = gpd.GeoDataFrame(index=dsm_buses.index)
-        insert_buses["version"] = "0.0.0"
         insert_buses["scn_name"] = dsm_buses["scn_name"]
         insert_buses["bus_id"] = dsm_buses["bus_id"]
         insert_buses["v_nom"] = dsm_buses["v_nom"]
@@ -538,7 +532,6 @@ def dsm_cts_ind_processing():
         # dsm_links
 
         insert_links = pd.DataFrame(index=dsm_links.index)
-        insert_links["version"] = "0.0.0"
         insert_links["scn_name"] = dsm_links["scn_name"]
         insert_links["link_id"] = dsm_links["link_id"]
         insert_links["bus0"] = dsm_links["original_bus"]
@@ -556,7 +549,6 @@ def dsm_cts_ind_processing():
         )
 
         insert_links_timeseries = pd.DataFrame(index=dsm_links.index)
-        insert_links_timeseries["version"] = "0.0.0"
         insert_links_timeseries["scn_name"] = dsm_links["scn_name"]
         insert_links_timeseries["link_id"] = dsm_links["link_id"]
         insert_links_timeseries["p_min_pu"] = dsm_links["p_min"]
@@ -575,7 +567,6 @@ def dsm_cts_ind_processing():
         # dsm_stores
 
         insert_stores = pd.DataFrame(index=dsm_stores.index)
-        insert_stores["version"] = "0.0.0"
         insert_stores["scn_name"] = dsm_stores["scn_name"]
         insert_stores["store_id"] = dsm_stores["store_id"]
         insert_stores["bus"] = dsm_stores["bus"]
@@ -592,7 +583,6 @@ def dsm_cts_ind_processing():
         )
 
         insert_stores_timeseries = pd.DataFrame(index=dsm_stores.index)
-        insert_stores_timeseries["version"] = "0.0.0"
         insert_stores_timeseries["scn_name"] = dsm_stores["scn_name"]
         insert_stores_timeseries["store_id"] = dsm_stores["store_id"]
         insert_stores_timeseries["e_min_pu"] = dsm_stores["e_min"]
@@ -657,7 +647,7 @@ def dsm_cts_ind_processing():
         dsm = ind_osm_data_import(con,ind_cool_vent_share)
 
         p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.5, s_util=0.67, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
+            s_flex=0.5, s_util=0.73, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
         )
 
         dsm_buses, dsm_links, dsm_stores = create_dsm_components(
