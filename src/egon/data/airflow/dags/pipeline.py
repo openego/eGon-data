@@ -247,6 +247,7 @@ with airflow.DAG(
             heat_demand_Germany,
             etrago_input_data,
             household_electricity_demand_annual,
+            zensus_mv_grid_districts
         ]
     )
 
