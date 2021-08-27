@@ -112,8 +112,8 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 Base = declarative_base()
 
 
-# Set random_seed as long as no global_seed exists (see #351).
-RANDOM_SEED = 42
+# Get random seed from config
+RANDOM_SEED = egon.data.config.settings()['egon-data']['--random-seed']
 
 # Define mapping of zensus household categories to eurostat categories
 # - Adults living in househould type
