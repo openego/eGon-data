@@ -652,7 +652,6 @@ etrago_electricity:
       schema: 'grid'
       table: 'egon_etrago_load_timeseries'
 
-
 chp_location:
   sources:
     list_conv_pp:
