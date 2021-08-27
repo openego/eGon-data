@@ -1147,6 +1147,10 @@ def houseprofiles_in_census_cells():
     the database as pandas
 
     """
+    # Init random generators using global seed
+    random.seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
     # Read demand profiles from egon-data-bundle
     df_profiles = get_household_demand_profiles_raw()
 
