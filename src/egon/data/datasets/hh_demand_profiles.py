@@ -502,12 +502,12 @@ def create_missing_zensus_data(
         if difference > 0:
             # add to any row
             split = split.round()
-            random_row = split.sample(random_state=RANDOM_SEED)
+            random_row = split.sample()
             split[random_row.index] = random_row + difference
         elif difference < 0:
             # subtract only from rows > 0
             split = split.round()
-            random_row = split[split > 0].sample(random_state=RANDOM_SEED)
+            random_row = split[split > 0].sample()
             split[random_row.index] = random_row + difference
         else:
             split = split.round()
