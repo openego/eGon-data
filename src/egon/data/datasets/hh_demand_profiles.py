@@ -112,8 +112,8 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 Base = declarative_base()
 
 
-# Set random_seed as long as no global_seed exists (see #351).
-RANDOM_SEED = 42
+# Get random seed from config
+RANDOM_SEED = egon.data.config.settings()['egon-data']['--random-seed']
 
 # Define mapping of zensus household categories to eurostat categories
 # - Adults living in househould type
@@ -502,12 +502,12 @@ def create_missing_zensus_data(
         if difference > 0:
             # add to any row
             split = split.round()
-            random_row = split.sample(random_state=RANDOM_SEED)
+            random_row = split.sample()
             split[random_row.index] = random_row + difference
         elif difference < 0:
             # subtract only from rows > 0
             split = split.round()
-            random_row = split[split > 0].sample(random_state=RANDOM_SEED)
+            random_row = split[split > 0].sample()
             split[random_row.index] = random_row + difference
         else:
             split = split.round()
@@ -926,7 +926,6 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     # np.random.default_rng().integers(low=0, high=pool_size[hh_type], size=sq) instead of random.sample
     # use random.choices() if with replacement
     # list of sample ids per hh_type in cell
-    random.seed(RANDOM_SEED)
     cell_profile_ids = [
         (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
         if pool_size[hh_type] >= sq
@@ -1148,6 +1147,10 @@ def houseprofiles_in_census_cells():
     the database as pandas
 
     """
+    # Init random generators using global seed
+    random.seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
     # Read demand profiles from egon-data-bundle
     df_profiles = get_household_demand_profiles_raw()
 
