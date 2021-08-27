@@ -926,7 +926,6 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     # np.random.default_rng().integers(low=0, high=pool_size[hh_type], size=sq) instead of random.sample
     # use random.choices() if with replacement
     # list of sample ids per hh_type in cell
-    random.seed(RANDOM_SEED)
     cell_profile_ids = [
         (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
         if pool_size[hh_type] >= sq
