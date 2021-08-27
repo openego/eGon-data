@@ -4,6 +4,7 @@ potential areas for wind onshore and ground-mounted PV.
 
 from functools import partial
 from urllib.request import urlretrieve
+from pathlib import Path
 import os
 
 from geoalchemy2 import Geometry
@@ -57,10 +58,16 @@ def download_datasets():
         else ve(f"'{dataset}' is not a valid dataset boundary.")
     )
 
+    download_directory = Path(".") / "re_potential_areas"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
+
     url_target_file_map = zip(
         pa_config["original_data"]["source"][url_section],
         [
-            os.path.join(os.path.dirname(__file__), file)
+            # os.path.join(os.path.dirname(__file__), file)
+            Path(".") / "re_potential_areas" / Path(file).name
             for file in pa_config["original_data"]["target"][
                 "path_table_map"
             ].keys()
@@ -106,7 +113,7 @@ def insert_data():
     pa_config = data_config["re_potential_areas"]
 
     file_table_map = {
-        os.path.join(os.path.dirname(__file__), file): table
+        Path(".") / "re_potential_areas" / Path(file).name: table
         for file, table in pa_config["original_data"]["target"][
             "path_table_map"
         ].items()
