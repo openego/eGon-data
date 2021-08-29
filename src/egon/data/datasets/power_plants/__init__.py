@@ -464,7 +464,7 @@ def assign_bus_id(power_plants, cfg):
 
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT * FROM {cfg['sources']['mv_grid_districts']}
+        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
         """, epsg=4326)
 
     ehv_grid_districts = db.select_geodataframe(

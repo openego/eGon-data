@@ -263,8 +263,8 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
     mv_grid_district = db.select_geodataframe(
         f"""
         SELECT subst_id, geom FROM
-        {sources['mv_grid_districts']['schema']}.
-        {sources['mv_grid_districts']['table']}
+        {sources['egon_mv_grid_district']['schema']}.
+        {sources['egon_mv_grid_district']['table']}
         """)
 
     # Map zensus cells to district heating areas

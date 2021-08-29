@@ -43,8 +43,8 @@ def identify_bus(load_curves, demand_area):
     # Select mv griddistrict
     griddistrict = db.select_geodataframe(
         f"""SELECT subst_id, geom FROM
-                {sources['mv_grid_districts']['schema']}.
-                {sources['mv_grid_districts']['table']}""",
+                {sources['egon_mv_grid_district']['schema']}.
+                {sources['egon_mv_grid_district']['table']}""",
         geom_col="geom",
         epsg=3035,
     )

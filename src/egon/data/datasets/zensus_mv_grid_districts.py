@@ -60,8 +60,8 @@ def mapping():
 
     grid_districts = db.select_geodataframe(
         f"""SELECT subst_id, geom
-        FROM {cfg['sources']['mv_grid_districts']['schema']}.
-        {cfg['sources']['mv_grid_districts']['table']}""",
+        FROM {cfg['sources']['egon_mv_grid_district']['schema']}.
+        {cfg['sources']['egon_mv_grid_district']['table']}""",
         geom_col="geom",
         epsg=3035,
     )

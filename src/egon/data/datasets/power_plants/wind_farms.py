@@ -27,7 +27,7 @@ def insert():
     target_power_df = pd.read_sql(sql, con)
 
     # mv_districts has geographic info of medium voltage districts in Germany
-    sql = "SELECT geom FROM grid.mv_grid_districts"
+    sql = "SELECT geom FROM grid.egon_mv_grid_district"
     mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
 
     # Delete all the water bodies from the federal states shapes
@@ -451,7 +451,7 @@ def generate_map():
     wind_farms = wind_farms.to_crs(3035)
 
     # mv_districts has geographic info of medium voltage districts in Germany
-    sql = "SELECT geom FROM grid.mv_grid_districts"
+    sql = "SELECT geom FROM grid.egon_mv_grid_district"
     mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
     mv_districts = mv_districts.to_crs(3035)
 

@@ -61,8 +61,8 @@ def mapping():
     mv_grid_districts = db.select_geodataframe(
         f"""
         SELECT subst_id as bus_id, ST_Centroid(geom) as geom
-        FROM {sources['mv_grid_districts']['schema']}.
-        {sources['mv_grid_districts']['table']}
+        FROM {sources['egon_mv_grid_district']['schema']}.
+        {sources['egon_mv_grid_district']['table']}
         """,
         index_col='bus_id')
 
