@@ -678,4 +678,3 @@ chp_location:
     mastr_conventional_without_chp:
       table: 'egon_mastr_conventional_without_chp'
       schema: 'supply'
-

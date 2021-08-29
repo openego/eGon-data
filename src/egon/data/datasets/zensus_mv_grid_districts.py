@@ -2,14 +2,16 @@
 Implements mapping between mv grid districts and zensus cells
 """
 
-import geopandas as gpd
-import egon.data.config
-from egon.data import db
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
-from egon.data.datasets.mv_grid_districts import MvGridDistricts
+import geopandas as gpd
+
+from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.mv_grid_districts import MvGridDistricts
+from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+import egon.data.config
+
 
 class ZensusMvGridDistricts(Dataset):
     def __init__(self, dependencies):
@@ -17,21 +19,24 @@ class ZensusMvGridDistricts(Dataset):
             name="ZensusMvGridDistricts",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                mapping
-                )
+            tasks=(mapping),
         )
+
 
 # will be later imported from another file ###
 Base = declarative_base()
+
 
 class MapZensusGridDistricts(Base):
     __tablename__ = "egon_map_zensus_grid_districts"
     __table_args__ = {"schema": "boundaries"}
 
-    zensus_population_id = Column(Integer,
-                                  ForeignKey(DestatisZensusPopulationPerHa.id),
-                                  primary_key=True, index=True)
+    zensus_population_id = Column(
+        Integer,
+        ForeignKey(DestatisZensusPopulationPerHa.id),
+        primary_key=True,
+        index=True,
+    )
     subst_id = Column(Integer, ForeignKey(MvGridDistricts.subst_id))
 
 

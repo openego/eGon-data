@@ -3,13 +3,14 @@ timeseries data using demandregio
 
 """
 
-import pandas as pd
-import geopandas as gpd
-import egon.data.config
-from egon.data.datasets.electricity_demand.temporal import calc_load_curve
-from egon.data import db
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets.electricity_demand.temporal import calc_load_curve
+import egon.data.config
 
 Base = declarative_base()
 

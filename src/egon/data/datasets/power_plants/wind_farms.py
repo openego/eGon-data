@@ -1,13 +1,14 @@
-from egon.data import db
-import geopandas as gpd
-import pandas as pd
-import numpy as np
 from matplotlib import pyplot as plt
-from shapely.geometry import Polygon, LineString, Point, MultiPoint
+from shapely.geometry import LineString, MultiPoint, Point, Polygon
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+
+from egon.data import db
 
 
 def insert():
-    """ Main function. Import power objectives generate results calling the
+    """Main function. Import power objectives generate results calling the
     functions "generate_wind_farms" and  "wind_power_states".
 
     Parameters
@@ -20,7 +21,9 @@ def insert():
 
     # federal_std has the shapes of the German states
     sql = "SELECT  gen, gf, nuts, geometry FROM boundaries.vg250_lan"
-    federal_std = gpd.GeoDataFrame.from_postgis(sql, con, geom_col="geometry", crs=4326)
+    federal_std = gpd.GeoDataFrame.from_postgis(
+        sql, con, geom_col="geometry", crs=4326
+    )
 
     # target_power_df has the expected capacity of each federal state
     sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities"
@@ -34,7 +37,9 @@ def insert():
     federal_std = federal_std[federal_std["gf"] == 4]
     federal_std.drop(columns=["gf"], inplace=True)
     # Filter the potential expected from wind_onshore
-    target_power_df = target_power_df[target_power_df["carrier"] == "wind_onshore"]
+    target_power_df = target_power_df[
+        target_power_df["carrier"] == "wind_onshore"
+    ]
     target_power_df.set_index("nuts", inplace=True)
     target_power_df["geom"] = Point(0, 0)
 
@@ -46,7 +51,9 @@ def insert():
         else:
             target_power_df.at[std, "name"] = np.nan
         target_power_df.at[std, "geom"] = df.unary_union
-    target_power_df = gpd.GeoDataFrame(target_power_df, geometry="geom", crs=4326)
+    target_power_df = gpd.GeoDataFrame(
+        target_power_df, geometry="geom", crs=4326
+    )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
     target_power_df = target_power_df.to_crs(3035)
 
@@ -67,7 +74,9 @@ def insert():
     # Fit wind farms scenarions for each one of the states
     for scenario in target_power_df.index:
         state_wf = gpd.clip(wf_areas, target_power_df.at[scenario, "geom"])
-        state_wf_ni = gpd.clip(wf_areas_ni, target_power_df.at[scenario, "geom"])
+        state_wf_ni = gpd.clip(
+            wf_areas_ni, target_power_df.at[scenario, "geom"]
+        )
         state_mv_districts = gpd.clip(
             mv_districts, target_power_df.at[scenario, "geom"]
         )
@@ -150,7 +159,9 @@ def generate_wind_farms():
     map_ap_wea_voltage = {}
     for i in bus.index:
         for unit in bus["MaStRNummer"][i][1:-1].split(", "):
-            map_ap_wea_farm[unit[1:-1]] = bus["NetzanschlusspunktMastrNummer"][i]
+            map_ap_wea_farm[unit[1:-1]] = bus["NetzanschlusspunktMastrNummer"][
+                i
+            ]
             map_ap_wea_voltage[unit[1:-1]] = bus["Spannungsebene"][i]
     wea["connection point"] = wea["EinheitMastrNummer"].apply(wind_farm)
     wea["voltage"] = wea["EinheitMastrNummer"].apply(voltage)
@@ -158,7 +169,9 @@ def generate_wind_farms():
     # Create the columns 'geometry' which will have location of each WT in a point type
     wea = gpd.GeoDataFrame(
         wea,
-        geometry=gpd.points_from_xy(wea["Laengengrad"], wea["Breitengrad"], crs=4326),
+        geometry=gpd.points_from_xy(
+            wea["Laengengrad"], wea["Breitengrad"], crs=4326
+        ),
     )
 
     # wf_size storages the number of WT connected to each connection point
@@ -303,7 +316,9 @@ def wind_power_states(
     )
     hv_substations = hvmv_substation[hvmv_substation["voltage"] >= 110000]
     hv_substations = hv_substations.unary_union  # join all the hv_substations
-    wf_mv["dist_to_HV"] = state_wf["geom"].to_crs(3035).distance(hv_substations)
+    wf_mv["dist_to_HV"] = (
+        state_wf["geom"].to_crs(3035).distance(hv_substations)
+    )
     wf_mv_to_hv = wf_mv[
         (wf_mv["dist_to_HV"] <= max_dist_hv)
         & (wf_mv["inst capacity [MW]"] >= max_power_mv)
@@ -334,8 +349,12 @@ def wind_power_states(
     )
     if total_wind_power > target_power:
         scale_factor = target_power / total_wind_power
-        wf_mv["inst capacity [MW]"] = wf_mv["inst capacity [MW]"] * scale_factor
-        wf_hv["inst capacity [MW]"] = wf_hv["inst capacity [MW]"] * scale_factor
+        wf_mv["inst capacity [MW]"] = (
+            wf_mv["inst capacity [MW]"] * scale_factor
+        )
+        wf_hv["inst capacity [MW]"] = (
+            wf_hv["inst capacity [MW]"] * scale_factor
+        )
         wind_farms = wf_hv.append(wf_mv)
         summary = summary.append(
             {
@@ -356,7 +375,9 @@ def wind_power_states(
         extra_wf["area [km²]"] = 0.0
         for district in extra_wf.index:
             try:
-                pot_area_district = gpd.clip(state_wf_ni, extra_wf.at[district, "geom"])
+                pot_area_district = gpd.clip(
+                    state_wf_ni, extra_wf.at[district, "geom"]
+                )
                 extra_wf.at[district, "area [km²]"] = pot_area_district[
                     "area [km²]"
                 ].sum()
@@ -406,7 +427,9 @@ def wind_power_states(
     # write_table in egon-data database:
 
     # Copy relevant columns from wind_farms
-    insert_wind_farms = wind_farms[["inst capacity [MW]", "voltage_level", "centroid"]]
+    insert_wind_farms = wind_farms[
+        ["inst capacity [MW]", "voltage_level", "centroid"]
+    ]
 
     # Set static column values
     insert_wind_farms["carrier"] = source
@@ -425,18 +448,23 @@ def wind_power_states(
 
     # Reset index
     insert_wind_farms.index = pd.RangeIndex(
-        start=wind_farm_id, stop=wind_farm_id + len(insert_wind_farms), name="id"
+        start=wind_farm_id,
+        stop=wind_farm_id + len(insert_wind_farms),
+        name="id",
     )
 
     # Insert into database
     insert_wind_farms.reset_index().to_postgis(
-        "egon_power_plants", schema="supply", con=db.engine(), if_exists="append"
+        "egon_power_plants",
+        schema="supply",
+        con=db.engine(),
+        if_exists="append",
     )
     return wind_farms, summary
 
 
 def generate_map():
-    """ Generates a map with the position of all the wind farms
+    """Generates a map with the position of all the wind farms
 
     Parameters
     ----------
@@ -447,7 +475,9 @@ def generate_map():
 
     # Import wind farms from egon-data
     sql = "SELECT  carrier, el_capacity, geom FROM supply.egon_power_plants"
-    wind_farms = gpd.GeoDataFrame.from_postgis(sql, con, geom_col="geom", crs=4326)
+    wind_farms = gpd.GeoDataFrame.from_postgis(
+        sql, con, geom_col="geom", crs=4326
+    )
     wind_farms = wind_farms.to_crs(3035)
 
     # mv_districts has geographic info of medium voltage districts in Germany
@@ -471,7 +501,10 @@ def generate_map():
         column="power",
         cmap="magma_r",
         legend=True,
-        legend_kwds={"label": "Installed capacity in MW", "orientation": "vertical"},
+        legend_kwds={
+            "label": "Installed capacity in MW",
+            "orientation": "vertical",
+        },
     )
     plt.savefig("wind_farms_map.png", dpi=300)
     return 0
