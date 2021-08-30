@@ -9,11 +9,11 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
+from pathlib import Path
 from urllib.request import urlretrieve
 import json
 import os
 import time
-from pathlib import Path
 
 from egon.data import db
 from egon.data.config import settings
@@ -39,7 +39,7 @@ def download():
         source_url = osm_config["source"]["url_testmode"]
         target_filename = osm_config["target"]["file_testmode"]
 
-    target_file = (download_directory / target_filename)
+    target_file = download_directory / target_filename
 
     if not os.path.isfile(target_file):
         urlretrieve(source_url, target_file)
@@ -68,7 +68,10 @@ def to_postgres(num_processes=4, cache_size=4096):
     else:
         input_filename = osm_config["target"]["file_testmode"]
 
-    input_file = (Path(".") / "openstreetmap" / input_filename)
+    input_file = Path(".") / "openstreetmap" / input_filename
+    style_file = os.path.join(
+        os.path.dirname(__file__), osm_config["source"]["stylefile"]
+    )
 
     # Prepare osm2pgsql command
     cmd = [
@@ -82,7 +85,7 @@ def to_postgres(num_processes=4, cache_size=4096):
         f"-d {docker_db_config['POSTGRES_DB']} "
         f"-U {docker_db_config['POSTGRES_USER']}",
         f"-p {osm_config['target']['table_prefix']}",
-        f"-S {osm_config['source']['stylefile']}",
+        f"-S {style_file}",
         f"{input_file}",
     ]
 
@@ -91,7 +94,6 @@ def to_postgres(num_processes=4, cache_size=4096):
         " ".join(cmd),
         shell=True,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-        cwd=os.path.dirname(__file__),
     )
 
 
