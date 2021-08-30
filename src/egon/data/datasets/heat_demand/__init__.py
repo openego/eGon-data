@@ -199,7 +199,7 @@ def cutout_heat_demand_germany():
         The alternative of cutting out Germany from the pan-European raster
         based on German census cells, instead of using state boundaries with
         low resolution (to avoid inaccuracies), was not implemented in order to
-        achieve consistency with other datasets (e.g. mv_grid_districts).
+        achieve consistency with other datasets (e.g. egon_mv_grid_district).
         Besides, all attempts to read, (union) and load cells from the local
         database failed, but were documented as commented code within this
         function and afterwards removed.
