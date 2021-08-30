@@ -9,11 +9,10 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
+from pathlib import Path
 from urllib.request import urlretrieve
-import codecs
 import json
 import os
-from pathlib import Path
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -34,7 +33,7 @@ def download_files():
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = (download_directory / vg250_config["target"]["file"])
+    target_file = download_directory / vg250_config["target"]["file"]
 
     if not os.path.isfile(target_file):
         urlretrieve(vg250_config["source"]["url"], target_file)
@@ -50,7 +49,7 @@ def to_postgres():
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {vg250_processed['schema']};")
 
-    zip_file = (Path(".") / "vg250" / vg250_orig["target"]["file"])
+    zip_file = Path(".") / "vg250" / vg250_orig["target"]["file"]
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
@@ -280,14 +279,14 @@ def add_metadata():
 def nuts_mview():
 
     db.execute_sql_script(
-        Path(".") / "vg250_lan_nuts_id_mview.sql"
+        os.path.join(os.path.dirname(__file__), "vg250_lan_nuts_id_mview.sql")
     )
 
 
 def cleaning_and_preperation():
 
     db.execute_sql_script(
-        Path(".") / "cleaning_and_preparation.sql"
+        os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
     )
 
 
