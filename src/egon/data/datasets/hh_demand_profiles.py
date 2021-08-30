@@ -1347,7 +1347,7 @@ def get_hh_profiles_from_db(profile_ids):
     return df_profile_loads
 
 
-def get_scaled_profiles_from_db(attribute, list_of_identifiers, year):
+def get_scaled_profiles_from_db(attribute, list_of_identifiers, year, peak_load_only=False):
     """Retrieve selection of scaled household electricity demand profiles
 
        Parameters
@@ -1366,15 +1366,18 @@ def get_scaled_profiles_from_db(attribute, list_of_identifiers, year):
         year: int
             * 2035
             * 2050
-
+            
+       peak_load_only: bool
+            
        See Also
        --------
        :func:`houseprofiles_in_census_cells`
 
        Returns
        -------
-       pd.DataFrame
-           Selection of scaled household electricity demand profiles
+       pd.Series or float
+        Aggregated time series for given `cell_ids` or peak load of this time
+        series in MWh.
        """
     cell_demand_metadata = get_cell_demand_metadata_from_db(attribute=attribute,
                                                             list_of_identifiers=list_of_identifiers)
@@ -1383,11 +1386,12 @@ def get_scaled_profiles_from_db(attribute, list_of_identifiers, year):
     df_profiles = get_hh_profiles_from_db(profile_ids)
     df_profiles = process_household_demand_profiles(df_profiles)
 
-    df_scaled_profiles = get_load_timeseries(df_profiles=df_profiles,
+    scaled_profiles = get_load_timeseries(df_profiles=df_profiles,
                                              df_cell_demand_metadata=cell_demand_metadata,
                                              cell_ids=cell_demand_metadata.index.to_list(),
-                                             year=year)
-    return df_scaled_profiles
+                                             year=year,
+                                             peak_load_only=peak_load_only)
+    return scaled_profiles
 
 
 def mv_grid_district_HH_electricity_load(
