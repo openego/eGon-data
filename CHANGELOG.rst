@@ -237,5 +237,7 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
 * Add xlrd and openpyxl to installation setup
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
+* Add missing dependency in pipeline.py
+  `#412 <https://github.com/openego/eGon-data/issues/412>`_
 
 
