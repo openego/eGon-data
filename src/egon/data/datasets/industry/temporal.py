@@ -109,7 +109,7 @@ def calc_load_curves_ind_osm(scenario):
         per substation id
 
     """
-
+    scenario = 'eGon2035'
     sources = egon.data.config.datasets()["electrical_load_curves_industry"][
         "sources"
     ]
@@ -164,7 +164,7 @@ def calc_load_curves_ind_osm(scenario):
     curves_da = identify_bus(load_curves, demand_area)
 
     # Group all load curves per bus
-    curves_bus = curves_da.drop(["id"], axis=1).groupby("subst_id").sum()
+    curves_bus = curves_da.drop(["id"], axis=1).fillna(0).groupby("subst_id").sum()
 
     # Initalize pandas.DataFrame for export to database
     load_ts_df = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
