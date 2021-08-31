@@ -251,5 +251,6 @@ Bug fixes
   `#398 <https://github.com/openego/eGon-data/issues/398>`_
 * Add missing dependency in pipeline.py
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
-
+* Replace NAN by 0 to avoid empty p_set column in DB
+  `#414 <https://github.com/openego/eGon-data/issues/414>`_
 

@@ -165,7 +165,7 @@ def calc_load_curves_ind_osm(scenario):
     curves_da = identify_bus(load_curves, demand_area)
 
     # Group all load curves per bus
-    curves_bus = curves_da.drop(["id"], axis=1).groupby("subst_id").sum()
+    curves_bus = curves_da.drop(["id"], axis=1).fillna(0).groupby("subst_id").sum()
 
     # Initalize pandas.DataFrame for export to database
     load_ts_df = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
@@ -288,7 +288,7 @@ def calc_load_curves_ind_sites(scenario):
 
     # Group all load curves per bus and wz
     curves_bus = (
-        curves_da.groupby(["subst_id", "wz"]).sum().drop(["id"], axis=1)
+        curves_da.fillna(0).groupby(["subst_id", "wz"]).sum().drop(["id"], axis=1)
     )
 
     # Initalize pandas.DataFrame for pf table load timeseries
