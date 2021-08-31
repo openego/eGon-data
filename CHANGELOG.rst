@@ -199,6 +199,8 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
 
 Bug fixes
 ---------
@@ -247,3 +249,7 @@ Bug fixes
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
 * Remove hard-coded slashes in file paths to ensure Windows compatibility
   `#398 <https://github.com/openego/eGon-data/issues/398>`_
+* Add missing dependency in pipeline.py
+  `#412 <https://github.com/openego/eGon-data/issues/412>`_
+
+

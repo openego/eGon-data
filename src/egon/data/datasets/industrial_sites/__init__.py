@@ -134,20 +134,20 @@ def create_tables():
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"""
     )
-   
-    
+
+
     # Drop tables and sequences before recreating them
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
@@ -453,9 +453,12 @@ def schmidt_to_postgres():
         "sources"
     ]["schmidt"]
 
-    input_file = os.path.join(
-        os.path.dirname(__file__), schmidt_sources["path"]
-    )
+    input_file = (
+            Path(".") /
+            "data_bundle_egon_data" /
+            "industrial_sites" /
+            schmidt_sources["path"])
+
     engine = db.engine()
 
     db.execute_sql(
@@ -689,7 +692,7 @@ class MergeIndustrialSites(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(download_import_industrial_sites, merge_inputs, map_nuts3),
         )
