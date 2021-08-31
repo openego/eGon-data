@@ -72,9 +72,7 @@ def import_osm_data():
     else:
         target_path = osm_config["target"]["file_testmode"]
 
-    filtered_osm_pbf_path_to_file = os.path.join(
-        egon.data.__path__[0], "datasets", "osm", target_path
-    )
+    filtered_osm_pbf_path_to_file = Path(".") / "openstreetmap" / target_path
 
     docker_db_config = db.credentials()
     config_database = docker_db_config["POSTGRES_DB"]
