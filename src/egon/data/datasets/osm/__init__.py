@@ -45,7 +45,7 @@ def download():
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(num_processes=4, cache_size=4096):
+def to_postgres(num_processes=1, cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
