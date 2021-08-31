@@ -1,20 +1,22 @@
-import sys
+from pathlib import Path
+import codecs
 import configparser
-import psycopg2
-import os
 import csv
 import datetime
 import logging
-import codecs
+import os
 import shutil
-from pathlib import Path
-import egon.data.config
-from egon.data.config import settings
-import egon.data.subprocess as subproc
-from egon.data import db
-from egon.data.datasets import Dataset
+import sys
+
 from airflow.operators.postgres_operator import PostgresOperator
 import importlib_resources as resources
+import psycopg2
+
+from egon.data import db
+from egon.data.config import settings
+from egon.data.datasets import Dataset
+import egon.data.config
+import egon.data.subprocess as subproc
 
 
 def run():
@@ -25,9 +27,9 @@ def run():
     osm_config = data_config["openstreetmap"]["original_data"]
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        target_path = osm_config["target"]["path"]
+        target_path = osm_config["target"]["file"]
     else:
-        target_path = osm_config["target"]["path_testmode"]
+        target_path = osm_config["target"]["file_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
         egon.data.__path__[0], "datasets", "osm", target_path
@@ -66,26 +68,26 @@ def import_osm_data():
     osm_config = data_config["openstreetmap"]["original_data"]
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        target_path = osm_config["target"]["path"]
+        target_path = osm_config["target"]["file"]
     else:
-        target_path = osm_config["target"]["path_testmode"]
+        target_path = osm_config["target"]["file_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
         egon.data.__path__[0], "datasets", "osm", target_path
     )
 
-    docker_db_config=db.credentials()
-    config_database=docker_db_config["POSTGRES_DB"]
-    config_basepath="osmTGmod/egon-data"
+    docker_db_config = db.credentials()
+    config_database = docker_db_config["POSTGRES_DB"]
+    config_basepath = "osmTGmod/egon-data"
 
     config = configparser.ConfigParser()
     config.read(config_basepath + ".cfg")
     config["postgres_server"]["host"] = docker_db_config["HOST"]
     config["postgres_server"]["port"] = docker_db_config["PORT"]
-    config["postgres_server"]["user"] = docker_db_config[
-            "POSTGRES_USER"]
+    config["postgres_server"]["user"] = docker_db_config["POSTGRES_USER"]
     config["postgres_server"]["password"] = docker_db_config[
-            "POSTGRES_PASSWORD"]
+        "POSTGRES_PASSWORD"
+    ]
 
     logging.info("Creating status table ...")
     db.execute_sql(
@@ -94,7 +96,7 @@ def import_osm_data():
         CREATE TABLE _db_status (module TEXT, status BOOLEAN);
         INSERT INTO _db_status (module, status) VALUES ('grid_model', FALSE);
         """
-        )
+    )
 
     logging.info("Status table created.")
 
@@ -105,26 +107,25 @@ def import_osm_data():
 
     logging.info("Loading functions and result schema ...")
     scripts = [
-            "sql-scripts/extensions.sql",
-            "sql-scripts/functions.sql",
-            "sql-scripts/admin_boundaries.sql",
-            "sql-scripts/electrical_properties.sql",
-            "sql-scripts/build_up_db.sql",
-        ]
+        "sql-scripts/extensions.sql",
+        "sql-scripts/functions.sql",
+        "sql-scripts/admin_boundaries.sql",
+        "sql-scripts/electrical_properties.sql",
+        "sql-scripts/build_up_db.sql",
+    ]
     for script in scripts:
-            logging.info("Running script {0} ...".format(script))
-            with codecs.open(
-                    os.path.join("osmTGmod",
-                                 script), "r", "utf-8-sig") as fd:
-                sqlfile = fd.read()
-            db.execute_sql(sqlfile)
-            logging.info("Done.")
+        logging.info("Running script {0} ...".format(script))
+        with codecs.open(
+            os.path.join("osmTGmod", script), "r", "utf-8-sig"
+        ) as fd:
+            sqlfile = fd.read()
+        db.execute_sql(sqlfile)
+        logging.info("Done.")
 
     db.execute_sql(
-            """UPDATE _db_status SET status = TRUE
+        """UPDATE _db_status SET status = TRUE
             WHERE module = 'grid_model'; """
-        )
-
+    )
 
     logging.info("osmTGmod-database successfully built up!")
 
@@ -134,30 +135,31 @@ def import_osm_data():
     logging.info(
         f"""Assuming osmosis is avaliable at
         {config['osm_data']['osmosis_path_to_binary']}"""
-        )
+    )
 
     # create directory to store osmosis' temp files
-    osmosis_temp_dir = Path('osmTGmod') / "osmosis_temp/"
+    osmosis_temp_dir = Path("osmTGmod") / "osmosis_temp/"
     if not os.path.exists(osmosis_temp_dir):
         os.mkdir(osmosis_temp_dir)
 
     subproc.run(
-            "JAVACMD_OPTIONS='%s' %s --read-pbf %s --write-pgsql \
+        "JAVACMD_OPTIONS='%s' %s --read-pbf %s --write-pgsql \
                 database=%s host=%s user=%s password=%s"
-            % (
-                f"-Djava.io.tmpdir={osmosis_temp_dir}",
-                os.path.join("osmTGmod",
-                             config["osm_data"]["osmosis_path_to_binary"]),
-                filtered_osm_pbf_path_to_file,
-                config_database,
-                config["postgres_server"]["host"]
-                + ":"
-                + config["postgres_server"]["port"],
-                config["postgres_server"]["user"],
-                config["postgres_server"]["password"],
+        % (
+            f"-Djava.io.tmpdir={osmosis_temp_dir}",
+            os.path.join(
+                "osmTGmod", config["osm_data"]["osmosis_path_to_binary"]
             ),
-            shell=True,
-        )
+            filtered_osm_pbf_path_to_file,
+            config_database,
+            config["postgres_server"]["host"]
+            + ":"
+            + config["postgres_server"]["port"],
+            config["postgres_server"]["user"],
+            config["postgres_server"]["password"],
+        ),
+        shell=True,
+    )
     logging.info("Importing OSM-Data...")
 
     # After updating OSM-Data, power_tables (for editing)
@@ -180,15 +182,16 @@ def osmtgmod(
     docker_db_config=None,
 ):
 
-    if 'germany-21' in filtered_osm_pbf_path_to_file:
+    if "germany-21" in filtered_osm_pbf_path_to_file:
         """
         Manually add under construction substation expansion in Garenfeld
         to existing substation. (see:)
         """
-        print('Manually updating geometry of substation in Garenfeld')
+        print("Manually updating geometry of substation in Garenfeld")
         db.execute_sql(
             """DROP TRIGGER IF EXISTS
-            power_ways_update ON power_ways CASCADE """)
+            power_ways_update ON power_ways CASCADE """
+        )
 
         db.execute_sql(
             """
@@ -208,7 +211,8 @@ def osmtgmod(
                 '20A8644A35B34940'), 4326))
             WHERE name = 'Garenfeld'
             AND id = 24667346
-            """)
+            """
+        )
 
     # ==============================================================
     # Setup logging
@@ -221,32 +225,30 @@ def osmtgmod(
     sh = logging.StreamHandler()
     sh.setFormatter(logformat)
     log.addHandler(sh)
-    logging.info(
-        "\n\n======================\nego_otg\n======================")
+    logging.info("\n\n======================\nego_otg\n======================")
     logging.info("Logging to standard output...")
     # catch up some log messages from evaluation of command line arguments
     logging.info("Database: {}".format(config_database))
     logging.info(
-        "Path for configuration file and results: {}"
-        .format(config_basepath)
+        "Path for configuration file and results: {}".format(config_basepath)
     )
     # ==============================================================
     # read configuration from file and create folder structure
     # ==============================================================
     logging.info(
-            (
-                "Taking db connection credentials from eGon-data "
-                "with respect to the given docker_db_config variable"
-            )
+        (
+            "Taking db connection credentials from eGon-data "
+            "with respect to the given docker_db_config variable"
         )
+    )
     config = configparser.ConfigParser()
     config.read(config_basepath + ".cfg")
     config["postgres_server"]["host"] = docker_db_config["HOST"]
     config["postgres_server"]["port"] = docker_db_config["PORT"]
-    config["postgres_server"]["user"] = docker_db_config[
-            "POSTGRES_USER"]
+    config["postgres_server"]["user"] = docker_db_config["POSTGRES_USER"]
     config["postgres_server"]["password"] = docker_db_config[
-            "POSTGRES_PASSWORD"]
+        "POSTGRES_PASSWORD"
+    ]
 
     # Setting osmTGmod folder structure:
     logging.info("Checking/Creating file directories")
@@ -268,8 +270,7 @@ def osmtgmod(
             logfile
         )
     )
-    logging.info(
-        "\n\n======================\nego_otg\n======================")
+    logging.info("\n\n======================\nego_otg\n======================")
     # copy config file
     logging.info(
         "Copying configuration file to '{0}'.".format(
@@ -284,15 +285,14 @@ def osmtgmod(
     )
 
     # Connects to new Database
-    logging.info("Connecting to database {} ..."
-                     .format(config_database))
+    logging.info("Connecting to database {} ...".format(config_database))
     conn = psycopg2.connect(
-            host=config["postgres_server"]["host"],
-            port=config["postgres_server"]["port"],
-            database=config_database,
-            user=config["postgres_server"]["user"],
-            password=config["postgres_server"]["password"],
-        )
+        host=config["postgres_server"]["host"],
+        port=config["postgres_server"]["port"],
+        database=config_database,
+        user=config["postgres_server"]["user"],
+        password=config["postgres_server"]["password"],
+    )
 
     cur = conn.cursor()
 
@@ -418,8 +418,9 @@ def osmtgmod(
             "'sql-scripts/power_script.sql' ..."
         )
     )
-    with codecs.open("osmTGmod/sql-scripts/power_script.sql", "r",
-                     "utf-8-sig") as fd:
+    with codecs.open(
+        "osmTGmod/sql-scripts/power_script.sql", "r", "utf-8-sig"
+    ) as fd:
         sqlfile = fd.read()
     # remove lines starting with "--" (comments), tabulators and empty line
     # beware: comments in C-like style (such as /* comment */) arn't parsed!
@@ -508,8 +509,7 @@ def osmtgmod(
         logging.info("writing %s..." % table)
         filename = os.path.join(result_dir, table + ".csv")
         logging.info(
-            "Writing contents of table {0} to {1}...".format(table,
-                                                             filename)
+            "Writing contents of table {0} to {1}...".format(table, filename)
         )
         query = "SELECT * FROM osmtgmod_results.%s " % (table,)
         outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER \
@@ -526,14 +526,14 @@ def osmtgmod(
 
 def to_pypsa():
     db.execute_sql(
-            """
+        """
             -- CLEAN UP OF TABLES
             DELETE FROM grid.egon_etrago_bus
             WHERE carrier = 'AC';
             DELETE FROM grid.egon_etrago_line;
             DELETE FROM grid.egon_etrago_transformer;
             """
-            )
+    )
 
     for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
 
@@ -649,6 +649,7 @@ def to_pypsa():
                 """
         )
 
+
 class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -658,14 +659,14 @@ class Osmtgmod(Dataset):
             tasks=(
                 import_osm_data,
                 run,
-               # {
-                    PostgresOperator(
-                        task_id="osmtgmod_substation",
-                        sql=resources.read_text(__name__, "substation_otg.sql"),
-                        postgres_conn_id="egon_data",
-                        autocommit=True,
-                    ),
-                    to_pypsa
-              #  }
+                # {
+                PostgresOperator(
+                    task_id="osmtgmod_substation",
+                    sql=resources.read_text(__name__, "substation_otg.sql"),
+                    postgres_conn_id="egon_data",
+                    autocommit=True,
+                ),
+                to_pypsa
+                #  }
             ),
         )
