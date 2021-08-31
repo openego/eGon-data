@@ -2,7 +2,6 @@
 Netzentwicklungsplan 2035, Version 2031, Szenario C
 """
 
-import os
 import egon.data.config
 import pandas as pd
 import numpy as np
@@ -12,6 +11,7 @@ from egon.data.datasets import Dataset
 from sqlalchemy import Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from pathlib import Path
 
 ### will be later imported from another file ###
 Base = declarative_base()
@@ -55,7 +55,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 create_table,
@@ -118,8 +118,10 @@ def insert_capacities_per_federal_state_nep():
                    "AND nuts != 'DE'")
 
     # read-in installed capacities per federal state of germany
-    target_file = os.path.join(
-        "data_bundle_egon_data/nep2035_version2021",
+    target_file = (
+        Path(".") /
+        "data_bundle_egon_data" /
+        "nep2035_version2021" /
         scenario_config('eGon2035')['paths']['capacities'])
 
     df = pd.read_excel(target_file, sheet_name='1.Entwurf_NEP2035_V2021',
@@ -235,9 +237,12 @@ def insert_nep_list_powerplants():
     engine = db.engine()
 
     # Read-in data from csv-file
-    target_file = os.path.join(
-        "data_bundle_egon_data/nep2035_version2021/",
+    target_file = (
+        Path(".") /
+        "data_bundle_egon_data" /
+        "nep2035_version2021" /
         scenario_config('eGon2035')['paths']['list_conv_pp'])
+
     kw_liste_nep = pd.read_csv(target_file,
                                delimiter=';', decimal=',')
 
@@ -298,8 +303,10 @@ def district_heating_input():
 
     """
     # import data to dataframe
-    file = os.path.join(
-        "data_bundle_egon_data/nep2035_version2021",
+    file = (
+        Path(".") /
+        "data_bundle_egon_data" /
+        "nep2035_version2021" /
         scenario_config('eGon2035')['paths']['capacities'])
     df = pd.read_excel(file, sheet_name='Kurzstudie_KWK', dtype={'Wert':float})
     df.set_index(['Energietraeger', 'Name'], inplace=True)
