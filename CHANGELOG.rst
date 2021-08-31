@@ -127,7 +127,7 @@ Added
 * Integrate existing CHP and extdended CHP > 10MW_el
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
 * Integrate DSM potentials for CTS and industry
-  `#266 <https://github.com/openego/eGon-data/issues/259>`_
+  `#259 <https://github.com/openego/eGon-data/issues/259>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
