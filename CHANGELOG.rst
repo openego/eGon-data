@@ -191,6 +191,8 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
 
 Bug fixes
 ---------
