@@ -52,7 +52,7 @@ INSERT INTO            openstreetmap.osm_landuse
     
 -- Create index using GIST (geom)
 
-DROP INDEX IF EXISTS osm_landuse_geom_idx; 
+DROP INDEX IF EXISTS openstreetmap.osm_landuse_geom_idx; 
 
 CREATE INDEX osm_landuse_geom_idx
     ON openstreetmap.osm_landuse USING GIST (geom);
@@ -113,7 +113,7 @@ CREATE SEQUENCE 		openstreetmap.osm_landuse_vg250_cut_id;
 -- Create materialized views to identify and store intersecting parts of polygons overlapping the external borders 
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_cut;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_cut AS
-	SELECT	nextval('openstreetmap.osm_landuse_vg250_cut_id') ::integer AS id,
+	SELECT	nextval('openstreetmap.osm_landuse_vg250_cut_id') ::integer AS cut_id,
 		cut.id ::integer AS id,
 		cut.osm_id ::integer AS osm_id,
 		cut.name ::text AS name,

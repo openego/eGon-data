@@ -202,11 +202,11 @@ def map_zensus_vg250():
             missing_cells, boundaries_buffer, how="inner", op="intersects"
         )
         join = join.append(join_missing)
-        missing_cells = gdf[(~gdf.id.isin(join.id)) & (gdf.population > 0)]
+        missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
     print(f"Maximal buffer to match zensus points to vg250: {buffer}m")
 
     # drop duplicates
-    join = join.drop_duplicates(subset=["id"])
+    join = join.drop_duplicates(subset=["id_left"])
 
     # Insert results to database
     join.rename(
