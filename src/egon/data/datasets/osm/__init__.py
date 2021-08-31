@@ -13,7 +13,10 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import json
 import os
+import shutil
 import time
+
+import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
@@ -69,9 +72,13 @@ def to_postgres(num_processes=1, cache_size=4096):
         input_filename = osm_config["target"]["file_testmode"]
 
     input_file = Path(".") / "openstreetmap" / input_filename
-    style_file = os.path.join(
-        os.path.dirname(__file__), osm_config["source"]["stylefile"]
+    style_file = (
+        Path(".") / "openstreetmap" / osm_config["source"]["stylefile"]
     )
+    with resources.path(
+        "egon.data.datasets.osm", osm_config["source"]["stylefile"]
+    ) as p:
+        shutil.copy(p, style_file)
 
     # Prepare osm2pgsql command
     cmd = [
@@ -94,14 +101,15 @@ def to_postgres(num_processes=1, cache_size=4096):
         "-p",
         f"{osm_config['target']['table_prefix']}",
         "-S",
-        f"-S {style_file}",
-        f"{input_file}",
+        f"{style_file.absolute()}",
+        f"{input_file.absolute()}",
     ]
 
     # Execute osm2pgsql for import OSM data
     subprocess.run(
         cmd,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+        cwd=Path(__file__).parent,
     )
 
 
@@ -117,7 +125,7 @@ def add_metadata():
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
         input_filename = osm_config["original_data"]["target"]["file_testmode"]
 
-    spatial_and_date = os.path.basename(input_filename).split("-")
+    spatial_and_date = Path(input_filename).name.split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"
