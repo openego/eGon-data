@@ -24,7 +24,7 @@ class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250, inside_germany,
