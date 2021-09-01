@@ -37,6 +37,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.datasets.gas_prod import GasProduction
+from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 import airflow
 
 import egon.data.importing.zensus as import_zs
@@ -236,19 +237,6 @@ with airflow.DAG(
     heat_demand_Germany = HeatDemandImport(
         dependencies=[vg250, scenario_parameters, zensus_vg250])
 
-    # Distribute electrical CTS demands to zensus grid
-    cts_electricity_demand_annual = CtsElectricityDemand(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            heat_demand_Germany,
-            etrago_input_data,
-            household_electricity_demand_annual,
-        ]
-    )
-
-    elec_cts_demands_zensus = tasks[
-        'electricity_demand.distribute-cts-demands']
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
@@ -280,6 +268,10 @@ with airflow.DAG(
     # Gas prod import
     gas_production_insert_data = GasProduction(
         dependencies=[create_gas_polygons])
+
+    # Insert industrial gas demand
+    industrial_gas_demand = IndustrialGasDemand( 
+     dependencies=[create_gas_polygons]) 
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -331,6 +323,22 @@ with airflow.DAG(
     )
 
     map_zensus_grid_districts = tasks["zensus_mv_grid_districts.mapping"]
+    
+    # Distribute electrical CTS demands to zensus grid
+    cts_electricity_demand_annual = CtsElectricityDemand(
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            heat_demand_Germany,
+            etrago_input_data,
+            household_electricity_demand_annual,
+            zensus_mv_grid_districts
+        ]
+    )
+
+    elec_cts_demands_zensus = tasks[
+        'electricity_demand.distribute-cts-demands']
+
 
     # Map federal states to mv_grid_districts
     vg250_mv_grid_districts = Vg250MvGridDistricts(

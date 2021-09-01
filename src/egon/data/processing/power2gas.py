@@ -10,7 +10,7 @@ from shapely import geometry
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
 from egon.data import db
-from egon.data.importing.gas_grid import next_id
+#from egon.data.importing.gas_grid import next_id
 
 def insert_power2gas():
     """Function defining the potential power-to-gas capacities and inserting them in the etrago_link table.
@@ -24,7 +24,7 @@ def insert_power2gas():
     engine = db.engine()
 
     # Select next id value
-    new_id = next_id('link')
+    new_id = db.next_etrago_id('link')
 
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = """SELECT bus_id, geom
