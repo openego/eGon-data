@@ -191,6 +191,8 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
+* Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
+  `#423 <https://github.com/openego/eGon-data/issues/423>`_
 
 Bug fixes
 ---------
