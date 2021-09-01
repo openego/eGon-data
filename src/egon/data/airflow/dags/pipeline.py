@@ -37,6 +37,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.datasets.gas_prod import GasProduction
+from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 import airflow
 
 import egon.data.importing.zensus as import_zs
@@ -267,6 +268,10 @@ with airflow.DAG(
     # Gas prod import
     gas_production_insert_data = GasProduction(
         dependencies=[create_gas_polygons])
+
+    # Insert industrial gas demand
+    industrial_gas_demand = IndustrialGasDemand( 
+     dependencies=[create_gas_polygons]) 
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
