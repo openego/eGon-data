@@ -321,6 +321,22 @@ with airflow.DAG(
 
     map_zensus_grid_districts = tasks["zensus_mv_grid_districts.mapping"]
 
+    # Distribute electrical CTS demands to zensus grid
+    cts_electricity_demand_annual = CtsElectricityDemand(
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            heat_demand_Germany,
+            etrago_input_data,
+            household_electricity_demand_annual,
+            zensus_mv_grid_districts,
+        ]
+    )
+
+    elec_cts_demands_zensus = tasks[
+        "electricity_demand.distribute-cts-demands"
+    ]
+
     # Map federal states to mv_grid_districts
     vg250_mv_grid_districts = Vg250MvGridDistricts(
         dependencies=[vg250, mv_grid_districts]
