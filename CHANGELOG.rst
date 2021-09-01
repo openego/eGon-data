@@ -126,6 +126,9 @@ Added
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
 * Integrate existing CHP and extdended CHP > 10MW_el
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
+* Extend zensus by a combined table with all cells where
+  there's either building, apartment or population data
+  `#359 <https://github.com/openego/eGon-data/issues/359>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
