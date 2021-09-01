@@ -13,7 +13,10 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import json
 import os
+import shutil
 import time
+
+import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
@@ -45,7 +48,7 @@ def download():
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(num_processes=4, cache_size=4096):
+def to_postgres(num_processes=1, cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
@@ -69,9 +72,13 @@ def to_postgres(num_processes=4, cache_size=4096):
         input_filename = osm_config["target"]["file_testmode"]
 
     input_file = Path(".") / "openstreetmap" / input_filename
-    style_file = os.path.join(
-        os.path.dirname(__file__), osm_config["source"]["stylefile"]
+    style_file = (
+        Path(".") / "openstreetmap" / osm_config["source"]["stylefile"]
     )
+    with resources.path(
+        "egon.data.datasets.osm", osm_config["source"]["stylefile"]
+    ) as p:
+        shutil.copy(p, style_file)
 
     # Prepare osm2pgsql command
     cmd = [
@@ -79,21 +86,30 @@ def to_postgres(num_processes=4, cache_size=4096):
         "--create",
         "--slim",
         "--hstore-all",
-        f"--number-processes {num_processes}",
-        f"--cache {cache_size}",
-        f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} "
-        f"-d {docker_db_config['POSTGRES_DB']} "
-        f"-U {docker_db_config['POSTGRES_USER']}",
-        f"-p {osm_config['target']['table_prefix']}",
-        f"-S {style_file}",
-        f"{input_file}",
+        "--number-processes",
+        f"{num_processes}",
+        "--cache",
+        f"{cache_size}",
+        "-H",
+        f"{docker_db_config['HOST']}",
+        "-P",
+        f"{docker_db_config['PORT']}",
+        "-d",
+        f"{docker_db_config['POSTGRES_DB']}",
+        "-U",
+        f"{docker_db_config['POSTGRES_USER']}",
+        "-p",
+        f"{osm_config['target']['table_prefix']}",
+        "-S",
+        f"{style_file.absolute()}",
+        f"{input_file.absolute()}",
     ]
 
     # Execute osm2pgsql for import OSM data
     subprocess.run(
-        " ".join(cmd),
-        shell=True,
+        cmd,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+        cwd=Path(__file__).parent,
     )
 
 
@@ -109,7 +125,7 @@ def add_metadata():
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
         input_filename = osm_config["original_data"]["target"]["file_testmode"]
 
-    spatial_and_date = os.path.basename(input_filename).split("-")
+    spatial_and_date = Path(input_filename).name.split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"
