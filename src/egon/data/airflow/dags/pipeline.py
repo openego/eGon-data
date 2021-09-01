@@ -6,7 +6,6 @@ from airflow.utils.dates import days_ago
 import airflow
 import importlib_resources as resources
 
-from egon.data import db
 from egon.data.datasets import database
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.data_bundle import DataBundle
