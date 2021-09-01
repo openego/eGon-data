@@ -128,6 +128,8 @@ Added
   `#321 <https://github.com/openego/eGon-data/issues/358>`_
 * Integrate existing CHP and extdended CHP > 10MW_el
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
+* Add random seed to CLI parameters
+  `#351 <https://github.com/openego/eGon-data/issues/351>`_
 
 
 Changed
