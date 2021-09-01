@@ -411,8 +411,29 @@ def zensus_misc_to_postgres():
                     REFERENCES {population_table}(id);"""
         )
 
+    # Create combined table
+    create_combined_zensus_table()
+
     # Delete entries for unpopulated cells
     adjust_zensus_misc()
+
+
+def create_combined_zensus_table():
+    """Create combined table with buildings, apartments and population per cell
+
+    Only apartment and building data with acceptable data quality
+    (quantity_q<2) is used, all other data is dropped. For more details on data
+    quality see Zensus docs:
+    https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
+
+    If there's no data on buildings or apartments for a certain cell, the value
+    for building_count resp. apartment_count contains NULL.
+    """
+    sql_script = os.path.join(
+        os.path.dirname(__file__),
+        "create_combined_zensus_table.sql"
+    )
+    db.execute_sql_script(sql_script)
 
 
 def adjust_zensus_misc():
