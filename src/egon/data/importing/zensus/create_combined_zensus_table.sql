@@ -13,7 +13,8 @@ SELECT GREATEST(bld_apt.grid_id, ze.grid_id) AS grid_id,
        bld_apt.building_count,
        bld_apt.apartment_count,
        ze.population,
-       ze.geom
+       ze.geom,
+       ze.geom_point
     FROM
         (SELECT GREATEST(bld.zensus_population_id, apt.zensus_population_id) AS zensus_population_id,
                 GREATEST(bld.grid_id, apt.grid_id) AS grid_id,
@@ -42,7 +43,9 @@ SELECT GREATEST(bld_apt.grid_id, ze.grid_id) AS grid_id,
 -- This is needed as table `society.destatis_zensus_population_per_ha_inside_germany`
 -- holds geoms on cells with population > 0
 UPDATE society.egon_destatis_zensus_apartment_building_population_per_ha AS t
-    SET geom = t2.geom
+    SET
+        geom = t2.geom,
+        geom_point = t2.geom_point
     FROM society.destatis_zensus_population_per_ha AS t2
     WHERE t.geom IS NULL AND t.grid_id = t2.grid_id;
 
