@@ -429,7 +429,10 @@ def create_combined_zensus_table():
     If there's no data on buildings or apartments for a certain cell, the value
     for building_count resp. apartment_count contains NULL.
     """
-    sql_script = Path(".") / "create_combined_zensus_table.sql"
+    sql_script = os.path.join(
+        os.path.dirname(__file__),
+        "create_combined_zensus_table.sql"
+    )
     db.execute_sql_script(sql_script)
 
 
