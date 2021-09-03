@@ -204,6 +204,8 @@ Changed
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
 * Adjust file path for industrial sites import
   `#397 <https://github.com/openego/eGon-data/issues/418>`_
+* Rename columns gid to id
+  `#169 <https://github.com/openego/eGon-data/issues/169>`_
 
 Bug fixes
 ---------

@@ -79,7 +79,7 @@ def to_postgres():
                 ]
 
         # Set index column and format column headings
-        data.index.set_names("gid", inplace=True)
+        data.index.set_names("id", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
         # Drop table before inserting data
@@ -100,7 +100,7 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {vg250_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (gid);"
+            f"ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
