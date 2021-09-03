@@ -50,6 +50,12 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
+import egon.data.processing.calculate_dlr as dlr
+from egon.data.processing.DSM_cts_ind import dsm_Potential
+
+
+from egon.data import db
+
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -455,6 +461,12 @@ with airflow.DAG(
             landuse_extraction,
         ]
     )
+    
+    # DSM 
+    components_dsm =  dsm_Potential(
+        dependencies = [cts_electricity_demand_annual, 
+                        demand_curves_industry,
+                        osmtgmod_pypsa])
 
     # Electrical loads to eTraGo
 
