@@ -11,7 +11,7 @@ def insert():
     """
     # Connect to the data base
     offshore_path = 'data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx'
-    offshore = pd.read_excel(offshore_path, sheet_name= 'WInd_Offshore',
+    offshore = pd.read_excel(offshore_path, sheet_name= 'WInd_Offshore_NEP',
                              usecols= ['Netzverknuepfungspunkt',
                                        'Spannungsebene in kV',
                                        'C 2035'])
@@ -75,6 +75,9 @@ def insert():
             offshore.at[index, 'osm_web'] = substations_mvhv.at[a, 'osm_www']
         else:
             print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
+    
+    # Drop offshore wind farms without found connexion point
+    offshore.dropna(subset= ['bus_id'], inplace= True)
     
     # Assign voltage levels to wind offshore parks
     offshore['voltage_level'] = np.nan
