@@ -653,18 +653,6 @@ def merge_inputs():
                     LOWER (SUBSTRING(s.companyname, 1, 3)));"""
     )
 
-    # Delete remaining duplicates
-
-    db.execute_sql(
-        f"""DELETE FROM
-                {sites_table} a
-                    USING {sites_table} b
-            WHERE a.id > b.id
-            AND a.geom = b.geom
-            AND a.wz = b.wz;"""
-    )
-
-
 def map_nuts3():
     """
     Match resulting industrial sites with nuts3 codes and fill column 'nuts3'
@@ -694,7 +682,7 @@ class MergeIndustrialSites(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
-            version="0.0.2",
+            version="0.0.2.dev",
             dependencies=dependencies,
             tasks=(download_import_industrial_sites, merge_inputs, map_nuts3),
         )
