@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS society.egon_destatis_zensus_apartment_building_population_
 -- Join tables and filter data
 CREATE TABLE society.egon_destatis_zensus_apartment_building_population_per_ha AS
 SELECT GREATEST(bld_apt.grid_id, ze.grid_id) AS grid_id,
-       GREATEST(bld_apt.zensus_population_id, ze.gid) AS zensus_population_id,
+       GREATEST(bld_apt.zensus_population_id, ze.id) AS zensus_population_id,
        bld_apt.building_count,
        bld_apt.apartment_count,
        ze.population,
