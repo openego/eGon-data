@@ -245,3 +245,6 @@ Bug fixes
   `#398 <https://github.com/openego/eGon-data/issues/398>`_
 * Add missing dependency in pipeline.py
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
+* Add prefix egon to MV grid district tables
+  `#349 <https://github.com/openego/eGon-data/issues/349>`_
+
