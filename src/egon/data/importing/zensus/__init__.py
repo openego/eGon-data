@@ -23,9 +23,13 @@ def download_zensus_pop():
     zensus_population_config = data_config["zensus_population"][
         "original_data"
     ]
+    download_directory = Path(".") / "zensus_population"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
 
-    target_file = os.path.join(
-        os.path.dirname(__file__), zensus_population_config["target"]["path"]
+    target_file = (
+        download_directory / zensus_population_config["target"]["file"]
     )
 
     if not os.path.isfile(target_file):
@@ -37,17 +41,20 @@ def download_zensus_misc():
 
     # Get data config
     data_config = egon.data.config.datasets()
-
+    download_directory = Path(".") / "zensus_population"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
     # Download remaining zensus data set on households, buildings, apartments
 
     zensus_config = data_config["zensus_misc"]["original_data"]
     zensus_misc_processed = data_config["zensus_misc"]["processed"]
     zensus_url = zensus_config["source"]["url"]
-    zensus_path = zensus_misc_processed["path_table_map"].keys()
-    url_path_map = list(zip(zensus_url, zensus_path))
+    zensus_files = zensus_misc_processed["file_table_map"].keys()
+    url_path_map = list(zip(zensus_url, zensus_files))
 
     for url, path in url_path_map:
-        target_file_misc = os.path.join(os.path.dirname(__file__), path)
+        target_file_misc = download_directory / path
 
         if not os.path.isfile(target_file_misc):
             urlretrieve(url, target_file_misc)
@@ -90,7 +97,7 @@ def create_zensus_tables():
     )
 
     # Create tables for household, apartment and building
-    for table in zensus_misc_processed["path_table_map"].values():
+    for table in zensus_misc_processed["file_table_map"].values():
         misc_table = f"{zensus_misc_processed['schema']}.{table}"
 
         db.execute_sql(f"DROP TABLE IF EXISTS {misc_table} CASCADE;")
@@ -129,7 +136,7 @@ def target(source, dataset):
 
     """
     return Path(
-        os.path.join(os.path.dirname(__file__), source.stem)
+        os.path.join(Path("."), "zensus_population", source.stem)
         + "."
         + dataset
         + source.suffix
@@ -277,10 +284,12 @@ def population_to_postgres():
     data_config = egon.data.config.datasets()
     zensus_population_orig = data_config["zensus_population"]["original_data"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
-    input_file = os.path.join(
-        os.path.dirname(__file__), zensus_population_orig["target"]["path"]
+    input_file = (
+        Path(".")
+        / "zensus_population"
+        / zensus_population_orig["target"]["file"]
     )
-    dataset = settings()['egon-data']['--dataset-boundary']
+    dataset = settings()["egon-data"]["--dataset-boundary"]
 
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
@@ -349,7 +358,8 @@ def zensus_misc_to_postgres():
     data_config = egon.data.config.datasets()
     zensus_misc_processed = data_config["zensus_misc"]["processed"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
-    dataset = settings()['egon-data']['--dataset-boundary']
+    file_path = Path(".") / "zensus_population"
+    dataset = settings()["egon-data"]["--dataset-boundary"]
 
     population_table = (
         f"{zensus_population_processed['schema']}"
@@ -359,10 +369,8 @@ def zensus_misc_to_postgres():
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 
-    for input_file, table in zensus_misc_processed["path_table_map"].items():
-        with zipfile.ZipFile(
-            os.path.join(os.path.dirname(__file__), input_file)
-        ) as zf:
+    for input_file, table in zensus_misc_processed["file_table_map"].items():
+        with zipfile.ZipFile(file_path / input_file) as zf:
             csvfiles = [n for n in zf.namelist() if n.lower()[-3:] == "csv"]
             for filename in csvfiles:
                 zf.extract(filename)
@@ -439,11 +447,11 @@ def adjust_zensus_misc():
         f".{zensus_population_processed['table']}"
     )
 
-    for input_file, table in zensus_misc_processed["path_table_map"].items():
+    for input_file, table in zensus_misc_processed["file_table_map"].items():
         db.execute_sql(
-             f"""
+            f"""
              DELETE FROM {zensus_population_processed['schema']}.{table} as b
              WHERE b.zensus_population_id IN (
                  SELECT id FROM {population_table}
                  WHERE population < 0);"""
-            )
+        )
