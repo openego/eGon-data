@@ -436,5 +436,5 @@ with airflow.DAG(
     # Heat time Series
     heat_time_series = HeatTimeSeries(
         dependencies = [heat_demand_Germany, import_district_heating_areas,  
-                        import_district_heating_areas,vg250_population_metadata,
+                        import_district_heating_areas,vg250,
                         map_zensus_grid_districts])
