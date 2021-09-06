@@ -9,10 +9,14 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
+from pathlib import Path
 from urllib.request import urlretrieve
 import json
 import os
+import shutil
 import time
+
+import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
@@ -26,20 +30,25 @@ def download():
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
 
+    download_directory = Path(".") / "openstreetmap"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
+
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         source_url = osm_config["source"]["url"]
-        target_path = osm_config["target"]["path"]
+        target_filename = osm_config["target"]["file"]
     else:
         source_url = osm_config["source"]["url_testmode"]
-        target_path = osm_config["target"]["path_testmode"]
+        target_filename = osm_config["target"]["file_testmode"]
 
-    target_file = os.path.join(os.path.dirname(__file__), target_path)
+    target_file = download_directory / target_filename
 
     if not os.path.isfile(target_file):
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(num_processes=4, cache_size=4096):
+def to_postgres(num_processes=1, cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
@@ -58,11 +67,18 @@ def to_postgres(num_processes=4, cache_size=4096):
     osm_config = data_config["openstreetmap"]["original_data"]
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        target_path = osm_config["target"]["path"]
+        input_filename = osm_config["target"]["file"]
     else:
-        target_path = osm_config["target"]["path_testmode"]
+        input_filename = osm_config["target"]["file_testmode"]
 
-    input_file = os.path.join(os.path.dirname(__file__), target_path)
+    input_file = Path(".") / "openstreetmap" / input_filename
+    style_file = (
+        Path(".") / "openstreetmap" / osm_config["source"]["stylefile"]
+    )
+    with resources.path(
+        "egon.data.datasets.osm", osm_config["source"]["stylefile"]
+    ) as p:
+        shutil.copy(p, style_file)
 
     # Prepare osm2pgsql command
     cmd = [
@@ -70,22 +86,30 @@ def to_postgres(num_processes=4, cache_size=4096):
         "--create",
         "--slim",
         "--hstore-all",
-        f"--number-processes {num_processes}",
-        f"--cache {cache_size}",
-        f"-H {docker_db_config['HOST']} -P {docker_db_config['PORT']} "
-        f"-d {docker_db_config['POSTGRES_DB']} "
-        f"-U {docker_db_config['POSTGRES_USER']}",
-        f"-p {osm_config['target']['table_prefix']}",
-        f"-S {osm_config['source']['stylefile']}",
-        f"{input_file}",
+        "--number-processes",
+        f"{num_processes}",
+        "--cache",
+        f"{cache_size}",
+        "-H",
+        f"{docker_db_config['HOST']}",
+        "-P",
+        f"{docker_db_config['PORT']}",
+        "-d",
+        f"{docker_db_config['POSTGRES_DB']}",
+        "-U",
+        f"{docker_db_config['POSTGRES_USER']}",
+        "-p",
+        f"{osm_config['target']['table_prefix']}",
+        "-S",
+        f"{style_file.absolute()}",
+        f"{input_file.absolute()}",
     ]
 
     # Execute osm2pgsql for import OSM data
     subprocess.run(
-        " ".join(cmd),
-        shell=True,
+        cmd,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-        cwd=os.path.dirname(__file__),
+        cwd=Path(__file__).parent,
     )
 
 
@@ -96,11 +120,12 @@ def add_metadata():
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         osm_url = osm_config["original_data"]["source"]["url"]
-        target_path = osm_config["original_data"]["target"]["path"]
+        input_filename = osm_config["original_data"]["target"]["file"]
     else:
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
-        target_path = osm_config["original_data"]["target"]["path_testmode"]
-    spatial_and_date = os.path.basename(target_path).split("-")
+        input_filename = osm_config["original_data"]["target"]["file_testmode"]
+
+    spatial_and_date = Path(input_filename).name.split("-")
     spatial_extend = spatial_and_date[0]
     osm_data_date = (
         "20"
@@ -260,7 +285,7 @@ class OpenStreetMap(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OpenStreetMap",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(download, to_postgres, modify_tables, add_metadata),
         )
