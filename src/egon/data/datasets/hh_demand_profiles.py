@@ -861,10 +861,10 @@ def enrich_zensus_data_at_cell_level(df_zensus):
     # Census cells with nuts3 and nuts1 information
     df_grid_id = db.select_dataframe(
         sql="""
-                            SELECT pop.grid_id, pop.gid as cell_id, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
+                            SELECT pop.grid_id, pop.id as cell_id, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
                             FROM society.destatis_zensus_population_per_ha_inside_germany as pop
                             LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
-                            ON (pop.gid=vg250.zensus_population_id)
+                            ON (pop.id=vg250.zensus_population_id)
                             LEFT JOIN boundaries.vg250_lan as lan
                             ON (LEFT(vg250.vg250_nuts3, 3)=lan.nuts)
                             WHERE lan.gf = 4 """
