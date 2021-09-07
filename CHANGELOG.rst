@@ -108,6 +108,10 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Add household electricity demand time series, mapping of
+  demand profiles to census cells and aggregated household
+  electricity demand time series at MV grid district level
+  `#256 <https://github.com/openego/eGon-data/issues/256>`_
 * Integrate power-to-gas installation potential links
   `#293 <https://github.com/openego/eGon-data/issues/293>`_
 * Integrate distribution of wind onshore and pv ground mounted generation
@@ -133,6 +137,8 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
+
+.. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
 Changed
@@ -242,9 +248,12 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
 * Add xlrd and openpyxl to installation setup
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
+* Store files of OSM, zensus and VG250 in working dir
+  `#341 <https://github.com/openego/eGon-data/issues/341>`_
 * Remove hard-coded slashes in file paths to ensure Windows compatibility
   `#398 <https://github.com/openego/eGon-data/issues/398>`_
 * Add missing dependency in pipeline.py
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
-
+* Add prefix egon to MV grid district tables
+  `#349 <https://github.com/openego/eGon-data/issues/349>`_
 
