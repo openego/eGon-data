@@ -27,6 +27,7 @@ from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
     houseprofiles_in_census_cells
 from egon.data.datasets.osmtgmod import Osmtgmod
@@ -81,6 +82,9 @@ with airflow.DAG(
     osm.insert_into(pipeline)
     osm_add_metadata = tasks["osm.add-metadata"]
     osm_download = tasks["osm.download"]
+
+    osm_buildings_streets = OsmBuildingsStreets(dependencies=[osm])
+    osm_buildings_streets.insert_into(pipeline)
 
     data_bundle = DataBundle(dependencies=[setup])
     data_bundle.insert_into(pipeline)
@@ -281,8 +285,8 @@ with airflow.DAG(
     )
 
     # Insert industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand( 
-     dependencies=[create_gas_polygons]) 
+    industrial_gas_demand = IndustrialGasDemand(
+     dependencies=[create_gas_polygons])
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
