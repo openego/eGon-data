@@ -221,6 +221,9 @@ def dsm_cts_ind_processing():
             return ts
 
         def relate_to_Schmidt_sites(dsm):
+            
+            # TODO: nach Änderung der Schmidt-Tabelle relation einfach über geom nicht mehr möglich
+            # -> application-Spalte in industrial_sites
 
             # import industrial sites by Schmidt
 
@@ -405,8 +408,10 @@ def dsm_cts_ind_processing():
         dsm_buses["scn_name"] = dsm["scn_name"].copy()
 
         # get original buses and add copy relevant information
-        sql = "SELECT bus_id, v_nom, scn_name, x, y, geom FROM grid.egon_etrago_bus"
-        original_buses = gpd.GeoDataFrame.from_postgis(sql, con)
+        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['bus']
+        original_buses = db.select_geodataframe(
+            f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
+                {target1['schema']}.{target1['table']}""")
 
         # copy v_nom, x, y and geom
         v_nom = pd.Series(index=dsm_buses.index, dtype=float)
@@ -454,7 +459,14 @@ def dsm_cts_ind_processing():
         dsm_links["scn_name"] = dsm_buses["scn_name"].copy()
 
         # set link_id
-        sql = "SELECT link_id FROM grid.egon_etrago_link"
+        # get original buses and add copy relevant information
+        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['bus']
+        original_buses = db.select_geodataframe(
+            f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
+                {target1['schema']}.{target1['table']}""")
+        
+        target2 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['link']
+        sql = f"""SELECT link_id FROM {target2['schema']}.{target2['table']}"""
         max_id = pd.read_sql_query(sql, con)
         max_id = max_id["link_id"].max()
         if np.isnan(max_id):
@@ -481,7 +493,8 @@ def dsm_cts_ind_processing():
         dsm_stores["scn_name"] = dsm_buses["scn_name"].copy()
 
         # set store_id
-        sql = "SELECT store_id FROM grid.egon_etrago_store"
+        target3 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['store']
+        sql = f"""SELECT store_id FROM {target3['schema']}.{target3['table']}"""
         max_id = pd.read_sql_query(sql, con)
         max_id = max_id["store_id"].max()
         if np.isnan(max_id):
