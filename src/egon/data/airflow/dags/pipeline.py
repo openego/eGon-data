@@ -41,6 +41,9 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 
 from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
+
+from egon.data.datasets.DSM_cts_ind import dsm_Potential
+
 import airflow
 
 import egon.data.importing.zensus as import_
@@ -52,7 +55,6 @@ import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
-from egon.data.processing.DSM_cts_ind import dsm_Potential
 
 
 from egon.data import db
