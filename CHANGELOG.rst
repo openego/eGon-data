@@ -124,8 +124,12 @@ Added
   `#237 <https://github.com/openego/eGon-data/issues/237>`_
 * Merge electrical loads per bus and export to etrago tables
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
+* Insert industial gas demand
+  `#321 <https://github.com/openego/eGon-data/issues/358>`_
 * Integrate existing CHP and extdended CHP > 10MW_el
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
+* Add random seed to CLI parameters
+  `#351 <https://github.com/openego/eGon-data/issues/351>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
 
@@ -239,12 +243,14 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
 * Add xlrd and openpyxl to installation setup
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
+* Store files of OSM, zensus and VG250 in working dir
+  `#341 <https://github.com/openego/eGon-data/issues/341>`_
 * Remove hard-coded slashes in file paths to ensure Windows compatibility
   `#398 <https://github.com/openego/eGon-data/issues/398>`_
 * Add missing dependency in pipeline.py
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
 * Replace NAN by 0 to avoid empty p_set column in DB
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
-
-
+* Add prefix egon to MV grid district tables
+  `#349 <https://github.com/openego/eGon-data/issues/349>`_
 

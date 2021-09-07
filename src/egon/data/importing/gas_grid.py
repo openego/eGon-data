@@ -18,30 +18,6 @@ from zipfile import ZipFile
 from geoalchemy2.shape import from_shape
 from pathlib import Path
 
-def next_id(component):
-    """ Select next id value for components in pf-tables
-    Parameters
-    ----------
-    component : str
-        Name of componenet
-    Returns
-    -------
-    next_id : int
-        Next index value
-    """
-    max_id = db.select_dataframe(
-        f"""
-        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
-        """)['max'][0]
-
-    if max_id:
-        next_id = max_id + 1
-    else:
-        next_id = 1
-
-    return next_id
-
-
 def download_SciGRID_gas_data():
     """
     Download SciGRID_gas IGGIELGN data from Zenodo
@@ -85,7 +61,7 @@ def define_gas_nodes_list():
 
     """
     # Select next id value
-    new_id = next_id('bus')
+    new_id = db.next_etrago_id('bus')
 
     target_file = (
             Path(".") /
@@ -185,7 +161,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
     engine = db.engine()
 
     # Select next id value
-    new_id = next_id('link')
+    new_id = db.next_etrago_id('link')
 
     classifiaction_file = (
             Path(".") /

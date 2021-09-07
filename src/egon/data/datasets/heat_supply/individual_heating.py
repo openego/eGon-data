@@ -183,13 +183,14 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         resulting_capacities,
         geometry = geom_mv[resulting_capacities.mv_grid_id].values)
 
+
 def plot_heat_supply(resulting_capacities):
 
     from matplotlib import pyplot as plt
 
     mv_grids = db.select_geodataframe(
         """
-        SELECT * FROM grid.mv_grid_districts
+        SELECT * FROM grid.egon_mv_grid_district
         """, index_col='subst_id')
 
     for c in ['CHP', 'heat_pump']:

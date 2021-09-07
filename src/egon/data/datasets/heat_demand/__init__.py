@@ -12,44 +12,47 @@ This module obtains the residential and service-sector heat demand data for
 database with assigned census cell IDs.
 """
 
-from jinja2 import Template
-
-from egon.data import db, subprocess
-import egon.data.config
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters, EgonScenario)
+from pathlib import Path  # for database import
 from urllib.request import urlretrieve
+
+# for metadata creation
+import json
 import os
 import zipfile
 
+from jinja2 import Template
+from rasterio.mask import mask
+
+# packages for ORM class definition
+from sqlalchemy import Column, Float, ForeignKey, Integer, Sequence, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
 # for raster operations
 import rasterio
-from rasterio.mask import mask
 
-from pathlib import Path  # for database import
+from egon.data import db, subprocess
+from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import (
+    EgonScenario,
+    get_sector_parameters,
+)
+import egon.data.config
 
-# for metadata creation
-import json
 # import time
 
-# packages for ORM class definition
-from sqlalchemy import Column, String, Float, Integer, Sequence, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-
-from egon.data.datasets import Dataset
 
 # class for airflow task management (and version control)
 class HeatDemandImport(Dataset):
-
     def __init__(self, dependencies):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.0", # maybe rethink the naming
+            version="0.0.0",  # maybe rethink the naming
             dependencies=dependencies,
-            tasks=(scenario_data_import))
+            tasks=(scenario_data_import),
+        )
+
 
 Base = declarative_base()
 
@@ -199,7 +202,7 @@ def cutout_heat_demand_germany():
         The alternative of cutting out Germany from the pan-European raster
         based on German census cells, instead of using state boundaries with
         low resolution (to avoid inaccuracies), was not implemented in order to
-        achieve consistency with other datasets (e.g. mv_grid_districts).
+        achieve consistency with other datasets (e.g. egon_mv_grid_district).
         Besides, all attempts to read, (union) and load cells from the local
         database failed, but were documented as commented code within this
         function and afterwards removed.
@@ -344,10 +347,10 @@ def future_heat_demand_germany(scenario_name):
         res_hd_reduction = 1
         ser_hd_reduction = 1
     else:
-        heat_parameters = get_sector_parameters('heat', scenario=scenario_name)
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
-        res_hd_reduction = heat_parameters['DE_demand_reduction_residential']
-        ser_hd_reduction = heat_parameters['DE_demand_reduction_service']
+        res_hd_reduction = heat_parameters["DE_demand_reduction_residential"]
+        ser_hd_reduction = heat_parameters["DE_demand_reduction_service"]
 
     # Define the directory where the created rasters will be saved
     scenario_raster_directory = "heat_scenario_raster"
@@ -394,11 +397,7 @@ def future_heat_demand_germany(scenario_name):
     # adjusting and connversion to MWh
     ser_scenario_raster = ser_hd_reduction * ser_hd_2015 / 3.6
 
-    ser_profile.update(
-        dtype=rasterio.float32,
-        count=1,
-        compress="lzw"
-    )
+    ser_profile.update(dtype=rasterio.float32, count=1, compress="lzw")
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
     ser_result_filename = (
@@ -465,7 +464,7 @@ def heat_demand_to_db_table():
 
     for source in sources:
 
-        if not '2015' in source.stem:
+        if not "2015" in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
@@ -475,8 +474,10 @@ def heat_demand_to_db_table():
                 text=True,
             ).stdout
             with engine.begin() as connection:
-                print(f'CREATE TEMPORARY TABLE "{rasters}"'
-                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);')
+                print(
+                    f'CREATE TEMPORARY TABLE "{rasters}"'
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
+                )
                 connection.execute(
                     f'CREATE TEMPORARY TABLE "{rasters}"'
                     ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
@@ -764,14 +765,13 @@ def add_metadata():
                                 "fields": ["id"],
                             },
                         },
-
                         {
                             "fields": ["scenario"],
                             "reference": {
                                 "resource": "scenario.egon_scenario_parameters",
                                 "fields": ["name"],
                             },
-                        }
+                        },
                     ],
                 },
                 "dialect": {"delimiter": "none", "decimalSeparator": "."},
@@ -823,6 +823,8 @@ def scenario_data_import():
         None
 
     """
+    # create schema if not exists
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
     # drop table if exists
     # can be removed when table structure doesn't change anymore
     db.execute_sql("DROP TABLE IF EXISTS demand.egon_peta_heat CASCADE")
