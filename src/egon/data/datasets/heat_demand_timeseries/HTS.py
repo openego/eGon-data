@@ -89,7 +89,8 @@ def temperature_profile_extract():
     '''
 
     cutout = era.import_cutout(boundary = 'Europe')
-    coordinates_path = os.path.join(os.getcwd(),'TRY_Climate_Zones')
+    coordinates_path = os.path.join(os.getcwd(),'data_bundle_egon_data','climate_zones_Germany',
+                                    'TRY_Climate_Zone')
     station_location=pd.read_csv(
         os.path.join(coordinates_path,'station_coordinates.csv'))
 
@@ -144,8 +145,8 @@ def idp_pool_generator():
         for every combination of household stock and temperature class 
 
     '''
-    path = os.path.join(os.path.join(os.getcwd(), 'heat_data_new.hdf5'))
-
+    path = os.path.join(os.getcwd(),'data_bundle_egon_data',
+                        'household_heat_demand_profiles','household_heat_demand_profiles.hdf5')
     index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq='H')
 
     sfh = pd.read_hdf(path, key ='SFH')
@@ -444,7 +445,9 @@ def annual_demand_generator():
         demand_geom.columns.difference(['demand', 'grid_id', 'geom','zensus_population_id']), 1)
     demand_geom['geom'] = demand_geom['geom'].to_crs(epsg=4326)
 
-    temperature_zones = gpd.read_file(os.path.join(os.getcwd(),'TRY_Climate_Zones','Try_Climate_Zone.shp'))
+    temperature_zones = gpd.read_file(os.path.join(os.getcwd(),'data_bundle_egon_data',
+                                                   'climate_zones_Germany','TRY_Climate_Zone',
+                                                   'Climate_Zone.shp'))
     temperature_zones.sort_values('Zone', inplace=True)
     temperature_zones.reset_index(inplace=True)
     temperature_zones.drop(columns=['index', 'Id'], inplace=True, axis=0)
