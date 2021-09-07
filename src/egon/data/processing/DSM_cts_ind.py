@@ -693,6 +693,8 @@ def dsm_cts_ind_processing():
         print(" ")
         print("industry sites: ventilation in WZ23")
         print(" ")
+        
+        # TODO: WZ23 - Cement Mills, sonst doppeltes DSM-Potential
 
         dsm = ind_sites_vent_data_import(con, ind_vent_share, wz=23)
 
