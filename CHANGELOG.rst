@@ -193,6 +193,8 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
+* Use random seed from CLI parameters for CHP and society prognosis functions
+  `#351 <https://github.com/openego/eGon-data/issues/351>`_
 
 Bug fixes
 ---------

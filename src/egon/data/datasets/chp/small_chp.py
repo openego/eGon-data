@@ -141,7 +141,7 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
     """
     session = sessionmaker(bind=db.engine())()
 
-    np.random.seed(seed=123456)
+    np.random.seed(seed=config.settings()['egon-data']['--random-seed'])
 
     # n = 0
     # Add new CHP as long as the additional capacity is not reached
