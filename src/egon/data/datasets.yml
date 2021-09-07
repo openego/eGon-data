@@ -396,6 +396,15 @@ electrical_load_curves_cts:
       schema: 'demand'
       table: 'egon_etrago_electricity_cts'
 
+hh_demand_profiles:
+  sources:
+    household_electricity_demand_profiles:
+      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
+      path: "household_electricity_demand_profiles_100k.hdf5"
+
+    zensus_household_types:
+      path: "Zensus2011_Personen.csv"
+
 map_mvgrid_vg250:
   sources:
     egon_mv_grid_district:
@@ -642,7 +651,6 @@ etrago_electricity:
     etrago_load_curves:
       schema: 'grid'
       table: 'egon_etrago_load_timeseries'
-
 
 chp_location:
   sources:

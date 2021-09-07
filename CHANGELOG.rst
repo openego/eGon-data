@@ -108,6 +108,10 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Add household electricity demand time series, mapping of
+  demand profiles to census cells and aggregated household
+  electricity demand time series at MV grid district level
+  `#256 <https://github.com/openego/eGon-data/issues/256>`_
 * Integrate power-to-gas installation potential links
   `#293 <https://github.com/openego/eGon-data/issues/293>`_
 * Integrate distribution of wind onshore and pv ground mounted generation
@@ -130,6 +134,8 @@ Added
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
 * Add random seed to CLI parameters
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
+
+.. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
 Changed
