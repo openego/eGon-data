@@ -166,7 +166,7 @@ def industrial_demand_distr():
 
         # Select industrial landuse polygons
         landuse = db.select_geodataframe(
-            f"""SELECT gid, area_ha, geom FROM
+            f"""SELECT id, area_ha, geom FROM
                 {sources['osm_landuse']['schema']}.
                 {sources['osm_landuse']['table']}
                 WHERE sector = 3
@@ -323,7 +323,7 @@ def industrial_demand_distr():
         sites["scenario"] = scn
         sites.set_index("industrial_sites_id", inplace=True)
 
-        landuse = landuse.rename({"gid": "osm_id"}, axis=1)
+        landuse = landuse.rename({"id": "osm_id"}, axis=1)
 
         # Remove duplicates and adjust index
         landuse = landuse.groupby(["osm_id", "wz"]).sum().reset_index()
@@ -351,7 +351,7 @@ class IndustrialDemandCurves(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Industrial_demand_curves",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 create_tables,

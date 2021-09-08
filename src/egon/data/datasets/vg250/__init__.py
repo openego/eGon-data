@@ -79,7 +79,7 @@ def to_postgres():
                 ]
 
         # Set index column and format column headings
-        data.index.set_names("gid", inplace=True)
+        data.index.set_names("id", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
         # Drop table before inserting data
@@ -100,7 +100,7 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {vg250_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (gid);"
+            f"ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
@@ -299,7 +299,7 @@ class Vg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="VG250",
-            version=self.filename + "-0.0.2",
+            version=self.filename + "-0.0.3",
             dependencies=dependencies,
             tasks=(
                 download_files,

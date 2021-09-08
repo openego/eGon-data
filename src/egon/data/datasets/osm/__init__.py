@@ -220,7 +220,7 @@ def add_metadata():
 def modify_tables():
     """Adjust primary keys, indices and schema of OSM tables.
 
-    * The Column "gid" is added and used as the new primary key.
+    * The Column "id" is added and used as the new primary key.
     * Indices (GIST, GIN) are reset
     * The tables are moved to the schema configured as the "output_schema".
     """
@@ -239,10 +239,10 @@ def modify_tables():
         # Drop primary keys
         sql_statements.append(f"DROP INDEX IF EXISTS {table}_pkey;")
 
-        # Add primary key on newly created column "gid"
-        sql_statements.append(f"ALTER TABLE public.{table} ADD gid SERIAL;")
+        # Add primary key on newly created column "id"
+        sql_statements.append(f"ALTER TABLE public.{table} ADD id SERIAL;")
         sql_statements.append(
-            f"ALTER TABLE public.{table} ADD PRIMARY KEY (gid);"
+            f"ALTER TABLE public.{table} ADD PRIMARY KEY (id);"
         )
         sql_statements.append(
             f"ALTER TABLE public.{table} RENAME COLUMN way TO geom;"
@@ -285,7 +285,7 @@ class OpenStreetMap(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OpenStreetMap",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(download, to_postgres, modify_tables, add_metadata),
         )
