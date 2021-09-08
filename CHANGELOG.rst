@@ -267,4 +267,5 @@ Bug fixes
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
 * Add prefix egon to MV grid district tables
   `#349 <https://github.com/openego/eGon-data/issues/349>`_
-
+* Bump MV grid district version no
+  `#432 <https://github.com/openego/eGon-data/issues/432>`_
