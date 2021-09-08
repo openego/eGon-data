@@ -238,9 +238,6 @@ def dsm_cts_ind_processing():
                 epsg=3035,
             )
 
-            dsm.set_geometry("geom", inplace=True)
-            dsm.to_crs(3035)
-
             dsm = gpd.overlay(dsm, schmidt)
 
             dsm.rename(
