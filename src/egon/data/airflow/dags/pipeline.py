@@ -83,9 +83,6 @@ with airflow.DAG(
     osm_add_metadata = tasks["osm.add-metadata"]
     osm_download = tasks["osm.download"]
 
-    osm_buildings_streets = OsmBuildingsStreets(dependencies=[osm])
-    osm_buildings_streets.insert_into(pipeline)
-
     data_bundle = DataBundle(dependencies=[setup])
     data_bundle.insert_into(pipeline)
     download_data_bundle = tasks["data_bundle.download"]
@@ -150,6 +147,12 @@ with airflow.DAG(
             zensus_misc_import
         ]
     )
+
+    # OSM buildings, streets, amenities
+    osm_buildings_streets = OsmBuildingsStreets(
+        dependencies=[osm, zensus_misc_import]
+    )
+    osm_buildings_streets.insert_into(pipeline)
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
