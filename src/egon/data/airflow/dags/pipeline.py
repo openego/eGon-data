@@ -32,6 +32,7 @@ from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -43,6 +44,11 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+
+from egon.data.datasets.gas_prod import GasProduction
+from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
+
+import egon.data.importing.zensus as import_
 import egon.data.importing.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.calculate_dlr as dlr
@@ -50,7 +56,6 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
-import egon.data.processing.calculate_dlr as dlr
 from egon.data.processing.DSM_cts_ind import dsm_Potential
 
 
@@ -82,6 +87,9 @@ with airflow.DAG(
     osm.insert_into(pipeline)
     osm_add_metadata = tasks["osm.add-metadata"]
     osm_download = tasks["osm.download"]
+
+    osm_buildings_streets = OsmBuildingsStreets(dependencies=[osm])
+    osm_buildings_streets.insert_into(pipeline)
 
     data_bundle = DataBundle(dependencies=[setup])
     data_bundle.insert_into(pipeline)
@@ -134,9 +142,8 @@ with airflow.DAG(
     zensus_inside_ger >> zensus_misc_import
 
     # DemandRegio data import
-    demandregio = DemandRegio(
-        dependencies=[setup, vg250, scenario_parameters, data_bundle]
-    )
+    demandregio = DemandRegio(dependencies=[
+        setup, vg250, scenario_parameters, data_bundle])
     demandregio_demand_cts_ind = tasks["demandregio.insert-cts-ind-demands"]
 
     # Society prognosis
@@ -145,7 +152,7 @@ with airflow.DAG(
             demandregio,
             zensus_vg250,
             population_import,
-            zensus_misc_import,
+            zensus_misc_import
         ]
     )
 
@@ -282,10 +289,14 @@ with airflow.DAG(
         dependencies=[create_gas_polygons]
     )
 
+    # Insert industrial gas demand
+    industrial_gas_demand = IndustrialGasDemand(
+     dependencies=[create_gas_polygons])
+
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
         task_id="create-landuse-table",
-        python_callable=loadarea.create_landuse_table,
+        python_callable=loadarea.create_landuse_table
     )
 
     landuse_extraction = PostgresOperator(

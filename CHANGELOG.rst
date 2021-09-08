@@ -139,6 +139,9 @@ Added
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
+* Add task to extract, filter and preprocess buildings,
+  streets and amenities from OpenStreetMap
+  `#262 <https://github.com/openego/eGon-data/issues/262>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -262,4 +265,6 @@ Bug fixes
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
 * Replace NAN by 0 to avoid empty p_set column in DB
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
+* Add prefix egon to MV grid district tables
+  `#349 <https://github.com/openego/eGon-data/issues/349>`_
 
