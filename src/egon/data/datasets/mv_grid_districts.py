@@ -772,7 +772,7 @@ def define_mv_grid_districts():
 mv_grid_districts_setup = partial(
     Dataset,
     name="MvGridDistricts",
-    version="0.0.0",
+    version="0.0.1",
     dependencies=[],
     tasks=(define_mv_grid_districts),
 )
