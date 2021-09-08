@@ -27,6 +27,8 @@ from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
+    houseprofiles_in_census_cells
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -38,10 +40,8 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-
 from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
-
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 
 import airflow
@@ -55,7 +55,6 @@ import egon.data.processing.loadarea as loadarea
 import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
-
 
 from egon.data import db
 
@@ -129,12 +128,15 @@ with airflow.DAG(
     population_import >> zensus_misc_import
 
     # Combine Zensus and VG250 data
-    zensus_vg250 = ZensusVg250(dependencies=[vg250, population_import])
+    zensus_vg250 = ZensusVg250(
+        dependencies=[vg250, population_import])
+    zensus_inside_ger = tasks["zensus_vg250.inside-germany"]
+
+    zensus_inside_ger >> zensus_misc_import
 
     # DemandRegio data import
-    demandregio = DemandRegio(
-        dependencies=[setup, vg250, scenario_parameters, data_bundle]
-    )
+    demandregio = DemandRegio(dependencies=[
+        setup, vg250, scenario_parameters, data_bundle])
     demandregio_demand_cts_ind = tasks["demandregio.insert-cts-ind-demands"]
 
     # Society prognosis
@@ -143,7 +145,7 @@ with airflow.DAG(
             demandregio,
             zensus_vg250,
             population_import,
-            zensus_misc_import,
+            zensus_misc_import
         ]
     )
 
@@ -287,7 +289,7 @@ with airflow.DAG(
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
         task_id="create-landuse-table",
-        python_callable=loadarea.create_landuse_table,
+        python_callable=loadarea.create_landuse_table
     )
 
     landuse_extraction = PostgresOperator(
@@ -386,6 +388,35 @@ with airflow.DAG(
     elec_household_demands_zensus >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
+
+    mv_hh_electricity_load_2035 = PythonOperator(
+        task_id="MV-hh-electricity-load-2035",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon2035", 2035, "0.0.0"],
+        op_kwargs={"drop_table": True},
+    )
+
+    mv_hh_electricity_load_2050 = PythonOperator(
+        task_id="MV-hh-electricity-load-2050",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon100RE", 2050, "0.0.0"],
+    )
+
+    hh_demand = hh_demand_setup(dependencies=[
+        vg250_clean_and_prepare,
+        zensus_misc_import,
+        map_zensus_grid_districts,
+        zensus_inside_ger,
+        demandregio,
+    ],
+        tasks=(houseprofiles_in_census_cells,
+               mv_hh_electricity_load_2035,
+               mv_hh_electricity_load_2050,)
+    )
+    hh_demand.insert_into(pipeline)
+    householdprofiles_in_cencus_cells = tasks["hh_demand_profiles.houseprofiles-in-census-cells"]
+    mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
+    mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
     # CHP locations
     chp = Chp(dependencies=[mv_grid_districts, mastr_data])

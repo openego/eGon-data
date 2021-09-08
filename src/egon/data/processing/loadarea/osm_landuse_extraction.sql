@@ -25,7 +25,7 @@ DELETE FROM openstreetmap.osm_landuse;
 -- filter urban
 
 INSERT INTO            openstreetmap.osm_landuse
-    SELECT  osm.gid ::integer AS gid,
+    SELECT  osm.id ::integer AS id,
             osm.osm_id ::integer AS osm_id,
             osm.name ::text AS name,
             '0' ::integer AS sector,
@@ -48,11 +48,11 @@ INSERT INTO            openstreetmap.osm_landuse
         tags @> '"man_made"=>"works"'::hstore OR 
         tags @> '"landuse"=>"farmyard"'::hstore OR 
         tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
-    ORDER BY    osm.gid;
+    ORDER BY    osm.id;
     
 -- Create index using GIST (geom)
 
-DROP INDEX IF EXISTS osm_landuse_geom_idx; 
+DROP INDEX IF EXISTS openstreetmap.osm_landuse_geom_idx; 
 
 CREATE INDEX osm_landuse_geom_idx
     ON openstreetmap.osm_landuse USING GIST (geom);
@@ -65,20 +65,20 @@ CREATE INDEX osm_landuse_geom_idx
 UPDATE 	openstreetmap.osm_landuse AS t1
 	SET  	vg250 = t2.vg250
 	FROM    (
-		SELECT	osm.gid AS gid,
+		SELECT	osm.id AS id,
 			'inside' ::text AS vg250
 		FROM	boundaries.vg250_sta_union AS vg,
 			openstreetmap.osm_landuse AS osm
 		WHERE  	vg.geometry && osm.geom AND
 			ST_CONTAINS(vg.geometry,osm.geom)
 		) AS t2
-	WHERE  	t1.gid = t2.gid;
+	WHERE  	t1.id = t2.id;
 
 -- Identify polygons which are spatially overlapping with the defined boundaries 
 UPDATE 	openstreetmap.osm_landuse AS t1
 	SET  	vg250 = t2.vg250
 	FROM    (
-		SELECT	osm.gid AS gid,
+		SELECT	osm.id AS id,
 			'crossing' ::text AS vg250
 		FROM	boundaries.vg250_sta_union AS vg,
 			openstreetmap.osm_landuse AS osm
@@ -86,7 +86,7 @@ UPDATE 	openstreetmap.osm_landuse AS t1
 			vg.geometry && osm.geom AND
 			ST_Overlaps(vg.geometry,osm.geom)
 		) AS t2
-	WHERE  	t1.gid = t2.gid;
+	WHERE  	t1.id = t2.id;
 
 -- Move all polygons which are overlapping the external borders or lying outside of these to a materialized view
 
@@ -97,8 +97,8 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_error_geom_vg250 AS
 	WHERE	osm.vg250 = 'outside' OR osm.vg250 = 'crossing';
 
 -- Create index
-CREATE UNIQUE INDEX  	osm_landuse_error_geom_vg250_gid_idx
-		ON	openstreetmap.osm_landuse_error_geom_vg250 (gid);
+CREATE UNIQUE INDEX  	osm_landuse_error_geom_vg250_id_idx
+		ON	openstreetmap.osm_landuse_error_geom_vg250 (id);
 
 -- index GIST (geom)
 CREATE INDEX  	osm_landuse_error_geom_vg250_geom_idx
@@ -113,8 +113,8 @@ CREATE SEQUENCE 		openstreetmap.osm_landuse_vg250_cut_id;
 -- Create materialized views to identify and store intersecting parts of polygons overlapping the external borders 
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_cut;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_cut AS
-	SELECT	nextval('openstreetmap.osm_landuse_vg250_cut_id') ::integer AS id,
-		cut.gid ::integer AS gid,
+	SELECT	nextval('openstreetmap.osm_landuse_vg250_cut_id') ::integer AS cut_id,
+		cut.id ::integer AS id,
 		cut.osm_id ::integer AS osm_id,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
@@ -130,11 +130,11 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_cut AS
 			boundaries.vg250_sta_union AS cut
 		WHERE	poly.vg250 = 'crossing'
 		) AS cut
-	ORDER BY 	cut.gid;
+	ORDER BY 	cut.id;
 
 -- index (id)
-CREATE UNIQUE INDEX  	osm_landuse_vg250_cut_gid_idx
-		ON	openstreetmap.osm_landuse_vg250_cut (gid);
+CREATE UNIQUE INDEX  	osm_landuse_vg250_cut_id_idx
+		ON	openstreetmap.osm_landuse_vg250_cut (id);
 
 -- index GIST (geom)
 CREATE INDEX  	osm_landuse_vg250_cut_geom_idx
@@ -144,7 +144,7 @@ CREATE INDEX  	osm_landuse_vg250_cut_geom_idx
 -- Store polygons in a materialized view
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_clean_cut_multi;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_clean_cut_multi AS
-	SELECT	nextval('openstreetmap.osm_polygon_gid_seq'::regclass) ::integer AS gid,
+	SELECT	nextval('openstreetmap.osm_polygon_id_seq'::regclass) ::integer AS id,
 		cut.osm_id ::integer AS osm_id,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
@@ -157,8 +157,8 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_clean_cut_multi AS
 	WHERE	cut.geom_type = 'MULTIPOLYGON';
 
 -- index (id)
-CREATE UNIQUE INDEX  	osm_landuse_vg250_clean_cut_multi_gid_idx
-		ON	openstreetmap.osm_landuse_vg250_clean_cut_multi (gid);
+CREATE UNIQUE INDEX  	osm_landuse_vg250_clean_cut_multi_id_idx
+		ON	openstreetmap.osm_landuse_vg250_clean_cut_multi (id);
 
 -- index GIST (geom)
 CREATE INDEX  	osm_landuse_vg250_clean_cut_multi_geom_idx
@@ -168,7 +168,7 @@ CREATE INDEX  	osm_landuse_vg250_clean_cut_multi_geom_idx
 -- Store multipolygons in a materialized view
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_clean_cut;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_clean_cut AS
-	SELECT	nextval('openstreetmap.osm_polygon_gid_seq'::regclass) ::integer AS gid,
+	SELECT	nextval('openstreetmap.osm_polygon_id_seq'::regclass) ::integer AS id,
 		cut.osm_id ::integer AS osm_id,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
@@ -181,8 +181,8 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_clean_cut AS
 	WHERE	cut.geom_type = 'POLYGON';
 
 -- index (id)
-CREATE UNIQUE INDEX  	osm_landuse_vg250_clean_cut_gid_idx
-		ON	openstreetmap.osm_landuse_vg250_clean_cut (gid);
+CREATE UNIQUE INDEX  	osm_landuse_vg250_clean_cut_id_idx
+		ON	openstreetmap.osm_landuse_vg250_clean_cut (id);
 		
 ----------------------------------------------------------------------------
 -- Remove all faulty entries from table openstreetmap.osm_landuse 
@@ -201,13 +201,13 @@ DELETE FROM	openstreetmap.osm_landuse AS osm
 INSERT INTO	openstreetmap.osm_landuse
 	SELECT	clean.*
 	FROM	openstreetmap.osm_landuse_vg250_clean_cut AS clean
-	ORDER BY 	clean.gid;
+	ORDER BY 	clean.id;
 
 -- Insert multi polygon fragments lying inside vg250 boundaries
 INSERT INTO	openstreetmap.osm_landuse
 	SELECT	clean.*
 	FROM	openstreetmap.osm_landuse_vg250_clean_cut_multi AS clean
-	ORDER BY 	clean.gid;
+	ORDER BY 	clean.id;
 
 
 ---------- ---------- ----------
