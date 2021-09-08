@@ -11,7 +11,7 @@ from egon.data import db, subprocess
 
 import xarray as xr
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
-import egon.data.importing.era5 as era
+import egon.data.datasets.era5 as era
 
 from sqlalchemy.ext.declarative import declarative_base
 
