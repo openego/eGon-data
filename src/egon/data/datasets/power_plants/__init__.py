@@ -52,10 +52,12 @@ class PowerPlants(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                insert_hydro_biomass,
-                wind_onshore.insert,
-                pv_ground_mounted.insert,
-                pv_rooftop_per_mv_grid,
+                {
+                    insert_hydro_biomass,
+                    wind_onshore.insert,
+                    pv_ground_mounted.insert,
+                    pv_rooftop_per_mv_grid,
+                },
             ),
         )
 
