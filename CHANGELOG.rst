@@ -204,6 +204,8 @@ Changed
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
 * Rename columns gid to id
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
+* Remove upper version limit of pandas
+  `#383 <https://github.com/openego/eGon-data/issues/383>`_
 
 Bug fixes
 ---------
