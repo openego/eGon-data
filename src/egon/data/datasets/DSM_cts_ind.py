@@ -13,7 +13,7 @@ class dsm_Potential(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DSM_potentials",
-            version="0.0.0",
+            version="0.0.0.dev",
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing),
         )
@@ -124,7 +124,7 @@ def dsm_cts_ind_processing():
 
         # select load for considered applications
 
-        dsm = dsm[dsm["wz"] == wz]
+        dsm = dsm[dsm["wz"] == wz]        
 
         # calculate share of timeseries
         timeseries = dsm["p_set"].copy()
@@ -211,7 +211,8 @@ def dsm_cts_ind_processing():
 
             # initialize dataframe to be returned
             ts = gpd.GeoDataFrame(
-                index=curves_bus["id"].astype(int), data=demand_area["geom"]
+                index=curves_bus["id"].astype(int), data=demand_area["geom"], 
+                geometry="geom", crs=3035
             )
             ts["subst_id"] = curves_bus["subst_id"].astype(int)
             curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
@@ -221,9 +222,6 @@ def dsm_cts_ind_processing():
             return ts
 
         def relate_to_Schmidt_sites(dsm):
-            
-            # TODO: nach Änderung der Schmidt-Tabelle relation einfach über geom nicht mehr möglich
-            # -> application-Spalte in industrial_sites
 
             # import industrial sites by Schmidt
 
@@ -257,6 +255,9 @@ def dsm_cts_ind_processing():
         dsm = dsm_2035.append(dsm_100)
 
         dsm = relate_to_Schmidt_sites(dsm)
+        
+        dsm = pd.DataFrame(dsm)
+        dsm.drop("geometry", axis=1, inplace=True) 
 
         return dsm
 
@@ -400,7 +401,7 @@ def dsm_cts_ind_processing():
             e_min.loc[index] = new
 
         # add DSM-buses to "original" buses
-        dsm_buses = gpd.GeoDataFrame(index=dsm.index)
+        dsm_buses = gpd.GeoDataFrame(index=dsm.index, crs=4326)
         dsm_buses["original_bus"] = dsm["bus"].copy()
         dsm_buses["scn_name"] = dsm["scn_name"].copy()
 
@@ -408,13 +409,15 @@ def dsm_cts_ind_processing():
         target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['bus']
         original_buses = db.select_geodataframe(
             f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
-                {target1['schema']}.{target1['table']}""")
+                {target1['schema']}.{target1['table']}""",
+                geom_col="geom",
+                epsg=4326)
 
         # copy v_nom, x, y and geom
         v_nom = pd.Series(index=dsm_buses.index, dtype=float)
         x = pd.Series(index=dsm_buses.index, dtype=float)
         y = pd.Series(index=dsm_buses.index, dtype=float)
-        geom = gpd.GeoSeries(index=dsm_buses.index)
+        geom = gpd.GeoSeries(index=dsm_buses.index, crs=4326)
 
         originals = dsm_buses["original_bus"].unique()
         for i in originals:
@@ -433,7 +436,8 @@ def dsm_cts_ind_processing():
         dsm_buses["x"] = x
         dsm_buses["y"] = y
         dsm_buses["geom"] = geom
-
+        dsm_buses.set_geometry("geom",inplace=True)
+        
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
         if np.isnan(max_id):
@@ -532,10 +536,10 @@ def dsm_cts_ind_processing():
         """
 
         targets = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]
-
+        
         # dsm_buses
 
-        insert_buses = gpd.GeoDataFrame(index=dsm_buses.index)
+        insert_buses = gpd.GeoDataFrame(index=dsm_buses.index, crs=4326)
         insert_buses["scn_name"] = dsm_buses["scn_name"]
         insert_buses["bus_id"] = dsm_buses["bus_id"]
         insert_buses["v_nom"] = dsm_buses["v_nom"]
@@ -543,7 +547,7 @@ def dsm_cts_ind_processing():
         insert_buses["x"] = dsm_buses["x"]
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
-        insert_buses = insert_buses.set_geometry("geom").set_crs(4326)
+        insert_buses.set_geometry("geom",inplace=True)
 
         # insert into database
         insert_buses.to_postgis(
@@ -622,6 +626,46 @@ def dsm_cts_ind_processing():
             if_exists="append",
             index=False,
         )
+        
+    def delete_dsm_entries(carrier):
+
+        """
+        Deletes DSM-components from databse if they are there already.
+        Parameters
+            ----------
+         carrier: String
+            Remark in column 'carrier' identifying DSM-potential
+        """      
+        
+        targets = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]
+        
+        # buses
+        
+        sql = f"""DELETE FROM {targets["bus"]["schema"]}.{targets["bus"]["table"]} b
+         WHERE (b.carrier LIKE '{carrier}');"""
+        db.execute_sql(sql)
+        
+        # links
+        
+        sql = f"""DELETE FROM {targets["link_timeseries"]["schema"]}.{targets["link_timeseries"]["table"]} t
+        WHERE t.link_id IN 
+                 (SELECT l.link_id FROM {targets["link"]["schema"]}.{targets["link"]["table"]} l
+              WHERE l.carrier LIKE '{carrier}');"""
+        db.execute_sql(sql)
+        sql = f"""DELETE FROM {targets["link"]["schema"]}.{targets["link"]["table"]} l
+         WHERE (l.carrier LIKE '{carrier}');"""
+        db.execute_sql(sql)
+        
+        # stores
+        
+        sql = f"""DELETE FROM {targets["store_timeseries"]["schema"]}.{targets["store_timeseries"]["table"]} t
+        WHERE t.store_id IN 
+                 (SELECT s.store_id FROM {targets["store"]["schema"]}.{targets["store"]["table"]} s
+              WHERE s.carrier LIKE '{carrier}');"""
+        db.execute_sql(sql)
+        sql = f"""DELETE FROM {targets["store"]["schema"]}.{targets["store"]["table"]} s
+         WHERE (s.carrier LIKE '{carrier}');"""
+        db.execute_sql(sql)
 
     def dsm_cts_ind(
         con=db.engine(),
@@ -650,6 +694,8 @@ def dsm_cts_ind_processing():
         print(" ")
         print("CTS per osm-area: cooling, ventilation and air conditioning")
         print(" ")
+        
+        delete_dsm_entries('dsm-cts')
 
         dsm = cts_data_import(con, cts_cool_vent_ac_share)
 
@@ -668,6 +714,8 @@ def dsm_cts_ind_processing():
         print(" ")
         print("industry per osm-area: cooling and ventilation")
         print(" ")
+        
+        delete_dsm_entries('dsm-ind-osm')
 
         dsm = ind_osm_data_import(con, ind_cool_vent_share)
 
@@ -685,29 +733,9 @@ def dsm_cts_ind_processing():
 
         # industry sites
 
-        # industry sites: ventilation in WZ23
-
-        print(" ")
-        print("industry sites: ventilation in WZ23")
-        print(" ")
-        
-        # TODO: WZ23 - Cement Mills, sonst doppeltes DSM-Potential
-
-        dsm = ind_sites_vent_data_import(con, ind_vent_share, wz=23)
-
-        p_max, p_min, e_max, e_min = calculate_potentials(
-            s_flex=0.5, s_util=0.8, s_inc=1, s_dec=0.5, delta_t=1, dsm=dsm
-        )
-
-        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
-            con, p_max, p_min, e_max, e_min, dsm
-        )
-
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
-        )
-
         # industry sites: different applications
+        
+        delete_dsm_entries('dsm-ind-sites')
 
         dsm = ind_sites_data_import(con)
 
@@ -814,6 +842,31 @@ def dsm_cts_ind_processing():
 
         dsm_buses, dsm_links, dsm_stores = create_dsm_components(
             con, p_max, p_min, e_max, e_min, dsm_cement
+        )
+
+        data_export(
+            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
+        )
+        
+        # industry sites: ventilation in WZ23
+
+        print(" ")
+        print("industry sites: ventilation in WZ23")
+        print(" ")
+
+        dsm = ind_sites_vent_data_import(con, ind_vent_share, wz=23)
+        
+        # drop entries of Cement Mills whose DSM-potentials have already been modelled
+        cement = np.unique(dsm_cement['bus'].values)
+        index_names = np.array(dsm[dsm['bus'].isin(cement)].index)
+        dsm.drop(index_names,inplace=True)
+
+        p_max, p_min, e_max, e_min = calculate_potentials(
+            s_flex=0.5, s_util=0.8, s_inc=1, s_dec=0.5, delta_t=1, dsm=dsm
+        )
+
+        dsm_buses, dsm_links, dsm_stores = create_dsm_components(
+            con, p_max, p_min, e_max, e_min, dsm
         )
 
         data_export(
