@@ -82,9 +82,12 @@ the number of categories of cell-level household data.
 * Due to secrecy, some census data are highly modified under certain attributes
  (quantity_q = 2). This cell data is not corrected, but excluded.
 * Census data with attribute 'HHTYP_FAM' is missing for some cells with small
- amount of households. This data is generated using the average share of household types
-  for cells with similar household number
-
+ amount of households. This data is generated using the average share of
+ household types for cells with similar household number. For some cells the
+ summed amount of households per type deviates from the total number with
+ attribute 'INSGESAMT'. As the profiles are scaled with demand-regio data at
+ nuts3-level the impact at a higher aggregation level is negligible.
+ For sake of simplicity, the data is not corrected.
 
 Notes
 -----
