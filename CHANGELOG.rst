@@ -213,6 +213,8 @@ Changed
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
 * Limit number of parallel proccesses per task
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
+* Remove upper version limit of pandas
+  `#383 <https://github.com/openego/eGon-data/issues/383>`_
 
 Bug fixes
 ---------
