@@ -260,3 +260,6 @@ Bug fixes
   `#349 <https://github.com/openego/eGon-data/issues/349>`_
 * Bump MV grid district version no
   `#432 <https://github.com/openego/eGon-data/issues/432>`_
+* Fix constant p_set values for industrial site load curves
+  `#429 <https://github.com/openego/eGon-data/issues/429>`_
+

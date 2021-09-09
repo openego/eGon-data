@@ -288,7 +288,7 @@ def calc_load_curves_ind_sites(scenario):
 
     # Group all load curves per bus and wz
     curves_bus = (
-        curves_da.groupby(["subst_id", "wz"]).sum().drop(["id"], axis=1)
+        curves_da.drop(["id"], axis=1).groupby(["subst_id", "wz"]).sum()
     )
 
     # Initalize pandas.DataFrame for pf table load timeseries
