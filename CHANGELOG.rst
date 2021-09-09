@@ -211,6 +211,8 @@ Changed
   `#397 <https://github.com/openego/eGon-data/issues/418>`_
 * Rename columns gid to id
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
+* Limit number of parallel proccesses per task
+  `#265 <https://github.com/openego/eGon-data/issues/265>`_
 
 Bug fixes
 ---------

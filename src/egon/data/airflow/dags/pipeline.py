@@ -60,7 +60,10 @@ from egon.data.processing.DSM_cts_ind import dsm_Potential
 
 
 from egon.data import db
+from egon.data.config import set_numexpr_threads
 
+# Set number of threads used by numpy and pandas
+set_numexpr_threads()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
