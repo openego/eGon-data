@@ -7,7 +7,10 @@ from egon.data.datasets import Dataset
 def data_extract():
     sql_scripts = [
         'osm_amenities_shops_preprocessing.sql',
-        'osm_buildings_preprocessing.sql',
+        'osm_buildings_filter.sql',
+        'osm_buildings_zensus_mapping.sql',
+        'osm_buildings_temp_tables.sql',
+        'osm_buildings_amentities_results.sql',
         'osm_ways_preprocessing.sql',
         'drop_temp_tables.sql'
     ]
