@@ -135,6 +135,7 @@ class Tasks(dict):
             self.first = {task for result in results for task in result.first}
             self.last = {task for result in results for task in result.last}
             self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
+            self.graph = set(tasks.graph for tasks in results)
         elif isinstance(graph, tuple):
             results = [Tasks(subtasks) for subtasks in graph]
             for (left, right) in zip(results[:-1], results[1:]):
@@ -144,6 +145,7 @@ class Tasks(dict):
             self.first = results[0].first
             self.last = results[-1].last
             self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
+            self.graph = tuple(tasks.graph for tasks in results)
         else:
             raise (
                 TypeError(
