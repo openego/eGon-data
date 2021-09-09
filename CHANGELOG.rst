@@ -250,6 +250,8 @@ Bug fixes
   `#387 <https://github.com/openego/eGon-data/issues/390>`_
 * Add xlrd and openpyxl to installation setup
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
+* Replace NAN by 0 to avoid empty p_set column in DB
+  `#414 <https://github.com/openego/eGon-data/issues/414>`_
 * Store files of OSM, zensus and VG250 in working dir
   `#341 <https://github.com/openego/eGon-data/issues/341>`_
 * Remove hard-coded slashes in file paths to ensure Windows compatibility
