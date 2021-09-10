@@ -153,34 +153,37 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
         #         f'{additional_capacity} MW are not matched to an area.')
         #     break
         if district_heating:
-            possible_areas = areas[
+            selected_areas = areas.loc[
                     areas.demand
-                    > existing_chp.th_capacity.min()*flh].to_crs(4326)
+                    > existing_chp.th_capacity.min()*flh, :].to_crs(4326)
         else:
-            possible_areas = areas[
+            selected_areas = areas.loc[
                     areas.demand
-                    > existing_chp.el_capacity.min()*flh].to_crs(4326)
+                    > existing_chp.el_capacity.min()*flh, :].to_crs(4326)
 
 
-        if len(possible_areas) > 0:
+        if len(selected_areas) > 0:
             # Assign gas bus_id
-            possible_areas['gas_bus_id'] = assign_gas_bus_id(
-                possible_areas.copy()).gas_bus_id
+            selected_areas['gas_bus_id'] = assign_gas_bus_id(
+                selected_areas.copy()).gas_bus_id
 
             # Select randomly one area from the list of possible areas
             # weighted by the share of demand
             id_area = np.random.choice(
-                possible_areas.index,
-                p = possible_areas.demand/possible_areas.demand.sum())
-            selected_area = possible_areas[possible_areas.index==id_area]
+                selected_areas.index,
+                p = selected_areas.demand/selected_areas.demand.sum())
+            selected_areas.drop(
+                selected_areas.loc[selected_areas.index!=id_area, :].index,
+                inplace=True)
+            #selected_area = possible_areas.loc[possible_areas.index==id_area, :]
 
             if district_heating:
                 possible_chp = existing_chp[
-                    (existing_chp.th_capacity*flh<selected_area.demand.values[0])
+                    (existing_chp.th_capacity*flh<selected_areas.demand.values[0])
                     &(existing_chp.el_capacity<= additional_capacity)]
             else:
                 possible_chp = existing_chp[
-                    (existing_chp.el_capacity*flh<selected_area.demand.values[0])
+                    (existing_chp.el_capacity*flh<selected_areas.demand.values[0])
                     &(existing_chp.el_capacity<= additional_capacity)]
 
             # Select random new build CHP from list of existing CHP
@@ -189,10 +192,10 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
             selected_chp = possible_chp.iloc[id_chp]
 
             # Assign bus_id
-            selected_area['voltage_level'] = selected_chp.voltage_level
+            selected_areas['voltage_level'] = selected_chp['voltage_level']
 
-            selected_area['bus_id'] = assign_bus_id(
-                selected_area,
+            selected_areas.loc[:, 'bus_id'] = assign_bus_id(
+                selected_areas,
                 config.datasets()["chp_location"]).bus_id
 
         # # Select random new build CHP from list of existing CHP
@@ -246,16 +249,16 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
                         th_capacity= selected_chp.th_capacity,
                         district_heating=district_heating,
                         voltage_level=selected_chp.voltage_level,
-                        electrical_bus_id = int(selected_area.bus_id),
-                        gas_bus_id = int(selected_area.gas_bus_id),
+                        electrical_bus_id = int(selected_areas.bus_id),
+                        gas_bus_id = int(selected_areas.gas_bus_id),
                         scenario='eGon2035',
                         geom=f"""
                         SRID=4326;
-                        POINT({selected_area.geom.values[0].x} {selected_area.geom.values[0].y})
+                        POINT({selected_areas.geom.values[0].x} {selected_areas.geom.values[0].y})
                         """,
                     )
             if district_heating:
-                entry.district_heating_area_id = int(selected_area.area_id)
+                entry.district_heating_area_id = int(selected_areas.area_id)
 
             session.add(entry)
             session.commit()
@@ -267,11 +270,11 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
             # enrgy output of the CHP
             if district_heating:
                 areas.loc[
-                    areas.index[areas.area_id == selected_area.area_id.values[0]],
+                    areas.index[areas.area_id == selected_areas.area_id.values[0]],
                     'demand'] -= selected_chp.th_capacity*flh
             else:
                 areas.loc[
-                areas.index[areas.osm_id == selected_area.osm_id.values[0]],
+                areas.index[areas.osm_id == selected_areas.osm_id.values[0]],
                 'demand'] -= selected_chp.th_capacity*flh
             areas = areas[areas.demand > 0]
 
