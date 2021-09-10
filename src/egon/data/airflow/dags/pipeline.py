@@ -22,13 +22,17 @@ from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.hh_demand_profiles import (
+    hh_demand_setup,
+    houseprofiles_in_census_cells,
+    mv_grid_district_HH_electricity_load,
+)
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
-from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
-    houseprofiles_in_census_cells
+from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -57,6 +61,10 @@ import egon.data.processing.power2gas as power2gas
 import egon.data.processing.substation as substation
 
 from egon.data import db
+from egon.data.config import set_numexpr_threads
+
+# Set number of threads used by numpy and pandas
+set_numexpr_threads()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -148,6 +156,12 @@ with airflow.DAG(
             zensus_misc_import
         ]
     )
+
+    # OSM buildings, streets, amenities
+    osm_buildings_streets = OsmBuildingsStreets(
+        dependencies=[osm, zensus_misc_import]
+    )
+    osm_buildings_streets.insert_into(pipeline)
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -283,8 +297,8 @@ with airflow.DAG(
     )
 
     # Insert industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand( 
-     dependencies=[create_gas_polygons]) 
+    industrial_gas_demand = IndustrialGasDemand(
+     dependencies=[create_gas_polygons])
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -389,6 +403,16 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
+    # CHP locations
+    chp = Chp(dependencies=[mv_grid_districts, mastr_data])
+
+    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
+    chp_heat_bus = tasks["chp.assign-heat-bus"]
+
+    nep_insert_data >> chp_locations_nep
+    create_gas_polygons >> chp_locations_nep
+    import_district_heating_areas >> chp_locations_nep
+
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=mv_grid_district_HH_electricity_load,
@@ -402,31 +426,26 @@ with airflow.DAG(
         op_args=["eGon100RE", 2050, "0.0.0"],
     )
 
-    hh_demand = hh_demand_setup(dependencies=[
-        vg250_clean_and_prepare,
-        zensus_misc_import,
-        map_zensus_grid_districts,
-        zensus_inside_ger,
-        demandregio,
-    ],
-        tasks=(houseprofiles_in_census_cells,
-               mv_hh_electricity_load_2035,
-               mv_hh_electricity_load_2050,)
+    hh_demand = hh_demand_setup(
+        dependencies=[
+            vg250_clean_and_prepare,
+            zensus_misc_import,
+            map_zensus_grid_districts,
+            zensus_inside_ger,
+            demandregio,
+        ],
+        tasks=(
+            houseprofiles_in_census_cells,
+            mv_hh_electricity_load_2035,
+            mv_hh_electricity_load_2050,
+        ),
     )
     hh_demand.insert_into(pipeline)
-    householdprofiles_in_cencus_cells = tasks["hh_demand_profiles.houseprofiles-in-census-cells"]
+    householdprofiles_in_cencus_cells = tasks[
+        "hh_demand_profiles.houseprofiles-in-census-cells"
+    ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
-
-    # CHP locations
-    chp = Chp(dependencies=[mv_grid_districts, mastr_data])
-
-    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
-    chp_heat_bus = tasks["chp.assign-heat-bus"]
-
-    nep_insert_data >> chp_locations_nep
-    create_gas_polygons >> chp_locations_nep
-    import_district_heating_areas >> chp_locations_nep
 
     # Heat supply
     heat_supply = HeatSupply(
