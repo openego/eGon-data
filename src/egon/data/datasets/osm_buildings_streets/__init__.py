@@ -39,6 +39,7 @@ def extract_ways():
 def drop_temp_tables():
     execute_sql_script('drop_temp_tables.sql')
 
+
 def add_metadata():
     pass
 
@@ -50,8 +51,8 @@ class OsmBuildingsStreets(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
-                extract_buildings,
-                extract_ways,
+                {extract_buildings,
+                 extract_ways},
                 drop_temp_tables,
                 add_metadata
             ),
