@@ -18,7 +18,7 @@ class RenewableFeedin(Dataset):
             name="RenewableFeedin",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(wind, pv, solar_thermal),
+            tasks={wind, pv, solar_thermal},
             )
 
 def weather_cells_in_germany(geom_column='geom'):
