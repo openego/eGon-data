@@ -42,7 +42,7 @@ def dsm_cts_ind_processing():
             {sources['schema']}.{sources['table']}"""
         )
 
-        # get relevant data
+        # identify relevant columns and prepare df to be returned
 
         dsm = pd.DataFrame(index=ts.index)
 
@@ -50,9 +50,8 @@ def dsm_cts_ind_processing():
         dsm["scn_name"] = ts["scn_name"].copy()
         dsm["p_set"] = ts["p_set"].copy()
 
-        # timeseries for air conditioning, cooling and ventilation out of CTS-data
+        # calculate share of timeseries for air conditioning, cooling and ventilation out of CTS-data
 
-        # calculate share of timeseries
         timeseries = dsm["p_set"].copy()
         for index, liste in timeseries.iteritems():
             share = []
@@ -85,9 +84,8 @@ def dsm_cts_ind_processing():
             {sources['schema']}.{sources['table']}"""
         )
 
-        # timeseries for cooling or ventilation out of industry-data
+        # calculate share of timeseries for cooling and ventilation out of industry-data
 
-        # calculate share of timeseries
         timeseries = dsm["p_set"].copy()
         for index, liste in timeseries.iteritems():
             share = []
@@ -124,9 +122,10 @@ def dsm_cts_ind_processing():
 
         # select load for considered applications
 
-        dsm = dsm[dsm["wz"] == wz]        
+        dsm = dsm[dsm["wz"] == wz]
 
-        # calculate share of timeseries
+        # calculate share of timeseries for ventilation
+
         timeseries = dsm["p_set"].copy()
         for index, liste in timeseries.iteritems():
             share = []
@@ -152,7 +151,6 @@ def dsm_cts_ind_processing():
             # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
 
             # select demands per industrial site including the subsector information
-
             source1 = egon.data.config.datasets()["DSM_CTS_industry"][
                 "sources"
             ]["demandregio_ind_sites"]
@@ -166,7 +164,6 @@ def dsm_cts_ind_processing():
             ).set_index(["industrial_sites_id"])
 
             # select industrial sites as demand_areas from database
-
             source2 = egon.data.config.datasets()["DSM_CTS_industry"][
                 "sources"
             ]["ind_sites"]
@@ -210,9 +207,12 @@ def dsm_cts_ind_processing():
             curves_bus.index = curves_bus["id"].astype(int)
 
             # initialize dataframe to be returned
+
             ts = gpd.GeoDataFrame(
-                index=curves_bus["id"].astype(int), data=demand_area["geom"], 
-                geometry="geom", crs=3035
+                index=curves_bus["id"].astype(int),
+                data=demand_area["geom"],
+                geometry="geom",
+                crs=3035,
             )
             ts["subst_id"] = curves_bus["subst_id"].astype(int)
             curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
@@ -236,7 +236,11 @@ def dsm_cts_ind_processing():
                 epsg=3035,
             )
 
+            # relate calculated timeseries (dsm) to Schmidt's industrial sites
+
             dsm = gpd.overlay(dsm, schmidt)
+
+            # initialize dataframe to be returned
 
             dsm.rename(
                 columns={"scenario_name": "scn_name", "subst_id": "bus"},
@@ -245,26 +249,34 @@ def dsm_cts_ind_processing():
 
             return dsm
 
+        # calculate timeseries per site
+
+        # scenario eGon2035
         dsm_2035 = calc_ind_site_timeseries("eGon2035")
         dsm_2035.reset_index(inplace=True)
-
+        # scenario eGon100RE
         dsm_100 = calc_ind_site_timeseries("eGon100RE")
         dsm_100.reset_index(inplace=True)
+        # bring df for both scenarios together
         dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
-
         dsm = dsm_2035.append(dsm_100)
 
+        # relate calculated timeseries to Schmidt's industrial sites
+
         dsm = relate_to_Schmidt_sites(dsm)
-        
+
+        # prepare dataframe to be returned
+
         dsm = pd.DataFrame(dsm)
-        dsm.drop("geometry", axis=1, inplace=True) 
+        dsm.drop("geometry", axis=1, inplace=True)
 
         return dsm
 
     def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
 
         """
-        Calculate DSM-potential per bus.
+        Calculate DSM-potential per bus using the methods by Heitkoetter et. al.:
+            https://doi.org/10.1016/j.adapen.2020.100001
         Parameters
             ----------
         s_flex: float
@@ -281,6 +293,7 @@ def dsm_cts_ind_processing():
             List of existing buses with DSM-potential including timeseries of loads
         """
 
+        # copy relevant timeseries
         timeseries = dsm["p_set"].copy()
 
         # calculate scheduled load L(t)
@@ -405,20 +418,24 @@ def dsm_cts_ind_processing():
         dsm_buses["original_bus"] = dsm["bus"].copy()
         dsm_buses["scn_name"] = dsm["scn_name"].copy()
 
-        # get original buses and add copy relevant information
-        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['bus']
+        # get original buses and add copy of relevant information
+        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
+            "bus"
+        ]
         original_buses = db.select_geodataframe(
             f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
                 {target1['schema']}.{target1['table']}""",
-                geom_col="geom",
-                epsg=4326)
+            geom_col="geom",
+            epsg=4326,
+        )
 
-        # copy v_nom, x, y and geom
+        # prepare pd.Series for copied data
         v_nom = pd.Series(index=dsm_buses.index, dtype=float)
         x = pd.Series(index=dsm_buses.index, dtype=float)
         y = pd.Series(index=dsm_buses.index, dtype=float)
         geom = gpd.GeoSeries(index=dsm_buses.index, crs=4326)
 
+        # copy v_nom, x, y and geom of the respective original buses
         originals = dsm_buses["original_bus"].unique()
         for i in originals:
             o_bus = original_buses[original_buses["bus_id"] == i]
@@ -432,12 +449,13 @@ def dsm_cts_ind_processing():
             y[dsm_bus.index[1]] = o_bus.iloc[0]["y"]
             geom[dsm_bus.index[1]] = o_bus.iloc[0]["geom"]
 
+        # write copied data to df to be returned
         dsm_buses["v_nom"] = v_nom
         dsm_buses["x"] = x
         dsm_buses["y"] = y
         dsm_buses["geom"] = geom
-        dsm_buses.set_geometry("geom",inplace=True)
-        
+        dsm_buses.set_geometry("geom", inplace=True)
+
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
         if np.isnan(max_id):
@@ -461,12 +479,9 @@ def dsm_cts_ind_processing():
 
         # set link_id
         # get original buses and add copy relevant information
-        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['bus']
-        original_buses = db.select_geodataframe(
-            f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
-                {target1['schema']}.{target1['table']}""")
-        
-        target2 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['link']
+        target2 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
+            "link"
+        ]
         sql = f"""SELECT link_id FROM {target2['schema']}.{target2['table']}"""
         max_id = pd.read_sql_query(sql, con)
         max_id = max_id["link_id"].max()
@@ -482,20 +497,24 @@ def dsm_cts_ind_processing():
         )
         dsm_links["link_id"] = link_id
 
-        # timeseries
+        # add calculated timeseries to df to be returned
         dsm_links["p_nom"] = p_nom
         dsm_links["p_min"] = p_min
         dsm_links["p_max"] = p_max
 
-        # add stores
+        # add DSM-stores
 
         dsm_stores = pd.DataFrame(index=dsm_buses.index)
         dsm_stores["bus"] = dsm_buses["bus_id"].copy()
         dsm_stores["scn_name"] = dsm_buses["scn_name"].copy()
 
         # set store_id
-        target3 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]['store']
-        sql = f"""SELECT store_id FROM {target3['schema']}.{target3['table']}"""
+        target3 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
+            "store"
+        ]
+        sql = (
+            f"""SELECT store_id FROM {target3['schema']}.{target3['table']}"""
+        )
         max_id = pd.read_sql_query(sql, con)
         max_id = max_id["store_id"].max()
         if np.isnan(max_id):
@@ -510,7 +529,7 @@ def dsm_cts_ind_processing():
         )
         dsm_stores["store_id"] = store_id
 
-        # timeseries
+        # add calculated timeseries to df to be returned
         dsm_stores["e_nom"] = e_nom
         dsm_stores["e_min"] = e_min
         dsm_stores["e_max"] = e_max
@@ -536,7 +555,7 @@ def dsm_cts_ind_processing():
         """
 
         targets = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]
-        
+
         # dsm_buses
 
         insert_buses = gpd.GeoDataFrame(index=dsm_buses.index, crs=4326)
@@ -547,7 +566,7 @@ def dsm_cts_ind_processing():
         insert_buses["x"] = dsm_buses["x"]
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
-        insert_buses.set_geometry("geom",inplace=True)
+        insert_buses.set_geometry("geom", inplace=True)
 
         # insert into database
         insert_buses.to_postgis(
@@ -626,27 +645,27 @@ def dsm_cts_ind_processing():
             if_exists="append",
             index=False,
         )
-        
+
     def delete_dsm_entries(carrier):
 
         """
-        Deletes DSM-components from databse if they are there already.
+        Deletes DSM-components from database if they already exist before creating new ones.
         Parameters
             ----------
          carrier: String
             Remark in column 'carrier' identifying DSM-potential
-        """      
-        
+        """
+
         targets = egon.data.config.datasets()["DSM_CTS_industry"]["targets"]
-        
+
         # buses
-        
+
         sql = f"""DELETE FROM {targets["bus"]["schema"]}.{targets["bus"]["table"]} b
          WHERE (b.carrier LIKE '{carrier}');"""
         db.execute_sql(sql)
-        
+
         # links
-        
+
         sql = f"""DELETE FROM {targets["link_timeseries"]["schema"]}.{targets["link_timeseries"]["table"]} t
         WHERE t.link_id IN 
                  (SELECT l.link_id FROM {targets["link"]["schema"]}.{targets["link"]["table"]} l
@@ -655,9 +674,9 @@ def dsm_cts_ind_processing():
         sql = f"""DELETE FROM {targets["link"]["schema"]}.{targets["link"]["table"]} l
          WHERE (l.carrier LIKE '{carrier}');"""
         db.execute_sql(sql)
-        
+
         # stores
-        
+
         sql = f"""DELETE FROM {targets["store_timeseries"]["schema"]}.{targets["store_timeseries"]["table"]} t
         WHERE t.store_id IN 
                  (SELECT s.store_id FROM {targets["store"]["schema"]}.{targets["store"]["table"]} s
@@ -675,17 +694,23 @@ def dsm_cts_ind_processing():
     ):
 
         """
-        Execute methodology to create and implement components for DSM-CTS cooling, ventilation and AC.
+        Execute methodology to create and implement components for DSM considering
+        a) CTS per osm-area: combined potentials of cooling, ventilation and air conditioning
+        b) Industry per osm-are: combined potentials of cooling and ventilation
+        c) Industrial Sites: potentials of ventilation in sites of "Wirtschaftszweig" (WZ) 23
+        d) Industrial Sites: potentials of sites specified by subsectors identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+                                                                                                Paper, Recycled Paper, Pulp, Cement
+        Modelled using the methods by Heitkoetter et. al.: https://doi.org/10.1016/j.adapen.2020.100001
         Parameters
             ----------
         con :
             Connection to database
-        cts_share: float
+        cts_cool_vent_ac_share: float
             Share of cooling, ventilation and AC in CTS demand
-        ind_cool_share: float
-            Share of cooling in industry demand
+        ind_cool_vent_share: float
+            Share of cooling and ventilation in industry demand
         ind_vent_share: float
-            Share of ventilation in industry demand
+            Share of ventilation in industry demand in sites of WZ 23
 
         """
 
@@ -694,11 +719,13 @@ def dsm_cts_ind_processing():
         print(" ")
         print("CTS per osm-area: cooling, ventilation and air conditioning")
         print(" ")
-        
-        delete_dsm_entries('dsm-cts')
+
+        delete_dsm_entries("dsm-cts")
 
         dsm = cts_data_import(con, cts_cool_vent_ac_share)
 
+        # calculate combined potentials of cooling, ventilation and air conditioning in CTS
+        # using combined parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.67, s_inc=1, s_dec=0, delta_t=1, dsm=dsm
         )
@@ -714,11 +741,13 @@ def dsm_cts_ind_processing():
         print(" ")
         print("industry per osm-area: cooling and ventilation")
         print(" ")
-        
-        delete_dsm_entries('dsm-ind-osm')
+
+        delete_dsm_entries("dsm-ind-osm")
 
         dsm = ind_osm_data_import(con, ind_cool_vent_share)
 
+        # calculate combined potentials of cooling and ventilation in industrial sector
+        # using combined parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.73, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
         )
@@ -734,8 +763,8 @@ def dsm_cts_ind_processing():
         # industry sites
 
         # industry sites: different applications
-        
-        delete_dsm_entries('dsm-ind-sites')
+
+        delete_dsm_entries("dsm-ind-sites")
 
         dsm = ind_sites_data_import(con)
 
@@ -756,6 +785,8 @@ def dsm_cts_ind_processing():
             ]
         )
 
+        # calculate potentials of industrial sites with paper-applications
+        # using parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.15,
             s_util=0.86,
@@ -777,6 +808,8 @@ def dsm_cts_ind_processing():
         print("industry sites: recycled paper")
         print(" ")
 
+        # calculate potentials of industrial sites with recycled paper-applications
+        # using parameters by Heitkoetter et. al.
         dsm_recycled_paper = gpd.GeoDataFrame(
             dsm[dsm["application"] == "Recycled Paper"]
         )
@@ -806,6 +839,8 @@ def dsm_cts_ind_processing():
             dsm[dsm["application"] == "Mechanical Pulp"]
         )
 
+        # calculate potentials of industrial sites with pulp-applications
+        # using parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.7,
             s_util=0.83,
@@ -831,6 +866,8 @@ def dsm_cts_ind_processing():
 
         dsm_cement = gpd.GeoDataFrame(dsm[dsm["application"] == "Cement Mill"])
 
+        # calculate potentials of industrial sites with cement-applications
+        # using parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.61,
             s_util=0.65,
@@ -847,7 +884,7 @@ def dsm_cts_ind_processing():
         data_export(
             con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
         )
-        
+
         # industry sites: ventilation in WZ23
 
         print(" ")
@@ -855,12 +892,14 @@ def dsm_cts_ind_processing():
         print(" ")
 
         dsm = ind_sites_vent_data_import(con, ind_vent_share, wz=23)
-        
-        # drop entries of Cement Mills whose DSM-potentials have already been modelled
-        cement = np.unique(dsm_cement['bus'].values)
-        index_names = np.array(dsm[dsm['bus'].isin(cement)].index)
-        dsm.drop(index_names,inplace=True)
 
+        # drop entries of Cement Mills whose DSM-potentials have already been modelled
+        cement = np.unique(dsm_cement["bus"].values)
+        index_names = np.array(dsm[dsm["bus"].isin(cement)].index)
+        dsm.drop(index_names, inplace=True)
+
+        # calculate potentials of ventialtion in industrial sites of WZ 23
+        # using parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.8, s_inc=1, s_dec=0.5, delta_t=1, dsm=dsm
         )
