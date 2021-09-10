@@ -444,7 +444,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         {sources['osm_landuse']['schema']}.
         {sources['osm_landuse']['table']} b
         WHERE a.scenario = 'eGon2035'
-        AND b.gid = a.osm_id
+        AND b.id = a.osm_id
         AND NOT ST_Intersects(
             ST_Transform(b.geom, 4326),
             (SELECT ST_Union(geom) FROM
