@@ -264,3 +264,5 @@ Bug fixes
   `#349 <https://github.com/openego/eGon-data/issues/349>`_
 * Bump MV grid district version no
   `#432 <https://github.com/openego/eGon-data/issues/432>`_
+* Add curl to prerequisites in the docs
+  `#440 <https://github.com/openego/eGon-data/issues/440>`_
