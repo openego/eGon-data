@@ -48,11 +48,11 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.0",
+            version="0.0.1.dev",
             dependencies=dependencies,
             tasks=(create_tables, insert_chp_egon2035,
                    assign_heat_bus,
-                   #extension
+                   extension
                    ),
         )
 
