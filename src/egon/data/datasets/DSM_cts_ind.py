@@ -218,6 +218,8 @@ def dsm_cts_ind_processing():
             curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
             ts["scenario_name"] = scenario
             ts["p_set"] = curves_bus.values.tolist()
+            
+            # add subsector to relate to Schmidt's tables afterwards
             ts["application"] = demand_area["subsector"]
 
             return ts
@@ -416,7 +418,7 @@ def dsm_cts_ind_processing():
             e_min.loc[index] = new
 
         # add DSM-buses to "original" buses
-        dsm_buses = gpd.GeoDataFrame(index=dsm.index, crs=4326)
+        dsm_buses = gpd.GeoDataFrame(index=dsm.index)
         dsm_buses["original_bus"] = dsm["bus"].copy()
         dsm_buses["scn_name"] = dsm["scn_name"].copy()
 
@@ -430,12 +432,12 @@ def dsm_cts_ind_processing():
             geom_col="geom",
             epsg=4326,
         )
-
+        
         # prepare pd.Series for copied data
         v_nom = pd.Series(index=dsm_buses.index, dtype=float)
         x = pd.Series(index=dsm_buses.index, dtype=float)
         y = pd.Series(index=dsm_buses.index, dtype=float)
-        geom = gpd.GeoSeries(index=dsm_buses.index, crs=4326)
+        geom = gpd.GeoSeries(index=dsm_buses.index)
 
         # copy v_nom, x, y and geom of the respective original buses
         originals = dsm_buses["original_bus"].unique()
@@ -457,6 +459,7 @@ def dsm_cts_ind_processing():
         dsm_buses["y"] = y
         dsm_buses["geom"] = geom
         dsm_buses.set_geometry("geom", inplace=True)
+        dsm_buses.set_crs(4326, inplace=True)
 
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
@@ -559,7 +562,7 @@ def dsm_cts_ind_processing():
 
         # dsm_buses
 
-        insert_buses = gpd.GeoDataFrame(index=dsm_buses.index, crs=4326)
+        insert_buses = gpd.GeoDataFrame(index=dsm_buses.index)
         insert_buses["scn_name"] = dsm_buses["scn_name"]
         insert_buses["bus_id"] = dsm_buses["bus_id"]
         insert_buses["v_nom"] = dsm_buses["v_nom"]
@@ -567,7 +570,7 @@ def dsm_cts_ind_processing():
         insert_buses["x"] = dsm_buses["x"]
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
-        insert_buses.set_geometry("geom", inplace=True)
+        insert_buses.set_geometry("geom", inplace=True) 
 
         # insert into database
         insert_buses.to_postgis(
