@@ -169,7 +169,7 @@ def dsm_cts_ind_processing():
             ]["ind_sites"]
 
             demand_area = db.select_geodataframe(
-                f"""SELECT id, geom FROM
+                f"""SELECT id, geom, subsector FROM
                     {source2['schema']}.{source2['table']}""",
                 index_col="id",
                 geom_col="geom",
@@ -218,6 +218,7 @@ def dsm_cts_ind_processing():
             curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
             ts["scenario_name"] = scenario
             ts["p_set"] = curves_bus.values.tolist()
+            ts["application"] = demand_area["subsector"]
 
             return ts
 
@@ -238,7 +239,8 @@ def dsm_cts_ind_processing():
 
             # relate calculated timeseries (dsm) to Schmidt's industrial sites
 
-            dsm = gpd.overlay(dsm, schmidt)
+            applications = np.unique(schmidt['application'])
+            dsm = dsm[dsm['application'].isin(applications)]
 
             # initialize dataframe to be returned
 
@@ -268,7 +270,7 @@ def dsm_cts_ind_processing():
         # prepare dataframe to be returned
 
         dsm = pd.DataFrame(dsm)
-        dsm.drop("geometry", axis=1, inplace=True)
+        dsm.drop("geom", axis=1, inplace=True)
 
         return dsm
 
@@ -478,7 +480,6 @@ def dsm_cts_ind_processing():
         dsm_links["scn_name"] = dsm_buses["scn_name"].copy()
 
         # set link_id
-        # get original buses and add copy relevant information
         target2 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
             "link"
         ]
