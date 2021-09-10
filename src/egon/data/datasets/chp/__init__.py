@@ -240,18 +240,20 @@ def extension():
 
         existing_capacity = db.select_dataframe(
             f"""
-            SELECT SUM(el_capacity) as capacity
+            SELECT SUM(el_capacity) as capacity, district_heating
             FROM supply.egon_chp
             WHERE sources::json->>'el_capacity' = 'MaStR'
             AND ST_Intersects(geom, (
             SELECT ST_Union(geometry) FROM boundaries.vg250_lan
             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-            """).capacity[0]
+            GROUP BY district_heating
+            """)
 
         print(f"Target capacity in {federal_state}: {targets[federal_state]}")
-        print(f"Existing capacity in {federal_state}: {existing_capacity}")
+        print(f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}")
 
 
-        additional_capacity = targets[federal_state] - existing_capacity
+        additional_capacity = targets[federal_state] - existing_capacity.capacity.sum()
         extension_per_federal_state(
-            additional_capacity, federal_state, EgonChp)
+            additional_capacity, federal_state, EgonChp,
+            existing_capacity[existing_capacity.district_heating].capacity.values[0]/existing_capacity.capacity.sum())
