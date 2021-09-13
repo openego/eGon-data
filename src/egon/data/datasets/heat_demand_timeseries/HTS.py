@@ -15,9 +15,6 @@ import egon.data.datasets.era5 as era
 
 from sqlalchemy.ext.declarative import declarative_base
 
-import netCDF4
-from netCDF4 import Dataset
-
 from disaggregator import config, data, spatial, temporal, plot
 
 from math import ceil
@@ -109,7 +106,7 @@ def temperature_profile_extract():
 
     temperature_profile = cutout.temperature(
         shapes=selected_weather_cells.geom.values,
-        index=selected_weather_cells.index).to_pandas().transpose()
+        index=selected_weather_cells.index).to_pandas()
 
     return temperature_profile
 
@@ -534,9 +531,8 @@ def profile_selector():
     all_temperature_interval = all_temperature_interval.resample('D').max()
     all_temperature_interval.reset_index(drop=True, inplace=True)
     
-    station_count = annual_demand.Station.nunique()
         
-    all_temperature_interval = all_temperature_interval.iloc[:,0:station_count]
+    all_temperature_interval = all_temperature_interval.loc[:,annual_demand.Station.unique()]
 
 
     Temperature_interval = all_temperature_interval.transpose()
@@ -726,7 +722,7 @@ def profile_generator(aggregation_level):
         y.rename(columns={i:'index'},inplace=True)
         
     if aggregation_level == 'district':
-        district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+        district_heating = psycop_df_AF('demand.egon_map_zensus_district_heating_areas')
         district_heating = district_heating[district_heating.scenario == 'eGon2035']
         
         heat_profile_dist = pd.merge(heat_profile_idp,
@@ -810,7 +806,7 @@ def residential_demand_scale(aggregation_level):
 
     if aggregation_level == 'district':
         
-        district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+        district_heating = psycop_df_AF('demand.egon_map_zensus_district_heating_areas')
         district_heating = district_heating[district_heating.scenario == 'eGon2035']
 
         district_station=pd.merge(district_heating[['area_id','zensus_population_id']],
@@ -1001,7 +997,7 @@ def cts_demand_per_aggregation_level(aggregation_level):
 
 
     if aggregation_level == 'district':
-        district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+        district_heating = psycop_df_AF('demand.egon_map_zensus_district_heating_areas')
         district_heating = district_heating[district_heating.scenario == 'eGon2035']
         
         CTS_per_district = pd.merge(CTS_per_zensus,district_heating[['area_id','zensus_population_id']],
@@ -1097,7 +1093,7 @@ def CTS_demand_scale(aggregation_level):
     demand.sort_values('zensus_population_id',inplace=True)
 
     if aggregation_level =='district':
-        district_heating = psycop_df_AF('demand.map_zensus_district_heating_areas')
+        district_heating = psycop_df_AF('demand.egon_map_zensus_district_heating_areas')
         district_heating = district_heating[district_heating.scenario == 'eGon2035']
 
         CTS_demands_district = pd.merge(demand, district_heating[['zensus_population_id','area_id']],
