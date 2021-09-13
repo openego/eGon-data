@@ -11,7 +11,8 @@ CREATE TABLE boundaries.egon_map_zensus_buildings_filtered as
     select * from (
         select
 			bld.osm_id,
-			zensus.grid_id
+			zensus.grid_id,
+			zensus.zensus_population_id as cell_id
         from openstreetmap.osm_buildings_filtered bld
         left join society.egon_destatis_zensus_apartment_building_population_per_ha zensus
         on ST_Within(bld.geom_point, zensus.geom)
