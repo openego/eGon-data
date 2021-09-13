@@ -76,16 +76,27 @@ def execute_sql_script(script):
     )
 
 
-def extract_buildings():
+def preprocessing():
     sql_scripts = [
         'osm_amenities_shops_preprocessing.sql',
         'osm_buildings_filter.sql',
         'osm_buildings_zensus_mapping.sql',
-        'osm_buildings_temp_tables.sql',
-        'osm_buildings_amentities_results.sql'
+        'osm_buildings_temp_tables.sql'
     ]
     for script in sql_scripts:
         execute_sql_script(script)
+
+
+def extract_buildings_w_amenities():
+    execute_sql_script('osm_results_buildings_w_amenities.sql')
+
+
+def extract_buildings_wo_amenities():
+    execute_sql_script('osm_results_buildings_wo_amenities.sql')
+
+
+def extract_amenities():
+    execute_sql_script('osm_results_amenities.sql')
 
 
 def extract_ways():
@@ -107,7 +118,10 @@ class OsmBuildingsStreets(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
-                {extract_buildings,
+                preprocessing,
+                {extract_buildings_w_amenities,
+                 extract_buildings_wo_amenities,
+                 extract_amenities,
                  extract_ways},
                 drop_temp_tables,
                 add_metadata
