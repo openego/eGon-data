@@ -24,7 +24,7 @@ class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250, inside_germany,
@@ -37,7 +37,7 @@ class Vg250Sta(Base):
     __tablename__ = "vg250_sta"
     __table_args__ = {"schema": "boundaries"}
 
-    gid = Column(BigInteger, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     ade = Column(BigInteger)
     gf = Column(BigInteger)
     bsg = Column(BigInteger)
@@ -71,7 +71,7 @@ class Vg250Gem(Base):
     __tablename__ = "vg250_gem"
     __table_args__ = {"schema": "boundaries"}
 
-    gid = Column(BigInteger, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     ade = Column(BigInteger)
     gf = Column(BigInteger)
     bsg = Column(BigInteger)
@@ -118,7 +118,7 @@ class DestatisZensusPopulationPerHaInsideGermany(Base):
     __tablename__ = "destatis_zensus_population_per_ha_inside_germany"
     __table_args__ = {"schema": "society"}
 
-    gid = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     grid_id = Column(String(254), nullable=False)
     population = Column(SmallInteger)
     geom_point = Column(Geometry("POINT", 3035), index=True)
@@ -129,7 +129,7 @@ class Vg250GemPopulation(Base):
     __tablename__ = "vg250_gem_population"
     __table_args__ = {"schema": "boundaries"}
 
-    gid = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     gen = Column(String)
     bez = Column(String)
     bem = Column(String)
@@ -188,7 +188,7 @@ def map_zensus_vg250():
     join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op="intersects")
 
     # Deal with cells that don't interect with boundaries (e.g. at borders)
-    missing_cells = gdf[(~gdf.id.isin(join.id)) & (gdf.population > 0)]
+    missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
 
     # start with buffer
     buffer = 0
@@ -202,19 +202,19 @@ def map_zensus_vg250():
             missing_cells, boundaries_buffer, how="inner", op="intersects"
         )
         join = join.append(join_missing)
-        missing_cells = gdf[(~gdf.id.isin(join.id)) & (gdf.population > 0)]
+        missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
     print(f"Maximal buffer to match zensus points to vg250: {buffer}m")
 
     # drop duplicates
-    join = join.drop_duplicates(subset=["id"])
+    join = join.drop_duplicates(subset=["id_left"])
 
     # Insert results to database
     join.rename(
         {
-            "id": "zensus_population_id",
+            "id_left": "zensus_population_id",
             "geom_point": "zensus_geom",
             "nuts": "vg250_nuts3",
-            "gid": "vg250_municipality_id",
+            "id_right": "vg250_municipality_id",
         },
         axis=1,
     )[
@@ -267,7 +267,7 @@ def inside_germany():
         # Insert above queried data into new table
         insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(
             (
-                DestatisZensusPopulationPerHaInsideGermany.gid,
+                DestatisZensusPopulationPerHaInsideGermany.id,
                 DestatisZensusPopulationPerHaInsideGermany.grid_id,
                 DestatisZensusPopulationPerHaInsideGermany.population,
                 DestatisZensusPopulationPerHaInsideGermany.geom_point,
@@ -296,7 +296,7 @@ def population_in_municipalities():
         "SELECT * FROM boundaries.vg250_gem",
         geom_col="geometry",
         epsg=srid,
-        index_col='gid'
+        index_col='id'
     )
 
     gem["area_ha"] = gem.area / 10000
@@ -415,7 +415,7 @@ def add_metadata_zensus_inside_ger():
                 "format": "PostgreSQL",
                 "fields": [
                     {
-                        "name": "gid",
+                        "name": "id",
                         "description": "Unique identifier",
                         "unit": "none",
                     },

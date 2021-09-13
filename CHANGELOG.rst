@@ -205,6 +205,8 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
+* Rename columns gid to id
+  `#169 <https://github.com/openego/eGon-data/issues/169>`_
 
 Bug fixes
 ---------
@@ -259,4 +261,7 @@ Bug fixes
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
 * Add prefix egon to MV grid district tables
   `#349 <https://github.com/openego/eGon-data/issues/349>`_
-
+* Bump MV grid district version no
+  `#432 <https://github.com/openego/eGon-data/issues/432>`_
+* Add curl to prerequisites in the docs
+  `#440 <https://github.com/openego/eGon-data/issues/440>`_

@@ -298,7 +298,7 @@ def hotmaps_to_postgres():
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        ["gid", "bez", "area_ha", "index_right", "geom"], axis=1
+        ["id", "bez", "area_ha", "index_right", "geom"], axis=1
     )
 
     # Rename geometry column
@@ -406,7 +406,7 @@ def seenergies_to_postgres():
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        ["gid", "bez", "area_ha", "index_right"], axis=1
+        ["id", "bez", "area_ha", "index_right"], axis=1
     )
 
     # Remove duplicates on columns 'plant' and 'geom'
@@ -492,7 +492,7 @@ def schmidt_to_postgres():
 
     # Choose only sites inside Germany or testmode boundaries
     gdf = gpd.sjoin(gdf, boundaries).drop(
-        ["gid", "bez", "area_ha", "index_right"], axis=1
+        ["id", "bez", "area_ha", "index_right"], axis=1
     )
 
     # Remove duplicates on columns 'plant' 'lon' and 'lat'
@@ -689,7 +689,7 @@ class MergeIndustrialSites(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(download_import_industrial_sites, merge_inputs, map_nuts3),
         )

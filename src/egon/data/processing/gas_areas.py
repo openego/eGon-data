@@ -123,7 +123,7 @@ def create_voronoi():
     db.execute_sql(
         f"""
         INSERT INTO {schema}.{voronoi_table_f} (id, bus_id, geom)
-            SELECT id, bus_id, ST_Multi(ST_Intersection(
+            SELECT b.id, bus_id, ST_Multi(ST_Intersection(
             ST_Transform(a.geometry, 4326), b.geom)) AS geom
             FROM {boundary} a
             CROSS JOIN {schema}.{voronoi_table} b;
