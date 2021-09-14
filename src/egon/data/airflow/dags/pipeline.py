@@ -470,7 +470,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(
