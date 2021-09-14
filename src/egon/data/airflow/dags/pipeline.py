@@ -263,7 +263,7 @@ with airflow.DAG(
 
     gas_grid_insert_data  >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
-    
+
     # Gas prod import
     gas_production_insert_data = GasProduction(
         dependencies=[create_gas_polygons])
@@ -318,7 +318,7 @@ with airflow.DAG(
     )
 
     map_zensus_grid_districts = tasks["zensus_mv_grid_districts.mapping"]
-    
+
     # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
@@ -397,7 +397,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(
