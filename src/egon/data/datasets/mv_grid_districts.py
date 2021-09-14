@@ -81,7 +81,7 @@ class HvmvSubstPerMunicipality(Base):
 
 
 class VoronoiMunicipalityCutsBase(object):
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     municipality_id = Column(Integer)
     voronoi_id = Column(Integer)
     ags_0 = Column(String)
@@ -122,7 +122,7 @@ class MvGridDistrictsDissolved(Base):
         Sequence(f"{__tablename__}_id_seq", schema="grid"),
         primary_key=True,
     )
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     geom = Column(Geometry("MultiPolygon", 3035))
     area = Column(Float)
 
@@ -131,7 +131,7 @@ class MvGridDistricts(Base):
     __tablename__ = "egon_mv_grid_district"
     __table_args__ = {"schema": "grid"}
 
-    subst_id = Column(Integer, primary_key=True)
+    bus_id = Column(Integer, primary_key=True)
     geom = Column(Geometry("MultiPolygon", 3035))
     area = Column(Float)
 
@@ -262,7 +262,7 @@ def split_multi_substation_municipalities():
                 VoronoiMunicipalityCuts.municipality_id,
                 VoronoiMunicipalityCuts.ags_0,
                 VoronoiMunicipalityCuts.geom,
-                VoronoiMunicipalityCuts.subst_id,
+                VoronoiMunicipalityCuts.bus_id,
                 VoronoiMunicipalityCuts.voronoi_id,
             ],
             q,
@@ -298,7 +298,7 @@ def split_multi_substation_municipalities():
         ).update(
             {
                 "subst_count": cuts_substation_subquery.c.subst_count,
-                "subst_id": cuts_substation_subquery.c.bus_id,
+                "bus_id": cuts_substation_subquery.c.bus_id,
                 "geom_sub": cuts_substation_subquery.c.geom_sub,
             },
             synchronize_session="fetch",
@@ -397,7 +397,7 @@ def assign_substation_municipality_fragments(
     with_substation, without_substation, strategy, session
 ):
     """
-    Assign subst_id from next neighboring polygon to municipality fragment
+    Assign bus_id from next neighboring polygon to municipality fragment
 
     For parts municipalities without a substation inside their polygon the
     next municipality polygon part is found and assigned.
@@ -427,7 +427,7 @@ def assign_substation_municipality_fragments(
     different in detail.
     """
     # Determine nearest neighboring polygon that has a substation
-    columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
+    columns_from_cut1_subst = ["bus_id", "subst_count", "geom_sub"]
 
     if strategy == "touches":
         neighboring_criterion = func.ST_Touches(
@@ -526,14 +526,14 @@ def merge_polygons_to_grid_district():
         # Step 1: Merge municipality parts cut by voronoi polygons according
         # to prior determined associated substation
         joined_municipality_parts = session.query(
-            VoronoiMunicipalityCutsAssigned.subst_id,
+            VoronoiMunicipalityCutsAssigned.bus_id,
             func.ST_Multi(
                 func.ST_Union(VoronoiMunicipalityCutsAssigned.geom)
             ).label("geom"),
             func.sum(func.ST_Area(VoronoiMunicipalityCutsAssigned.geom)).label(
                 "area"
             ),
-        ).group_by(VoronoiMunicipalityCutsAssigned.subst_id)
+        ).group_by(VoronoiMunicipalityCutsAssigned.bus_id)
 
         joined_municipality_parts_insert = (
             MvGridDistrictsDissolved.__table__.insert().from_select(
@@ -585,7 +585,7 @@ def merge_polygons_to_grid_district():
         while True:
             previous_ids_length = len(already_assigned)
             with_substation = session.query(
-                MvGridDistrictsDissolved.subst_id,
+                MvGridDistrictsDissolved.bus_id,
                 MvGridDistrictsDissolved.geom,
                 MvGridDistrictsDissolved.id,
             ).subquery()
@@ -615,7 +615,7 @@ def merge_polygons_to_grid_district():
         # Step 4: Merge MV grid district parts
         # Forms one (multi-)polygon for each substation
         joined_mv_grid_district_parts = session.query(
-            MvGridDistrictsDissolved.subst_id,
+            MvGridDistrictsDissolved.bus_id,
             func.ST_Multi(
                 func.ST_Buffer(
                     func.ST_Buffer(
@@ -625,7 +625,7 @@ def merge_polygons_to_grid_district():
                 )
             ).label("geom"),
             func.sum(MvGridDistrictsDissolved.area).label("area"),
-        ).group_by(MvGridDistrictsDissolved.subst_id)
+        ).group_by(MvGridDistrictsDissolved.bus_id)
 
         joined_mv_grid_district_parts_insert = (
             MvGridDistricts.__table__.insert().from_select(
@@ -688,7 +688,7 @@ def nearest_polygon_with_substation(
         session.query(
             without_substation.c.id,
             func.ST_Multi(without_substation.c.geom).label("geom"),
-            with_substation.c.subst_id,
+            with_substation.c.bus_id,
             func.ST_Area(func.ST_Multi(without_substation.c.geom)).label(
                 "area"
             ),
@@ -718,7 +718,7 @@ def nearest_polygon_with_substation(
 
     # Take only one candidate polygon for assgning it
     nearest_neighbors = session.query(
-        all_nearest_neighbors.c.subst_id,
+        all_nearest_neighbors.c.bus_id,
         all_nearest_neighbors.c.geom,
         all_nearest_neighbors.c.area,
     ).distinct(all_nearest_neighbors.c.id)
@@ -772,7 +772,7 @@ def define_mv_grid_districts():
 mv_grid_districts_setup = partial(
     Dataset,
     name="MvGridDistricts",
-    version="0.0.1",
+    version="0.0.2",
     dependencies=[],
     tasks=(define_mv_grid_districts),
 )
