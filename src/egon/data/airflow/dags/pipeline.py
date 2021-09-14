@@ -429,12 +429,12 @@ with airflow.DAG(
 
 
     #HTS
-    etrago_input_data >> heat_etrago_buses
-    define_mv_grid_districts >> heat_etrago_buses
-    import_district_heating_areas >> heat_etrago_supply
+    # etrago_input_data >> heat_etrago_buses
+    # define_mv_grid_districts >> heat_etrago_buses
+    # import_district_heating_areas >> heat_etrago_supply
     
     # Heat time Series
     heat_time_series = HeatTimeSeries(
-        dependencies = [heat_demand_Germany, import_district_heating_areas,  
+        dependencies = [data_bundle,heat_demand_Germany, import_district_heating_areas,  
                         import_district_heating_areas,vg250,
                         map_zensus_grid_districts])
