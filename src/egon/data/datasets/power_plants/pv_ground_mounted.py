@@ -439,9 +439,9 @@ def insert():
         """
 
         # get MV grid districts
-        sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
+        sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
         distr = gpd.GeoDataFrame.from_postgis(sql, con)
-        distr = distr.set_index("subst_id")
+        distr = distr.set_index("bus_id")
 
         # identify potential areas where there are no PV parks yet
         for index, pv in pv.iterrows():
@@ -894,9 +894,9 @@ def insert():
             # 1) eGon2035
 
             # get MV grid districts
-            sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
+            sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
-            distr = distr.set_index("subst_id")
+            distr = distr.set_index("bus_id")
 
             # assign pv_per_distr-power to districts
             distr["capacity"] = pd.Series()
@@ -943,9 +943,9 @@ def insert():
             # 2) eGon100RE
 
             # get MV grid districts
-            sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
+            sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
-            distr = distr.set_index("subst_id")
+            distr = distr.set_index("bus_id")
 
             # assign pv_per_distr-power to districts
             distr["capacity"] = pd.Series()
