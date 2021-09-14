@@ -9,15 +9,17 @@ import egon.data.config
 
 def insert():
     """
-    Include the offshore wind parks in egon-data
+    Include the offshore wind parks in egon-data.
     locations and installed capacities based on: NEP2035_V2021_scnC2035
 
     Parameters
     ----------
-    *No parameters required    
+    *No parameters required
     """
-    
+    # Read file with all required input/output tables' names
     cfg = egon.data.config.datasets()["power_plants"]
+    
+    # load NEP2035_V2021_scnC2035 file
     offshore_path = (
         Path(".")
         / "data_bundle_egon_data"
@@ -35,28 +37,28 @@ def insert():
     # Import manually generated list of wind offshore farms with their connexion
     # points (OSM_id)
     id_bus = {
-        "Büttel": "w136034396",
-        "Heide/West": "w30622610",
-        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "w114319248",
-        "Suchraum Zensenbusch": "w76185022",
-        "Rommerskirchen": "w24839976",
-        "Oberzier": "w26593929",
-        "Garrel/Ost": "w23837631",
-        "Diele": "w177829920",
-        "Dörpen/West": "w142487746",
-        "Emden/Borßum": "w34835258",
-        "Emden/Ost": "w34835258",
-        "Hagermarsch": "w79316833",
-        "Hanekenfähr": "w61918154",
-        "Inhausen": "w29420322",
-        "Unterweser": "w32076853",
-        "Wehrendorf": "w33411203",
-        "Wilhelmshaven 2": "w157421333",
-        "Rastede": "w23837631",
-        "Bentwisch": "w32063539",
-        "Lubmin": "w460134233",
-        "Suchraum Gemeinde Papendorf": "w32063539",
-        "Suchraum Gemeinden Brünzow/Kemnitz": "w460134233",
+        "Büttel": "136034396",
+        "Heide/West": "603661085",
+        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
+        "Suchraum Zensenbusch": "76185022",
+        "Rommerskirchen": "24839976",
+        "Oberzier": "26593929",
+        "Garrel/Ost": "23837631",
+        "Diele": "177829920",
+        "Dörpen/West": "142487746",
+        "Emden/Borßum":	"34835258",
+        "Emden/Ost": "34835258",
+        "Hagermarsch": "79316833",
+        "Hanekenfähr": "61918154",
+        "Inhausen": "29420322",
+        "Unterweser": "32076853",
+        "Wehrendorf": "33411203",
+        "Wilhelmshaven 2": "23744346",
+        "Rastede": "23837631",
+        "Bentwisch": "32063539",
+        "Lubmin": "460134233",
+        "Suchraum Gemeinde Papendorf": "32063539",
+        "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
     }
 
     # Match wind offshore table with the corresponding OSM_id
@@ -65,60 +67,38 @@ def insert():
     # Connect to the data-base
     con = db.engine()
 
-    # Import table with extra high voltage substations
-    sql = (
-        "SELECT bus_id, point, voltage, osm_id, subst_name, osm_www FROM "
-        + cfg["sources"]["ehv_subs"]
-    )
-
-    substations_ehv = gpd.GeoDataFrame.from_postgis(
+    # Import table with all the busses of the grid
+    sql = f"""
+        SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
+        as osm_id FROM {cfg["sources"]["buses_data"]}
+        """
+        
+    busses = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="point"
     )
-
-    # Import table with high and medium voltage substations
-    sql = (
-        "SELECT bus_id, point, voltage, osm_id, subst_name, osm_www FROM "
-        + cfg["sources"]["hvmv_subs"]
-    )
-    substations_mvhv = gpd.GeoDataFrame.from_postgis(
-        sql, con, crs="EPSG:4326", geom_col="point"
-    )
-
-    # Create columns for bus_id, geometry and osm_web in the offshore df
+    
+    # Drop NANs in column osm_id
+    busses.dropna(subset= ['osm_id'], inplace= True)
+    
+    # Create columns for bus_id and geometry in the offshore df
     offshore["bus_id"] = np.nan
     offshore["geom"] = Point(0, 0)
-    offshore["osm_web"] = ""  # Just for testing purposes
 
-    # Match bus_id, geometry and osm_web
+    # Match bus_id and geometry
     for index, wind_park in offshore.iterrows():
         if (
             len(
-                substations_ehv[
-                    substations_ehv["osm_id"] == wind_park["osm_id"]
+                busses[
+                    busses["osm_id"] == wind_park["osm_id"]
                 ].index
             )
             > 0
         ):
-            a = substations_ehv[
-                substations_ehv["osm_id"] == wind_park["osm_id"]
+            bus_ind = busses[
+                busses["osm_id"] == wind_park["osm_id"]
             ].index[0]
-            offshore.at[index, "bus_id"] = substations_ehv.at[a, "bus_id"]
-            offshore.at[index, "geom"] = substations_ehv.at[a, "point"]
-            offshore.at[index, "osm_web"] = substations_ehv.at[a, "osm_www"]
-        elif (
-            len(
-                substations_mvhv[
-                    substations_mvhv["osm_id"] == wind_park["osm_id"]
-                ].index
-            )
-            > 0
-        ):
-            a = substations_mvhv[
-                substations_mvhv["osm_id"] == wind_park["osm_id"]
-            ].index[0]
-            offshore.at[index, "bus_id"] = substations_mvhv.at[a, "bus_id"]
-            offshore.at[index, "geom"] = substations_mvhv.at[a, "point"]
-            offshore.at[index, "osm_web"] = substations_mvhv.at[a, "osm_www"]
+            offshore.at[index, "bus_id"] = busses.at[bus_ind, "bus_id"]
+            offshore.at[index, "geom"] = busses.at[bus_ind, "point"]
         else:
             print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
 
@@ -129,10 +109,11 @@ def insert():
     offshore["voltage_level"] = np.nan
     offshore.loc[
         offshore[offshore["Spannungsebene in kV"] == 110].index,
-        "voltage_level",] = 3
+        "voltage_level",
+    ] = 3
     offshore.loc[
-        offshore[offshore["Spannungsebene in kV"] > 110].index,
-        "voltage_level"] = 1
+        offshore[offshore["Spannungsebene in kV"] > 110].index, "voltage_level"
+    ] = 1
 
     # Assign static values
     offshore["carrier"] = "wind_offshore"
@@ -148,18 +129,31 @@ def insert():
             "Spannungsebene in kV",
             "C 2035",
             "osm_id",
-            "osm_web",
         ],
         axis=1,
         inplace=True,
     )
 
-    # convert column "bus_id" to integer
+    # convert column "bus_id" and "voltage_level" to integer
     offshore["bus_id"] = offshore["bus_id"].apply(int)
     offshore["voltage_level"] = offshore["voltage_level"].apply(int)
 
+    # Delete, in case of existing, previous wind offshore parks
+
+    db.execute_sql(
+        f""" 
+    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']} 
+    WHERE carrier IN ('wind_offshore') 
+    """
+    )
+
     # Look for the maximum id in the table egon_power_plants
-    sql = "SELECT MAX(id) FROM supply.egon_power_plants"
+    sql = (
+        "SELECT MAX(id) FROM "
+        + cfg["target"]["schema"]
+        + "."
+        + cfg["target"]["table"]
+    )
     max_id = pd.read_sql(sql, con)
     max_id = max_id["max"].iat[0]
     if max_id == None:
@@ -178,7 +172,7 @@ def insert():
     # Insert into database
     offshore.reset_index().to_postgis(
         cfg["target"]["table"],
-        schema=cfg["target"]["supply"],
+        schema=cfg["target"]["schema"],
         con=db.engine(),
         if_exists="append",
     )
