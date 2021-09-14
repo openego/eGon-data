@@ -283,6 +283,8 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
                 f'{additional_capacity} MW are not matched to an area.')
             break
 
+    return additional_capacity
+
 def extension_district_heating(
         federal_state, additional_capacity, flh_chp, EgonChp,
         areas_without_chp_only=True):
@@ -360,8 +362,9 @@ def extension_district_heating(
             AND district_heating = TRUE)
         """)
 
-    extension_to_areas(dh_areas, additional_capacity, existing_chp, flh_chp,
-                       EgonChp, district_heating = True)
+    not_distributed_capacity = extension_to_areas(
+        dh_areas, additional_capacity, existing_chp, flh_chp,
+         EgonChp, district_heating = True)
 
     if not areas_without_chp_only:
         # Append district heating areas with CHP
@@ -392,6 +395,8 @@ def extension_district_heating(
                     b.area_id, geom_polygon)
                 """),ignore_index=True
                 )
+
+    return not_distributed_capacity
 
 
 def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
@@ -477,8 +482,11 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
 
         """)
 
-    extension_to_areas(industry_areas, additional_capacity, existing_chp,
-                       flh_chp, EgonChp, district_heating = False)
+    not_distributed_capacity = extension_to_areas(
+        industry_areas, additional_capacity, existing_chp,
+        flh_chp, EgonChp, district_heating = False)
+
+    return not_distributed_capacity
 
 
 def extension_per_federal_state(additional_capacity, federal_state, EgonChp, share_dh):
@@ -507,79 +515,36 @@ def extension_per_federal_state(additional_capacity, federal_state, EgonChp, sha
     None.
 
     """
-    sources = config.datasets()["chp_location"]["sources"]
-    targets = config.datasets()["chp_location"]["targets"]
+
 
     flh_chp = 6000
-    # dh_areas_demand = db.select_dataframe(
-    #     f"""
-    #     SELECT SUM(residential_and_service_demand) as demand
-    #     FROM
-    #     {sources['district_heating_areas']['schema']}.
-    #     {sources['district_heating_areas']['table']}
-    #     WHERE scenario = 'eGon2035'
-    #     AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
-    #         SELECT ST_Union(d.geometry)
-    #         FROM
-    #         {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} d
-    #         WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-    #     AND area_id NOT IN (
-    #         SELECT district_heating_area_id
-    #         FROM {targets['chp_table']['schema']}.
-    #         {targets['chp_table']['table']}
-    #         WHERE scenario = 'eGon2035'
-    #         AND district_heating = TRUE)
-    #     """).demand[0]
 
-    # heat_elec_ratio_industry = 2.5 # According to Flexibilisierung der Kraft-Wärme-Kopplung, figure 6-3
+    capacity_district_heating = additional_capacity*share_dh
+    capacity_industry = additional_capacity*(1-share_dh)
 
-    # industry_heat_demand = db.select_dataframe(
-    #     f"""
-    #     SELECT
-    #     SUM(demand) as demand
-    #     FROM
-    #     {sources['industrial_demand_osm']['schema']}.
-    #     {sources['industrial_demand_osm']['table']} a,
-    #     {sources['osm_landuse']['schema']}.
-    #     {sources['osm_landuse']['table']} b
-    #     WHERE a.scenario = 'eGon2035'
-    #     AND b.id = a.osm_id
-    #     AND NOT ST_Intersects(
-    #         ST_Transform(b.geom, 4326),
-    #         (SELECT ST_Union(geom) FROM
-    #           {targets['chp_table']['schema']}.
-    #           {targets['chp_table']['table']}
-    #           ))
-    #     AND b.tags::json->>'landuse' = 'industrial'
-    #     AND b.name NOT LIKE '%%kraftwerk%%'
-    #     AND b.name NOT LIKE '%%Stadtwerke%%'
-    #     AND b.name NOT LIKE '%%Müllverbrennung%%'
-    #     AND b.name NOT LIKE '%%Müllverwertung%%'
-    #     AND b.name NOT LIKE '%%Abfall%%'
-    #     AND b.name NOT LIKE '%%Kraftwerk%%'
-    #     AND b.name NOT LIKE '%%Wertstoff%%'
-    #     AND b.name NOT LIKE '%%olarpark%%'
-    #     AND b.name NOT LIKE '%%Gewerbegebiet%%'
-    #     AND b.name NOT LIKE '%%Gewerbepark%%'
-    #     AND ST_Intersects(
-    #         ST_Transform(ST_Centroid(b.geom), 4326),
-    #         (SELECT ST_Union(d.geometry)
-    #          FROM {sources['vg250_lan']['schema']}.
-    #          {sources['vg250_lan']['table']} d
-    #          WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-    #     """).demand[0]*heat_elec_ratio_industry
+    print(f"Distributing {additional_capacity} MW_el in {federal_state}")
+    print(f"Distributing {capacity_district_heating} MW_el to district heating")
+    not_distributed_capacity_dh = extension_district_heating(
+        federal_state, capacity_district_heating, flh_chp, EgonChp)
 
+    if not_distributed_capacity_dh > 1:
+        print(f"{not_distributed_capacity_dh} MW_el were not matched to district "
+              "heating. This capacity is added to industry")
+        capacity_industry += not_distributed_capacity_dh
 
-
-    # share_dh = dh_areas_demand /(dh_areas_demand+industry_heat_demand)
-    print(f"Distributing {additional_capacity} MW in {federal_state}")
-    print(f"Distributing {additional_capacity*share_dh} MW to district heating")
-    extension_district_heating(
-        federal_state, additional_capacity*share_dh, flh_chp, EgonChp)
-    print(f"Distributing {additional_capacity*(1-share_dh)} MW to industry")
-    extension_industrial(
+    print(f"Distributing {capacity_industry} MW_el to industry")
+    not_distributed_capacity_industry = extension_industrial(
         federal_state, additional_capacity*(1-share_dh), flh_chp, EgonChp)
 
+    print(f"{not_distributed_capacity_industry} MW_el were not matched to "
+          "industry. This capacity is added to district heating")
+
+    if not_distributed_capacity_industry > 1:
+        print(f"{not_distributed_capacity_industry} MW_el were not matched to "
+              "industry. This capacity is added to district heating")
+
+        extension_district_heating(
+            federal_state, not_distributed_capacity_industry, flh_chp, EgonChp)
 
 def assign_use_case(chp, sources):
     """Identifies CHPs used in district heating areas.
