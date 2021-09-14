@@ -571,6 +571,10 @@ def dsm_cts_ind_processing():
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
         insert_buses.set_geometry("geom", inplace=True) 
+        
+        print('insert_buses: ')
+        print(insert_buses)
+        print('number of buses: '+str(len(insert_buses)))
 
         # insert into database
         insert_buses.to_postgis(
