@@ -16,6 +16,7 @@ import json
 import os
 import shutil
 import time
+import re
 
 import importlib_resources as resources
 
@@ -129,16 +130,13 @@ def add_metadata():
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
         input_filename = osm_config["original_data"]["target"]["file_testmode"]
 
-    spatial_and_date = Path(input_filename).name.split("-")
-    spatial_extend = spatial_and_date[0]
-    osm_data_date = (
-        "20"
-        + spatial_and_date[1][0:2]
-        + "-"
-        + spatial_and_date[1][2:4]
-        + "-"
-        + spatial_and_date[1][4:6]
-    )
+    # Extract spatial extend and date
+    (spatial_extend, osm_data_date) = re.compile(
+        "^([\\w-]*).*-(\\d+)$").findall(
+        Path(input_filename).name.split('.')[0]
+    )[0]
+    osm_data_date = datetime.datetime.strptime(
+        osm_data_date, '%y%m%d').strftime('%y-%m-%d')
 
     # Insert metadata for each table
     licenses = [license_odbl()]
