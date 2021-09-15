@@ -16,50 +16,35 @@ from geoalchemy2.types import Geometry
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 from geoalchemy2.shape import from_shape
-
-def next_id(component):
-    """ Select next id value for components in pf-tables
-    Parameters
-    ----------
-    component : str
-        Name of componenet
-    Returns
-    -------
-    next_id : int
-        Next index value
-    """
-    max_id = db.select_dataframe(
-        f"""
-        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
-        """)['max'][0]
-
-    if max_id:
-        next_id = max_id + 1
-    else:
-        next_id = 1
-
-    return next_id
-
+from pathlib import Path
 
 def download_SciGRID_gas_data():
     """
     Download SciGRID_gas IGGIELGN data from Zenodo
 
     """
-    path = "datasets/gas_data/"
+    path = (
+            Path(".") /
+            "datasets" /
+            "gas_data" )
     os.makedirs(path, exist_ok=True)
 
     basename = "IGGIELGN"
+    zip_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            "IGGIELGN.zip")
     zenodo_zip_file_url = ("https://zenodo.org/record/4767098/files/"+ basename + ".zip")
-    if not os.path.isfile(path + basename + ".zip"):
-        urlretrieve(zenodo_zip_file_url, path + basename + ".zip")
+    if not os.path.isfile(zip_file):
+        urlretrieve(zenodo_zip_file_url, zip_file)
 
     components = ['Nodes', 'PipeSegments', 'Productions', 'Storages'] #'Compressors'
     files = []
     for i in components:
         files.append('data/'+ basename + "_" + i + ".csv")
 
-    with ZipFile(path + basename + ".zip", 'r') as zipObj:
+    with ZipFile(zip_file, 'r') as zipObj:
         listOfFileNames = zipObj.namelist()
         for fileName in listOfFileNames:
             if fileName in files:
@@ -76,11 +61,14 @@ def define_gas_nodes_list():
 
     """
     # Select next id value
-    new_id = next_id('bus')
+    new_id = db.next_etrago_id('bus')
 
-    target_file = os.path.join(
-        "datasets/gas_data/data/",
-        'IGGIELGN_Nodes.csv')
+    target_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            "data" /
+            "IGGIELGN_Nodes.csv")      
 
     gas_nodes_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -173,19 +161,24 @@ def insert_gas_pipeline_list(gas_nodes_list):
     engine = db.engine()
 
     # Select next id value
-    new_id = next_id('link')
+    new_id = db.next_etrago_id('link')
 
-    classifiaction_file = os.path.join(
-        "data_bundle_egon_data/pipeline_classification_gas/",
-        'pipeline_classification.csv')
+    classifiaction_file = (
+            Path(".") /
+            "data_bundle_egon_data" /
+            "pipeline_classification_gas" /
+            "pipeline_classification.csv")
 
     classification = pd.read_csv(classifiaction_file,
                                delimiter=',',
                                usecols = ['classification', 'max_transport_capacity_Gwh/d'])
 
-    target_file = os.path.join(
-        "datasets/gas_data/data/",
-        'IGGIELGN_PipeSegments.csv')
+    target_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            "data" /
+            "IGGIELGN_PipeSegments.csv")
 
     gas_pipelines_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',

@@ -1,4 +1,4 @@
-"""The central module containing all code dealing with importing VG250 data.
+"""The central module containing all code dealing with VG250 data.
 
 This module either directly contains the code dealing with importing VG250
 data, or it re-exports everything needed to handle it. Please refrain
@@ -9,6 +9,7 @@ If you have to import code from a module below this one because the code
 isn't exported from this module, please file a bug, so we can fix this.
 """
 
+from pathlib import Path
 from urllib.request import urlretrieve
 import time
 import datetime
@@ -31,9 +32,12 @@ def download_files():
     data_config = egon.data.config.datasets()
     vg250_config = data_config["vg250"]["original_data"]
 
-    target_file = os.path.join(
-        os.path.dirname(__file__), vg250_config["target"]["path"]
-    )
+    download_directory = Path(".") / "vg250"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(download_directory):
+        os.mkdir(download_directory)
+
+    target_file = download_directory / vg250_config["target"]["file"]
 
     if not os.path.isfile(target_file):
         urlretrieve(vg250_config["source"]["url"], target_file)
@@ -49,9 +53,7 @@ def to_postgres():
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {vg250_processed['schema']};")
 
-    zip_file = os.path.join(
-        os.path.dirname(__file__), vg250_orig["target"]["path"]
-    )
+    zip_file = Path(".") / "vg250" / vg250_orig["target"]["file"]
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
@@ -81,7 +83,7 @@ def to_postgres():
                 ]
 
         # Set index column and format column headings
-        data.index.set_names("gid", inplace=True)
+        data.index.set_names("id", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
         # Drop table before inserting data
@@ -102,7 +104,7 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {vg250_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (gid);"
+            f"ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
@@ -297,7 +299,7 @@ class Vg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="VG250",
-            version=self.filename + "-0.0.1",
+            version=self.filename + "-0.0.3",
             dependencies=dependencies,
             tasks=(
                 download_files,

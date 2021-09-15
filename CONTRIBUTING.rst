@@ -189,10 +189,15 @@ Before requesting a review, please
 1. Include passing tests (run ``tox``). [#tox-note]_
 2. Let the workflow run in :ref:`Test mode` once from scratch to verify
    successful execution
-3. Update documentation when there's new API, functionality etc.
-4. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
+3. Make sure that your changes are tested in integration with other
+   tasks and on a complete run at least once by merging them into the
+   `continuous-integration/run-everything-over-the-weekend`_ branch.
+   This branch will regularly be checked out and tested on a complete
+   workflow run on friday evening.
+4. Update documentation when there's new API, functionality etc.
+5. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
    corresponding Github issue.
-5. Add yourself to ``AUTHORS.rst``.
+6. Add yourself to ``AUTHORS.rst``.
 
 .. [#tox-note]
     If you don't have all the necessary Python versions available locally
@@ -202,6 +207,7 @@ Before requesting a review, please
     It will be slower though ...
 
 .. _run the tests: https://github.com/openego/eGon-data/actions?query=workflow%3A%22Tests%2C+code+style+%26+coverage%22
+.. _continuous-integration/run-everything-over-the-weekend: https://github.com/openego/eGon-data/tree/continuous-integration/run-everything-over-the-weekend
 
 
 When requesting reviews, please keep in mind it might be a significant effort

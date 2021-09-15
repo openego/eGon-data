@@ -2,7 +2,7 @@
 """
 The central module containing all code dealing with importing gas production data
 """
-import os
+#import os
 import ast
 import pandas as pd
 import geopandas as gpd
@@ -10,16 +10,16 @@ import numpy as np
 import geopandas
 
 from egon.data import db
-from egon.data.importing.gas_grid import next_id
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from urllib.request import urlretrieve
+from pathlib import Path
 
 class GasProduction(Dataset):
      def __init__(self, dependencies):
          super().__init__(
              name="GasProduction",
-             version="0.0.2",
+             version="0.0.4",
              dependencies=dependencies,
              tasks=(import_gas_generators),
          )
@@ -34,9 +34,12 @@ def load_NG_generators():
         Dataframe containing the natural gas producion units in Germany
 
     """
-    target_file = os.path.join(
-        "datasets/gas_data/",
-        'data/IGGIELGN_Productions.csv')
+    target_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            "data" /
+            "IGGIELGN_Productions.csv")
 
     NG_generators_list = pd.read_csv(target_file,
                                delimiter=';', decimal='.',
@@ -100,7 +103,11 @@ def load_biogas_generators():
     # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
     url = "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/" + basename
-    target_file = "datasets/gas_data/" + basename
+    target_file = (
+            Path(".") /
+            "datasets" /
+            "gas_data" /
+            basename)
 
     urlretrieve(url, target_file)
 
@@ -144,7 +151,7 @@ def load_biogas_generators():
             AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)'''
 
         biogas_generators_list = gpd.GeoDataFrame.from_postgis(sql, con=engine, geom_col="geom", crs=4326)
-        biogas_generators_list = biogas_generators_list.drop(columns=['gid', 'bez', 'area_ha', 'geometry'])
+        biogas_generators_list = biogas_generators_list.drop(columns=['id', 'bez', 'area_ha', 'geometry'])
         db.execute_sql(
             """
               DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
@@ -210,7 +217,7 @@ def import_gas_generators():
     )
 
     # Select next id value
-    new_id = next_id('generator')
+    new_id = db.next_etrago_id('generator')
 
     CH4_generators_list = pd.concat([load_NG_generators(), load_biogas_generators()])
     CH4_generators_list['generator_id'] = range(new_id, new_id + len(CH4_generators_list))
