@@ -583,6 +583,7 @@ def dsm_cts_ind_processing():
             schema=targets["bus"]["schema"],
             if_exists="append",
             index=False,
+            dtype = {'geom':'geometry'}
         )
 
         # dsm_links
@@ -601,7 +602,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["link"]["schema"],
             if_exists="append",
-            index=False,
+            index=False
         )
 
         insert_links_timeseries = pd.DataFrame(index=dsm_links.index)
@@ -617,7 +618,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["link_timeseries"]["schema"],
             if_exists="append",
-            index=False,
+            index=False
         )
 
         # dsm_stores
@@ -635,7 +636,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["store"]["schema"],
             if_exists="append",
-            index=False,
+            index=False
         )
 
         insert_stores_timeseries = pd.DataFrame(index=dsm_stores.index)
@@ -651,7 +652,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["store_timeseries"]["schema"],
             if_exists="append",
-            index=False,
+            index=False
         )
 
     def delete_dsm_entries(carrier):
