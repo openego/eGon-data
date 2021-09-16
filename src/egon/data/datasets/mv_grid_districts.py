@@ -114,7 +114,7 @@ class VoronoiMunicipalityCutsAssigned(VoronoiMunicipalityCutsBase, Base):
 
 
 class MvGridDistrictsDissolved(Base):
-    __tablename__ = "mv_grid_districts_dissolved"
+    __tablename__ = "egon_mv_grid_district_dissolved"
     __table_args__ = {"schema": "grid"}
 
     id = Column(
@@ -128,7 +128,7 @@ class MvGridDistrictsDissolved(Base):
 
 
 class MvGridDistricts(Base):
-    __tablename__ = "mv_grid_districts"
+    __tablename__ = "egon_mv_grid_district"
     __table_args__ = {"schema": "grid"}
 
     subst_id = Column(Integer, primary_key=True)
@@ -772,7 +772,7 @@ def define_mv_grid_districts():
 mv_grid_districts_setup = partial(
     Dataset,
     name="MvGridDistricts",
-    version="0.0.0",
+    version="0.0.1",
     dependencies=[],
     tasks=(define_mv_grid_districts),
 )
