@@ -226,7 +226,7 @@ class EgonEtragoElectricityHouseholds(Base):
     __table_args__ = {"schema": "demand"}
 
     version = Column(String, primary_key=True)
-    subst_id = Column(Integer, primary_key=True)
+    bus_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
     q_set = Column(ARRAY(Float))
@@ -235,7 +235,7 @@ class EgonEtragoElectricityHouseholds(Base):
 hh_demand_setup = partial(
     Dataset,
     name="HH Demand",
-    version="0.0.1",
+    version="0.0.2",
     dependencies=[],
     # Tasks are declared in pipeline as function is used multiple times with different args
     # To differentiate these tasks PythonOperator with specific id-names are used
@@ -1451,7 +1451,7 @@ def mv_grid_district_HH_electricity_load(
     Returns
     -------
     pd.DataFrame
-        Multiindexed dataframe with `timestep` and `subst_id` as indexers.
+        Multiindexed dataframe with `timestep` and `bus_id` as indexers.
         Demand is given in kWh.
     """
     engine = db.engine()
@@ -1459,7 +1459,7 @@ def mv_grid_district_HH_electricity_load(
     with db.session_scope() as session:
         cells_query = session.query(
             HouseholdElectricityProfilesInCensusCells,
-            MapZensusGridDistricts.subst_id,
+            MapZensusGridDistricts.bus_id,
         ).join(
             MapZensusGridDistricts,
             HouseholdElectricityProfilesInCensusCells.cell_id
@@ -1481,7 +1481,7 @@ def mv_grid_district_HH_electricity_load(
 
     # Create aggregated load profile for each MV grid district
     mvgd_profiles_dict = {}
-    for grid_district, data in cells.groupby("subst_id"):
+    for grid_district, data in cells.groupby("bus_id"):
         mvgd_profile = get_load_timeseries(
             df_profiles=df_profiles,
             df_cell_demand_metadata=data,
@@ -1494,7 +1494,7 @@ def mv_grid_district_HH_electricity_load(
 
     # Reshape data: put MV grid ids in columns to a single index column
     mvgd_profiles = mvgd_profiles.reset_index()
-    mvgd_profiles.columns = ["subst_id", "p_set"]
+    mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Add remaining columns
     mvgd_profiles["version"] = version
