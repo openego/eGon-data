@@ -205,18 +205,12 @@ def dsm_cts_ind_processing():
             # identify bus per industrial site
             curves_bus = identify_bus(load_curves, demand_area)
             curves_bus.index = curves_bus["id"].astype(int)
-
+            
             # initialize dataframe to be returned
 
-            ts = gpd.GeoDataFrame(
-                index=curves_bus["id"].astype(int),
-                data=demand_area["geom"],
-                geometry="geom",
-                crs=3035,
-            )
-            ts["subst_id"] = curves_bus["subst_id"].astype(int)
-            curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
+            ts = pd.DataFrame(data=curves_bus['subst_id'], index=curves_bus["id"].astype(int))
             ts["scenario_name"] = scenario
+            curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
             ts["p_set"] = curves_bus.values.tolist()
             
             # add subsector to relate to Schmidt's tables afterwards
@@ -232,17 +226,15 @@ def dsm_cts_ind_processing():
                 "sources"
             ]["ind_sites_schmidt"]
 
-            schmidt = db.select_geodataframe(
+            schmidt = db.select_dataframe(
                 f"""SELECT application, geom FROM
-                    {source['schema']}.{source['table']}""",
-                geom_col="geom",
-                epsg=3035,
+                    {source['schema']}.{source['table']}"""
             )
 
             # relate calculated timeseries (dsm) to Schmidt's industrial sites
 
             applications = np.unique(schmidt['application'])
-            dsm = dsm[dsm['application'].isin(applications)]
+            dsm = pd.DataFrame(dsm[dsm['application'].isin(applications)])
 
             # initialize dataframe to be returned
 
@@ -268,11 +260,6 @@ def dsm_cts_ind_processing():
         # relate calculated timeseries to Schmidt's industrial sites
 
         dsm = relate_to_Schmidt_sites(dsm)
-
-        # prepare dataframe to be returned
-
-        dsm = pd.DataFrame(dsm)
-        dsm.drop("geom", axis=1, inplace=True)
 
         return dsm
 
