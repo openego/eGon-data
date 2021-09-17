@@ -20,6 +20,7 @@ from egon.data.datasets import Dataset
 
 Base = declarative_base()
 
+
 class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -32,6 +33,7 @@ class ZensusVg250(Dataset):
                 add_metadata_vg250_gem_pop
                 )
         )
+
 
 class Vg250Sta(Base):
     __tablename__ = "vg250_sta"
