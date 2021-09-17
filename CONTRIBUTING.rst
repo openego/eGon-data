@@ -278,12 +278,39 @@ be saved locally, please use `CWD` to store the data. This is achieved by using
 Add metadata
 ^^^^^^^^^^^^
 
-For describing data with machine-readable information,
-`oemetadata standard <https://github.com/OpenEnergyPlatform/oemetadata>`_ is
-used. Follow
+Add a metadata for every dataset you create for describing data with
+machine-readable information. Adhere to the OEP Metadata version 1.4.1, you can
+follow
 `the example <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/latest/example.json>`_
 to understand how the fields are used. Field are described in detail
-`here <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/latest/metadata_key_description.md>`_.
+`here <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_.
+
+You can obtain the metadata string from a table you created in SQL via
+
+.. code-block:: sql
+
+  SELECT obj_description('<SCHEMA>.<TABLE>'::regclass);
+
+Alternatively, you can write the table comment directly to a JSON file by
+
+.. code-block:: bash
+
+  psql -h <HOST> -p <PORT> -d <DB> -U <USER> -c "\COPY (SELECT obj_description('<SCHEMA>.<TABLE>'::regclass)) TO '/PATH/TO/FILE.json';"
+
+Please verify that your metadata string is in compliance with the OEP Metadata
+standard version 1.4.1 using the `OMI tool
+<https://github.com/OpenEnergyPlatform/omi>`_:
+
+.. code-block:: bash
+
+  omi translate -f oep-v1.4 metadata_file.json
+
+Omit the field `id` in your string as it will be automatically set at the
+end of the pipeline (you can ignore the OMI's message `metadata string does
+not contain an id` ), but fix all other errors.
+
+For details, you may want to check
+`PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
 
 Adjusting test mode data
 ------------------------
