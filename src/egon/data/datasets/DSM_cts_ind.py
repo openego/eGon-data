@@ -244,6 +244,8 @@ def dsm_cts_ind_processing():
             )
 
             return dsm
+        
+        print('CALC')
 
         # calculate timeseries per site
 
@@ -256,10 +258,14 @@ def dsm_cts_ind_processing():
         # bring df for both scenarios together
         dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
         dsm = dsm_2035.append(dsm_100)
+        
+        print('RELATE')
 
         # relate calculated timeseries to Schmidt's industrial sites
 
         dsm = relate_to_Schmidt_sites(dsm)
+        
+        print('STOP')
 
         return dsm
 
