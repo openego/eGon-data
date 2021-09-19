@@ -149,6 +149,9 @@ def dsm_cts_ind_processing():
 
             # calculate timeseries per site
             # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
+            
+            print(' ')
+            print('calc')
 
             # select demands per industrial site including the subsector information
             source1 = egon.data.config.datasets()["DSM_CTS_industry"][
@@ -201,10 +204,14 @@ def dsm_cts_ind_processing():
             load_curves = calc_load_curve(
                 share_transpose, demands_ind_sites["demand"]
             )
+            
+            print('bus')
 
             # identify bus per industrial site
             curves_bus = identify_bus(load_curves, demand_area)
             curves_bus.index = curves_bus["id"].astype(int)
+            
+            print('df')
             
             # initialize dataframe to be returned
 
@@ -256,6 +263,7 @@ def dsm_cts_ind_processing():
         dsm_100 = calc_ind_site_timeseries("eGon100RE")
         dsm_100.reset_index(inplace=True)
         # bring df for both scenarios together
+        print('scenarios together')
         dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
         dsm = dsm_2035.append(dsm_100)
         
