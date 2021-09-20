@@ -3,13 +3,14 @@ timeseries data using demandregio
 
 """
 
-import pandas as pd
-import geopandas as gpd
-import egon.data.config
-from egon.data.datasets.electricity_demand.temporal import calc_load_curve
-from egon.data import db
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets.electricity_demand.temporal import calc_load_curve
+import egon.data.config
 
 Base = declarative_base()
 
@@ -43,8 +44,8 @@ def identify_bus(load_curves, demand_area):
     # Select mv griddistrict
     griddistrict = db.select_geodataframe(
         f"""SELECT subst_id, geom FROM
-                {sources['mv_grid_districts']['schema']}.
-                {sources['mv_grid_districts']['table']}""",
+                {sources['egon_mv_grid_district']['schema']}.
+                {sources['egon_mv_grid_district']['table']}""",
         geom_col="geom",
         epsg=3035,
     )
@@ -126,11 +127,11 @@ def calc_load_curves_ind_osm(scenario):
 
     # Select industrial landuse polygons as demand area
     demand_area = db.select_geodataframe(
-        f"""SELECT gid, geom FROM
+        f"""SELECT id, geom FROM
                 {sources['osm_landuse']['schema']}.
                 {sources['osm_landuse']['table']}
                 WHERE sector = 3 """,
-        index_col="gid",
+        index_col="id",
         geom_col="geom",
         epsg=3035,
     )
