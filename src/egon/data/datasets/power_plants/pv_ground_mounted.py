@@ -1095,6 +1095,7 @@ def insert():
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column
+        insert_pv_parks.set_crs(epsg= 3035, allow_override= True, inplace= True)
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
