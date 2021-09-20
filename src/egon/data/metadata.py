@@ -23,13 +23,18 @@ def context():
         "Titelbilder/titel_foerderlogo_bmwi.jpg?"
         "__blob=normal&v=3",
         "publisherLogo": "https://ego-n.org/images/eGon_logo_"
-        "noborder_transbg.svg",
+        "noborder_transbg.svg"
     }
 
 
-def licenses_datenlizenz_deutschland():
+def licenses_datenlizenz_deutschland(attribution):
     """
     License information for Datenlizenz Deutschland
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g. '© GeoBasis-DE / BKG'
 
     Returns
     -------
@@ -66,13 +71,19 @@ def licenses_datenlizenz_deutschland():
             "sonstige Abwandlungen sind im Quellenvermerk mit dem Hinweis "
             "zu versehen, dass die Daten geändert wurden."
         ),
-        "attribution": f"© GeoBasis-DE / BKG ({datetime.date.today().year})",
+        "attribution": attribution
     }
 
 
-def license_odbl():
+def license_odbl(attribution):
     """
     License information for Open Data Commons Open Database License (ODbL-1.0)
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g.
+        '© OpenStreetMap contributors'
 
     Returns
     -------
@@ -84,5 +95,5 @@ def license_odbl():
         "title": "Open Data Commons Open Database License 1.0",
         "path": "https://opendatacommons.org/licenses/odbl/1.0/index.html",
         "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute, Share-Alike, Keep open!",
-        "attribution": "© OpenStreetMap contributors",
+        "attribution": attribution
     }
