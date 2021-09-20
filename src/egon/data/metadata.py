@@ -94,7 +94,8 @@ def license_odbl(attribution):
         "name": "ODbL-1.0",
         "title": "Open Data Commons Open Database License 1.0",
         "path": "https://opendatacommons.org/licenses/odbl/1.0/index.html",
-        "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute, Share-Alike, Keep open!",
+        "instruction": "You are free: To Share, To Create, To Adapt; "
+                       "As long as you: Attribute, Share-Alike, Keep open!",
         "attribution": attribution
     }
 
@@ -118,6 +119,7 @@ def license_ccby(attribution):
         "name": "CC-BY-4.0",
         "title": "Creative Commons Attribution 4.0 International",
         "path": "https://creativecommons.org/licenses/by/4.0/legalcode",
-        "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute.",
+        "instruction": "You are free: To Share, To Create, To Adapt; "
+                       "As long as you: Attribute.",
         "attribution": attribution
     }
