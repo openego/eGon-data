@@ -97,3 +97,27 @@ def license_odbl(attribution):
         "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute, Share-Alike, Keep open!",
         "attribution": attribution
     }
+
+
+def license_ccby(attribution):
+    """
+    License information for Creative Commons Attribution 4.0 International
+    (CC-BY-4.0)
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g. '© GeoBasis-DE / BKG'
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+    return {
+        "name": "CC-BY-4.0",
+        "title": "Creative Commons Attribution 4.0 International",
+        "path": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute.",
+        "attribution": attribution
+    }
