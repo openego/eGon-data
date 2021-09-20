@@ -156,7 +156,9 @@ def add_metadata():
     url = vg250_config["original_data"]["source"]["url"]
 
     # Insert metadata for each table
-    licenses = [licenses_datenlizenz_deutschland()]
+    licenses = [licenses_datenlizenz_deutschland(
+        attribution=f"© GeoBasis-DE / BKG ({datetime.date.today().year})"
+    )]
 
     vg250_source = {
         "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",

@@ -139,7 +139,7 @@ def add_metadata():
         osm_data_date, '%y%m%d').strftime('%y-%m-%d')
 
     # Insert metadata for each table
-    licenses = [license_odbl()]
+    licenses = [license_odbl(attribution="© OpenStreetMap contributors")]
 
     for table in osm_config["processed"]["tables"]:
         table_suffix = table.split("_")[1]
