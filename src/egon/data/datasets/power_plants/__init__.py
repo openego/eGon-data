@@ -14,6 +14,7 @@ import numpy as np
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
+import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
 Base = declarative_base()
 
 
@@ -38,14 +39,15 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 insert_hydro_biomass,
                  wind_onshore.insert,
                  pv_ground_mounted.insert,
-                 pv_rooftop_per_mv_grid
+                 pv_rooftop_per_mv_grid,
+                 assign_weather_data.weather_id,
 
             ),
         )
