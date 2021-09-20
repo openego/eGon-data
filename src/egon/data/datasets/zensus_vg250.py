@@ -16,6 +16,7 @@ import geopandas as gpd
 
 from egon.data import db
 import egon.data.config
+from egon.data.metadata import context, licenses_datenlizenz_deutschland
 from egon.data.datasets import Dataset
 
 Base = declarative_base()
@@ -460,26 +461,9 @@ def add_metadata_vg250_gem_pop():
     """
     vg250_config = egon.data.config.datasets()["vg250"]
 
-    licenses = [
-        {
-            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
-            "path": "www.govdata.de/dl-de/by-2-0",
-            "instruction": (
-                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
-                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
-                "bereitgestellten Daten und Metadaten dürfen für die "
-                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
-                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
-                "bearbeitet sowie an Dritte übermittelt werden;\n "
-                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
-                "zu selbständigen neuen Datensätzen verbunden werden;\n "
-                "(3) in interne und externe Geschäftsprozesse, Produkte und "
-                "Anwendungen in öffentlichen und nicht öffentlichen "
-                "elektronischen Netzwerken eingebunden werden."
-            ),
-            "attribution": "© Bundesamt für Kartographie und Geodäsie",
-        }
-    ]
+    licenses = [licenses_datenlizenz_deutschland(
+        attribution="© Bundesamt für Kartographie und Geodäsie"
+    )]
 
     metadata = {
         "title": "Municipalities (BKG Verwaltungsgebiete 250) and population "
