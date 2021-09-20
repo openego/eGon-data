@@ -451,7 +451,7 @@ def insert():
         """
 
         # get MV grid districts
-        sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+        sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
         distr = gpd.GeoDataFrame.from_postgis(sql, con)
         distr = distr.set_index("subst_id")
 
@@ -910,7 +910,7 @@ def insert():
             # 1) eGon2035
 
             # get MV grid districts
-            sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+            sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
             distr = distr.set_index("subst_id")
 
@@ -959,7 +959,7 @@ def insert():
             # 2) eGon100RE
 
             # get MV grid districts
-            sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+            sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
             distr = distr.set_index("subst_id")
 
