@@ -41,11 +41,11 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 
-from egon.data.datasets.gas_prod import GasProduction
+import egon.data.datasets.gas_grid as gas_grid # GasGrid
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 
 import egon.data.importing.zensus as import_
-import egon.data.importing.gas_grid as gas_grid
+#import egon.data.importing.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.gas_areas as gas_areas
@@ -249,6 +249,9 @@ with airflow.DAG(
     )
 
     # Gas grid import
+#    gas_grid_insert_data = GasGrid(
+#        dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
+#    )
     gas_grid_insert_data = PythonOperator(
         task_id="insert-gas-grid",
         python_callable=gas_grid.insert_gas_data,
@@ -261,7 +264,7 @@ with airflow.DAG(
     # Power-to-gas installations creation
     insert_power2gas_installations = PythonOperator(
         task_id="insert-power-to-gas-installations",
-        python_callable=power2gas.insert_power2gas,
+        python_callable=power2gas.insert_power2gas_H2,
     )
 
     gas_grid_insert_data >> insert_power2gas_installations
