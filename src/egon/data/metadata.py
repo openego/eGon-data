@@ -123,3 +123,34 @@ def license_ccby(attribution):
                        "As long as you: Attribute.",
         "attribution": attribution
     }
+
+
+def license_geonutzv(attribution):
+    """
+    License information for GeoNutzV
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g. '© GeoBasis-DE / BKG'
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+    return {
+        "name": "geonutzv-de-2013-03-19",
+        "title": "Verordnung zur Festlegung der Nutzungsbestimmungen für die "
+                 "Bereitstellung von Geodaten des Bundes",
+        "path": "https://www.gesetze-im-internet.de/geonutzv/",
+        "instruction": "Geodaten und Geodatendienste, einschließlich "
+                       "zugehöriger Metadaten, werden für alle derzeit "
+                       "bekannten sowie für alle zukünftig bekannten Zwecke "
+                       "kommerzieller und nicht kommerzieller Nutzung "
+                       "geldleistungsfrei zur Verfügung gestellt, soweit "
+                       "durch besondere Rechtsvorschrift nichts anderes "
+                       "bestimmt ist oder vertragliche oder gesetzliche "
+                       "Rechte Dritter dem nicht entgegenstehen.",
+        "attribution": attribution
+    }
