@@ -276,7 +276,7 @@ be saved locally, please use `CWD` to store the data. This is achieved by using
   urlretrieve("https://url/to/file", filepath)
 
 Add metadata
-^^^^^^^^^^^^
+------------
 
 Add a metadata for every dataset you create for describing data with
 machine-readable information. Adhere to the OEP Metadata version 1.4.1, you can
