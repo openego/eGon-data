@@ -299,7 +299,7 @@ Alternatively, you can write the table comment directly to a JSON file by
 
 Please verify that your metadata string is in compliance with the OEP Metadata
 standard version 1.4.1 using the `OMI tool
-<https://github.com/OpenEnergyPlatform/omi>`_:
+<https://github.com/OpenEnergyPlatform/omi>`_ (tool is shipped with eGon-data):
 
 .. code-block:: bash
 
