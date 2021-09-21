@@ -649,7 +649,7 @@ etrago_electricity:
 chp_location:
   sources:
     list_conv_pp:
-      table: 'nep_2021_conv_powerplants'
+      table: 'egon_nep_2021_conventional_powerplants'
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
     mastr_location: 'location_elec_generation_raw.csv'
