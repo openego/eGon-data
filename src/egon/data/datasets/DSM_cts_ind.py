@@ -421,9 +421,11 @@ def dsm_cts_ind_processing():
         )
         
         # copy relevant information from original buses to DSM-buses
+        dsm_buses['index']=dsm_buses.index
         originals=original_buses[original_buses['bus_id'].isin(np.unique(dsm_buses['original_bus']))]
         dsm_buses=originals.merge(dsm_buses, left_on=['bus_id','scn_name'], right_on=['original_bus','scn_name'])
-        dsm_buses.drop('bus_id', axis=1, inplace=True)
+        dsm_buses.index = dsm_buses['index']
+        dsm_buses.drop(['bus_id', 'index'], axis=1, inplace=True)
 
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
