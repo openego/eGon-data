@@ -9,68 +9,9 @@ from egon.data.datasets.power_plants import (
     assign_voltage_level, assign_bus_id, assign_gas_bus_id,
     filter_mastr_geometry, select_target)
 from egon.data.datasets.chp.small_chp import assign_use_case
+from egon.data.datasets.scenario_capacities import map_carrier
 from sqlalchemy.orm import sessionmaker
 
-def map_carrier_nep_mastr():
-    """Map carriers from NEP to carriers from MaStR
-
-    Returns
-    -------
-    pandas.Series
-        List of mapped carriers
-
-    """
-    return (
-        pd.Series(data={
-        'Abfall': "Sonstige_Energietraeger",
-        'Erdgas': 'Erdgas',
-        'Sonstige\nEnergieträger': "Sonstige_Energietraeger",
-        'Steinkohle': 'Steinkohle',
-        'Kuppelgase': 'Kuppelgase',
-        'Mineralöl-\nprodukte': 'Mineraloelprodukte'
-
-        }))
-
-def map_carrier_egon_mastr():
-    """Map carriers from MaStR to carriers used in egon-data
-
-    Returns
-    -------
-    pandas.Series
-        List of mapped carriers
-
-    """
-    return (
-        pd.Series(data={
-            'Steinkohle': 'coal',
-            'Erdgas': 'gas',
-            'Kuppelgase': 'gas',
-            'Mineraloelprodukte': 'oil',
-            'NichtBiogenerAbfall': 'other_non_renewable',
-            'AndereGase': 'other_non_renewable',
-            'Waerme': 'other_non_renewable',
-            'Sonstige_Energietraeger': 'other_non_renewable',
-            }))
-
-def map_carrier_matching():
-    """Map carriers from NEP to carriers from MaStR used in matching
-
-    Returns
-    -------
-    pandas.Series
-        List of mapped carriers
-
-    """
-    return (
-        pd.Series(
-        data = {
-        'Kuppelgase': ['Erdgas', 'AndereGase','Mineraloelprodukte' ],
-        'Sonstige_Energietraeger':[
-                    'Erdgas', 'AndereGase','Mineraloelprodukte',
-                    'Waerme','NichtBiogenerAbfall'],
-        'Mineraloelprodukte':['Erdgas', 'Mineraloelprodukte' ],
-        'Erdgas': ['Erdgas'],
-        'Steinkohle': ['Steinkohle']}))
 
 #####################################   NEP treatment   #################################
 def select_chp_from_nep(sources):
@@ -107,9 +48,9 @@ def select_chp_from_nep(sources):
     # Remove the subunits from the bnetza_id
     chp_NEP_data['bnetza_id'] = chp_NEP_data['bnetza_id'].str[0:7]
 
-    # Update carrier to match to MaStR
-    map_carrier = map_carrier_nep_mastr()
-    chp_NEP_data['carrier'] = map_carrier[chp_NEP_data['carrier'].values].values
+    # Update carrier to match to eGon
+    chp_NEP_data['carrier'] = map_carrier()[
+        chp_NEP_data['carrier'].values].values
 
     # Initalize DataFrame
     chp_NEP = pd.DataFrame(
@@ -175,6 +116,13 @@ def select_chp_from_mastr(sources):
     MaStR_konv = geopandas.GeoDataFrame(
         MaStR_konv, geometry=geopandas.points_from_xy(
             MaStR_konv['Laengengrad'], MaStR_konv['Breitengrad']))
+
+    # Delete from Mastr_kov where carrier is not conventional
+    MaStR_konv = MaStR_konv[MaStR_konv.carrier.isin(map_carrier().keys())]
+
+    # Update carrier to match to eGon
+    MaStR_konv['carrier'] = map_carrier()[
+        MaStR_konv['carrier'].values].values
 
     # Drop individual CHP
     MaStR_konv = MaStR_konv[(MaStR_konv['el_capacity'] >= 100)]
@@ -243,10 +191,6 @@ def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
 
     for ET in chp_NEP['carrier'].unique():
 
-        map_carrier = map_carrier_matching()
-
-        carrier_egon = map_carrier_egon_mastr()
-
         for index, row in chp_NEP[
                 (chp_NEP['carrier'] == ET)
                 & (chp_NEP['postcode'] != 'None')].iterrows():
@@ -280,7 +224,7 @@ def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
 
             # Set capacity constraint if selected
             if consider_carrier:
-                selected = selected[selected.carrier.isin(map_carrier[ET])]
+                selected = selected[selected.carrier==ET]
 
             # If a plant could be matched, add this to chp_NEP_matched
             if len(selected) > 0:
@@ -290,7 +234,7 @@ def match_nep_chp(chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,
                             'source': 'MaStR scaled with NEP 2021 list',
                             'MaStRNummer': selected.EinheitMastrNummer.head(1),
                             'carrier': (
-                                carrier_egon[ET] if row.c2035_chp=='Nein'
+                                ET if row.c2035_chp=='Nein'
                                 else 'gas'),
                             'chp': True,
                             'el_capacity': row.c2035_capacity,
