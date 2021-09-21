@@ -38,7 +38,7 @@ def dsm_cts_ind_processing():
         ]
 
         ts = db.select_dataframe(
-            f"""SELECT subst_id, scn_name, p_set FROM
+            f"""SELECT bus_id, scn_name, p_set FROM
             {sources['schema']}.{sources['table']}"""
         )
 
@@ -46,7 +46,7 @@ def dsm_cts_ind_processing():
 
         dsm = pd.DataFrame(index=ts.index)
 
-        dsm["bus"] = ts["subst_id"].copy()
+        dsm["bus"] = ts["bus_id"].copy()
         dsm["scn_name"] = ts["scn_name"].copy()
         dsm["p_set"] = ts["p_set"].copy()
 
@@ -208,9 +208,9 @@ def dsm_cts_ind_processing():
             
             # initialize dataframe to be returned
 
-            ts = pd.DataFrame(data=curves_bus['subst_id'], index=curves_bus["id"].astype(int))
+            ts = pd.DataFrame(data=curves_bus['bus_id'], index=curves_bus["id"].astype(int))
             ts["scenario_name"] = scenario
-            curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
+            curves_bus.drop({"id", "bus_id"}, axis=1, inplace=True)
             ts["p_set"] = curves_bus.values.tolist()
             
             # add subsector to relate to Schmidt's tables afterwards
@@ -239,7 +239,7 @@ def dsm_cts_ind_processing():
             # initialize dataframe to be returned
 
             dsm.rename(
-                columns={"scenario_name": "scn_name", "subst_id": "bus"},
+                columns={"scenario_name": "scn_name", "bus_id": "bus"},
                 inplace=True,
             )
 
