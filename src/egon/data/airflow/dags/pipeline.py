@@ -20,6 +20,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.heat_demand import HeatDemandImport
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_profiles import (
@@ -219,6 +220,7 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
+
 
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
@@ -494,3 +496,15 @@ with airflow.DAG(
     electrical_load_etrago = ElectricalLoadEtrago(
         dependencies=[demand_curves_industry, cts_electricity_demand_annual]
     )
+
+
+    #HTS
+    # etrago_input_data >> heat_etrago_buses
+    # define_mv_grid_districts >> heat_etrago_buses
+    # import_district_heating_areas >> heat_etrago_supply
+    
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies = [data_bundle,heat_demand_Germany, import_district_heating_areas,  
+                        import_district_heating_areas,vg250,
+                        map_zensus_grid_districts])
