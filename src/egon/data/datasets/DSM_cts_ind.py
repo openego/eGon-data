@@ -205,18 +205,12 @@ def dsm_cts_ind_processing():
             # identify bus per industrial site
             curves_bus = identify_bus(load_curves, demand_area)
             curves_bus.index = curves_bus["id"].astype(int)
-
+            
             # initialize dataframe to be returned
 
-            ts = gpd.GeoDataFrame(
-                index=curves_bus["id"].astype(int),
-                data=demand_area["geom"],
-                geometry="geom",
-                crs=3035,
-            )
-            ts["subst_id"] = curves_bus["subst_id"].astype(int)
-            curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
+            ts = pd.DataFrame(data=curves_bus['subst_id'], index=curves_bus["id"].astype(int))
             ts["scenario_name"] = scenario
+            curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
             ts["p_set"] = curves_bus.values.tolist()
             
             # add subsector to relate to Schmidt's tables afterwards
@@ -232,17 +226,15 @@ def dsm_cts_ind_processing():
                 "sources"
             ]["ind_sites_schmidt"]
 
-            schmidt = db.select_geodataframe(
+            schmidt = db.select_dataframe(
                 f"""SELECT application, geom FROM
-                    {source['schema']}.{source['table']}""",
-                geom_col="geom",
-                epsg=3035,
+                    {source['schema']}.{source['table']}"""
             )
 
             # relate calculated timeseries (dsm) to Schmidt's industrial sites
 
             applications = np.unique(schmidt['application'])
-            dsm = dsm[dsm['application'].isin(applications)]
+            dsm = pd.DataFrame(dsm[dsm['application'].isin(applications)])
 
             # initialize dataframe to be returned
 
@@ -268,11 +260,6 @@ def dsm_cts_ind_processing():
         # relate calculated timeseries to Schmidt's industrial sites
 
         dsm = relate_to_Schmidt_sites(dsm)
-
-        # prepare dataframe to be returned
-
-        dsm = pd.DataFrame(dsm)
-        dsm.drop("geom", axis=1, inplace=True)
 
         return dsm
 
@@ -433,33 +420,10 @@ def dsm_cts_ind_processing():
             epsg=4326,
         )
         
-        # prepare pd.Series for copied data
-        v_nom = pd.Series(index=dsm_buses.index, dtype=float)
-        x = pd.Series(index=dsm_buses.index, dtype=float)
-        y = pd.Series(index=dsm_buses.index, dtype=float)
-        geom = gpd.GeoSeries(index=dsm_buses.index)
-
-        # copy v_nom, x, y and geom of the respective original buses
-        originals = dsm_buses["original_bus"].unique()
-        for i in originals:
-            o_bus = original_buses[original_buses["bus_id"] == i]
-            dsm_bus = dsm_buses[dsm_buses["original_bus"] == i]
-            v_nom[dsm_bus.index[0]] = o_bus.iloc[0]["v_nom"]
-            x[dsm_bus.index[0]] = o_bus.iloc[0]["x"]
-            y[dsm_bus.index[0]] = o_bus.iloc[0]["y"]
-            geom[dsm_bus.index[0]] = o_bus.iloc[0]["geom"]
-            v_nom[dsm_bus.index[1]] = o_bus.iloc[0]["v_nom"]
-            x[dsm_bus.index[1]] = o_bus.iloc[0]["x"]
-            y[dsm_bus.index[1]] = o_bus.iloc[0]["y"]
-            geom[dsm_bus.index[1]] = o_bus.iloc[0]["geom"]
-
-        # write copied data to df to be returned
-        dsm_buses["v_nom"] = v_nom
-        dsm_buses["x"] = x
-        dsm_buses["y"] = y
-        dsm_buses["geom"] = geom
-        dsm_buses.set_geometry("geom", inplace=True)
-        dsm_buses.set_crs(4326, inplace=True)
+        # copy relevant information from original buses to DSM-buses
+        originals=original_buses[original_buses['bus_id'].isin(np.unique(dsm_buses['original_bus']))]
+        dsm_buses=originals.merge(dsm_buses, left_on=['bus_id','scn_name'], right_on=['original_bus','scn_name'])
+        dsm_buses.drop('bus_id', axis=1, inplace=True)
 
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
