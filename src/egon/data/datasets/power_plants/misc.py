@@ -5,7 +5,7 @@ data from MaStR and NEP.
 """
 
 import pandas as pd
-import geopandas
+import geopandas as gpd
 import egon.data.config
 from egon.data import db, config
 from egon.data.datasets.power_plants import (
@@ -119,6 +119,25 @@ def select_no_chp_combustion_mastr(carrier):
     mastr.EinheitMastrNummer = mastr.EinheitMastrNummer.str.slice(stop=15)
     mastr = mastr.merge(MaStR_konv, how="left", left_on=["EinheitMastrNummer"], right_on=["EinheitMastrNummer"] )
 
+    # Import geodataframe on federal states and their borders
+
+    fs = db.select_geodataframe(
+        f"""
+        SELECT  gen,
+                geometry
+            FROM {cfg['sources']['geom_federal_states']}
+            WHERE gf = 4;
+        """,
+        index_col= None,
+        geom_col='geometry',
+        epsg = 4326
+    )
+
+    # Spatial join to add name of federal state to dataframe containing MaStR data
+
+    mastr = gpd.sjoin(mastr, fs, how='inner', op='intersects').drop(columns=['index_right']).rename(columns={'gen':'federal_state'})
+
+
     return mastr
 
 def match_nep_no_chp(nep, mastr, matched, buffer_capacity=0.1,
@@ -151,20 +170,20 @@ def match_nep_no_chp(nep, mastr, matched, buffer_capacity=0.1,
     list_federal_states = pd.Series(
             {"Hamburg": "HH",
              "Sachsen": "SN",
-             "MecklenburgVorpommern": "MV",
-             "Thueringen": "TH",
-             "SchleswigHolstein": "SH",
+             "Mecklenburg-Vorpommern": "MV",
+             "Thüringen": "TH",
+             "Schleswig-Holstein": "SH",
              "Bremen": "HB",
              "Saarland": "SL",
              "Bayern": "BY",
-             "BadenWuerttemberg": "BW",
+             "Baden-Württemberg": "BW",
              "Brandenburg": "BB",
              "Hessen": "HE",
-             "NordrheinWestfalen": "NW",
+             "Nordrhein-Westfalen": "NW",
              "Berlin": "BE",
              "Niedersachsen": "NI",
-             "SachsenAnhalt": "ST",
-             "RheinlandPfalz": "RP"})
+             "Sachsen-Anhalt": "ST",
+             "Rheinland-Pfalz": "RP"})
 
     for ET in nep['carrier'].unique():
 
@@ -209,7 +228,7 @@ def match_nep_no_chp(nep, mastr, matched, buffer_capacity=0.1,
             # If a plant could be matched, add this to matched
             if len(selected) > 0:
                 matched = matched.append(
-                    geopandas.GeoDataFrame(
+                    gpd.GeoDataFrame(
                         data = {
                             'source': 'MaStR scaled with NEP 2021 list',
                             'MaStRNummer': selected.EinheitMastrNummer.head(1),
@@ -232,6 +251,8 @@ def match_nep_no_chp(nep, mastr, matched, buffer_capacity=0.1,
 
 def merge_nep_mastr():
 
+    carrier = []
+
     cfg = egon.data.config.datasets()["power_plants"]
 
     nep = select_nep_power_plants('Mineralöl-\nprodukte')
@@ -243,7 +264,7 @@ def merge_nep_mastr():
                           ), cfg)
 
     # Initalize DataFrame for matching power plants
-    matched = geopandas.GeoDataFrame(
+    matched = gpd.GeoDataFrame(
         columns = [
             'carrier','chp','el_capacity','th_capacity', 'scenario','geometry',
             'MaStRNummer', 'source', 'voltage_level'])
