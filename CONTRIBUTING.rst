@@ -312,6 +312,39 @@ not contain an id` ), but fix all other errors.
 For details, you may want to check
 `PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
 
+Helpers
+^^^^^^^
+
+The following script quickly generates a template for the resource fields (
+`section 14.6.1 <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_
+) of a specific SQLA table class. This might be especially helpful if your
+table has plenty of columns.
+
+.. code-block:: python
+
+    import pprint
+    from egon.data.datasets.zensus_vg250 import Vg250Sta  # adjust class
+
+    fields = []
+
+    # adjust to match the types of your columns
+    sqlalchemy_type_map = {
+      "BIGINT": "integer",
+      "VARCHAR": "string"
+    }
+
+    for col in Vg250Sta.__table__.columns:
+      print("\"" + str(col).split(".")[1] + ":\" ")
+      field = {
+        "name": col.name,
+        "description": "",
+        "type": sqlalchemy_type_map.get(str(col.type), col.type),
+        "unit": None
+      }
+      fields.append(field)
+
+    pprint.pprint(fields)
+
 Adjusting test mode data
 ------------------------
 
