@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing all code dealing with importing gas production data
+The central module containing all code dealing with importing CH4 production data
 """
 #import os
 import ast
@@ -15,23 +15,23 @@ from egon.data.datasets import Dataset
 from urllib.request import urlretrieve
 from pathlib import Path
 
-class GasProduction(Dataset):
+class CH4Production(Dataset):
      def __init__(self, dependencies):
          super().__init__(
-             name="GasProduction",
-             version="0.0.4",
+             name="CH4Production",
+             version="0.0.5.dev",
              dependencies=dependencies,
              tasks=(import_gas_generators),
          )
 
 
 def load_NG_generators():
-    """Define the natural gas producion units in Germany
+    """Define the natural CH4 production units in Germany
 
     Returns
     -------
     CH4_generators_list :
-        Dataframe containing the natural gas producion units in Germany
+        Dataframe containing the natural gas production units in Germany
 
     """
     target_file = (
@@ -92,12 +92,12 @@ def load_NG_generators():
 
 
 def load_biogas_generators():
-    """Define the biogas producion units in Germany
+    """Define the biogas production units in Germany
 
     Returns
     -------
     CH4_generators_list :
-        Dataframe containing the biogas producion units in Germany
+        Dataframe containing the biogas production units in Germany
 
     """
     # Download file
@@ -172,8 +172,8 @@ def load_biogas_generators():
     return biogas_generators_list
 
 
-def assign_gas_bus_id(dataframe):
-    """Assigns bus_ids (for gas buses) to points (contained in a dataframe) according to location
+def assign_ch4_bus_id(dataframe):
+    """Assigns bus_ids (for CH4 buses) to points (contained in a dataframe) according to location
     Parameters
     ----------
     dataframe : pandas.DataFrame cointaining points
@@ -184,17 +184,43 @@ def assign_gas_bus_id(dataframe):
         Power plants (including voltage level) and bus_id
     """
 
-    gas_voronoi = db.select_geodataframe(
+    CH4_voronoi = db.select_geodataframe(
         """
-        SELECT * FROM grid.egon_gas_voronoi
+        SELECT * FROM grid.egon_voronoi_ch4
         """, epsg=4326)
 
-    res = gpd.sjoin(dataframe, gas_voronoi)
+    res = gpd.sjoin(dataframe, CH4_voronoi)
     res['bus'] = res['bus_id']
     res = res.drop(columns=['index_right', 'id'])
 
     # Assert that all power plants have a bus_id
-    assert res.bus.notnull().all(), "Some points are not attached to a gas bus."
+    assert res.bus.notnull().all(), "Some points are not attached to a CH4 bus."
+
+    return res
+
+def assign_h2_bus_id(dataframe):
+    """Assigns bus_ids (for H2 buses) to points (contained in a dataframe) according to location
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame cointaining points
+
+    Returns
+    -------
+    power_plants : pandas.DataFrame
+        Power plants (including voltage level) and bus_id
+    """
+
+    H2_voronoi = db.select_geodataframe(
+        """
+        SELECT * FROM grid.egon_voronoi_h2
+        """, epsg=4326)
+
+    res = gpd.sjoin(dataframe, H2_voronoi)
+    res['bus'] = res['bus_id']
+    res = res.drop(columns=['index_right', 'id'])
+
+    # Assert that all power plants have a bus_id
+    assert res.bus.notnull().all(), "Some points are not attached to a H2 bus."
 
     return res
 
@@ -212,7 +238,7 @@ def import_gas_generators():
     # Clean table
     db.execute_sql(
         """
-    DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'gas';
+    DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4';
     """
     )
 
@@ -224,13 +250,13 @@ def import_gas_generators():
 
     # Add missing columns
 #    CH4_generators_list['p_set_fixed'] = CH4_generators_list['p_nom']
-    c = {'scn_name':'eGon2035', 'carrier':'gas'}
+    c = {'scn_name':'eGon2035', 'carrier':'CH4'}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     CH4_generators_list =  CH4_generators_list.reset_index(drop=True)
 
-    # Match to associated gas bus
-    CH4_generators_list = assign_gas_bus_id(CH4_generators_list)
+    # Match to associated CH4 bus
+    CH4_generators_list = assign_ch4_bus_id(CH4_generators_list)
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=['geom', 'bus_id'])

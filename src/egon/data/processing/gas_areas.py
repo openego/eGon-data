@@ -50,7 +50,7 @@ def create_CH4_voronoi():
     """)
 
     engine = db.engine()
-    EgonCH4VoronoiTmp.__table__.create(bind=engine, checkfirst=True) #True
+    EgonCH4VoronoiTmp.__table__.create(bind=engine, checkfirst=True)
 
     db.execute_sql(
     """

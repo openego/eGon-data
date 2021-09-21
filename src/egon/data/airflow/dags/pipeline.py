@@ -18,7 +18,7 @@ from egon.data.datasets.electricity_demand import (
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
-from egon.data.datasets.gas_prod import GasProduction
+from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
@@ -279,7 +279,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> create_gas_polygons
 
     # Gas prod import
-    gas_production_insert_data = GasProduction(
+    gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
 

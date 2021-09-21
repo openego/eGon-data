@@ -9,7 +9,7 @@ import numpy as np
 
 from shapely import wkt 
 from egon.data import db
-from egon.data.datasets.gas_prod import assign_gas_bus_id
+from egon.data.datasets.gas_prod import assign_ch4_bus_id, assign_h2_bus_id
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 
@@ -17,7 +17,7 @@ class IndustrialGasDemand(Dataset):
      def __init__(self, dependencies): 
          super().__init__( 
              name="IndustrialGasDemand", 
-             version="0.0.0", 
+             version="0.0.1.dev", 
              dependencies=dependencies, 
              tasks=(insert_industrial_gas_demand), 
          )       
@@ -90,7 +90,11 @@ def download_CH4_industrial_demand():
     industrial_loads_list = industrial_loads_list.rename(columns={'point': 'geom'}).set_geometry('geom', crs=4326)
 
     # Match to associated gas bus   
-    industrial_loads_list = assign_gas_bus_id(industrial_loads_list)
+    industrial_loads_list = assign_ch4_bus_id(industrial_loads_list)
+    
+    # Add carrier   
+    c = {'carrier':'CH4'}
+    industrial_loads_list = industrial_loads_list.assign(**c)
     
     # Remove useless columns
     industrial_loads_list = industrial_loads_list.drop(columns=['geom', 'NUTS0', 'NUTS1', 'bus_id']) 
@@ -166,10 +170,14 @@ def download_H2_industrial_demand():
     industrial_loads_list = industrial_loads_list.rename(columns={'point': 'geom'}).set_geometry('geom', crs=4326)
 
     # Match to associated gas bus   
-    industrial_loads_list = assign_gas_bus_id(industrial_loads_list)
+    industrial_loads_list = assign_h2_bus_id(industrial_loads_list)
+    
+    # Add carrier   
+    c = {'carrier':'H2'}
+    industrial_loads_list = industrial_loads_list.assign(**c)
     
     # Remove useless columns
-    industrial_loads_list = industrial_loads_list.drop(columns=['geom', 'NUTS0', 'NUTS1', 'bus_id']) 
+    industrial_loads_list = industrial_loads_list.drop(columns=['geom', 'NUTS0', 'NUTS1', 'bus_id'])
         
     return industrial_loads_list
     
@@ -185,7 +193,8 @@ def import_industrial_gas_demand():
     # Clean table
     db.execute_sql(
         """
-    DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'gas';
+    DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'CH4';
+    DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'H2';
     """
     )
     
@@ -196,7 +205,7 @@ def import_industrial_gas_demand():
     industrial_gas_demand['load_id'] = range(new_id, new_id + len(industrial_gas_demand))
      
     # Add missing columns
-    c = {'scn_name':'eGon2035', 'carrier':'gas'}
+    c = {'scn_name':'eGon2035'}
     industrial_gas_demand = industrial_gas_demand.assign(**c)
     
     industrial_gas_demand =  industrial_gas_demand.reset_index(drop=True)
