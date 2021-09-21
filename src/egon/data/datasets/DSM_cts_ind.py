@@ -149,9 +149,6 @@ def dsm_cts_ind_processing():
 
             # calculate timeseries per site
             # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
-            
-            print(' ')
-            print('calc')
 
             # select demands per industrial site including the subsector information
             source1 = egon.data.config.datasets()["DSM_CTS_industry"][
@@ -204,14 +201,10 @@ def dsm_cts_ind_processing():
             load_curves = calc_load_curve(
                 share_transpose, demands_ind_sites["demand"]
             )
-            
-            print('bus')
 
             # identify bus per industrial site
             curves_bus = identify_bus(load_curves, demand_area)
             curves_bus.index = curves_bus["id"].astype(int)
-            
-            print('df')
             
             # initialize dataframe to be returned
 
@@ -251,8 +244,6 @@ def dsm_cts_ind_processing():
             )
 
             return dsm
-        
-        print('CALC')
 
         # calculate timeseries per site
 
@@ -263,17 +254,12 @@ def dsm_cts_ind_processing():
         dsm_100 = calc_ind_site_timeseries("eGon100RE")
         dsm_100.reset_index(inplace=True)
         # bring df for both scenarios together
-        print('scenarios together')
         dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
         dsm = dsm_2035.append(dsm_100)
-        
-        print('RELATE')
 
         # relate calculated timeseries to Schmidt's industrial sites
 
         dsm = relate_to_Schmidt_sites(dsm)
-        
-        print('STOP')
 
         return dsm
 
@@ -434,33 +420,10 @@ def dsm_cts_ind_processing():
             epsg=4326,
         )
         
-        # prepare pd.Series for copied data
-        v_nom = pd.Series(index=dsm_buses.index, dtype=float)
-        x = pd.Series(index=dsm_buses.index, dtype=float)
-        y = pd.Series(index=dsm_buses.index, dtype=float)
-        geom = gpd.GeoSeries(index=dsm_buses.index)
-
-        # copy v_nom, x, y and geom of the respective original buses
-        originals = dsm_buses["original_bus"].unique()
-        for i in originals:
-            o_bus = original_buses[original_buses["bus_id"] == i]
-            dsm_bus = dsm_buses[dsm_buses["original_bus"] == i]
-            v_nom[dsm_bus.index[0]] = o_bus.iloc[0]["v_nom"]
-            x[dsm_bus.index[0]] = o_bus.iloc[0]["x"]
-            y[dsm_bus.index[0]] = o_bus.iloc[0]["y"]
-            geom[dsm_bus.index[0]] = o_bus.iloc[0]["geom"]
-            v_nom[dsm_bus.index[1]] = o_bus.iloc[0]["v_nom"]
-            x[dsm_bus.index[1]] = o_bus.iloc[0]["x"]
-            y[dsm_bus.index[1]] = o_bus.iloc[0]["y"]
-            geom[dsm_bus.index[1]] = o_bus.iloc[0]["geom"]
-
-        # write copied data to df to be returned
-        dsm_buses["v_nom"] = v_nom
-        dsm_buses["x"] = x
-        dsm_buses["y"] = y
-        dsm_buses["geom"] = geom
-        dsm_buses.set_geometry("geom", inplace=True)
-        dsm_buses.set_crs(4326, inplace=True)
+        # copy relevant information from original buses to DSM-buses
+        originals=original_buses[original_buses['bus_id'].isin(np.unique(dsm_buses['original_bus']))]
+        dsm_buses=originals.merge(dsm_buses, left_on=['bus_id','scn_name'], right_on=['original_bus','scn_name'])
+        dsm_buses.drop('bus_id', axis=1, inplace=True)
 
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
@@ -572,17 +535,6 @@ def dsm_cts_ind_processing():
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
         insert_buses.set_geometry("geom", inplace=True) 
-        
-        print(' ')
-        print('insert_buses: ')
-        print(insert_buses)
-        print(' ')
-        print('Anzahl der Buses: '+str(len(insert_buses)))
-        print(' ')
-        print('Typ: '+str(type(insert_buses)))
-        print('Geom: '+str(insert_buses.geometry))
-        print('CRS: '+str(insert_buses.crs))
-        print(' ')
 
         # insert into database
         insert_buses.to_postgis(
