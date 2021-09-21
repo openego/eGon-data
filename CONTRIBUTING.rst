@@ -337,7 +337,7 @@ How to document Python scripts
 
 Use docstrings to document your Python code. Note that PEP 8 also
 contains a `section <PEP8-docstrings_>`_ on docstrings and that there is
-a whole `PEP <PEP257_>`_ dedicated to docstring convetions. Try to
+a whole `PEP <PEP257_>`_ dedicated to docstring conventions. Try to
 adhere to both of them.
 Additionally every Python script needs to contain a header describing
 the general functionality and objective and including information on
