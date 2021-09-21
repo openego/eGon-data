@@ -337,6 +337,7 @@ def add_metadata_zensus_inside_ger():
         "title": "DESTATIS - Zensus 2011 - Population per hectar",
         "description": "National census in Germany in 2011 with the bounds on Germanys boarders.",
         "language": ["eng", "ger"],
+        "context": context(),
         "spatial": {
             "location": "none",
             "extent": "Germany",
