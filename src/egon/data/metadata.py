@@ -186,25 +186,12 @@ def generate_resource_fields_from_sqla_model(model):
     list of dict
         Resource fields
     """
-    fields = []
 
-    # adjust to match the types of your columns
-    sqlalchemy_type_map = {
-      "BIGINT": "integer",
-      "VARCHAR": "string"
-    }
-
-    for col in model.__table__.columns:
-      print("\"" + str(col).split(".")[1] + ":\" ")
-      field = {
-        "name": col.name,
-        "description": "",
-        "type": sqlalchemy_type_map.get(str(col.type), col.type),
-        "unit": None
-      }
-      fields.append(field)
-
-    return fields
+    return [{'name': col.name,
+             'description': '',
+             'type': str(col.type).lower(),
+             'unit': None}
+            for col in model.__table__.columns]
 
 
 def generate_resource_fields_from_db_table(schema, table):
