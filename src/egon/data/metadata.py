@@ -221,6 +221,10 @@ def generate_resource_fields_from_db_table(schema, table):
     list of dict
         Resource fields
     """
+
+    # TODO: Workaround as SQLA does not recognize Geometry columns. This only
+    #  covers the dtype of a specific column 'geom', how can this be done in a
+    #  generic way?
     ischema_names['geom'] = Geometry
 
     table = Table(table,
