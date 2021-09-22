@@ -313,6 +313,9 @@ power_plants:
       geom_federal_states: "boundaries.vg250_lan"
       egon_mv_grid_district: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      buses_data: "osmtgmod_results.bus_data"
+      power_plants: 'supply.egon_power_plants'
+      nep_2035: "NEP2035_V2021_scnC2035.xlsx"
   target:
       table: 'egon_power_plants'
       schema: 'supply'
