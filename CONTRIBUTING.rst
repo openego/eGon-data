@@ -279,11 +279,11 @@ Add metadata
 ------------
 
 Add a metadata for every dataset you create for describing data with
-machine-readable information. Adhere to the OEP Metadata version 1.4.1, you can
+machine-readable information. Adhere to the OEP Metadata v1.4.1, you can
 follow
 `the example <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/latest/example.json>`_
-to understand how the fields are used. Field are described in detail
-`here <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_.
+to understand how the fields are used. Field are described in detail in the
+`Open Energy Metadata Description`_.
 
 You can obtain the metadata string from a table you created in SQL via
 
@@ -309,66 +309,28 @@ Omit the field `id` in your string as it will be automatically set at the
 end of the pipeline (you can ignore the OMI's message `metadata string does
 not contain an id` ), but fix all other errors.
 
-For details, you may want to check
+For previous discussions, you may want to check
 `PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
+
+Sources
+^^^^^^^
+
+TBD
 
 Resource fields
 ^^^^^^^^^^^^^^^
 
-The following snippets quickly generate a template for the resource fields
-(`section 14.6.1 <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_)
-of a SQLA table class or a DB table. This might be especially helpful if your
-table has plenty of columns.
+There are some functions to quickly generate a template for the resource fields
+(section 14.6.1 in `Open Energy Metadata Description`_) from a SQLA table class
+or a DB table. This might be especially helpful if your table has plenty of
+columns.
 
-**From SQLA table class**
+* From SQLA table class:
+  :py:func:`egon.data.metadata.generate_resource_fields_from_sqla_model`
+* From database table:
+  :py:func:`egon.data.metadata.generate_resource_fields_from_db_table`
 
-.. code-block:: python
-
-    import pprint
-    from egon.data.datasets.zensus_vg250 import Vg250Sta  # adjust class
-
-    fields = []
-
-    # adjust to match the types of your columns
-    sqlalchemy_type_map = {
-      "BIGINT": "integer",
-      "VARCHAR": "string"
-    }
-
-    for col in Vg250Sta.__table__.columns:
-      print("\"" + str(col).split(".")[1] + ":\" ")
-      field = {
-        "name": col.name,
-        "description": "",
-        "type": sqlalchemy_type_map.get(str(col.type), col.type),
-        "unit": None
-      }
-      fields.append(field)
-
-    pprint.pprint(fields)
-
-**From database table**
-
-.. code-block:: python
-
-    import pprint
-    from sqlalchemy import MetaData, Table
-    from geoalchemy2 import Geometry
-
-    sqla.dialects.postgresql.base.ischema_names['geom'] = Geometry
-
-    table = Table('osm_point',
-                  MetaData(),
-                  schema='openstreetmap',
-                  autoload=True,
-                  autoload_with=engine())
-    resources = [{'name': col.name,
-                  'description': '',
-                  'type': str(col.type).lower(),
-                  'unit': None}
-                  for col in table.c]
-
-    pprint.pprint(resources)
+.. _Open Energy Metadata Description: https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md
 
 Adjusting test mode data
 ------------------------
