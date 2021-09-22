@@ -10,9 +10,8 @@ from shapely import geometry
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
 from egon.data import db
-#from egon.data.importing.gas_grid import next_id
 
-def insert_power2gas_H2():
+def insert_power_to_h2():
     """Function defining the potential power-to-H2 capacities and inserting them in the etrago_link table.
     The power-to-H2 capacities potentials are created between each H2 bus and its closest HV power bus.
     Returns

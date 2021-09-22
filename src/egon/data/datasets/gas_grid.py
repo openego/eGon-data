@@ -22,10 +22,10 @@ from pathlib import Path
 #class GasGrid(Dataset):
 #     def __init__(self, dependencies):
 #         super().__init__(
-#             name="GasProduction",
+#             name="GasGrid",
 #             version="0.0.0.dev",
 #             dependencies=dependencies,
-#             tasks=(insert_gas_data),
+#             tasks=(etrago_input_data, download_data_bundle, osmtgmod_pypsa),
 #         )
 
 
