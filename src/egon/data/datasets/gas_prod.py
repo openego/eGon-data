@@ -19,7 +19,7 @@ class CH4Production(Dataset):
      def __init__(self, dependencies):
          super().__init__(
              name="CH4Production",
-             version="0.0.5.dev",
+             version="0.0.5",
              dependencies=dependencies,
              tasks=(import_gas_generators),
          )
