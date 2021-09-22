@@ -362,8 +362,8 @@ table has plenty of columns.
                   schema='openstreetmap',
                   autoload=True,
                   autoload_with=engine())
-    resources = [{'description': '',
-                  'name': col.name,
+    resources = [{'name': col.name,
+                  'description': '',
                   'type': str(col.type).lower(),
                   'unit': None}
                   for col in table.c]
