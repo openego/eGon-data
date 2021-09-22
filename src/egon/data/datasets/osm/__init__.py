@@ -22,7 +22,9 @@ import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
-from egon.data.metadata import context, license_odbl
+from egon.data.metadata import (context,
+                                license_odbl,
+                                generate_resource_fields_from_db_table)
 from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subprocess
@@ -198,6 +200,25 @@ def add_metadata():
                     "date": time.strftime("%Y-%m-%d"),
                     "object": None,
                     "comment": "Metadata extended",
+                }
+            ],
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": table,
+                    "path": None,
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": generate_resource_fields_from_db_table(osm_config["processed"]["schema"],
+                                                                         table),
+                        "primaryKey": ["id"],
+                        "foreignKeys": None
+                    },
+                    "dialect": {
+                        "delimiter": None,
+                        "decimalSeparator": "."
+                    }
                 }
             ],
             "metaMetadata": {
