@@ -1,3 +1,8 @@
+from sqlalchemy import MetaData, Table
+from sqlalchemy.dialects.postgresql.base import ischema_names
+from geoalchemy2 import Geometry
+
+from egon.data.db import engine
 
 
 def context():
@@ -153,3 +158,81 @@ def license_geonutzv(attribution):
                        "Rechte Dritter dem nicht entgegenstehen.",
         "attribution": attribution
     }
+
+
+def generate_resource_fields_from_sqla_model(model):
+    """ Generate a template for the resource fields for metadata from a SQL
+    Alchemy model.
+
+    For details on the fields see section 14.6.1 of `Open Energy Metadata
+    <https://github.com/OpenEnergyPlatform/ oemetadata/blob/develop/metadata/
+    v141/metadata_key_description.md>`_ standard.
+    The fields `name` and `type` are automatically filled, the `description`
+    and `unit` must be filled manually.
+
+    Parameters
+    ----------
+    model : sqlalchemy.ext.declarative.declarative_base()
+        SQLA model
+
+    Returns
+    -------
+    list of dict
+        Resource fields
+    """
+    fields = []
+
+    # adjust to match the types of your columns
+    sqlalchemy_type_map = {
+      "BIGINT": "integer",
+      "VARCHAR": "string"
+    }
+
+    for col in model.__table__.columns:
+      print("\"" + str(col).split(".")[1] + ":\" ")
+      field = {
+        "name": col.name,
+        "description": "",
+        "type": sqlalchemy_type_map.get(str(col.type), col.type),
+        "unit": None
+      }
+      fields.append(field)
+
+    return fields
+
+
+def generate_resource_fields_from_db_table(schema, table):
+    """ Generate a template for the resource fields for metadata from a
+    database table.
+
+    For details on the fields see section 14.6.1 of `Open Energy Metadata
+    <https://github.com/OpenEnergyPlatform/ oemetadata/blob/develop/metadata/
+    v141/metadata_key_description.md>`_ standard.
+    The fields `name` and `type` are automatically filled, the `description`
+    and `unit` must be filled manually.
+
+    Parameters
+    ----------
+    schema : str
+        The target table's database schema
+    table : str
+        Database table on which to put the given comment
+
+    Returns
+    -------
+    list of dict
+        Resource fields
+    """
+    ischema_names['geom'] = Geometry
+
+    table = Table(table,
+                  MetaData(),
+                  schema=schema,
+                  autoload=True,
+                  autoload_with=engine())
+
+    return [{'name': col.name,
+             'description': '',
+             'type': str(col.type).lower(),
+             'unit': None}
+            for col in table.c]
