@@ -24,7 +24,9 @@ from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
-from egon.data.metadata import context, licenses_datenlizenz_deutschland
+from egon.data.metadata import (context,
+                                meta_metadata,
+                                licenses_datenlizenz_deutschland)
 
 
 def download_files():
@@ -259,16 +261,7 @@ def add_metadata():
                     }
                 }
             ],
-            "metaMetadata": {
-                "metadataVersion": "OEP-1.4.1",
-                "metadataLicense": {
-                    "name": "CC0-1.0",
-                    "title": "Creative Commons Zero v1.0 Universal",
-                    "path": (
-                        "https://creativecommons.org/publicdomain/zero/1.0/"
-                    ),
-                },
-            },
+            "metaMetadata": meta_metadata(),
         }
 
         meta_json = "'" + json.dumps(meta) + "'"

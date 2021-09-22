@@ -31,6 +31,28 @@ def context():
     }
 
 
+def meta_metadata():
+    """
+    Meta data on metadata
+
+    Returns
+    -------
+    dict
+        OEP metadata conform metadata on metadata
+    """
+
+    return {
+        "metadataVersion": "OEP-1.4.1",
+        "metadataLicense": {
+            "name": "CC0-1.0",
+            "title": "Creative Commons Zero v1.0 Universal",
+            "path": (
+                "https://creativecommons.org/publicdomain/zero/1.0/"
+            ),
+        },
+    }
+
+
 def licenses_datenlizenz_deutschland(attribution):
     """
     License information for Datenlizenz Deutschland
