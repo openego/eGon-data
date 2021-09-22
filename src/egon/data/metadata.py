@@ -170,6 +170,12 @@ def generate_resource_fields_from_sqla_model(model):
     The fields `name` and `type` are automatically filled, the `description`
     and `unit` must be filled manually.
 
+    Examples
+    --------
+    >>> from egon.data.metadata import generate_resource_fields_from_sqla_model
+    ... from egon.data.datasets.zensus_vg250 import Vg250Sta
+    >>> resources = generate_resource_fields_from_sqla_model(Vg250Sta)
+
     Parameters
     ----------
     model : sqlalchemy.ext.declarative.declarative_base()
@@ -210,6 +216,11 @@ def generate_resource_fields_from_db_table(schema, table):
     v141/metadata_key_description.md>`_ standard.
     The fields `name` and `type` are automatically filled, the `description`
     and `unit` must be filled manually.
+
+    Examples
+    --------
+    >>> from egon.data.metadata import generate_resource_fields_from_db_table
+    >>> resources = generate_resource_fields_from_db_table('openstreetmap', 'osm_point')
 
     Parameters
     ----------
