@@ -219,6 +219,8 @@ Changed
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
 * Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
+* Replace 'gas' carrier with 'CH4' and 'H2' carriers
+  `#436 <https://github.com/openego/eGon-data/issues/436>`_
 
 Bug fixes
 ---------

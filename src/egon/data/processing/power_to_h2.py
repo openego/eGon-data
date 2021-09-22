@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing all code dealing with the definition of the power-to-gas installations
+The central module containing all code dealing with the definition of the power-to-H2 installations
 """
 import numpy as np
 import pandas as pd
@@ -10,11 +10,10 @@ from shapely import geometry
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
 from egon.data import db
-#from egon.data.importing.gas_grid import next_id
 
-def insert_power2gas():
-    """Function defining the potential power-to-gas capacities and inserting them in the etrago_link table.
-    The power-to-gas capacities potentials are created between each gas bus and its closest HV power bus.
+def insert_power_to_h2():
+    """Function defining the potential power-to-H2 capacities and inserting them in the etrago_link table.
+    The power-to-H2 capacities potentials are created between each H2 bus and its closest HV power bus.
     Returns
     -------
     None.
@@ -32,7 +31,7 @@ def insert_power2gas():
                 WHERE carrier = 'AC';"""
     sql_gas = """SELECT bus_id, scn_name, geom
                 FROM grid.egon_etrago_bus
-                WHERE carrier = 'gas';"""
+                WHERE carrier = 'H2';"""
 
     gdf_AC = db.select_geodataframe(sql_AC, epsg=4326)
     gdf_gas = db.select_geodataframe(sql_gas, epsg=4326)
@@ -81,7 +80,7 @@ def insert_power2gas():
     gdf['topo'] = topo
     gdf['length'] = length
     gdf['link_id'] = range(new_id, new_id + len(n_gas))
-    gdf['carrier'] = 'power-to-gas'
+    gdf['carrier'] = 'power-to-H2'
     gdf['efficiency_fixed'] = 0.8   # H2 electrolysis - Brown et al. 2018
                                     # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
     gdf['p_nom'] = 0
@@ -99,7 +98,7 @@ def insert_power2gas():
     print('Minimal length (in km): ' + str(gdf['length'].min()))
 
     # Insert data to db
-    gdf.to_postgis('egon_etrago_gas_link',
+    gdf.to_postgis('egon_etrago_h2_link',
                           engine,
                           schema = 'grid',
                           index = False,
@@ -108,9 +107,9 @@ def insert_power2gas():
 
     db.execute_sql(
         """
-    DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'power-to-gas';
+    DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'power-to-H2';
 
-    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
+    select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
 
     INSERT INTO grid.egon_etrago_link (scn_name, link_id, bus0,
                                               bus1, p_nom, p_nom_extendable, capital_cost,length,
@@ -118,7 +117,7 @@ def insert_power2gas():
     SELECT scn_name, link_id, bus0,
         bus1, p_nom, p_nom_extendable, capital_cost, length,
         geom, topo, efficiency_fixed, carrier, p_nom_max
-    FROM grid.egon_etrago_gas_link;
+    FROM grid.egon_etrago_h2_link;
 
-    DROP TABLE grid.egon_etrago_gas_link;
+    DROP TABLE grid.egon_etrago_h2_link;
         """)
