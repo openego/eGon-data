@@ -215,10 +215,12 @@ Changed
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Remove upper version limit of pandas
   `#383 <https://github.com/openego/eGon-data/issues/383>`_
-* Use random seed from CLI parameters for CHP and society prognosis functions
-  `#351 <https://github.com/openego/eGon-data/issues/351>`_
+* Rename columns gid to id
+  `#169 <https://github.com/openego/eGon-data/issues/169>`_
 * Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
+  * Use random seed from CLI parameters for CHP and society prognosis functions
+  `#351 <https://github.com/openego/eGon-data/issues/351>`_
 
 Bug fixes
 ---------
