@@ -10,14 +10,12 @@ def insert():
     def mastr_existing_pv(path, pow_per_area):
 
         """Import MaStR data from csv-files.
-
         Parameters
         ----------
         path : string
             Path to location of MaStR-file
         pow_per_area: int
             Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
-
         """
 
         # import MaStR data: locations, grid levels and installed capacities
@@ -142,14 +140,12 @@ def insert():
     def potential_areas(con, join_buffer):
 
         """Import potential areas and choose and prepare areas suitable for PV ground mounted.
-
         Parameters
         ----------
         con:
             Connection to database
         join_buffer: int
             Maximum distance for joining of potential areas (only small ones to big ones) in m
-
         """
 
         # import potential areas: railways and roads & agriculture
@@ -292,14 +288,12 @@ def insert():
     def select_pot_areas(mastr, potentials_pot):
 
         """Select potential areas where there are existing pv parks (MaStR-data).
-
         Parameters
         ----------
         mastr: gpd.GeoDataFrame()
             MaStR-DataFrame with existing pv parks
         potentials_pot: gpd.GeoDataFrame()
             Suitable potential areas
-
         """
 
         # select potential areas with existing pv parks
@@ -338,14 +332,12 @@ def insert():
     def build_pv(pv_pot, pow_per_area):
 
         """Build new pv parks in selected potential areas.
-
         Parameters
         ----------
         pv_pot: gpd.GeoDataFrame()
             Selected potential areas
         pow_per_area: int
             Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
-
         """
 
         # build pv farms in selected areas
@@ -368,7 +360,6 @@ def insert():
     def adapt_grid_level(pv_pot, max_dist_hv, con):
 
         """Check and if needed adapt grid level of newly built pv parks.
-
         Parameters
         ----------
         pv_pot: gpd.GeoDataFrame()
@@ -377,7 +368,6 @@ def insert():
             Assumption for maximum distance of park with hv-power to next substation in m
         con:
             Connection to database
-
         """
 
         # divide dataframe in MV and HV
@@ -436,7 +426,6 @@ def insert():
     def build_additional_pv(potentials, pv, pow_per_area, con):
 
         """Build additional pv parks if pv parks on selected potential areas do not hit the target value.
-
          Parameters
          ----------
          potenatials: gpd.GeoDataFrame()
@@ -447,13 +436,12 @@ def insert():
              Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
          con:
              Connection to database
-
         """
 
         # get MV grid districts
-        sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
+        sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
         distr = gpd.GeoDataFrame.from_postgis(sql, con)
-        distr = distr.set_index("bus_id")
+        distr = distr.set_index("subst_id")
 
         # identify potential areas where there are no PV parks yet
         for index, pv in pv.iterrows():
@@ -509,7 +497,6 @@ def insert():
     ):
 
         """Check target value per scenario and per state.
-
          Parameters
          ----------
          pv_rora_i: gpd.GeoDataFrame()
@@ -526,7 +513,6 @@ def insert():
              Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
          con:
              Connection to database
-
         """
 
         # sum overall installed capacity for MV and HV
@@ -693,7 +679,6 @@ def insert():
     ):
 
         """Execute methodology to distribute pv ground mounted.
-
          Parameters
          ----------
          con:
@@ -708,7 +693,6 @@ def insert():
              Assumption for maximum distance of park with hv-power to next substation in m
         show_map:  boolean
             Optional creation of map to show distribution of installed capacity
-
         """
 
         ###
@@ -910,9 +894,9 @@ def insert():
             # 1) eGon2035
 
             # get MV grid districts
-            sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
+            sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
-            distr = distr.set_index("bus_id")
+            distr = distr.set_index("subst_id")
 
             # assign pv_per_distr-power to districts
             distr["capacity"] = pd.Series()
@@ -959,9 +943,9 @@ def insert():
             # 2) eGon100RE
 
             # get MV grid districts
-            sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
+            sql = "SELECT subst_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
-            distr = distr.set_index("bus_id")
+            distr = distr.set_index("subst_id")
 
             # assign pv_per_distr-power to districts
             distr["capacity"] = pd.Series()
@@ -1026,7 +1010,6 @@ def insert():
     def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
         """Write to database.
-
         Parameters
         ----------
         pv_rora : gpd.GeoDataFrame()
@@ -1037,7 +1020,6 @@ def insert():
             Additionally built pv parks on potential areas per mv grid district
         scenario_name:
             Scenario name of calculation
-
         """
 
         # prepare dataframe for integration in supply.egon_power_plants
@@ -1087,7 +1069,7 @@ def insert():
         # copy relevant columns from pv_parks
         insert_pv_parks = pv_parks[["el_capacity", "voltage_level", "geometry"]]
         insert_pv_parks = insert_pv_parks.set_geometry('geometry')
-
+        
         # set static column values
         insert_pv_parks["carrier"] = "solar"
         insert_pv_parks["chp"] = False
@@ -1095,11 +1077,12 @@ def insert():
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column
+        insert_pv_parks.set_crs(epsg= 3035, allow_override= True, inplace= True)
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
-            .set_crs(4326)
-        )
+            .to_crs(4326)
+        )        
 
         # reset index
         insert_pv_parks.index = pd.RangeIndex(
