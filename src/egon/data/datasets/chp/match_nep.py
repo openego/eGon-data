@@ -48,9 +48,6 @@ def select_chp_from_nep(sources):
     # Remove the subunits from the bnetza_id
     chp_NEP_data['bnetza_id'] = chp_NEP_data['bnetza_id'].str[0:7]
 
-    # Update carrier to match to eGon
-    chp_NEP_data['carrier'] = map_carrier()[
-        chp_NEP_data['carrier'].values].values
 
     # Initalize DataFrame
     chp_NEP = pd.DataFrame(
