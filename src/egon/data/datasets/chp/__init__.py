@@ -46,17 +46,8 @@ class EgonMaStRConventinalWithoutChp(Base):
     geometry = Column(Geometry("POINT", 4326))
 
 
-class Chp(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="Chp",
-            version="0.0.1.dev",
-            dependencies=dependencies,
-            tasks=(create_tables, insert_chp_egon2035,
-                   assign_heat_bus,
-                   extension
-                   ),
-        )
+
+
 
 class ChpEtrago(Dataset):
     def __init__(self, dependencies):
@@ -228,51 +219,55 @@ def insert_chp_egon2035():
                     con=db.engine(),
                     if_exists = "replace")
 
-def extension():
-    """ Build additional CHP for district heating.
+def extension_BW():
+    extension_per_federal_state('BadenWuerttemberg', EgonChp)
 
-    Existing CHPs are randomly seected from MaStR list and assigned to a
-    district heating area considering the demand and the estimated feedin
-    from the selected CHP.
-    For more details see small_chp.extension_per_federal_state
+def extension_BY():
+    extension_per_federal_state('Bayern', EgonChp)
 
-    Returns
-    -------
-    None.
+def extension_HB():
+    extension_per_federal_state('Bremen', EgonChp)
 
-    """
-    # Select target values per federal state
-    targets = select_target('small_chp', 'eGon2035')
+def extension_BB():
+    extension_per_federal_state('Brandenburg', EgonChp)
 
-    # Run methodology for each federal state
-    for federal_state in targets.index:
+def extension_HH():
+    extension_per_federal_state('Hamburg', EgonChp)
+
+def extension_HE():
+    extension_per_federal_state('Hessen', EgonChp)
+
+def extension_MV():
+    extension_per_federal_state('MecklenburgVorpommern', EgonChp)
+
+def extension_NS():
+    extension_per_federal_state('Niedersachsen', EgonChp)
+
+def extension_NW():
+    extension_per_federal_state('NordrheinWestfalen', EgonChp)
+
+def extension_SN():
+    extension_per_federal_state('Sachsen', EgonChp)
+
+def extension_TH():
+    extension_per_federal_state('Thueringen', EgonChp)
+
+def extension_SL():
+    extension_per_federal_state('Saarland', EgonChp)
+
+def extension_ST():
+    extension_per_federal_state('SachsenAnhalt', EgonChp)
+
+def extension_RP():
+    extension_per_federal_state('RheinlandPfalz', EgonChp)
+
+def extension_BE():
+    extension_per_federal_state('Berlin', EgonChp)
+
+def extension_SH():
+    extension_per_federal_state('SchleswigHolstein', EgonChp)
 
 
-        existing_capacity = db.select_dataframe(
-            f"""
-            SELECT SUM(el_capacity) as capacity, district_heating
-            FROM supply.egon_chp
-            WHERE sources::json->>'el_capacity' = 'MaStR'
-            AND ST_Intersects(geom, (
-            SELECT ST_Union(geometry) FROM boundaries.vg250_lan
-            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-            GROUP BY district_heating
-            """)
-
-        print(f"Target capacity in {federal_state}: {targets[federal_state]}")
-        print(f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}")
-
-
-        additional_capacity = targets[federal_state] - existing_capacity.capacity.sum()
-
-        if additional_capacity > 0:
-
-            extension_per_federal_state(
-                additional_capacity, federal_state, EgonChp,
-                existing_capacity[existing_capacity.district_heating].capacity.values[0]/existing_capacity.capacity.sum())
-
-        else:
-            print("Decommissioning of CHP plants is not implemented.")
 def to_etrago():
 
     db.execute_sql(
@@ -379,3 +374,25 @@ def to_etrago():
         schema="grid",
         con=db.engine(),
         if_exists="append")
+
+if config.settings()[
+        "egon-data"]["--dataset-boundary"] == 'Schleswig-Holstein':
+    extension = extension_SH
+
+else:
+    extension = {extension_BW, extension_BY, extension_HB, extension_BB,
+                 extension_HE, extension_MV, extension_NS, extension_NW,
+                 extension_SH, extension_HH, extension_RP, extension_SL,
+                 extension_SN, extension_ST, extension_TH, extension_BE}
+
+class Chp(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Chp",
+            version="0.0.1.dev",
+            dependencies=dependencies,
+            tasks=(create_tables, insert_chp_egon2035,
+                   assign_heat_bus,
+                   extension
+                   ),
+        )
