@@ -186,7 +186,7 @@ def generate_resource_fields_from_sqla_model(model):
     """ Generate a template for the resource fields for metadata from a SQL
     Alchemy model.
 
-    For details on the fields see section 14.6.1 of `Open Energy Metadata
+    For details on the fields see field 14.6.1 of `Open Energy Metadata
     <https://github.com/OpenEnergyPlatform/ oemetadata/blob/develop/metadata/
     v141/metadata_key_description.md>`_ standard.
     The fields `name` and `type` are automatically filled, the `description`
@@ -220,7 +220,7 @@ def generate_resource_fields_from_db_table(schema, table):
     """ Generate a template for the resource fields for metadata from a
     database table.
 
-    For details on the fields see section 14.6.1 of `Open Energy Metadata
+    For details on the fields see field 14.6.1 of `Open Energy Metadata
     <https://github.com/OpenEnergyPlatform/ oemetadata/blob/develop/metadata/
     v141/metadata_key_description.md>`_ standard.
     The fields `name` and `type` are automatically filled, the `description`
