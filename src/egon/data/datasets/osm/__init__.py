@@ -145,10 +145,12 @@ def add_metadata():
     licenses = [license_odbl(attribution="© OpenStreetMap contributors")]
 
     for table in osm_config["processed"]["tables"]:
+        schema_table = ".".join([osm_config["processed"]["schema"], table])
         table_suffix = table.split("_")[1]
         meta = {
-            "name": table,
+            "name": schema_table,
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
+            "id": "WILL_BE_SET_AT_PUBLICATION",
             "description": (
                 "OpenStreetMap is a free, editable map of the"
                 " whole world that is being built by volunteers"
@@ -206,13 +208,14 @@ def add_metadata():
             "resources": [
                 {
                     "profile": "tabular-data-resource",
-                    "name": table,
+                    "name": schema_table,
                     "path": None,
                     "format": "PostgreSQL",
                     "encoding": "UTF-8",
                     "schema": {
-                        "fields": generate_resource_fields_from_db_table(osm_config["processed"]["schema"],
-                                                                         table),
+                        "fields": generate_resource_fields_from_db_table(
+                            osm_config["processed"]["schema"],
+                            table),
                         "primaryKey": ["id"],
                         "foreignKeys": None
                     },

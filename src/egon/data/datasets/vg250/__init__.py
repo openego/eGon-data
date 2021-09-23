@@ -159,7 +159,7 @@ def add_metadata():
 
     # Insert metadata for each table
     licenses = [licenses_datenlizenz_deutschland(
-        attribution=f"© GeoBasis-DE / BKG ({datetime.date.today().year})"
+        attribution=f"© GeoBasis-DE / BKG (2020)"
     )]
 
     vg250_source = {
@@ -213,6 +213,7 @@ def add_metadata():
         meta = {
             "name": schema_table,
             "title": title_and_description[table]["title"],
+            "id": "WILL_BE_SET_AT_PUBLICATION",
             "description": title_and_description[table]["title"],
             "language": ["de-DE"],
             "publicationDate": datetime.date.today().isoformat(),
