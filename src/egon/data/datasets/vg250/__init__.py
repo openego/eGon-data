@@ -239,8 +239,15 @@ def add_metadata():
                     "title": "Guido Pleßmann",
                     "email": "http://github.com/gplssm",
                     "date": time.strftime("%Y-%m-%d"),
-                    "object": "",
+                    "object": None,
                     "comment": "Imported data",
+                },
+                {
+                    "title": "Jonathan Amme",
+                    "email": "http://github.com/nesnoj",
+                    "date": time.strftime("%Y-%m-%d"),
+                    "object": None,
+                    "comment": "Metadata extended",
                 }
             ],
             "resources": [

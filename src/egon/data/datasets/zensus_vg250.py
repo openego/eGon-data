@@ -1,4 +1,6 @@
 import json
+import time
+import datetime
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (
@@ -346,10 +348,14 @@ def add_metadata_zensus_inside_ger():
             "resolution": "1 ha",
         },
         "temporal": {
-            "reference_date": "2011",
-            "start": "none",
-            "end": "none",
-            "resolution": "none",
+            "reference_date": "2011-12-31",
+            "timeseries": {
+                "start": None,
+                "end": None,
+                "resolution": None,
+                "alignment": None,
+                "aggregationType": None,
+            },
         },
         "sources": [
             {
@@ -463,29 +469,34 @@ def add_metadata_vg250_gem_pop():
     Creates a metdadata JSON string and writes it to the database table comment
     """
     vg250_config = egon.data.config.datasets()["vg250"]
+    schema_table = ".".join([Vg250GemPopulation.__table__.schema,
+                             Vg250GemPopulation.__table__.name])
 
     licenses = [licenses_datenlizenz_deutschland(
         attribution="© Bundesamt für Kartographie und Geodäsie"
     )]
 
     metadata = {
+        "name": schema_table,
         "title": "Municipalities (BKG Verwaltungsgebiete 250) and population "
         "(Destatis Zensus)",
         "description": "Municipality data enriched by population data",
-        "language": ["DE"],
+        "language": ["de-DE"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
         "spatial": {
-            "location": "",
+            "location": None,
             "extent": "Germany",
-            "resolution": "vector",
+            "resolution": "1:250000",
         },
         "temporal": {
             "referenceDate": "2020-01-01",
             "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
+                "start": None,
+                "end": None,
+                "resolution": None,
+                "alignment": None,
+                "aggregationType": None,
             },
         },
         "sources": [
@@ -534,9 +545,16 @@ def add_metadata_vg250_gem_pop():
             {
                 "title": "Guido Pleßmann",
                 "email": "http://github.com/gplssm",
-                "date": "2021-03-11",
-                "object": "",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
                 "comment": "Imported data",
+            },
+            {
+                "title": "Jonathan Amme",
+                "email": "http://github.com/nesnoj",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Metadata extended",
             }
         ],
         "metaMetadata": meta_metadata(),
