@@ -212,7 +212,7 @@ def generate_resource_fields_from_sqla_model(model):
     return [{'name': col.name,
              'description': '',
              'type': str(col.type).lower(),
-             'unit': None}
+             'unit': 'none'}
             for col in model.__table__.columns]
 
 
@@ -258,5 +258,5 @@ def generate_resource_fields_from_db_table(schema, table):
     return [{'name': col.name,
              'description': '',
              'type': str(col.type).lower(),
-             'unit': None}
+             'unit': 'none'}
             for col in table.c]
