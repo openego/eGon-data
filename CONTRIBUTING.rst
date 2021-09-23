@@ -312,18 +312,20 @@ not contain an id` ), but fix all other errors.
 For previous discussions, you may want to check
 `PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
 
-Sources
+Helpers
 ^^^^^^^
 
-TBD
+There are some **licence templates** provided in :py:mod:`egon.data.metadata`
+you can make use of for fields 11.4 and 12 of the
+`Open Energy Metadata Description`_. Also, there's a template for the
+metaMetadata (field 16).
 
-Resource fields
-^^^^^^^^^^^^^^^
+[Some content about **sources** will be inserted here]
 
-There are some functions to quickly generate a template for the resource fields
-(section 14.6.1 in `Open Energy Metadata Description`_) from a SQLA table class
-or a DB table. This might be especially helpful if your table has plenty of
-columns.
+There are some functions to quickly generate a template for the
+**resource fields** (field 14.6.1 in `Open Energy Metadata Description`_) from
+a SQLA table class or a DB table. This might be especially helpful if your
+table has plenty of columns.
 
 * From SQLA table class:
   :py:func:`egon.data.metadata.generate_resource_fields_from_sqla_model`
