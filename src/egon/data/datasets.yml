@@ -686,3 +686,19 @@ chp_location:
     mastr_conventional_without_chp:
       table: 'egon_mastr_conventional_without_chp'
       schema: 'supply'
+
+chp_etrago:
+  sources:
+    chp_table:
+      table: 'egon_chp'
+      schema: 'supply'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
+  targets:
+    link:
+      schema: 'grid'
+      table: 'egon_etrago_link'

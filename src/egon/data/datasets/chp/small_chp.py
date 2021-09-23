@@ -522,15 +522,21 @@ def extension_per_federal_state(federal_state, EgonChp):
     None.
 
     """
+
+    sources = config.datasets()["chp_location"]["sources"]
+    target_table = config.datasets()["chp_location"]["targets"]["chp_table"]
+
     targets = select_target('small_chp', 'eGon2035')
 
     existing_capacity = db.select_dataframe(
             f"""
             SELECT SUM(el_capacity) as capacity, district_heating
-            FROM supply.egon_chp
+            FROM {target_table['schema']}.
+            {target_table['table']}
             WHERE sources::json->>'el_capacity' = 'MaStR'
             AND ST_Intersects(geom, (
-            SELECT ST_Union(geometry) FROM boundaries.vg250_lan
+            SELECT ST_Union(geometry) FROM
+            {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} b
             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
             GROUP BY district_heating
             """)

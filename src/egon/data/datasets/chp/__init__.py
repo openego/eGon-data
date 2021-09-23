@@ -270,20 +270,26 @@ def extension_SH():
 
 def to_etrago():
 
+    sources = config.datasets()["chp_etrago"]["sources"]
+
+    targets = config.datasets()["chp_etrago"]["targets"]
+
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_etrago_link
+        f"""
+        DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon2035'
         """)
 
     chp_dh = db.select_dataframe(
-        """
+        f"""
         SELECT electrical_bus_id, gas_bus_id, a.carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
-        FROM supply.egon_chp a
-        JOIN demand.egon_district_heating_areas b
+        FROM {sources['chp_table']['schema']}.
+        {sources['chp_table']['schema']} a
+        JOIN {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['schema']}  b
         ON a.district_heating_area_id = b.area_id
         JOIN grid.egon_etrago_bus c
         ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
@@ -315,8 +321,8 @@ def to_etrago():
         len(chp_el)+db.next_etrago_id('link'))
 
     chp_el.to_postgis(
-        "egon_etrago_link",
-        schema="grid",
+        targets["link"]["table"],
+        schema=targets["link"]["schema"],
         con=db.engine(),
         if_exists="append")
 
@@ -337,8 +343,8 @@ def to_etrago():
         len(chp_heat)+db.next_etrago_id('link'))
 
     chp_heat.to_postgis(
-        "egon_etrago_link",
-        schema="grid",
+        targets["link"]["table"],
+        schema=targets["link"]["schema"],
         con=db.engine(),
         if_exists="append")
 
@@ -347,7 +353,7 @@ def to_etrago():
         """
         SELECT electrical_bus_id, gas_bus_id, carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity
-        FROM supply.egon_chp
+        FROM {sources['chp_table']['schema']}.{sources['chp_table']['schema']}
         WHERE scenario='eGon2035'
         AND district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, gas_bus_id, carrier)
@@ -370,8 +376,8 @@ def to_etrago():
         len(chp_el_ind)+db.next_etrago_id('link'))
 
     chp_el_ind.to_postgis(
-        "egon_etrago_link",
-        schema="grid",
+    targets["link"]["table"],
+            schema=targets["link"]["schema"],
         con=db.engine(),
         if_exists="append")
 
