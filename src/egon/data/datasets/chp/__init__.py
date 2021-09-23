@@ -230,10 +230,6 @@ def extension():
     # Select target values per federal state
     targets = select_target('small_chp', 'eGon2035')
 
-    # Temporary drop Hamburg and Bremen
-    if 'Hamburg' in targets:
-        targets = targets.drop(['Hamburg', 'Bremen'])
-
     # Run methodology for each federal state
     for federal_state in targets.index:
 
