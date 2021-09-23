@@ -22,6 +22,7 @@ from egon.data.metadata import (context,
                                 licenses_datenlizenz_deutschland,
                                 meta_metadata)
 from egon.data.datasets import Dataset
+from egon.data.datasets.vg250 import vg250_metadata_resources_fields
 
 Base = declarative_base()
 
@@ -337,13 +338,24 @@ def add_metadata_zensus_inside_ger():
 
     Creates a metdadata JSON string and writes it to the database table comment
     """
+    schema_table = ".".join([
+        DestatisZensusPopulationPerHaInsideGermany.__table__.schema,
+        DestatisZensusPopulationPerHaInsideGermany.__table__.name,
+    ])
+
     metadata = {
+        "name": schema_table,
         "title": "DESTATIS - Zensus 2011 - Population per hectar",
-        "description": "National census in Germany in 2011 with the bounds on Germanys boarders.",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": (
+            "National census in Germany in 2011 with the bounds on Germanys "
+            "borders."
+        ),
         "language": ["en-EN", "de-DE"],
+        "publicationDate": datetime.date.today().isoformat(),
         "context": context(),
         "spatial": {
-            "location": "none",
+            "location": None,
             "extent": "Germany",
             "resolution": "1 ha",
         },
@@ -359,98 +371,122 @@ def add_metadata_zensus_inside_ger():
         },
         "sources": [
             {
-                "name": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
-                "Zensus 2011 zum Download",
-                "description": "Als Download bieten wir Ihnen auf dieser Seite "
-                "zusätzlich zur Zensusdatenbank CSV- und "
-                "teilweise Excel-Tabellen mit umfassenden "
-                "Personen-, Haushalts- und Familien- sowie "
-                "Gebäude- und Wohnungs­merkmalen. Die "
-                "Ergebnisse liegen auf Bundes-, Länder-, Kreis- "
-                "und Gemeinde­ebene vor. Außerdem sind einzelne "
-                "Ergebnisse für Gitterzellen verfügbar.",
-                "url": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnis"
-                "se/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B2"
-                "58A3B22D20448F2E4A91.2_cid380?nn=3065474",
-                "license": "",
-                "copyright": "© Statistische Ämter des Bundes und der Länder 2014",
+                "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
+                         "Zensus 2011 zum Download",
+                "description": (
+                    "Als Download bieten wir Ihnen auf dieser Seite "
+                    "zusätzlich zur Zensusdatenbank CSV- und "
+                    "teilweise Excel-Tabellen mit umfassenden "
+                    "Personen-, Haushalts- und Familien- sowie "
+                    "Gebäude- und Wohnungsmerkmalen. Die "
+                    "Ergebnisse liegen auf Bundes-, Länder-, Kreis- "
+                    "und Gemeindeebene vor. Außerdem sind einzelne "
+                    "Ergebnisse für Gitterzellen verfügbar."
+                ),
+                "path": "https://www.zensus2011.de/DE/Home/Aktuelles/"
+                        "DemografischeGrunddaten.html",
+                "licenses": [
+                    licenses_datenlizenz_deutschland(
+                        attribution="© Statistische Ämter des Bundes und der "
+                                    "Länder 2014"
+                    )
+                ],
             },
             {
-                "name": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
-                "description": "Diese Publikation beschreibt ausführlich die "
-                "Methoden und Verfahren des registergestützten "
-                "Zensus 2011; von der Datengewinnung und "
-                "-aufbereitung bis hin zur Ergebniserstellung"
-                " und Geheimhaltung. Der vorliegende Band wurde "
-                "von den Statistischen Ämtern des Bundes und "
-                "der Länder im Juni 2015 veröffentlicht.",
-                "url": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
-                "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
-                "19004.pdf?__blob=publicationFile",
-                "license": "Vervielfältigung und Verbreitung, auch "
-                "auszugsweise, mit Quellenangabe gestattet.",
-                "copyright": "© Statistisches Bundesamt, Wiesbaden, 2015 "
-                "(im Auftrag der Herausgebergemeinschaft)",
+                "title": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
+                "description": (
+                    "Diese Publikation beschreibt ausführlich die "
+                    "Methoden und Verfahren des registergestützten "
+                    "Zensus 2011; von der Datengewinnung und "
+                    "-aufbereitung bis hin zur Ergebniserstellung"
+                    " und Geheimhaltung. Der vorliegende Band wurde "
+                    "von den Statistischen Ämtern des Bundes und "
+                    "der Länder im Juni 2015 veröffentlicht."
+                ),
+                "path": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
+                        "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
+                        "19004.pdf?__blob=publicationFile",
+                "licenses": [
+                    licenses_datenlizenz_deutschland(
+                        attribution="© Statistisches Bundesamt, Wiesbaden "
+                                    "2015 (im Auftrag der "
+                                    "Herausgebergemeinschaft)"
+                    )
+                ],
             },
         ],
-        "license": {
-            "id": "dl-de/by-2-0",
-            "name": "Datenlizenz by-2-0",
-            "version": "2.0",
-            "url": "www.govdata.de/dl-de/by-2-0",
-            "instruction": "Empfohlene Zitierweise des Quellennachweises: "
-            "Datenquelle: Statistisches Bundesamt, Wiesbaden, "
-            "Genesis-Online, <optional> Abrufdatum; Datenlizenz "
-            "by-2-0. Quellenvermerk bei eigener Berechnung / "
-            "Darstellung: Datenquelle: Statistisches Bundesamt, "
-            "Wiesbaden, Genesis-Online, <optional> Abrufdatum; "
-            "Datenlizenz by-2-0; eigene Berechnung/eigene "
-            "Darstellung. In elektronischen Werken ist im "
-            "Quellenverweis dem Begriff (Datenlizenz by-2-0) "
-            "der Link www.govdata.de/dl-de/by-2-0 als "
-            "Verknüpfung zu hinterlegen.",
-            "copyright": "Statistisches Bundesamt, Wiesbaden, Genesis-Online; "
-            "Datenlizenz by-2-0; eigene Berechnung",
-        },
+        "licenses": [
+            licenses_datenlizenz_deutschland(
+                attribution="© Statistische Ämter des Bundes und der Länder "
+                            "2014; © Statistisches Bundesamt, Wiesbaden 2015 "
+                            "(Daten verändert)"
+            )
+        ],
         "contributors": [
             {
                 "title": "Guido Pleßmann",
                 "email": "http://github.com/gplssm",
-                "date": "2021-03-11",
-                "object": "",
-                "comment": "Created processing ",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+            {
+                "title": "Jonathan Amme",
+                "email": "http://github.com/nesnoj",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Metadata extended",
             }
         ],
         "resources": [
             {
-                "name": "society.destatis_zensus_population_per_ha",
+                "profile": "tabular-data-resource",
+                "name": schema_table,
+                "path": None,
                 "format": "PostgreSQL",
-                "fields": [
-                    {
-                        "name": "id",
-                        "description": "Unique identifier",
-                        "unit": "none",
-                    },
-                    {
-                        "name": "grid_id",
-                        "description": "Grid number of source",
-                        "unit": "none",
-                    },
-                    {
-                        "name": "population",
-                        "description": "Number of registred residents",
-                        "unit": "resident",
-                    },
-                    {
-                        "name": "geom_point",
-                        "description": "Geometry centroid",
-                        "unit": "none",
-                    },
-                    {"name": "geom", "description": "Geometry", "unit": ""},
-                ],
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "id",
+                            "description": "Unique identifier",
+                            "type": "none",
+                            "unit": "integer",
+                        },
+                        {
+                            "name": "grid_id",
+                            "description": "Grid number of source",
+                            "type": "string",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "population",
+                            "description": "Number of registred residents",
+                            "type": "integer",
+                            "unit": "resident",
+                        },
+                        {
+                            "name": "geom_point",
+                            "description": "Geometry centroid",
+                            "type": "Geometry",
+                            "unit": "none",
+                        },
+                        {
+                            "name": "geom",
+                            "description": "Geometry",
+                            "type": "Geometry",
+                            "unit": ""},
+                    ],
+                    "primaryKey": ["id"],
+                    "foreignKeys": None
+                },
+                "dialect": {
+                    "delimiter": None,
+                    "decimalSeparator": "."
+                }
             }
         ],
-        "metadata_version": "1.3",
+        "metaMetadata": meta_metadata(),
     }
 
     meta_json = "'" + json.dumps(metadata) + "'"
@@ -473,13 +509,53 @@ def add_metadata_vg250_gem_pop():
                              Vg250GemPopulation.__table__.name])
 
     licenses = [licenses_datenlizenz_deutschland(
-        attribution="© Bundesamt für Kartographie und Geodäsie"
+        attribution="© Bundesamt für Kartographie und Geodäsie "
+                    "2020 (Daten verändert)"
     )]
+
+    vg250_source = {
+        "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
+        "description":
+            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+            "Verwaltungsebene des jeweiligen Landes.",
+        "path": vg250_config["original_data"]["source"]["url"],
+        "licenses": licenses
+    }
+
+    resources_fields = vg250_metadata_resources_fields()
+    resources_fields.extend(
+        {'name': 'area_ha',
+         'description': 'Area in ha',
+         'type': 'float',
+         'unit': 'ha'},
+        {'name': 'area_km2',
+         'description': 'Area in km2',
+         'type': 'float',
+         'unit': 'km2'},
+        {'name': 'population_total',
+         'description': 'Number of inhabitants',
+         'type': 'integer',
+         'unit': 'none'},
+        {'name': 'cell_count',
+         'description': 'Number of Zensus cells',
+         'type': 'integer',
+         'unit': 'none'},
+        {'name': 'population_density',
+         'description': 'Number of inhabitants per km2',
+         'type': 'float',
+         'unit': 'inhabitants/km²'},
+    )
 
     metadata = {
         "name": schema_table,
-        "title": "Municipalities (BKG Verwaltungsgebiete 250) and population "
-        "(Destatis Zensus)",
+        "title": (
+            "Municipalities (BKG Verwaltungsgebiete 250) and population "
+            "(Destatis Zensus)"
+        ),
+        "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": "Municipality data enriched by population data",
         "language": ["de-DE"],
         "publicationDate": datetime.date.today().isoformat(),
@@ -499,47 +575,7 @@ def add_metadata_vg250_gem_pop():
                 "aggregationType": None,
             },
         },
-        "sources": [
-            {
-                "title": "Dienstleistungszentrum des Bundes für "
-                "Geoinformation und Geodäsie - Open Data",
-                "description": "Dieser Datenbestand steht über "
-                "Geodatendienste gemäß "
-                "Geodatenzugangsgesetz (GeoZG) "
-                "(http://www.geodatenzentrum.de/auftrag/pdf"
-                "/geodatenzugangsgesetz.pdf) für die "
-                "kommerzielle und nicht kommerzielle "
-                "Nutzung geldleistungsfrei zum Download "
-                "und zur Online-Nutzung zur Verfügung. Die "
-                "Nutzung der Geodaten und Geodatendienste "
-                "wird durch die Verordnung zur Festlegung "
-                "der Nutzungsbestimmungen für die "
-                "Bereitstellung von Geodaten des Bundes "
-                "(GeoNutzV) (http://www.geodatenzentrum.de"
-                "/auftrag/pdf/geonutz.pdf) geregelt. "
-                "Insbesondere hat jeder Nutzer den "
-                "Quellenvermerk zu allen Geodaten, "
-                "Metadaten und Geodatendiensten erkennbar "
-                "und in optischem Zusammenhang zu "
-                "platzieren. Veränderungen, Bearbeitungen, "
-                "neue Gestaltungen oder sonstige "
-                "Abwandlungen sind mit einem "
-                "Veränderungshinweis im Quellenvermerk zu "
-                "versehen. Quellenvermerk und "
-                "Veränderungshinweis sind wie folgt zu "
-                "gestalten. Bei der Darstellung auf einer "
-                "Webseite ist der Quellenvermerk mit der "
-                "URL http://www.bkg.bund.de zu verlinken. "
-                "© GeoBasis-DE / BKG <Jahr des letzten "
-                "Datenbezugs> © GeoBasis-DE / BKG "
-                "<Jahr des letzten Datenbezugs> "
-                "(Daten verändert) Beispiel: "
-                "© GeoBasis-DE / BKG 2013",
-                "path": vg250_config["original_data"]["source"]["url"],
-                "licenses": licenses,
-                "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
-            },
-        ],
+        "sources": [vg250_source],
         "licenses": licenses,
         "contributors": [
             {
@@ -555,6 +591,24 @@ def add_metadata_vg250_gem_pop():
                 "date": time.strftime("%Y-%m-%d"),
                 "object": None,
                 "comment": "Metadata extended",
+            }
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": schema_table,
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": resources_fields,
+                    "primaryKey": ["id"],
+                    "foreignKeys": None
+                },
+                "dialect": {
+                    "delimiter": None,
+                    "decimalSeparator": "."
+                }
             }
         ],
         "metaMetadata": meta_metadata(),

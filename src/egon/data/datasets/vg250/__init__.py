@@ -155,11 +155,9 @@ def add_metadata():
         },
     }
 
-    url = vg250_config["original_data"]["source"]["url"]
-
-    # Insert metadata for each table
     licenses = [licenses_datenlizenz_deutschland(
-        attribution=f"© GeoBasis-DE / BKG (2020)"
+        attribution="© Bundesamt für Kartographie und Geodäsie "
+                    "2020 (Daten verändert)"
     )]
 
     vg250_source = {
@@ -170,43 +168,9 @@ def add_metadata():
             "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
             "Verwaltungseinheit sowie die spezifische Bezeichnung der "
             "Verwaltungsebene des jeweiligen Landes.",
-        "path": url,
+        "path": vg250_config["original_data"]["source"]["url"],
         "licenses": licenses
     }
-
-    resource_fields = [
-        {'description': 'Index', 'name': 'gid', 'type': 'integer', 'unit': None},
-        {'description': 'Administrative level', 'name': 'ade', 'type': 'integer', 'unit': None},
-        {'description': 'Geofactor', 'name': 'gf', 'type': 'integer', 'unit': None},
-        {'description': 'Particular areas', 'name': 'bsg', 'type': 'integer', 'unit': None},
-        {'description': 'Territorial code', 'name': 'ars', 'type': 'string', 'unit': None},
-        {'description': 'Official Municipality Key', 'name': 'ags', 'type': 'string', 'unit': None},
-        {'description': 'Seat of the administration (territorial code)', 'name': 'sdv_ars', 'type': 'string', 'unit': None},
-        {'description': 'Geographical name', 'name': 'gen', 'type': 'string', 'unit': None},
-        {'description': 'Designation of the administrative unit', 'name': 'bez', 'type': 'string', 'unit': None},
-        {'description': 'Identifier', 'name': 'ibz', 'type': 'integer', 'unit': None},
-        {'description': 'Note', 'name': 'bem', 'type': 'string', 'unit': None},
-        {'description': 'Name generation', 'name': 'nbd', 'type': 'string', 'unit': None},
-        {'description': 'Land (state)', 'name': 'sn_l', 'type': 'string', 'unit': None},
-        {'description': 'Administrative district', 'name': 'sn_r', 'type': 'string', 'unit': None},
-        {'description': 'District', 'name': 'sn_k', 'type': 'string', 'unit': None},
-        {'description': 'Administrative association – front part', 'name': 'sn_v1', 'type': 'string', 'unit': None},
-        {'description': 'Administrative association – rear part', 'name': 'sn_v2', 'type': 'string', 'unit': None},
-        {'description': 'Municipality', 'name': 'sn_g', 'type': 'string', 'unit': None},
-        {'description': 'Function of the 3rd key digit', 'name': 'fk_s3', 'type': 'string', 'unit': None},
-        {'description': 'European statistics key', 'name': 'nuts', 'type': 'string', 'unit': None},
-        {'description': 'Filled territorial code', 'name': 'ars_0', 'type': 'string', 'unit': None},
-        {'description': 'Filled Official Municipality Key', 'name': 'ags_0', 'type': 'string', 'unit': None},
-        {'description': 'Effectiveness', 'name': 'wsk', 'type': 'string', 'unit': None},
-        {'description': 'DLM identifier', 'name': 'debkg_id', 'type': 'string',
-         'unit': None},
-        {'description': 'Territorial code (deprecated column)', 'name': 'rs', 'type': 'string', 'unit': None},
-        {'description': 'Seat of the administration (territorial code, deprecated column)', 'name': 'sdv_rs', 'type': 'string', 'unit': None},
-        {'description': 'Filled territorial code (deprecated column)', 'name': 'rs_0', 'type': 'string', 'unit': None},
-        {'description': 'Geometry of areas as WKB',
-         'name': 'geometry',
-         'type': "Geometry(Polygon, srid=4326)",
-         'unit': None}]
 
     for table in vg250_config["processed"]["file_table_map"].values():
         schema_table = ".".join([vg250_config["processed"]["schema"], table])
@@ -259,8 +223,8 @@ def add_metadata():
                     "format": "PostgreSQL",
                     "encoding": "UTF-8",
                     "schema": {
-                        "fields": resource_fields,
-                        "primaryKey": ["gid"],
+                        "fields": vg250_metadata_resources_fields(),
+                        "primaryKey": ["id"],
                         "foreignKeys": None
                     },
                     "dialect": {
@@ -291,6 +255,43 @@ def cleaning_and_preperation():
     db.execute_sql_script(
         os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
     )
+
+
+def vg250_metadata_resources_fields():
+
+    return [
+        {'description': 'Index', 'name': 'id', 'type': 'integer', 'unit': 'none'},
+        {'description': 'Administrative level', 'name': 'ade', 'type': 'integer', 'unit': 'none'},
+        {'description': 'Geofactor', 'name': 'gf', 'type': 'integer', 'unit': 'none'},
+        {'description': 'Particular areas', 'name': 'bsg', 'type': 'integer', 'unit': 'none'},
+        {'description': 'Territorial code', 'name': 'ars', 'type': 'string', 'unit': 'none'},
+        {'description': 'Official Municipality Key', 'name': 'ags', 'type': 'string', 'unit': 'none'},
+        {'description': 'Seat of the administration (territorial code)', 'name': 'sdv_ars', 'type': 'string', 'unit': 'none'},
+        {'description': 'Geographical name', 'name': 'gen', 'type': 'string', 'unit': 'none'},
+        {'description': 'Designation of the administrative unit', 'name': 'bez', 'type': 'string', 'unit': 'none'},
+        {'description': 'Identifier', 'name': 'ibz', 'type': 'integer', 'unit': 'none'},
+        {'description': 'Note', 'name': 'bem', 'type': 'string', 'unit': 'none'},
+        {'description': 'Name generation', 'name': 'nbd', 'type': 'string', 'unit': 'none'},
+        {'description': 'Land (state)', 'name': 'sn_l', 'type': 'string', 'unit': 'none'},
+        {'description': 'Administrative district', 'name': 'sn_r', 'type': 'string', 'unit': 'none'},
+        {'description': 'District', 'name': 'sn_k', 'type': 'string', 'unit': 'none'},
+        {'description': 'Administrative association – front part', 'name': 'sn_v1', 'type': 'string', 'unit': 'none'},
+        {'description': 'Administrative association – rear part', 'name': 'sn_v2', 'type': 'string', 'unit': 'none'},
+        {'description': 'Municipality', 'name': 'sn_g', 'type': 'string', 'unit': 'none'},
+        {'description': 'Function of the 3rd key digit', 'name': 'fk_s3', 'type': 'string', 'unit': 'none'},
+        {'description': 'European statistics key', 'name': 'nuts', 'type': 'string', 'unit': 'none'},
+        {'description': 'Filled territorial code', 'name': 'ars_0', 'type': 'string', 'unit': 'none'},
+        {'description': 'Filled Official Municipality Key', 'name': 'ags_0', 'type': 'string', 'unit': 'none'},
+        {'description': 'Effectiveness', 'name': 'wsk', 'type': 'string', 'unit': 'none'},
+        {'description': 'DLM identifier', 'name': 'debkg_id', 'type': 'string', 'unit': 'none'},
+        {'description': 'Territorial code (deprecated column)', 'name': 'rs', 'type': 'string', 'unit': 'none'},
+        {'description': 'Seat of the administration (territorial code, deprecated column)', 'name': 'sdv_rs', 'type': 'string', 'unit': 'none'},
+        {'description': 'Filled territorial code (deprecated column)', 'name': 'rs_0', 'type': 'string', 'unit': 'none'},
+        {'description': 'Geometry of areas as WKB',
+         'name': 'geometry',
+         'type': "Geometry(Polygon, srid=4326)",
+         'unit': 'none'}
+    ]
 
 
 class Vg250(Dataset):
