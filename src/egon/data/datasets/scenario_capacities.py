@@ -249,8 +249,8 @@ def map_carrier():
         "AndereGase": "gas",
         "Sonstige_Energietraeger": "other_non_renewable",
         "Kernenergie": "nuclear",
-        "Pumpspeicher": "pumped_hydro"
-
+        "Pumpspeicher": "pumped_hydro",
+        "Mineralöl-\nProdukte": "oil",
         }))
 
 def insert_nep_list_powerplants():
