@@ -526,7 +526,7 @@ def add_metadata_vg250_gem_pop():
     }
 
     resources_fields = vg250_metadata_resources_fields()
-    resources_fields.extend(
+    resources_fields.extend([
         {'name': 'area_ha',
          'description': 'Area in ha',
          'type': 'float',
@@ -547,7 +547,7 @@ def add_metadata_vg250_gem_pop():
          'description': 'Number of inhabitants per km2',
          'type': 'float',
          'unit': 'inhabitants/km²'},
-    )
+    ])
 
     metadata = {
         "name": schema_table,
