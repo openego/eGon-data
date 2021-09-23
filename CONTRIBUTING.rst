@@ -318,7 +318,7 @@ Helpers
 There are some **licence templates** provided in :py:mod:`egon.data.metadata`
 you can make use of for fields 11.4 and 12 of the
 `Open Energy Metadata Description`_. Also, there's a template for the
-metaMetadata (field 16).
+**metaMetadata** (field 16).
 
 [Some content about **sources** will be inserted here]
 
