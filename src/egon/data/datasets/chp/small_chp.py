@@ -287,7 +287,7 @@ def extension_to_areas(areas, additional_capacity, existing_chp, flh, EgonChp,
 
 def extension_district_heating(
         federal_state, additional_capacity, flh_chp, EgonChp,
-        areas_without_chp_only=True):
+        areas_without_chp_only=False):
     """ Build new CHP < 10 MW for district areas considering existing CHP
     and the heat demand.
 
@@ -340,31 +340,33 @@ def extension_district_heating(
         """)
 
     # Select all district heating areas without CHP
-    dh_areas = db.select_geodataframe(
-        f"""
-        SELECT
-        residential_and_service_demand as demand, area_id,
-        ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
-        FROM
-        {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['table']}
-        WHERE scenario = 'eGon2035'
-        AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
-            SELECT ST_Union(d.geometry)
-            FROM
-            {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} d
-            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-        AND area_id NOT IN (
-            SELECT district_heating_area_id
-            FROM {targets['chp_table']['schema']}.
-            {targets['chp_table']['table']}
-            WHERE scenario = 'eGon2035'
-            AND district_heating = TRUE)
-        """)
 
-    not_distributed_capacity = extension_to_areas(
-        dh_areas, additional_capacity, existing_chp, flh_chp,
-         EgonChp, district_heating = True)
+    if federal_state not in ['Berlin', 'Bremen', 'Hamburg']:
+        dh_areas = db.select_geodataframe(
+            f"""
+            SELECT
+            residential_and_service_demand as demand, area_id,
+            ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
+            FROM
+            {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
+            WHERE scenario = 'eGon2035'
+            AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
+                SELECT ST_Union(d.geometry)
+                FROM
+                {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} d
+                WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
+            AND area_id NOT IN (
+                SELECT district_heating_area_id
+                FROM {targets['chp_table']['schema']}.
+                {targets['chp_table']['table']}
+                WHERE scenario = 'eGon2035'
+                AND district_heating = TRUE)
+            """)
+    else:
+        dh_areas = gpd.GeoDataFrame(
+            columns=['demand', 'area_id', 'geom']
+            ).set_geometry('geom')
 
     if not areas_without_chp_only:
         # Append district heating areas with CHP
@@ -395,6 +397,11 @@ def extension_district_heating(
                     b.area_id, geom_polygon)
                 """),ignore_index=True
                 )
+
+
+    not_distributed_capacity = extension_to_areas(
+        dh_areas, additional_capacity, existing_chp, flh_chp,
+         EgonChp, district_heating = True)
 
     return not_distributed_capacity
 
