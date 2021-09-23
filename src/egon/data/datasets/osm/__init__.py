@@ -217,7 +217,7 @@ def add_metadata():
                             osm_config["processed"]["schema"],
                             table),
                         "primaryKey": ["id"],
-                        "foreignKeys": None
+                        "foreignKeys": []
                     },
                     "dialect": {
                         "delimiter": None,

@@ -478,7 +478,7 @@ def add_metadata_zensus_inside_ger():
                             "unit": ""},
                     ],
                     "primaryKey": ["id"],
-                    "foreignKeys": None
+                    "foreignKeys": []
                 },
                 "dialect": {
                     "delimiter": None,
@@ -603,7 +603,7 @@ def add_metadata_vg250_gem_pop():
                 "schema": {
                     "fields": resources_fields,
                     "primaryKey": ["id"],
-                    "foreignKeys": None
+                    "foreignKeys": []
                 },
                 "dialect": {
                     "delimiter": None,

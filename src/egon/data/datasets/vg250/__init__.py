@@ -225,7 +225,7 @@ def add_metadata():
                     "schema": {
                         "fields": vg250_metadata_resources_fields(),
                         "primaryKey": ["id"],
-                        "foreignKeys": None
+                        "foreignKeys": []
                     },
                     "dialect": {
                         "delimiter": None,
