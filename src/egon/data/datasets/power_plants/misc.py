@@ -32,7 +32,6 @@ def select_nep_power_plants(carrier):
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
-    carrier = 'Mineralöl-\nprodukte'
 
     # Select plants with geolocation from list of conventional power plants
     nep = db.select_dataframe(
@@ -58,11 +57,6 @@ def select_nep_power_plants(carrier):
     # Remove the subunits from the bnetza_id
     nep['bnetza_id'] = nep['bnetza_id'].str[0:7]
 
-    # Update carrier to match to MaStR
-    map_carrier = map_carrier_nep_mastr()
-    nep['carrier'] = map_carrier[nep['carrier'].values].values
-
-
     return nep
 
 
@@ -81,7 +75,6 @@ def select_no_chp_combustion_mastr(carrier):
         Power plants from NEP list
 
     """
-    carrier = 'Mineraloelprodukte'
     cfg = egon.data.config.datasets()["power_plants"]
     # import data for MaStR
     mastr = db.select_geodataframe(
@@ -251,49 +244,60 @@ def match_nep_no_chp(nep, mastr, matched, buffer_capacity=0.1,
 
 def merge_nep_mastr():
 
-    carrier = []
+    carrier = ['oil', 'gas', 'other_non_renewable']
 
     cfg = egon.data.config.datasets()["power_plants"]
 
-    nep = select_nep_power_plants('Mineralöl-\nprodukte')
-    mastr = select_no_chp_combustion_mastr('Mineraloelprodukte')
 
-    #Assign voltage level to MaStR
-    mastr['voltage_level'] = assign_voltage_level(
-        mastr.rename({'el_capacity': 'Nettonennleistung'}, axis=1
-                          ), cfg)
+    for carrier in carrier :
 
-    # Initalize DataFrame for matching power plants
-    matched = gpd.GeoDataFrame(
-        columns = [
-            'carrier','chp','el_capacity','th_capacity', 'scenario','geometry',
-            'MaStRNummer', 'source', 'voltage_level'])
+        nep = select_nep_power_plants(carrier)
+        mastr = select_no_chp_combustion_mastr(carrier)
 
-    # Match combustion plants of a certain carrier from NEP list
-    # using PLZ and capacity
-    matched, mastr, nep = match_nep_no_chp(
-        nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False)
+        #Assign voltage level to MaStR
+        mastr['voltage_level'] = assign_voltage_level(
+            mastr.rename({'el_capacity': 'Nettonennleistung'}, axis=1
+                              ), cfg)
 
-    # Match plants from NEP list using city and capacity
-    matched, mastr, nep = match_nep_no_chp(
-        nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False,
-        consider_location='city')
+        # Initalize DataFrame for matching power plants
+        matched = gpd.GeoDataFrame(
+            columns = [
+                'carrier','chp','el_capacity','th_capacity', 'scenario','geometry',
+                'MaStRNummer', 'source', 'voltage_level'])
 
-    # Match plants from NEP list using plz,
-    # neglecting the capacity
-    matched, mastr, nep = match_nep_no_chp(
-        nep, mastr, matched, consider_location='plz', consider_carrier=False,
-        consider_capacity=False)
+        # Match combustion plants of a certain carrier from NEP list
+        # using PLZ and capacity
+        matched, mastr, nep = match_nep_no_chp(
+            nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False)
 
-    # Match plants from NEP list using city,
-    # neglecting the capacity
-    matched, mastr, nep = match_nep_no_chp(
-        nep, mastr, matched, consider_location='city', consider_carrier=False,
-        consider_capacity=False)
+        # Match plants from NEP list using city and capacity
+        matched, mastr, nep = match_nep_no_chp(
+            nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False,
+            consider_location='city')
 
-    # Match remaining plants from NEP using the federal state
-    matched, mastr, nep = match_nep_no_chp(
-        nep, mastr, matched, buffer_capacity=0.1,
-        consider_location='federal_state', consider_carrier=False)
+        # Match plants from NEP list using plz,
+        # neglecting the capacity
+        matched, mastr, nep = match_nep_no_chp(
+            nep, mastr, matched, consider_location='plz', consider_carrier=False,
+            consider_capacity=False)
+
+        # Match plants from NEP list using city,
+        # neglecting the capacity
+        matched, mastr, nep = match_nep_no_chp(
+            nep, mastr, matched, consider_location='city', consider_carrier=False,
+            consider_capacity=False)
+
+        # Match remaining plants from NEP using the federal state
+        matched, mastr, nep = match_nep_no_chp(
+            nep, mastr, matched, buffer_capacity=0.1,
+            consider_location='federal_state', consider_carrier=False)
+
+        # Match remaining plants from NEP using the federal state
+        matched, mastr, nep = match_nep_no_chp(
+            nep, mastr, matched, buffer_capacity=0.7,
+            consider_location='federal_state', consider_carrier=False)
+
+        print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
+        print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
 
 
