@@ -16,7 +16,9 @@ import geopandas as gpd
 
 from egon.data import db
 import egon.data.config
-from egon.data.metadata import context, licenses_datenlizenz_deutschland
+from egon.data.metadata import (context,
+                                licenses_datenlizenz_deutschland,
+                                meta_metadata)
 from egon.data.datasets import Dataset
 
 Base = declarative_base()
@@ -537,14 +539,7 @@ def add_metadata_vg250_gem_pop():
                 "comment": "Imported data",
             }
         ],
-        "metaMetadata": {
-            "metadataVersion": "OEP-1.4.0",
-            "metadataLicense": {
-                "name": "CC0-1.0",
-                "title": "Creative Commons Zero v1.0 Universal",
-                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
-            },
-        },
+        "metaMetadata": meta_metadata(),
     }
 
     meta_json = "'" + json.dumps(metadata) + "'"
