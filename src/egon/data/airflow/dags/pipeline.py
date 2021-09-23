@@ -7,7 +7,8 @@ import airflow
 import importlib_resources as resources
 
 from egon.data.datasets import database
-from egon.data.datasets.chp import Chp, ChpEtrago
+from egon.data.datasets.chp import Chp
+from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
