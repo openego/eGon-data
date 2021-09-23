@@ -179,7 +179,7 @@ def add_metadata():
             },
             "sources": [
                 {
-                    "title": ("OpenStreetMap Data Extracts (Geofabrik)"),
+                    "title": "OpenStreetMap Data Extracts (Geofabrik)",
                     "description": (
                         "Full data extract of OpenStreetMap data for defined "
                         "spatial extent at ''referenceDate''"
