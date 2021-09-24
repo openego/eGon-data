@@ -210,6 +210,8 @@ Changed
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
 * Use random seed from CLI parameters for CHP and society prognosis functions
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
+* Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
+  `#423 <https://github.com/openego/eGon-data/issues/423>`_
 
 Bug fixes
 ---------
