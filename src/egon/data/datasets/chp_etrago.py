@@ -38,9 +38,9 @@ def insert():
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
         FROM {sources['chp_table']['schema']}.
-        {sources['chp_table']['schema']} a
+        {sources['chp_table']['table']} a
         JOIN {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['schema']}  b
+        {sources['district_heating_areas']['table']}  b
         ON a.district_heating_area_id = b.area_id
         JOIN grid.egon_etrago_bus c
         ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
@@ -101,10 +101,10 @@ def insert():
 
 
     chp_industry = db.select_dataframe(
-        """
+        f"""
         SELECT electrical_bus_id, gas_bus_id, carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity
-        FROM {sources['chp_table']['schema']}.{sources['chp_table']['schema']}
+        FROM {sources['chp_table']['schema']}.{sources['chp_table']['table']}
         WHERE scenario='eGon2035'
         AND district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, gas_bus_id, carrier)
