@@ -6,8 +6,8 @@ openstreetmap:
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      path: "germany-210101.osm.pbf"
-      path_testmode: "schleswig-holstein-210101.osm.pbf"
+      file: "germany-210101.osm.pbf"
+      file_testmode: "schleswig-holstein-210101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -23,7 +23,7 @@ vg250:
     source:
       url: "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
     target:
-      path: "vg250_01-01.geo84.shape.ebenen.zip"
+      file: "vg250_01-01.geo84.shape.ebenen.zip"
   processed:
     schema: "boundaries"
     file_table_map:
@@ -38,7 +38,7 @@ zensus_population:
     source:
       url: "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
     target:
-      path: "csv_Bevoelkerung_100m_Gitter.zip"
+      file: "csv_Bevoelkerung_100m_Gitter.zip"
   processed:
     schema: "society"
     table: "destatis_zensus_population_per_ha"
@@ -51,7 +51,7 @@ zensus_misc:
         - "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
   processed:
     schema: "society"
-    path_table_map:
+    file_table_map:
       "csv_Haushalte_100m_Gitter.zip": "egon_destatis_zensus_household_per_ha"
       "csv_Gebaeude_100m_Gitter.zip": "egon_destatis_zensus_building_per_ha"
       "csv_Wohnungen_100m_Gitter.zip": "egon_destatis_zensus_apartment_per_ha"
@@ -312,7 +312,7 @@ power_plants:
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
-      mv_grid_districts: "grid.egon_mv_grid_district"
+      egon_mv_grid_district: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
   target:
@@ -362,7 +362,7 @@ map_zensus_grid_districts:
     zensus_population:
       schema: 'society'
       table: 'destatis_zensus_population_per_ha'
-    mv_grid_districts:
+    egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
   targets:
@@ -398,9 +398,18 @@ electrical_load_curves_cts:
       schema: 'demand'
       table: 'egon_etrago_electricity_cts'
 
+hh_demand_profiles:
+  sources:
+    household_electricity_demand_profiles:
+      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
+      path: "household_electricity_demand_profiles_100k.hdf5"
+
+    zensus_household_types:
+      path: "Zensus2011_Personen.csv"
+
 map_mvgrid_vg250:
   sources:
-    mv_grid_districts:
+    egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
     federal_states:
@@ -416,9 +425,9 @@ solar_rooftop:
     solar_feedin:
       schema: 'supply'
       table: 'egon_era5_renewable_feedin'
-    mv_grid_districts:
+    egon_mv_grid_district:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
     weather_cells:
       schema: 'supply'
       table: 'egon_era5_weather_cells'
@@ -519,7 +528,7 @@ etrago_heat:
     solar_thermal_feedin:
       schema: 'supply'
       table: 'egon_era5_renewable_feedin'
-    mv_grid_districts:
+    egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
     heat_demand:
@@ -615,7 +624,7 @@ electrical_load_curves_industry:
     hvmv_substation:
       schema: 'grid'
       table: 'egon_hvmv_substation'
-    mv_grid_districts:
+    egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
   targets:
@@ -653,7 +662,7 @@ chp_location:
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
     mastr_location: 'location_elec_generation_raw.csv'
-    mv_grid_districts: 'grid.egon_mv_grid_district'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
     etrago_buses:
       table: 'egon_pf_hv_bus'

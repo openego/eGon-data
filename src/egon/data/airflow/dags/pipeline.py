@@ -3,6 +3,7 @@ import os
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
+import airflow
 import importlib_resources as resources
 
 from egon.data.datasets import database
@@ -17,37 +18,40 @@ from egon.data.datasets.electricity_demand import (
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
+from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
-from egon.data.datasets.renewable_feedin import RenewableFeedin
-from egon.data.datasets.osm import OpenStreetMap
-from egon.data.datasets.osmtgmod import Osmtgmod
+from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
-from egon.data.datasets.re_potential_areas import re_potential_area_setup
-from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
+from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
+    houseprofiles_in_census_cells
+from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
+from egon.data.datasets.re_potential_areas import re_potential_area_setup
+from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
+from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-from egon.data.datasets.gas_prod import GasProduction
-import airflow
 
-import egon.data.importing.zensus as import_zs
+from egon.data.datasets.gas_prod import GasProduction
+from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
+
+import egon.data.importing.zensus as import_
 import egon.data.importing.gas_grid as gas_grid
-import egon.data.processing.power2gas as power2gas
-import egon.data.processing.substation as substation
+import egon.data.importing.zensus as import_zs
+import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
-import egon.data.processing.calculate_dlr as dlr
-
-
+import egon.data.processing.power2gas as power2gas
+import egon.data.processing.substation as substation
 
 from egon.data import db
 
@@ -124,19 +128,24 @@ with airflow.DAG(
     # Combine Zensus and VG250 data
     zensus_vg250 = ZensusVg250(
         dependencies=[vg250, population_import])
+    zensus_inside_ger = tasks["zensus_vg250.inside-germany"]
+
+    zensus_inside_ger >> zensus_misc_import
 
     # DemandRegio data import
     demandregio = DemandRegio(dependencies=[
         setup, vg250, scenario_parameters, data_bundle])
-    demandregio_demand_cts_ind = tasks['demandregio.insert-cts-ind-demands']
-
+    demandregio_demand_cts_ind = tasks["demandregio.insert-cts-ind-demands"]
 
     # Society prognosis
-    society_prognosis = SocietyPrognosis(dependencies=[
-        demandregio,
-        zensus_vg250,
-        population_import,
-        zensus_misc_import])
+    society_prognosis = SocietyPrognosis(
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            population_import,
+            zensus_misc_import
+        ]
+    )
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -162,8 +171,7 @@ with airflow.DAG(
 
     # setting etrago input tables
 
-    setup_etrago = EtragoSetup(
-        dependencies=[setup])
+    setup_etrago = EtragoSetup(dependencies=[setup])
     etrago_input_data = tasks["etrago_setup.create-tables"]
 
     # Retrieve MaStR data
@@ -196,7 +204,6 @@ with airflow.DAG(
         autocommit=True,
     )
 
-
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
@@ -204,10 +211,14 @@ with airflow.DAG(
     vg250_clean_and_prepare >> ehv_substation_extraction
 
     # osmTGmod ehv/hv grid model generation
-    osmtgmod = Osmtgmod(dependencies=[osm_download,
-                                         ehv_substation_extraction,
-                                         hvmv_substation_extraction,
-                                         setup_etrago])
+    osmtgmod = Osmtgmod(
+        dependencies=[
+            osm_download,
+            ehv_substation_extraction,
+            hvmv_substation_extraction,
+            setup_etrago,
+        ]
+    )
     osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
     osmtgmod_substation = tasks["osmtgmod_substation"]
@@ -234,8 +245,8 @@ with airflow.DAG(
 
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_Germany = HeatDemandImport(
-        dependencies=[vg250, scenario_parameters, zensus_vg250])
-
+        dependencies=[vg250, scenario_parameters, zensus_vg250]
+    )
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
@@ -261,12 +272,17 @@ with airflow.DAG(
         python_callable=gas_areas.create_voronoi,
     )
 
-    gas_grid_insert_data  >> create_gas_polygons
+    gas_grid_insert_data >> create_gas_polygons
     vg250_clean_and_prepare >> create_gas_polygons
-    
+
     # Gas prod import
     gas_production_insert_data = GasProduction(
-        dependencies=[create_gas_polygons])
+        dependencies=[create_gas_polygons]
+    )
+
+    # Insert industrial gas demand
+    industrial_gas_demand = IndustrialGasDemand( 
+     dependencies=[create_gas_polygons]) 
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -286,7 +302,9 @@ with airflow.DAG(
     vg250_clean_and_prepare >> landuse_extraction
 
     # Import weather data
-    weather_data = WeatherData(dependencies=[setup, scenario_parameters, vg250])
+    weather_data = WeatherData(
+        dependencies=[setup, scenario_parameters, vg250]
+    )
     download_weather_data = tasks["era5.download-era5"]
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
@@ -297,9 +315,9 @@ with airflow.DAG(
 
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
-        dependencies=[heat_demand_Germany, scenario_parameters])
-    import_district_heating_areas = tasks[
-        "district_heating_areas.demarcation"]
+        dependencies=[heat_demand_Germany, scenario_parameters]
+    )
+    import_district_heating_areas = tasks["district_heating_areas.demarcation"]
 
     zensus_misc_import >> import_district_heating_areas
 
@@ -318,27 +336,27 @@ with airflow.DAG(
     )
 
     map_zensus_grid_districts = tasks["zensus_mv_grid_districts.mapping"]
-    
-    # Distribute electrical CTS demands to zensus grid
-    cts_electricity_demand_annual = CtsElectricityDemand(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            heat_demand_Germany,
-            etrago_input_data,
-            household_electricity_demand_annual,
-            zensus_mv_grid_districts
-        ]
-    )
-
-    elec_cts_demands_zensus = tasks[
-        'electricity_demand.distribute-cts-demands']
-
 
     # Map federal states to mv_grid_districts
     vg250_mv_grid_districts = Vg250MvGridDistricts(
         dependencies=[vg250, mv_grid_districts]
     )
+
+    # Distribute electrical CTS demands to zensus grid
+    cts_electricity_demand_annual = CtsElectricityDemand(
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            zensus_mv_grid_districts,
+            heat_demand_Germany,
+            etrago_input_data,
+            household_electricity_demand_annual,
+        ]
+    )
+
+    elec_cts_demands_zensus = tasks[
+        "electricity_demand.distribute-cts-demands"
+    ]
 
     # Power plants
     power_plants = PowerPlants(
@@ -369,10 +387,37 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
+    mv_hh_electricity_load_2035 = PythonOperator(
+        task_id="MV-hh-electricity-load-2035",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon2035", 2035, "0.0.0"],
+        op_kwargs={"drop_table": True},
+    )
+
+    mv_hh_electricity_load_2050 = PythonOperator(
+        task_id="MV-hh-electricity-load-2050",
+        python_callable=mv_grid_district_HH_electricity_load,
+        op_args=["eGon100RE", 2050, "0.0.0"],
+    )
+
+    hh_demand = hh_demand_setup(dependencies=[
+        vg250_clean_and_prepare,
+        zensus_misc_import,
+        map_zensus_grid_districts,
+        zensus_inside_ger,
+        demandregio,
+    ],
+        tasks=(houseprofiles_in_census_cells,
+               mv_hh_electricity_load_2035,
+               mv_hh_electricity_load_2050,)
+    )
+    hh_demand.insert_into(pipeline)
+    householdprofiles_in_cencus_cells = tasks["hh_demand_profiles.houseprofiles-in-census-cells"]
+    mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
+    mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
+
     # CHP locations
-    chp = Chp(
-        dependencies=[mv_grid_districts,
-                      mastr_data])
+    chp = Chp(dependencies=[mv_grid_districts, mastr_data])
 
     chp_locations_nep = tasks["chp.insert-chp-egon2035"]
     chp_heat_bus = tasks["chp.assign-heat-bus"]
@@ -383,13 +428,20 @@ with airflow.DAG(
 
     # Heat supply
     heat_supply = HeatSupply(
-        dependencies=[data_bundle, zensus_mv_grid_districts,
-                      district_heating_areas, power_plants,
-                      zensus_mv_grid_districts, chp])
+        dependencies=[
+            data_bundle,
+            zensus_mv_grid_districts,
+            district_heating_areas,
+            power_plants,
+            zensus_mv_grid_districts,
+            chp,
+        ]
+    )
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[heat_supply, mv_grid_districts, setup_etrago])
+        dependencies=[heat_supply, mv_grid_districts, setup_etrago]
+    )
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]
