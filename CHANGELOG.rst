@@ -130,7 +130,8 @@ Added
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
 * Add random seed to CLI parameters
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
-
+* Distribute wind offshore capacities
+  `#329 <https://github.com/openego/eGon-data/issues/329>`_
 
 Changed
 -------
