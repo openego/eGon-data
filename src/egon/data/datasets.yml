@@ -312,7 +312,7 @@ power_plants:
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
-      mv_grid_districts: "grid.mv_grid_districts"
+      mv_grid_districts: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
   target:
@@ -364,7 +364,7 @@ map_zensus_grid_districts:
       table: 'destatis_zensus_population_per_ha'
     mv_grid_districts:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
   targets:
     map:
       schema: 'boundaries'
@@ -402,7 +402,7 @@ map_mvgrid_vg250:
   sources:
     mv_grid_districts:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan_union'
@@ -478,7 +478,7 @@ heat_supply:
       table: 'egon_map_mvgriddistrict_vg250'
     mv_grids:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
     map_dh:
       schema: 'demand'
       table: 'egon_map_zensus_district_heating_areas'
@@ -506,7 +506,7 @@ etrago_heat:
       table: 'egon_map_zensus_district_heating_areas'
     mv_grids:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
     district_heating_supply:
       schema: 'supply'
       table: 'egon_district_heating'
@@ -521,7 +521,7 @@ etrago_heat:
       table: 'egon_era5_renewable_feedin'
     mv_grid_districts:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
     heat_demand:
       schema: 'demand'
       table: 'egon_peta_heat'
@@ -617,7 +617,7 @@ electrical_load_curves_industry:
       table: 'egon_hvmv_substation'
     mv_grid_districts:
       schema: 'grid'
-      table: 'mv_grid_districts'
+      table: 'egon_mv_grid_district'
   targets:
     osm_load:
       schema: 'demand'
@@ -653,7 +653,7 @@ chp_location:
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
     mastr_location: 'location_elec_generation_raw.csv'
-    mv_grid_districts: 'grid.mv_grid_districts'
+    mv_grid_districts: 'grid.egon_mv_grid_district'
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
     etrago_buses:
       table: 'egon_pf_hv_bus'
