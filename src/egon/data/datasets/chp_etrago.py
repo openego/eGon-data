@@ -34,7 +34,7 @@ def insert():
 
     chp_dh = db.select_dataframe(
         f"""
-        SELECT electrical_bus_id, gas_bus_id, a.carrier,
+        SELECT electrical_bus_id, ch4_bus_id, a.carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
         FROM {sources['chp_table']['schema']}.
@@ -51,7 +51,7 @@ def insert():
         AND c.carrier = 'central_heat'
         AND NOT district_heating_area_id IS NULL
         GROUP BY (
-            electrical_bus_id, gas_bus_id, a.carrier, c.bus_id)
+            electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
         """)
 
     # Create geodataframes for CHP plants
@@ -60,7 +60,7 @@ def insert():
             index=chp_dh.index,
             data={
                 'scn_name': 'eGon2035',
-                'bus0': chp_dh.gas_bus_id,
+                'bus0': chp_dh.ch4_bus_id,
                 'bus1': chp_dh.electrical_bus_id,
                 'p_nom': chp_dh.el_capacity,
                 'carrier': 'urban central gas CHP'
@@ -82,7 +82,7 @@ def insert():
             index=chp_dh.index,
             data={
                 'scn_name': 'eGon2035',
-                'bus0': chp_dh.gas_bus_id,
+                'bus0': chp_dh.ch4_bus_id,
                 'bus1': chp_dh.heat_bus_id,
                 'p_nom': chp_dh.th_capacity,
                 'carrier': 'urban central gas CHP heat'
@@ -102,12 +102,12 @@ def insert():
 
     chp_industry = db.select_dataframe(
         f"""
-        SELECT electrical_bus_id, gas_bus_id, carrier,
+        SELECT electrical_bus_id, ch4_bus_id, carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity
         FROM {sources['chp_table']['schema']}.{sources['chp_table']['table']}
         WHERE scenario='eGon2035'
         AND district_heating_area_id IS NULL
-        GROUP BY (electrical_bus_id, gas_bus_id, carrier)
+        GROUP BY (electrical_bus_id, ch4_bus_id, carrier)
         """)
 
     chp_el_ind = link_geom_from_buses(
@@ -115,7 +115,7 @@ def insert():
             index=chp_industry.index,
             data={
                 'scn_name': 'eGon2035',
-                'bus0': chp_industry.gas_bus_id,
+                'bus0': chp_industry.ch4_bus_id,
                 'bus1': chp_industry.electrical_bus_id,
                 'p_nom': chp_industry.el_capacity,
                 'carrier': 'industrial gas CHP'
