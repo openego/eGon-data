@@ -8,6 +8,7 @@ import importlib_resources as resources
 
 from egon.data.datasets import database
 from egon.data.datasets.chp import Chp
+from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
@@ -408,16 +409,6 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
-    # CHP locations
-    chp = Chp(dependencies=[mv_grid_districts, mastr_data])
-
-    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
-    chp_heat_bus = tasks["chp.assign-heat-bus"]
-
-    nep_insert_data >> chp_locations_nep
-    create_gas_polygons >> chp_locations_nep
-    import_district_heating_areas >> chp_locations_nep
-
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=mv_grid_district_HH_electricity_load,
@@ -452,13 +443,44 @@ with airflow.DAG(
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
+    # Industry
+
+    industrial_sites = MergeIndustrialSites(
+        dependencies=[setup, vg250_clean_and_prepare]
+    )
+
+    demand_curves_industry = IndustrialDemandCurves(
+        dependencies=[
+            define_mv_grid_districts,
+            industrial_sites,
+            demandregio_demand_cts_ind,
+            osm,
+            landuse_extraction,
+        ]
+    )
+
+    # Electrical loads to eTraGo
+
+    electrical_load_etrago = ElectricalLoadEtrago(
+        dependencies=[demand_curves_industry, cts_electricity_demand_annual]
+    )
+
+    # CHP locations
+    chp = Chp(dependencies=[mv_grid_districts, mastr_data, industrial_sites])
+
+    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
+    chp_heat_bus = tasks["chp.assign-heat-bus"]
+
+    nep_insert_data >> chp_locations_nep
+    create_gas_polygons >> chp_locations_nep
+    import_district_heating_areas >> chp_locations_nep
+
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[
             data_bundle,
             zensus_mv_grid_districts,
             district_heating_areas,
-            power_plants,
             zensus_mv_grid_districts,
             chp,
         ]
@@ -472,34 +494,8 @@ with airflow.DAG(
     heat_etrago_buses = tasks["heat_etrago.buses"]
     heat_etrago_supply = tasks["heat_etrago.supply"]
 
-    # Industry
-
-    industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
-    )
-
-    demand_curves_industry = IndustrialDemandCurves(
-        dependencies=[
-            define_mv_grid_districts,
-            industrial_sites,
-            demandregio_demand_cts_ind,
-            osm,
-            landuse_extraction,
-        ]
-    )
-    
-    # DSM 
-    components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
-                        demand_curves_industry,
-                        osmtgmod_pypsa])
-
-    # Electrical loads to eTraGo
-
-    electrical_load_etrago = ElectricalLoadEtrago(
-        dependencies=[demand_curves_industry, cts_electricity_demand_annual]
-    )
-
+    # CHP to eTraGo
+    chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     #HTS
     # etrago_input_data >> heat_etrago_buses
