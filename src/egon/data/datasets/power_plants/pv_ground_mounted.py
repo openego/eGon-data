@@ -990,7 +990,7 @@ def insert():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
-
+        
         pv_rora = pv_rora[pv_rora['installed capacity in kW']>0]
         pv_agri = pv_agri[pv_agri['installed capacity in kW']>0]
         pv_per_distr = pv_per_distr[pv_per_distr['installed capacity in kW']>0]
@@ -1189,3 +1189,4 @@ def insert():
         pv_parks_100RE = gpd.GeoDataFrame()
 
     return pv_parks, pv_parks_100RE
+

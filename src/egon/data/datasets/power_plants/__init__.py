@@ -16,7 +16,6 @@ from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
@@ -24,8 +23,8 @@ import egon.data.config
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
-import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
+
 
 Base = declarative_base()
 
@@ -56,11 +55,18 @@ class PowerPlants(Dataset):
             tasks=(
                 create_tables,
                 insert_hydro_biomass,
+<<<<<<< HEAD
                  wind_onshore.insert,
                  pv_ground_mounted.insert,
                  pv_rooftop_per_mv_grid,
                  wind_offshore.insert               
                  assign_weather_data.weather_id,
+=======
+                wind_onshore.insert,
+                pv_ground_mounted.insert,
+                pv_rooftop_per_mv_grid,
+                assign_weather_data.weather_id,
+>>>>>>> features/#330-assign-weather-cell-id-to-power-plants
             ),
         )
 
