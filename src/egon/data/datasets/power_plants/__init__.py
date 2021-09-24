@@ -12,7 +12,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import numpy as np
@@ -28,7 +27,6 @@ from egon.data.datasets.power_plants.conventional import (
 )
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
-import egon.data.datasets.power_plants.conventional as conventional
 
 Base = declarative_base()
 
@@ -685,7 +683,7 @@ def allocate_conventional_non_chp_power_plants():
         # Load grid district polygons
         mv_grid_districts = db.select_geodataframe(
             f"""
-        SELECT * FROM {cfg['sources']['mv_grid_districts']}
+        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
         """,
             epsg=4326,
         )
