@@ -253,6 +253,7 @@ def extension_BE():
 def extension_SH():
     extension_per_federal_state('SchleswigHolstein', EgonChp)
 
+# Add one task per federal state for small CHP extension
 if config.settings()[
         "egon-data"]["--dataset-boundary"] == 'Schleswig-Holstein':
     extension = extension_SH
@@ -267,7 +268,7 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.1.dev",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(create_tables, insert_chp_egon2035,
                    assign_heat_bus,
