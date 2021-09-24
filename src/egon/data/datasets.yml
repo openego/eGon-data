@@ -470,7 +470,7 @@ heat_supply:
       table: 'egon_district_heating_areas'
     chp:
       schema: 'supply'
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
@@ -681,7 +681,7 @@ chp_location:
       table: 'vg250_lan'
   targets:
     chp_table:
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
       schema: 'supply'
     mastr_conventional_without_chp:
       table: 'egon_mastr_conventional_without_chp'
@@ -690,7 +690,7 @@ chp_location:
 chp_etrago:
   sources:
     chp_table:
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
       schema: 'supply'
     district_heating_areas:
       schema: 'demand'

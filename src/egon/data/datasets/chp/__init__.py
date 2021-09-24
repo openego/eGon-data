@@ -1,6 +1,7 @@
 
 """
-The central module containing all code dealing with chp.
+The central module containing all code dealing with combined heat and power
+(CHP) plants.
 """
 
 import pandas as pd
@@ -20,7 +21,7 @@ from shapely.ops import nearest_points
 Base = declarative_base()
 
 class EgonChp(Base):
-    __tablename__ = "egon_chp"
+    __tablename__ = "egon_chp_plants"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, Sequence("chp_seq"), primary_key=True)
     sources = Column(JSONB)
@@ -44,11 +45,6 @@ class EgonMaStRConventinalWithoutChp(Base):
     carrier = Column(String)
     el_capacity = Column(Float)
     geometry = Column(Geometry("POINT", 4326))
-
-
-
-
-
 
 
 def create_tables():

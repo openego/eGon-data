@@ -321,7 +321,8 @@ def extension_district_heating(
         f"""
         SELECT el_capacity, th_capacity, voltage_level, b.area_id
         FROM
-        supply.egon_chp a,
+        {targets['chp_table']['schema']}.
+        {targets['chp_table']['table']} a,
         {sources['district_heating_areas']['schema']}.
         {sources['district_heating_areas']['table']} b
         WHERE a.scenario = 'eGon2035'
