@@ -308,6 +308,7 @@ power_plants:
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
+      mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
@@ -316,6 +317,7 @@ power_plants:
       buses_data: "osmtgmod_results.bus_data"
       power_plants: 'supply.egon_power_plants'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
   target:
       table: 'egon_power_plants'
       schema: 'supply'
@@ -655,10 +657,11 @@ etrago_electricity:
       schema: 'grid'
       table: 'egon_etrago_load_timeseries'
 
+
 chp_location:
   sources:
     list_conv_pp:
-      table: 'nep_2021_conv_powerplants'
+      table: 'egon_nep_2021_conventional_powerplants'
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
     mastr_location: 'location_elec_generation_raw.csv'

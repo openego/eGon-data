@@ -146,6 +146,8 @@ Added
   `#329 <https://github.com/openego/eGon-data/issues/329>`_
 * Assign weather cell id to weather dependant power plants
   `#330 <https://github.com/openego/eGon-data/issues/330>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
