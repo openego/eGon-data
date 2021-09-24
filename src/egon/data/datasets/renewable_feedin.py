@@ -16,7 +16,7 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(wind, pv, solar_thermal),
             )
