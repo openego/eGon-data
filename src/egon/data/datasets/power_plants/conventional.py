@@ -8,12 +8,6 @@ import pandas as pd
 import geopandas as gpd
 import egon.data.config
 from egon.data import db, config
-from egon.data.datasets.power_plants import (
-    assign_voltage_level,
-    EgonPowerPlants,
-)
-from egon.data.datasets.chp.match_nep import map_carrier_matching
-from sqlalchemy.orm import sessionmaker
 
 
 def select_nep_power_plants(carrier):
@@ -194,8 +188,6 @@ def match_nep_no_chp(
 
     for ET in nep["carrier"].unique():
 
-        map_carrier = map_carrier_matching()
-
         for index, row in nep[
             (nep["carrier"] == ET) & (nep["postcode"] != "None")
         ].iterrows():
@@ -238,7 +230,7 @@ def match_nep_no_chp(
 
             # Set capacity constraint if selected
             if consider_carrier:
-                selected = selected[selected.carrier.isin(map_carrier[ET])]
+                selected = selected[selected.carrier==ET]
 
             # If a plant could be matched, add this to matched
             if len(selected) > 0:
@@ -265,149 +257,3 @@ def match_nep_no_chp(
 
     return matched, mastr, nep
 
-
-def allocate_conventional_non_chp_power_plants():
-
-    carrier = ["oil", "gas", "other_non_renewable"]
-
-    cfg = egon.data.config.datasets()["power_plants"]
-
-    for carrier in carrier:
-
-        nep = select_nep_power_plants(carrier)
-        mastr = select_no_chp_combustion_mastr(carrier)
-
-        # Assign voltage level to MaStR
-        mastr["voltage_level"] = assign_voltage_level(
-            mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1), cfg
-        )
-
-        # Initalize DataFrame for matching power plants
-        matched = gpd.GeoDataFrame(
-            columns=[
-                "carrier",
-                "el_capacity",
-                "scenario",
-                "geometry",
-                "MaStRNummer",
-                "source",
-                "voltage_level",
-            ]
-        )
-
-        # Match combustion plants of a certain carrier from NEP list
-        # using PLZ and capacity
-        matched, mastr, nep = match_nep_no_chp(
-            nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False
-        )
-
-        # Match plants from NEP list using city and capacity
-        matched, mastr, nep = match_nep_no_chp(
-            nep,
-            mastr,
-            matched,
-            buffer_capacity=0.1,
-            consider_carrier=False,
-            consider_location="city",
-        )
-
-        # Match plants from NEP list using plz,
-        # neglecting the capacity
-        matched, mastr, nep = match_nep_no_chp(
-            nep,
-            mastr,
-            matched,
-            consider_location="plz",
-            consider_carrier=False,
-            consider_capacity=False,
-        )
-
-        # Match plants from NEP list using city,
-        # neglecting the capacity
-        matched, mastr, nep = match_nep_no_chp(
-            nep,
-            mastr,
-            matched,
-            consider_location="city",
-            consider_carrier=False,
-            consider_capacity=False,
-        )
-
-        # Match remaining plants from NEP using the federal state
-        matched, mastr, nep = match_nep_no_chp(
-            nep,
-            mastr,
-            matched,
-            buffer_capacity=0.1,
-            consider_location="federal_state",
-            consider_carrier=False,
-        )
-
-        # Match remaining plants from NEP using the federal state
-        matched, mastr, nep = match_nep_no_chp(
-            nep,
-            mastr,
-            matched,
-            buffer_capacity=0.7,
-            consider_location="federal_state",
-            consider_carrier=False,
-        )
-
-        print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
-        print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
-
-        matched.crs = "EPSG:4326"
-
-        # Assign bus_id
-        # Load grid district polygons
-        mv_grid_districts = db.select_geodataframe(
-            f"""
-        SELECT * FROM {cfg['sources']['mv_grid_districts']}
-        """,
-            epsg=4326,
-        )
-
-        ehv_grid_districts = db.select_geodataframe(
-            f"""
-        SELECT * FROM {cfg['sources']['ehv_voronoi']}
-        """,
-            epsg=4326,
-        )
-
-        # Perform spatial joins for plants in ehv and hv level seperately
-        power_plants_hv = gpd.sjoin(
-            matched[matched.voltage_level >= 3],
-            mv_grid_districts[["bus_id", "geom"]],
-            how="left",
-        ).drop(columns=["index_right"])
-        power_plants_ehv = gpd.sjoin(
-            matched[matched.voltage_level < 3],
-            ehv_grid_districts[["bus_id", "geom"]],
-            how="left",
-        ).drop(columns=["index_right"])
-
-        # Combine both dataframes
-        power_plants = pd.concat([power_plants_hv, power_plants_ehv])
-
-        # Delete existing CHP in the target table
-        db.execute_sql(
-            f""" DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
-            WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-            AND scenario='eGon2035';"""
-        )
-
-        # Insert into target table
-        session = sessionmaker(bind=db.engine())()
-        for i, row in power_plants.iterrows():
-            entry = EgonPowerPlants(
-                sources={"el_capacity": row.source},
-                source_id={"MastrNummer": row.MaStRNummer},
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                voltage_level=row.voltage_level,
-                bus_id=row.bus_id,
-                scenario=row.scenario,
-                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-            )
-            session.add(entry)
-        session.commit()
