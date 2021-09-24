@@ -86,7 +86,9 @@ def datasets(config_file=None):
         package_path = egon.data.__path__[0]
         config_file = os.path.join(package_path, "datasets.yml")
 
-    return yaml.load(open(config_file), Loader=yaml.SafeLoader)
+    with open(config_file) as f:
+        return yaml.load(f, Loader=yaml.SafeLoader)
+
 
 def set_numexpr_threads():
     """Sets maximum threads used by NumExpr
