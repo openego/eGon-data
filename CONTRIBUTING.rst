@@ -297,6 +297,8 @@ Alternatively, you can write the table comment directly to a JSON file by
 
   psql -h <HOST> -p <PORT> -d <DB> -U <USER> -c "\COPY (SELECT obj_description('<SCHEMA>.<TABLE>'::regclass)) TO '/PATH/TO/FILE.json';"
 
+For bulk export of all DB's table comments you can use `this script
+<https://gist.github.com/nesnoj/86145999eca8182f43c2bca36bcc984f>`_.
 Please verify that your metadata string is in compliance with the OEP Metadata
 standard version 1.4.1 using the `OMI tool
 <https://github.com/OpenEnergyPlatform/omi>`_ (tool is shipped with eGon-data):
@@ -305,9 +307,12 @@ standard version 1.4.1 using the `OMI tool
 
   omi translate -f oep-v1.4 metadata_file.json
 
-Omit the field `id` in your string as it will be automatically set at the
-end of the pipeline (you can ignore the OMI's message `metadata string does
-not contain an id` ), but fix all other errors.
+If your metadata string is correct, OMI puts the keys in the correct order and
+prints the full string (use `-o` option for export).
+
+You may omit the fields `id` and `publicationDate` in your string as it will be
+automatically set at the end of the pipeline but you're required to set them to
+some value for a complete validation with OMI.
 
 For previous discussions, you may want to check
 `PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
