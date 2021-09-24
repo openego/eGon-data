@@ -142,8 +142,12 @@ Added
   `#262 <https://github.com/openego/eGon-data/issues/262>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
+* Distribute wind offshore capacities
+  `#329 <https://github.com/openego/eGon-data/issues/329>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
+
+
 
 
 Changed
