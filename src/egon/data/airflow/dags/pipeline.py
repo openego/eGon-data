@@ -51,6 +51,11 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
+import egon.data.processing.gas_areas as gas_areas
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
+
+
 
 from egon.data import db
 
@@ -202,6 +207,7 @@ with airflow.DAG(
         postgres_conn_id="egon_data",
         autocommit=True,
     )
+
 
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
@@ -451,7 +457,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(

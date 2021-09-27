@@ -210,6 +210,8 @@ Changed
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
 * Replace 'gas' carrier with 'CH4' and 'H2' carriers
   `#436 <https://github.com/openego/eGon-data/issues/436>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
 
 Bug fixes
 ---------
