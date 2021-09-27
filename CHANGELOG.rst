@@ -137,6 +137,8 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
