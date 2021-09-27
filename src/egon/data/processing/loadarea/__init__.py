@@ -17,7 +17,7 @@ Base = declarative_base()
 class OsmPolygonUrban(Base):
     __tablename__ = "osm_landuse"
     __table_args__ = {"schema": "openstreetmap"}
-    gid = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     osm_id = Column(Integer)
     name = Column(String)
     sector = Column(Integer)

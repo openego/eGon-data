@@ -16,17 +16,17 @@ __author__ = "Ludee"
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_sta_tiny_buffer CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_sta_tiny_buffer AS
 	SELECT
-		vg.gid ::integer,
+		vg.id ::integer,
 		vg.bez ::text,
 		vg.gf ::double precision,
 		ST_AREA(ST_TRANSFORM(vg.geometry, 3035)) / 10000 ::double precision AS area_ha,
 		ST_MULTI(ST_BUFFER(ST_TRANSFORM(vg.geometry,3035),-0.001)) ::geometry(MultiPolygon,3035) AS geometry
 	FROM	boundaries.vg250_sta AS vg
-	ORDER BY vg.gid;
+	ORDER BY vg.id;
 
 -- index (id)
-CREATE UNIQUE INDEX  	vg250_sta_tiny_buffer_gid_idx
-		ON	boundaries.vg250_sta_tiny_buffer (gid);
+CREATE UNIQUE INDEX  	vg250_sta_tiny_buffer_id_idx
+		ON	boundaries.vg250_sta_tiny_buffer (id);
 
 -- index GIST (geometry)
 CREATE INDEX  	vg250_sta_tiny_buffer_geometry_idx
@@ -78,12 +78,12 @@ SELECT obj_description('boundaries.vg250_sta_tiny_buffer' ::regclass) ::json;
 -- 1. country - error geometry
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_sta_invalid_geometry CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_sta_invalid_geometry AS 
-	SELECT	sub.gid AS gid,
+	SELECT	sub.id AS id,
 		sub.error AS error,
 		sub.error_reason AS error_reason,
 		ST_SETSRID(location(ST_IsValidDetail(sub.geometry)),3035) ::geometry(Point,3035) AS geometry
 	FROM	(
-		SELECT	source.gid AS gid,				-- PK
+		SELECT	source.id AS id,				-- PK
 			ST_IsValid(source.geometry) AS error,
 			reason(ST_IsValidDetail(source.geometry)) AS error_reason,
 			source.geometry AS geometry
@@ -91,9 +91,9 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_sta_invalid_geometry AS
 		) AS sub
 	WHERE	sub.error = FALSE;
 
--- index (gid)
-CREATE UNIQUE INDEX  	vg250_sta_invalid_geometry_gid_idx
-		ON	boundaries.vg250_sta_invalid_geometry (gid);
+-- index (id)
+CREATE UNIQUE INDEX  	vg250_sta_invalid_geometry_id_idx
+		ON	boundaries.vg250_sta_invalid_geometry (id);
 
 -- index GIST (geometry)
 CREATE INDEX  	vg250_sta_invalid_geometry_geometry_idx
@@ -114,7 +114,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_invalid_geometry IS '{
 	"Extend": "Germany; Nationalstaat (sta) - country (cntry)" }],
     "Description": ["Errors in country border"],
     "Column":[
-        {"Name": "gid", "Description": "Unique identifier", "Unit": " " },
+        {"Name": "id", "Description": "Unique identifier", "Unit": " " },
         {"Name": "error", "Description": "Error", "Unit": " " },
 	{"Name": "error_reason", "Description": "Error reason", "Unit": " " },
 	{"Name": "geometry", "Description": "geometry", "Unit": " " } ],
@@ -138,7 +138,7 @@ SELECT obj_description('boundaries.vg250_sta_invalid_geometry' ::regclass) ::jso
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_sta_union CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_sta_union AS
 	SELECT
-		'1' ::integer AS gid,
+		'1' ::integer AS id,
 		'Bundesrepublik' ::text AS bez,
 		ST_AREA(un.geometry) / 10000 ::double precision AS area_ha,
 		un.geometry ::geometry(MultiPolygon,3035) AS geometry
@@ -147,9 +147,9 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_sta_union AS
 		WHERE	vg.bez = 'Bundesrepublik'
 		) AS un;
 
--- index (gid)
-CREATE UNIQUE INDEX  	vg250_sta_union_gid_idx
-		ON	boundaries.vg250_sta_union (gid);
+-- index (id)
+CREATE UNIQUE INDEX  	vg250_sta_union_id_idx
+		ON	boundaries.vg250_sta_union (id);
 
 -- index GIST (geometry)
 CREATE INDEX  	vg250_sta_union_geometry_idx
@@ -171,7 +171,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_union IS '{
     "Description": ["geometry union"],
     "Column":[
         {"Name": "reference_date", "Description": "Reference Year", "Unit": " " },
-        {"Name": "gid", "Description": "Unique identifier", "Unit": " " },
+        {"Name": "id", "Description": "Unique identifier", "Unit": " " },
         {"Name": "bez", "Description": "Bezeichnung der Verwaltungseinheit", "Unit": " " },
 	{"Name": "area_ha", "Description": "Area in ha", "Unit": "ha" },
 	{"Name": "geometry", "Description": "geometry", "Unit": " " } ],
@@ -195,7 +195,7 @@ SELECT obj_description('boundaries.vg250_sta_union' ::regclass) ::json;
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_sta_bbox CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_sta_bbox AS
 	SELECT
-		'1' ::integer AS gid,
+		'1' ::integer AS id,
 		'Bundesrepublik' ::text AS bez,
 		ST_AREA(un.geometry) / 10000 ::double precision AS area_ha,
 		un.geometry ::geometry(Polygon,3035) AS geometry
@@ -203,9 +203,9 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_sta_bbox AS
 		FROM	boundaries.vg250_sta_union AS vg
 		) AS un;
 
--- index (gid)
-CREATE UNIQUE INDEX  	vg250_sta_bbox_gid_idx
-		ON	boundaries.vg250_sta_bbox (gid);
+-- index (id)
+CREATE UNIQUE INDEX  	vg250_sta_bbox_id_idx
+		ON	boundaries.vg250_sta_bbox (id);
 
 -- index GIST (geometry)
 CREATE INDEX  	vg250_sta_bbox_geometry_idx
@@ -227,7 +227,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_bbox IS '{
     "Description": ["geometry bounding box"],
     "Column":[
         {"Name": "reference_date", "Description": "Reference Year", "Unit": " " },
-        {"Name": "gid", "Description": "Unique identifier", "Unit": " " },
+        {"Name": "id", "Description": "Unique identifier", "Unit": " " },
         {"Name": "bez", "Description": "Bezeichnung der Verwaltungseinheit", "Unit": " " },
 	{"Name": "area_ha", "Description": "Area in ha", "Unit": "ha" },
 	{"Name": "geometry", "Description": "geometry", "Unit": " " } ],
@@ -264,7 +264,7 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_lan_union AS
 	GROUP BY lan.ags_0,lan.gen
 	ORDER BY lan.ags_0;
 
--- index (gid)
+-- index (id)
 CREATE UNIQUE INDEX  	vg250_lan_union_ags_0_idx
 		ON	boundaries.vg250_lan_union (ags_0);
 
@@ -313,7 +313,7 @@ SELECT obj_description('boundaries.vg250_lan_union' ::regclass) ::json;
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_krs_area CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_krs_area AS
 	SELECT
-		vg.gid ::integer AS id,
+		vg.id ::integer AS id,
 		vg.gen ::text AS gen,
 		vg.bez ::text AS bez,
 		vg.nuts ::varchar(5) AS nuts,
@@ -322,9 +322,9 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_krs_area AS
 		ST_AREA(vg.geometry) / 10000 ::double precision AS area_ha,
 		ST_TRANSFORM(vg.geometry,3035) AS geometry
 	FROM	boundaries.vg250_krs AS vg
-	ORDER BY vg.gid;
+	ORDER BY vg.id;
 
--- index (gid)
+-- index (id)
 CREATE UNIQUE INDEX  	vg250_krs_area_id_idx
 		ON	boundaries.vg250_krs_area (id);
 
@@ -378,7 +378,7 @@ CREATE SEQUENCE IF NOT EXISTS boundaries.vg250_gem_valid_id;
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_gem_valid CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_gem_valid AS
 	SELECT	nextval('boundaries.vg250_gem_valid_id') AS id,
-		vg.gid ::integer AS old_id,
+		vg.id ::integer AS old_id,
 		vg.gen ::text AS gen,
 		vg.bez ::text AS bez,
 		vg.bem ::text AS bem,
@@ -389,7 +389,7 @@ CREATE MATERIALIZED VIEW		boundaries.vg250_gem_valid AS
 		ST_MakeValid((ST_DUMP(ST_TRANSFORM(vg.geometry,3035))).geom) ::geometry(Polygon,3035) AS geometry
 	FROM	boundaries.vg250_gem AS vg
 	WHERE	gf = '4' -- Without water
-	ORDER BY vg.gid;
+	ORDER BY vg.id;
 
 -- index (id)
 CREATE UNIQUE INDEX  	vg250_gem_valid_id_idx
