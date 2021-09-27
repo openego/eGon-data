@@ -26,7 +26,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 run_pypsa_eur_sec, neighbor_reduction
@@ -63,7 +63,7 @@ def run_pypsa_eur_sec():
         )
 
         file_to_copy = os.path.join(
-            __path__[0] + "/importing" + "/pypsaeursec/pypsaeur/Snakefile"
+            __path__[0] + "/datasets" + "/pypsaeursec/pypsaeur/Snakefile"
         )
 
         subproc.run(["cp", file_to_copy, pypsa_eur_repos])
@@ -112,7 +112,7 @@ def run_pypsa_eur_sec():
 
     with open(filepath / "Snakefile", "w") as snakefile:
         snakefile.write(
-            resources.read_text("egon.data.importing.pypsaeursec",
+            resources.read_text("egon.data.datasets.pypsaeursec",
                                 "Snakefile")
         )
 
