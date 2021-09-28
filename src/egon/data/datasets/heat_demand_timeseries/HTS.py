@@ -15,8 +15,13 @@ import egon.data.datasets.era5 as era
 
 from sqlalchemy.ext.declarative import declarative_base
 
-#from disaggregator import config, data, spatial, temporal, plot
-# from disaggregator import temporal
+try:
+    from disaggregator import config, data, spatial, temporal, plot
+except:
+    print(
+         "Could not import disaggregator. "
+        "Please run task 'demandregio-installation'")
+
 from math import ceil
 
 
