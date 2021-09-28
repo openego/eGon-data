@@ -205,14 +205,16 @@ def dsm_cts_ind_processing():
             # identify bus per industrial site
             curves_bus = identify_bus(load_curves, demand_area)
             curves_bus.index = curves_bus["id"].astype(int)
-            
+
             # initialize dataframe to be returned
 
-            ts = pd.DataFrame(data=curves_bus['subst_id'], index=curves_bus["id"].astype(int))
+            ts = pd.DataFrame(
+                data=curves_bus["subst_id"], index=curves_bus["id"].astype(int)
+            )
             ts["scenario_name"] = scenario
             curves_bus.drop({"id", "subst_id"}, axis=1, inplace=True)
             ts["p_set"] = curves_bus.values.tolist()
-            
+
             # add subsector to relate to Schmidt's tables afterwards
             ts["application"] = demand_area["subsector"]
 
@@ -233,8 +235,8 @@ def dsm_cts_ind_processing():
 
             # relate calculated timeseries (dsm) to Schmidt's industrial sites
 
-            applications = np.unique(schmidt['application'])
-            dsm = pd.DataFrame(dsm[dsm['application'].isin(applications)])
+            applications = np.unique(schmidt["application"])
+            dsm = pd.DataFrame(dsm[dsm["application"].isin(applications)])
 
             # initialize dataframe to be returned
 
@@ -419,13 +421,19 @@ def dsm_cts_ind_processing():
             geom_col="geom",
             epsg=4326,
         )
-        
+
         # copy relevant information from original buses to DSM-buses
-        dsm_buses['index']=dsm_buses.index
-        originals=original_buses[original_buses['bus_id'].isin(np.unique(dsm_buses['original_bus']))]
-        dsm_buses=originals.merge(dsm_buses, left_on=['bus_id','scn_name'], right_on=['original_bus','scn_name'])
-        dsm_buses.index = dsm_buses['index']
-        dsm_buses.drop(['bus_id', 'index'], axis=1, inplace=True)
+        dsm_buses["index"] = dsm_buses.index
+        originals = original_buses[
+            original_buses["bus_id"].isin(np.unique(dsm_buses["original_bus"]))
+        ]
+        dsm_buses = originals.merge(
+            dsm_buses,
+            left_on=["bus_id", "scn_name"],
+            right_on=["original_bus", "scn_name"],
+        )
+        dsm_buses.index = dsm_buses["index"]
+        dsm_buses.drop(["bus_id", "index"], axis=1, inplace=True)
 
         # new bus_ids for DSM-buses
         max_id = original_buses["bus_id"].max()
@@ -536,7 +544,7 @@ def dsm_cts_ind_processing():
         insert_buses["x"] = dsm_buses["x"]
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
-        insert_buses.set_geometry("geom", inplace=True) 
+        insert_buses.set_geometry("geom", inplace=True)
 
         # insert into database
         insert_buses.to_postgis(
@@ -545,7 +553,7 @@ def dsm_cts_ind_processing():
             schema=targets["bus"]["schema"],
             if_exists="append",
             index=False,
-            dtype = {'geom':'geometry'}
+            dtype={"geom": "geometry"},
         )
 
         # dsm_links
@@ -564,7 +572,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["link"]["schema"],
             if_exists="append",
-            index=False
+            index=False,
         )
 
         insert_links_timeseries = pd.DataFrame(index=dsm_links.index)
@@ -580,7 +588,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["link_timeseries"]["schema"],
             if_exists="append",
-            index=False
+            index=False,
         )
 
         # dsm_stores
@@ -598,7 +606,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["store"]["schema"],
             if_exists="append",
-            index=False
+            index=False,
         )
 
         insert_stores_timeseries = pd.DataFrame(index=dsm_stores.index)
@@ -614,7 +622,7 @@ def dsm_cts_ind_processing():
             con=db.engine(),
             schema=targets["store_timeseries"]["schema"],
             if_exists="append",
-            index=False
+            index=False,
         )
 
     def delete_dsm_entries(carrier):
