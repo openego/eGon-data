@@ -241,7 +241,7 @@ def dsm_cts_ind_processing():
             # initialize dataframe to be returned
 
             dsm.rename(
-                columns={"scenario_name": "scn_name", "bus_id_id": "bus"},
+                columns={"scenario_name": "scn_name", "bus_id": "bus"},
                 inplace=True,
             )
 
