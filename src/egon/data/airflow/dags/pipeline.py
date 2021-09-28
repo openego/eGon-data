@@ -60,6 +60,11 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
+import egon.data.processing.gas_areas as gas_areas
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
+
+
 
 from egon.data import db
 from egon.data.config import set_numexpr_threads
@@ -446,7 +451,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(

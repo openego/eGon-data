@@ -133,20 +133,20 @@ def create_tables():
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.industrial_sites CASCADE;"""
     )
-
+    
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"""
     )
-
+    
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"""
     )
-
+    
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"""
     )
-
-
+   
+    
     # Drop tables and sequences before recreating them
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
@@ -615,6 +615,7 @@ def merge_inputs():
     )
     
     # Insert data from Hotmaps
+
     db.execute_sql(
         f"""INSERT INTO {sites_table}
               (companyname, address, subsector, wz, geom)
