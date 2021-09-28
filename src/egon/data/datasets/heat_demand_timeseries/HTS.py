@@ -15,9 +15,10 @@ import egon.data.datasets.era5 as era
 
 from sqlalchemy.ext.declarative import declarative_base
 
-from disaggregator import config, data, spatial, temporal, plot
-
+#from disaggregator import config, data, spatial, temporal, plot
+# from disaggregator import temporal
 from math import ceil
+
 
 from egon.data.datasets import Dataset
 
