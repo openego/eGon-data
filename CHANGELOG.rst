@@ -207,8 +207,6 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
-* Adjust file path for industrial sites import
-  `#397 <https://github.com/openego/eGon-data/issues/418>`_
 * Rename columns gid to id
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
 * Limit number of parallel proccesses per task
@@ -221,6 +219,8 @@ Changed
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
   * Use random seed from CLI parameters for CHP and society prognosis functions
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
 
 Bug fixes
 ---------
