@@ -19,15 +19,6 @@ from zipfile import ZipFile
 from geoalchemy2.shape import from_shape
 from pathlib import Path
 
-#class GasGrid(Dataset):
-#     def __init__(self, dependencies):
-#         super().__init__(
-#             name="GasGrid",
-#             version="0.0.0.dev",
-#             dependencies=dependencies,
-#             tasks=(etrago_input_data, download_data_bundle, osmtgmod_pypsa),
-#         )
-
 
 def download_SciGRID_gas_data():
     """

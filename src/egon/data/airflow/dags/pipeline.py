@@ -254,9 +254,6 @@ with airflow.DAG(
     )
 
     # Gas grid import
-#    gas_grid_insert_data = GasGrid(
-#        dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
-#    )
     gas_grid_insert_data = PythonOperator(
         task_id="insert-gas-grid",
         python_callable=gas_grid.insert_gas_data,
