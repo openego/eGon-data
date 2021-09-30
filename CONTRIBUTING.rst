@@ -312,9 +312,11 @@ prints the full string (use `-o` option for export).
 
 You may omit the fields `id` and `publicationDate` in your string as it will be
 automatically set at the end of the pipeline but you're required to set them to
-some value for a complete validation with OMI.
+some value for a complete validation with OMI. For datasets published on the
+OEP `id` will be the URL which points to the table, it will follow the pattern
+`https://openenergy-platform.org/dataedit/view/SCHEMA/TABLE`.
 
-For previous discussions, you may want to check
+For previous discussions on metadata, you may want to check
 `PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
 
 Helpers
