@@ -142,6 +142,19 @@ import egon.data.config as config
     show_default=True,
 )
 
+@click.option(
+    "--random-seed",
+    default=42,
+    metavar="RANDOM_SEED",
+    help=(
+        "Random seed used by some tasks in the pipeline to ensure "
+        " deterministic behaviour. All published results in the eGon project "
+        " will be created with the default value so keep it if you want to "
+        " make sure to get the same results."
+    ),
+    show_default=True,
+)
+
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):

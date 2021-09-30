@@ -64,6 +64,7 @@ def district_heating():
     None.
 
     """
+    sources = config.datasets()['heat_supply']['sources']
     targets = config.datasets()['heat_supply']['targets']
 
     db.execute_sql(
@@ -80,6 +81,28 @@ def district_heating():
         targets['district_heating_supply']['table'],
         schema=targets['district_heating_supply']['schema'],
         con=db.engine(), if_exists='append')
+
+    # Compare target value with sum of distributed heat supply
+    df_check = db.select_dataframe(
+        f"""
+        SELECT a.carrier,
+        (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
+        FROM {targets['district_heating_supply']['schema']}.
+        {targets['district_heating_supply']['table']} a,
+        {sources['scenario_capacities']['schema']}.
+        {sources['scenario_capacities']['table']} b
+        WHERE a.scenario = 'eGon2035'
+        AND b.scenario_name = 'eGon2035'
+        AND b.carrier = CONCAT('urban_central_', a.carrier)
+        GROUP BY (a.carrier,  b.capacity);
+        """)
+    # If the deviation is > 1%, throw an error
+    assert (df_check.deviation.abs().max() < 1), (
+        f"""Unexpected deviation between target value and distributed
+        heat supply: {df_check}
+        """
+        )
+
 
 def individual_heating():
     """ Insert supply for individual heating
@@ -111,7 +134,7 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(create_tables,
                 district_heating, individual_heating, potential_germany),

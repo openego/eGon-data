@@ -109,6 +109,7 @@ packages are required too. Right now these are:
 * `postgis <https://postgis.net/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install postgis`.
+
 * osmTGmod resp. osmosis needs `java <https://www.java.com/>`_.
   On recent Ubuntu version you can install it via
   :code:`sudo apt install default-jre` and
@@ -126,6 +127,9 @@ packages are required too. Right now these are:
 * `gdal <https://gdal.org/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install gdal-bin`.
+
+* curl is required.
+  You can install it via :code:`sudo apt install curl`.
 
 * To download ERA5 weather data you need to register at the CDS
   registration page and install the CDS API key as described

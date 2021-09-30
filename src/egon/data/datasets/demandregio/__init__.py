@@ -2,7 +2,6 @@
 adjusting data from demandRegio
 
 """
-import os
 import pandas as pd
 import numpy as np
 import egon.data.config
@@ -14,6 +13,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install)
 from egon.data.datasets import Dataset
+from pathlib import Path
 
 try:
     from disaggregator import data, spatial, config
@@ -40,7 +40,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(clone_and_install, create_tables,
                    insert_society_data, insert_household_demand,
@@ -168,14 +168,19 @@ def insert_cts_ind_wz_definitions():
     engine = db.engine()
 
     for sector in source['wz_definitions']:
+
+        file_path = (
+            Path(".") /
+            "data_bundle_egon_data" /
+            "WZ_definition" /
+            source['wz_definitions'][sector])
+
         if sector=='CTS':
             delimiter=';'
         else:
             delimiter=','
         df = pd.read_csv(
-            os.path.join(
-                "data_bundle_egon_data/wz_definition/",
-                source['wz_definitions'][sector]),
+            file_path,
             delimiter=delimiter,
             header=None).rename(
                 {0: 'wz', 1: 'definition'},
@@ -233,10 +238,14 @@ def adjust_cts_ind_nep(ec_cts_ind, sector):
     sources = (egon.data.config.datasets()
                ['demandregio_cts_ind_demand']['sources'])
 
+    file_path = (
+        Path(".") /
+        "data_bundle_egon_data" /
+        "nep2035_version2021" /
+        sources['new_consumers_2035'])
+
     # get data from NEP per federal state
-    new_con = pd.read_csv(os.path.join(
-        "data_bundle_egon_data/nep2035_version2021/",
-        sources['new_consumers_2035']),
+    new_con = pd.read_csv(file_path,
         delimiter=';', decimal=',', index_col=0)
 
     # match nuts3 regions to federal states
