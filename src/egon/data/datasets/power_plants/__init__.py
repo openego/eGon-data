@@ -592,6 +592,15 @@ def allocate_conventional_non_chp_power_plants():
     carrier = ["oil", "gas", "other_non_renewable"]
 
     cfg = egon.data.config.datasets()["power_plants"]
+    
+    # Delete existing CHP in the target table
+    db.execute_sql(
+         f""" 
+         DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
+         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
+         AND scenario='eGon2035';
+         """
+     )
 
     for carrier in carrier:
 
@@ -709,13 +718,6 @@ def allocate_conventional_non_chp_power_plants():
 
         # Combine both dataframes
         power_plants = pd.concat([power_plants_hv, power_plants_ehv])
-
-        # Delete existing CHP in the target table
-        db.execute_sql(
-            f""" DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
-            WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-            AND scenario='eGon2035';"""
-        )
 
         # Insert into target table
         session = sessionmaker(bind=db.engine())()
