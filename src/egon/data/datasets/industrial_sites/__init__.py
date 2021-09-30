@@ -452,9 +452,12 @@ def schmidt_to_postgres():
         "sources"
     ]["schmidt"]
 
-    input_file = os.path.join(
-        os.path.dirname(__file__), schmidt_sources["path"]
-    )
+    input_file = (
+            Path(".") /
+            "data_bundle_egon_data" /
+            "industrial_sites" /
+            schmidt_sources["path"])
+
     engine = db.engine()
 
     db.execute_sql(
@@ -612,6 +615,7 @@ def merge_inputs():
     )
     
     # Insert data from Hotmaps
+
     db.execute_sql(
         f"""INSERT INTO {sites_table}
               (companyname, address, subsector, wz, geom)
