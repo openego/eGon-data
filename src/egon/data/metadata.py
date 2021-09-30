@@ -216,7 +216,7 @@ def generate_resource_fields_from_sqla_model(model):
             for col in model.__table__.columns]
 
 
-def generate_resource_fields_from_db_table(schema, table):
+def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
     """ Generate a template for the resource fields for metadata from a
     database table.
 
@@ -229,7 +229,9 @@ def generate_resource_fields_from_db_table(schema, table):
     Examples
     --------
     >>> from egon.data.metadata import generate_resource_fields_from_db_table
-    >>> resources = generate_resource_fields_from_db_table('openstreetmap', 'osm_point')
+    ... resources = generate_resource_fields_from_db_table(
+    ...     'openstreetmap', 'osm_point', ['geom', 'geom_centroid']
+    >>> )
 
     Parameters
     ----------
@@ -237,6 +239,10 @@ def generate_resource_fields_from_db_table(schema, table):
         The target table's database schema
     table : str
         Database table on which to put the given comment
+    geom_columns : list of str
+        Names of all geometry columns in the table. This is required to return
+        Geometry data type for those columns as SQL Alchemy does not recognize
+        them correctly. Defaults to ['geom'].
 
     Returns
     -------
@@ -244,10 +250,11 @@ def generate_resource_fields_from_db_table(schema, table):
         Resource fields
     """
 
-    # TODO: Workaround as SQLA does not recognize Geometry columns. This only
-    #  covers the dtype of a specific column 'geom', how can this be done in a
-    #  generic way?
-    ischema_names['geom'] = Geometry
+    # handle geometry columns
+    if geom_columns is None:
+        geom_columns = ['geom']
+    for col in geom_columns:
+        ischema_names[col] = Geometry
 
     table = Table(table,
                   MetaData(),
