@@ -275,6 +275,105 @@ be saved locally, please use `CWD` to store the data. This is achieved by using
   filepath = Path(".") / "filename.csv"
   urlretrieve("https://url/to/file", filepath)
 
+Add metadata
+------------
+
+Add a metadata for every dataset you create for describing data with
+machine-readable information. Adhere to the OEP Metadata v1.4.1, you can
+follow
+`the example <https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/latest/example.json>`_
+to understand how the fields are used. Field are described in detail in the
+`Open Energy Metadata Description`_.
+
+You can obtain the metadata string from a table you created in SQL via
+
+.. code-block:: sql
+
+  SELECT obj_description('<SCHEMA>.<TABLE>'::regclass);
+
+Alternatively, you can write the table comment directly to a JSON file by
+
+.. code-block:: bash
+
+  psql -h <HOST> -p <PORT> -d <DB> -U <USER> -c "\COPY (SELECT obj_description('<SCHEMA>.<TABLE>'::regclass)) TO '/PATH/TO/FILE.json';"
+
+For bulk export of all DB's table comments you can use `this script
+<https://gist.github.com/nesnoj/86145999eca8182f43c2bca36bcc984f>`_.
+Please verify that your metadata string is in compliance with the OEP Metadata
+standard version 1.4.1 using the `OMI tool
+<https://github.com/OpenEnergyPlatform/omi>`_ (tool is shipped with eGon-data):
+
+.. code-block:: bash
+
+  omi translate -f oep-v1.4 metadata_file.json
+
+If your metadata string is correct, OMI puts the keys in the correct order and
+prints the full string (use `-o` option for export).
+
+You may omit the fields `id` and `publicationDate` in your string as it will be
+automatically set at the end of the pipeline but you're required to set them to
+some value for a complete validation with OMI. For datasets published on the
+OEP `id` will be the URL which points to the table, it will follow the pattern
+`https://openenergy-platform.org/dataedit/view/SCHEMA/TABLE`.
+
+For previous discussions on metadata, you may want to check
+`PR 176 <https://github.com/openego/eGon-data/pull/176>`_.
+
+Helpers
+^^^^^^^
+
+There are some **licence templates** provided in :py:mod:`egon.data.metadata`
+you can make use of for fields 11.4 and 12 of the
+`Open Energy Metadata Description`_. Also, there's a template for the
+**metaMetadata** (field 16).
+
+There are some functions to quickly generate a template for the
+**resource fields** (field 14.6.1 in `Open Energy Metadata Description`_) from
+a SQLA table class or a DB table. This might be especially helpful if your
+table has plenty of columns.
+
+* From SQLA table class:
+  :py:func:`egon.data.metadata.generate_resource_fields_from_sqla_model`
+* From database table:
+  :py:func:`egon.data.metadata.generate_resource_fields_from_db_table`
+
+Sources
+^^^^^^^
+
+The **sources** (field 11) are the most important parts of the metadata which
+need to be filled manually. You may also add references to tables in eGon-data
+(e.g. from an upstream task) so you don't have to list all original sources
+again. Make sure you include all upstream attribution requirements.
+
+The following example uses various input datasets whose attribution must be
+retained:
+
+.. code-block:: python
+
+  "sources": [
+      {
+          "title": "eGo^n - Medium voltage grid districts",
+          "description": (
+              "Medium-voltage grid districts describe the area supplied by "
+              "one MV grid. Medium-voltage grid districts are defined by one "
+              "polygon that represents the supply area. Each MV grid district "
+              "is connected to the HV grid via a single substation."
+          ),
+          "path": "https://openenergy-platform.org/dataedit/view/"
+                  "grid/egon_mv_grid_district", # "id" in the source dataset
+          "licenses": [
+              license_odbl(attribution=
+                  "© OpenStreetMap contributors, 2021; "
+                  "© Statistische Ämter des Bundes und der Länder, 2014; "
+                  "© Statistisches Bundesamt, Wiesbaden 2015; "
+                  "(Daten verändert)"
+              )
+          ]
+      },
+      # more sources...
+  ]
+
+.. _Open Energy Metadata Description: https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md
 
 Adjusting test mode data
 ------------------------
@@ -301,7 +400,7 @@ How to document Python scripts
 
 Use docstrings to document your Python code. Note that PEP 8 also
 contains a `section <PEP8-docstrings_>`_ on docstrings and that there is
-a whole `PEP <PEP257_>`_ dedicated to docstring convetions. Try to
+a whole `PEP <PEP257_>`_ dedicated to docstring conventions. Try to
 adhere to both of them.
 Additionally every Python script needs to contain a header describing
 the general functionality and objective and including information on

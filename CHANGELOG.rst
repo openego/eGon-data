@@ -148,10 +148,12 @@ Added
   `#330 <https://github.com/openego/eGon-data/issues/330>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Add example metadata for OSM, VG250 and Zensus VG250.
+  Add metadata templates for licences, context and some helper
+  functions. Extend docs on how to create metadata for tables.
+  `#139 <https://github.com/openego/eGon-data/issues/139>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
-
-
 
 
 Changed
@@ -215,18 +217,20 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
-
 * Rename columns gid to id
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
 * Limit number of parallel proccesses per task
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Remove upper version limit of pandas
   `#383 <https://github.com/openego/eGon-data/issues/383>`_
-<<<<<<< HEAD
 * Use random seed from CLI parameters for CHP and society prognosis functions
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
 * Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
+* Rename columns subst_id to bus_id
+  `#335 <https://github.com/openego/eGon-data/issues/335>`_
 * Replace 'gas' carrier with 'CH4' and 'H2' carriers
   `#436 <https://github.com/openego/eGon-data/issues/436>`_
 
