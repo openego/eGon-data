@@ -327,8 +327,6 @@ you can make use of for fields 11.4 and 12 of the
 `Open Energy Metadata Description`_. Also, there's a template for the
 **metaMetadata** (field 16).
 
-[Some content about **sources** will be inserted here]
-
 There are some functions to quickly generate a template for the
 **resource fields** (field 14.6.1 in `Open Energy Metadata Description`_) from
 a SQLA table class or a DB table. This might be especially helpful if your
@@ -338,6 +336,42 @@ table has plenty of columns.
   :py:func:`egon.data.metadata.generate_resource_fields_from_sqla_model`
 * From database table:
   :py:func:`egon.data.metadata.generate_resource_fields_from_db_table`
+
+Sources
+^^^^^^^
+
+The **sources** (field 11) are the most important parts of the metadata which
+need to be filled manually. You may also add references to tables in eGon-data
+(e.g. from an upstream task) so you don't have to list all original sources
+again. Make sure you include all upstream attribution requirements.
+
+The following example uses various input datasets whose attribution must be
+retained:
+
+.. code-block:: python
+
+  "sources": [
+      {
+          "title": "eGo^n - Medium voltage grid districts",
+          "description": (
+              "Medium-voltage grid districts describe the area supplied by "
+              "one MV grid. Medium-voltage grid districts are defined by one "
+              "polygon that represents the supply area. Each MV grid district "
+              "is connected to the HV grid via a single substation."
+          ),
+          "path": "https://openenergy-platform.org/dataedit/view/"
+                  "grid/egon_mv_grid_district", # "id" in the source dataset
+          "licenses": [
+              license_odbl(attribution=
+                  "© OpenStreetMap contributors, 2021; "
+                  "© Statistische Ämter des Bundes und der Länder, 2014; "
+                  "© Statistisches Bundesamt, Wiesbaden 2015; "
+                  "(Daten verändert)"
+              )
+          ]
+      },
+      # more sources...
+  ]
 
 .. _Open Energy Metadata Description: https://github.com/OpenEnergyPlatform/oemetadata/blob/develop/metadata/v141/metadata_key_description.md
 
