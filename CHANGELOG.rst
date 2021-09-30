@@ -273,3 +273,6 @@ Bug fixes
   `#432 <https://github.com/openego/eGon-data/issues/432>`_
 * Add curl to prerequisites in the docs
   `#440 <https://github.com/openego/eGon-data/issues/440>`_
+* Replace NAN by 0 to avoid empty p_set column in DB
+  `#414 <https://github.com/openego/eGon-data/issues/414>`_
+
