@@ -206,6 +206,15 @@ Changed
   `#169 <https://github.com/openego/eGon-data/issues/169>`_
 * Remove upper version limit of pandas
   `#383 <https://github.com/openego/eGon-data/issues/383>`_
+* Use random seed from CLI parameters for CHP and society prognosis functions
+  `#351 <https://github.com/openego/eGon-data/issues/351>`_
+* Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
+  `#423 <https://github.com/openego/eGon-data/issues/423>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
+* Rename columns subst_id to bus_id
+  `#335 <https://github.com/openego/eGon-data/issues/335>`_
+
 
 Bug fixes
 ---------
@@ -262,3 +271,5 @@ Bug fixes
   `#349 <https://github.com/openego/eGon-data/issues/349>`_
 * Bump MV grid district version no
   `#432 <https://github.com/openego/eGon-data/issues/432>`_
+* Add curl to prerequisites in the docs
+  `#440 <https://github.com/openego/eGon-data/issues/440>`_

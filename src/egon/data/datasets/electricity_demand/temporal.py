@@ -16,7 +16,7 @@ class EgonEtragoElectricityCts(Base):
     __tablename__ = "egon_etrago_electricity_cts"
     __table_args__ = {"schema": "demand"}
 
-    subst_id = Column(Integer, primary_key=True)
+    bus_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
     q_set = Column(ARRAY(Float))
@@ -113,7 +113,7 @@ def calc_load_curves_cts(scenario):
     Returns
     -------
     pandas.DataFrame
-        Demand timeseries of cts per substation id
+        Demand timeseries of cts per bus id
 
     """
 
@@ -138,7 +138,7 @@ def calc_load_curves_cts(scenario):
     demands_zensus = db.select_dataframe(
             f"""SELECT a.zensus_population_id, a.demand,
             b.vg250_nuts3 as nuts3,
-            c.subst_id
+            c.bus_id
             FROM {sources['zensus_electricity']['schema']}.
             {sources['zensus_electricity']['table']} a
             INNER JOIN
@@ -168,10 +168,10 @@ def calc_load_curves_cts(scenario):
 
     # Calculate shares of cts branches per hvmv substation
     share_subst = demands_zensus.drop(
-        'demand', axis=1).groupby('subst_id').mean()
+        'demand', axis=1).groupby('bus_id').mean()
 
     # Calculate cts annual demand per hvmv substation
-    annual_demand_subst = demands_zensus.groupby('subst_id').demand.sum()
+    annual_demand_subst = demands_zensus.groupby('bus_id').demand.sum()
 
     # Return electrical load curves per hvmv substation
     return calc_load_curve(share_subst, annual_demand_subst)
