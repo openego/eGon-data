@@ -13,7 +13,7 @@ import xarray as xr
 import rioxarray
 from shapely.geometry import Point
 import psycopg2
-
+from pathlib import Path
 
 def Calculate_DLR():
     """Calculate DLR and assign values to each line in the db
@@ -24,10 +24,14 @@ def Calculate_DLR():
 
     """
 
-    weather_info_path = "cutouts/europe-2011-era5/201101.nc"
+    weather_info_path = (
+        Path(".") / "cutouts" / "germany-2011-era5.nc")
+
     regions_shape_path = (
-        "data_bundle_egon_data/regions_dynamic_line_rating/Germany_regions.shp"
-    )
+        Path(".") /
+        "data_bundle_egon_data" /
+        "regions_dynamic_line_rating" /
+        "Germany_regions.shp")
 
     # Calculate hourly DLR per region
     dlr_hourly_dic, dlr_hourly = DLR_Regions(weather_info_path, regions_shape_path)
@@ -131,7 +135,8 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     regions = regions.sort_values(by=["Region"])
 
     # The data downloaded using Atlite is loaded in 'weather_data_raw'.
-    weather_data_raw = xr.open_mfdataset("cutouts/germany-2011-era5.nc")
+    path = (Path(".") / "cutouts" / "germany-2011-era5.nc")
+    weather_data_raw = xr.open_mfdataset(str(path))
     weather_data_raw = weather_data_raw.rio.write_crs(4326)
     weather_data_raw = weather_data_raw.rio.clip_box(
         minx=5.5,

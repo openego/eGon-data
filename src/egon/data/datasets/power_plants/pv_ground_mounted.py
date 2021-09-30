@@ -451,9 +451,9 @@ def insert():
         """
 
         # get MV grid districts
-        sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+        sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
         distr = gpd.GeoDataFrame.from_postgis(sql, con)
-        distr = distr.set_index("subst_id")
+        distr = distr.set_index("bus_id")
 
         # identify potential areas where there are no PV parks yet
         for index, pv in pv.iterrows():
@@ -910,9 +910,9 @@ def insert():
             # 1) eGon2035
 
             # get MV grid districts
-            sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+            sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
-            distr = distr.set_index("subst_id")
+            distr = distr.set_index("bus_id")
 
             # assign pv_per_distr-power to districts
             distr["capacity"] = pd.Series()
@@ -959,9 +959,9 @@ def insert():
             # 2) eGon100RE
 
             # get MV grid districts
-            sql = "SELECT subst_id, geom FROM grid.mv_grid_districts"
+            sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
             distr = gpd.GeoDataFrame.from_postgis(sql, con)
-            distr = distr.set_index("subst_id")
+            distr = distr.set_index("bus_id")
 
             # assign pv_per_distr-power to districts
             distr["capacity"] = pd.Series()
@@ -1006,7 +1006,7 @@ def insert():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
-        
+
         pv_rora = pv_rora[pv_rora['installed capacity in kW']>0]
         pv_agri = pv_agri[pv_agri['installed capacity in kW']>0]
         pv_per_distr = pv_per_distr[pv_per_distr['installed capacity in kW']>0]

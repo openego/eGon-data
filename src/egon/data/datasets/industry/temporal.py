@@ -3,13 +3,14 @@ timeseries data using demandregio
 
 """
 
-import pandas as pd
-import geopandas as gpd
-import egon.data.config
-from egon.data.datasets.electricity_demand.temporal import calc_load_curve
-from egon.data import db
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets.electricity_demand.temporal import calc_load_curve
+import egon.data.config
 
 Base = declarative_base()
 
@@ -42,9 +43,9 @@ def identify_bus(load_curves, demand_area):
 
     # Select mv griddistrict
     griddistrict = db.select_geodataframe(
-        f"""SELECT subst_id, geom FROM
-                {sources['mv_grid_districts']['schema']}.
-                {sources['mv_grid_districts']['table']}""",
+        f"""SELECT bus_id, geom FROM
+                {sources['egon_mv_grid_district']['schema']}.
+                {sources['egon_mv_grid_district']['table']}""",
         geom_col="geom",
         epsg=3035,
     )
@@ -85,7 +86,7 @@ def identify_bus(load_curves, demand_area):
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
         load_curves.T,
-        peak_bus[["subst_id", "id"]],
+        peak_bus[["bus_id", "id"]],
         left_index=True,
         right_on="id",
     )
@@ -126,11 +127,11 @@ def calc_load_curves_ind_osm(scenario):
 
     # Select industrial landuse polygons as demand area
     demand_area = db.select_geodataframe(
-        f"""SELECT gid, geom FROM
+        f"""SELECT id, geom FROM
                 {sources['osm_landuse']['schema']}.
                 {sources['osm_landuse']['table']}
                 WHERE sector = 3 """,
-        index_col="gid",
+        index_col="id",
         geom_col="geom",
         epsg=3035,
     )
@@ -164,7 +165,7 @@ def calc_load_curves_ind_osm(scenario):
     curves_da = identify_bus(load_curves, demand_area)
 
     # Group all load curves per bus
-    curves_bus = curves_da.drop(["id"], axis=1).fillna(0).groupby("subst_id").sum()
+    curves_bus = curves_da.drop(["id"], axis=1).fillna(0).groupby("bus_id").sum()
 
     # Initalize pandas.DataFrame for export to database
     load_ts_df = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
@@ -287,7 +288,7 @@ def calc_load_curves_ind_sites(scenario):
 
     # Group all load curves per bus and wz
     curves_bus = (
-        curves_da.fillna(0).groupby(["subst_id", "wz"]).sum().drop(["id"], axis=1)
+        curves_da.fillna(0).groupby(["bus_id", "wz"]).sum().drop(["id"], axis=1)
     )
 
     # Initalize pandas.DataFrame for pf table load timeseries
