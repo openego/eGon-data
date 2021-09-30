@@ -124,7 +124,7 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     # Select residential heat demand per mv grid district and federal state
     heat_per_mv = db.select_geodataframe(
         f"""
-        SELECT d.subst_id as bus_id, SUM(demand) as demand,
+        SELECT d.bus_id as bus_id, SUM(demand) as demand,
         c.vg250_lan as state, d.geom
         FROM {sources['heat_demand']['schema']}.
         {sources['heat_demand']['table']} a
@@ -133,17 +133,17 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         ON a.zensus_population_id = b.zensus_population_id
         JOIN {sources['map_vg250_grid']['schema']}.
         {sources['map_vg250_grid']['table']} c
-        ON b.subst_id = c.bus_id
+        ON b.bus_id = c.bus_id
         JOIN {sources['mv_grids']['schema']}.
         {sources['mv_grids']['table']} d
-        ON d.subst_id = c.bus_id
+        ON d.bus_id = c.bus_id
         WHERE scenario = '{scenario}'
         AND sector = 'residential'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
             FROM {sources['map_dh']['schema']}.{sources['map_dh']['table']}
             WHERE scenario = '{scenario}')
-        GROUP BY d.subst_id, vg250_lan, geom
+        GROUP BY d.bus_id, vg250_lan, geom
         """,
         index_col = 'bus_id')
 
@@ -191,7 +191,7 @@ def plot_heat_supply(resulting_capacities):
     mv_grids = db.select_geodataframe(
         """
         SELECT * FROM grid.egon_mv_grid_district
-        """, index_col='subst_id')
+        """, index_col='bus_id')
 
     for c in ['CHP', 'heat_pump']:
         mv_grids[c] = resulting_capacities[
