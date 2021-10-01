@@ -31,6 +31,7 @@ from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_distr
     houseprofiles_in_census_cells
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
+from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
@@ -281,8 +282,8 @@ with airflow.DAG(
     )
 
     # Insert industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand( 
-     dependencies=[create_gas_polygons]) 
+    industrial_gas_demand = IndustrialGasDemand(
+     dependencies=[create_gas_polygons])
 
     # Extract landuse areas from osm data set
     create_landuse_table = PythonOperator(
@@ -467,3 +468,14 @@ with airflow.DAG(
     electrical_load_etrago = ElectricalLoadEtrago(
         dependencies=[demand_curves_industry, cts_electricity_demand_annual]
     )
+
+    # Pumped hydro units
+
+    pumped_hydro = PumpedHydro(
+        dependencies=[setup,
+            mv_grid_districts,
+            mastr_data,
+            scenario_parameters,
+            scenario_capacities,
+            Vg250MvGridDistricts,
+            power_plants,])
