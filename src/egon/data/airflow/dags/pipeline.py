@@ -35,8 +35,11 @@ from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
+from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
+    houseprofiles_in_census_cells
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
+from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
@@ -47,13 +50,12 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 
-import egon.data.datasets.gas_grid as gas_grid
+from egon.data.datasets.gas_prod import GasProduction
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 
-import airflow
-
 import egon.data.importing.zensus as import_
+import egon.data.importing.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.gas_areas as gas_areas
@@ -427,19 +429,16 @@ with airflow.DAG(
         op_args=["eGon100RE", 2050, "0.0.0"],
     )
 
-    hh_demand = hh_demand_setup(
-        dependencies=[
-            vg250_clean_and_prepare,
-            zensus_misc_import,
-            map_zensus_grid_districts,
-            zensus_inside_ger,
-            demandregio,
-        ],
-        tasks=(
-            houseprofiles_in_census_cells,
-            mv_hh_electricity_load_2035,
-            mv_hh_electricity_load_2050,
-        ),
+    hh_demand = hh_demand_setup(dependencies=[
+        vg250_clean_and_prepare,
+        zensus_misc_import,
+        map_zensus_grid_districts,
+        zensus_inside_ger,
+        demandregio,
+    ],
+        tasks=(houseprofiles_in_census_cells,
+               mv_hh_electricity_load_2035,
+               mv_hh_electricity_load_2050,)
     )
     hh_demand.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
@@ -486,6 +485,7 @@ with airflow.DAG(
             data_bundle,
             zensus_mv_grid_districts,
             district_heating_areas,
+            power_plants,
             zensus_mv_grid_districts,
             chp,
         ]
