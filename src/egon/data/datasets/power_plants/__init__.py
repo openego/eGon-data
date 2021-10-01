@@ -17,7 +17,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 import egon.data.config
@@ -79,7 +79,7 @@ def create_tables():
     None.
     """
 
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
     engine = db.engine()
     db.execute_sql(
@@ -142,7 +142,7 @@ def select_target(carrier, scenario):
         Target values for carrier and scenario
 
     """
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
 
     return (
         pd.read_sql(
@@ -180,7 +180,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
         Power plants listed in MaStR with geometry inside German boundaries
 
     """
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
 
     if type(mastr) == pd.core.frame.DataFrame:
         # Drop entries without geometry for insert
@@ -236,7 +236,7 @@ def insert_biomass_plants(scenario):
     None.
 
     """
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
 
     # import target values from NEP 2021, scneario C 2035
     target = select_target("biomass", scenario)
@@ -318,7 +318,7 @@ def insert_hydro_plants(scenario):
     None.
 
     """
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
 
     # Map MaStR carriers to eGon carriers
     map_carrier = {
@@ -579,7 +579,7 @@ def insert_hydro_biomass():
     None.
 
     """
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
@@ -596,7 +596,7 @@ def allocate_conventional_non_chp_power_plants():
 
     carrier = ["oil", "gas", "other_non_renewable"]
 
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
 
     for carrier in carrier:
 

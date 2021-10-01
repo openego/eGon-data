@@ -152,8 +152,6 @@ Added
   Add metadata templates for licences, context and some helper
   functions. Extend docs on how to create metadata for tables.
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
-* Include allocation of pumped hydro units
-  `#332 <https://github.com/openego/eGon-data/issues/332>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
