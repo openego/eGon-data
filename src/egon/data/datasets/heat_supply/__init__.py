@@ -143,7 +143,7 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.2.dev",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(create_tables,
                 district_heating, individual_heating, potential_germany),
