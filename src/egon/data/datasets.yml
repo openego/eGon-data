@@ -532,6 +532,9 @@ etrago_heat:
     heat_demand:
       schema: 'demand'
       table: 'egon_peta_heat'
+    ch4_voronoi:
+      schema: 'grid'
+      table: 'egon_voronoi_ch4'
   targets:
     heat_buses:
       schema: 'grid'

@@ -256,9 +256,11 @@ def insert_central_gas_boilers(scenario="eGon2035", efficiency=1):
         JOIN {targets['heat_buses']['schema']}.
         {targets['heat_buses']['table']} b
         ON ST_Transform(ST_Centroid(geometry), 4326) = geom
-        JOIN grid.egon_voronoi_ch4 c
+        JOIN {sources['ch4_voronoi']['schema']}.
+        {sources['ch4_voronoi']['table']} c
         ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
         WHERE scenario = '{scenario}'
+        AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='central_heat'
         """
@@ -330,7 +332,8 @@ def insert_rural_gas_boilers(scenario="eGon2035", efficiency=0.98):
         JOIN {targets['heat_buses']['schema']}.
         {targets['heat_buses']['table']} b
         ON ST_Transform(ST_Centroid(a.geometry), 4326) = b.geom
-        JOIN grid.egon_voronoi_ch4 c
+        JOIN {sources['ch4_voronoi']['schema']}.
+        {sources['ch4_voronoi']['table']} c
         ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
         WHERE scenario = '{scenario}'
         AND b.scn_name = '{scenario}'
