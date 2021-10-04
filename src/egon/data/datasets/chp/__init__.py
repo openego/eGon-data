@@ -29,7 +29,7 @@ class EgonChp(Base):
     th_capacity = Column(Float)
     electrical_bus_id = Column(Integer)
     district_heating_area_id = Column(Integer)
-    gas_bus_id = Column(Integer)
+    ch4_bus_id = Column(Integer)
     voltage_level = Column(Integer)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
@@ -48,7 +48,7 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.0",
+            version="0.0.0.dev",
             dependencies=dependencies,
             tasks=(create_tables, insert_chp_egon2035,
                    assign_heat_bus,
@@ -176,7 +176,7 @@ def assign_heat_bus(scenario='eGon2035'):
                 el_capacity=row.el_capacity,
                 th_capacity= row.th_capacity,
                 electrical_bus_id = row.electrical_bus_id,
-                gas_bus_id = row.gas_bus_id,
+                ch4_bus_id = row.ch4_bus_id,
                 district_heating_area_id = row.district_heating_area_id,
                 district_heating=row.district_heating,
                 voltage_level = row.voltage_level,
