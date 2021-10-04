@@ -137,6 +137,10 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
+* Add example metadata for OSM, VG250 and Zensus VG250.
+  Add metadata templates for licences, context and some helper
+  functions. Extend docs on how to create metadata for tables.
+  `#139 <https://github.com/openego/eGon-data/issues/139>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -210,6 +214,8 @@ Changed
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
 * Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
+* Replace 'gas' carrier with 'CH4' and 'H2' carriers
+  `#436 <https://github.com/openego/eGon-data/issues/436>`_
 * Adjust file path for industrial sites import
   `#397 <https://github.com/openego/eGon-data/issues/418>`_
 * Rename columns subst_id to bus_id

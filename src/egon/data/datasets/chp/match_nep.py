@@ -528,7 +528,7 @@ def insert_large_chp(sources, target, EgonChp):
             th_capacity=row.th_capacity,
             voltage_level=row.voltage_level,
             electrical_bus_id=row.bus_id,
-            gas_bus_id=row.gas_bus_id,
+            ch4_bus_id = row.gas_bus_id,
             district_heating=row.district_heating,
             scenario="eGon2035",
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",

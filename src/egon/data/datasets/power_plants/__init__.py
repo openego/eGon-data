@@ -546,7 +546,7 @@ def assign_gas_bus_id(power_plants):
 
     gas_voronoi = db.select_geodataframe(
         """
-        SELECT * FROM grid.egon_gas_voronoi
+        SELECT * FROM grid.egon_voronoi_ch4
         """,
         epsg=4326,
     )
