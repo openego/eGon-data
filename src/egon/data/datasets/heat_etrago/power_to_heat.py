@@ -102,7 +102,8 @@ def insert_central_power_to_heat(scenario="eGon2035"):
 
     # Assign voltage level
     central_heat_pumps = assign_voltage_level(
-        central_heat_pumps, carrier="heat_pump")
+        central_heat_pumps, carrier="heat_pump"
+    )
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
@@ -140,7 +141,8 @@ def insert_central_power_to_heat(scenario="eGon2035"):
 
     # Assign voltage level
     central_resistive_heater = assign_voltage_level(
-        central_resistive_heater, carrier="resistive_heater")
+        central_resistive_heater, carrier="resistive_heater"
+    )
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
@@ -158,6 +160,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         carrier="central_resistive_heater",
         scenario="eGon2035",
     )
+
 
 def insert_power_to_heat_per_level(
     heat_pumps,
@@ -267,24 +270,21 @@ def assign_voltage_level(heat_pumps, carrier="heat_pump"):
 
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == carrier)
-            & (heat_pumps.category == "small")
+            (heat_pumps.carrier == carrier) & (heat_pumps.category == "small")
         ].index,
         "voltage_level",
     ] = 7
 
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == carrier)
-            & (heat_pumps.category == "medium")
+            (heat_pumps.carrier == carrier) & (heat_pumps.category == "medium")
         ].index,
         "voltage_level",
     ] = 5
 
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == carrier)
-            & (heat_pumps.category == "large")
+            (heat_pumps.carrier == carrier) & (heat_pumps.category == "large")
         ].index,
         "voltage_level",
     ] = 1
