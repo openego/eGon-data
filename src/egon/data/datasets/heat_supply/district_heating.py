@@ -42,7 +42,7 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
 
     capacity_per_category = pd.DataFrame(
         index=['small', 'medium', 'large'],
-        columns=['solar_thermal_collector',
+        columns=['solar_thermal_collector', 'resistive_heater',
                  'heat_pump', 'geo_thermal', 'demand'])
 
     capacity_per_category.demand = district_heating_areas.groupby(
@@ -56,6 +56,11 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
 
     capacity_per_category.loc[:, 'heat_pump'] = (
         target_values.capacity['heat_pump']
+        *capacity_per_category.demand
+        /capacity_per_category.demand.sum())
+
+    capacity_per_category.loc[:, 'resistive_heater'] = (
+        target_values.capacity['resistive_heater']
         *capacity_per_category.demand
         /capacity_per_category.demand.sum())
 
@@ -76,11 +81,11 @@ def set_technology_data():
     """
     return  pd.DataFrame(
         index = ['CHP', 'solar_thermal_collector',
-                 'heat_pump', 'geo_thermal'],
+                 'heat_pump', 'geo_thermal', 'resistive_heater'],
         columns = ['estimated_flh', 'priority'],
         data = {
-            'estimated_flh': [8760, 1330, 7000, 3000],
-            'priority': [4, 2 ,1 ,3]})
+            'estimated_flh': [8760, 1330, 7000, 3000, 400],
+            'priority': [5, 3 ,2 ,4, 1]})
 
 
 def select_district_heating_areas(scenario):
@@ -190,7 +195,9 @@ def cascade_per_technology(
 
     # Distribute solar thermal and heatpumps linear to remaining demand.
     # Geothermal plants are distributed to areas with geothermal potential.
-    if tech.index in ['solar_thermal_collector', 'heat_pump', 'geo_thermal']:
+    if tech.index in [
+            'resistive_heater', 'solar_thermal_collector',
+            'heat_pump', 'geo_thermal']:
 
         if tech.index == 'geo_thermal':
             # Select areas with geothermal potential considering costs
@@ -260,9 +267,9 @@ def cascade_heat_supply(scenario, plotting=True):
 
     # Select technolgies per district heating size
     map_dh_technologies = {
-        'small': ['CHP', 'solar_thermal_collector', 'heat_pump'],
-        'medium': ['CHP', 'solar_thermal_collector', 'heat_pump'],
-        'large': ['CHP', 'geo_thermal', 'heat_pump'],
+        'small': ['CHP', 'solar_thermal_collector', 'heat_pump', 'resistive_heater'],
+        'medium': ['CHP', 'solar_thermal_collector', 'heat_pump', 'resistive_heater'],
+        'large': ['CHP', 'geo_thermal', 'heat_pump', 'resistive_heater'],
         }
 
     # Assign capacities per district heating category
