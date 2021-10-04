@@ -516,7 +516,7 @@ def assign_bus_id(power_plants, cfg):
         power_plants.loc[power_plants_hv, "bus_id"] = gpd.sjoin(
             power_plants[power_plants.index.isin(power_plants_hv)],
             mv_grid_districts,
-        ).subst_id
+        ).bus_id
 
     # Assign power plants in ehv to ehv bus
     power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
@@ -551,7 +551,7 @@ def assign_gas_bus_id(power_plants):
 
     gas_voronoi = db.select_geodataframe(
         """
-        SELECT * FROM grid.egon_gas_voronoi
+        SELECT * FROM grid.egon_voronoi_ch4
         """,
         epsg=4326,
     )

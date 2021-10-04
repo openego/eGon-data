@@ -18,7 +18,7 @@ from egon.data.datasets.electricity_demand import (
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
-from egon.data.datasets.gas_prod import GasProduction
+from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
@@ -42,17 +42,21 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 
-from egon.data.datasets.gas_prod import GasProduction
+import egon.data.datasets.gas_grid as gas_grid
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 
 import egon.data.importing.zensus as import_
-import egon.data.importing.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
-import egon.data.processing.power2gas as power2gas
+import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
+import egon.data.processing.gas_areas as gas_areas
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.calculate_dlr as dlr
+
+
 
 from egon.data import db
 
@@ -205,6 +209,7 @@ with airflow.DAG(
         autocommit=True,
     )
 
+
     osm_add_metadata >> substation_tables >> substation_functions
     substation_functions >> hvmv_substation_extraction
     substation_functions >> ehv_substation_extraction
@@ -260,12 +265,12 @@ with airflow.DAG(
     osmtgmod_pypsa >> gas_grid_insert_data
 
     # Power-to-gas installations creation
-    insert_power2gas_installations = PythonOperator(
-        task_id="insert-power-to-gas-installations",
-        python_callable=power2gas.insert_power2gas,
+    insert_power_to_h2_installations = PythonOperator(
+        task_id="insert-power-to-h2-installations",
+        python_callable=power_to_h2.insert_power_to_h2,
     )
 
-    gas_grid_insert_data >> insert_power2gas_installations
+    gas_grid_insert_data >> insert_power_to_h2_installations
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
@@ -277,7 +282,7 @@ with airflow.DAG(
     vg250_clean_and_prepare >> create_gas_polygons
 
     # Gas prod import
-    gas_production_insert_data = GasProduction(
+    gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
 
@@ -450,7 +455,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(

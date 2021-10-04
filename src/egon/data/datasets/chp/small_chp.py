@@ -37,7 +37,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
                 el_capacity=row.el_capacity,
                 th_capacity= row.th_capacity,
                 electrical_bus_id = row.bus_id,
-                gas_bus_id = row.gas_bus_id,
+                ch4_bus_id = row.gas_bus_id,
                 district_heating=row.district_heating,
                 voltage_level=row.voltage_level,
                 scenario='eGon2035',

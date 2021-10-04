@@ -68,8 +68,8 @@ def submit_comment(json, schema, table):
     """Add comment to table.
 
     We use `Open Energy Metadata <https://github.com/OpenEnergyPlatform/
-    oemetadata/blob/develop/metadata/v140/metadata_key_description.md>`_
-    standard for describging our data. Metadata is stored as JSON in the table
+    oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_
+    standard for describing our data. Metadata is stored as JSON in the table
     comment.
 
     Parameters
@@ -95,6 +95,7 @@ def submit_comment(json, schema, table):
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
 
+
 def execute_sql_script(script, encoding="utf-8-sig"):
     """Execute a SQL script given as a file name.
 
@@ -114,6 +115,7 @@ def execute_sql_script(script, encoding="utf-8-sig"):
         sqlfile = fd.read()
 
     execute_sql(sqlfile)
+
 
 @contextmanager
 def session_scope():
@@ -181,6 +183,7 @@ def select_dataframe(sql, index_col=None):
 
     return df
 
+
 def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
     """ Select data from local database as geopandas.GeoDataFrame
 
@@ -210,6 +213,7 @@ def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return gdf
+
 
 def next_etrago_id(component):
     """ Select next id value for components in etrago tables
