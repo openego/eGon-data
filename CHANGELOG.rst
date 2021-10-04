@@ -137,9 +137,6 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
-* Add task to extract, filter and preprocess buildings,
-  streets and amenities from OpenStreetMap
-  `#262 <https://github.com/openego/eGon-data/issues/262>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
 

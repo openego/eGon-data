@@ -41,8 +41,6 @@ class EgonMaStRConventinalWithoutChp(Base):
     EinheitMastrNummer = Column(String)
     carrier = Column(String)
     el_capacity = Column(Float)
-    plz = Column(Integer)
-    city = Column(String)
     geometry = Column(Geometry("POINT", 4326))
 
 
@@ -210,7 +208,7 @@ def insert_chp_egon2035():
     existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
 
     gpd.GeoDataFrame(MaStR_konv[['EinheitMastrNummer', 'el_capacity',
-                'geometry', 'carrier', 'plz', 'city']]).to_postgis(
+                'geometry', 'carrier']]).to_postgis(
                     targets["mastr_conventional_without_chp"]["table"],
                     schema=targets["mastr_conventional_without_chp"]["schema"],
                     con=db.engine(),

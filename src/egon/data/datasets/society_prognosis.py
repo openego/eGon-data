@@ -28,7 +28,7 @@ class SocietyPrognosis(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SocietyPrognosis",
-            version="0.0.1",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(create_tables,
                    zensus_population,
@@ -147,10 +147,6 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
     )
     prognosis["rounded"] = prognosis["quantity"].astype(int)
     prognosis["rest"] = prognosis["quantity"] - prognosis["rounded"]
-
-    # Set seed for reproducibility
-    np.random.seed(
-        seed=egon.data.config.settings()['egon-data']['--random-seed'])
 
     # Rounding process to meet exact values from demandregio on nuts3-level
     for name, group in prognosis.groupby(prognosis.nuts3):
