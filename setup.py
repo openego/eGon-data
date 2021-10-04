@@ -102,6 +102,7 @@ setup(
         "xarray",
         "xlrd",
         "rioxarray",
+        "omi"
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
