@@ -29,11 +29,11 @@ def demands_per_bus(scenario):
 
     # Select data on CTS electricity demands per bus
     cts_curves = db.select_dataframe(
-        f"""SELECT subst_id, p_set FROM
+        f"""SELECT bus_id, p_set FROM
                 {sources['cts_curves']['schema']}.
                 {sources['cts_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-        index_col="subst_id",
+        index_col="bus_id",
     )
 
     # Rename index
@@ -187,7 +187,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )

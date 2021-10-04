@@ -17,7 +17,7 @@ class ZensusMvGridDistricts(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMvGridDistricts",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(mapping),
         )
@@ -37,7 +37,7 @@ class MapZensusGridDistricts(Base):
         primary_key=True,
         index=True,
     )
-    subst_id = Column(Integer, ForeignKey(MvGridDistricts.subst_id))
+    bus_id = Column(Integer, ForeignKey(MvGridDistricts.bus_id))
 
 
 def mapping():
@@ -64,7 +64,7 @@ def mapping():
     )
 
     grid_districts = db.select_geodataframe(
-        f"""SELECT subst_id, geom
+        f"""SELECT bus_id, geom
         FROM {cfg['sources']['egon_mv_grid_district']['schema']}.
         {cfg['sources']['egon_mv_grid_district']['table']}""",
         geom_col="geom",
@@ -75,7 +75,7 @@ def mapping():
     join = gpd.sjoin(zensus, grid_districts, how="inner", op="intersects")
 
     # Insert results to database
-    join[["zensus_population_id", "subst_id"]].to_sql(
+    join[["zensus_population_id", "bus_id"]].to_sql(
         cfg["targets"]["map"]["table"],
         schema=cfg["targets"]["map"]["schema"],
         con=db.engine(),
