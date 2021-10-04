@@ -315,6 +315,19 @@ def cascade_heat_supply(scenario, plotting=True):
             resulting_capacities.district_heating_id].centroid.values)
 
 def backup_gas_boilers(scenario):
+    """ Adds backup gas boilers to district heating grids.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    Geopandas.GeoDataFrame
+        List of gas boilers for district heating
+
+    """
 
     # Select district heating areas from database
     district_heating_areas = select_district_heating_areas(scenario)

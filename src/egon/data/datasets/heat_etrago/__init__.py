@@ -195,6 +195,20 @@ def insert_central_direct_heat(scenario='eGon2035'):
         con=db.engine())
 
 def insert_central_gas_boilers(scenario='eGon2035', efficiency=1):
+    """ Inserts gas boilers for district heating to eTraGo-table
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of the scenario. The default is 'eGon2035'.
+    efficiency : float, optional
+        Efficiency of central gas boilers in p.u.. The default is 1.
+
+    Returns
+    -------
+    None.
+
+    """
 
     sources = config.datasets()['etrago_heat']['sources']
     targets = config.datasets()['etrago_heat']['targets']
@@ -252,6 +266,20 @@ def insert_central_gas_boilers(scenario='eGon2035', efficiency=1):
         )
 
 def insert_rural_gas_boilers(scenario='eGon2035', efficiency=0.98):
+    """ Inserts gas boilers for individual heating to eTraGo-table
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of the scenario. The default is 'eGon2035'.
+    efficiency : float, optional
+        Efficiency of central gas boilers in p.u.. The default is 0.98.
+
+    Returns
+    -------
+    None.
+
+    """
 
     sources = config.datasets()['etrago_heat']['sources']
     targets = config.datasets()['etrago_heat']['targets']
