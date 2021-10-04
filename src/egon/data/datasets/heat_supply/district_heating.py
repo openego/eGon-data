@@ -314,6 +314,21 @@ def cascade_heat_supply(scenario, plotting=True):
         geometry = district_heating_areas.geom[
             resulting_capacities.district_heating_id].centroid.values)
 
+def backup_gas_boilers(scenario):
+
+    # Select district heating areas from database
+    district_heating_areas = select_district_heating_areas(scenario)
+
+    return gpd.GeoDataFrame(data={
+        "district_heating_id": district_heating_areas.index,
+        "capacity": district_heating_areas.demand.div(8000),
+        "carrier": "gas_boiler",
+        "category": district_heating_areas.category,
+        "geometry": district_heating_areas.geom.centroid,
+        "scenario": scenario,
+        })
+
+
 
 def plot_heat_supply(resulting_capacities):
 

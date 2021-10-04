@@ -81,12 +81,26 @@ def cascade_per_technology(
             'bus_id':'mv_grid_id',
             'share':'capacity'}, axis = 1, inplace=True)
 
+    elif tech.index == 'gas_boiler':
+
+        append_df = pd.DataFrame(
+            data={
+                "capacity": heat_per_mv.remaining_demand.div(
+                    tech.estimated_flh.values[0]),
+                "carrier": "residential_rural_gas_boiler",
+                "mv_grid_id": heat_per_mv.index,
+                "scenario": scenario,
+                })
+
+
     if append_df.size > 0:
         append_df['carrier'] = tech.index[0]
         heat_per_mv.loc[append_df.mv_grid_id,
                   'remaining_demand'] -= append_df.set_index(
                       'mv_grid_id').capacity.mul(
                           tech.estimated_flh.values[0])
+
+
 
     heat_per_mv = heat_per_mv[heat_per_mv.remaining_demand>=0]
 
@@ -158,11 +172,11 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     # http://www.wbzu.de/seminare/infopool/infopool-bhkw
     # TODO: Add gas boilers and solar themal (eGon100RE)
     technologies = pd.DataFrame(
-        index = ['heat_pump'],
+        index = ['heat_pump', 'gas_boiler'],
         columns = ['estimated_flh', 'priority'],
         data = {
-            'estimated_flh': [4000],
-            'priority': [1]})
+            'estimated_flh': [4000, 8000],
+            'priority': [2, 1]})
 
     # In the beginning, the remaining demand equals demand
     heat_per_mv['remaining_demand'] = heat_per_mv['demand']
