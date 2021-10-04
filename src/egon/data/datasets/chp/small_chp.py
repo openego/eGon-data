@@ -230,7 +230,7 @@ def extension_to_areas(
                 district_heating=district_heating,
                 voltage_level=selected_chp.voltage_level,
                 electrical_bus_id=int(selected_areas.bus_id),
-                gas_bus_id=int(selected_areas.gas_bus_id),
+                ch4_bus_id=int(selected_areas.gas_bus_id),
                 scenario="eGon2035",
                 geom=f"""
                         SRID=4326;
