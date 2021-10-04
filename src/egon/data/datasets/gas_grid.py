@@ -9,6 +9,7 @@ import numpy as np
 import geopandas
 import json
 
+from egon.data.datasets import Dataset
 from shapely import geometry
 from egon.data import db
 from egon.data.config import settings
@@ -17,6 +18,7 @@ from urllib.request import urlretrieve
 from zipfile import ZipFile
 from geoalchemy2.shape import from_shape
 from pathlib import Path
+
 
 def download_SciGRID_gas_data():
     """
@@ -88,8 +90,8 @@ def define_gas_nodes_list():
     return gas_nodes_list
 
 
-def insert_gas_nodes_list(gas_nodes_list):
-    """Insert list of gas nodes from SciGRID_gas IGGIELGN data
+def insert_CH4_nodes_list(gas_nodes_list):
+    """Insert list of CH4 nodes from SciGRID_gas IGGIELGN data
         Parameters
     ----------
     gas_nodes_list : dataframe
@@ -124,7 +126,7 @@ def insert_gas_nodes_list(gas_nodes_list):
         # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
 
     # Add missing columns
-    c = {'scn_name':'eGon2035', 'carrier':'gas'}
+    c = {'scn_name':'eGon2035', 'carrier':'CH4'}
     gas_nodes_list = gas_nodes_list.assign(**c)
 
     gas_nodes_list = geopandas.GeoDataFrame(gas_nodes_list, geometry=geopandas.points_from_xy(gas_nodes_list['x'], gas_nodes_list['y']))
@@ -136,16 +138,51 @@ def insert_gas_nodes_list(gas_nodes_list):
     # Insert data to db
     db.execute_sql(
         """
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'gas';
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'CH4';
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'H2';
     """)
 
-    # Insert data to db
+    # Insert CH4 data to db
+    print(gas_nodes_list)
     gas_nodes_list.to_postgis('egon_etrago_bus',
                               engine,
                               schema ='grid',
                               index = False,
                               if_exists = 'append',
                               dtype = {"geom": Geometry()})
+
+
+def insert_H2_nodes_list():
+    """Insert the H2 buses to db, same buses than the CH4 buses
+    Returns
+    -------
+    None.
+    """
+    # Connect to local database
+    engine = db.engine()
+    
+    # Select the CH4 buses
+    sql_CH4 = """SELECT bus_id, scn_name, geom
+                FROM grid.egon_etrago_bus
+                WHERE carrier = 'CH4';"""
+
+    gdf_H2 = db.select_geodataframe(sql_CH4, epsg=4326)
+    
+    # Select next id value
+    new_id = db.next_etrago_id('bus')
+
+    gdf_H2['carrier'] = 'H2' 
+    gdf_H2['bus_id'] = range(new_id, new_id + len(gdf_H2))
+    
+    # Insert H2 data to db
+    print(gdf_H2)
+    gdf_H2.to_postgis('egon_etrago_bus',
+                              engine,
+                              schema ='grid',
+                              index = False,
+                              if_exists = 'append',
+                              dtype = {"geom": Geometry()})
+
 
 def insert_gas_pipeline_list(gas_nodes_list):
     """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
@@ -218,7 +255,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
     # Add missing columns
     gas_pipelines_list['scn_name'] = 'eGon2035'
-    gas_pipelines_list['carrier'] = 'gas'
+    gas_pipelines_list['carrier'] = 'CH4'
 
     diameter = []
     length = []
@@ -295,7 +332,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
     # Insert data to db
     db.execute_sql(
-        """DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'gas';
+        """DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4';
         """)
 
     gas_pipelines_list.to_postgis('egon_etrago_gas_link',
@@ -336,7 +373,8 @@ def insert_gas_data():
 
     gas_nodes_list = define_gas_nodes_list()
 
-    insert_gas_nodes_list(gas_nodes_list)
+    insert_CH4_nodes_list(gas_nodes_list)
+    insert_H2_nodes_list()
 
     insert_gas_pipeline_list(gas_nodes_list)
 
