@@ -281,4 +281,6 @@ Bug fixes
   `#440 <https://github.com/openego/eGon-data/issues/440>`_
 * Replace NAN by 0 to avoid empty p_set column in DB
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
+* Exchange bus 0 and bus 1 in Power-to-H2 links
+  `#458 <https://github.com/openego/eGon-data/issues/458>`_
 

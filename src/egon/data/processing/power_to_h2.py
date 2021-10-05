@@ -41,7 +41,7 @@ def insert_power_to_h2():
     n_AC = np.array(list(gdf_AC.geometry.apply(lambda x: (x.x, x.y))))
     btree = cKDTree(n_AC)
     dist, idx = btree.query(n_gas, k=1)
-    gd_AC_nearest = gdf_AC.iloc[idx].rename(columns={'bus_id': 'bus1','geom': 'geom_AC'}).reset_index(drop=True)
+    gd_AC_nearest = gdf_AC.iloc[idx].rename(columns={'bus_id': 'bus0','geom': 'geom_AC'}).reset_index(drop=True)
     gdf = pd.concat(
         [
             gdf_gas.reset_index(drop=True),
@@ -50,7 +50,7 @@ def insert_power_to_h2():
         ],
         axis=1)
 
-    gdf = gdf.rename(columns={'bus_id': 'bus0','geom': 'geom_gas'})
+    gdf = gdf.rename(columns={'bus_id': 'bus1','geom': 'geom_gas'})
     geod = Geod(ellps="WGS84")
 
     # Add missing columns
