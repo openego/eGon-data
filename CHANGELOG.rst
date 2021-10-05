@@ -141,6 +141,8 @@ Added
   Add metadata templates for licences, context and some helper
   functions. Extend docs on how to create metadata for tables.
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
+* Integrate DSM potentials for CTS and industry
+  `#259 <https://github.com/openego/eGon-data/issues/259>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
