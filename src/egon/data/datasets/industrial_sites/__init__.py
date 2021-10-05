@@ -458,7 +458,6 @@ def schmidt_to_postgres():
             "industrial_sites" /
             schmidt_sources["path"])
     engine = db.engine()
-
     db.execute_sql(
         f"DELETE FROM {schmidt_targets['schema']}.{schmidt_targets['table']}"
     )
