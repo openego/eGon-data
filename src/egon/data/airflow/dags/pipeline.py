@@ -40,6 +40,7 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.DSM_cts_ind import dsm_Potential
 
 import egon.data.datasets.gas_grid as gas_grid
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
@@ -466,6 +467,12 @@ with airflow.DAG(
             landuse_extraction,
         ]
     )
+    
+    # DSM 
+    components_dsm =  dsm_Potential(
+        dependencies = [cts_electricity_demand_annual, 
+                        demand_curves_industry,
+                        osmtgmod_pypsa])
 
     # Electrical loads to eTraGo
 

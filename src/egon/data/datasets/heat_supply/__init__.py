@@ -18,7 +18,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
 from egon.data.datasets import Dataset
 
-### will be later imported from another file ###
+# Will later be imported from another file.
 Base = declarative_base()
 
 
@@ -164,8 +164,8 @@ class HeatSupply(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                district_heating,
+                {district_heating,
                 individual_heating,
-                potential_germany,
+                potential_germany},
             ),
         )
