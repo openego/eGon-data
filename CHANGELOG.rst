@@ -141,6 +141,8 @@ Added
   Add metadata templates for licences, context and some helper
   functions. Extend docs on how to create metadata for tables.
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
+* Integrate DSM potentials for CTS and industry
+  `#259 <https://github.com/openego/eGon-data/issues/259>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -281,4 +283,6 @@ Bug fixes
   `#440 <https://github.com/openego/eGon-data/issues/440>`_
 * Replace NAN by 0 to avoid empty p_set column in DB
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
+* Exchange bus 0 and bus 1 in Power-to-H2 links
+  `#458 <https://github.com/openego/eGon-data/issues/458>`_
 
