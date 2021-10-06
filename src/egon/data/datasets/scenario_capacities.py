@@ -27,12 +27,13 @@ class EgonScenarioCapacities(Base):
     scenario_name = Column(String(50))
 
 class NEP2021ConvPowerPlants(Base):
-    __tablename__ = 'nep_2021_conv_powerplants'
+    __tablename__ = 'egon_nep_2021_conventional_powerplants'
     __table_args__ = {'schema': 'supply'}
     index =  Column(String(50), primary_key=True)
     bnetza_id = Column(String(50))
     name = Column(String(100))
     name_unit = Column(String(50))
+    carrier_nep = Column(String(50))
     carrier = Column(String(12))
     chp = Column(String(12))
     postcode = Column(String(12))
@@ -55,7 +56,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_table,
@@ -224,6 +225,34 @@ def population_share():
     FROM society.destatis_zensus_population_per_ha
     WHERE population>0""", con=db.engine())['sum'][0]/80324282
 
+def map_carrier():
+    """Map carriers from NEP and Marktstammdatenregister to carriers from eGon
+
+    Returns
+    -------
+    pandas.Series
+        List of mapped carriers
+
+    """
+    return (
+        pd.Series(data={
+        "Abfall": "other_non_renewable",
+        "Erdgas": "gas",
+        'Sonstige\nEnergieträger': "other_non_renewable",
+        "Steinkohle": "coal",
+        "Kuppelgase": "gas",
+        "Mineralöl-\nprodukte": "oil",
+        "Braunkohle": "lignite",
+        "Waerme": "other_non_renewable",
+        "Mineraloelprodukte": "oil",
+        "NichtBiogenerAbfall": "other_non_renewable",
+        "AndereGase": "gas",
+        "Sonstige_Energietraeger": "other_non_renewable",
+        "Kernenergie": "nuclear",
+        "Pumpspeicher": "pumped_hydro",
+        "Mineralöl-\nProdukte": "oil",
+        }))
+
 def insert_nep_list_powerplants():
     """Insert list of conventional powerplants attachd to the approval
     of the scenario report by BNetzA
@@ -250,7 +279,7 @@ def insert_nep_list_powerplants():
     kw_liste_nep = kw_liste_nep.rename(columns={'BNetzA-ID': 'bnetza_id',
                                  'Kraftwerksname': 'name',
                                  'Blockname': 'name_unit',
-                                 'Energieträger': 'carrier',
+                                 'Energieträger': 'carrier_nep',
                                  'KWK\nJa/Nein': 'chp',
                                  'PLZ': 'postcode',
                                  'Ort': 'city',
@@ -288,8 +317,10 @@ def insert_nep_list_powerplants():
                 kw_liste_nep[kw_liste_nep.federal_state.isnull()].index,
                 col] *= population_share()
 
+    kw_liste_nep['carrier'] = map_carrier()[kw_liste_nep.carrier_nep].values
+
     # Insert data to db
-    kw_liste_nep.to_sql('nep_2021_conv_powerplants',
+    kw_liste_nep.to_sql('egon_nep_2021_conventional_powerplants',
                        engine,
                        schema='supply',
                        if_exists='replace')
