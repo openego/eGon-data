@@ -5,6 +5,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
 from egon.data.datasets import Dataset
 
+import geopandas as gpd
+from shapely.geometry import LineString
+
 Base = declarative_base()
 metadata = Base.metadata
 
@@ -466,3 +469,44 @@ def temp_resolution():
         (temp_id, timesteps, resolution, start_time)
         SELECT 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
         """)
+
+def link_geom_from_buses(df, scn_name):
+    """ Add LineString geometry accoring to geometry of buses to links
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        List of eTraGo links with bus0 and bus 1 but without topology
+    scn_name : str
+        Scenario name
+
+    Returns
+    -------
+    gdf : geopandas.GeoDataFrame
+        List of eTraGo links with bus0 and bus 1 but with topology
+
+    """
+
+    geom_buses = db.select_geodataframe(
+        f"""
+        SELECT bus_id, geom
+        FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        """,
+        index_col="bus_id",
+        epsg=4326,
+    )
+
+    # Create geometry columns for bus0 and bus1
+    df["geom_0"] = geom_buses.geom[df.bus0.values].values
+    df["geom_1"] = geom_buses.geom[df.bus1.values].values
+
+    geometry = df.apply(
+        lambda x: LineString([x["geom_0"], x["geom_1"]]), axis=1
+    )
+    df = df.drop(['geom_0', 'geom_1'], axis=1)
+
+    gdf = gpd.GeoDataFrame(
+        df, geometry=geometry, crs=4326).rename_geometry('topo')
+
+    return gdf

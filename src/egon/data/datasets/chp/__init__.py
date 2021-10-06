@@ -1,6 +1,6 @@
-
 """
-The central module containing all code dealing with chp.
+The central module containing all code dealing with combined heat and power
+(CHP) plants.
 """
 
 import pandas as pd
@@ -8,17 +8,24 @@ import geopandas as gpd
 from egon.data import db, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.chp.match_nep import insert_large_chp
-from egon.data.datasets.chp.small_chp import existing_chp_smaller_10mw, extension_per_federal_state, select_target
+from egon.data.datasets.chp.small_chp import (
+    existing_chp_smaller_10mw,
+    extension_per_federal_state,
+    select_target,
+)
+from egon.data.datasets.etrago_setup import link_geom_from_buses
 from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
+
 Base = declarative_base()
 
+
 class EgonChp(Base):
-    __tablename__ = "egon_chp"
+    __tablename__ = "egon_chp_plants"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, Sequence("chp_seq"), primary_key=True)
     sources = Column(JSONB)
@@ -33,6 +40,7 @@ class EgonChp(Base):
     voltage_level = Column(Integer)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
+
 
 class EgonMaStRConventinalWithoutChp(Base):
     __tablename__ = "egon_mastr_conventional_without_chp"
@@ -71,11 +79,18 @@ def create_tables():
     EgonChp.__table__.create(bind=engine, checkfirst=True)
     EgonMaStRConventinalWithoutChp.__table__.drop(bind=engine, checkfirst=True)
     EgonMaStRConventinalWithoutChp.__table__.create(
-        bind=engine, checkfirst=True)
+        bind=engine, checkfirst=True
+    )
 
 
-def nearest(row, df, centroid= False,
-            row_geom_col='geometry', df_geom_col='geometry', src_column=None):
+def nearest(
+    row,
+    df,
+    centroid=False,
+    row_geom_col="geometry",
+    df_geom_col="geometry",
+    src_column=None,
+):
     """
     Finds the nearest point and returns the specified column values
 
@@ -107,16 +122,18 @@ def nearest(row, df, centroid= False,
         unary_union = df[df_geom_col].unary_union
 
     # Find the geometry that is closest
-    nearest = df[df_geom_col] == nearest_points(
-        row[row_geom_col], unary_union)[1]
+    nearest = (
+        df[df_geom_col] == nearest_points(row[row_geom_col], unary_union)[1]
+    )
 
     # Get the corresponding value from df (matching is based on the geometry)
     value = df[nearest][src_column].values[0]
 
     return value
 
-def assign_heat_bus(scenario='eGon2035'):
-    """ Selects heat_bus for chps used in district heating.
+
+def assign_heat_bus(scenario="eGon2035"):
+    """Selects heat_bus for chps used in district heating.
 
     Parameters
     ----------
@@ -139,8 +156,9 @@ def assign_heat_bus(scenario='eGon2035'):
         WHERE scenario = '{scenario}'
         AND district_heating = True
         """,
-        index_col='id',
-        epsg=4326)
+        index_col="id",
+        epsg=4326,
+    )
 
     # Select district heating areas and their centroid
     district_heating = db.select_geodataframe(
@@ -151,13 +169,20 @@ def assign_heat_bus(scenario='eGon2035'):
         {sources['district_heating_areas']['table']}
         WHERE scenario = '{scenario}'
         """,
-        epsg=4326)
+        epsg=4326,
+    )
 
     # Assign district heating area_id to district_heating_chp
     # According to nearest centroid of district heating area
-    chp['district_heating_area_id'] = chp.apply(
-        nearest, df=district_heating, row_geom_col='geom', df_geom_col='geom',
-        centroid=True, src_column='area_id', axis=1)
+    chp["district_heating_area_id"] = chp.apply(
+        nearest,
+        df=district_heating,
+        row_geom_col="geom",
+        df_geom_col="geom",
+        centroid=True,
+        src_column="area_id",
+        axis=1,
+    )
 
     # Drop district heating CHP without heat_bus_id
     db.execute_sql(
@@ -165,31 +190,33 @@ def assign_heat_bus(scenario='eGon2035'):
         DELETE FROM {target['schema']}.{target['table']}
         WHERE scenario = '{scenario}'
         AND district_heating = True
-        """)
+        """
+    )
 
     # Insert district heating CHP with heat_bus_id
     session = sessionmaker(bind=db.engine())()
     for i, row in chp.iterrows():
         entry = EgonChp(
-                id = i,
-                sources=row.sources,
-                source_id=row.source_id,
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                th_capacity= row.th_capacity,
-                electrical_bus_id = row.electrical_bus_id,
-                ch4_bus_id = row.ch4_bus_id,
-                district_heating_area_id = row.district_heating_area_id,
-                district_heating=row.district_heating,
-                voltage_level = row.voltage_level,
-                scenario=scenario,
-                geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
-            )
+            id=i,
+            sources=row.sources,
+            source_id=row.source_id,
+            carrier=row.carrier,
+            el_capacity=row.el_capacity,
+            th_capacity=row.th_capacity,
+            electrical_bus_id=row.electrical_bus_id,
+            ch4_bus_id = row.ch4_bus_id,
+            district_heating_area_id=row.district_heating_area_id,
+            district_heating=row.district_heating,
+            voltage_level=row.voltage_level,
+            scenario=scenario,
+            geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+        )
         session.add(entry)
     session.commit()
 
+
 def insert_chp_egon2035():
-    """ Insert CHP plants for eGon2035 considering NEP and MaStR data
+    """Insert CHP plants for eGon2035 considering NEP and MaStR data
 
     Returns
     -------
@@ -209,51 +236,120 @@ def insert_chp_egon2035():
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
     existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
 
-    gpd.GeoDataFrame(MaStR_konv[['EinheitMastrNummer', 'el_capacity',
-                'geometry', 'carrier', 'plz', 'city']]).to_postgis(
-                    targets["mastr_conventional_without_chp"]["table"],
-                    schema=targets["mastr_conventional_without_chp"]["schema"],
-                    con=db.engine(),
-                    if_exists = "replace")
-
-def extension():
-    """ Build additional CHP for district heating.
-
-    Existing CHPs are randomly seected from MaStR list and assigned to a
-    district heating area considering the demand and the estimated feedin
-    from the selected CHP.
-    For more details see small_chp.extension_per_federal_state
-
-    Returns
-    -------
-    None.
-
-    """
-    # Select target values per federal state
-    targets = select_target('small_chp', 'eGon2035')
-
-    # Temporary drop Hamburg and Bremen
-    if 'Hamburg' in targets:
-        targets = targets.drop(['Hamburg', 'Bremen'])
-
-    # Run methodology for each federal state
-    for federal_state in targets.index:
+    gpd.GeoDataFrame(
+        MaStR_konv[
+            ["EinheitMastrNummer", "el_capacity", "geometry", "carrier"]
+        ]
+    ).to_postgis(
+        targets["mastr_conventional_without_chp"]["table"],
+        schema=targets["mastr_conventional_without_chp"]["schema"],
+        con=db.engine(),
+        if_exists="replace",
+    )
 
 
-        existing_capacity = db.select_dataframe(
-            f"""
-            SELECT SUM(el_capacity) as capacity
-            FROM supply.egon_chp
-            WHERE sources::json->>'el_capacity' = 'MaStR'
-            AND ST_Intersects(geom, (
-            SELECT ST_Union(geometry) FROM boundaries.vg250_lan
-            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-            """).capacity[0]
-
-        print(f"Target capacity in {federal_state}: {targets[federal_state]}")
-        print(f"Existing capacity in {federal_state}: {existing_capacity}")
+def extension_BW():
+    extension_per_federal_state("BadenWuerttemberg", EgonChp)
 
 
-        additional_capacity = targets[federal_state] - existing_capacity
-        extension_per_federal_state(
-            additional_capacity, federal_state, EgonChp)
+def extension_BY():
+    extension_per_federal_state("Bayern", EgonChp)
+
+
+def extension_HB():
+    extension_per_federal_state("Bremen", EgonChp)
+
+
+def extension_BB():
+    extension_per_federal_state("Brandenburg", EgonChp)
+
+
+def extension_HH():
+    extension_per_federal_state("Hamburg", EgonChp)
+
+
+def extension_HE():
+    extension_per_federal_state("Hessen", EgonChp)
+
+
+def extension_MV():
+    extension_per_federal_state("MecklenburgVorpommern", EgonChp)
+
+
+def extension_NS():
+    extension_per_federal_state("Niedersachsen", EgonChp)
+
+
+def extension_NW():
+    extension_per_federal_state("NordrheinWestfalen", EgonChp)
+
+
+def extension_SN():
+    extension_per_federal_state("Sachsen", EgonChp)
+
+
+def extension_TH():
+    extension_per_federal_state("Thueringen", EgonChp)
+
+
+def extension_SL():
+    extension_per_federal_state("Saarland", EgonChp)
+
+
+def extension_ST():
+    extension_per_federal_state("SachsenAnhalt", EgonChp)
+
+
+def extension_RP():
+    extension_per_federal_state("RheinlandPfalz", EgonChp)
+
+
+def extension_BE():
+    extension_per_federal_state("Berlin", EgonChp)
+
+
+def extension_SH():
+    extension_per_federal_state("SchleswigHolstein", EgonChp)
+
+
+# Add one task per federal state for small CHP extension
+if (
+    config.settings()["egon-data"]["--dataset-boundary"]
+    == "Schleswig-Holstein"
+):
+    extension = extension_SH
+
+else:
+    extension = {
+        extension_BW,
+        extension_BY,
+        extension_HB,
+        extension_BB,
+        extension_HE,
+        extension_MV,
+        extension_NS,
+        extension_NW,
+        extension_SH,
+        extension_HH,
+        extension_RP,
+        extension_SL,
+        extension_SN,
+        extension_ST,
+        extension_TH,
+        extension_BE,
+    }
+
+
+class Chp(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="Chp",
+            version="0.0.1",
+            dependencies=dependencies,
+            tasks=(
+                create_tables,
+                insert_chp_egon2035,
+                assign_heat_bus,
+                extension,
+            ),
+        )

@@ -57,7 +57,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_table,
@@ -250,8 +250,8 @@ def map_carrier():
         "AndereGase": "gas",
         "Sonstige_Energietraeger": "other_non_renewable",
         "Kernenergie": "nuclear",
-        "Pumpspeicher": "pumped_hydro"
-
+        "Pumpspeicher": "pumped_hydro",
+        "Mineralöl-\nProdukte": "oil",
         }))
 
 def insert_nep_list_powerplants():
