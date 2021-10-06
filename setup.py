@@ -93,7 +93,7 @@ setup(
         "netcdf4",
         "oedialect==0.0.8",
         "openpyxl",
-        "pandas>1.2.0,<1.3.0",
+        "pandas>1.2.0",
         "psycopg2",
         "pyaml",
         "rasterio",
@@ -102,6 +102,7 @@ setup(
         "xarray",
         "xlrd",
         "rioxarray",
+        "omi"
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
