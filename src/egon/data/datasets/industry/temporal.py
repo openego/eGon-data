@@ -3,14 +3,13 @@ timeseries data using demandregio
 
 """
 
-from sqlalchemy import ARRAY, Column, Float, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+import egon.data.config
 import geopandas as gpd
 import pandas as pd
-
 from egon.data import db
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
-import egon.data.config
+from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
@@ -165,7 +164,9 @@ def calc_load_curves_ind_osm(scenario):
     curves_da = identify_bus(load_curves, demand_area)
 
     # Group all load curves per bus
-    curves_bus = curves_da.drop(["id"], axis=1).fillna(0).groupby("bus_id").sum()
+    curves_bus = (
+        curves_da.drop(["id"], axis=1).fillna(0).groupby("bus_id").sum()
+    )
 
     # Initalize pandas.DataFrame for export to database
     load_ts_df = pd.DataFrame(index=curves_bus.index, columns=["p_set"])
@@ -288,7 +289,10 @@ def calc_load_curves_ind_sites(scenario):
 
     # Group all load curves per bus and wz
     curves_bus = (
-        curves_da.fillna(0).groupby(["bus_id", "wz"]).sum().drop(["id"], axis=1)
+        curves_da.fillna(0)
+        .groupby(["bus_id", "wz"])
+        .sum()
+        .drop(["id"], axis=1)
     )
 
     # Initalize pandas.DataFrame for pf table load timeseries

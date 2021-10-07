@@ -1,8 +1,7 @@
+from egon.data.db import engine
+from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
-from geoalchemy2 import Geometry
-
-from egon.data.db import engine
 
 
 def context():
@@ -27,7 +26,7 @@ def context():
         "Titelbilder/titel_foerderlogo_bmwi.jpg?"
         "__blob=normal&v=3",
         "publisherLogo": "https://ego-n.org/images/eGon_logo_"
-        "noborder_transbg.svg"
+        "noborder_transbg.svg",
     }
 
 
@@ -46,9 +45,7 @@ def meta_metadata():
         "metadataLicense": {
             "name": "CC0-1.0",
             "title": "Creative Commons Zero v1.0 Universal",
-            "path": (
-                "https://creativecommons.org/publicdomain/zero/1.0/"
-            ),
+            "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
         },
     }
 
@@ -97,7 +94,7 @@ def licenses_datenlizenz_deutschland(attribution):
             "sonstige Abwandlungen sind im Quellenvermerk mit dem Hinweis "
             "zu versehen, dass die Daten geändert wurden."
         ),
-        "attribution": attribution
+        "attribution": attribution,
     }
 
 
@@ -121,8 +118,8 @@ def license_odbl(attribution):
         "title": "Open Data Commons Open Database License 1.0",
         "path": "https://opendatacommons.org/licenses/odbl/1.0/index.html",
         "instruction": "You are free: To Share, To Create, To Adapt; "
-                       "As long as you: Attribute, Share-Alike, Keep open!",
-        "attribution": attribution
+        "As long as you: Attribute, Share-Alike, Keep open!",
+        "attribution": attribution,
     }
 
 
@@ -146,8 +143,8 @@ def license_ccby(attribution):
         "title": "Creative Commons Attribution 4.0 International",
         "path": "https://creativecommons.org/licenses/by/4.0/legalcode",
         "instruction": "You are free: To Share, To Create, To Adapt; "
-                       "As long as you: Attribute.",
-        "attribution": attribution
+        "As long as you: Attribute.",
+        "attribution": attribution,
     }
 
 
@@ -168,17 +165,17 @@ def license_geonutzv(attribution):
     return {
         "name": "geonutzv-de-2013-03-19",
         "title": "Verordnung zur Festlegung der Nutzungsbestimmungen für die "
-                 "Bereitstellung von Geodaten des Bundes",
+        "Bereitstellung von Geodaten des Bundes",
         "path": "https://www.gesetze-im-internet.de/geonutzv/",
         "instruction": "Geodaten und Geodatendienste, einschließlich "
-                       "zugehöriger Metadaten, werden für alle derzeit "
-                       "bekannten sowie für alle zukünftig bekannten Zwecke "
-                       "kommerzieller und nicht kommerzieller Nutzung "
-                       "geldleistungsfrei zur Verfügung gestellt, soweit "
-                       "durch besondere Rechtsvorschrift nichts anderes "
-                       "bestimmt ist oder vertragliche oder gesetzliche "
-                       "Rechte Dritter dem nicht entgegenstehen.",
-        "attribution": attribution
+        "zugehöriger Metadaten, werden für alle derzeit "
+        "bekannten sowie für alle zukünftig bekannten Zwecke "
+        "kommerzieller und nicht kommerzieller Nutzung "
+        "geldleistungsfrei zur Verfügung gestellt, soweit "
+        "durch besondere Rechtsvorschrift nichts anderes "
+        "bestimmt ist oder vertragliche oder gesetzliche "
+        "Rechte Dritter dem nicht entgegenstehen.",
+        "attribution": attribution,
     }
 
 
@@ -209,11 +206,15 @@ def generate_resource_fields_from_sqla_model(model):
         Resource fields
     """
 
-    return [{'name': col.name,
-             'description': '',
-             'type': str(col.type).lower(),
-             'unit': 'none'}
-            for col in model.__table__.columns]
+    return [
+        {
+            "name": col.name,
+            "description": "",
+            "type": str(col.type).lower(),
+            "unit": "none",
+        }
+        for col in model.__table__.columns
+    ]
 
 
 def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
@@ -252,18 +253,20 @@ def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
 
     # handle geometry columns
     if geom_columns is None:
-        geom_columns = ['geom']
+        geom_columns = ["geom"]
     for col in geom_columns:
         ischema_names[col] = Geometry
 
-    table = Table(table,
-                  MetaData(),
-                  schema=schema,
-                  autoload=True,
-                  autoload_with=engine())
+    table = Table(
+        table, MetaData(), schema=schema, autoload=True, autoload_with=engine()
+    )
 
-    return [{'name': col.name,
-             'description': '',
-             'type': str(col.type).lower(),
-             'unit': 'none'}
-            for col in table.c]
+    return [
+        {
+            "name": col.name,
+            "description": "",
+            "type": str(col.type).lower(),
+            "unit": "none",
+        }
+        for col in table.c
+    ]

@@ -195,7 +195,6 @@ def industrial_demand_distr():
             epsg=3035,
         )
 
-
         # Spatially join vg250_krs and industrial landuse areas
         landuse = gpd.sjoin(landuse, boundaries, how="inner", op="intersects")
         # Rename column
