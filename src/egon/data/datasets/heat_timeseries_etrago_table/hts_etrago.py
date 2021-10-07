@@ -1,12 +1,9 @@
 from egon.data import config, db
-
 from egon.data.db import next_etrago_id
+from egon.data.datasets import Dataset
 
-import geopandas as gpd
 import pandas as pd
 import numpy as np
-
-
 
 def hts_to_etrago():
     
@@ -110,4 +107,13 @@ def hts_to_etrago():
             index =False
             )
 
+
+class HtsEtragoTable(Dataset):
+     def __init__(self, dependencies):
+        super().__init__(
+            name="HtsEtragoTable",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(hts_to_etrago),
+        )
 
