@@ -60,11 +60,14 @@ class Chp(Dataset):
             name="Chp",
             version="0.0.0.dev",
             dependencies=dependencies,
-            tasks=(create_tables, insert_chp_egon2035,
-                   assign_heat_bus,
-                   #extension
-                   ),
+            tasks=(
+                create_tables,
+                insert_chp_egon2035,
+                assign_heat_bus,
+                # extension
+            ),
         )
+
 
 def create_tables():
     """Create tables for chp data
@@ -204,7 +207,7 @@ def assign_heat_bus(scenario="eGon2035"):
             el_capacity=row.el_capacity,
             th_capacity=row.th_capacity,
             electrical_bus_id=row.electrical_bus_id,
-            ch4_bus_id = row.ch4_bus_id,
+            ch4_bus_id=row.ch4_bus_id,
             district_heating_area_id=row.district_heating_area_id,
             district_heating=row.district_heating,
             voltage_level=row.voltage_level,

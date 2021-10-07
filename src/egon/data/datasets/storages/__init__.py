@@ -1,25 +1,23 @@
 """The central module containing all code dealing with power plant data.
 """
 from geoalchemy2 import Geometry
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Float,
-    Integer,
-    Sequence,
-    String,
-)
+from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from egon.data.datasets.storages.pumped_hydro import select_mastr_pumped_hydro, select_nep_pumped_hydro, match_storage_units, get_location, apply_voltage_level_thresholds
+from egon.data.datasets.storages.pumped_hydro import (
+    select_mastr_pumped_hydro,
+    select_nep_pumped_hydro,
+    match_storage_units,
+    get_location,
+    apply_voltage_level_thresholds,
+)
 from egon.data.datasets.power_plants import assign_voltage_level
 import geopandas as gpd
 import pandas as pd
 
 from egon.data import db, config
 from egon.data.datasets import Dataset
-
 
 
 Base = declarative_base()
@@ -40,16 +38,12 @@ class EgonStorages(Base):
 
 
 class PumpedHydro(Dataset):
-
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                create_tables,
-                allocate_pumped_hydro,
-            ),
+            tasks=(create_tables, allocate_pumped_hydro),
         )
 
 
@@ -70,6 +64,7 @@ def create_tables():
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonStorages.__table__.create(bind=engine, checkfirst=True)
+
 
 def allocate_pumped_hydro():
 
@@ -103,7 +98,6 @@ def allocate_pumped_hydro():
     matched, mastr, nep = match_storage_units(
         nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False
     )
-
 
     # Match plants from NEP list using plz,
     # neglecting the capacity
@@ -156,7 +150,19 @@ def allocate_pumped_hydro():
         located, unmatched = get_location(nep)
 
         # Bring both dataframes together
-        matched= matched.append(located[["carrier", "el_capacity", "scenario", "geometry", "source", "MaStRNummer"]], ignore_index=True)
+        matched = matched.append(
+            located[
+                [
+                    "carrier",
+                    "el_capacity",
+                    "scenario",
+                    "geometry",
+                    "source",
+                    "MaStRNummer",
+                ]
+            ],
+            ignore_index=True,
+        )
 
     # Set CRS
     matched.crs = "EPSG:4326"

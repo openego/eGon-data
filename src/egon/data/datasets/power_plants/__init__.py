@@ -58,7 +58,7 @@ class PowerPlants(Dataset):
             tasks=(
                 create_tables,
                 insert_hydro_biomass,
-		 allocate_conventional_non_chp_power_plants,
+                allocate_conventional_non_chp_power_plants,
                 {
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
@@ -205,10 +205,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     mastr_loc = (
         gpd.sjoin(
-            gpd.read_postgis(
-                sql,
-                con=db.engine(),
-            ).to_crs(4326),
+            gpd.read_postgis(sql, con=db.engine()).to_crs(4326),
             mastr_loc,
             how="right",
         )
@@ -635,7 +632,11 @@ def allocate_conventional_non_chp_power_plants():
             # Match combustion plants of a certain carrier from NEP list
             # using PLZ and capacity
             matched, mastr, nep = match_nep_no_chp(
-                nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False
+                nep,
+                mastr,
+                matched,
+                buffer_capacity=0.1,
+                consider_carrier=False,
             )
 
             # Match plants from NEP list using city and capacity
