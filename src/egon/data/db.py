@@ -83,10 +83,8 @@ def submit_comment(json, schema, table):
     """
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
-    check_json_str = (
-        "SELECT obj_description('{0}.{1}'::regclass)::json".format(
-            schema, table
-        )
+    check_json_str = "SELECT obj_description('{0}.{1}'::regclass)::json".format(
+        schema, table
     )
 
     execute_sql(prefix_str + json + ";")
@@ -184,7 +182,7 @@ def select_dataframe(sql, index_col=None):
     return df
 
 
-def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
+def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
     """ Select data from local database as geopandas.GeoDataFrame
 
     Parameters
@@ -207,7 +205,7 @@ def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
 
     gdf = gpd.read_postgis(
         sql, engine(), index_col=index_col, geom_col=geom_col
-        ).to_crs(epsg=epsg)
+    ).to_crs(epsg=epsg)
 
     if gdf.size == 0:
         print(f"WARNING: No data returned by statement: \n {sql}")
@@ -232,7 +230,8 @@ def next_etrago_id(component):
     max_id = select_dataframe(
         f"""
         SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
-        """)['max'][0]
+        """
+    )["max"][0]
 
     if max_id:
         next_id = max_id + 1

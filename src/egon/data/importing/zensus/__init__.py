@@ -165,10 +165,7 @@ def select_geom():
             f" port={docker_db_config['PORT']}"
             f" dbname='{docker_db_config['POSTGRES_DB']}'"
         ]
-        + [
-            "-sql",
-            "SELECT ST_Union(geometry) FROM boundaries.vg250_lan",
-        ],
+        + ["-sql", "SELECT ST_Union(geometry) FROM boundaries.vg250_lan"],
         text=True,
     )
     features = json.loads(geojson.stdout)["features"]
@@ -438,8 +435,7 @@ def create_combined_zensus_table():
     for building_count resp. apartment_count contains NULL.
     """
     sql_script = os.path.join(
-        os.path.dirname(__file__),
-        "create_combined_zensus_table.sql"
+        os.path.dirname(__file__), "create_combined_zensus_table.sql"
     )
     db.execute_sql_script(sql_script)
 

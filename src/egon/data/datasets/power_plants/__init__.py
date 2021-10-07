@@ -199,10 +199,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     mastr_loc = (
         gpd.sjoin(
-            gpd.read_postgis(
-                sql,
-                con=db.engine(),
-            ).to_crs(4326),
+            gpd.read_postgis(sql, con=db.engine()).to_crs(4326),
             mastr_loc,
             how="right",
         )

@@ -21,15 +21,15 @@ def calc_geothermal_potentials():
     ## full load hours per year in h (p. 95)
     flh = 3000
     ## mass flow per reservoir in kg/s (p. 95)
-    m_flow = pd.Series(
-        data={'NDB': 35, 'ORG': 90, 'SMB': 125}, name = 'm_flow')
+    m_flow = pd.Series(data={"NDB": 35, "ORG": 90, "SMB": 125}, name="m_flow")
 
     ## geothermal potentials per temperature (p. 94)
     file_path = (
-        Path(".") /
-        "data_bundle_egon_data" /
-        "geothermal_potential" /
-        "geothermal_potential_germany.shp")
+        Path(".")
+        / "data_bundle_egon_data"
+        / "geothermal_potential"
+        / "geothermal_potential_germany.shp"
+    )
     potentials = gpd.read_file(file_path)
     ## temperature heating system in °C (p. 95)
     sys_temp = 60
@@ -37,30 +37,35 @@ def calc_geothermal_potentials():
     loss_temp = 5
 
     # calc mean temperatures per region (p. 93/94):
-    potentials['mean_temperature'] = potentials['min_temper'] + 15
+    potentials["mean_temperature"] = potentials["min_temper"] + 15
 
     # exclude regions with mean_temp < 60°C (p. 93):
-    potentials = potentials[potentials.mean_temperature>=60]
+    potentials = potentials[potentials.mean_temperature >= 60]
 
     # exclude regions outside of NDB, ORG or SMB because of missing mass flow
     potentials = potentials[~potentials.reservoir.isnull()]
 
     ## set mass flows per region
-    potentials['m_flow'] = potentials.join(m_flow, on = 'reservoir').m_flow
+    potentials["m_flow"] = potentials.join(m_flow, on="reservoir").m_flow
 
     # calculate flow in kW
-    potentials['Q_flow'] = potentials.m_flow * c_p * (
-        potentials.mean_temperature - loss_temp - sys_temp)
+    potentials["Q_flow"] = (
+        potentials.m_flow
+        * c_p
+        * (potentials.mean_temperature - loss_temp - sys_temp)
+    )
 
-    potentials['Q'] = potentials.Q_flow * flh
+    potentials["Q"] = potentials.Q_flow * flh
 
     return potentials
+
 
 def calc_geothermal_costs(max_costs=np.inf, min_costs=0):
     # Set parameters
     ## drilling depth per reservoir in m (p. 99)
     depth = pd.Series(
-        data={'NDB': 2500, 'ORG': 3400, 'SMB': 2800}, name = 'depth')
+        data={"NDB": 2500, "ORG": 3400, "SMB": 2800}, name="depth"
+    )
     ## drillings costs in EUR/m (p. 99)
     depth_costs = 1500
     ## ratio of investment costs to drilling costs  (p. 99)
@@ -68,31 +73,35 @@ def calc_geothermal_costs(max_costs=np.inf, min_costs=0):
     ## annulazaion factors
     p = 0.045
     T = 30
-    PVA = 1/p - 1/(p*(1+p)**T)
+    PVA = 1 / p - 1 / (p * (1 + p) ** T)
 
     # calculate overnight investment costs per drilling and region
-    overnight_investment = depth*depth_costs*ratio
-    investment_per_year = overnight_investment/PVA
+    overnight_investment = depth * depth_costs * ratio
+    investment_per_year = overnight_investment / PVA
 
     # investment costs per well according to p.99
     costs = pd.Series(
-        data={'NDB': 12.5e6, 'ORG': 17e6, 'SMB': 14e6}, name = 'costs')
+        data={"NDB": 12.5e6, "ORG": 17e6, "SMB": 14e6}, name="costs"
+    )
 
     potentials = calc_geothermal_potentials()
 
+    potentials["cost_per_well"] = potentials.join(costs, on="reservoir").costs
 
-    potentials['cost_per_well'] = potentials.join(
-        costs, on = 'reservoir').costs
-
-    potentials['cost_per_well_mw'] = potentials.cost_per_well/1000/potentials.Q_flow
+    potentials["cost_per_well_mw"] = (
+        potentials.cost_per_well / 1000 / potentials.Q_flow
+    )
 
     potentials = potentials.to_crs(3035)
 
     # area weighted mean costs per well and mw
     np.average(potentials.cost_per_well_mw, weights=potentials.area)
 
-    return potentials[(potentials['cost_per_well_mw']<=max_costs)
-                      &(potentials['cost_per_well_mw']>min_costs)]
+    return potentials[
+        (potentials["cost_per_well_mw"] <= max_costs)
+        & (potentials["cost_per_well_mw"] > min_costs)
+    ]
+
 
 def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
     """ Calculate geothermal potentials close to district heating demands
@@ -110,7 +119,7 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
         Geothermal potential close to district heating areas in MW
 
     """
-    sources = config.datasets()['heat_supply']['sources']
+    sources = config.datasets()["heat_supply"]["sources"]
 
     # Select 1km buffer arround large district heating areas as possible areas
     district_heating = db.select_geodataframe(
@@ -130,7 +139,8 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
     # Select geothermal potential areas where investments costs per MW
     # are in given range
     geothermal_potential = calc_geothermal_costs(
-        max_costs=max_costs, min_costs=min_costs)
+        max_costs=max_costs, min_costs=min_costs
+    )
 
     # Intersect geothermal potential areas with district heating areas:
     # geothermal will be build only if demand of a large district heating
@@ -165,9 +175,11 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
         # Group intersecting areas by district heating area
         grouped = overlay[
             overlay.area_id.isin(
-                gt_potential_dh[gt_potential_dh.index.isin(
-                    overlay.area_id)].index)
-            ].groupby(overlay.area_id)
+                gt_potential_dh[
+                    gt_potential_dh.index.isin(overlay.area_id)
+                ].index
+            )
+        ].groupby(overlay.area_id)
 
         # Calculate geo thermal capacity per district heating area
         gt_potential_dh["Q_flow"] = grouped.Q_per_area.sum() / 1000
@@ -176,14 +188,16 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
         # Demand resitriction: If technical potential exceeds demand of
         # district heating area, reduce potential according to demand
         idx_demand_restriction = (
-            gt_potential_dh["Q_flow"] * 3000 > gt_potential_dh["demand"])
-        gt_potential_dh.loc[
-            idx_demand_restriction, "installed_MW"] = (
-                gt_potential_dh.loc[idx_demand_restriction, "demand"]
-                / 3000)
+            gt_potential_dh["Q_flow"] * 3000 > gt_potential_dh["demand"]
+        )
+        gt_potential_dh.loc[idx_demand_restriction, "installed_MW"] = (
+            gt_potential_dh.loc[idx_demand_restriction, "demand"] / 3000
+        )
 
-        print(f"""Geothermal potential in Germany:
-              {round(gt_potential_dh["Q_flow"].sum()/1000, 3)} GW_th""")
+        print(
+            f"""Geothermal potential in Germany:
+              {round(gt_potential_dh["Q_flow"].sum()/1000, 3)} GW_th"""
+        )
         print(
             f"""
             Geothermal potential in Germany close to large district heating:
@@ -191,10 +205,10 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
             """
         )
 
-
         return gt_potential_dh["installed_MW"].sum()
     else:
         return 0
+
 
 def potential_germany():
     """Calculates geothermal potentials for different investment costs.
@@ -211,25 +225,28 @@ def potential_germany():
     None.
 
     """
-    geothermal_costs_and_potentials = pd.Series(
-        index=[0.5, 1, 2, 5, 10])
+    geothermal_costs_and_potentials = pd.Series(index=[0.5, 1, 2, 5, 10])
 
     geothermal_costs_and_potentials[0.5] = calc_usable_geothermal_potential(
-        max_costs=0.5, min_costs=0)
+        max_costs=0.5, min_costs=0
+    )
 
     geothermal_costs_and_potentials[1] = calc_usable_geothermal_potential(
-        max_costs=1, min_costs=0.5)
+        max_costs=1, min_costs=0.5
+    )
 
     geothermal_costs_and_potentials[2] = calc_usable_geothermal_potential(
-        max_costs=2, min_costs=1)
+        max_costs=2, min_costs=1
+    )
 
     geothermal_costs_and_potentials[5] = calc_usable_geothermal_potential(
-        max_costs=5, min_costs=2)
+        max_costs=5, min_costs=2
+    )
 
     geothermal_costs_and_potentials[10] = calc_usable_geothermal_potential(
-        max_costs=10, min_costs=5)
+        max_costs=10, min_costs=5
+    )
 
-    pd.DataFrame(
-        geothermal_costs_and_potentials).reset_index().rename(
-            {'index':'cost [EUR/kW]', 0: 'potential [MW]'}, axis=1).to_csv(
-                'geothermal_potential_germany.csv')
+    pd.DataFrame(geothermal_costs_and_potentials).reset_index().rename(
+        {"index": "cost [EUR/kW]", 0: "potential [MW]"}, axis=1
+    ).to_csv("geothermal_potential_germany.csv")

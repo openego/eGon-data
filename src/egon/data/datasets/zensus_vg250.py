@@ -18,9 +18,11 @@ import geopandas as gpd
 
 from egon.data import db
 import egon.data.config
-from egon.data.metadata import (context,
-                                licenses_datenlizenz_deutschland,
-                                meta_metadata)
+from egon.data.metadata import (
+    context,
+    licenses_datenlizenz_deutschland,
+    meta_metadata,
+)
 from egon.data.datasets import Dataset
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
 
@@ -34,10 +36,12 @@ class ZensusVg250(Dataset):
             version="0.0.2",
             dependencies=dependencies,
             tasks=(
-                map_zensus_vg250, inside_germany,
-                add_metadata_zensus_inside_ger, population_in_municipalities,
-                add_metadata_vg250_gem_pop
-                )
+                map_zensus_vg250,
+                inside_germany,
+                add_metadata_zensus_inside_ger,
+                population_in_municipalities,
+                add_metadata_vg250_gem_pop,
+            ),
         )
 
 
@@ -210,7 +214,9 @@ def map_zensus_vg250():
             missing_cells, boundaries_buffer, how="inner", op="intersects"
         )
         join = join.append(join_missing)
-        missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
+        missing_cells = gdf[
+            (~gdf.id.isin(join.id_left)) & (gdf.population > 0)
+        ]
     print(f"Maximal buffer to match zensus points to vg250: {buffer}m")
 
     # drop duplicates
@@ -226,8 +232,12 @@ def map_zensus_vg250():
         },
         axis=1,
     )[
-        ["zensus_population_id", "zensus_geom",
-         "vg250_municipality_id", "vg250_nuts3"]
+        [
+            "zensus_population_id",
+            "zensus_geom",
+            "vg250_municipality_id",
+            "vg250_nuts3",
+        ]
     ].set_geometry(
         "zensus_geom"
     ).to_postgis(
@@ -304,7 +314,7 @@ def population_in_municipalities():
         "SELECT * FROM boundaries.vg250_gem",
         geom_col="geometry",
         epsg=srid,
-        index_col='id'
+        index_col="id",
     )
 
     gem["area_ha"] = gem.area / 10000
@@ -320,16 +330,22 @@ def population_in_municipalities():
         WHERE population > 0"""
     )
 
-    gem["population_total"] = population.groupby(
-        'vg250_municipality_id').population.sum().fillna(0)
+    gem["population_total"] = (
+        population.groupby("vg250_municipality_id").population.sum().fillna(0)
+    )
 
     gem["cell_count"] = population.groupby(
-        'vg250_municipality_id').population.count()
+        "vg250_municipality_id"
+    ).population.count()
 
-    gem["population_density"] = gem["population_total"]/gem["area_km2"]
+    gem["population_density"] = gem["population_total"] / gem["area_km2"]
 
-    gem.reset_index().to_postgis("vg250_gem_population", schema= "boundaries",
-                   con=db.engine(), if_exists='replace')
+    gem.reset_index().to_postgis(
+        "vg250_gem_population",
+        schema="boundaries",
+        con=db.engine(),
+        if_exists="replace",
+    )
 
 
 def add_metadata_zensus_inside_ger():
@@ -338,10 +354,12 @@ def add_metadata_zensus_inside_ger():
 
     Creates a metdadata JSON string and writes it to the database table comment
     """
-    schema_table = ".".join([
-        DestatisZensusPopulationPerHaInsideGermany.__table__.schema,
-        DestatisZensusPopulationPerHaInsideGermany.__table__.name,
-    ])
+    schema_table = ".".join(
+        [
+            DestatisZensusPopulationPerHaInsideGermany.__table__.schema,
+            DestatisZensusPopulationPerHaInsideGermany.__table__.name,
+        ]
+    )
 
     metadata = {
         "name": schema_table,
@@ -372,7 +390,7 @@ def add_metadata_zensus_inside_ger():
         "sources": [
             {
                 "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
-                         "Zensus 2011 zum Download",
+                "Zensus 2011 zum Download",
                 "description": (
                     "Als Download bieten wir Ihnen auf dieser Seite "
                     "zusätzlich zur Zensusdatenbank CSV- und "
@@ -384,11 +402,11 @@ def add_metadata_zensus_inside_ger():
                     "Ergebnisse für Gitterzellen verfügbar."
                 ),
                 "path": "https://www.zensus2011.de/DE/Home/Aktuelles/"
-                        "DemografischeGrunddaten.html",
+                "DemografischeGrunddaten.html",
                 "licenses": [
                     licenses_datenlizenz_deutschland(
                         attribution="© Statistische Ämter des Bundes und der "
-                                    "Länder 2014"
+                        "Länder 2014"
                     )
                 ],
             },
@@ -404,13 +422,13 @@ def add_metadata_zensus_inside_ger():
                     "der Länder im Juni 2015 veröffentlicht."
                 ),
                 "path": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
-                        "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
-                        "19004.pdf?__blob=publicationFile",
+                "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
+                "19004.pdf?__blob=publicationFile",
                 "licenses": [
                     licenses_datenlizenz_deutschland(
                         attribution="© Statistisches Bundesamt, Wiesbaden "
-                                    "2015 (im Auftrag der "
-                                    "Herausgebergemeinschaft)"
+                        "2015 (im Auftrag der "
+                        "Herausgebergemeinschaft)"
                     )
                 ],
             },
@@ -418,8 +436,8 @@ def add_metadata_zensus_inside_ger():
         "licenses": [
             licenses_datenlizenz_deutschland(
                 attribution="© Statistische Ämter des Bundes und der Länder "
-                            "2014; © Statistisches Bundesamt, Wiesbaden 2015 "
-                            "(Daten verändert)"
+                "2014; © Statistisches Bundesamt, Wiesbaden 2015 "
+                "(Daten verändert)"
             )
         ],
         "contributors": [
@@ -436,7 +454,7 @@ def add_metadata_zensus_inside_ger():
                 "date": time.strftime("%Y-%m-%d"),
                 "object": None,
                 "comment": "Metadata extended",
-            }
+            },
         ],
         "resources": [
             {
@@ -475,15 +493,13 @@ def add_metadata_zensus_inside_ger():
                             "name": "geom",
                             "description": "Geometry",
                             "type": "Geometry",
-                            "unit": ""},
+                            "unit": "",
+                        },
                     ],
                     "primaryKey": ["id"],
-                    "foreignKeys": []
+                    "foreignKeys": [],
                 },
-                "dialect": {
-                    "delimiter": None,
-                    "decimalSeparator": "."
-                }
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
         "metaMetadata": meta_metadata(),
@@ -505,49 +521,66 @@ def add_metadata_vg250_gem_pop():
     Creates a metdadata JSON string and writes it to the database table comment
     """
     vg250_config = egon.data.config.datasets()["vg250"]
-    schema_table = ".".join([Vg250GemPopulation.__table__.schema,
-                             Vg250GemPopulation.__table__.name])
+    schema_table = ".".join(
+        [
+            Vg250GemPopulation.__table__.schema,
+            Vg250GemPopulation.__table__.name,
+        ]
+    )
 
-    licenses = [licenses_datenlizenz_deutschland(
-        attribution="© Bundesamt für Kartographie und Geodäsie "
-                    "2020 (Daten verändert)"
-    )]
+    licenses = [
+        licenses_datenlizenz_deutschland(
+            attribution="© Bundesamt für Kartographie und Geodäsie "
+            "2020 (Daten verändert)"
+        )
+    ]
 
     vg250_source = {
         "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
-        "description":
-            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
-            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
-            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
-            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
-            "Verwaltungsebene des jeweiligen Landes.",
+        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+        "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+        "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+        "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+        "Verwaltungsebene des jeweiligen Landes.",
         "path": vg250_config["original_data"]["source"]["url"],
-        "licenses": licenses
+        "licenses": licenses,
     }
 
     resources_fields = vg250_metadata_resources_fields()
-    resources_fields.extend([
-        {'name': 'area_ha',
-         'description': 'Area in ha',
-         'type': 'float',
-         'unit': 'ha'},
-        {'name': 'area_km2',
-         'description': 'Area in km2',
-         'type': 'float',
-         'unit': 'km2'},
-        {'name': 'population_total',
-         'description': 'Number of inhabitants',
-         'type': 'integer',
-         'unit': 'none'},
-        {'name': 'cell_count',
-         'description': 'Number of Zensus cells',
-         'type': 'integer',
-         'unit': 'none'},
-        {'name': 'population_density',
-         'description': 'Number of inhabitants per km2',
-         'type': 'float',
-         'unit': 'inhabitants/km²'},
-    ])
+    resources_fields.extend(
+        [
+            {
+                "name": "area_ha",
+                "description": "Area in ha",
+                "type": "float",
+                "unit": "ha",
+            },
+            {
+                "name": "area_km2",
+                "description": "Area in km2",
+                "type": "float",
+                "unit": "km2",
+            },
+            {
+                "name": "population_total",
+                "description": "Number of inhabitants",
+                "type": "integer",
+                "unit": "none",
+            },
+            {
+                "name": "cell_count",
+                "description": "Number of Zensus cells",
+                "type": "integer",
+                "unit": "none",
+            },
+            {
+                "name": "population_density",
+                "description": "Number of inhabitants per km2",
+                "type": "float",
+                "unit": "inhabitants/km²",
+            },
+        ]
+    )
 
     metadata = {
         "name": schema_table,
@@ -591,7 +624,7 @@ def add_metadata_vg250_gem_pop():
                 "date": time.strftime("%Y-%m-%d"),
                 "object": None,
                 "comment": "Metadata extended",
-            }
+            },
         ],
         "resources": [
             {
@@ -603,12 +636,9 @@ def add_metadata_vg250_gem_pop():
                 "schema": {
                     "fields": resources_fields,
                     "primaryKey": ["id"],
-                    "foreignKeys": []
+                    "foreignKeys": [],
                 },
-                "dialect": {
-                    "delimiter": None,
-                    "decimalSeparator": "."
-                }
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
         "metaMetadata": meta_metadata(),

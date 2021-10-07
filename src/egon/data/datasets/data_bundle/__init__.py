@@ -10,6 +10,7 @@ from egon.data.datasets import Dataset
 from pathlib import Path
 import shutil
 
+
 def download():
     """
     Download small scale imput data from Zenodo
@@ -17,7 +18,7 @@ def download():
     ----------
 
     """
-    data_bundle_path = Path(".") / 'data_bundle_egon_data'
+    data_bundle_path = Path(".") / "data_bundle_egon_data"
     # Delete folder if it already exists
     if data_bundle_path.exists() and data_bundle_path.is_dir():
         shutil.rmtree(data_bundle_path)

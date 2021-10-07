@@ -17,10 +17,13 @@ def clone_and_install():
 
     """
 
-    source = egon.data.config.datasets()['demandregio_installation']['sources']
+    source = egon.data.config.datasets()["demandregio_installation"]["sources"]
 
-    repo_path = Path(".") / (egon.data.config.datasets()
-                   ['demandregio_installation']['targets']["path"])
+    repo_path = Path(".") / (
+        egon.data.config.datasets()["demandregio_installation"]["targets"][
+            "path"
+        ]
+    )
 
     # Delete repository if it already exists
     if repo_path.exists() and repo_path.is_dir():
@@ -39,15 +42,10 @@ def clone_and_install():
             source["branch"],
             source["git-repository"],
         ],
-        cwd=repo_path
+        cwd=repo_path,
     )
 
     # Install disaggregator from path
     subprocess.run(
-        [
-            "pip",
-            "install",
-            "-e",
-            (repo_path/'disaggregator').absolute(),
-        ],
+        ["pip", "install", "-e", (repo_path / "disaggregator").absolute()]
     )

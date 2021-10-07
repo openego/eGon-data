@@ -254,8 +254,7 @@ with airflow.DAG(
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
-        task_id="insert-gas-grid",
-        python_callable=gas_grid.insert_gas_data,
+        task_id="insert-gas-grid", python_callable=gas_grid.insert_gas_data
     )
 
     etrago_input_data >> gas_grid_insert_data
@@ -272,8 +271,7 @@ with airflow.DAG(
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
-        task_id="create-gas-voronoi",
-        python_callable=gas_areas.create_voronoi,
+        task_id="create-gas-voronoi", python_callable=gas_areas.create_voronoi
     )
 
     gas_grid_insert_data >> create_gas_polygons
@@ -328,8 +326,7 @@ with airflow.DAG(
 
     # Calculate dynamic line rating for HV trans lines
     calculate_dlr = PythonOperator(
-        task_id="calculate_dlr",
-        python_callable=dlr.Calculate_DLR,
+        task_id="calculate_dlr", python_callable=dlr.Calculate_DLR
     )
     osmtgmod_pypsa >> calculate_dlr
     download_data_bundle >> calculate_dlr
@@ -480,8 +477,11 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM 
-    components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
-                        demand_curves_industry,
-                        osmtgmod_pypsa])
+    # DSM
+    components_dsm = dsm_Potential(
+        dependencies=[
+            cts_electricity_demand_annual,
+            demand_curves_industry,
+            osmtgmod_pypsa,
+        ]
+    )

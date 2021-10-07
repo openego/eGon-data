@@ -121,7 +121,6 @@ import egon.data.config as config
     ),
     show_default=True,
 )
-
 @click.option(
     "--compose-project-name",
     default="egon-data",
@@ -133,7 +132,6 @@ import egon.data.config as config
     ),
     show_default=True,
 )
-
 @click.option(
     "--airflow-port",
     default=8080,
@@ -141,7 +139,6 @@ import egon.data.config as config
     help=("Specify the port on which airflow runs."),
     show_default=True,
 )
-
 @click.option(
     "--random-seed",
     default=42,
@@ -154,7 +151,6 @@ import egon.data.config as config
     ),
     show_default=True,
 )
-
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
@@ -313,8 +309,14 @@ def egon_data(context, **kwargs):
         )
     if code != 0:
         subprocess.run(
-            ["docker-compose", "-p", options["--compose-project-name"],
-             "up", "-d", "--build"],
+            [
+                "docker-compose",
+                "-p",
+                options["--compose-project-name"],
+                "up",
+                "-d",
+                "--build",
+            ],
             cwd=str((Path(".") / "docker").absolute()),
         )
         time.sleep(1.5)  # Give the container time to boot.
