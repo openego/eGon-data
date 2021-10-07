@@ -2,13 +2,14 @@
 forecast Zensus data.
 """
 
-from egon.data import db
+import numpy as np
+
 import egon.data.config
 import pandas as pd
-import numpy as np
+from egon.data import db
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from egon.data.datasets import Dataset
 
 # will be later imported from another file ###
 Base = declarative_base()

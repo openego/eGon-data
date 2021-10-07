@@ -2,9 +2,9 @@
 individual heat supply.
 
 """
-import pandas as pd
 import geopandas as gpd
-from egon.data import db, config
+import pandas as pd
+from egon.data import config, db
 
 
 def cascade_per_technology(

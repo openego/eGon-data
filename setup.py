@@ -2,10 +2,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, print_function
 
-from glob import glob
-from os.path import basename, dirname, join, splitext
 import io
 import re
+from glob import glob
+from os.path import basename, dirname, join, splitext
 
 from setuptools import find_packages, setup
 

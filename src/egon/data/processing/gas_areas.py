@@ -2,9 +2,9 @@
 
 """
 from egon.data import db
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Float, Integer, Sequence, Text
 from geoalchemy2.types import Geometry
+from sqlalchemy import Column, Float, Integer, Sequence, Text
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 

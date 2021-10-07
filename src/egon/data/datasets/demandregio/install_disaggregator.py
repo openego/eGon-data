@@ -2,10 +2,11 @@
 
 """
 import os
+import shutil
+from pathlib import Path
+
 import egon.data.config
 from egon.data import subprocess
-from pathlib import Path
-import shutil
 
 
 def clone_and_install():

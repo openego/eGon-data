@@ -4,16 +4,16 @@ The central module containing all code dealing with importing CH4 production dat
 """
 # import os
 import ast
-import pandas as pd
-import geopandas as gpd
-import numpy as np
-import geopandas
+from pathlib import Path
+from urllib.request import urlretrieve
 
+import numpy as np
+
+import geopandas as gpd
+import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from urllib.request import urlretrieve
-from pathlib import Path
 
 
 class CH4Production(Dataset):

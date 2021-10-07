@@ -1,9 +1,10 @@
-from egon.data import db
-import psycopg2
-import geopandas as gpd
-from shapely import wkb
-import pandas as pd
 import numpy as np
+import psycopg2
+
+import geopandas as gpd
+import pandas as pd
+from egon.data import db
+from shapely import wkb
 
 
 def insert():

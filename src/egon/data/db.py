@@ -1,13 +1,12 @@
-from contextlib import contextmanager
 import codecs
 import functools
+from contextlib import contextmanager
 
+import geopandas as gpd
+import pandas as pd
+from egon.data import config
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import pandas as pd
-import geopandas as gpd
-
-from egon.data import config
 
 
 def credentials():

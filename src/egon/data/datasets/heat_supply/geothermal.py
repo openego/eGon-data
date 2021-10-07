@@ -6,12 +6,13 @@ Berlin ifeu – Institut für Energie- und Umweltforschung Heidelberg GmbH
 Februar 2017
 
 """
-import geopandas as gpd
-import pandas as pd
-import numpy as np
 from pathlib import Path
 
-from egon.data import db, config
+import numpy as np
+
+import geopandas as gpd
+import pandas as pd
+from egon.data import config, db
 
 
 def calc_geothermal_potentials():

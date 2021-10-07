@@ -2,16 +2,15 @@
 """
 The central module containing all code dealing with importing gas industrial demand
 """
-import requests
-import pandas as pd
 import numpy as np
+import requests
 
-
-from shapely import wkt
+import pandas as pd
 from egon.data import db
-from egon.data.datasets.gas_prod import assign_ch4_bus_id, assign_h2_bus_id
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.gas_prod import assign_ch4_bus_id, assign_h2_bus_id
+from shapely import wkt
 
 
 class IndustrialGasDemand(Dataset):

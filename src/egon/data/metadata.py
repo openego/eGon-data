@@ -1,8 +1,7 @@
+from egon.data.db import engine
+from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
-from geoalchemy2 import Geometry
-
-from egon.data.db import engine
 
 
 def context():

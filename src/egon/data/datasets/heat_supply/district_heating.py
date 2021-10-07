@@ -2,10 +2,9 @@
 for district heating areas.
 
 """
-import pandas as pd
 import geopandas as gpd
-from egon.data import db, config
-
+import pandas as pd
+from egon.data import config, db
 from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 
 

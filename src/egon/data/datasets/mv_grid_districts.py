@@ -62,27 +62,15 @@ see :func:`define_mv_grid_districts`.
 
 from functools import partial
 
-from geoalchemy2.types import Geometry
-from sqlalchemy import (
-    ARRAY,
-    Boolean,
-    Column,
-    Float,
-    Integer,
-    Numeric,
-    Sequence,
-    String,
-    func,
-)
-from sqlalchemy.ext.declarative import declarative_base
-
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.db import session_scope
-from egon.data.processing.substation import (
-    EgonHvmvSubstation,
-    EgonHvmvSubstationVoronoi,
-)
+from egon.data.processing.substation import (EgonHvmvSubstation,
+                                             EgonHvmvSubstationVoronoi)
+from geoalchemy2.types import Geometry
+from sqlalchemy import (ARRAY, Boolean, Column, Float, Integer, Numeric,
+                        Sequence, String, func)
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 metadata = Base.metadata

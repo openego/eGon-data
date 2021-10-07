@@ -3,13 +3,13 @@
 The central module containing all code dealing with the definition of the power-to-H2 installations
 """
 import numpy as np
-import pandas as pd
-
 from pyproj import Geod
-from shapely import geometry
+
+import pandas as pd
+from egon.data import db
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
-from egon.data import db
+from shapely import geometry
 
 
 def insert_power_to_h2():

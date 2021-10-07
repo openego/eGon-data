@@ -2,22 +2,23 @@
 """
 The central module containing all code dealing with importing data from SciGRID_gas IGGIELGN data
 """
-import os
 import ast
-import pandas as pd
-import numpy as np
-import geopandas
 import json
-
-from egon.data.datasets import Dataset
-from shapely import geometry
-from egon.data import db
-from egon.data.config import settings
-from geoalchemy2.types import Geometry
+import os
+from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
+
+import numpy as np
+
+import geopandas
+import pandas as pd
+from egon.data import db
+from egon.data.config import settings
+from egon.data.datasets import Dataset
 from geoalchemy2.shape import from_shape
-from pathlib import Path
+from geoalchemy2.types import Geometry
+from shapely import geometry
 
 
 def download_SciGRID_gas_data():
