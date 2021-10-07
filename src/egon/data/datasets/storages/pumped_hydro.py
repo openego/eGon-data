@@ -10,7 +10,7 @@ from egon.data import db, config
 from egon.data.datasets.power_plants import (
     assign_voltage_level, assign_bus_id, assign_gas_bus_id,
     filter_mastr_geometry, select_target)
-from egon.data.datasets.chp.match_nep import match_nep_chp, map_carrier_nep_mastr, map_carrier_egon_mastr, map_carrier_matching
+from egon.data.datasets.chp.match_nep import match_nep_chp
 from egon.data.datasets.chp.small_chp import assign_use_case
 from sqlalchemy.orm import sessionmaker
 

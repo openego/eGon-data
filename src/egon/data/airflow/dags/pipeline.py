@@ -50,16 +50,12 @@ from egon.data.datasets.DSM_cts_ind import dsm_Potential
 import egon.data.datasets.gas_grid as gas_grid
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 
-import egon.data.importing.zensus as import_
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
-import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.loadarea as loadarea
-import egon.data.processing.calculate_dlr as dlr
 
 
 
@@ -437,7 +433,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(
@@ -489,33 +485,12 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM 
+    # DSM
     components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
+        dependencies = [cts_electricity_demand_annual,
                         demand_curves_industry,
                         osmtgmod_pypsa])
 
-    # Industry
-
-    industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
-    )
-
-    demand_curves_industry = IndustrialDemandCurves(
-        dependencies=[
-            define_mv_grid_districts,
-            industrial_sites,
-            demandregio_demand_cts_ind,
-            osm,
-            landuse_extraction,
-        ]
-    )
-
-    # Electrical loads to eTraGo
-
-    electrical_load_etrago = ElectricalLoadEtrago(
-        dependencies=[demand_curves_industry, cts_electricity_demand_annual]
-    )
 
     # Pumped hydro units
 

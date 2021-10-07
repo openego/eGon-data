@@ -3,7 +3,6 @@
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     Column,
     Float,
     Integer,
@@ -16,7 +15,6 @@ from sqlalchemy.orm import sessionmaker
 from egon.data.datasets.storages.pumped_hydro import select_mastr_pumped_hydro, select_nep_pumped_hydro, match_storage_units, get_location, apply_voltage_level_thresholds
 from egon.data.datasets.power_plants import assign_voltage_level
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 
 from egon.data import db, config
@@ -152,13 +150,13 @@ def allocate_pumped_hydro():
     print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
     print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
 
-    # Get location using geolocator and city information
+    if nep.c2035_capacity.sum() > 0:
 
-    located, unmatched = get_location(nep)
+        # Get location using geolocator and city information
+        located, unmatched = get_location(nep)
 
-    # Bring both dataframes together
-
-    matched= matched.append(located[["carrier", "el_capacity", "scenario", "geometry", "source", "MaStRNummer"]], ignore_index=True)
+        # Bring both dataframes together
+        matched= matched.append(located[["carrier", "el_capacity", "scenario", "geometry", "source", "MaStRNummer"]], ignore_index=True)
 
     # Set CRS
     matched.crs = "EPSG:4326"

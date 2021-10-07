@@ -592,7 +592,7 @@ def allocate_conventional_non_chp_power_plants():
 
     carrier = ["oil", "gas", "other_non_renewable"]
 
-    cfg = config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["power_plants"]
 
     # Delete existing CHP in the target table
     db.execute_sql(
