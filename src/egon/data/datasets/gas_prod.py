@@ -89,9 +89,9 @@ def load_NG_generators():
     NG_generators_list = NG_generators_list.rename(
         columns={"lat": "y", "long": "x"}
     )
-    NG_generators_list = geopandas.GeoDataFrame(
+    NG_generators_list = gpd.GeoDataFrame(
         NG_generators_list,
-        geometry=geopandas.points_from_xy(
+        geometry=gpd.points_from_xy(
             NG_generators_list["x"], NG_generators_list["y"]
         ),
     )
@@ -156,9 +156,9 @@ def load_biogas_generators():
     biogas_generators_list["x"] = x
     biogas_generators_list["y"] = y
 
-    biogas_generators_list = geopandas.GeoDataFrame(
+    biogas_generators_list = gpd.GeoDataFrame(
         biogas_generators_list,
-        geometry=geopandas.points_from_xy(
+        geometry=gpd.points_from_xy(
             biogas_generators_list["x"], biogas_generators_list["y"]
         ),
     )
