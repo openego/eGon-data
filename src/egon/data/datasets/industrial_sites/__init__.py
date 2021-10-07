@@ -130,23 +130,20 @@ def create_tables():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
     # Drop outdated tables if still present, might be removed later
-    db.execute_sql(
-        """DROP TABLE IF EXISTS demand.industrial_sites CASCADE;"""
-    )
-    
+    db.execute_sql("""DROP TABLE IF EXISTS demand.industrial_sites CASCADE;""")
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"""
     )
-   
-    
+
     # Drop tables and sequences before recreating them
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
@@ -453,10 +450,11 @@ def schmidt_to_postgres():
     ]["schmidt"]
 
     input_file = (
-            Path(".") /
-            "data_bundle_egon_data" /
-            "industrial_sites" /
-            schmidt_sources["path"])
+        Path(".")
+        / "data_bundle_egon_data"
+        / "industrial_sites"
+        / schmidt_sources["path"]
+    )
 
     engine = db.engine()
 
@@ -582,7 +580,7 @@ def merge_inputs():
     schmidt_table = (
         f"{schmidt_targets['schema']}" f".{schmidt_targets['table']}"
     )
-    
+
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
         f"""INSERT INTO {sites_table}
@@ -613,7 +611,7 @@ def merge_inputs():
  					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
                               LOWER (SUBSTRING(s.companyname, 1, 3))));"""
     )
-    
+
     # Insert data from Hotmaps
 
     db.execute_sql(
@@ -654,6 +652,7 @@ def merge_inputs():
               AND  (LOWER (SUBSTRING(g.plant, 1, 3)) =
                     LOWER (SUBSTRING(s.companyname, 1, 3)));"""
     )
+
 
 def map_nuts3():
     """

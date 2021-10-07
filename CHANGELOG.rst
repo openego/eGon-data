@@ -226,6 +226,8 @@ Changed
   `#397 <https://github.com/openego/eGon-data/issues/418>`_
 * Rename columns subst_id to bus_id
   `#335 <https://github.com/openego/eGon-data/issues/335>`_
+* Apply black and isort for all python scripts
+  `#463 <https://github.com/openego/eGon-data/issues/463>`_
 
 
 Bug fixes
