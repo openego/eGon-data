@@ -17,10 +17,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 try:
     from disaggregator import config, data, spatial, temporal, plot
-except:
-    print(
-         "Could not import disaggregator. "
-        "Please run task 'demandregio-installation'")
+except ImportError as e:
+   pass
 
 from math import ceil
 
