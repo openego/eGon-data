@@ -43,6 +43,7 @@ from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
+from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
@@ -465,6 +466,7 @@ with airflow.DAG(
             data_bundle,
             zensus_mv_grid_districts,
             district_heating_areas,
+            power_plants,
             zensus_mv_grid_districts,
             chp,
         ]
@@ -487,15 +489,21 @@ with airflow.DAG(
                         import_district_heating_areas,vg250,
                         map_zensus_grid_districts])
 
+    # DSM 
+    components_dsm =  dsm_Potential(
+        dependencies = [cts_electricity_demand_annual, 
+                        demand_curves_industry,
+                        osmtgmod_pypsa])
 
-    
-    # DSM
-    components_dsm = dsm_Potential(
+    # Pumped hydro units
+    pumped_hydro = PumpedHydro(
         dependencies=[
-            cts_electricity_demand_annual,
-            demand_curves_industry,
-            osmtgmod_pypsa,
+            setup,
+            mv_grid_districts,
+            mastr_data,
+            scenario_parameters,
+            scenario_capacities,
+            Vg250MvGridDistricts,
+            power_plants,
         ]
     )
-
-

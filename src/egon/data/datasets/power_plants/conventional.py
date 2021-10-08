@@ -230,7 +230,7 @@ def match_nep_no_chp(
 
             # Set capacity constraint if selected
             if consider_carrier:
-                selected = selected[selected.carrier==ET]
+                selected = selected[selected.carrier == ET]
 
             # If a plant could be matched, add this to matched
             if len(selected) > 0:
@@ -256,4 +256,3 @@ def match_nep_no_chp(
                     mastr = mastr.drop(selected.index)
 
     return matched, mastr, nep
-
