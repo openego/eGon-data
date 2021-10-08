@@ -53,7 +53,6 @@ class EgonPowerPlants(Base):
 
 
 class PowerPlants(Dataset):
-
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
@@ -63,9 +62,11 @@ class PowerPlants(Dataset):
                 create_tables,
                 insert_hydro_biomass,
                 allocate_conventional_non_chp_power_plants,
-                wind_onshore.insert,
-                pv_ground_mounted.insert,
-                pv_rooftop_per_mv_grid,
+                {
+                    wind_onshore.insert,
+                    pv_ground_mounted.insert,
+                    pv_rooftop_per_mv_grid,
+                },
                 wind_offshore.insert,
                 assign_weather_data.weather_id,
             ),
@@ -209,10 +210,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     mastr_loc = (
         gpd.sjoin(
-            gpd.read_postgis(
-                sql,
-                con=db.engine(),
-            ).to_crs(4326),
+            gpd.read_postgis(sql, con=db.engine()).to_crs(4326),
             mastr_loc,
             how="right",
         )

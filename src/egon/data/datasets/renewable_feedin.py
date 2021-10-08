@@ -2,14 +2,15 @@
 Central module containing all code dealing with processing era5 weather data.
 """
 
-import pandas as pd
-import geopandas as gpd
 import numpy as np
+
 import egon.data.config
+import geopandas as gpd
+import pandas as pd
 from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.era5 import import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets import Dataset
 
 
 class RenewableFeedin(Dataset):
@@ -19,10 +20,11 @@ class RenewableFeedin(Dataset):
             version="0.0.1",
             dependencies=dependencies,
             tasks={wind, pv, solar_thermal},
-            )
+        )
+
 
 def weather_cells_in_germany(geom_column="geom"):
-    """Get weather cells which intersect with Germany
+    """ Get weather cells which intersect with Germany
 
     Returns
     -------
@@ -34,18 +36,19 @@ def weather_cells_in_germany(geom_column="geom"):
     cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
 
     return db.select_geodataframe(
-        f"""SELECT w_id, geom_point, geom
+        f"""SELECT a.w_id, a.geom_point, a.geom
         FROM {cfg['weather_cells']['schema']}.
-        {cfg['weather_cells']['table']}
-        WHERE ST_Intersects('SRID=4326;
-        POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
+        {cfg['weather_cells']['table']} a,
+        {cfg['vg250_sta_union']['schema']}.
+        {cfg['vg250_sta_union']['table']} b
+        WHERE ST_Intersects(ST_Transform(b.geometry, 4326), a.geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
 
 
 def federal_states_per_weather_cell():
-    """Assings a federal state to each weather cell in Germany.
+    """ Assings a federal state to each weather cell in Germany.
 
     Sets the federal state to the weather celss using the centroid.
     Weather cells at the borders whoes centroid is not inside Germany
@@ -146,7 +149,7 @@ def turbine_per_weather_cell():
 
 
 def feedin_per_turbine():
-    """Calculate feedin timeseries per turbine type and weather cell
+    """ Calculate feedin timeseries per turbine type and weather cell
 
     Returns
     -------
@@ -250,7 +253,7 @@ def feedin_per_turbine():
 
 
 def wind():
-    """Insert feed-in timeseries for wind onshore turbines to database
+    """ Insert feed-in timeseries for wind onshore turbines to database
 
     Returns
     -------
@@ -305,7 +308,7 @@ def wind():
 
 
 def pv():
-    """Insert feed-in timeseries for pv plants to database
+    """ Insert feed-in timeseries for pv plants to database
 
     Returns
     -------
@@ -335,7 +338,7 @@ def pv():
 
 
 def solar_thermal():
-    """Insert feed-in timeseries for pv plants to database
+    """ Insert feed-in timeseries for pv plants to database
 
     Returns
     -------
@@ -365,7 +368,7 @@ def solar_thermal():
 
 
 def insert_feedin(data, carrier, weather_year):
-    """Insert feedin data into database
+    """ Insert feedin data into database
 
     Parameters
     ----------

@@ -208,8 +208,9 @@ def dsm_cts_ind_processing():
 
             # initialize dataframe to be returned
 
-            ts = pd.DataFrame(data=curves_bus['bus_id'], index=curves_bus["id"].astype(int))
-
+            ts = pd.DataFrame(
+                data=curves_bus["bus_id"], index=curves_bus["id"].astype(int)
+            )
             ts["scenario_name"] = scenario
             curves_bus.drop({"id", "bus_id"}, axis=1, inplace=True)
             ts["p_set"] = curves_bus.values.tolist()
@@ -543,7 +544,7 @@ def dsm_cts_ind_processing():
         insert_buses["x"] = dsm_buses["x"]
         insert_buses["y"] = dsm_buses["y"]
         insert_buses["geom"] = dsm_buses["geom"]
-        insert_buses.set_geometry("geom", inplace=True) 
+        insert_buses.set_geometry("geom", inplace=True)
 
         # insert into database
         insert_buses.to_postgis(

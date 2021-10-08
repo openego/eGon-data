@@ -49,6 +49,8 @@ class EgonMaStRConventinalWithoutChp(Base):
     EinheitMastrNummer = Column(String)
     carrier = Column(String)
     el_capacity = Column(Float)
+    plz = Column(Integer)
+    city = Column(String)
     geometry = Column(Geometry("POINT", 4326))
 
 
@@ -183,20 +185,20 @@ def assign_heat_bus(scenario="eGon2035"):
     session = sessionmaker(bind=db.engine())()
     for i, row in chp.iterrows():
         entry = EgonChp(
-                id = i,
-                sources=row.sources,
-                source_id=row.source_id,
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                th_capacity= row.th_capacity,
-                electrical_bus_id = row.electrical_bus_id,
-                ch4_bus_id = row.ch4_bus_id,
-                district_heating_area_id = row.district_heating_area_id,
-                district_heating=row.district_heating,
-                voltage_level = row.voltage_level,
-                scenario=scenario,
-                geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
-            )
+            id=i,
+            sources=row.sources,
+            source_id=row.source_id,
+            carrier=row.carrier,
+            el_capacity=row.el_capacity,
+            th_capacity=row.th_capacity,
+            electrical_bus_id=row.electrical_bus_id,
+            ch4_bus_id=row.ch4_bus_id,
+            district_heating_area_id=row.district_heating_area_id,
+            district_heating=row.district_heating,
+            voltage_level=row.voltage_level,
+            scenario=scenario,
+            geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+        )
         session.add(entry)
     session.commit()
 

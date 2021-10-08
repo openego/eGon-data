@@ -1,6 +1,7 @@
 """The module containing all parameters for the scenario table
 """
 
+
 def global_settings(scenario):
     """Returns global paramaters for the selected scenario.
 
@@ -16,17 +17,11 @@ def global_settings(scenario):
 
     """
 
-    if scenario == 'eGon2035':
-        parameters = {
-            'weather_year': 2011,
-            'population_year': 2035
-            }
+    if scenario == "eGon2035":
+        parameters = {"weather_year": 2011, "population_year": 2035}
 
-    elif scenario == 'eGon100RE':
-        parameters = {
-            'weather_year': 2011,
-            'population_year': 2050
-            }
+    elif scenario == "eGon100RE":
+        parameters = {"weather_year": 2011, "population_year": 2050}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -49,21 +44,16 @@ def electricity(scenario):
 
     """
 
-    if scenario == 'eGon2035':
-        parameters = {
-            'grid_topology': 'Status Quo'
-            }
+    if scenario == "eGon2035":
+        parameters = {"grid_topology": "Status Quo"}
 
-    elif scenario == 'eGon100RE':
-        parameters = {
-            'grid_topology': 'Status Quo'
-            }
+    elif scenario == "eGon100RE":
+        parameters = {"grid_topology": "Status Quo"}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
 
     return parameters
-
 
 
 def gas(scenario):
@@ -81,15 +71,11 @@ def gas(scenario):
 
     """
 
-    if scenario == 'eGon2035':
-        parameters = {
+    if scenario == "eGon2035":
+        parameters = {}
 
-            }
-
-    elif scenario == 'eGon100RE':
-        parameters = {
-
-            }
+    elif scenario == "eGon100RE":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -112,21 +98,16 @@ def mobility(scenario):
 
     """
 
-    if scenario == 'eGon2035':
-        parameters = {
+    if scenario == "eGon2035":
+        parameters = {}
 
-            }
-
-    elif scenario == 'eGon100RE':
-        parameters = {
-
-            }
+    elif scenario == "eGon100RE":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
 
     return parameters
-
 
 
 def heat(scenario):
@@ -144,21 +125,19 @@ def heat(scenario):
 
     """
 
-    if scenario == 'eGon2035':
+    if scenario == "eGon2035":
         parameters = {
-            'DE_demand_reduction_residential': 0.854314018923104,
-            'DE_demand_reduction_service': 0.498286864771128,
-            'DE_district_heating_share': 0.14
+            "DE_demand_reduction_residential": 0.854314018923104,
+            "DE_demand_reduction_service": 0.498286864771128,
+            "DE_district_heating_share": 0.14,
+        }
 
-            }
-
-    elif scenario == 'eGon100RE':
+    elif scenario == "eGon100RE":
         parameters = {
-            'DE_demand_reduction_residential': 0.640720648501849,
-            'DE_demand_reduction_service': 0.390895195300713,
-            'DE_district_heating_share': 0.19
-
-            }
+            "DE_demand_reduction_residential": 0.640720648501849,
+            "DE_demand_reduction_service": 0.390895195300713,
+            "DE_district_heating_share": 0.19,
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")

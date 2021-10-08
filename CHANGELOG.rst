@@ -152,6 +152,8 @@ Added
   Add metadata templates for licences, context and some helper
   functions. Extend docs on how to create metadata for tables.
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
+* Integrate DSM potentials for CTS and industry
+  `#259 <https://github.com/openego/eGon-data/issues/259>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -227,12 +229,15 @@ Changed
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
 * Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
   `#423 <https://github.com/openego/eGon-data/issues/423>`_
+* Replace 'gas' carrier with 'CH4' and 'H2' carriers
+  `#436 <https://github.com/openego/eGon-data/issues/436>`_
 * Adjust file path for industrial sites import
   `#397 <https://github.com/openego/eGon-data/issues/418>`_
 * Rename columns subst_id to bus_id
   `#335 <https://github.com/openego/eGon-data/issues/335>`_
-* Replace 'gas' carrier with 'CH4' and 'H2' carriers
-  `#436 <https://github.com/openego/eGon-data/issues/436>`_
+* Apply black and isort for all python scripts
+  `#463 <https://github.com/openego/eGon-data/issues/463>`_
+
 
 Bug fixes
 ---------
@@ -293,3 +298,6 @@ Bug fixes
   `#432 <https://github.com/openego/eGon-data/issues/432>`_
 * Add curl to prerequisites in the docs
   `#440 <https://github.com/openego/eGon-data/issues/440>`_
+* Exchange bus 0 and bus 1 in Power-to-H2 links
+  `#458 <https://github.com/openego/eGon-data/issues/458>`_
+

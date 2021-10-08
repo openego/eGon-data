@@ -132,13 +132,7 @@ def export_to_db():
             ]
         )
         load_timeseries = pd.DataFrame(
-            columns=[
-                "scn_name",
-                "load_id",
-                "temp_id",
-                "p_set",
-                "q_set",
-            ]
+            columns=["scn_name", "load_id", "temp_id", "p_set", "q_set"]
         )
 
         # Choose next unused load_id

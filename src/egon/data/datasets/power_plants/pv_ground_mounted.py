@@ -1,21 +1,24 @@
-from egon.data import db
-import psycopg2
-import geopandas as gpd
-from shapely import wkb
-import pandas as pd
 import numpy as np
+import psycopg2
+
+import geopandas as gpd
+import pandas as pd
+from egon.data import db
+from shapely import wkb
 
 
 def insert():
     def mastr_existing_pv(path, pow_per_area):
 
         """Import MaStR data from csv-files.
+
         Parameters
         ----------
         path : string
             Path to location of MaStR-file
         pow_per_area: int
             Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
+
         """
 
         # import MaStR data: locations, grid levels and installed capacities
@@ -41,7 +44,10 @@ def insert():
         print("originale Anzahl der Zeilen im Datensatz: " + str(len(df)))
         print("NaNs für Längen- und Breitengrad: " + str(x1) + " & " + str(x2))
         df.dropna(inplace=True)
-        print("Anzahl der Zeilen im Datensatz nach Dropping der NaNs: " + str(len(df)))
+        print(
+            "Anzahl der Zeilen im Datensatz nach Dropping der NaNs: "
+            + str(len(df))
+        )
         print(" ")
 
         # derive dataframe for locations
@@ -105,7 +111,9 @@ def insert():
         x1 = mastr["voltage_level"].isnull().sum()
         print(" ")
         print("Untersuchung des MaStR-Datensatzes für Spannungsebenen:")
-        print("Anzahl der Zeilen im MaStR-Datensatz vorher: " + str(len(mastr)))
+        print(
+            "Anzahl der Zeilen im MaStR-Datensatz vorher: " + str(len(mastr))
+        )
         print(
             "NaNs in Spannungsebene aufgrund a) keine Zuordnung zur Nummer oder b) fehlender Daten: "
             + str(x1)
@@ -113,7 +121,8 @@ def insert():
         # drop PVs with missing values due to a) no assignemtn of MaStR-numbers or b) missing data in row
         mastr.dropna(inplace=True)
         print(
-            "Anzahl der Zeilen im Datensatz nach Dropping der NaNs: " + str(len(mastr))
+            "Anzahl der Zeilen im Datensatz nach Dropping der NaNs: "
+            + str(len(mastr))
         )
 
         # drop PVs in low voltage level
@@ -140,12 +149,14 @@ def insert():
     def potential_areas(con, join_buffer):
 
         """Import potential areas and choose and prepare areas suitable for PV ground mounted.
+
         Parameters
         ----------
         con:
             Connection to database
         join_buffer: int
             Maximum distance for joining of potential areas (only small ones to big ones) in m
+
         """
 
         # import potential areas: railways and roads & agriculture
@@ -156,7 +167,9 @@ def insert():
         potentials_rora = potentials_rora.set_index("id")
 
         # agriculture
-        sql = "SELECT id, geom FROM supply.egon_re_potential_area_pv_agriculture"
+        sql = (
+            "SELECT id, geom FROM supply.egon_re_potential_area_pv_agriculture"
+        )
         potentials_agri = gpd.GeoDataFrame.from_postgis(sql, con)
         potentials_agri = potentials_agri.set_index("id")
 
@@ -205,10 +218,14 @@ def insert():
         print("Länge des Dataframes der Flächen vorher: " + str(before))
         print("Anzahl kleiner Flächen: " + str(count_small))
         print(
-            "Anzahl der durchgeführten Prozedur des Zusammenfassens: " + str(count_join)
+            "Anzahl der durchgeführten Prozedur des Zusammenfassens: "
+            + str(count_join)
         )
         print("gelöschte Flächen (not joined): " + str(count_delete))
-        print("Länge des Dataframes der Flächen danach: " + str(len(potentials_rora)))
+        print(
+            "Länge des Dataframes der Flächen danach: "
+            + str(len(potentials_rora))
+        )
         print(" ")
 
         # agriculture
@@ -250,10 +267,14 @@ def insert():
         print("Länge des Dataframes der Flächen vorher: " + str(before))
         print("Anzahl kleiner Flächen: " + str(count_small))
         print(
-            "Anzahl der durchgeführten Prozedur des Zusammenfassens: " + str(count_join)
+            "Anzahl der durchgeführten Prozedur des Zusammenfassens: "
+            + str(count_join)
         )
         print("gelöschte Flächen (not joined): " + str(count_delete))
-        print("Länge des Dataframes der Flächen danach: " + str(len(potentials_agri)))
+        print(
+            "Länge des Dataframes der Flächen danach: "
+            + str(len(potentials_agri))
+        )
         print(" ")
 
         # calculate new areas
@@ -288,12 +309,14 @@ def insert():
     def select_pot_areas(mastr, potentials_pot):
 
         """Select potential areas where there are existing pv parks (MaStR-data).
+
         Parameters
         ----------
         mastr: gpd.GeoDataFrame()
             MaStR-DataFrame with existing pv parks
         potentials_pot: gpd.GeoDataFrame()
             Suitable potential areas
+
         """
 
         # select potential areas with existing pv parks
@@ -332,12 +355,14 @@ def insert():
     def build_pv(pv_pot, pow_per_area):
 
         """Build new pv parks in selected potential areas.
+
         Parameters
         ----------
         pv_pot: gpd.GeoDataFrame()
             Selected potential areas
         pow_per_area: int
             Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
+
         """
 
         # build pv farms in selected areas
@@ -351,15 +376,16 @@ def insert():
 
         # check for maximal capacity for PV ground mounted
         limit_cap = 120000  # in kW
-        pv_pot["installed capacity in kW"] = pv_pot["installed capacity in kW"].apply(
-            lambda x: x if x < limit_cap else limit_cap
-        )
+        pv_pot["installed capacity in kW"] = pv_pot[
+            "installed capacity in kW"
+        ].apply(lambda x: x if x < limit_cap else limit_cap)
 
         return pv_pot
 
     def adapt_grid_level(pv_pot, max_dist_hv, con):
 
         """Check and if needed adapt grid level of newly built pv parks.
+
         Parameters
         ----------
         pv_pot: gpd.GeoDataFrame()
@@ -368,6 +394,7 @@ def insert():
             Assumption for maximum distance of park with hv-power to next substation in m
         con:
             Connection to database
+
         """
 
         # divide dataframe in MV and HV
@@ -379,20 +406,28 @@ def insert():
         max_cap_mv = 5500  # in kW
 
         # find PVs which need to be HV or to have reduced capacity
-        pv_pot_mv_to_hv = pv_pot_mv[pv_pot_mv["installed capacity in kW"] > max_cap_mv]
+        pv_pot_mv_to_hv = pv_pot_mv[
+            pv_pot_mv["installed capacity in kW"] > max_cap_mv
+        ]
 
         if len(pv_pot_mv_to_hv) > 0:
 
             # import data for HV substations
 
             sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
-            hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col="point")
+            hvmv_substation = gpd.GeoDataFrame.from_postgis(
+                sql, con, geom_col="point"
+            )
             hvmv_substation = hvmv_substation.to_crs(3035)
             hvmv_substation["voltage"] = hvmv_substation["voltage"].apply(
                 lambda x: int(x.split(";")[0])
             )
-            hv_substations = hvmv_substation[hvmv_substation["voltage"] >= 110000]
-            hv_substations = hv_substations.unary_union  # join all the hv_substations
+            hv_substations = hvmv_substation[
+                hvmv_substation["voltage"] >= 110000
+            ]
+            hv_substations = (
+                hv_substations.unary_union
+            )  # join all the hv_substations
 
             # check distance to HV substations of PVs with too high installed capacity for MV
 
@@ -426,6 +461,7 @@ def insert():
     def build_additional_pv(potentials, pv, pow_per_area, con):
 
         """Build additional pv parks if pv parks on selected potential areas do not hit the target value.
+
          Parameters
          ----------
          potenatials: gpd.GeoDataFrame()
@@ -436,6 +472,7 @@ def insert():
              Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
          con:
              Connection to database
+
         """
 
         # get MV grid districts
@@ -463,11 +500,18 @@ def insert():
         anz_small = len(overlay[overlay["area"] < size])
 
         print(" ")
-        print("Untersuchung der (übrigen) Potentialflächen in den MV Grid Districts: ")
+        print(
+            "Untersuchung der (übrigen) Potentialflächen in den MV Grid Districts: "
+        )
         print("Anzahl der Potentialflächen: " + str(anz))
         print(" -> verteilt über " + str(anz_distr) + " Districts")
-        print("Anzahl der Flächen mit einem Potential >= 5,5 MW: " + str(anz_big))
-        print("Anzahl der Flächen mit einem Potential < 5,5 MW: " + str(anz_small))
+        print(
+            "Anzahl der Flächen mit einem Potential >= 5,5 MW: " + str(anz_big)
+        )
+        print(
+            "Anzahl der Flächen mit einem Potential < 5,5 MW: "
+            + str(anz_small)
+        )
         print(" ")
 
         for index, dist in distr.iterrows():
@@ -479,7 +523,9 @@ def insert():
 
         # calculate area per MV grid district and linearly distribute needed capacity considering pow_per_area
         pv_per_distr["area"] = pv_per_distr["geom"].area
-        pv_per_distr["installed capacity in kW"] = pv_per_distr["area"] * pow_per_area
+        pv_per_distr["installed capacity in kW"] = (
+            pv_per_distr["area"] * pow_per_area
+        )
 
         # calculate centroid
         pv_per_distr["centroid"] = pv_per_distr["geom"].centroid
@@ -497,6 +543,7 @@ def insert():
     ):
 
         """Check target value per scenario and per state.
+
          Parameters
          ----------
          pv_rora_i: gpd.GeoDataFrame()
@@ -513,6 +560,7 @@ def insert():
              Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
          con:
              Connection to database
+
         """
 
         # sum overall installed capacity for MV and HV
@@ -630,10 +678,12 @@ def insert():
 
                 if pv_per_distr_i["installed capacity in kW"].sum() > rest_cap:
                     scale_factor = (
-                        rest_cap / pv_per_distr_i["installed capacity in kW"].sum()
+                        rest_cap
+                        / pv_per_distr_i["installed capacity in kW"].sum()
                     )
                     pv_per_distr_i["installed capacity in kW"] = (
-                        pv_per_distr_i["installed capacity in kW"] * scale_factor
+                        pv_per_distr_i["installed capacity in kW"]
+                        * scale_factor
                     )
 
                     ###
@@ -679,6 +729,7 @@ def insert():
     ):
 
         """Execute methodology to distribute pv ground mounted.
+
          Parameters
          ----------
          con:
@@ -693,6 +744,7 @@ def insert():
              Assumption for maximum distance of park with hv-power to next substation in m
         show_map:  boolean
             Optional creation of map to show distribution of installed capacity
+
         """
 
         ###
@@ -777,7 +829,9 @@ def insert():
 
         # check target value per state
         for i in nuts:
-            target_power = target[target["nuts"] == i]["capacity"].iloc[0] * 1000
+            target_power = (
+                target[target["nuts"] == i]["capacity"].iloc[0] * 1000
+            )
 
             ###
             land = target[target["nuts"] == i]["nuts"].iloc[0]
@@ -868,7 +922,9 @@ def insert():
         # assumption for target value of installed capacity in Germany per scenario
         sql = "SELECT capacity,scenario_name FROM supply.egon_scenario_capacities WHERE carrier='solar'"
         target_power = pd.read_sql(sql, con)
-        target_power = target_power[target_power["scenario_name"] == "eGon100RE"]
+        target_power = target_power[
+            target_power["scenario_name"] == "eGon100RE"
+        ]
         target_power = target_power["capacity"].sum() * 1000
 
         ###
@@ -990,13 +1046,21 @@ def insert():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
-        
-        pv_rora = pv_rora[pv_rora['installed capacity in kW']>0]
-        pv_agri = pv_agri[pv_agri['installed capacity in kW']>0]
-        pv_per_distr = pv_per_distr[pv_per_distr['installed capacity in kW']>0]
-        pv_rora_100RE = pv_rora_100RE[pv_rora_100RE['installed capacity in kW']>0]
-        pv_agri_100RE = pv_agri_100RE[pv_agri_100RE['installed capacity in kW']>0]
-        pv_per_distr_100RE = pv_per_distr_100RE[pv_per_distr_100RE['installed capacity in kW']>0]
+
+        pv_rora = pv_rora[pv_rora["installed capacity in kW"] > 0]
+        pv_agri = pv_agri[pv_agri["installed capacity in kW"] > 0]
+        pv_per_distr = pv_per_distr[
+            pv_per_distr["installed capacity in kW"] > 0
+        ]
+        pv_rora_100RE = pv_rora_100RE[
+            pv_rora_100RE["installed capacity in kW"] > 0
+        ]
+        pv_agri_100RE = pv_agri_100RE[
+            pv_agri_100RE["installed capacity in kW"] > 0
+        ]
+        pv_per_distr_100RE = pv_per_distr_100RE[
+            pv_per_distr_100RE["installed capacity in kW"] > 0
+        ]
 
         return (
             pv_rora,
@@ -1010,6 +1074,7 @@ def insert():
     def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
         """Write to database.
+
         Parameters
         ----------
         pv_rora : gpd.GeoDataFrame()
@@ -1020,6 +1085,7 @@ def insert():
             Additionally built pv parks on potential areas per mv grid district
         scenario_name:
             Scenario name of calculation
+
         """
 
         # prepare dataframe for integration in supply.egon_power_plants
@@ -1067,9 +1133,11 @@ def insert():
         pv_park_id = max_id + 1
 
         # copy relevant columns from pv_parks
-        insert_pv_parks = pv_parks[["el_capacity", "voltage_level", "geometry"]]
-        insert_pv_parks = insert_pv_parks.set_geometry('geometry')
-        
+        insert_pv_parks = pv_parks[
+            ["el_capacity", "voltage_level", "geometry"]
+        ]
+        insert_pv_parks = insert_pv_parks.set_geometry("geometry")
+
         # set static column values
         insert_pv_parks["carrier"] = "solar"
         insert_pv_parks["chp"] = False
@@ -1081,8 +1149,8 @@ def insert():
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
-            .to_crs(4326)
-        )        
+            .set_crs(4326)
+        )
 
         # reset index
         insert_pv_parks.index = pd.RangeIndex(
@@ -1091,7 +1159,10 @@ def insert():
 
         # insert into database
         insert_pv_parks.reset_index().to_postgis(
-            "egon_power_plants", schema="supply", con=db.engine(), if_exists="append"
+            "egon_power_plants",
+            schema="supply",
+            con=db.engine(),
+            if_exists="append",
         )
 
         return pv_parks
@@ -1189,4 +1260,3 @@ def insert():
         pv_parks_100RE = gpd.GeoDataFrame()
 
     return pv_parks, pv_parks_100RE
-

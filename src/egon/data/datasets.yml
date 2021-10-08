@@ -707,7 +707,6 @@ chp_etrago:
     link:
       schema: 'grid'
       table: 'egon_etrago_link'
-
       
 DSM_CTS_industry:
   sources:

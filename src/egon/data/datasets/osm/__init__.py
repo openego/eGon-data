@@ -22,10 +22,12 @@ import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
-from egon.data.metadata import (context,
-                                license_odbl,
-                                meta_metadata,
-                                generate_resource_fields_from_db_table)
+from egon.data.metadata import (
+    context,
+    license_odbl,
+    meta_metadata,
+    generate_resource_fields_from_db_table,
+)
 from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subprocess
@@ -54,18 +56,17 @@ def download():
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(cache_size=4096):
+def to_postgres(num_processes=1, cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
     ----------
+    num_processes : int, optional
+        Number of parallel processes used for processing during data import
     cache_size: int, optional
         Memory used during data import
 
     """
-    # Read maximum number of threads per task from egon-data.configuration.yaml
-    num_processes = settings()["egon-data"]["--processes-per-task"]
-
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 
@@ -136,11 +137,11 @@ def add_metadata():
 
     # Extract spatial extend and date
     (spatial_extend, osm_data_date) = re.compile(
-        "^([\\w-]*).*-(\\d+)$").findall(
-        Path(input_filename).name.split('.')[0]
-    )[0]
+        "^([\\w-]*).*-(\\d+)$"
+    ).findall(Path(input_filename).name.split(".")[0])[0]
     osm_data_date = datetime.datetime.strptime(
-        osm_data_date, '%y%m%d').strftime('%y-%m-%d')
+        osm_data_date, "%y%m%d"
+    ).strftime("%y-%m-%d")
 
     # Insert metadata for each table
     licenses = [license_odbl(attribution="© OpenStreetMap contributors")]
@@ -204,7 +205,7 @@ def add_metadata():
                     "date": time.strftime("%Y-%m-%d"),
                     "object": None,
                     "comment": "Metadata extended",
-                }
+                },
             ],
             "resources": [
                 {
@@ -215,15 +216,12 @@ def add_metadata():
                     "encoding": "UTF-8",
                     "schema": {
                         "fields": generate_resource_fields_from_db_table(
-                            osm_config["processed"]["schema"],
-                            table),
+                            osm_config["processed"]["schema"], table
+                        ),
                         "primaryKey": ["id"],
-                        "foreignKeys": []
+                        "foreignKeys": [],
                     },
-                    "dialect": {
-                        "delimiter": None,
-                        "decimalSeparator": "."
-                    }
+                    "dialect": {"delimiter": None, "decimalSeparator": "."},
                 }
             ],
             "metaMetadata": meta_metadata(),
