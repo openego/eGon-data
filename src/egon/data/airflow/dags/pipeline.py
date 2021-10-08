@@ -466,7 +466,6 @@ with airflow.DAG(
             data_bundle,
             zensus_mv_grid_districts,
             district_heating_areas,
-            power_plants,
             zensus_mv_grid_districts,
             chp,
         ]
@@ -485,13 +484,13 @@ with airflow.DAG(
 
     # Heat time Series
     heat_time_series = HeatTimeSeries(
-        dependencies = [data_bundle,demandregio,heat_demand_Germany, import_district_heating_areas,  
+        dependencies = [data_bundle,demandregio,heat_demand_Germany, import_district_heating_areas,
                         import_district_heating_areas,vg250,
                         map_zensus_grid_districts])
 
-    # DSM 
+    # DSM
     components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
+        dependencies = [cts_electricity_demand_annual,
                         demand_curves_industry,
                         osmtgmod_pypsa])
 
