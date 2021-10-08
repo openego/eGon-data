@@ -544,7 +544,9 @@ def profile_selector():
     Temperature_interval = all_temperature_interval.transpose()
 
     
-    np.random.seed(0)
+    np.random.seed(
+        seed=egon.data.config.settings()['egon-data']['--random-seed'])
+    
     if  os.path.isfile('selected_profiles.csv'):
         os.remove('selected_profiles.csv')
 
