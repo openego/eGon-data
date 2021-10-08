@@ -1149,7 +1149,7 @@ def insert():
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
-            .set_crs(4326)
+            .to_crs(4326)
         )
 
         # reset index
