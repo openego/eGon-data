@@ -137,12 +137,17 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
+<<<<<<< HEAD
 * Add example metadata for OSM, VG250 and Zensus VG250.
   Add metadata templates for licences, context and some helper
   functions. Extend docs on how to create metadata for tables.
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
+=======
+* Assign weather cell id to weather dependant power plants
+  `#330 <https://github.com/openego/eGon-data/issues/330>`_
+>>>>>>> features/#330-assign-weather-cell-id-to-power-plants
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

@@ -1062,6 +1062,7 @@ def insert():
             pv_per_distr_100RE["installed capacity in kW"] > 0
         ]
 
+
         return (
             pv_rora,
             pv_agri,
@@ -1145,10 +1146,11 @@ def insert():
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column
+        insert_pv_parks.set_crs(epsg= 3035, allow_override= True, inplace= True)
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
-            .set_crs(4326)
+            .to_crs(4326)
         )
 
         # reset index
