@@ -461,7 +461,7 @@ def grid():
     sources = config.datasets()['electrical_neighbours']['sources']
     targets = config.datasets()['electrical_neighbours']['targets']
 
-    for scenario in ['eGon2035', 'eGon100RE']:
+    for scenario in ['eGon2035']:
 
         central_buses = buses(scenario, sources, targets)
 
@@ -737,11 +737,6 @@ def insert_storage(capacities):
         session.add(entry)
         session.commit()
 
-def insert_links(capacities, map_buses):
-
-    link = capacities[capacities.carrier.isin([
-        'power_to_gas', 'gas', 'biogas'])]
-
 def get_map_buses():
     """ Returns a dictonary of foreign regions which are aggregated to another
 
@@ -780,8 +775,6 @@ def tyndp_generation():
     insert_generators(capacities)
 
     insert_storage(capacities)
-
-    #insert_links(capacities, map_buses)
 
 def tyndp_demand():
     """Copy load timeseries data from TYNDP 2020.
