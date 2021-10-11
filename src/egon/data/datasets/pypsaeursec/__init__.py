@@ -21,6 +21,7 @@ from egon.data.datasets import Dataset
 
 import pypsa
 
+
 def run_pypsa_eur_sec():
 
     cwd = Path(".")
@@ -99,8 +100,7 @@ def run_pypsa_eur_sec():
 
     with open(filepath / "Snakefile", "w") as snakefile:
         snakefile.write(
-            resources.read_text("egon.data.datasets.pypsaeursec",
-                                "Snakefile")
+            resources.read_text("egon.data.datasets.pypsaeursec", "Snakefile")
         )
 
     subproc.run(
@@ -240,7 +240,7 @@ def neighbor_reduction():
             / "2021-egondata-integration"
             / "postnetworks"
             / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
-            )
+        )
 
     network = pypsa.Network(str(target_file))
 
@@ -419,10 +419,11 @@ def neighbor_reduction():
 
     # Set country tag for all buses
     network.buses.country = network.buses.index.str[:2]
-    neighbors = network.buses[network.buses.country!='DE']
+    neighbors = network.buses[network.buses.country != "DE"]
 
-
-    neighbors["new_index"] = db.next_etrago_id('bus') + neighbors.reset_index().index
+    neighbors["new_index"] = (
+        db.next_etrago_id("bus") + neighbors.reset_index().index
+    )
 
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
@@ -436,14 +437,12 @@ def neighbor_reduction():
 
     neighbor_lines.reset_index(inplace=True)
     neighbor_lines.bus0 = (
-        neighbors.loc[neighbor_lines.bus0,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_lines.bus0, "new_index"].reset_index().new_index
     )
     neighbor_lines.bus1 = (
-        neighbors.loc[neighbor_lines.bus1,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_lines.bus1, "new_index"].reset_index().new_index
     )
-    neighbor_lines.index += db.next_etrago_id('line')
+    neighbor_lines.index += db.next_etrago_id("line")
 
     if not network.lines_t["s_max_pu"].empty:
         for i in neighbor_lines_t.columns:
@@ -458,14 +457,12 @@ def neighbor_reduction():
 
     neighbor_links.reset_index(inplace=True)
     neighbor_links.bus0 = (
-        neighbors.loc[neighbor_links.bus0,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_links.bus0, "new_index"].reset_index().new_index
     )
     neighbor_links.bus1 = (
-        neighbors.loc[neighbor_links.bus1,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_links.bus1, "new_index"].reset_index().new_index
     )
-    neighbor_links.index += db.next_etrago_id('link')
+    neighbor_links.index += db.next_etrago_id("link")
 
     # generators
     neighbor_gens = network.generators[
@@ -475,10 +472,9 @@ def neighbor_reduction():
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
-        neighbors.loc[neighbor_gens.bus,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_gens.bus, "new_index"].reset_index().new_index
     )
-    neighbor_gens.index += db.next_etrago_id('generator')
+    neighbor_gens.index += db.next_etrago_id("generator")
 
     for i in neighbor_gens_t.columns:
         new_index = neighbor_gens[neighbor_gens["name"] == i].index
@@ -494,18 +490,16 @@ def neighbor_reduction():
 
     neighbor_loads.reset_index(inplace=True)
     neighbor_loads.bus = (
-        neighbors.loc[neighbor_loads.bus,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_loads.bus, "new_index"].reset_index().new_index
     )
-    neighbor_loads.index += db.next_etrago_id('load')
+    neighbor_loads.index += db.next_etrago_id("load")
 
     for i in neighbor_loads_t.columns:
         new_index = neighbor_loads[neighbor_loads["index"] == i].index
         neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # stores
-    neighbor_stores = network.stores[network.stores.bus.
-                                     isin(neighbors.index)]
+    neighbor_stores = network.stores[network.stores.bus.isin(neighbors.index)]
     neighbor_stores_t_index = neighbor_stores.index[
         neighbor_stores.index.isin(network.stores_t.e_min_pu.columns)
     ]
@@ -513,10 +507,9 @@ def neighbor_reduction():
 
     neighbor_stores.reset_index(inplace=True)
     neighbor_stores.bus = (
-        neighbors.loc[neighbor_stores.bus,
-                      "new_index"].reset_index().new_index
+        neighbors.loc[neighbor_stores.bus, "new_index"].reset_index().new_index
     )
-    neighbor_stores.index += db.next_etrago_id('store')
+    neighbor_stores.index += db.next_etrago_id("store")
 
     for i in neighbor_stores_t.columns:
         new_index = neighbor_stores[neighbor_stores["name"] == i].index
@@ -539,7 +532,7 @@ def neighbor_reduction():
         .reset_index()
         .new_index
     )
-    neighbor_storage.index += db.next_etrago_id('storage')
+    neighbor_storage.index += db.next_etrago_id("storage")
 
     for i in neighbor_storage_t.columns:
         new_index = neighbor_storage[neighbor_storage["name"] == i].index
@@ -559,16 +552,18 @@ def neighbor_reduction():
     )
     neighbors.index = neighbors["new_index"]
 
-    for i in ["new_index", "control", "generator",
-              "location", "sub_network"]:
+    for i in ["new_index", "control", "generator", "location", "sub_network"]:
         neighbors = neighbors.drop(i, axis=1)
 
     # Add geometry column
 
-    neighbors = gpd.GeoDataFrame(
-        neighbors,
-        geometry=gpd.points_from_xy(neighbors.x, neighbors.y)
-        ).rename_geometry('geom').set_crs(4326)
+    neighbors = (
+        gpd.GeoDataFrame(
+            neighbors, geometry=gpd.points_from_xy(neighbors.x, neighbors.y)
+        )
+        .rename_geometry("geom")
+        .set_crs(4326)
+    )
 
     neighbors.to_postgis(
         "egon_etrago_bus",
@@ -586,7 +581,9 @@ def neighbor_reduction():
         neighbor_lines = neighbor_lines.rename(
             columns={"s_max_pu": "s_max_pu_fixed"}
         )
-        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(int)
+        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(
+            int
+        )
         neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
 
         for i in [
@@ -604,14 +601,17 @@ def neighbor_reduction():
 
         # Define geometry and add to lines dataframe as 'topo'
         gdf = gpd.GeoDataFrame(index=neighbor_lines.index)
-        gdf['geom_bus0'] = neighbors.geom[neighbor_lines.bus0].values
-        gdf['geom_bus1'] = neighbors.geom[neighbor_lines.bus1].values
-        gdf['geometry']=gdf.apply(
-                lambda x: LineString([x['geom_bus0'], x['geom_bus1']]),axis=1)
+        gdf["geom_bus0"] = neighbors.geom[neighbor_lines.bus0].values
+        gdf["geom_bus1"] = neighbors.geom[neighbor_lines.bus1].values
+        gdf["geometry"] = gdf.apply(
+            lambda x: LineString([x["geom_bus0"], x["geom_bus1"]]), axis=1
+        )
 
-        neighbor_lines = gpd.GeoDataFrame(
-            neighbor_lines, geometry = gdf['geometry']).rename_geometry(
-                'topo').set_crs(4326)
+        neighbor_lines = (
+            gpd.GeoDataFrame(neighbor_lines, geometry=gdf["geometry"])
+            .rename_geometry("topo")
+            .set_crs(4326)
+        )
 
         neighbor_lines.to_postgis(
             "egon_etrago_line",
@@ -621,6 +621,7 @@ def neighbor_reduction():
             index=True,
             index_label="line_id",
         )
+
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
 
@@ -658,14 +659,17 @@ def neighbor_reduction():
 
         # Define geometry and add to lines dataframe as 'topo'
         gdf = gpd.GeoDataFrame(index=neighbor_links.index)
-        gdf['geom_bus0'] = neighbors.geom[neighbor_links.bus0].values
-        gdf['geom_bus1'] = neighbors.geom[neighbor_links.bus1].values
-        gdf['geometry']=gdf.apply(
-                lambda x: LineString([x['geom_bus0'], x['geom_bus1']]),axis=1)
+        gdf["geom_bus0"] = neighbors.geom[neighbor_links.bus0].values
+        gdf["geom_bus1"] = neighbors.geom[neighbor_links.bus1].values
+        gdf["geometry"] = gdf.apply(
+            lambda x: LineString([x["geom_bus0"], x["geom_bus1"]]), axis=1
+        )
 
-        neighbor_links = gpd.GeoDataFrame(
-            neighbor_links, geometry = gdf['geometry']).rename_geometry(
-                'topo').set_crs(4326)
+        neighbor_links = (
+            gpd.GeoDataFrame(neighbor_links, geometry=gdf["geometry"])
+            .rename_geometry("topo")
+            .set_crs(4326)
+        )
 
         neighbor_links.to_postgis(
             "egon_etrago_link",
@@ -677,7 +681,7 @@ def neighbor_reduction():
         )
 
     links_to_etrago(neighbor_links, "eGon100RE")
-    links_to_etrago(neighbor_links[neighbor_links.carrier=='DC'], "eGon2035")
+    links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
@@ -873,16 +877,17 @@ def neighbor_reduction():
             index_label="line_id",
         )
 
+
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
 execute_pypsa_eur_sec = False
 
 if execute_pypsa_eur_sec:
     tasks = (run_pypsa_eur_sec, neighbor_reduction)
 else:
-    tasks = (neighbor_reduction)
+    tasks = neighbor_reduction
+
 
 class PypsaEurSec(Dataset):
-
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
@@ -890,5 +895,3 @@ class PypsaEurSec(Dataset):
             dependencies=dependencies,
             tasks=tasks,
         )
-
-

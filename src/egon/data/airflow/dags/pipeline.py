@@ -21,8 +21,10 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
-from egon.data.datasets.electricity_demand import (CtsElectricityDemand,
-                                                   HouseholdElectricityDemand)
+from egon.data.datasets.electricity_demand import (
+    CtsElectricityDemand,
+    HouseholdElectricityDemand,
+)
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
@@ -31,17 +33,22 @@ from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.hh_demand_profiles import (hh_demand_setup,
-                                                   houseprofiles_in_census_cells,
-                                                   mv_grid_district_HH_electricity_load)
+from egon.data.datasets.hh_demand_profiles import (
+    hh_demand_setup,
+    houseprofiles_in_census_cells,
+    mv_grid_district_HH_electricity_load,
+)
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
-from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
-    houseprofiles_in_census_cells
+from egon.data.datasets.hh_demand_profiles import (
+    hh_demand_setup,
+    mv_grid_district_HH_electricity_load,
+    houseprofiles_in_census_cells,
+)
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
@@ -254,8 +261,7 @@ with airflow.DAG(
     # download only, processing in PyPSA-Eur-Sec fork
     hd_abroad = HeatDemandEurope(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
-    heat_demands_abroad_download = tasks[
-        "heat_demand_europe.download"]
+    heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
@@ -462,12 +468,18 @@ with airflow.DAG(
 
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
-        dependencies=[weather_data, hd_abroad, osmtgmod,
-                      setup_etrago, data_bundle])
+        dependencies=[
+            weather_data,
+            hd_abroad,
+            osmtgmod,
+            setup_etrago,
+            data_bundle,
+        ]
+    )
 
-
-    foreign_lines = ElectricalNeighbours(dependencies=[
-        run_pypsaeursec, tyndp_data])
+    foreign_lines = ElectricalNeighbours(
+        dependencies=[run_pypsaeursec, tyndp_data]
+    )
 
     # Heat supply
     heat_supply = HeatSupply(
@@ -499,4 +511,3 @@ with airflow.DAG(
             osmtgmod_pypsa,
         ]
     )
-
