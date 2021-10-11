@@ -462,11 +462,9 @@ with airflow.DAG(
 
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
-        dependencies=[weather_data, hd_abroad])
+        dependencies=[weather_data, hd_abroad, osmtgmod,
+                      setup_etrago, data_bundle])
 
-    neighbors = tasks["pypsaeursec.neighbor-reduction"]
-    osmtgmod_pypsa >> neighbors
-    etrago_input_data >> neighbors
 
     foreign_lines = ElectricalNeighbours(dependencies=[
         run_pypsaeursec, tyndp_data])

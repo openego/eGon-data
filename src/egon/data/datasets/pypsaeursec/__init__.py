@@ -21,19 +21,6 @@ from egon.data.datasets import Dataset
 
 import pypsa
 
-class PypsaEurSec(Dataset):
-
-    def __init__(self, dependencies):
-        super().__init__(
-            name="PypsaEurSec",
-            version="0.0.1",
-            dependencies=dependencies,
-            tasks=(
-                run_pypsa_eur_sec, neighbor_reduction
-            ),
-        )
-
-
 def run_pypsa_eur_sec():
 
     cwd = Path(".")
@@ -210,36 +197,50 @@ def pypsa_eur_sec_eGon100_capacities():
 
 def neighbor_reduction():
 
+    # Set execute_pypsa_eur_sec to False until optional task is implemented
+    execute_pypsa_eur_sec = False
     cwd = Path(".")
-    filepath = cwd / "run-pypsa-eur-sec"
-    pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-    # Read YAML file
-    pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
-    with open(pes_egonconfig, "r") as stream:
-        data_config = yaml.safe_load(stream)
 
-    simpl = data_config["scenario"]["simpl"][0]
-    clusters = data_config["scenario"]["clusters"][0]
-    lv = data_config["scenario"]["lv"][0]
-    opts = data_config["scenario"]["opts"][0]
-    sector_opts = data_config["scenario"]["sector_opts"][0]
-    planning_horizons = data_config["scenario"]["planning_horizons"][0]
-    file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(
-        simpl=simpl,
-        clusters=clusters,
-        opts=opts,
-        lv=lv,
-        sector_opts=sector_opts,
-        planning_horizons=planning_horizons,
-    )
+    if execute_pypsa_eur_sec:
+        filepath = cwd / "run-pypsa-eur-sec"
+        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
+        # Read YAML file
+        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
+        with open(pes_egonconfig, "r") as stream:
+            data_config = yaml.safe_load(stream)
 
-    target_file = (
-        pypsa_eur_sec_repos
-        / "results"
-        / data_config["run"]
-        / "postnetworks"
-        / file
-    )
+        simpl = data_config["scenario"]["simpl"][0]
+        clusters = data_config["scenario"]["clusters"][0]
+        lv = data_config["scenario"]["lv"][0]
+        opts = data_config["scenario"]["opts"][0]
+        sector_opts = data_config["scenario"]["sector_opts"][0]
+        planning_horizons = data_config["scenario"]["planning_horizons"][0]
+        file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(
+            simpl=simpl,
+            clusters=clusters,
+            opts=opts,
+            lv=lv,
+            sector_opts=sector_opts,
+            planning_horizons=planning_horizons,
+        )
+
+        target_file = (
+            pypsa_eur_sec_repos
+            / "results"
+            / data_config["run"]
+            / "postnetworks"
+            / file
+        )
+
+    else:
+        target_file = (
+            cwd
+            / "data_bundle_egon_data"
+            / "pypsa_eur_sec"
+            / "2021-egondata-integration"
+            / "postnetworks"
+            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            )
 
     network = pypsa.Network(str(target_file))
 
@@ -871,3 +872,23 @@ def neighbor_reduction():
             index=True,
             index_label="line_id",
         )
+
+# Skip execution of pypsa-eur-sec by default until optional task is implemented
+execute_pypsa_eur_sec = False
+
+if execute_pypsa_eur_sec:
+    tasks = (run_pypsa_eur_sec, neighbor_reduction)
+else:
+    tasks = (neighbor_reduction)
+
+class PypsaEurSec(Dataset):
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name="PypsaEurSec",
+            version="0.0.1.dev",
+            dependencies=dependencies,
+            tasks=tasks,
+        )
+
+
