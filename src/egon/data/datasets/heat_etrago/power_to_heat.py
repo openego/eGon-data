@@ -301,7 +301,7 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
     # Select mv grid distrcits
     mv_grid_district = db.select_geodataframe(
         f"""
-        SELECT subst_id, geom FROM
+        SELECT bus_id, geom FROM
         {sources['egon_mv_grid_district']['schema']}.
         {sources['egon_mv_grid_district']['table']}
         """
@@ -339,7 +339,7 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
     # Assign power bus per zensus cell
     cells["power_bus"] = gpd.sjoin(
         cells, mv_grid_district, how="inner", op="intersects"
-    ).subst_id
+    ).bus_id
 
     # Calclate district heating demand per substaion
     demand_per_substation = pd.DataFrame(

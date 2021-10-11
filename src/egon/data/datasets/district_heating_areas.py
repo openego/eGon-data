@@ -13,7 +13,10 @@ end it saves them in the database.
 """
 import os
 from egon.data import db
-from egon.data.datasets.scenario_parameters import get_sector_parameters, EgonScenario
+from egon.data.datasets.scenario_parameters import (
+    get_sector_parameters,
+    EgonScenario,
+)
 
 import pandas as pd
 import geopandas as gpd
@@ -42,9 +45,11 @@ class DistrictHeatingAreas(Dataset):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.0", # maybe rethink the naming
+            version="0.0.0",  # maybe rethink the naming
             dependencies=dependencies,
-            tasks=(create_tables, demarcation))
+            tasks=(create_tables, demarcation),
+        )
+
 
 Base = declarative_base()
 # definition of classes for saving data in the database
@@ -714,11 +719,7 @@ def add_metadata():
         "description": "Modelled future district heating areas for "
         "the supply of residential and service-sector heat demands",
         "language": ["EN"],
-        "spatial": {
-            "location": "",
-            "extent": "Germany",
-            "resolution": "",
-        },
+        "spatial": {"location": "", "extent": "Germany", "resolution": ""},
         "temporal": {
             "referenceDate": "scenario-specific",
             "timeseries": {
@@ -823,11 +824,7 @@ def add_metadata():
         " for supply of residential and service-sector heat demands"
         " assigned to zensus_population_ids",
         "language": ["EN"],
-        "spatial": {
-            "location": "",
-            "extent": "Germany",
-            "resolution": "",
-        },
+        "spatial": {"location": "", "extent": "Germany", "resolution": ""},
         "temporal": {
             "referenceDate": "scenario-specific",
             "timeseries": {
@@ -918,7 +915,9 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "egon_map_zensus_district_heating_areas")
+    db.submit_comment(
+        meta_json, "demand", "egon_map_zensus_district_heating_areas"
+    )
 
     return None
 
