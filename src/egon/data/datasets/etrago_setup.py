@@ -1,12 +1,28 @@
 # coding: utf-8
-from sqlalchemy import ARRAY, BigInteger, Boolean, Column, DateTime, Float, Integer, Numeric, String, Text, text
+from sqlalchemy import (
+    ARRAY,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    text,
+)
 from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
 from egon.data.datasets import Dataset
 
+import geopandas as gpd
+from shapely.geometry import LineString
+
 Base = declarative_base()
 metadata = Base.metadata
+
 
 class EtragoSetup(Dataset):
     def __init__(self, dependencies):
@@ -14,15 +30,13 @@ class EtragoSetup(Dataset):
             name="EtragoSetup",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(create_tables,
-                   temp_resolution
-                   ),
-            )
+            tasks=(create_tables, temp_resolution),
+        )
 
 
 class EgonPfHvBus(Base):
-    __tablename__ = 'egon_etrago_bus'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_bus"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -34,21 +48,22 @@ class EgonPfHvBus(Base):
     v_mag_pu_max = Column(Float(53))
     x = Column(Float(53))
     y = Column(Float(53))
-    geom = Column(Geometry('POINT', 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True)
     country = Column(Text, server_default=text("'DE'::text"))
 
 
 class EgonPfHvBusTimeseries(Base):
-    __tablename__ = 'egon_etrago_bus_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_bus_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
     v_mag_pu_set = Column(ARRAY(Float(precision=53)))
 
+
 class EgonPfHvGenerator(Base):
-    __tablename__ = 'egon_etrago_generator'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_generator"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -82,8 +97,8 @@ class EgonPfHvGenerator(Base):
 
 
 class EgonPfHvGeneratorTimeseries(Base):
-    __tablename__ = 'egon_etrago_generator_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_generator_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
@@ -96,8 +111,8 @@ class EgonPfHvGeneratorTimeseries(Base):
 
 
 class EgonPfHvLine(Base):
-    __tablename__ = 'egon_etrago_line'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_line"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -122,13 +137,13 @@ class EgonPfHvLine(Base):
     v_ang_min = Column(Float(53))
     v_ang_max = Column(Float(53))
     v_nom = Column(Float(53))
-    geom = Column(Geometry('MULTILINESTRING', 4326))
-    topo = Column(Geometry('LINESTRING', 4326))
+    geom = Column(Geometry("MULTILINESTRING", 4326))
+    topo = Column(Geometry("LINESTRING", 4326))
 
 
 class EgonPfHvLineTimeseries(Base):
-    __tablename__ = 'egon_etrago_line_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_line_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -137,8 +152,8 @@ class EgonPfHvLineTimeseries(Base):
 
 
 class EgonPfHvLink(Base):
-    __tablename__ = 'egon_etrago_link'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_link"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -158,12 +173,13 @@ class EgonPfHvLink(Base):
     marginal_cost_fixed = Column(Float(53))
     length = Column(Float(53))
     terrain_factor = Column(Float(53))
-    geom = Column(Geometry('MULTILINESTRING', 4326))
-    topo = Column(Geometry('LINESTRING', 4326))
+    geom = Column(Geometry("MULTILINESTRING", 4326))
+    topo = Column(Geometry("LINESTRING", 4326))
+
 
 class EgonPfHvLinkTimeseries(Base):
-    __tablename__ = 'egon_etrago_link_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_link_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -176,8 +192,8 @@ class EgonPfHvLinkTimeseries(Base):
 
 
 class EgonPfHvLoad(Base):
-    __tablename__ = 'egon_etrago_load'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_load"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -190,8 +206,8 @@ class EgonPfHvLoad(Base):
 
 
 class EgonPfHvLoadTimeseries(Base):
-    __tablename__ = 'egon_etrago_load_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_load_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -201,8 +217,8 @@ class EgonPfHvLoadTimeseries(Base):
 
 
 class EgonPfHvCarrier(Base):
-    __tablename__ = 'egon_etrago_carrier'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_carrier"
+    __table_args__ = {"schema": "grid"}
 
     name = Column(Text, primary_key=True, nullable=False)
     co2_emissions = Column(Float(53))
@@ -212,8 +228,8 @@ class EgonPfHvCarrier(Base):
 
 
 class EgonPfHvStorage(Base):
-    __tablename__ = 'egon_etrago_storage'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_storage"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -242,10 +258,9 @@ class EgonPfHvStorage(Base):
     inflow_fixed = Column(Float(53))
 
 
-
 class EgonPfHvStorageTimeseries(Base):
-    __tablename__ = 'egon_etrago_storage_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_storage_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -258,9 +273,10 @@ class EgonPfHvStorageTimeseries(Base):
     inflow = Column(ARRAY(Float(precision=53)))
     marginal_cost = Column(ARRAY(Float(precision=53)))
 
+
 class EgonPfHvStore(Base):
-    __tablename__ = 'egon_etrago_store'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_store"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -282,9 +298,10 @@ class EgonPfHvStore(Base):
     capital_cost = Column(Float(53))
     standing_loss = Column(Float(53))
 
+
 class EgonPfHvStoreTimeseries(Base):
-    __tablename__ = 'egon_etrago_store_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_store_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -295,9 +312,10 @@ class EgonPfHvStoreTimeseries(Base):
     e_max_pu = Column(ARRAY(Float(precision=53)))
     marginal_cost = Column(ARRAY(Float(precision=53)))
 
+
 class EgonPfHvTempResolution(Base):
-    __tablename__ = 'egon_etrago_temp_resolution'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_temp_resolution"
+    __table_args__ = {"schema": "grid"}
 
     temp_id = Column(BigInteger, primary_key=True, nullable=False)
     timesteps = Column(BigInteger, nullable=False)
@@ -306,8 +324,8 @@ class EgonPfHvTempResolution(Base):
 
 
 class EgonPfHvTransformer(Base):
-    __tablename__ = 'egon_etrago_transformer'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_transformer"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -332,13 +350,13 @@ class EgonPfHvTransformer(Base):
     v_ang_max = Column(Float(53))
     capital_cost = Column(Float(53))
     num_parallel = Column(Float(53))
-    geom = Column(Geometry('MULTILINESTRING', 4326))
-    topo = Column(Geometry('LINESTRING', 4326))
+    geom = Column(Geometry("MULTILINESTRING", 4326))
+    topo = Column(Geometry("LINESTRING", 4326))
 
 
 class EgonPfHvTransformerTimeseries(Base):
-    __tablename__ = 'egon_etrago_transformer_timeseries'
-    __table_args__ = {'schema': 'grid'}
+    __tablename__ = "egon_etrago_transformer_timeseries"
+    __table_args__ = {"schema": "grid"}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -352,65 +370,82 @@ def create_tables():
     -------
     None.
     """
-    db.execute_sql(
-        "CREATE SCHEMA IF NOT EXISTS grid;")
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
 
     ##################### drop tables with old names #########################
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_bus;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_bus;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_bus_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_bus_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_generator_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_generator_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_line;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_line;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_line_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_line_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_link;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_link;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_link_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_link_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_load;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_store;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;"""
+    )
     db.execute_sql(
         """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;""")
+        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;"""
+    )
     ##########################################################################
 
     # Drop existing tables
@@ -450,7 +485,10 @@ def create_tables():
     EgonPfHvStoreTimeseries.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTempResolution.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvTransformer.__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvTransformerTimeseries.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvTransformerTimeseries.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
 
 def temp_resolution():
     """ Insert temporal resolution for etrago
@@ -466,4 +504,48 @@ def temp_resolution():
         INSERT INTO grid.egon_etrago_temp_resolution
         (temp_id, timesteps, resolution, start_time)
         SELECT 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
-        """)
+        """
+    )
+
+
+def link_geom_from_buses(df, scn_name):
+    """ Add LineString geometry accoring to geometry of buses to links
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        List of eTraGo links with bus0 and bus 1 but without topology
+    scn_name : str
+        Scenario name
+
+    Returns
+    -------
+    gdf : geopandas.GeoDataFrame
+        List of eTraGo links with bus0 and bus 1 but with topology
+
+    """
+
+    geom_buses = db.select_geodataframe(
+        f"""
+        SELECT bus_id, geom
+        FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        """,
+        index_col="bus_id",
+        epsg=4326,
+    )
+
+    # Create geometry columns for bus0 and bus1
+    df["geom_0"] = geom_buses.geom[df.bus0.values].values
+    df["geom_1"] = geom_buses.geom[df.bus1.values].values
+
+    geometry = df.apply(
+        lambda x: LineString([x["geom_0"], x["geom_1"]]), axis=1
+    )
+    df = df.drop(["geom_0", "geom_1"], axis=1)
+
+    gdf = gpd.GeoDataFrame(df, geometry=geometry, crs=4326).rename_geometry(
+        "topo"
+    )
+
+    return gdf

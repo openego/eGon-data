@@ -195,7 +195,6 @@ def industrial_demand_distr():
             epsg=3035,
         )
 
-
         # Spatially join vg250_krs and industrial landuse areas
         landuse = gpd.sjoin(landuse, boundaries, how="inner", op="intersects")
         # Rename column
@@ -351,7 +350,7 @@ class IndustrialDemandCurves(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Industrial_demand_curves",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_tables,

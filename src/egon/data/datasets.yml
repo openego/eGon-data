@@ -480,7 +480,7 @@ heat_supply:
       table: 'egon_district_heating_areas'
     chp:
       schema: 'supply'
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
@@ -665,7 +665,7 @@ etrago_electricity:
 chp_location:
   sources:
     list_conv_pp:
-      table: 'nep_2021_conv_powerplants'
+      table: 'egon_nep_2021_conventional_powerplants'
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
     mastr_location: 'location_elec_generation_raw.csv'
@@ -691,12 +691,64 @@ chp_location:
       table: 'vg250_lan'
   targets:
     chp_table:
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
       schema: 'supply'
     mastr_conventional_without_chp:
       table: 'egon_mastr_conventional_without_chp'
       schema: 'supply'
 
+chp_etrago:
+  sources:
+    chp_table:
+      table: 'egon_chp_plants'
+      schema: 'supply'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
+  targets:
+    link:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+      
+DSM_CTS_industry:
+  sources:
+    cts_loadcurves:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_cts'
+    ind_osm_loadcurves:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves'
+    ind_sites_loadcurves:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves'
+    ind_sites:
+      schema: 'demand'
+      table: 'egon_industrial_sites'
+    ind_sites_schmidt:
+      schema: 'demand'
+      table: 'egon_schmidt_industrial_sites'
+    demandregio_ind_sites:
+      schema: 'demand'
+      table: 'egon_demandregio_sites_ind_electricity'
+  targets:
+    bus:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    link:
+      schema: 'grid'
+      table: 'egon_etrago_link'  
+    link_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_link_timeseries'   
+    store:
+      schema: 'grid'
+      table: 'egon_etrago_store'  
+    store_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_store_timeseries' 
 
 electrical_neighbours:
   sources:

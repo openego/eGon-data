@@ -658,14 +658,16 @@ class Osmtgmod(Dataset):
             tasks=(
                 import_osm_data,
                 run,
-                # {
-                PostgresOperator(
-                    task_id="osmtgmod_substation",
-                    sql=resources.read_text(__name__, "substation_otg.sql"),
-                    postgres_conn_id="egon_data",
-                    autocommit=True,
-                ),
-                to_pypsa
-                #  }
+                {
+                    PostgresOperator(
+                        task_id="osmtgmod_substation",
+                        sql=resources.read_text(
+                            __name__, "substation_otg.sql"
+                        ),
+                        postgres_conn_id="egon_data",
+                        autocommit=True,
+                    ),
+                    to_pypsa,
+                },
             ),
         )

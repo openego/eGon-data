@@ -79,7 +79,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
     demand = db.select_dataframe(
         f"""
          SELECT SUM(demand) as demand,
-         subst_id as bus_id, vg250_lan
+         b.bus_id, vg250_lan
          FROM {sources['electricity_demand']['schema']}.
          {sources['electricity_demand']['table']} a
          JOIN {sources['map_zensus_grid_districts']['schema']}.
@@ -87,9 +87,9 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
          ON a.zensus_population_id = b.zensus_population_id
          JOIN {sources['map_grid_boundaries']['schema']}.
          {sources['map_grid_boundaries']['table']} c
-         ON c.bus_id = b.subst_id
+         ON c.bus_id = b.bus_id
          WHERE scenario = 'eGon2035'
-         GROUP BY (subst_id, vg250_lan)
+         GROUP BY (b.bus_id, vg250_lan)
          """
     )
 
@@ -163,7 +163,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
 
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT subst_id as bus_id, ST_Centroid(geom) as geom
+        SELECT bus_id as bus_id, ST_Centroid(geom) as geom
         FROM {sources['egon_mv_grid_district']['schema']}.
         {sources['egon_mv_grid_district']['table']}
         """,

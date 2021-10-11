@@ -48,14 +48,16 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 insert_hydro_biomass,
-                wind_onshore.insert,
-                pv_ground_mounted.insert,
-                pv_rooftop_per_mv_grid,
+                {
+                    wind_onshore.insert,
+                    pv_ground_mounted.insert,
+                    pv_rooftop_per_mv_grid,
+                },
             ),
         )
 
@@ -197,10 +199,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     mastr_loc = (
         gpd.sjoin(
-            gpd.read_postgis(
-                sql,
-                con=db.engine(),
-            ).to_crs(4326),
+            gpd.read_postgis(sql, con=db.engine()).to_crs(4326),
             mastr_loc,
             how="right",
         )
@@ -509,7 +508,7 @@ def assign_bus_id(power_plants, cfg):
         power_plants.loc[power_plants_hv, "bus_id"] = gpd.sjoin(
             power_plants[power_plants.index.isin(power_plants_hv)],
             mv_grid_districts,
-        ).subst_id
+        ).bus_id
 
     # Assign power plants in ehv to ehv bus
     power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
@@ -544,7 +543,7 @@ def assign_gas_bus_id(power_plants):
 
     gas_voronoi = db.select_geodataframe(
         """
-        SELECT * FROM grid.egon_gas_voronoi
+        SELECT * FROM grid.egon_voronoi_ch4
         """,
         epsg=4326,
     )

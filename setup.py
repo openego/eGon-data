@@ -2,10 +2,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, print_function
 
-from glob import glob
-from os.path import basename, dirname, join, splitext
 import io
 import re
+from glob import glob
+from os.path import basename, dirname, join, splitext
 
 from setuptools import find_packages, setup
 
@@ -93,7 +93,7 @@ setup(
         "netcdf4",
         "oedialect==0.0.8",
         "openpyxl",
-        "pandas>1.2.0,<1.3.0",
+        "pandas>1.2.0",
         "psycopg2",
         "pyaml",
         "rasterio",
@@ -104,6 +104,7 @@ setup(
         "xarray",
         "xlrd",
         "rioxarray",
+        "omi",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
@@ -111,9 +112,5 @@ setup(
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
     },
-    entry_points={
-        "console_scripts": [
-            "egon-data = egon.data.cli:main",
-        ]
-    },
+    entry_points={"console_scripts": ["egon-data = egon.data.cli:main"]},
 )
