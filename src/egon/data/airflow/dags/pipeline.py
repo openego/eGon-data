@@ -49,6 +49,7 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -476,3 +477,10 @@ with airflow.DAG(
             osmtgmod_pypsa,
         ]
     )
+
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies = [data_bundle,demandregio,heat_demand_Germany, import_district_heating_areas,  
+                        import_district_heating_areas,vg250,
+                        map_zensus_grid_districts])
+
