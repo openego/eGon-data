@@ -13,6 +13,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 from egon.data import db
+from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
