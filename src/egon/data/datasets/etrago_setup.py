@@ -256,6 +256,7 @@ class EgonPfHvStorage(Base):
     inflow_fixed = Column(Float(53))
 
 
+
 class EgonPfHvStorageTimeseries(Base):
     __tablename__ = "egon_etrago_storage_timeseries"
     __table_args__ = {"schema": "grid"}
