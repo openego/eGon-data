@@ -35,13 +35,6 @@ def weather_id():
     ]
     power_plants.set_index("id", inplace=True)
 
-    ########################## ERASE #########################################
-    # solar = power_plants[power_plants['carrier'] == 'solar']
-    # solar.set_crs(epsg= 3035, allow_override= True, inplace= True)
-    # solar = solar.to_crs(4326)
-    # power_plants.drop(labels= (power_plants[power_plants['carrier'] == 'solar']).index.values, axis= 0,inplace= True)
-    # power_plants = power_plants.append(solar)
-    ########################## ERASE #########################################
     # Import table with weather data for each technology
     sql = "SELECT * FROM supply.egon_era5_renewable_feedin"
     weather_data = pd.read_sql_query(sql, con)

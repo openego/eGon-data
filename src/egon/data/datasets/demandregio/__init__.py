@@ -21,11 +21,10 @@ from pathlib import Path
 
 try:
     from disaggregator import data, spatial, config
-except:
-    print(
-        "Could not import disaggregator. "
-        "Please run task 'demandregio-installation'"
-    )
+
+except ImportError as e:
+   pass
+
 # will be later imported from another file ###
 Base = declarative_base()
 

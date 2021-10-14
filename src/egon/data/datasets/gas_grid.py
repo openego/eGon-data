@@ -16,9 +16,17 @@ import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geometry
 from shapely import geometry
+
+class GasNodesandPipes(Dataset):
+     def __init__(self, dependencies):
+         super().__init__(
+             name="GasNodesandPipes",
+             version="0.0.0",
+             dependencies=dependencies,
+             tasks=(insert_gas_data),
+         )
 
 
 def download_SciGRID_gas_data():
