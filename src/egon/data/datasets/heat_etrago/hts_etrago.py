@@ -38,7 +38,7 @@ def hts_to_etrago():
                                 demand.egon_timeseries_district_heating
                                 """
                                 )
-            ## bus_id connected to corresponding time series
+            #bus_id connected to corresponding time series
             bus_ts = pd.merge(bus_area,disct_time_series, on='area_id', how = 'inner')
         
         else:
@@ -57,7 +57,7 @@ def hts_to_etrago():
                  WHERE carrier = '{carrier}'
                  """
              )
-            ##scenario name still needs to be adjusted in bus_sub
+            ##**scenario name still needs to be adjusted in bus_sub**
             
             #individual heating time series
             ind_time_series = db.select_dataframe(
@@ -67,7 +67,7 @@ def hts_to_etrago():
                                 """
                                 )
             
-            ## bus_id connected to corresponding time series
+            # bus_id connected to corresponding time series
             bus_ts = pd.merge(bus_sub,ind_time_series, on='subst_id', how = 'inner')
               
         next_id = next_etrago_id('load')
@@ -78,11 +78,8 @@ def hts_to_etrago():
         etrago_load['scn_name'] = scenario
         etrago_load['load_id'] = bus_ts.load_id
         etrago_load['bus'] =bus_ts.bus_id
-        etrago_load['type'] =None  ### where are these values comming from?##########*#*#*
         etrago_load['carrier'] = carrier
-        etrago_load['p_set_fixed']=None
-        etrago_load['q_set_fixed']=None
-        etrago_load['sign']='NaN'
+        etrago_load['sign']=-1
         
         etrago_load.to_sql(
             'egon_etrago_load',
@@ -97,7 +94,6 @@ def hts_to_etrago():
         etrago_load_timeseries['load_id'] = bus_ts.load_id
         etrago_load_timeseries['temp_id'] = 1
         etrago_load_timeseries['p_set'] = bus_ts.iloc[:,2]
-        etrago_load_timeseries['q_set'] = None
         
         etrago_load_timeseries.to_sql(
             'egon_etrago_load_timeseries',
