@@ -294,4 +294,6 @@ Bug fixes
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
 * Exchange bus 0 and bus 1 in Power-to-H2 links
   `#458 <https://github.com/openego/eGon-data/issues/458>`_
+* Add `data_bundle` to `industrial_sites` task dependencies
+  `#468 <https://github.com/openego/eGon-data/issues/468>`_
 
