@@ -8,7 +8,7 @@ import numpy as np
 import geopandas
 
 from egon.data.datasets.gas_prod import assign_ch4_bus_id
-from egon.data.datasets.gas_grid import define_gas_nodes_list
+from egon.data.datasets.gas_grid import ch4_nodes_number_G, define_gas_nodes_list
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
@@ -18,7 +18,7 @@ class CH4Storages(Dataset):
      def __init__(self, dependencies):
          super().__init__(
              name="CH4Storages",
-             version="0.0.0",
+             version="0.0.0.dev",
              dependencies=dependencies,
              tasks=(import_ch4_storages),
          )
@@ -109,9 +109,9 @@ def import_ch4_grid_capacity():
     
     """ 
     Gas_grid_capacity = 130000 # G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
-    N_gas_nodes = len(define_gas_nodes_list()) # Number of nodes in Germany
-    print(N_gas_nodes)
-    Store_capacity = Gas_grid_capacity / N_gas_nodes
+    N_ch4_nodes_G = ch4_nodes_number_G(define_gas_nodes_list()) # Number of nodes in Germany
+    print(N_ch4_nodes_G)
+    Store_capacity = Gas_grid_capacity / N_ch4_nodes_G
     
     sql_gas = """SELECT bus_id, scn_name, carrier, geom
                 FROM grid.egon_etrago_bus
