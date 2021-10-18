@@ -18,7 +18,7 @@ class CH4Storages(Dataset):
      def __init__(self, dependencies):
          super().__init__(
              name="CH4Storages",
-             version="0.0.0.dev",
+             version="0.0.0",
              dependencies=dependencies,
              tasks=(import_ch4_storages),
          )
