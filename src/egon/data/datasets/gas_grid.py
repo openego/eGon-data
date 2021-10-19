@@ -16,9 +16,17 @@ import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geometry
 from shapely import geometry
+
+class GasNodesandPipes(Dataset):
+     def __init__(self, dependencies):
+         super().__init__(
+             name="GasNodesandPipes",
+             version="0.0.0",
+             dependencies=dependencies,
+             tasks=(insert_gas_data),
+         )
 
 
 def download_SciGRID_gas_data():
@@ -95,6 +103,26 @@ def define_gas_nodes_list():
     return gas_nodes_list
 
 
+def ch4_nodes_number_G(gas_nodes_list):
+    """Insert list of CH4 nodes from SciGRID_gas IGGIELGN data
+        Parameters
+    ----------
+    gas_nodes_list : dataframe
+        Dataframe containing the gas nodes (Europe)
+    Returns
+    -------
+        N_ch4_nodes_G : int
+            Number of CH4 buses in Germany (independantly from the mode used)
+    """
+
+    ch4_nodes_list = gas_nodes_list[
+        gas_nodes_list["country_code"].str.match("DE")
+    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    N_ch4_nodes_G = len(ch4_nodes_list)
+    
+    return N_ch4_nodes_G 
+
+
 def insert_CH4_nodes_list(gas_nodes_list):
     """Insert list of CH4 nodes from SciGRID_gas IGGIELGN data
         Parameters
@@ -103,7 +131,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
         Dataframe containing the gas nodes (Europe)
     Returns
     -------
-    None.
+    None
     """
     # Connect to local database
     engine = db.engine()
@@ -111,6 +139,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
     ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    
     # Cut data to federal state if in testmode
     NUTS1 = []
     for index, row in gas_nodes_list.iterrows():
@@ -182,6 +211,8 @@ def insert_CH4_nodes_list(gas_nodes_list):
         if_exists="append",
         dtype={"geom": Geometry()},
     )
+    
+    return N_ch4_nodes_G
 
 
 def insert_H2_nodes_list():
