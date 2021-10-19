@@ -119,8 +119,8 @@ def ch4_nodes_number_G(gas_nodes_list):
         gas_nodes_list["country_code"].str.match("DE")
     ]  # A remplacer evtmt par un test sur le NUTS0 ?
     N_ch4_nodes_G = len(ch4_nodes_list)
-    
-    return N_ch4_nodes_G 
+
+    return N_ch4_nodes_G
 
 
 def insert_CH4_nodes_list(gas_nodes_list):
@@ -139,7 +139,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
     ]  # A remplacer evtmt par un test sur le NUTS0 ?
-    
+
     # Cut data to federal state if in testmode
     NUTS1 = []
     for index, row in gas_nodes_list.iterrows():
@@ -211,8 +211,6 @@ def insert_CH4_nodes_list(gas_nodes_list):
         if_exists="append",
         dtype={"geom": Geometry()},
     )
-    
-    return N_ch4_nodes_G
 
 
 def insert_H2_nodes_list():
