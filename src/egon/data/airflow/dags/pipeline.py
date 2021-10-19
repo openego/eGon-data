@@ -418,7 +418,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(
@@ -480,7 +480,7 @@ with airflow.DAG(
 
     # Heat time Series
     heat_time_series = HeatTimeSeries(
-        dependencies = [data_bundle,demandregio,heat_demand_Germany, import_district_heating_areas,  
+        dependencies = [data_bundle,demandregio,heat_demand_Germany, import_district_heating_areas,
                         import_district_heating_areas,vg250,
                         map_zensus_grid_districts])
 
