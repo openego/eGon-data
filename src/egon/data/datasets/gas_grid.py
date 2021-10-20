@@ -197,47 +197,12 @@ def insert_CH4_nodes_list(gas_nodes_list):
     db.execute_sql(
         """
     DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'CH4';
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'H2';
     """
     )
 
     # Insert CH4 data to db
     print(gas_nodes_list)
     gas_nodes_list.to_postgis(
-        "egon_etrago_bus",
-        engine,
-        schema="grid",
-        index=False,
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
-
-
-def insert_H2_nodes_list():
-    """Insert the H2 buses to db, same buses than the CH4 buses
-    Returns
-    -------
-    None.
-    """
-    # Connect to local database
-    engine = db.engine()
-
-    # Select the CH4 buses
-    sql_CH4 = """SELECT bus_id, scn_name, geom
-                FROM grid.egon_etrago_bus
-                WHERE carrier = 'CH4';"""
-
-    gdf_H2 = db.select_geodataframe(sql_CH4, epsg=4326)
-
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
-    gdf_H2["carrier"] = "H2"
-    gdf_H2["bus_id"] = range(new_id, new_id + len(gdf_H2))
-
-    # Insert H2 data to db
-    print(gdf_H2)
-    gdf_H2.to_postgis(
         "egon_etrago_bus",
         engine,
         schema="grid",
@@ -487,6 +452,5 @@ def insert_gas_data():
     gas_nodes_list = define_gas_nodes_list()
 
     insert_CH4_nodes_list(gas_nodes_list)
-    insert_H2_nodes_list()
 
     insert_gas_pipeline_list(gas_nodes_list)
