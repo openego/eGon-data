@@ -33,6 +33,29 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
+
+bgr:
+  original_data:
+    source:
+      url: "file:///home/witt_fa/Documents/saltcavern-data.zip"
+    target:
+      file: "saltcavern-data.zip"
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "saltstructure_potentials_InSpEE_georeferenced.shp": "saltstructure_potentials_inspee_georeferenced"
+  sources:
+    vg250_federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    saltcaverns:
+      schema: 'boundaries'
+      table: 'saltstructure_potentials_inspee_georeferenced'
+  targets:
+    map:
+      schema: 'boundaries'
+      table: 'egon_saltcavern_storage_potential'
+
 zensus_population:
   original_data:
     source:
@@ -546,6 +569,19 @@ etrago_heat:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
     heat_links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+
+etrago_hydrogen:
+  sources:
+    saltcavern_data:
+      schema: 'boundaries'
+      table: 'egon_saltcavern_storage_potential'
+  targets:
+    hydrogen_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    hydrogen_links:
       schema: 'grid'
       table: 'egon_etrago_link'
 
