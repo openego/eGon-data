@@ -8,6 +8,7 @@ import os
 import glob
 
 from egon.data import db, subprocess
+from egon.data.config import settings
 
 import xarray as xr
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
@@ -771,7 +772,7 @@ def profile_selector():
     Temperature_interval = all_temperature_interval.transpose()
 
     np.random.seed(
-        seed=egon.data.config.settings()["egon-data"]["--random-seed"]
+        seed=settings()["egon-data"]["--random-seed"]
     )
 
     if os.path.isfile("selected_profiles.csv"):
