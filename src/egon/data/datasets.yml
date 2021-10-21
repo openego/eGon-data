@@ -584,6 +584,9 @@ etrago_hydrogen:
     hydrogen_links:
       schema: 'grid'
       table: 'egon_etrago_link'
+    hydrogen_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
 
 industrial_sites:
   sources:

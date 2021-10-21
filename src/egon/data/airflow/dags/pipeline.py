@@ -34,7 +34,8 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_profiles import (hh_demand_setup,
                                                    houseprofiles_in_census_cells,
                                                    mv_grid_district_HH_electricity_load)
-from egon.data.datasets.hydrogen_etrago import HydrogenEtrago
+from egon.data.datasets.hydrogen_etrago import (
+    HydrogenBusEtrago, HydrogenStoreEtrago)
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -254,8 +255,12 @@ with airflow.DAG(
     )
 
     # Insert hydrogen buses
-    insert_hydrogen_buses = HydrogenEtrago(
+    insert_hydrogen_buses = HydrogenBusEtrago(
         dependencies=[saltcavern_storage, gas_grid_insert_data])
+
+    # Insert hydrogen buses
+    insert_hydrogen_buses = HydrogenStoreEtrago(
+        dependencies=[insert_hydrogen_buses])
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = PowertoH2toPower(

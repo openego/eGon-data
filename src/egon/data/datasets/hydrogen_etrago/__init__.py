@@ -1,6 +1,7 @@
 """The central module containing all code dealing with heat sector in etrago
 """
 import pandas as pd
+from egon.data.datasets.hydrogen_etrago.storage import insert_H2_overground_storage
 import geopandas as gpd
 from egon.data import db, config
 from egon.data.datasets.insert_etrago_buses import (
@@ -91,11 +92,21 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target):
     finalize_bus_insertion(gdf_H2, carrier, target)
 
 
-class HydrogenEtrago(Dataset):
+class HydrogenBusEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="HydrogenEtrago",
-            version="0.0.0",
+            name="HydrogenBusEtrago",
+            version="0.0.0dev",
             dependencies=dependencies,
             tasks=(insert_hydrogen_buses),
+        )
+
+
+class HydrogenStoreEtrago(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HydrogenStoreEtrago",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(insert_H2_overground_storage),
         )
