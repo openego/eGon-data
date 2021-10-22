@@ -410,6 +410,7 @@ with airflow.DAG(
         map_zensus_grid_districts,
         zensus_inside_ger,
         demandregio,
+        osm_buildings_streets_preprocessing,
     ],
         tasks=(houseprofiles_in_census_cells,
                mv_hh_electricity_load_2035,
