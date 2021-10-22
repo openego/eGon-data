@@ -35,6 +35,7 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_profiles import (hh_demand_setup,
                                                    houseprofiles_in_census_cells,
                                                    mv_grid_district_HH_electricity_load)
+from egon.data.datasets.hh_demand_buildings import map_houseprofiles_to_buildings
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -155,6 +156,7 @@ with airflow.DAG(
         dependencies=[osm, zensus_misc_import]
     )
     osm_buildings_streets.insert_into(pipeline)
+    osm_buildings_streets_preprocessing = tasks["osm_buildings_streets.preprocessing"]
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -266,7 +268,7 @@ with airflow.DAG(
     insert_power_to_h2_installations = PowertoH2(
         dependencies=[gas_grid_insert_data]
     )
-   
+
     # Create gas voronoi
     create_gas_polygons = GasAreas(
         dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
@@ -276,7 +278,7 @@ with airflow.DAG(
     gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
-    
+
     # CH4 storages import
     insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons])
@@ -402,19 +404,18 @@ with airflow.DAG(
         op_args=["eGon100RE", 2050, "0.0.0"],
     )
 
-    hh_demand = hh_demand_setup(
-        dependencies=[
-            vg250_clean_and_prepare,
-            zensus_misc_import,
-            map_zensus_grid_districts,
-            zensus_inside_ger,
-            demandregio,
-        ],
-        tasks=(
-            houseprofiles_in_census_cells,
-            mv_hh_electricity_load_2035,
-            mv_hh_electricity_load_2050,
-        ),
+    hh_demand = hh_demand_setup(dependencies=[
+        vg250_clean_and_prepare,
+        zensus_misc_import,
+        map_zensus_grid_districts,
+        zensus_inside_ger,
+        demandregio,
+        osm_buildings_streets_preprocessing,
+    ],
+        tasks=(houseprofiles_in_census_cells,
+               mv_hh_electricity_load_2035,
+               mv_hh_electricity_load_2050,
+               map_houseprofiles_to_buildings)
     )
     hh_demand.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
@@ -422,6 +423,7 @@ with airflow.DAG(
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
+    map_houseprofiles_to_buildings = tasks["hh_demand_buildings.map-houseprofiles-to-buildings"]
 
     # Industry
 
