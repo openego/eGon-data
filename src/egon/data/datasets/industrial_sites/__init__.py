@@ -112,7 +112,6 @@ class IndustrialSites(Base):
     address = Column(String(170))
     subsector = Column(String(100))
     wz = Column(Integer)
-    el_demand = Column(Float)
     nuts3 = Column(String(10))
     geom = Column(Geometry("POINT", 4326), index=True)
 
@@ -131,23 +130,20 @@ def create_tables():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
     # Drop outdated tables if still present, might be removed later
-    db.execute_sql(
-        """DROP TABLE IF EXISTS demand.industrial_sites CASCADE;"""
-    )
-    
+    db.execute_sql("""DROP TABLE IF EXISTS demand.industrial_sites CASCADE;""")
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"""
     )
-    
+
     db.execute_sql(
         """DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"""
     )
-   
-    
+
     # Drop tables and sequences before recreating them
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
@@ -453,9 +449,13 @@ def schmidt_to_postgres():
         "sources"
     ]["schmidt"]
 
-    input_file = os.path.join(
-        os.path.dirname(__file__), schmidt_sources["path"]
+    input_file = (
+        Path(".")
+        / "data_bundle_egon_data"
+        / "industrial_sites"
+        / schmidt_sources["path"]
     )
+
     engine = db.engine()
 
     db.execute_sql(
@@ -494,9 +494,6 @@ def schmidt_to_postgres():
     gdf = gpd.sjoin(gdf, boundaries).drop(
         ["id", "bez", "area_ha", "index_right"], axis=1
     )
-
-    # Remove duplicates on columns 'plant' 'lon' and 'lat'
-    gdf = gdf.drop_duplicates(subset=["plant", "lat", "lon"])
 
     # Add additional column for sector information (wz)
     gdf["wz"] = gdf["application"]
@@ -584,20 +581,37 @@ def merge_inputs():
         f"{schmidt_targets['schema']}" f".{schmidt_targets['table']}"
     )
 
+    # Insert data from Schmidt's Master thesis
+    db.execute_sql(
+        f"""INSERT INTO {sites_table}
+              (companyname, subsector, wz, geom)
+                SELECT h.plant, h.application, h.wz, h.geom
+                FROM {schmidt_table} h
+                WHERE geom IS NOT NULL;"""
+    )
+
     # Insert data from s-EEnergies
     db.execute_sql(
         f"""INSERT INTO {sites_table}
-              (companyname, address, subsector, wz, el_demand, geom)
+              (companyname, address, subsector, wz, geom)
                 SELECT  s.companyname,
                         s.address,
                         s.subsector,
                         s.wz,
-                        s.electricitydemand_tj * 9/2500,
                         s.geom
                 FROM {seenergies_table} s
                 WHERE   s.country = 'DE'
-                AND     geom IS NOT NULL"""
+                AND     geom IS NOT NULL
+                AND LOWER(SUBSTRING(s.companyname, 1, 3)) NOT IN
+                    (SELECT LOWER(SUBSTRING(h.companyname, 1, 3))
+                      FROM  {sites_table} h,
+                            {seenergies_table} s
+                      WHERE ST_DWithin (h.geom, s.geom, 0.01)
+ 					  AND	(h.wz = s.wz)
+ 					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
+                              LOWER (SUBSTRING(s.companyname, 1, 3))));"""
     )
+
     # Insert data from Hotmaps
 
     db.execute_sql(
@@ -616,24 +630,15 @@ def merge_inputs():
                       (SELECT a.geom
                           FROM {seenergies_table} a
                           WHERE   a.country = 'DE'
-                          AND     a.geom IS NOT NULL);"""
-    )
-
-    # Insert data from Schmidt's Master thesis
-    db.execute_sql(
-        f"""INSERT INTO {sites_table}
-              (companyname, subsector, wz, geom)
-                SELECT h.plant, h.application, h.wz, h.geom
-                FROM {schmidt_table} h
-                WHERE geom IS NOT NULL
-                AND h.plant NOT IN
-                    (SELECT h.plant
-                      FROM  {schmidt_table} h,
-                            {sites_table} s
-                      WHERE ST_DWithin (h.geom, s.geom, 0.01)
+                          AND     a.geom IS NOT NULL)
+                AND LOWER(SUBSTRING(h.companyname, 1, 3)) NOT IN
+                    (SELECT LOWER(SUBSTRING(s.companyname, 1, 3))
+                      FROM  {sites_table} s,
+                            {hotmaps_table} h
+                      WHERE ST_DWithin (s.geom, h.geom, 0.01)
  					  AND	(h.wz = s.wz)
- 					  AND	(LOWER (SUBSTRING(h.plant, 1, 3)) =
-                              LOWER (SUBSTRING(s.companyname, 1, 3))));"""
+ 					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
+                              LOWER (SUBSTRING(s.companyname, 1, 3))))"""
     )
 
     # Replace geometry by spatial information from table 'demand.schmidt_industrial_sites' if possible
@@ -646,17 +651,6 @@ def merge_inputs():
               AND (g.wz = s.wz)
               AND  (LOWER (SUBSTRING(g.plant, 1, 3)) =
                     LOWER (SUBSTRING(s.companyname, 1, 3)));"""
-    )
-
-    # Delete remaining duplicates
-
-    db.execute_sql(
-        f"""DELETE FROM
-                {sites_table} a
-                    USING {sites_table} b
-            WHERE a.id > b.id
-            AND a.geom = b.geom
-            AND a.wz = b.wz;"""
     )
 
 
@@ -689,7 +683,7 @@ class MergeIndustrialSites(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(download_import_industrial_sites, merge_inputs, map_nuts3),
         )

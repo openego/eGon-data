@@ -8,13 +8,14 @@ from sqlalchemy.dialects.postgresql import JSONB
 import pandas as pd
 import egon.data.datasets.scenario_parameters.parameters as parameters
 from egon.data.datasets import Dataset
+
 Base = declarative_base()
 
 
 class EgonScenario(Base):
     __tablename__ = "egon_scenario_parameters"
     __table_args__ = {"schema": "scenario"}
-    name = Column(String,  primary_key=True)
+    name = Column(String, primary_key=True)
     global_parameters = Column(JSONB)
     electricity_parameters = Column(JSONB)
     gas_parameters = Column(JSONB)
@@ -32,7 +33,8 @@ def create_table():
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS scenario;")
     db.execute_sql(
-        "DROP TABLE IF EXISTS scenario.egon_scenario_parameters CASCADE;")
+        "DROP TABLE IF EXISTS scenario.egon_scenario_parameters CASCADE;"
+    )
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
 
@@ -50,7 +52,7 @@ def insert_scenarios():
     session = sessionmaker(bind=db.engine())()
 
     # Scenario eGon2035
-    egon2035 = EgonScenario(name='eGon2035')
+    egon2035 = EgonScenario(name="eGon2035")
 
     egon2035.description = """
         The mid-term scenario eGon2035 is based on scenario C 2035 of the
@@ -75,7 +77,7 @@ def insert_scenarios():
     session.commit()
 
     # Scenario eGon100RE
-    egon100re = EgonScenario(name='eGon100RE')
+    egon100re = EgonScenario(name="eGon100RE")
 
     egon100re.description = """
         The long-term scenario eGon100RE represents a 100% renewable
@@ -94,6 +96,7 @@ def insert_scenarios():
     session.add(egon100re)
 
     session.commit()
+
 
 def get_sector_parameters(sector, scenario=None):
     """ Returns parameters for each sector as dictionary.
@@ -116,52 +119,50 @@ def get_sector_parameters(sector, scenario=None):
 
     """
 
-
     if scenario:
-        if scenario in db.select_dataframe(
+        if (
+            scenario
+            in db.select_dataframe(
                 "SELECT name FROM scenario.egon_scenario_parameters"
-                ).name.values:
-            values = (
-                db.select_dataframe(
-                    f"""
+            ).name.values
+        ):
+            values = db.select_dataframe(
+                f"""
                     SELECT {sector}_parameters as val
                     FROM scenario.egon_scenario_parameters
-                    WHERE name = '{scenario}';""").val[0]
-                )
+                    WHERE name = '{scenario}';"""
+            ).val[0]
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
         values = pd.DataFrame(
             db.select_dataframe(
-                    f"""
+                f"""
                     SELECT {sector}_parameters as val
                     FROM scenario.egon_scenario_parameters
-                    WHERE name='eGon2035'""",
-                    ).val[0],
-            index = ['eGon2035']
-            ).append(
-                pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
+                    WHERE name='eGon2035'"""
+            ).val[0],
+            index=["eGon2035"],
+        ).append(
+            pd.DataFrame(
+                db.select_dataframe(
+                    f"""
                         SELECT {sector}_parameters as val
                         FROM scenario.egon_scenario_parameters
-                        WHERE name='eGon100RE'""",
-                        ).val[0],
-                    index = ['eGon100RE']
-                    )
-                )
+                        WHERE name='eGon100RE'"""
+                ).val[0],
+                index=["eGon100RE"],
+            )
+        )
 
     return values
 
-class ScenarioParameters(Dataset):
 
+class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(
-                create_table,
-                insert_scenarios
-            ),
+            tasks=(create_table, insert_scenarios),
         )
