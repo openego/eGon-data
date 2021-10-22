@@ -30,6 +30,7 @@ from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.hh_demand_profiles import hh_demand_setup, mv_grid_district_HH_electricity_load, \
     houseprofiles_in_census_cells
+from egon.data.datasets.hh_demand_buildings import map_houseprofiles_to_buildings
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -416,12 +417,14 @@ with airflow.DAG(
     ],
         tasks=(houseprofiles_in_census_cells,
                mv_hh_electricity_load_2035,
-               mv_hh_electricity_load_2050,)
+               mv_hh_electricity_load_2050,
+               map_houseprofiles_to_buildings)
     )
     hh_demand.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks["hh_demand_profiles.houseprofiles-in-census-cells"]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
+    map_houseprofiles_to_buildings = tasks["hh_demand_buildings.map-houseprofiles-to-buildings"]
 
     # CHP locations
     chp = Chp(dependencies=[mv_grid_districts, mastr_data])
