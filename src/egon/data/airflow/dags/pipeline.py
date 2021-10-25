@@ -3,7 +3,6 @@ import os
 import airflow
 import egon.data.datasets.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
-import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
@@ -50,6 +49,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.calculate_dlr import Calculate_dlr
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -316,12 +316,14 @@ with airflow.DAG(
     zensus_misc_import >> import_district_heating_areas
 
     # Calculate dynamic line rating for HV trans lines
-    calculate_dlr = PythonOperator(
-        task_id="calculate_dlr", python_callable=dlr.Calculate_DLR
+    dlr = Calculate_dlr(
+        dependencies=[osmtgmod_pypsa,
+                      download_data_bundle,
+                      download_weather_data,
+            ]
     )
-    osmtgmod_pypsa >> calculate_dlr
-    download_data_bundle >> calculate_dlr
-    download_weather_data >> calculate_dlr
+    #download_data_bundle = tasks["data_bundle.download"]
+    #download_weather_data = tasks["era5.download-era5"]
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
