@@ -27,7 +27,7 @@ def insert_H2_overground_storage():
         f"""
         SELECT bus_id, scn_name, geom
         FROM {sources['hydrogen_buses']['schema']}.
-        {sources['hydrogen_buses']['table']} WHERE carrier = 'H2'""",
+        {sources['hydrogen_buses']['table']} WHERE carrier LIKE 'H2%%'""",
         index_col="bus_id",
     )
 

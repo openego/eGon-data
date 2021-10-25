@@ -24,19 +24,17 @@ def insert_hydrogen_buses():
         Name of the scenario The default is 'eGon2035'.
 
     """
-    carrier = "H2"
     scenario = "eGon2035"
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"]
     # initalize dataframe for hydrogen buses
+    carrier = "H2_saltcavern"
     hydrogen_buses = initialise_bus_insertion(carrier, target)
+    insert_H2_buses_from_saltcavern(hydrogen_buses, carrier, sources, target)
 
-    # work on individual DataFrames
-    hydrogen_cavern = hydrogen_buses.copy()
-    hydrogen_grid = hydrogen_buses.copy()
-
-    insert_H2_buses_from_saltcavern(hydrogen_cavern, carrier, sources, target)
-    insert_H2_buses_from_CH4_grid(hydrogen_grid, carrier, target)
+    carrier = "H2_grid"
+    hydrogen_buses = initialise_bus_insertion(carrier, target)
+    insert_H2_buses_from_CH4_grid(hydrogen_buses, carrier, target)
 
 
 def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target):
@@ -113,7 +111,7 @@ class HydrogenBusEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenBusEtrago",
-            version="0.0.0dev",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(insert_hydrogen_buses),
         )
