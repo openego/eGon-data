@@ -56,6 +56,10 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
     scenario : str, optional
         Name of the scenario The default is 'eGon2035'.
 
+    Returns
+    -------
+    bus_data : geopandas.GeoDataFrame
+        GeoDataFrame containing the inserted bus data.
     """
     # Select unused index of buses
     next_bus_id = db.next_etrago_id("bus")
@@ -75,3 +79,5 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
         con=db.engine(),
         dtype={"geom": Geometry()},
     )
+
+    return bus_data

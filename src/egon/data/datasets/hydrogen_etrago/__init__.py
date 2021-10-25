@@ -89,7 +89,24 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target):
                 WHERE carrier = 'CH4';"""
 
     gdf_H2 = db.select_geodataframe(sql_CH4, epsg=4326)
-    finalize_bus_insertion(gdf_H2, carrier, target)
+    # CH4 bus ids and respective hydrogen bus ids are writte to db for
+    # later use (CH4 grid to H2 links)
+    buses_CH4 = gdf_H2[['bus_id', 'scn_name']].copy()
+
+    gdf_H2 = finalize_bus_insertion(gdf_H2, carrier, target)
+
+    gdf_H2_CH4 = gdf_H2[['bus_id']].rename(columns={'bus_id': 'bus_H2'})
+    gdf_H2_CH4['bus_CH4'] = buses_CH4['bus_id']
+    gdf_H2_CH4['scn_name'] = buses_CH4['scn_name']
+
+    # Insert data to db
+    gdf_H2_CH4.to_sql(
+        "egon_etrago_ch4_h2",
+        engine,
+        schema="grid",
+        index=False,
+        if_exists="replace",
+    )
 
 
 class HydrogenBusEtrago(Dataset):

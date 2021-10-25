@@ -26,6 +26,7 @@ from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.processing.gas_areas import GasAreas
 from egon.data.datasets.ch4_storages import CH4Storages
+from egon.data.processing.h2_to_ch4 import H2toCH4toH2
 from egon.data.processing.power_to_h2 import PowertoH2toPower
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -264,6 +265,11 @@ with airflow.DAG(
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = PowertoH2toPower(
+        dependencies=[insert_hydrogen_buses, ]
+    )
+
+    # Link between methane grid and respective hydrogen buses
+    insert_h2_to_ch4_grid_links = H2toCH4toH2(
         dependencies=[insert_hydrogen_buses, ]
     )
 
