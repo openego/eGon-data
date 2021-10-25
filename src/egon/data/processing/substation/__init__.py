@@ -10,17 +10,21 @@ from geoalchemy2.types import Geometry
 
 Base = declarative_base()
 
+
 class EgonEhvSubstation(Base):
-    __tablename__ = 'egon_ehv_substation'
-    __table_args__ = {'schema': 'grid'}
-    bus_id = Column(Integer,
-        Sequence('egon_ehv_substation_bus_id_seq', schema='grid'),
-        server_default=
-            Sequence('egon_ehv_substation_bus_id_seq', schema='grid').next_value(),
-        primary_key=True)
+    __tablename__ = "egon_ehv_substation"
+    __table_args__ = {"schema": "grid"}
+    bus_id = Column(
+        Integer,
+        Sequence("egon_ehv_substation_bus_id_seq", schema="grid"),
+        server_default=Sequence(
+            "egon_ehv_substation_bus_id_seq", schema="grid"
+        ).next_value(),
+        primary_key=True,
+    )
     lon = Column(Float(53))
     lat = Column(Float(53))
-    point = Column(Geometry('POINT', 4326), index=True)
+    point = Column(Geometry("POINT", 4326), index=True)
     polygon = Column(Geometry)
     voltage = Column(Text)
     power_type = Column(Text)
@@ -36,16 +40,19 @@ class EgonEhvSubstation(Base):
 
 
 class EgonHvmvSubstation(Base):
-    __tablename__ = 'egon_hvmv_substation'
-    __table_args__ = {'schema': 'grid'}
-    bus_id = Column(Integer,
-        Sequence('egon_hvmv_substation_bus_id_seq', schema='grid'),
-        server_default=
-            Sequence('egon_hvmv_substation_bus_id_seq', schema='grid').next_value(),
-        primary_key=True)
+    __tablename__ = "egon_hvmv_substation"
+    __table_args__ = {"schema": "grid"}
+    bus_id = Column(
+        Integer,
+        Sequence("egon_hvmv_substation_bus_id_seq", schema="grid"),
+        server_default=Sequence(
+            "egon_hvmv_substation_bus_id_seq", schema="grid"
+        ).next_value(),
+        primary_key=True,
+    )
     lon = Column(Float(53))
     lat = Column(Float(53))
-    point = Column(Geometry('POINT', 4326), index=True)
+    point = Column(Geometry("POINT", 4326), index=True)
     polygon = Column(Geometry)
     voltage = Column(Text)
     power_type = Column(Text)
@@ -59,28 +66,36 @@ class EgonHvmvSubstation(Base):
     dbahn = Column(Text)
     status = Column(Integer)
 
+
 class EgonHvmvSubstationVoronoi(Base):
-    __tablename__ = 'egon_hvmv_substation_voronoi'
-    __table_args__ = {'schema': 'grid'}
-    id = Column(Integer,
-        Sequence('egon_hvmv_substation_voronoi_id_seq', schema='grid'),
-        server_default=
-            Sequence('egon_hvmv_substation_voronoi_id_seq', schema='grid').next_value(),
-        primary_key=True)
+    __tablename__ = "egon_hvmv_substation_voronoi"
+    __table_args__ = {"schema": "grid"}
+    id = Column(
+        Integer,
+        Sequence("egon_hvmv_substation_voronoi_id_seq", schema="grid"),
+        server_default=Sequence(
+            "egon_hvmv_substation_voronoi_id_seq", schema="grid"
+        ).next_value(),
+        primary_key=True,
+    )
     bus_id = Column(Integer)
-    geom = Column(Geometry('Multipolygon', 4326))
+    geom = Column(Geometry("Multipolygon", 4326))
 
 
 class EgonEhvSubstationVoronoi(Base):
-    __tablename__ = 'egon_ehv_substation_voronoi'
-    __table_args__ = {'schema': 'grid'}
-    id = Column(Integer,
-        Sequence('egon_ehv_substation_voronoi_id_seq', schema='grid'),
-        server_default=
-            Sequence('egon_ehv_substation_voronoi_id_seq', schema='grid').next_value(),
-        primary_key=True)
+    __tablename__ = "egon_ehv_substation_voronoi"
+    __table_args__ = {"schema": "grid"}
+    id = Column(
+        Integer,
+        Sequence("egon_ehv_substation_voronoi_id_seq", schema="grid"),
+        server_default=Sequence(
+            "egon_ehv_substation_voronoi_id_seq", schema="grid"
+        ).next_value(),
+        primary_key=True,
+    )
     bus_id = Column(Integer)
-    geom = Column(Geometry('Multipolygon', 4326))
+    geom = Column(Geometry("Multipolygon", 4326))
+
 
 def create_tables():
     """Create tables for substation data
@@ -88,12 +103,13 @@ def create_tables():
     -------
     None.
     """
-    cfg_ehv = egon.data.config.datasets()['ehv_substation']
-    cfg_hvmv = egon.data.config.datasets()['hvmv_substation']
-    cfg_ehv_voronoi = egon.data.config.datasets()['ehv_substation_voronoi']
-    cfg_hvmv_voronoi = egon.data.config.datasets()['hvmv_substation_voronoi']
+    cfg_ehv = egon.data.config.datasets()["ehv_substation"]
+    cfg_hvmv = egon.data.config.datasets()["hvmv_substation"]
+    cfg_ehv_voronoi = egon.data.config.datasets()["ehv_substation_voronoi"]
+    cfg_hvmv_voronoi = egon.data.config.datasets()["hvmv_substation_voronoi"]
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {cfg_ehv['processed']['schema']};")
+        f"CREATE SCHEMA IF NOT EXISTS {cfg_ehv['processed']['schema']};"
+    )
 
     # Drop tables
     db.execute_sql(
@@ -216,7 +232,7 @@ def create_sql_functions():
         END;
         $$ LANGUAGE plpgsql;
         """
-        )
+    )
 
     # Create function: ST_Buffer_Meters(geometry, double precision)
 
@@ -239,32 +255,36 @@ def create_sql_functions():
         $BODY$ LANGUAGE 'plpgsql' IMMUTABLE
         COST 100;
         """
-        )
+    )
+
 
 def create_voronoi():
-    '''
+    """
     Creates voronoi polygons for hvmv and ehv substations
 
     Returns
     -------
     None.
 
-    '''
+    """
 
-    substation_list = ['hvmv_substation', 'ehv_substation']
+    substation_list = ["hvmv_substation", "ehv_substation"]
 
     for substation in substation_list:
-        schema = egon.data.config.datasets()[substation]['processed']['schema']
-        substation_table = egon.data.config.datasets()[substation]['processed']['table']
-        voronoi_table = egon.data.config.datasets()[substation + '_voronoi']['processed']['table']
-        view = 'grid.egon_voronoi_no_borders'
-        boundary = 'boundaries.vg250_sta_union'
-
+        schema = egon.data.config.datasets()[substation]["processed"]["schema"]
+        substation_table = egon.data.config.datasets()[substation][
+            "processed"
+        ]["table"]
+        voronoi_table = egon.data.config.datasets()[substation + "_voronoi"][
+            "processed"
+        ]["table"]
+        view = "grid.egon_voronoi_no_borders"
+        boundary = "boundaries.vg250_sta_union"
 
         # Create view for Voronoi polygons without taking borders into account
         db.execute_sql(
             f"DROP VIEW IF EXISTS {schema}.egon_voronoi_no_borders CASCADE;"
-                       )
+        )
 
         db.execute_sql(
             f"""
@@ -272,7 +292,7 @@ def create_voronoi():
                SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom
                FROM {schema}.{substation_table} a;
             """
-            )
+        )
 
         # Clip Voronoi with boundaries
         db.execute_sql(
@@ -283,7 +303,7 @@ def create_voronoi():
              FROM {boundary} a
              CROSS JOIN {view} b);
             """
-            )
+        )
 
         # Assign substation id as foreign key
         db.execute_sql(
@@ -300,13 +320,13 @@ def create_voronoi():
 		           )AS t2
 	            WHERE  	t1.id = t2.id;
             """
-            )
+        )
 
         db.execute_sql(
             f"""
             CREATE INDEX  	{voronoi_table}_idx
                 ON          {schema}.{voronoi_table} USING gist (geom);
             """
-            )
+        )
 
         db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")
