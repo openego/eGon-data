@@ -8,10 +8,11 @@ from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_individual_power_to_heat,
 )
 from egon.data.datasets import Dataset
+from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 
 def insert_buses(carrier, scenario="eGon2035"):
-    """ Insert heat buses to etrago table
+    """Insert heat buses to etrago table
 
     Heat buses are divided into central and individual heating
 
@@ -87,7 +88,7 @@ def insert_buses(carrier, scenario="eGon2035"):
 
 
 def insert_central_direct_heat(scenario="eGon2035"):
-    """ Insert renewable heating technologies (solar and geo thermal)
+    """Insert renewable heating technologies (solar and geo thermal)
 
     Parameters
     ----------
@@ -218,8 +219,160 @@ def insert_central_direct_heat(scenario="eGon2035"):
     )
 
 
+def insert_central_gas_boilers(scenario="eGon2035", efficiency=1):
+    """Inserts gas boilers for district heating to eTraGo-table
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of the scenario. The default is 'eGon2035'.
+    efficiency : float, optional
+        Efficiency of central gas boilers in p.u.. The default is 1.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = config.datasets()["etrago_heat"]["sources"]
+    targets = config.datasets()["etrago_heat"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier  = 'urban_central_gas_boiler'
+        AND scn_name = '{scenario}'
+        """
+    )
+
+    central_boilers = db.select_dataframe(
+        f"""
+        SELECT c.bus_id as bus0, b.bus_id as bus1,
+        capacity, a.carrier, scenario as scn_name
+        FROM  {sources['district_heating_supply']['schema']}.
+        {sources['district_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Transform(ST_Centroid(geometry), 4326) = geom
+        JOIN {sources['ch4_voronoi']['schema']}.
+        {sources['ch4_voronoi']['table']} c
+        ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
+        WHERE scenario = '{scenario}'
+        AND b.scn_name = '{scenario}'
+        AND a.carrier = 'gas_boiler'
+        AND b.carrier='central_heat'
+        """
+    )
+
+    # Add LineString topology
+    central_boilers = link_geom_from_buses(central_boilers, scenario)
+
+    # Add efficiency of gas boilers
+    central_boilers["efficiency_fixed"] = efficiency
+
+    # Transform thermal capacity to CH4 installed capacity
+    central_boilers["p_nom"] = central_boilers.capacity.div(
+        central_boilers.efficiency_fixed
+    )
+
+    # Drop unused columns
+    central_boilers.drop(["capacity"], axis=1, inplace=True)
+
+    # Set index
+    central_boilers.index += db.next_etrago_id("link")
+    central_boilers.index.name = "link_id"
+
+    # Set carrier name
+    central_boilers.carrier = "urban_central_gas_boiler"
+
+    central_boilers.reset_index().to_postgis(
+        targets["heat_links"]["table"],
+        schema=targets["heat_links"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
+
+
+def insert_rural_gas_boilers(scenario="eGon2035", efficiency=0.98):
+    """Inserts gas boilers for individual heating to eTraGo-table
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of the scenario. The default is 'eGon2035'.
+    efficiency : float, optional
+        Efficiency of central gas boilers in p.u.. The default is 0.98.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = config.datasets()["etrago_heat"]["sources"]
+    targets = config.datasets()["etrago_heat"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier  = 'rural_gas_boiler'
+        AND scn_name = '{scenario}'
+        """
+    )
+
+    rural_boilers = db.select_dataframe(
+        f"""
+        SELECT c.bus_id as bus0, b.bus_id as bus1,
+        capacity, a.carrier, scenario as scn_name
+        FROM  {sources['individual_heating_supply']['schema']}.
+        {sources['individual_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Transform(ST_Centroid(a.geometry), 4326) = b.geom
+        JOIN {sources['ch4_voronoi']['schema']}.
+        {sources['ch4_voronoi']['table']} c
+        ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
+        WHERE scenario = '{scenario}'
+        AND b.scn_name = '{scenario}'
+        AND a.carrier = 'gas_boiler'
+        AND b.carrier='rural_heat'
+        """
+    )
+
+    # Add LineString topology
+    rural_boilers = link_geom_from_buses(rural_boilers, scenario)
+
+    # Add efficiency of gas boilers
+    rural_boilers["efficiency_fixed"] = efficiency
+
+    # Transform thermal capacity to CH4 installed capacity
+    rural_boilers["p_nom"] = rural_boilers.capacity.div(
+        rural_boilers.efficiency_fixed
+    )
+
+    # Drop unused columns
+    rural_boilers.drop(["capacity"], axis=1, inplace=True)
+
+    # Set index
+    rural_boilers.index += db.next_etrago_id("link")
+    rural_boilers.index.name = "link_id"
+
+    # Set carrier name
+    rural_boilers.carrier = "rural_gas_boiler"
+
+    rural_boilers.reset_index().to_postgis(
+        targets["heat_links"]["table"],
+        schema=targets["heat_links"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
+
+
 def buses():
-    """ Insert individual and district heat buses into eTraGo-tables
+    """Insert individual and district heat buses into eTraGo-tables
 
     Parameters
     ----------
@@ -235,7 +388,7 @@ def buses():
 
 
 def supply():
-    """ Insert individual and district heat supply into eTraGo-tables
+    """Insert individual and district heat supply into eTraGo-tables
 
     Parameters
     ----------
@@ -250,12 +403,15 @@ def supply():
     insert_central_power_to_heat(scenario="eGon2035")
     insert_individual_power_to_heat(scenario="eGon2035")
 
+    insert_rural_gas_boilers(scenario="eGon2035")
+    insert_central_gas_boilers(scenario="eGon2035")
+
 
 class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(buses, supply),
         )

@@ -24,7 +24,8 @@ class RenewableFeedin(Dataset):
 
 
 def weather_cells_in_germany(geom_column="geom"):
-    """ Get weather cells which intersect with Germany
+
+    """Get weather cells which intersect with Germany
 
     Returns
     -------
@@ -36,16 +37,14 @@ def weather_cells_in_germany(geom_column="geom"):
     cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
 
     return db.select_geodataframe(
-        f"""SELECT a.w_id, a.geom_point, a.geom
+        f"""SELECT w_id, geom_point, geom
         FROM {cfg['weather_cells']['schema']}.
-        {cfg['weather_cells']['table']} a,
-        {cfg['vg250_sta_union']['schema']}.
-        {cfg['vg250_sta_union']['table']} b
-        WHERE ST_Intersects(ST_Transform(b.geometry, 4326), a.geom)""",
+        {cfg['weather_cells']['table']}
+        WHERE ST_Intersects('SRID=4326;
+        POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
-
 
 def federal_states_per_weather_cell():
     """ Assings a federal state to each weather cell in Germany.

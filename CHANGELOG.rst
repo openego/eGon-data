@@ -156,8 +156,17 @@ Added
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
+* Assign weather cell id to weather dependant power plants
+  `#330 <https://github.com/openego/eGon-data/issues/330>`_
+* Distribute wind offshore capacities
+  `#329 <https://github.com/openego/eGon-data/issues/329>`_
+* Add CH4 storages
+  `#405 <https://github.com/openego/eGon-data/issues/405>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
+
+
+
 
 
 Changed
@@ -302,4 +311,6 @@ Bug fixes
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
 * Exchange bus 0 and bus 1 in Power-to-H2 links
   `#458 <https://github.com/openego/eGon-data/issues/458>`_
+* Add `data_bundle` to `industrial_sites` task dependencies
+  `#468 <https://github.com/openego/eGon-data/issues/468>`_
 
