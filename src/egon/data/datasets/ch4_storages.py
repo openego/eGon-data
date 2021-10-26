@@ -110,7 +110,6 @@ def import_ch4_grid_capacity():
     """ 
     Gas_grid_capacity = 130000 # G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
     N_ch4_nodes_G = ch4_nodes_number_G(define_gas_nodes_list()) # Number of nodes in Germany
-    print(N_ch4_nodes_G)
     Store_capacity = Gas_grid_capacity / N_ch4_nodes_G
     
     sql_gas = """SELECT bus_id, scn_name, carrier, geom
@@ -154,7 +153,6 @@ def import_ch4_storages():
     gas_storages_list =  gas_storages_list.reset_index(drop=True)
    
     # Insert data to db
-    print(gas_storages_list)
     gas_storages_list.to_sql('egon_etrago_store',
                               engine,
                               schema ='grid',
