@@ -53,6 +53,14 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.heat_timeseries_etrago_table.hts_etrago import HtsEtragoTable
+
+from egon.data.datasets.gas_prod import GasProduction
+
+import egon.data.importing.zensus as import_
+import egon.data.importing.gas_grid as gas_grid
+import egon.data.processing.power2gas as power2gas
+
 
 
 # Set number of threads used by numpy and pandas
@@ -506,3 +514,10 @@ with airflow.DAG(
             power_plants,
         ]
     )
+
+
+    # HTS to etrago table
+    hts_etrago_table = HtsEtragoTable(
+                        dependencies = [heat_time_series,mv_grid_districts,
+                                        district_heating_areas,heat_etrago])
+
