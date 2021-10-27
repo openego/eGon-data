@@ -62,6 +62,9 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
+# Set number of threads used by numpy and pandas
+set_numexpr_threads()
+
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
