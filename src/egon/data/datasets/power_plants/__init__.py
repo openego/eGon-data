@@ -21,7 +21,11 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 import egon.data.config
+import egon.data.datasets.power_plants.wind_farms as wind_onshore
+import egon.data.datasets.power_plants.wind_offshore as wind_offshore
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
+
+import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 
 Base = declarative_base()
@@ -48,7 +52,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -56,6 +60,8 @@ class PowerPlants(Dataset):
                 wind_onshore.insert,
                 pv_ground_mounted.insert,
                 pv_rooftop_per_mv_grid,
+                assign_weather_data.weather_id,
+                 wind_offshore.insert,               
             ),
         )
 
@@ -197,10 +203,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     mastr_loc = (
         gpd.sjoin(
-            gpd.read_postgis(
-                sql,
-                con=db.engine(),
-            ).to_crs(4326),
+            gpd.read_postgis(sql, con=db.engine()).to_crs(4326),
             mastr_loc,
             how="right",
         )
@@ -509,7 +512,7 @@ def assign_bus_id(power_plants, cfg):
         power_plants.loc[power_plants_hv, "bus_id"] = gpd.sjoin(
             power_plants[power_plants.index.isin(power_plants_hv)],
             mv_grid_districts,
-        ).subst_id
+        ).bus_id
 
     # Assign power plants in ehv to ehv bus
     power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
@@ -544,7 +547,7 @@ def assign_gas_bus_id(power_plants):
 
     gas_voronoi = db.select_geodataframe(
         """
-        SELECT * FROM grid.egon_gas_voronoi
+        SELECT * FROM grid.egon_voronoi_ch4
         """,
         epsg=4326,
     )

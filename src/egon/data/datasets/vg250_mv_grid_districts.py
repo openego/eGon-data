@@ -15,7 +15,7 @@ class Vg250MvGridDistricts(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Vg250MvGridDistricts",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(mapping),
         )
@@ -62,7 +62,7 @@ def mapping():
     # Select sources from database
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT subst_id as bus_id, ST_Centroid(geom) as geom
+        SELECT bus_id as bus_id, ST_Centroid(geom) as geom
         FROM {sources['egon_mv_grid_district']['schema']}.
         {sources['egon_mv_grid_district']['table']}
         """,
