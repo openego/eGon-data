@@ -50,7 +50,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
-from egon.data.datasets.heat_timeseries_etrago_table.hts_etrago import HtsEtragoTable
+from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
