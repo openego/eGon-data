@@ -24,6 +24,8 @@ from math import ceil
 
 
 from egon.data.datasets import Dataset
+import egon
+
 
 
 class IdpProfiles:
