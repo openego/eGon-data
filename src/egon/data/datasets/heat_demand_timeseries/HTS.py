@@ -1178,14 +1178,6 @@ def residential_demand_scale(aggregation_level):
             mv_grid.index.difference(district_heating.index), :
         ]
         mv_grid_ind = mv_grid_ind.reset_index()
-
-        district_grid = pd.merge(
-            mv_grid_ind[["subst_id", "zensus_population_id"]],
-            annual_demand[["zensus_population_id", "Station", "demand"]],
-            on="zensus_population_id",
-            how="inner",
-        )
-
         district_grid = pd.merge(
             mv_grid_ind[["bus_id", "zensus_population_id"]],
             annual_demand[["zensus_population_id", "Station", "demand"]],
