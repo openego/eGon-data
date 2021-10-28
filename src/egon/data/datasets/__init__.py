@@ -101,6 +101,12 @@ Task = Union[Callable[[], None], Operator]
 TaskGraph = Union[Task, Set["TaskGraph"], Tuple["TaskGraph", ...]]
 
 
+def prefix(o):
+    module = o.__module__
+    parent = f"{__name__}."
+    return f"{module.replace(parent, '')}." if parent in module else ""
+
+
 @dataclass
 class Tasks(dict):
     first: Set[Task]
@@ -114,12 +120,7 @@ class Tasks(dict):
         """
         if isinstance(graph, Callable):
             graph = PythonOperator(
-                task_id=(
-                    f"{graph.__module__.replace('egon.data.datasets.', '')}."
-                    if "egon.data.datasets." in graph.__module__
-                    else ""
-                )
-                + graph.__name__.replace("_", "-"),
+                task_id=f"{prefix(graph)}{graph.__name__.replace('_', '-')}",
                 python_callable=graph,
             )
         self.graph = graph
@@ -135,6 +136,7 @@ class Tasks(dict):
             self.first = {task for result in results for task in result.first}
             self.last = {task for result in results for task in result.last}
             self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
+            self.graph = set(tasks.graph for tasks in results)
         elif isinstance(graph, tuple):
             results = [Tasks(subtasks) for subtasks in graph]
             for (left, right) in zip(results[:-1], results[1:]):
@@ -144,6 +146,7 @@ class Tasks(dict):
             self.first = results[0].first
             self.last = results[-1].last
             self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
+            self.graph = tuple(tasks.graph for tasks in results)
         else:
             raise (
                 TypeError(
@@ -227,8 +230,10 @@ class Dataset:
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
+            name = prefix(self)
+            name = name if name else f"{self.name}."
             update_version = PythonOperator(
-                task_id=f"update-{self.name}-version",
+                task_id=f"{name}update-version",
                 # Do nothing, because updating will be added later.
                 python_callable=lambda *xs, **ks: None,
             )

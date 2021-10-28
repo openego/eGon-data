@@ -2,37 +2,26 @@
 forecast Zensus data.
 """
 
-from egon.data import db
+import numpy as np
+
 import egon.data.config
 import pandas as pd
-import numpy as np
+from egon.data import db
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from egon.data.datasets import Dataset
+
 # will be later imported from another file ###
 Base = declarative_base()
 
-# class SocietyPrognosis(Dataset):
-#     def __init__(self, dependencies):
-#         super().__init__(
-#             name="SocietyPrognosis",
-#             version="0.0.0",
-#             dependencies=dependencies,
-#             tasks=(create_tables,
-#                    {zensus_population,
-#                     zensus_household}),
-#         )
 
-# Avoid parallel tasks as long as the dependencies are not set correctly
 class SocietyPrognosis(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SocietyPrognosis",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(create_tables,
-                   zensus_population,
-                    zensus_household),
+            tasks=(create_tables, {zensus_population, zensus_household}),
         )
 
 
@@ -42,6 +31,7 @@ class EgonPopulationPrognosis(Base):
     zensus_population_id = Column(Integer, primary_key=True)
     year = Column(Integer, primary_key=True)
     population = Column(Float)
+
 
 class EgonHouseholdPrognosis(Base):
     __tablename__ = "egon_household_prognosis"
@@ -150,7 +140,8 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
     # Set seed for reproducibility
     np.random.seed(
-        seed=egon.data.config.settings()['egon-data']['--random-seed'])
+        seed=egon.data.config.settings()["egon-data"]["--random-seed"]
+    )
 
     # Rounding process to meet exact values from demandregio on nuts3-level
     for name, group in prognosis.groupby(prognosis.nuts3):
