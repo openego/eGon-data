@@ -158,6 +158,8 @@ with airflow.DAG(
         dependencies=[osm, zensus_misc_import]
     )
     osm_buildings_streets.insert_into(pipeline)
+    osm_buildings_streets_preprocessing = tasks["osm_buildings_streets.preprocessing"]
+
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
