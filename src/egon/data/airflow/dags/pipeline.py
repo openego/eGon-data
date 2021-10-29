@@ -62,9 +62,6 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
-# Set number of threads used by numpy and pandas
-set_numexpr_threads()
-
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
@@ -161,7 +158,6 @@ with airflow.DAG(
         dependencies=[osm, zensus_misc_import]
     )
     osm_buildings_streets.insert_into(pipeline)
-    osm_buildings_streets_preprocessing = tasks["osm_buildings_streets.preprocessing"]
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
