@@ -389,6 +389,7 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
+    # Household electricity demand Profiles
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=hh_demand_profiles.mv_grid_district_HH_electricity_load,
@@ -402,25 +403,33 @@ with airflow.DAG(
         op_args=["eGon100RE", 2050, "0.0.0"],
     )
 
-    hh_demand = hh_demand_profiles.setup(dependencies=[
-        vg250_clean_and_prepare,
-        zensus_misc_import,
-        map_zensus_grid_districts,
-        zensus_inside_ger,
-        demandregio,
-        osm_buildings_streets_preprocessing,
-    ],
+    hh_demand_profiles_setup = hh_demand_profiles.setup(
+        dependencies=[
+            vg250_clean_and_prepare,
+            zensus_misc_import,
+            map_zensus_grid_districts,
+            zensus_inside_ger,
+            demandregio,
+            osm_buildings_streets_preprocessing,
+        ],
         tasks=(hh_demand_profiles.houseprofiles_in_census_cells,
                mv_hh_electricity_load_2035,
                mv_hh_electricity_load_2050,
                hh_demand_buildings.map_houseprofiles_to_buildings)
     )
-    hh_demand.insert_into(pipeline)
+    hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
         "hh_demand_profiles.houseprofiles-in-census-cells"
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
+
+    # Household electricity demand building assignment
+    hh_demand_buildings_setup = hh_demand_buildings.setup(
+        dependency=[householdprofiles_in_cencus_cells],
+    )
+
+    hh_demand_buildings_setup.insert_into(pipeline)
     map_houseprofiles_to_buildings = tasks["hh_demand_buildings.map-houseprofiles-to-buildings"]
 
     # Industry

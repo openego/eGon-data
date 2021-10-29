@@ -1,3 +1,4 @@
+from functools import partial
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
 from sqlalchemy import ARRAY, REAL, Column, Integer, String, Table, inspect
@@ -7,7 +8,8 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.hh_demand_profiles import (
+from egon.data.datasets import Dataset
+from egon.data.datasets.electricity_demand_timeseries.hh_demand_profiles import (
     HouseholdElectricityProfilesInCensusCells,
 )
 import egon.data.config
@@ -45,9 +47,7 @@ class OsmBuildingsSynthetic(Base):
     area = Column(REAL)
 
 
-# Assign buildings to profiles
-#
-#
+
 def map_houseprofiles_to_buildings():
     """"""
 
@@ -400,8 +400,17 @@ def map_houseprofiles_to_buildings():
     #                                          'cell_id': HouseholdElectricityProfilesOfBuildings.cell_id.type,
     #                                          'grid_id': HouseholdElectricityProfilesOfBuildings.grid_id.type,
     #                                          'building_profile_ids': HouseholdElectricityProfilesOfBuildings.building_profile_ids.type,
+    #
     #                                      })
 
+
+setup = partial(
+    Dataset,
+    name="Demand_Building_Assignment",
+    version="0.0.0",
+    dependencies=[],
+    tasks=[map_houseprofiles_to_buildings],
+)
 
 # if __name__ == "__main__":
 #     map_houseprofiles_to_buildings()
