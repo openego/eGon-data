@@ -741,5 +741,23 @@ DSM_CTS_industry:
       table: 'egon_etrago_store'  
     store_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_store_timeseries' 
+      table: 'egon_etrago_store_timeseries'
+
+generators_etrago:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    etrago_generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
 
