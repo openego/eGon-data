@@ -38,6 +38,7 @@ from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -141,6 +142,12 @@ with airflow.DAG(
             zensus_misc_import,
         ]
     )
+
+    # OSM buildings, streets, amenities
+    osm_buildings_streets = OsmBuildingsStreets(
+        dependencies=[osm, zensus_misc_import]
+    )
+    osm_buildings_streets.insert_into(pipeline)
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
