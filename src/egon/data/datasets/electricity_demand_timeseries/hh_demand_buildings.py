@@ -47,7 +47,6 @@ class OsmBuildingsSynthetic(Base):
     area = Column(REAL)
 
 
-
 def map_houseprofiles_to_buildings():
     """"""
 
@@ -409,7 +408,7 @@ setup = partial(
     name="Demand_Building_Assignment",
     version="0.0.0",
     dependencies=[],
-    tasks=[map_houseprofiles_to_buildings],
+    tasks=(map_houseprofiles_to_buildings),
 )
 
 # if __name__ == "__main__":

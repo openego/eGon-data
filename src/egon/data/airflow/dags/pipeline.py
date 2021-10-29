@@ -415,22 +415,22 @@ with airflow.DAG(
         tasks=(hh_demand_profiles.houseprofiles_in_census_cells,
                mv_hh_electricity_load_2035,
                mv_hh_electricity_load_2050,
-               hh_demand_buildings.map_houseprofiles_to_buildings)
+               )
     )
     hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
-        "hh_demand_profiles.houseprofiles-in-census-cells"
+        "electricity_demand_timeseries.hh_demand_profiles.houseprofiles-in-census-cells"
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
     # Household electricity demand building assignment
     hh_demand_buildings_setup = hh_demand_buildings.setup(
-        dependency=[householdprofiles_in_cencus_cells],
+        dependencies=[householdprofiles_in_cencus_cells],
     )
 
     hh_demand_buildings_setup.insert_into(pipeline)
-    map_houseprofiles_to_buildings = tasks["hh_demand_buildings.map-houseprofiles-to-buildings"]
+    map_houseprofiles_to_buildings = tasks["electricity_demand_timeseries.hh_demand_buildings.map-houseprofiles-to-buildings"]
 
     # Industry
 
