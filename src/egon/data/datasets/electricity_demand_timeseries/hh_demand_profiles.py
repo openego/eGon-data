@@ -232,7 +232,7 @@ class EgonEtragoElectricityHouseholds(Base):
     q_set = Column(ARRAY(Float))
 
 
-hh_demand_setup = partial(
+setup = partial(
     Dataset,
     name="HH Demand",
     version="0.0.2",
