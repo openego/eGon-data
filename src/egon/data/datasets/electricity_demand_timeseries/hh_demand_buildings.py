@@ -1,3 +1,10 @@
+"""
+Building assignment for Household electricity demand profiles
+
+
+Notes
+-----
+"""
 from functools import partial
 
 from geoalchemy2 import Geometry
