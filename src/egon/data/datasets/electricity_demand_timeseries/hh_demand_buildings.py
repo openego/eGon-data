@@ -131,7 +131,7 @@ def map_houseprofiles_to_buildings():
         ).rename(columns={"index": "cell_id"})
 
         # Edge_length of square synth building
-        edge_length = 1
+        edge_length = 10
 
         # get cell bounds - half edge_length
         xmin = missing_buildings_geom["geom"].bounds["minx"] + edge_length / 2
