@@ -88,6 +88,73 @@ def match_osm_and_zensus_data(
         number_of_buildings_profiles_per_cell.osm_ids == 0,
         ["cell_id", "cell_profile_ids"],
     ].set_index("cell_id")
+
+    # query zensus building count
+    egon_destatis_building_count = Table(
+        "egon_destatis_zensus_apartment_building_population_per_ha",
+        Base.metadata,
+        schema="society",
+    )
+    # get table metadata from db by name and schema
+    inspect(engine).reflecttable(egon_destatis_building_count, None)
+
+    with db.session_scope() as session:
+        cells_query = session.query(
+            egon_destatis_building_count.c.zensus_population_id,
+            egon_destatis_building_count.c.building_count,
+        )
+
+    egon_destatis_building_count = pd.read_sql(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col="zensus_population_id",
+    )
+    egon_destatis_building_count = egon_destatis_building_count.dropna()
+
+    missing_buildings = pd.merge(
+        left=missing_buildings,
+        right=egon_destatis_building_count,
+        left_index=True,
+        right_index=True,
+        how="left",
+    )
+
+    # exclude cells without buildings
+    only_cells_with_buildings = (
+        number_of_buildings_profiles_per_cell["osm_ids"] != 0
+    )
+    # get profile/building rate for each cell
+    profile_building_rate = (
+        number_of_buildings_profiles_per_cell.loc[
+            only_cells_with_buildings, "cell_profile_ids"
+        ]
+        / number_of_buildings_profiles_per_cell.loc[
+            only_cells_with_buildings, "osm_ids"
+        ]
+    )
+
+    # prepare values for missing building counts by number of profile ids
+    building_count_fillna = missing_buildings.loc[
+        missing_buildings["building_count"].isna(), "cell_profile_ids"
+    ]
+    # devide by mean profile/building rate
+    building_count_fillna = (
+        building_count_fillna / profile_building_rate.mean()
+    )
+    # replace missing building counts
+    missing_buildings["building_count"] = missing_buildings[
+        "building_count"
+    ].fillna(value=building_count_fillna)
+
+    # round and make type int
+    missing_buildings = missing_buildings.round().astype(int)
+    # missing_buildings = missing_buildings.astype(int)
+
+    missing_buildings["building_count"] = missing_buildings[
+        "building_count"
+    ].apply(range)
+    missing_buildings = missing_buildings.explode(column="building_count")
+
     return missing_buildings
 
 
@@ -120,17 +187,23 @@ def generate_synthetic_buildings(missing_buildings):
         left=destatis_zensus_population_per_ha_inside_germany[
             ["geom", "grid_id"]
         ],
-        right=missing_buildings.squeeze().rename("profiles"),
+        right=missing_buildings,
         left_index=True,
         right_index=True,
+        how="right",
     )
 
-    missing_buildings_geom = missing_buildings_geom.reset_index(
-        drop=False
-    ).rename(columns={"index": "cell_id"})
+    missing_buildings_geom = missing_buildings_geom.reset_index(drop=False)
+    missing_buildings_geom = missing_buildings_geom.rename(
+        columns={
+            "building_count": "building_id",
+            "cell_profile_ids": "profiles",
+            "index": "cell_id",
+        }
+    )
 
     # Edge_length of square synth building
-    edge_length = 10
+    edge_length = 5
 
     # get cell bounds - half edge_length
     xmin = missing_buildings_geom["geom"].bounds["minx"] + edge_length / 2
@@ -155,18 +228,6 @@ def generate_synthetic_buildings(missing_buildings):
     missing_buildings_geom["geom"] = buffer
     missing_buildings_geom["osm_id"] = missing_buildings_geom["grid_id"]
 
-    # number of profiles per building
-    # TODO: determine profile_rate
-    profile_rate = 3
-
-    missing_buildings_geom["building_id"] = (
-        (missing_buildings_geom["profiles"] / profile_rate)
-        .astype(int)
-        .apply(range)
-    )
-    missing_buildings_geom = missing_buildings_geom.explode(
-        column="building_id"
-    )
     missing_buildings_geom["building_id"] += 1
     missing_buildings_geom["osm_id"] = (
         missing_buildings_geom["grid_id"]
@@ -404,5 +465,5 @@ setup = partial(
     tasks=(map_houseprofiles_to_buildings),
 )
 
-# if __name__ == "__main__":
-#     map_houseprofiles_to_buildings()
+if __name__ == "__main__":
+    map_houseprofiles_to_buildings()
