@@ -300,28 +300,6 @@ def generate_mapping_table(
         mapping_profiles_to_buildings_reduced.applymap(len)
     )
 
-    # get list of profile by cell and profile position
-    profile_ids_per_cell_reduced = (
-        profile_ids_per_cell_reduced.explode().reset_index()
-    )
-    # assign profile position by order of list
-    profile_ids_per_cell_reduced[
-        "profile"
-    ] = profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
-    profile_ids_per_cell_reduced = profile_ids_per_cell_reduced.set_index(
-        ["cell_id", "profile"]
-    )
-
-    # get list of building by cell and building number
-    osm_ids_per_cell_reduced = osm_ids_per_cell_reduced.explode().reset_index()
-    # assign building number by order of list
-    osm_ids_per_cell_reduced["building"] = osm_ids_per_cell_reduced.groupby(
-        ["cell_id"]
-    ).cumcount()
-    osm_ids_per_cell_reduced = osm_ids_per_cell_reduced.set_index(
-        ["cell_id", "building"]
-    )
-
     # map profiles randomly per cell
     rng = np.random.default_rng(RANDOM_SEED)
     mapping_profiles_to_buildings = pd.Series(
@@ -354,6 +332,28 @@ def generate_mapping_table(
     index_buildings = mapping_profiles_to_buildings.set_index(
         ["cell_id", "building"]
     ).index
+
+    # get list of profiles by cell and profile position
+    profile_ids_per_cell_reduced = (
+        profile_ids_per_cell_reduced.explode().reset_index()
+    )
+    # assign profile position by order of list
+    profile_ids_per_cell_reduced[
+        "profile"
+    ] = profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    profile_ids_per_cell_reduced = profile_ids_per_cell_reduced.set_index(
+        ["cell_id", "profile"]
+    )
+
+    # get list of building by cell and building number
+    osm_ids_per_cell_reduced = osm_ids_per_cell_reduced.explode().reset_index()
+    # assign building number by order of list
+    osm_ids_per_cell_reduced["building"] = osm_ids_per_cell_reduced.groupby(
+        ["cell_id"]
+    ).cumcount()
+    osm_ids_per_cell_reduced = osm_ids_per_cell_reduced.set_index(
+        ["cell_id", "building"]
+    )
 
     # map profiles and buildings by profile position and building number
     # merge is possible as both index results from the same origin (*) and are not rearranged
