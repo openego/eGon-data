@@ -17,7 +17,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.electricity_demand_timeseries.hh_demand_profiles import (
+from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
 )
 import egon.data.config
