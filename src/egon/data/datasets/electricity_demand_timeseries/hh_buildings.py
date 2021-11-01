@@ -449,20 +449,6 @@ def map_houseprofiles_to_buildings():
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
 
-    # mapping_profiles_to_buildings.to_sql('egon_household_electricity_profile_of_buildings',
-    #                                      con=engine,
-    #                                      if_exists='append',
-    #                                      index=False,
-    #                                      method='multi',
-    #                                      schema='demand',
-    #                                      dtype={
-    #                                          'osm_id': HouseholdElectricityProfilesOfBuildings.osm_id.type,
-    #                                          'cell_id': HouseholdElectricityProfilesOfBuildings.cell_id.type,
-    #                                          'grid_id': HouseholdElectricityProfilesOfBuildings.grid_id.type,
-    #                                          'building_profile_ids': HouseholdElectricityProfilesOfBuildings.building_profile_ids.type,
-    #
-    #                                      })
-
 
 setup = partial(
     Dataset,
