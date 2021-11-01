@@ -15,7 +15,8 @@ The following datasets are used for creating the data:
 
 
 * `demand.household_electricity_profiles_in_census_cells`:
-  Lists references and scaling parameters to time series data for each household in a cell by
+  Lists references and scaling parameters to time series data for each household
+   in a cell by
   identifiers. This table is fundamental for creating subsequent data like
   demand profiles on MV grid level or for determining the peak load at load
 
@@ -97,7 +98,7 @@ class OsmBuildingsSynthetic(Base):
 
 
 def match_osm_and_zensus_data(
-    egon_household_electricity_profile_in_zensus_cell,
+    egon_hh_profile_in_zensus_cell,
     egon_map_zensus_buildings_filtered,
 ):
     """
@@ -112,7 +113,7 @@ def match_osm_and_zensus_data(
 
     Parameters
     ----------
-    egon_household_electricity_profile_in_zensus_cell: pd.DataFrame
+    egon_hh_profile_in_zensus_cell: pd.DataFrame
         Table mapping hh demand profiles to census cells
 
     egon_map_zensus_buildings_filtered: pd.DataFrame
@@ -124,13 +125,13 @@ def match_osm_and_zensus_data(
         Table with cell_ids and number of missing buildings
     """
     # count number of profiles for each cell
-    profiles_per_cell = egon_household_electricity_profile_in_zensus_cell.cell_profile_ids.apply(
+    profiles_per_cell = egon_hh_profile_in_zensus_cell.cell_profile_ids.apply(
         len
     )
     # add cell_id
     number_of_buildings_profiles_per_cell = pd.merge(
         left=profiles_per_cell,
-        right=egon_household_electricity_profile_in_zensus_cell["cell_id"],
+        right=egon_hh_profile_in_zensus_cell["cell_id"],
         left_index=True,
         right_index=True,
     )
@@ -331,7 +332,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
 def generate_mapping_table(
     egon_map_zensus_buildings_filtered_synth,
-    egon_household_electricity_profile_in_zensus_cell,
+    egon_hh_profile_in_zensus_cell,
 ):
     """
     Generate a mapping table for hh profiles to buildings.
@@ -347,7 +348,7 @@ def generate_mapping_table(
     ----------
     egon_map_zensus_buildings_filtered_synth: pd.DataFrame
         Table with OSM and synthetic buildings ids per census cell
-    egon_household_electricity_profile_in_zensus_cell: pd.DataFrame
+    egon_hh_profile_in_zensus_cell: pd.DataFrame
         Table mapping hh demand profiles to census cells
 
     Returns
@@ -368,7 +369,7 @@ def generate_mapping_table(
     cells_with_buildings = osm_ids_per_cell.index.astype(int).values
     # cell ids of cells with profiles
     cells_with_profiles = (
-        egon_household_electricity_profile_in_zensus_cell["cell_id"]
+        egon_hh_profile_in_zensus_cell["cell_id"]
         .astype(int)
         .values
     )
@@ -381,9 +382,9 @@ def generate_mapping_table(
     # cells with only buildings might not be residential etc.
 
     # reduced list of profile_ids per cell with both buildings and profiles
-    # should be same like egon_household_electricity_profile_in_zensus_cell.set_index('cell_id')['cell_profile_ids' ]
+    # should be same like egon_hh_profile_in_zensus_cell.set_index('cell_id')['cell_profile_ids' ]
     profile_ids_per_cell_reduced = (
-        egon_household_electricity_profile_in_zensus_cell.set_index(
+        egon_hh_profile_in_zensus_cell.set_index(
             "cell_id"
         ).loc[cell_with_profiles_and_buildings, "cell_profile_ids"]
     )
@@ -459,7 +460,8 @@ def generate_mapping_table(
     )
 
     # map profiles and buildings by profile position and building number
-    # merge is possible as both index results from the same origin (*) and are not rearranged
+    # merge is possible as both index results from the same origin (*) and are
+    # not rearranged
     mapping_profiles_to_buildings = pd.merge(
         osm_ids_per_cell_reduced.loc[index_buildings].reset_index(drop=False),
         profile_ids_per_cell_reduced.loc[index_profiles].reset_index(
@@ -509,13 +511,13 @@ def map_houseprofiles_to_buildings():
 
     with db.session_scope() as session:
         cells_query = session.query(HouseholdElectricityProfilesInCensusCells)
-    egon_household_electricity_profile_in_zensus_cell = pd.read_sql(
+    egon_hh_profile_in_zensus_cell = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
     )  # index_col="cell_id")
 
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(
-        egon_household_electricity_profile_in_zensus_cell,
+        egon_hh_profile_in_zensus_cell,
         egon_map_zensus_buildings_filtered,
     )
 
@@ -555,7 +557,7 @@ def map_houseprofiles_to_buildings():
     # assign profiles to buildings
     mapping_profiles_to_buildings = generate_mapping_table(
         egon_map_zensus_buildings_filtered_synth,
-        egon_household_electricity_profile_in_zensus_cell,
+        egon_hh_profile_in_zensus_cell,
     )
 
     HouseholdElectricityProfilesOfBuildings.__table__.drop(
