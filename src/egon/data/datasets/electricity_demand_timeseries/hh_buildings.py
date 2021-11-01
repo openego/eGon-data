@@ -1,9 +1,50 @@
 """
 Building assignment for Household electricity demand profiles
 
+Assignment of buildings for electricity demand timeseries and generation
+of synthetic buildings if no sufficient OSM-data. The
+
+The resulting data is stored in two separate tables
+
+* `openstreetmap.osm_buildings_synthetic`:
+* `demand.egon_household_electricity_profile_of_buildings`:
+
+  Both tables is created with :func:`map_houseprofiles_to_buildings`.
+
+The following datasets are used for creating the data:
+
+
+* `demand.household_electricity_profiles_in_census_cells`:
+  Lists references and scaling parameters to time series data for each household in a cell by
+  identifiers. This table is fundamental for creating subsequent data like
+  demand profiles on MV grid level or for determining the peak load at load
+
+* society.egon_destatis_zensus_apartment_building_population_per_ha
+  (see :func:`generate_synthetic_buildings`)
+* boundaries.egon_map_zensus_buildings_filtered
+*
+*
+
+**What is the goal?**
+
+
+**How are these datasets combined?**
+
+
+**What are central assumptions during the data processing?**
+
+*
+
+**Drawbacks and limitations of the data**
+
+* see drawbacks hh_profiles
 
 Notes
 -----
+
+This module docstring is rather a dataset documentation. Once, a decision
+is made in ... the content of this module docstring needs to be moved to
+docs attribute of the respective dataset class.
 """
 from functools import partial
 
@@ -479,8 +520,9 @@ def map_houseprofiles_to_buildings():
     )
 
     # randomly generate synthetic buildings in cell without any
-    synthetic_buildings = generate_synthetic_buildings(missing_buildings,
-                                                       edge_length=5)
+    synthetic_buildings = generate_synthetic_buildings(
+        missing_buildings, edge_length=5
+    )
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
