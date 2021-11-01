@@ -103,7 +103,7 @@ def to_postgres():
             schema=vg250_processed["schema"],
             index=True,
             if_exists="replace",
-            dtype={"geometry": Geometry()},
+            dtype={"geometry": Geometry("Polygon", 4326)},
         )
 
         db.execute_sql(
