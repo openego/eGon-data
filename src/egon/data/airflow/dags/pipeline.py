@@ -20,8 +20,10 @@ from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
-from egon.data.datasets.electricity_demand import (CtsElectricityDemand,
-                                                   HouseholdElectricityDemand)
+from egon.data.datasets.electricity_demand import (
+    CtsElectricityDemand,
+    HouseholdElectricityDemand,
+)
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
@@ -29,9 +31,11 @@ from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.hh_demand_profiles import (hh_demand_setup,
-                                                   houseprofiles_in_census_cells,
-                                                   mv_grid_district_HH_electricity_load)
+from egon.data.datasets.hh_demand_profiles import (
+    hh_demand_setup,
+    houseprofiles_in_census_cells,
+    mv_grid_district_HH_electricity_load,
+)
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -245,8 +249,7 @@ with airflow.DAG(
 
     # Gas grid import
     gas_grid_insert_data = PythonOperator(
-        task_id="insert-gas-grid",
-        python_callable=gas_grid.insert_gas_data,
+        task_id="insert-gas-grid", python_callable=gas_grid.insert_gas_data
     )
 
     etrago_input_data >> gas_grid_insert_data
@@ -263,8 +266,7 @@ with airflow.DAG(
 
     # Create gas voronoi
     create_gas_polygons = PythonOperator(
-        task_id="create-gas-voronoi",
-        python_callable=gas_areas.create_voronoi,
+        task_id="create-gas-voronoi", python_callable=gas_areas.create_voronoi
     )
 
     gas_grid_insert_data >> create_gas_polygons
@@ -319,8 +321,7 @@ with airflow.DAG(
 
     # Calculate dynamic line rating for HV trans lines
     calculate_dlr = PythonOperator(
-        task_id="calculate_dlr",
-        python_callable=dlr.Calculate_DLR,
+        task_id="calculate_dlr", python_callable=dlr.Calculate_DLR
     )
     osmtgmod_pypsa >> calculate_dlr
     download_data_bundle >> calculate_dlr
@@ -353,7 +354,6 @@ with airflow.DAG(
     elec_cts_demands_zensus = tasks[
         "electricity_demand.distribute-cts-demands"
     ]
-
 
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
@@ -420,7 +420,7 @@ with airflow.DAG(
     nep_insert_data >> chp_locations_nep
     create_gas_polygons >> chp_locations_nep
     import_district_heating_areas >> chp_locations_nep
-    
+
     # Power plants
     power_plants = PowerPlants(
         dependencies=[
@@ -484,7 +484,13 @@ with airflow.DAG(
 
     # Heat time Series
     heat_time_series = HeatTimeSeries(
-        dependencies = [data_bundle,demandregio,heat_demand_Germany, import_district_heating_areas,
-                        import_district_heating_areas,vg250,
-                        map_zensus_grid_districts])
-
+        dependencies=[
+            data_bundle,
+            demandregio,
+            heat_demand_Germany,
+            import_district_heating_areas,
+            import_district_heating_areas,
+            vg250,
+            map_zensus_grid_districts,
+        ]
+    )
