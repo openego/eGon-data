@@ -49,8 +49,6 @@ class EgonMaStRConventinalWithoutChp(Base):
     EinheitMastrNummer = Column(String)
     carrier = Column(String)
     el_capacity = Column(Float)
-    plz = Column(Integer)
-    city = Column(String)
     geometry = Column(Geometry("POINT", 4326))
 
 

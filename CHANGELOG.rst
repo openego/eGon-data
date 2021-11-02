@@ -137,8 +137,6 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
-* Include allocation of conventional (non CHP) power plants
-  `#392 <https://github.com/openego/eGon-data/issues/392>`_
 * Include allocation of pumped hydro units
   `#332 <https://github.com/openego/eGon-data/issues/332>`_
 * Add example metadata for OSM, VG250 and Zensus VG250.
@@ -147,6 +145,12 @@ Added
   `#139 <https://github.com/openego/eGon-data/issues/139>`_
 * Integrate DSM potentials for CTS and industry
   `#259 <https://github.com/openego/eGon-data/issues/259>`_
+* Assign weather cell id to weather dependant power plants
+  `#330 <https://github.com/openego/eGon-data/issues/330>`_
+* Distribute wind offshore capacities
+  `#329 <https://github.com/openego/eGon-data/issues/329>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -291,4 +295,6 @@ Bug fixes
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
 * Exchange bus 0 and bus 1 in Power-to-H2 links
   `#458 <https://github.com/openego/eGon-data/issues/458>`_
+* Add `data_bundle` to `industrial_sites` task dependencies
+  `#468 <https://github.com/openego/eGon-data/issues/468>`_
 

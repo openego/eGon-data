@@ -20,8 +20,10 @@ from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
-from egon.data.datasets.electricity_demand import (CtsElectricityDemand,
-                                                   HouseholdElectricityDemand)
+from egon.data.datasets.electricity_demand import (
+    CtsElectricityDemand,
+    HouseholdElectricityDemand,
+)
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
@@ -29,9 +31,11 @@ from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.hh_demand_profiles import (hh_demand_setup,
-                                                   houseprofiles_in_census_cells,
-                                                   mv_grid_district_HH_electricity_load)
+from egon.data.datasets.hh_demand_profiles import (
+    hh_demand_setup,
+    houseprofiles_in_census_cells,
+    mv_grid_district_HH_electricity_load,
+)
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -50,6 +54,7 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -351,35 +356,6 @@ with airflow.DAG(
         "electricity_demand.distribute-cts-demands"
     ]
 
-    # Power plants
-    power_plants = PowerPlants(
-        dependencies=[
-            setup,
-            renewable_feedin,
-            mv_grid_districts,
-            mastr_data,
-            re_potential_areas,
-            scenario_parameters,
-            scenario_capacities,
-            Vg250MvGridDistricts,
-        ]
-    )
-
-    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
-    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
-    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
-    solar_rooftop_etrago = tasks[
-        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
-    ]
-
-    hvmv_substation_extraction >> generate_wind_farms
-    hvmv_substation_extraction >> generate_pv_ground_mounted
-    feedin_pv >> solar_rooftop_etrago
-    elec_cts_demands_zensus >> solar_rooftop_etrago
-    elec_household_demands_zensus >> solar_rooftop_etrago
-    etrago_input_data >> solar_rooftop_etrago
-    map_zensus_grid_districts >> solar_rooftop_etrago
-
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=mv_grid_district_HH_electricity_load,
@@ -446,6 +422,36 @@ with airflow.DAG(
     create_gas_polygons >> chp_locations_nep
     import_district_heating_areas >> chp_locations_nep
 
+    # Power plants
+    power_plants = PowerPlants(
+        dependencies=[
+            setup,
+            renewable_feedin,
+            mv_grid_districts,
+            mastr_data,
+            re_potential_areas,
+            scenario_parameters,
+            scenario_capacities,
+            Vg250MvGridDistricts,
+            chp,
+        ]
+    )
+
+    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
+    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
+    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
+    solar_rooftop_etrago = tasks[
+        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
+    ]
+
+    hvmv_substation_extraction >> generate_wind_farms
+    hvmv_substation_extraction >> generate_pv_ground_mounted
+    feedin_pv >> solar_rooftop_etrago
+    elec_cts_demands_zensus >> solar_rooftop_etrago
+    elec_household_demands_zensus >> solar_rooftop_etrago
+    etrago_input_data >> solar_rooftop_etrago
+    map_zensus_grid_districts >> solar_rooftop_etrago
+
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[
@@ -486,5 +492,18 @@ with airflow.DAG(
             scenario_capacities,
             Vg250MvGridDistricts,
             power_plants,
+        ]
+    )
+
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies=[
+            data_bundle,
+            demandregio,
+            heat_demand_Germany,
+            import_district_heating_areas,
+            import_district_heating_areas,
+            vg250,
+            map_zensus_grid_districts,
         ]
     )
