@@ -5,17 +5,19 @@ Inspired mainly on Planungsgrundsaetze-2020
 Available at:
 <https://www.transnetbw.de/files/pdf/netzentwicklung/netzplanungsgrundsaetze/UENB_PlGrS_Juli2020.pdf>
 """
+from pathlib import Path
+
+from shapely.geometry import Point
 import geopandas as gpd
-from egon.data import db
-import egon.data.config
-from egon.data.datasets import Dataset
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import psycopg2
 import rioxarray
-from shapely.geometry import Point
 import xarray as xr
+
+from egon.data import db
+from egon.data.datasets import Dataset
+import egon.data.config
 
 
 class Calculate_dlr(Dataset):
@@ -24,10 +26,9 @@ class Calculate_dlr(Dataset):
             name="dlr",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                dlr,               
-            ),
+            tasks=(dlr,),
         )
+
 
 def dlr():
     """Calculate DLR and assign values to each line in the db

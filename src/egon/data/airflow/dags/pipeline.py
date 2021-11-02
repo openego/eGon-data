@@ -1,36 +1,37 @@
 import os
 
-import airflow
-import egon.data.datasets.gas_grid as gas_grid
-import egon.data.importing.zensus as import_zs
-import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.loadarea as loadarea
-import egon.data.processing.power_to_h2 as power_to_h2
-import egon.data.processing.substation as substation
-import importlib_resources as resources
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
+import airflow
+import importlib_resources as resources
+
 from egon.data import db
 from egon.data.datasets import database
+from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
-from egon.data.datasets.electricity_demand import (CtsElectricityDemand,
-                                                   HouseholdElectricityDemand)
+from egon.data.datasets.electricity_demand import (
+    CtsElectricityDemand,
+    HouseholdElectricityDemand,
+)
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.hh_demand_profiles import (hh_demand_setup,
-                                                   houseprofiles_in_census_cells,
-                                                   mv_grid_district_HH_electricity_load)
+from egon.data.datasets.hh_demand_profiles import (
+    hh_demand_setup,
+    houseprofiles_in_census_cells,
+    mv_grid_district_HH_electricity_load,
+)
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -48,8 +49,12 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
-from egon.data.datasets.calculate_dlr import Calculate_dlr
+import egon.data.datasets.gas_grid as gas_grid
+import egon.data.importing.zensus as import_zs
+import egon.data.processing.gas_areas as gas_areas
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.power_to_h2 as power_to_h2
+import egon.data.processing.substation as substation
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
