@@ -363,35 +363,6 @@ with airflow.DAG(
         "electricity_demand.distribute-cts-demands"
     ]
 
-    # Power plants
-    power_plants = PowerPlants(
-        dependencies=[
-            setup,
-            renewable_feedin,
-            mv_grid_districts,
-            mastr_data,
-            re_potential_areas,
-            scenario_parameters,
-            scenario_capacities,
-            Vg250MvGridDistricts,
-            chp,
-        ]
-    )
-
-    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
-    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
-    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
-    solar_rooftop_etrago = tasks[
-        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
-    ]
-
-    hvmv_substation_extraction >> generate_wind_farms
-    hvmv_substation_extraction >> generate_pv_ground_mounted
-    feedin_pv >> solar_rooftop_etrago
-    elec_cts_demands_zensus >> solar_rooftop_etrago
-    elec_household_demands_zensus >> solar_rooftop_etrago
-    etrago_input_data >> solar_rooftop_etrago
-    map_zensus_grid_districts >> solar_rooftop_etrago
 
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
@@ -458,6 +429,36 @@ with airflow.DAG(
     nep_insert_data >> chp_locations_nep
     create_gas_polygons >> chp_locations_nep
     import_district_heating_areas >> chp_locations_nep
+    
+    # Power plants
+    power_plants = PowerPlants(
+        dependencies=[
+            setup,
+            renewable_feedin,
+            mv_grid_districts,
+            mastr_data,
+            re_potential_areas,
+            scenario_parameters,
+            scenario_capacities,
+            Vg250MvGridDistricts,
+            chp,
+        ]
+    )
+
+    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
+    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
+    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
+    solar_rooftop_etrago = tasks[
+        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
+    ]
+
+    hvmv_substation_extraction >> generate_wind_farms
+    hvmv_substation_extraction >> generate_pv_ground_mounted
+    feedin_pv >> solar_rooftop_etrago
+    elec_cts_demands_zensus >> solar_rooftop_etrago
+    elec_household_demands_zensus >> solar_rooftop_etrago
+    etrago_input_data >> solar_rooftop_etrago
+    map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
     heat_supply = HeatSupply(
