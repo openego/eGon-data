@@ -24,6 +24,7 @@ from math import ceil
 
 
 from egon.data.datasets import Dataset
+import egon
 
 
 class IdpProfiles:
@@ -1027,13 +1028,14 @@ def profile_generator(aggregation_level):
 
         heat_profile_idp = pd.merge(
             heat_profile_idp,
-            mv_grid_ind["subst_id"],
+            mv_grid_ind["bus_id"],
             left_on=selected_profiles.index,
             right_on=mv_grid_ind.index,
             how="inner",
         )
-        heat_profile_idp.sort_values("subst_id", inplace=True)
-        heat_profile_idp.set_index("subst_id", inplace=True)
+
+        heat_profile_idp.sort_values("bus_id", inplace=True)
+        heat_profile_idp.set_index("bus_id", inplace=True)
         heat_profile_idp.drop("key_0", axis=1, inplace=True)
 
         heat_profile_dist = heat_profile_dist.groupby(
@@ -1176,26 +1178,25 @@ def residential_demand_scale(aggregation_level):
             mv_grid.index.difference(district_heating.index), :
         ]
         mv_grid_ind = mv_grid_ind.reset_index()
-
         district_grid = pd.merge(
-            mv_grid_ind[["subst_id", "zensus_population_id"]],
+            mv_grid_ind[["bus_id", "zensus_population_id"]],
             annual_demand[["zensus_population_id", "Station", "demand"]],
             on="zensus_population_id",
             how="inner",
         )
 
-        district_grid.sort_values("subst_id", inplace=True)
+        district_grid.sort_values("bus_id", inplace=True)
         district_grid.drop("zensus_population_id", axis=1, inplace=True)
-        district_grid = district_grid.groupby(["subst_id", "Station"]).sum()
+        district_grid = district_grid.groupby(["bus_id", "Station"]).sum()
         district_grid.reset_index("Station", inplace=True)
 
         demand_curves_mv = pd.DataFrame()
         for j in range(len(heat_profile_idp.columns)):
             current_district = heat_profile_idp.iloc[:, j]
-            subst_id = heat_profile_idp.columns[j]
-            station = district_grid[district_grid.index == subst_id][
+            bus_id = heat_profile_idp.columns[j]
+            station = district_grid[district_grid.index == bus_id][
                 "Station"
-            ][subst_id]
+            ][bus_id]
             if type(station) != str:
                 station = station.reset_index()
                 multiple_stations = pd.DataFrame()
@@ -1207,7 +1208,7 @@ def residential_demand_scale(aggregation_level):
                 multiple_stations = multiple_stations.sum(axis=1)
                 demand_curves_mv[bus_id] = multiple_stations
             else:
-                demand_curves_mv[subst_id] = current_district.multiply(
+                demand_curves_mv[bus_id] = current_district.multiply(
                     h[station], axis=0
                 )
         demand_curves_mv = demand_curves_mv.apply(lambda x: x / x.sum())
@@ -1225,9 +1226,10 @@ def residential_demand_scale(aggregation_level):
         )
 
         heat_demand_profile_mv.rename(
-            columns={"key_0": "subst_id"}, inplace=True
+
+            columns={"key_0": "bus_id"}, inplace=True
         )
-        heat_demand_profile_mv.set_index("subst_id", inplace=True)
+        heat_demand_profile_mv.set_index("bus_id", inplace=True)
         heat_demand_profile_mv = heat_demand_profile_mv[
             heat_demand_profile_mv.columns[:-1]
         ].multiply(heat_demand_profile_mv.demand, axis=0)
@@ -1417,17 +1419,17 @@ def cts_demand_per_aggregation_level(aggregation_level):
         mv_grid_ind = mv_grid_ind.reset_index()
         CTS_per_grid = pd.merge(
             CTS_per_zensus,
-            mv_grid_ind[["subst_id", "zensus_population_id"]],
+            mv_grid_ind[["bus_id", "zensus_population_id"]],
             on="zensus_population_id",
             how="inner",
         )
-        CTS_per_grid.set_index("subst_id", inplace=True)
+        CTS_per_grid.set_index("bus_id", inplace=True)
         CTS_per_grid.drop("zensus_population_id", axis=1, inplace=True)
 
         CTS_per_grid = CTS_per_grid.groupby(lambda x: x, axis=0).sum()
         CTS_per_grid = CTS_per_grid.transpose()
         CTS_per_grid = CTS_per_grid.apply(lambda x: x / x.sum())
-        CTS_per_grid.columns.name = "subst_id"
+        CTS_per_grid.columns.name = "bus_id"
         CTS_per_grid.reset_index(drop=True, inplace=True)
 
         CTS_per_zensus = pd.DataFrame()
@@ -1543,13 +1545,13 @@ def CTS_demand_scale(aggregation_level):
 
         CTS_demands_grid = pd.merge(
             demand,
-            mv_grid_ind[["subst_id", "zensus_population_id"]],
+            mv_grid_ind[["bus_id", "zensus_population_id"]],
             on="zensus_population_id",
             how="inner",
         )
 
         CTS_demands_grid.drop("zensus_population_id", axis=1, inplace=True)
-        CTS_demands_grid = CTS_demands_grid.groupby("subst_id").sum()
+        CTS_demands_grid = CTS_demands_grid.groupby("bus_id").sum()
 
         CTS_per_grid = pd.merge(
             CTS_per_grid,
@@ -1559,8 +1561,9 @@ def CTS_demand_scale(aggregation_level):
             left_on=CTS_demands_grid.index,
         )
 
-        CTS_per_grid = CTS_per_grid.rename(columns={"key_0": "subst_id"})
-        CTS_per_grid.set_index("subst_id", inplace=True)
+
+        CTS_per_grid = CTS_per_grid.rename(columns={"key_0": "bus_id"})
+        CTS_per_grid.set_index("bus_id", inplace=True)
 
         CTS_per_grid = CTS_per_grid[CTS_per_grid.columns[:-1]].multiply(
             CTS_per_grid.demand, axis=0
@@ -1642,10 +1645,11 @@ def demand_profile_generator(aggregation_level="district"):
             [residential_demand_grid, CTS_demand_grid]
         )
         total_demands_grid.sort_index(inplace=True)
+
         total_demands_grid = total_demands_grid.groupby(
             lambda x: x, axis=0
         ).sum()
-        total_demands_grid.index.name = "subst_id"
+        total_demands_grid.index.name = "bus_id"
 
         final_heat_profiles_grid = pd.DataFrame(index=total_demands_grid.index)
         final_heat_profiles_grid[
@@ -1659,6 +1663,7 @@ def demand_profile_generator(aggregation_level="district"):
             index=True,
             dtype=ARRAY(Float()),
         )
+
     else:
         total_demands_zensus = pd.concat(
             [residential_demand_zensus, CTS_demand_zensus]

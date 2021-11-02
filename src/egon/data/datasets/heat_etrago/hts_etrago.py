@@ -42,10 +42,14 @@ def hts_to_etrago():
             bus_ts = pd.merge(bus_area,disct_time_series, on='area_id', how = 'inner')
         
         else:
-            #interlinking bus_id and subst_id
+            #interlinking heat_bus_id and mv_grid bus_id
             bus_sub = db.select_dataframe(
                  f"""
-                 SELECT bus_id, subst_id FROM
+                 SELECT {targets['heat_buses']['schema']}.
+                 {targets['heat_buses']['table']}.bus_id as heat_bus_id, 
+                 {sources['egon_mv_grid_district']['schema']}.
+                             {sources['egon_mv_grid_district']['table']}.bus_id as 
+                             bus_id FROM
                  {targets['heat_buses']['schema']}.
                  {targets['heat_buses']['table']}
                  JOIN {sources['egon_mv_grid_district']['schema']}.
@@ -68,7 +72,7 @@ def hts_to_etrago():
                                 )
             
             # bus_id connected to corresponding time series
-            bus_ts = pd.merge(bus_sub,ind_time_series, on='subst_id', how = 'inner')
+            bus_ts = pd.merge(bus_sub,ind_time_series, on='bus_id', how = 'inner')
               
         next_id = next_etrago_id('load')
         
