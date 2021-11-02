@@ -24,9 +24,11 @@ from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
-from egon.data.metadata import (context,
-                                meta_metadata,
-                                licenses_datenlizenz_deutschland)
+from egon.data.metadata import (
+    context,
+    meta_metadata,
+    licenses_datenlizenz_deutschland,
+)
 
 
 def download_files():
@@ -155,21 +157,22 @@ def add_metadata():
         },
     }
 
-    licenses = [licenses_datenlizenz_deutschland(
-        attribution="© Bundesamt für Kartographie und Geodäsie "
-                    "2020 (Daten verändert)"
-    )]
+    licenses = [
+        licenses_datenlizenz_deutschland(
+            attribution="© Bundesamt für Kartographie und Geodäsie "
+            "2020 (Daten verändert)"
+        )
+    ]
 
     vg250_source = {
         "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
-        "description":
-            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
-            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
-            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
-            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
-            "Verwaltungsebene des jeweiligen Landes.",
+        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+        "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+        "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+        "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+        "Verwaltungsebene des jeweiligen Landes.",
         "path": vg250_config["original_data"]["source"]["url"],
-        "licenses": licenses
+        "licenses": licenses,
     }
 
     for table in vg250_config["processed"]["file_table_map"].values():
@@ -213,7 +216,7 @@ def add_metadata():
                     "date": time.strftime("%Y-%m-%d"),
                     "object": None,
                     "comment": "Metadata extended",
-                }
+                },
             ],
             "resources": [
                 {
@@ -225,12 +228,9 @@ def add_metadata():
                     "schema": {
                         "fields": vg250_metadata_resources_fields(),
                         "primaryKey": ["id"],
-                        "foreignKeys": []
+                        "foreignKeys": [],
                     },
-                    "dialect": {
-                        "delimiter": None,
-                        "decimalSeparator": "."
-                    }
+                    "dialect": {"delimiter": None, "decimalSeparator": "."},
                 }
             ],
             "metaMetadata": meta_metadata(),
@@ -260,37 +260,174 @@ def cleaning_and_preperation():
 def vg250_metadata_resources_fields():
 
     return [
-        {'description': 'Index', 'name': 'id', 'type': 'integer', 'unit': 'none'},
-        {'description': 'Administrative level', 'name': 'ade', 'type': 'integer', 'unit': 'none'},
-        {'description': 'Geofactor', 'name': 'gf', 'type': 'integer', 'unit': 'none'},
-        {'description': 'Particular areas', 'name': 'bsg', 'type': 'integer', 'unit': 'none'},
-        {'description': 'Territorial code', 'name': 'ars', 'type': 'string', 'unit': 'none'},
-        {'description': 'Official Municipality Key', 'name': 'ags', 'type': 'string', 'unit': 'none'},
-        {'description': 'Seat of the administration (territorial code)', 'name': 'sdv_ars', 'type': 'string', 'unit': 'none'},
-        {'description': 'Geographical name', 'name': 'gen', 'type': 'string', 'unit': 'none'},
-        {'description': 'Designation of the administrative unit', 'name': 'bez', 'type': 'string', 'unit': 'none'},
-        {'description': 'Identifier', 'name': 'ibz', 'type': 'integer', 'unit': 'none'},
-        {'description': 'Note', 'name': 'bem', 'type': 'string', 'unit': 'none'},
-        {'description': 'Name generation', 'name': 'nbd', 'type': 'string', 'unit': 'none'},
-        {'description': 'Land (state)', 'name': 'sn_l', 'type': 'string', 'unit': 'none'},
-        {'description': 'Administrative district', 'name': 'sn_r', 'type': 'string', 'unit': 'none'},
-        {'description': 'District', 'name': 'sn_k', 'type': 'string', 'unit': 'none'},
-        {'description': 'Administrative association – front part', 'name': 'sn_v1', 'type': 'string', 'unit': 'none'},
-        {'description': 'Administrative association – rear part', 'name': 'sn_v2', 'type': 'string', 'unit': 'none'},
-        {'description': 'Municipality', 'name': 'sn_g', 'type': 'string', 'unit': 'none'},
-        {'description': 'Function of the 3rd key digit', 'name': 'fk_s3', 'type': 'string', 'unit': 'none'},
-        {'description': 'European statistics key', 'name': 'nuts', 'type': 'string', 'unit': 'none'},
-        {'description': 'Filled territorial code', 'name': 'ars_0', 'type': 'string', 'unit': 'none'},
-        {'description': 'Filled Official Municipality Key', 'name': 'ags_0', 'type': 'string', 'unit': 'none'},
-        {'description': 'Effectiveness', 'name': 'wsk', 'type': 'string', 'unit': 'none'},
-        {'description': 'DLM identifier', 'name': 'debkg_id', 'type': 'string', 'unit': 'none'},
-        {'description': 'Territorial code (deprecated column)', 'name': 'rs', 'type': 'string', 'unit': 'none'},
-        {'description': 'Seat of the administration (territorial code, deprecated column)', 'name': 'sdv_rs', 'type': 'string', 'unit': 'none'},
-        {'description': 'Filled territorial code (deprecated column)', 'name': 'rs_0', 'type': 'string', 'unit': 'none'},
-        {'description': 'Geometry of areas as WKB',
-         'name': 'geometry',
-         'type': "Geometry(Polygon, srid=4326)",
-         'unit': 'none'}
+        {
+            "description": "Index",
+            "name": "id",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative level",
+            "name": "ade",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Geofactor",
+            "name": "gf",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Particular areas",
+            "name": "bsg",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Territorial code",
+            "name": "ars",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Official Municipality Key",
+            "name": "ags",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Seat of the administration (territorial code)",
+            "name": "sdv_ars",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Geographical name",
+            "name": "gen",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Designation of the administrative unit",
+            "name": "bez",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Identifier",
+            "name": "ibz",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Note",
+            "name": "bem",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Name generation",
+            "name": "nbd",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Land (state)",
+            "name": "sn_l",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative district",
+            "name": "sn_r",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "District",
+            "name": "sn_k",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative association – front part",
+            "name": "sn_v1",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative association – rear part",
+            "name": "sn_v2",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Municipality",
+            "name": "sn_g",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Function of the 3rd key digit",
+            "name": "fk_s3",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "European statistics key",
+            "name": "nuts",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Filled territorial code",
+            "name": "ars_0",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Filled Official Municipality Key",
+            "name": "ags_0",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Effectiveness",
+            "name": "wsk",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "DLM identifier",
+            "name": "debkg_id",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Territorial code (deprecated column)",
+            "name": "rs",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Seat of the administration (territorial code, deprecated column)",
+            "name": "sdv_rs",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Filled territorial code (deprecated column)",
+            "name": "rs_0",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Geometry of areas as WKB",
+            "name": "geometry",
+            "type": "Geometry(Polygon, srid=4326)",
+            "unit": "none",
+        },
     ]
 
 

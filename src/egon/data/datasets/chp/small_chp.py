@@ -254,18 +254,14 @@ def extension_to_areas(
                         areas.area_id == selected_areas.area_id.values[0]
                     ],
                     "demand",
-                ] -= (
-                    selected_chp.th_capacity * flh
-                )
+                ] -= (selected_chp.th_capacity * flh)
             else:
                 areas.loc[
                     areas.index[
                         areas.osm_id == selected_areas.osm_id.values[0]
                     ],
                     "demand",
-                ] -= (
-                    selected_chp.th_capacity * flh
-                )
+                ] -= (selected_chp.th_capacity * flh)
             areas = areas[areas.demand > 0]
 
         else:
