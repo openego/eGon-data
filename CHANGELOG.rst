@@ -147,11 +147,10 @@ Added
   `#330 <https://github.com/openego/eGon-data/issues/330>`_
 * Distribute wind offshore capacities
   `#329 <https://github.com/openego/eGon-data/issues/329>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
-
-
-
 
 
 Changed

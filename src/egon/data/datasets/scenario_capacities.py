@@ -4,16 +4,16 @@ Netzentwicklungsplan 2035, Version 2031, Szenario C
 
 from pathlib import Path
 
-import numpy as np
-
-import egon.data.config
-import pandas as pd
-from egon.data import db
-from egon.data.config import settings
-from egon.data.datasets import Dataset
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import numpy as np
+import pandas as pd
+
+from egon.data import db
+from egon.data.config import settings
+from egon.data.datasets import Dataset
+import egon.data.config
 
 ### will be later imported from another file ###
 Base = declarative_base()
