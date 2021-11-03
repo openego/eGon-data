@@ -2,28 +2,33 @@
 
 """
 
-from geoalchemy2.types import Geometry
-from sqlalchemy import Column, Float, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from egon.data import db, config
 
-from egon.data import config, db
-from egon.data.datasets import Dataset
-from egon.data.datasets.heat_supply.district_heating import cascade_heat_supply
-from egon.data.datasets.heat_supply.geothermal import potential_germany
+from egon.data.datasets.heat_supply.district_heating import (
+    cascade_heat_supply,
+    backup_gas_boilers,
+)
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
 )
+from egon.data.datasets.heat_supply.geothermal import potential_germany
+from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
+from sqlalchemy import Column, String, Float, Integer, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from geoalchemy2.types import Geometry
+from egon.data.datasets import Dataset
 
 # Will later be imported from another file.
 Base = declarative_base()
 
 
-# TODO: set district_heating_id as ForeignKey
 class EgonDistrictHeatingSupply(Base):
     __tablename__ = "egon_district_heating"
     __table_args__ = {"schema": "supply"}
-    index = Column(Integer, primary_key=True)
-    district_heating_id = Column(Integer)
+    index = Column(Integer, primary_key=True, autoincrement=True)
+    district_heating_id = Column(
+        Integer, ForeignKey(EgonDistrictHeatingAreas.id)
+    )
     carrier = Column(String(25))
     category = Column(String(25))
     capacity = Column(Float)
@@ -34,7 +39,7 @@ class EgonDistrictHeatingSupply(Base):
 class EgonIndividualHeatingSupply(Base):
     __tablename__ = "egon_individual_heating"
     __table_args__ = {"schema": "supply"}
-    index = Column(Integer, primary_key=True)
+    index = Column(Integer, primary_key=True, autoincrement=True)
     mv_grid_id = Column(Integer)
     carrier = Column(String(25))
     category = Column(String(25))
@@ -109,6 +114,16 @@ def district_heating():
         heat supply: {df_check}
         """
 
+    # Add gas boilers as conventional backup capacities
+    backup = backup_gas_boilers("eGon2035")
+
+    backup.to_postgis(
+        targets["district_heating_supply"]["table"],
+        schema=targets["district_heating_supply"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
+
 
 def individual_heating():
     """Insert supply for individual heating
@@ -145,10 +160,12 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                {district_heating, individual_heating, potential_germany},
+                {district_heating,
+                individual_heating,
+                potential_germany},
             ),
         )

@@ -98,10 +98,13 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         AND carrier = 'heat_pump'
         """,
         geom_col="geometry",
+        epsg=4326,
     )
 
     # Assign voltage level
-    central_heat_pumps = assign_voltage_level(central_heat_pumps)
+    central_heat_pumps = assign_voltage_level(
+        central_heat_pumps, carrier="heat_pump"
+    )
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
@@ -115,6 +118,48 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level < 3],
         multiple_per_mv_grid=True,
+        scenario="eGon2035",
+    )
+
+    # Delete existing entries
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier = 'central_resistive_heater'
+        """
+    )
+    # Select heat pumps in district heating
+    central_resistive_heater = db.select_geodataframe(
+        f"""
+        SELECT * FROM {sources['district_heating_supply']['schema']}.
+            {sources['district_heating_supply']['table']}
+        WHERE scenario = '{scenario}'
+        AND carrier = 'resistive_heater'
+        """,
+        geom_col="geometry",
+        epsg=4326,
+    )
+
+    # Assign voltage level
+    central_resistive_heater = assign_voltage_level(
+        central_resistive_heater, carrier="resistive_heater"
+    )
+
+    # Insert heatpumps in mv and below
+    # (one hvmv substation per district heating grid)
+    insert_power_to_heat_per_level(
+        central_resistive_heater[central_resistive_heater.voltage_level > 3],
+        multiple_per_mv_grid=False,
+        carrier="central_resistive_heater",
+        scenario="eGon2035",
+    )
+    # Insert heat pumps in hv grid
+    # (as many hvmv substations as intersect with district heating grid)
+    insert_power_to_heat_per_level(
+        central_resistive_heater[central_resistive_heater.voltage_level < 3],
+        multiple_per_mv_grid=True,
+        carrier="central_resistive_heater",
         scenario="eGon2035",
     )
 
@@ -146,7 +191,7 @@ def insert_power_to_heat_per_level(
 
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
-        gdf = assign_electrical_bus(heat_pumps, multiple_per_mv_grid)
+        gdf = assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid)
 
     else:
         gdf = heat_pumps.copy()
@@ -207,7 +252,7 @@ def insert_power_to_heat_per_level(
     )
 
 
-def assign_voltage_level(heat_pumps):
+def assign_voltage_level(heat_pumps, carrier="heat_pump"):
     """Assign voltage level to heat pumps
 
     Parameters
@@ -227,24 +272,21 @@ def assign_voltage_level(heat_pumps):
 
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == "heat_pump")
-            & (heat_pumps.category == "small")
+            (heat_pumps.carrier == carrier) & (heat_pumps.category == "small")
         ].index,
         "voltage_level",
     ] = 7
 
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == "heat_pump")
-            & (heat_pumps.category == "medium")
+            (heat_pumps.carrier == carrier) & (heat_pumps.category == "medium")
         ].index,
         "voltage_level",
     ] = 5
 
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == "heat_pump")
-            & (heat_pumps.category == "large")
+            (heat_pumps.carrier == carrier) & (heat_pumps.category == "large")
         ].index,
         "voltage_level",
     ] = 1
@@ -252,7 +294,7 @@ def assign_voltage_level(heat_pumps):
     # if capacity > 5.5 MW, heatpump is installed in HV
     heat_pumps.loc[
         heat_pumps[
-            (heat_pumps.carrier == "heat_pump") & (heat_pumps.capacity > 5.5)
+            (heat_pumps.carrier == carrier) & (heat_pumps.capacity > 5.5)
         ].index,
         "voltage_level",
     ] = 1
@@ -260,7 +302,7 @@ def assign_voltage_level(heat_pumps):
     return heat_pumps
 
 
-def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
+def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
     """Calculates heat pumps per electrical bus
 
     Parameters
@@ -304,7 +346,8 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
         SELECT bus_id, geom FROM
         {sources['egon_mv_grid_district']['schema']}.
         {sources['egon_mv_grid_district']['table']}
-        """
+        """,
+        epsg=4326,
     )
 
     # Map zensus cells to district heating areas
@@ -323,7 +366,8 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
         WHERE a.scenario = 'eGon2035'
         AND b.scenario = 'eGon2035'
         GROUP BY (area_id, a.zensus_population_id, geom_point)
-        """
+        """,
+        epsg=4326,
     )
 
     # Select area_id per heat pump
@@ -355,7 +399,7 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
 
         power_to_heat = demand_per_substation.reset_index()
 
-        power_to_heat.loc[:, "carrier"] = "urban_central_heat_pump"
+        power_to_heat.loc[:, "carrier"] = carrier
 
         power_to_heat.loc[:, "voltage_level"] = heat_pumps.voltage_level[
             power_to_heat.area_id
@@ -415,7 +459,7 @@ def assign_electrical_bus(heat_pumps, multiple_per_mv_grid=False):
 
         power_to_heat = selected_substations
 
-        power_to_heat.loc[:, "carrier"] = "urban_central_heat_pump"
+        power_to_heat.loc[:, "carrier"] = carrier
 
         power_to_heat.loc[:, "voltage_level"] = heat_pumps.voltage_level
 
