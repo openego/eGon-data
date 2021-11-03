@@ -308,11 +308,16 @@ power_plants:
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
+      mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
       egon_mv_grid_district: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
+      buses_data: "osmtgmod_results.bus_data"
+      power_plants: 'supply.egon_power_plants'
+      nep_2035: "NEP2035_V2021_scnC2035.xlsx"
   target:
       table: 'egon_power_plants'
       schema: 'supply'
@@ -470,7 +475,7 @@ heat_supply:
       table: 'egon_district_heating_areas'
     chp:
       schema: 'supply'
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
@@ -658,7 +663,7 @@ etrago_electricity:
 chp_location:
   sources:
     list_conv_pp:
-      table: 'nep_2021_conv_powerplants'
+      table: 'egon_nep_2021_conventional_powerplants'
       schema: 'supply'
     mastr_combustion: 'bnetza_mastr_combustion_cleaned.csv'
     mastr_location: 'location_elec_generation_raw.csv'
@@ -684,11 +689,27 @@ chp_location:
       table: 'vg250_lan'
   targets:
     chp_table:
-      table: 'egon_chp'
+      table: 'egon_chp_plants'
       schema: 'supply'
     mastr_conventional_without_chp:
       table: 'egon_mastr_conventional_without_chp'
       schema: 'supply'
+
+chp_etrago:
+  sources:
+    chp_table:
+      table: 'egon_chp_plants'
+      schema: 'supply'
+    district_heating_areas:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
+    etrago_buses:
+      table: 'egon_pf_hv_bus'
+      schema: 'grid'
+  targets:
+    link:
+      schema: 'grid'
+      table: 'egon_etrago_link'
       
 DSM_CTS_industry:
   sources:

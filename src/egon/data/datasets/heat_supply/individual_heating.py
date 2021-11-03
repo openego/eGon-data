@@ -2,9 +2,9 @@
 individual heat supply.
 
 """
-import pandas as pd
 import geopandas as gpd
-from egon.data import db, config
+import pandas as pd
+from egon.data import config, db
 
 
 def cascade_per_technology(
@@ -15,7 +15,7 @@ def cascade_per_technology(
     max_size_individual_chp=0.05,
 ):
 
-    """Add plants for individual heat.
+    """ Add plants for individual heat.
     Currently only on mv grid district level.
 
     Parameters
