@@ -242,7 +242,7 @@ def insert_power_to_heat_per_level(
     links.link_id = range(next_link_id, next_link_id + len(links))
 
     # Insert data into database
-    links.to_postgis(
+    links.to_crs(4326).to_postgis(
         targets["heat_links"]["table"],
         schema=targets["heat_links"]["schema"],
         if_exists="append",
