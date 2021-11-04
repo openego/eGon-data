@@ -77,8 +77,8 @@ def insert():
             index=chp_link_dh,
             data={
                 "scn_name": "eGon2035",
-                "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"],
-                "bus1": chp_dh.loc[chp_link_dh, "electrical_bus_id"],
+                "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"].astype(int),
+                "bus1": chp_dh.loc[chp_link_dh, "electrical_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[chp_link_dh, "el_capacity"],
                 "carrier": "urban central gas CHP",
             },
@@ -103,8 +103,8 @@ def insert():
             index=chp_link_dh,
             data={
                 "scn_name": "eGon2035",
-                "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"],
-                "bus1": chp_dh.loc[chp_link_dh, "heat_bus_id"],
+                "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"].astype(int),
+                "bus1": chp_dh.loc[chp_link_dh, "heat_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[chp_link_dh, "th_capacity"],
                 "carrier": "urban central gas CHP heat",
             },
@@ -130,7 +130,7 @@ def insert():
         index=chp_generator_dh,
             data={
                 "scn_name": "eGon2035",
-                "bus": chp_dh.loc[chp_generator_dh, "electrical_bus_id"],
+                "bus": chp_dh.loc[chp_generator_dh, "electrical_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[chp_generator_dh, "el_capacity"],
                 "carrier": "urban central biomass CHP",
             },
@@ -140,18 +140,19 @@ def insert():
         db.next_etrago_id("generator"), len(chp_el_gen) + db.next_etrago_id("generator")
     )
 
-    chp_el_gen.to_postgis(
+    chp_el_gen.to_sql(
         targets["generator"]["table"],
         schema=targets["generator"]["schema"],
         con=db.engine(),
         if_exists="append",
+        index=False
     )
 
     chp_heat_gen = pd.DataFrame(
         index=chp_generator_dh,
             data={
                 "scn_name": "eGon2035",
-                "bus": chp_dh.loc[chp_generator_dh, "heat_bus_id"],
+                "bus": chp_dh.loc[chp_generator_dh, "heat_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[chp_generator_dh, "th_capacity"],
                 "carrier": "urban central biomass CHP heat",
             },
@@ -166,6 +167,7 @@ def insert():
         schema=targets["generator"]["schema"],
         con=db.engine(),
         if_exists="append",
+        index=False
     )
     
 
@@ -188,8 +190,8 @@ def insert():
             index=chp_link_ind,
             data={
                 "scn_name": "eGon2035",
-                "bus0": chp_industry.loc[chp_link_ind, "ch4_bus_id"],
-                "bus1": chp_industry.loc[chp_link_ind, "electrical_bus_id"],
+                "bus0": chp_industry.loc[chp_link_ind, "ch4_bus_id"].astype(int),
+                "bus1": chp_industry.loc[chp_link_ind, "electrical_bus_id"].astype(int),
                 "p_nom": chp_industry.loc[chp_link_ind, "el_capacity"],
                 "carrier": "industrial gas CHP",
             },
@@ -212,7 +214,7 @@ def insert():
         index=chp_generator_dh,
             data={
                 "scn_name": "eGon2035",
-                "bus": chp_industry.loc[chp_generator_ind, "electrical_bus_id"],
+                "bus": chp_industry.loc[chp_generator_ind, "electrical_bus_id"].astype(int),
                 "p_nom": chp_industry.loc[chp_generator_ind, "el_capacity"],
                 "carrier": "industrial biomass CHP",
             },
@@ -227,4 +229,5 @@ def insert():
         schema=targets["generator"]["schema"],
         con=db.engine(),
         if_exists="append",
+        index=False
     )
