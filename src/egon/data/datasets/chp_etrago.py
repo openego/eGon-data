@@ -14,7 +14,7 @@ class ChpEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ChpEtrago",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(insert),
         )
@@ -43,7 +43,13 @@ def insert():
         AND scn_name = 'eGon2035'
         """
     )
-
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['generator']['schema']}.{targets['generator']['table']}
+        WHERE carrier LIKE '%%CHP%%'
+        AND scn_name = 'eGon2035'
+        """
+    )
     # Select all CHP plants used in district heating
     chp_dh = db.select_dataframe(
         f"""
@@ -211,7 +217,7 @@ def insert():
     )
     # Insert biomass CHP as generators 
     chp_el_ind_gen = pd.DataFrame(
-        index=chp_generator_dh,
+        index=chp_generator_ind,
             data={
                 "scn_name": "eGon2035",
                 "bus": chp_industry.loc[chp_generator_ind, "electrical_bus_id"].astype(int),
