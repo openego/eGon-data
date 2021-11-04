@@ -261,12 +261,12 @@ def insert_biomass_plants(scenario):
     else:
         level = "country"
 
-    # Scale capacities to meet target values
-    mastr = scale_prox2now(mastr, target, level=level)
-
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-
+    
+    # Scale capacities to meet target values
+    mastr_loc = scale_prox2now(mastr_loc, target, level=level)
+    
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
