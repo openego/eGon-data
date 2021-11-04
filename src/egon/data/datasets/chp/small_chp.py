@@ -370,7 +370,7 @@ def extension_district_heating(
                 SELECT
                 b.residential_and_service_demand - sum(a.el_capacity)*{flh_chp}
                 as demand, b.area_id,
-                ST_Transform(ST_Centroid(geom_polygon), 4326) as geom
+                ST_Transform(ST_PointOnSurface(geom_polygon), 4326) as geom
                 FROM
                 {targets['chp_table']['schema']}.
                 {targets['chp_table']['table']} a,
@@ -538,6 +538,7 @@ def extension_per_federal_state(federal_state, EgonChp):
             FROM {target_table['schema']}.
             {target_table['table']}
             WHERE sources::json->>'el_capacity' = 'MaStR'
+            AND carrier != 'biomass'
             AND ST_Intersects(geom, (
             SELECT ST_Union(geometry) FROM
             {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} b

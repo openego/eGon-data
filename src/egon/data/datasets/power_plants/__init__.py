@@ -55,7 +55,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -220,7 +220,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
     return mastr_loc
 
 
-def insert_biomass_plants(scenario):
+def insert_biomass_plants(scenario, chp=False):
     """Insert biomass power plants of future scenario
 
     Parameters
@@ -266,7 +266,6 @@ def insert_biomass_plants(scenario):
 
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-    # TODO: Deal with power plants without geometry
 
     # Assign bus_id
     if len(mastr_loc) > 0:
@@ -275,25 +274,48 @@ def insert_biomass_plants(scenario):
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
-    for i, row in mastr_loc.iterrows():
-        entry = EgonPowerPlants(
-            sources={
-                "chp": "MaStR",
-                "el_capacity": "MaStR scaled with NEP 2021",
-                "th_capacity": "MaStR",
-            },
-            source_id={"MastrNummer": row.EinheitMastrNummer},
-            carrier="biomass",
-            chp=type(row.KwkMastrNummer) != float,
-            el_capacity=row.Nettonennleistung,
-            th_capacity=row.ThermischeNutzleistung / 1000,
-            scenario=scenario,
-            bus_id=row.bus_id,
-            voltage_level=row.voltage_level,
-            geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
-        )
-        session.add(entry)
+    
+    if not chp:
+        for i, row in mastr_loc.iterrows():
+            if not row.ThermischeNutzleistung > 0:
+                entry = EgonPowerPlants(
+                    sources={
+                        "chp": "MaStR",
+                        "el_capacity": "MaStR scaled with NEP 2021",
+                        "th_capacity": "MaStR",
+                    },
+                    source_id={"MastrNummer": row.EinheitMastrNummer},
+                    carrier="biomass",
+                    chp=type(row.KwkMastrNummer) != float,
+                    el_capacity=row.Nettonennleistung,
+                    th_capacity=row.ThermischeNutzleistung / 1000,
+                    scenario=scenario,
+                    bus_id=row.bus_id,
+                    voltage_level=row.voltage_level,
+                    geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+                )
+                session.add(entry)
 
+    else:
+        for i, row in mastr_loc.iterrows():
+            if row.ThermischeNutzleistung > 0:
+                entry = EgonChp(
+                    sources={
+                        "chp": "MaStR",
+                        "el_capacity": "MaStR scaled with NEP 2021",
+                        "th_capacity": "MaStR",
+                    },
+                    source_id={"MastrNummer": row.EinheitMastrNummer},
+                    carrier="biomass",
+                    chp=type(row.KwkMastrNummer) != float,
+                    el_capacity=row.Nettonennleistung,
+                    th_capacity=row.ThermischeNutzleistung / 1000,
+                    scenario=scenario,
+                    electrical_bus_id=row.bus_id,
+                    voltage_level=row.voltage_level,
+                    geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+                )
+                session.add(entry)
     session.commit()
 
 
@@ -529,6 +551,8 @@ def assign_bus_id(power_plants, cfg):
             ehv_grid_districts,
         ).bus_id_right
 
+    # if not power_plants.bus_id.notnull().all():
+    #     import pdb; pdb.set_trace()
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
     not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
