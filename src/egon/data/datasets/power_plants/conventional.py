@@ -4,10 +4,11 @@ technologies (oil, gas, other_non_renewable) based on
 data from MaStR and NEP.
 """
 
-import pandas as pd
 import geopandas as gpd
+import pandas as pd
+
+from egon.data import config, db
 import egon.data.config
-from egon.data import db, config
 
 
 def select_nep_power_plants(carrier):

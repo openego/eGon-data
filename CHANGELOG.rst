@@ -166,9 +166,6 @@ Added
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
-
-
-
 Changed
 -------
 
