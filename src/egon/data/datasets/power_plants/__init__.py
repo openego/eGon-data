@@ -220,7 +220,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
     return mastr_loc
 
 
-def insert_biomass_plants(scenario, chp=False):
+def insert_biomass_plants(scenario):
     """Insert biomass power plants of future scenario
 
     Parameters
@@ -275,47 +275,28 @@ def insert_biomass_plants(scenario, chp=False):
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
     
-    if not chp:
-        for i, row in mastr_loc.iterrows():
-            if not row.ThermischeNutzleistung > 0:
-                entry = EgonPowerPlants(
-                    sources={
-                        "chp": "MaStR",
-                        "el_capacity": "MaStR scaled with NEP 2021",
-                        "th_capacity": "MaStR",
-                    },
-                    source_id={"MastrNummer": row.EinheitMastrNummer},
-                    carrier="biomass",
-                    chp=type(row.KwkMastrNummer) != float,
-                    el_capacity=row.Nettonennleistung,
-                    th_capacity=row.ThermischeNutzleistung / 1000,
-                    scenario=scenario,
-                    bus_id=row.bus_id,
-                    voltage_level=row.voltage_level,
-                    geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
-                )
-                session.add(entry)
 
-    else:
-        for i, row in mastr_loc.iterrows():
-            if row.ThermischeNutzleistung > 0:
-                entry = EgonChp(
-                    sources={
-                        "chp": "MaStR",
-                        "el_capacity": "MaStR scaled with NEP 2021",
-                        "th_capacity": "MaStR",
-                    },
-                    source_id={"MastrNummer": row.EinheitMastrNummer},
-                    carrier="biomass",
-                    chp=type(row.KwkMastrNummer) != float,
-                    el_capacity=row.Nettonennleistung,
-                    th_capacity=row.ThermischeNutzleistung / 1000,
-                    scenario=scenario,
-                    electrical_bus_id=row.bus_id,
-                    voltage_level=row.voltage_level,
-                    geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
-                )
-                session.add(entry)
+    for i, row in mastr_loc.iterrows():
+        if not row.ThermischeNutzleistung > 0:
+            entry = EgonPowerPlants(
+                sources={
+                    "chp": "MaStR",
+                    "el_capacity": "MaStR scaled with NEP 2021",
+                    "th_capacity": "MaStR",
+                },
+                source_id={"MastrNummer": row.EinheitMastrNummer},
+                carrier="biomass",
+                chp=type(row.KwkMastrNummer) != float,
+                el_capacity=row.Nettonennleistung,
+                th_capacity=row.ThermischeNutzleistung / 1000,
+                scenario=scenario,
+                bus_id=row.bus_id,
+                voltage_level=row.voltage_level,
+                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+            )
+            session.add(entry)
+
+
     session.commit()
 
 
