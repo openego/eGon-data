@@ -60,8 +60,8 @@ class PowerPlants(Dataset):
                 wind_onshore.insert,
                 pv_ground_mounted.insert,
                 pv_rooftop_per_mv_grid,
+                wind_offshore.insert,
                 assign_weather_data.weather_id,
-                 wind_offshore.insert,               
             ),
         )
 

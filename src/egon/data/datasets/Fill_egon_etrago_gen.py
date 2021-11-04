@@ -9,6 +9,9 @@ import psycopg2
 import rioxarray
 from shapely.geometry import Point
 import xarray as xr
+
+import egon.data.datasets.power_plants.__init__ as init_pp
+
 """
 class egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
@@ -22,64 +25,15 @@ class egon_etrago_gen(Dataset):
         )
 """
 
-def assign_bus_id(power_plants, cfg):
-    """Assigns bus_ids to power plants according to location and voltage level
-    Parameters
-    ----------
-    power_plants : pandas.DataFrame
-        Power plants including voltage level
-    Returns
-    -------
-    power_plants : pandas.DataFrame
-        Power plants including voltage level and bus_id
-    """
-
-    mv_grid_districts = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_mv_grid_district
-        """,
-        epsg=4326,
-    )
-
-    ehv_grid_districts = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_ehv_substation_voronoi
-        """,
-        epsg=4326,
-    )
-
-    # Assign power plants in hv and below to hvmv bus
-    power_plants_hv = power_plants[power_plants.voltage_level >= 3].index
-    if len(power_plants_hv) > 0:
-        power_plants.loc[power_plants_hv, "bus_id"] = gpd.sjoin(
-            power_plants[power_plants.index.isin(power_plants_hv)],
-            mv_grid_districts,
-        ).bus_id
-
-    # Assign power plants in ehv to ehv bus
-    power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
-
-    if len(power_plants_ehv) > 0:
-        power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
-            power_plants[power_plants.index.isin(power_plants_ehv)],
-            ehv_grid_districts,
-        ).bus_id_right
-
-    # Assert that all power plants have a bus_id
-    assert power_plants.bus_id.notnull().all(), f"""Some power plants are
-    not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
-
-    return power_plants
-
-
-
 def load_tables(con, cfg): 
     sql = f"""
     SELECT * FROM
     {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']}
     """
-    power_plants = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
+    power_plants = gpd.GeoDataFrame.from_postgis(sql, con,
+                                                 crs="EPSG:4326",
+                                                 index_col= 'id')
      
     sql = f"""
     SELECT * FROM
@@ -102,34 +56,156 @@ def load_tables(con, cfg):
     """
     etrago_gen_orig = pd.read_sql(sql, con)
     
-    return power_plants, renew_feedin, weather_cells, etrago_gen_orig
+    sql = f"""
+    SELECT * FROM
+    {cfg['targets']['etrago_gen_time']['schema']}.
+    {cfg['targets']['etrago_gen_time']['table']}
+    """
+    pp_time = pd.read_sql(sql, con)
+    
+    return power_plants, renew_feedin, weather_cells, etrago_gen_orig, pp_time
 
-#def group_gen():
+def consistency(data):
+    assert len(set(data)) <= 1, f'The elements in column {data.name} do not match'
+    return data.iloc[0]
+
+
+def numpy_nan(data):
+    return np.nan
+
+def power_timeser(weather_data):
+    if len(set(weather_data)) <= 1:
+        return weather_data.iloc[0]
+    else:
+        return 'multiple'
+
+def set_timeseries(power_plants, renew_feedin):
+    def timeseries(pp):
+        try:
+            if pp.weather_cell_id != "multiple":
+                feedin_time = renew_feedin[
+                    (renew_feedin["w_id"] == pp.weather_cell_id)
+                    & (renew_feedin["carrier"] == pp.carrier)
+                ].feedin.iloc[0]
+                return feedin_time
+            else:
+                df = power_plants[(power_plants['bus_id'] == pp.bus_id) & 
+                                  (power_plants['carrier'] == pp.carrier)]
+                total_int_cap = df.el_capacity.sum()
+                df['feedin'] = 0              
+                df['feedin'] = df.apply(lambda x: renew_feedin[
+                    (renew_feedin["w_id"] == x.weather_cell_id)
+                    & (renew_feedin["carrier"] == x.carrier)
+                ].feedin.iloc[0], axis= 1)
+                df['feedin'] = df.apply(lambda x: x.el_capacity / total_int_cap * x.feedin, axis= 1)
+                return df.feedin.sum()
+        except:
+                df = power_plants[(power_plants['bus_id'] == pp.bus_id) & 
+                                  (power_plants['carrier'] == pp.carrier)]
+                return list(df.weather_cell_id)
+    return timeseries
+   
+    
+#def fill_etrago_pp():
 # Connect to the data base
 con = db.engine()
 cfg = egon.data.config.datasets()["generators_etrago"]
 
 # Load required tables
-power_plants, renew_feedin, weather_cells, etrago_gen_orig = load_tables(
+power_plants, renew_feedin, weather_cells, etrago_gen_orig, pp_time = load_tables(
     con, cfg
 )
-##################ERASE AFTER SOLAR AND WIND HAVE BUS_ID#######################
-bus_id = power_plants.bus_id.dropna().values
-power_plants['no_bus'] = power_plants.bus_id.isna()
 
-def define_bus_id(serie):
-    if serie['no_bus'] == True:
-        number = np.random.randint(0, 100)
-        return bus_id[number]
-    else:
-        return serie['bus_id']
+################ TASK: DEFINE WHAT TO DO WITH CHP POWER PLANTS ################
+power_plants = power_plants[(power_plants['th_capacity'].isnull()) | 
+                            (power_plants['th_capacity'] == 0)]
 
-power_plants['bus_id'] = power_plants.apply(define_bus_id, axis= 1)
-##################ERASE AFTER SOLAR AND WIND HAVE BUS_ID#######################
+################ TASK: DEFINE WHAT TO DO WITH CHP POWER PLANTS ################
+
+# Define carrier 'solar' as 'pv'
+carrier_pv_mask = power_plants['carrier'] == 'solar'
+power_plants.loc[carrier_pv_mask, 'carrier'] = 'pv'
+
+# convert renewable feedin lists to arrays
+renew_feedin['feedin'] = renew_feedin['feedin'].apply(np.array)
+
+# Define bus_id for power plants without it
+power_plants_no_busId = power_plants[power_plants.bus_id.isna()]
+power_plants = power_plants[~power_plants.bus_id.isna()]
+
+power_plants_no_busId =power_plants_no_busId.drop(columns='bus_id')
+power_plants_no_busId = init_pp.assign_bus_id(power_plants_no_busId, cfg)
+ 
+power_plants = power_plants.append(power_plants_no_busId)
+
+# group power plants by bus and carrier
+
+agg_func = {'sources': numpy_nan,
+            'source_id': numpy_nan,
+            'carrier': consistency,
+            'chp': numpy_nan,#consistency,
+            'el_capacity': np.sum,
+            'th_capacity': numpy_nan,
+            'bus_id': consistency,
+            'voltage_level': numpy_nan,
+            'weather_cell_id': power_timeser,
+            'scenario': consistency,
+            'geom': numpy_nan}
+
+etrago_pp = power_plants.groupby(by= ['bus_id', 'carrier']).agg(func= agg_func)
+etrago_pp = etrago_pp.reset_index(drop=True)
+
+etrago_pp_time = etrago_pp.copy()
+
+etrago_pp = etrago_pp[['carrier', 'el_capacity', 'bus_id', 'scenario']]
+etrago_pp = etrago_pp.rename(columns= {'el_capacity': 'p_nom',
+                           'bus_id': 'bus',
+                           'scenario': 'scn_name'})
+
+etrago_pp = etrago_pp.reindex(columns= etrago_gen_orig.columns)
+max_id = etrago_gen_orig['generator_id'].max() + 1
+etrago_pp['generator_id'] = list(range(max_id, max_id + len(etrago_pp)))
+etrago_pp.set_index('generator_id', inplace= True)
+
+etrago_pp.to_sql(name= f"{cfg['targets']['etrago_generators']['table']}",
+                 schema= f"{cfg['targets']['etrago_generators']['schema']}",
+                 con= con,
+                 if_exists= 'append')
+
+
+##############################################################################
+etrago_pp_time = etrago_pp_time[
+    ["carrier", "el_capacity", "bus_id", "weather_cell_id", "scenario"]
+]
+
+etrago_pp_time = etrago_pp_time[(etrago_pp_time['carrier'] == 'pv') |
+                                (etrago_pp_time['carrier'] == 'wind_onshore') |
+                                (etrago_pp_time['carrier'] == 'wind_offshore')]
+
+cal_timeseries = set_timeseries(power_plants= power_plants,
+                                renew_feedin= renew_feedin)
+
+etrago_pp_time['p_set'] = 0
+etrago_pp_time['p_set'] = etrago_pp_time.apply(cal_timeseries, axis= 1)
+
+
+
+
+
+
 
 dic = {}
 for bus, df in power_plants.groupby(by='bus_id'):
     dic[bus] = df
+
+a = np.random.randint(0, 10, [5, 5])
+a = pd.DataFrame(a, columns= list('abcde'))
+stra = {'a': np.sum,
+        'b': numpy_nan,
+        'c': np.sum,
+        'd': np.mean,
+        'e': np.max,}
+a.groupby(by= 'a').agg(stra)
 
 
 
