@@ -50,6 +50,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -306,7 +307,7 @@ with airflow.DAG(
     feedin_wind_onshore = tasks["renewable_feedin.wind"]
     feedin_pv = tasks["renewable_feedin.pv"]
     feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
-
+    
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
         dependencies=[heat_demand_Germany, scenario_parameters]
@@ -414,6 +415,10 @@ with airflow.DAG(
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
+
+    # Fill eTraGo Generators tables
+    fill_etrago_generators = Egon_etrago_gen(
+        dependencies=[power_plants, weather_data])
 
     # Industry
 
