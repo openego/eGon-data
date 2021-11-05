@@ -1141,8 +1141,6 @@ def insert():
 
         # set static column values
         insert_pv_parks["carrier"] = "solar"
-        insert_pv_parks["chp"] = False
-        insert_pv_parks["th_capacity"] = 0
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column

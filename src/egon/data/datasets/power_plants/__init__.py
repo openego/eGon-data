@@ -41,9 +41,7 @@ class EgonPowerPlants(Base):
     sources = Column(JSONB)
     source_id = Column(JSONB)
     carrier = Column(String)
-    chp = Column(Boolean)
     el_capacity = Column(Float)
-    th_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
     weather_cell_id = Column(Integer)
@@ -280,15 +278,11 @@ def insert_biomass_plants(scenario):
         if not row.ThermischeNutzleistung > 0:
             entry = EgonPowerPlants(
                 sources={
-                    "chp": "MaStR",
                     "el_capacity": "MaStR scaled with NEP 2021",
-                    "th_capacity": "MaStR",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier="biomass",
-                chp=type(row.KwkMastrNummer) != float,
                 el_capacity=row.Nettonennleistung,
-                th_capacity=row.ThermischeNutzleistung / 1000,
                 scenario=scenario,
                 bus_id=row.bus_id,
                 voltage_level=row.voltage_level,
@@ -374,12 +368,10 @@ def insert_hydro_plants(scenario):
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
                 sources={
-                    "chp": "MaStR",
                     "el_capacity": "MaStR scaled with NEP 2021",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
-                chp=type(row.KwkMastrNummer) != float,
                 el_capacity=row.Nettonennleistung,
                 scenario=scenario,
                 bus_id=row.bus_id,

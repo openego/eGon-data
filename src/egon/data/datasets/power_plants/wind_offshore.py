@@ -117,11 +117,9 @@ def insert():
 
     # Assign static values
     offshore["carrier"] = "wind_offshore"
-    offshore["chp"] = False
     offshore["el_capacity"] = offshore["C 2035"]
     offshore["scenario"] = "eGon2035"
-    offshore["th_capacity"] = 0
-
+    
     # Delete unnecessary columns
     offshore.drop(
         [
