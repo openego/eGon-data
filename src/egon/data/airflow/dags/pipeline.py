@@ -61,7 +61,6 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.processing.gas_areas import GasAreas
 from egon.data.processing.power_to_h2 import PowertoH2
 import egon.data.importing.zensus as import_zs
-import egon.data.processing.calculate_dlr as dlr
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.substation as substation
 
