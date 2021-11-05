@@ -1,14 +1,20 @@
 """The central module containing all code dealing with heat sector in etrago
 """
-import pandas as pd
-from egon.data.datasets.hydrogen_etrago.storage import insert_H2_overground_storage
+from geoalchemy2 import Geometry
 import geopandas as gpd
-from egon.data import db, config
-from egon.data.datasets.insert_etrago_buses import (
-    initialise_bus_insertion,
-    finalize_bus_insertion,
-)
+import pandas as pd
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.hydrogen_etrago.storage import (
+    insert_H2_overground_storage,
+    insert_H2_saltcavern_storage,
+    calculate_and_map_saltcavern_storage_potential
+)
+from egon.data.datasets.insert_etrago_buses import (
+    finalize_bus_insertion,
+    initialise_bus_insertion,
+)
 
 
 def insert_hydrogen_buses():
