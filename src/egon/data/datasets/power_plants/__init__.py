@@ -261,10 +261,10 @@ def insert_biomass_plants(scenario):
 
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-    
+
     # Scale capacities to meet target values
     mastr_loc = scale_prox2now(mastr_loc, target, level=level)
-    
+
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
@@ -272,7 +272,6 @@ def insert_biomass_plants(scenario):
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
-    
 
     for i, row in mastr_loc.iterrows():
         if not row.ThermischeNutzleistung > 0:
@@ -289,7 +288,6 @@ def insert_biomass_plants(scenario):
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
             session.add(entry)
-
 
     session.commit()
 
