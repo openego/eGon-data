@@ -1,16 +1,17 @@
 """
 The module containing all code dealing with chp < 10MW.
 """
-from egon.data import db, config
+from sqlalchemy.orm import sessionmaker
+import geopandas as gpd
+import numpy as np
+
+from egon.data import config, db
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_gas_bus_id,
     filter_mastr_geometry,
     select_target,
 )
-from sqlalchemy.orm import sessionmaker
-import geopandas as gpd
-import numpy as np
 
 
 def insert_mastr_chp(mastr_chp, EgonChp):

@@ -4,9 +4,9 @@ The central module containing all code dealing with chp for eTraGo.
 
 import geopandas as gpd
 import pandas as pd
-from egon.data import db, config
-from egon.data.datasets import Dataset
 
+from egon.data import config, db
+from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 

@@ -3,30 +3,31 @@ The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
 
-import pandas as pd
+from geoalchemy2 import Geometry
+from shapely.ops import nearest_points
+from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
-from egon.data import db, config
+import pandas as pd
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.chp.match_nep import insert_large_chp
 from egon.data.datasets.chp.small_chp import (
+    assign_use_case,
     existing_chp_smaller_10mw,
     extension_per_federal_state,
     select_target,
-    assign_use_case,
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.power_plants import (
+    assign_bus_id,
+    assign_voltage_level,
     filter_mastr_geometry,
     scale_prox2now,
-    assign_voltage_level,
-    assign_bus_id,
 )
-from sqlalchemy import Column, String, Float, Integer, Sequence, Boolean
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSONB
-from geoalchemy2 import Geometry
-from shapely.ops import nearest_points
 
 Base = declarative_base()
 

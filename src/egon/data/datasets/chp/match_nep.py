@@ -2,19 +2,20 @@
 The module containing all code dealing with large chp from NEP list.
 """
 
-import pandas as pd
+from sqlalchemy.orm import sessionmaker
 import geopandas
-from egon.data import db, config
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.power_plants import (
-    assign_voltage_level,
     assign_bus_id,
     assign_gas_bus_id,
+    assign_voltage_level,
     filter_mastr_geometry,
     select_target,
 )
-from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.scenario_capacities import map_carrier
-from sqlalchemy.orm import sessionmaker
 
 
 #####################################   NEP treatment   #################################
