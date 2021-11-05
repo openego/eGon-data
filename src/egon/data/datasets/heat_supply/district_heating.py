@@ -44,6 +44,7 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
         index=["small", "medium", "large"],
         columns=[
             "solar_thermal_collector",
+            "resistive_heater",
             "heat_pump",
             "geo_thermal",
             "demand",
@@ -68,6 +69,12 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
         / capacity_per_category.demand.sum()
     )
 
+    capacity_per_category.loc[:, "resistive_heater"] = (
+        target_values.capacity["resistive_heater"]
+        * capacity_per_category.demand
+        / capacity_per_category.demand.sum()
+    )
+
     capacity_per_category.loc["large", "geo_thermal"] = target_values.capacity[
         "geo_thermal"
     ]
@@ -85,11 +92,17 @@ def set_technology_data():
 
     """
     return pd.DataFrame(
-        index=["CHP", "solar_thermal_collector", "heat_pump", "geo_thermal"],
+        index=[
+            "CHP",
+            "solar_thermal_collector",
+            "heat_pump",
+            "geo_thermal",
+            "resistive_heater",
+        ],
         columns=["estimated_flh", "priority"],
         data={
-            "estimated_flh": [8760, 1330, 7000, 3000],
-            "priority": [4, 2, 1, 3],
+            "estimated_flh": [8760, 1330, 7000, 3000, 400],
+            "priority": [5, 3, 2, 4, 1],
         },
     )
 
@@ -207,7 +220,12 @@ def cascade_per_technology(
 
     # Distribute solar thermal and heatpumps linear to remaining demand.
     # Geothermal plants are distributed to areas with geothermal potential.
-    if tech.index in ["solar_thermal_collector", "heat_pump", "geo_thermal"]:
+    if tech.index in [
+        "resistive_heater",
+        "solar_thermal_collector",
+        "heat_pump",
+        "geo_thermal",
+    ]:
 
         if tech.index == "geo_thermal":
             # Select areas with geothermal potential considering costs
@@ -287,9 +305,19 @@ def cascade_heat_supply(scenario, plotting=True):
 
     # Select technolgies per district heating size
     map_dh_technologies = {
-        "small": ["CHP", "solar_thermal_collector", "heat_pump"],
-        "medium": ["CHP", "solar_thermal_collector", "heat_pump"],
-        "large": ["CHP", "geo_thermal", "heat_pump"],
+        "small": [
+            "CHP",
+            "solar_thermal_collector",
+            "heat_pump",
+            "resistive_heater",
+        ],
+        "medium": [
+            "CHP",
+            "solar_thermal_collector",
+            "heat_pump",
+            "resistive_heater",
+        ],
+        "large": ["CHP", "geo_thermal", "heat_pump", "resistive_heater"],
     }
 
     # Assign capacities per district heating category
@@ -339,6 +367,36 @@ def cascade_heat_supply(scenario, plotting=True):
         geometry=district_heating_areas.geom[
             resulting_capacities.district_heating_id
         ].centroid.values,
+    )
+
+
+def backup_gas_boilers(scenario):
+    """Adds backup gas boilers to district heating grids.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    Geopandas.GeoDataFrame
+        List of gas boilers for district heating
+
+    """
+
+    # Select district heating areas from database
+    district_heating_areas = select_district_heating_areas(scenario)
+
+    return gpd.GeoDataFrame(
+        data={
+            "district_heating_id": district_heating_areas.index,
+            "capacity": district_heating_areas.demand.div(8000),
+            "carrier": "gas_boiler",
+            "category": district_heating_areas.category,
+            "geometry": district_heating_areas.geom.centroid,
+            "scenario": scenario,
+        }
     )
 
 
