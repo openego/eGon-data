@@ -701,6 +701,7 @@ chp_location:
     vg250_lan:
       schema: 'boundaries'
       table: 'vg250_lan'
+    mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
   targets:
     chp_table:
       table: 'egon_chp_plants'
@@ -724,6 +725,9 @@ chp_etrago:
     link:
       schema: 'grid'
       table: 'egon_etrago_link'
+    generator:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
       
 DSM_CTS_industry:
   sources:
