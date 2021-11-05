@@ -746,3 +746,4 @@ def allocate_conventional_non_chp_power_plants():
                 )
                 session.add(entry)
             session.commit()
+
