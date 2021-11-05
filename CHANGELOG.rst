@@ -166,6 +166,10 @@ Added
   `#485 <https://github.com/openego/eGon-data/issues/485>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Include hydrogen infrastructure for eGon2035 scenario
+  `#474 <https://github.com/openego/eGon-data/issues/474>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -249,6 +253,8 @@ Changed
   `#335 <https://github.com/openego/eGon-data/issues/335>`_
 * Apply black and isort for all python scripts
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
+* Update deposit id for zenodo download
+  `#397 <https://github.com/openego/eGon-data/issues/498>`_
 
 
 Bug fixes

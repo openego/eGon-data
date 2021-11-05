@@ -9,8 +9,12 @@ import importlib_resources as resources
 from egon.data import db
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
+<<<<<<< HEAD
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_storages import CH4Storages
+=======
+from egon.data.datasets.saltcavern import SaltcavernData
+>>>>>>> features/#474-insert-hydrogen-infrastructure
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
@@ -25,6 +29,11 @@ from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.gas_prod import CH4Production
+from egon.data.processing.gas_areas import GasAreas
+from egon.data.datasets.ch4_storages import CH4Storages
+from egon.data.processing.h2_to_ch4 import H2toCH4toH2
+from egon.data.processing.power_to_h2 import PowertoH2toPower
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -34,6 +43,9 @@ from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_buildings import (
     map_houseprofiles_to_buildings,
+)
+from egon.data.datasets.hydrogen_etrago import (
+    HydrogenBusEtrago, HydrogenStoreEtrago
 )
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
@@ -181,6 +193,8 @@ with airflow.DAG(
         "electricity_demand.distribute-household-demands"
     ]
 
+    saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
+
     # NEP data import
     scenario_capacities = ScenarioCapacities(
         dependencies=[setup, vg250, data_bundle]
@@ -273,14 +287,27 @@ with airflow.DAG(
         dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
     )
 
-    # Power-to-gas installations creation
-    insert_power_to_h2_installations = PowertoH2(
-        dependencies=[gas_grid_insert_data]
+    # Insert hydrogen buses
+    insert_hydrogen_buses = HydrogenBusEtrago(
+        dependencies=[saltcavern_storage, gas_grid_insert_data])
+
+    # H2 steel tanks and saltcavern storage
+    insert_H2_storage = HydrogenStoreEtrago(
+        dependencies=[insert_hydrogen_buses])
+
+    # Power-to-gas-to-power chain installations
+    insert_power_to_h2_installations = PowertoH2toPower(
+        dependencies=[insert_hydrogen_buses, ]
+    )
+
+    # Link between methane grid and respective hydrogen buses
+    insert_h2_to_ch4_grid_links = H2toCH4toH2(
+        dependencies=[insert_hydrogen_buses, ]
     )
 
     # Create gas voronoi
     create_gas_polygons = GasAreas(
-        dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
+        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
     )
 
     # Gas prod import
@@ -325,7 +352,7 @@ with airflow.DAG(
     feedin_wind_onshore = tasks["renewable_feedin.wind"]
     feedin_pv = tasks["renewable_feedin.pv"]
     feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
-    
+
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
         dependencies=[heat_demand_Germany, scenario_parameters]
