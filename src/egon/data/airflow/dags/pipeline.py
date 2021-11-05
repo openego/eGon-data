@@ -44,11 +44,6 @@ from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
-from egon.data.datasets.hh_demand_profiles import (
-    hh_demand_setup,
-    mv_grid_district_HH_electricity_load,
-    houseprofiles_in_census_cells,
-)
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
@@ -62,6 +57,7 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -371,35 +367,6 @@ with airflow.DAG(
         "electricity_demand.distribute-cts-demands"
     ]
 
-    # Power plants
-    power_plants = PowerPlants(
-        dependencies=[
-            setup,
-            renewable_feedin,
-            mv_grid_districts,
-            mastr_data,
-            re_potential_areas,
-            scenario_parameters,
-            scenario_capacities,
-            Vg250MvGridDistricts,
-        ]
-    )
-
-    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
-    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
-    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
-    solar_rooftop_etrago = tasks[
-        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
-    ]
-
-    hvmv_substation_extraction >> generate_wind_farms
-    hvmv_substation_extraction >> generate_pv_ground_mounted
-    feedin_pv >> solar_rooftop_etrago
-    elec_cts_demands_zensus >> solar_rooftop_etrago
-    elec_household_demands_zensus >> solar_rooftop_etrago
-    etrago_input_data >> solar_rooftop_etrago
-    map_zensus_grid_districts >> solar_rooftop_etrago
-
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=mv_grid_district_HH_electricity_load,
@@ -437,7 +404,7 @@ with airflow.DAG(
     # Industry
 
     industrial_sites = MergeIndustrialSites(
-        dependencies=[setup, vg250_clean_and_prepare]
+        dependencies=[setup, vg250_clean_and_prepare, data_bundle]
     )
 
     demand_curves_industry = IndustrialDemandCurves(
@@ -456,16 +423,6 @@ with airflow.DAG(
         dependencies=[demand_curves_industry, cts_electricity_demand_annual]
     )
 
-    # CHP locations
-    chp = Chp(dependencies=[mv_grid_districts, mastr_data, industrial_sites])
-
-    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
-    chp_heat_bus = tasks["chp.assign-heat-bus"]
-
-    nep_insert_data >> chp_locations_nep
-    create_gas_polygons >> chp_locations_nep
-    import_district_heating_areas >> chp_locations_nep
-
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -480,6 +437,46 @@ with airflow.DAG(
     foreign_lines = ElectricalNeighbours(
         dependencies=[run_pypsaeursec, tyndp_data]
     )
+
+    # CHP locations
+    chp = Chp(dependencies=[mv_grid_districts, mastr_data, industrial_sites])
+
+    chp_locations_nep = tasks["chp.insert-chp-egon2035"]
+    chp_heat_bus = tasks["chp.assign-heat-bus"]
+
+    nep_insert_data >> chp_locations_nep
+    create_gas_polygons >> chp_locations_nep
+    import_district_heating_areas >> chp_locations_nep
+
+    # Power plants
+    power_plants = PowerPlants(
+        dependencies=[
+            setup,
+            renewable_feedin,
+            mv_grid_districts,
+            mastr_data,
+            re_potential_areas,
+            scenario_parameters,
+            scenario_capacities,
+            Vg250MvGridDistricts,
+            chp,
+        ]
+    )
+
+    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
+    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
+    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
+    solar_rooftop_etrago = tasks[
+        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
+    ]
+
+    hvmv_substation_extraction >> generate_wind_farms
+    hvmv_substation_extraction >> generate_pv_ground_mounted
+    feedin_pv >> solar_rooftop_etrago
+    elec_cts_demands_zensus >> solar_rooftop_etrago
+    elec_household_demands_zensus >> solar_rooftop_etrago
+    etrago_input_data >> solar_rooftop_etrago
+    map_zensus_grid_districts >> solar_rooftop_etrago
 
     # Heat supply
     heat_supply = HeatSupply(
@@ -509,5 +506,18 @@ with airflow.DAG(
             cts_electricity_demand_annual,
             demand_curves_industry,
             osmtgmod_pypsa,
+        ]
+    )
+
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies=[
+            data_bundle,
+            demandregio,
+            heat_demand_Germany,
+            import_district_heating_areas,
+            import_district_heating_areas,
+            vg250,
+            map_zensus_grid_districts,
         ]
     )
