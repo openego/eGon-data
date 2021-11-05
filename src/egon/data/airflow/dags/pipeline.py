@@ -161,7 +161,7 @@ with airflow.DAG(
         "electricity_demand.distribute-household-demands"
     ]
 
-    saltcavern_storage = SaltcavernData(dependencies=[setup, vg250])
+    saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
 
     # NEP data import
     scenario_capacities = ScenarioCapacities(
