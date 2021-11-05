@@ -259,8 +259,8 @@ with airflow.DAG(
     insert_hydrogen_buses = HydrogenBusEtrago(
         dependencies=[saltcavern_storage, gas_grid_insert_data])
 
-    # Insert hydrogen buses
-    insert_hydrogen_buses = HydrogenStoreEtrago(
+    # H2 steel tanks and saltcavern storage
+    insert_H2_storage = HydrogenStoreEtrago(
         dependencies=[insert_hydrogen_buses])
 
     # Power-to-gas-to-power chain installations
