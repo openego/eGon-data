@@ -58,17 +58,48 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target):
         Target schema and table information.
 
     """
+    # electrical buses related to saltcavern storage
+    el_buses = db.select_dataframe(
+        f"""
+        SELECT bus_id
+        FROM  {sources['saltcavern_data']['schema']}.
+        {sources['saltcavern_data']['table']}"""
+    )["bus_id"]
 
-    # buses for saltcaverns
+    # locations of electrical buses
     locations = db.select_geodataframe(
         f"""
-        SELECT id, geometry as geom
-        FROM  {sources['saltcavern_data']['schema']}.
-        {sources['saltcavern_data']['table']}""",
-        index_col="id",
+        SELECT bus_id, geom
+        FROM  {sources['buses']['schema']}.
+        {sources['buses']['table']}""",
+        index_col="bus_id",
+    ).to_crs(epsg=4326)
+
+    # filter by related electrical buses and drop duplicates
+    locations = locations.loc[el_buses]
+    locations = locations[~locations.index.duplicated(keep="first")]
+
+    # AC bus ids and respective hydrogen bus ids are written to db for
+    # later use (hydrogen storage mapping)
+    AC_bus_ids = locations.index.copy()
+
+    # create H2 bus data
+    hydrogen_bus_ids = finalize_bus_insertion(locations, carrier, target)
+
+    gdf_H2_cavern = hydrogen_bus_ids[["bus_id"]].rename(
+        columns={"bus_id": "bus_H2"}
     )
-    gdf.geom = locations.centroid.to_crs(epsg=4326)
-    finalize_bus_insertion(gdf, carrier, target)
+    gdf_H2_cavern["bus_AC"] = AC_bus_ids
+    gdf_H2_cavern["scn_name"] = hydrogen_bus_ids["scn_name"]
+
+    # Insert data to db
+    gdf_H2_cavern.to_sql(
+        "egon_etrago_ac_h2",
+        db.engine(),
+        schema="grid",
+        index=False,
+        if_exists="replace",
+    )
 
 
 def insert_H2_buses_from_CH4_grid(gdf, carrier, target):
@@ -93,15 +124,15 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target):
                 WHERE carrier = 'CH4';"""
 
     gdf_H2 = db.select_geodataframe(sql_CH4, epsg=4326)
-    # CH4 bus ids and respective hydrogen bus ids are writte to db for
+    # CH4 bus ids and respective hydrogen bus ids are written to db for
     # later use (CH4 grid to H2 links)
-    buses_CH4 = gdf_H2[['bus_id', 'scn_name']].copy()
+    CH4_bus_ids = gdf_H2[["bus_id", "scn_name"]].copy()
 
-    gdf_H2 = finalize_bus_insertion(gdf_H2, carrier, target)
+    H2_bus_ids = finalize_bus_insertion(gdf_H2, carrier, target)
 
-    gdf_H2_CH4 = gdf_H2[['bus_id']].rename(columns={'bus_id': 'bus_H2'})
-    gdf_H2_CH4['bus_CH4'] = buses_CH4['bus_id']
-    gdf_H2_CH4['scn_name'] = buses_CH4['scn_name']
+    gdf_H2_CH4 = H2_bus_ids[["bus_id"]].rename(columns={"bus_id": "bus_H2"})
+    gdf_H2_CH4["bus_CH4"] = CH4_bus_ids["bus_id"]
+    gdf_H2_CH4["scn_name"] = CH4_bus_ids["scn_name"]
 
     # Insert data to db
     gdf_H2_CH4.to_sql(
@@ -117,9 +148,12 @@ class HydrogenBusEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenBusEtrago",
-            version="0.0.0",
+            version="0.0.0.dev",
             dependencies=dependencies,
-            tasks=(insert_hydrogen_buses),
+            tasks=(
+                calculate_and_map_saltcavern_storage_potential,
+                insert_hydrogen_buses,
+            ),
         )
 
 
@@ -129,5 +163,8 @@ class HydrogenStoreEtrago(Dataset):
             name="HydrogenStoreEtrago",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(insert_H2_overground_storage),
+            tasks=(
+                insert_H2_overground_storage,
+                insert_H2_saltcavern_storage
+            ),
         )
