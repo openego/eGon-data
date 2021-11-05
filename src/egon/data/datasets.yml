@@ -724,7 +724,7 @@ chp_etrago:
     link:
       schema: 'grid'
       table: 'egon_etrago_link'
-      
+
 DSM_CTS_industry:
   sources:
     cts_loadcurves:
@@ -751,14 +751,25 @@ DSM_CTS_industry:
       table: 'egon_etrago_bus'
     link:
       schema: 'grid'
-      table: 'egon_etrago_link'  
+      table: 'egon_etrago_link'
     link_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_link_timeseries'   
+      table: 'egon_etrago_link_timeseries'
     store:
       schema: 'grid'
-      table: 'egon_etrago_store'  
+      table: 'egon_etrago_store'
     store_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_store_timeseries' 
+      table: 'egon_etrago_store_timeseries'
+
+storage_etrago:
+  sources:
+    storage:
+      table: 'egon_storages'
+      schema: 'supply'
+  targets:
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+
 
