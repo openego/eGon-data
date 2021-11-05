@@ -1,5 +1,7 @@
 """The central module containing all code dealing with heat sector in etrago
 """
+from geoalchemy2 import Geometry
+import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
