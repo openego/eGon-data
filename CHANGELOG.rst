@@ -151,6 +151,8 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Include hydrogen infrastructure for eGon2035 scenario
+  `#474 <https://github.com/openego/eGon-data/issues/474>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
