@@ -524,8 +524,6 @@ def assign_bus_id(power_plants, cfg):
             ehv_grid_districts,
         ).bus_id_right
 
-    # if not power_plants.bus_id.notnull().all():
-    #     import pdb; pdb.set_trace()
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
     not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
