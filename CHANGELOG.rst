@@ -162,6 +162,8 @@ Added
   `#329 <https://github.com/openego/eGon-data/issues/329>`_
 * Add CH4 storages
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
+* Include biomass CHP plants to eTraGo tables
+  `#498 <https://github.com/openego/eGon-data/issues/498>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

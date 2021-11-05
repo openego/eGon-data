@@ -1,16 +1,17 @@
 """
 The module containing all code dealing with chp < 10MW.
 """
-from egon.data import db, config
+from sqlalchemy.orm import sessionmaker
+import geopandas as gpd
+import numpy as np
+
+from egon.data import config, db
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_gas_bus_id,
     filter_mastr_geometry,
     select_target,
 )
-from sqlalchemy.orm import sessionmaker
-import geopandas as gpd
-import numpy as np
 
 
 def insert_mastr_chp(mastr_chp, EgonChp):
@@ -254,14 +255,18 @@ def extension_to_areas(
                         areas.area_id == selected_areas.area_id.values[0]
                     ],
                     "demand",
-                ] -= (selected_chp.th_capacity * flh)
+                ] -= (
+                    selected_chp.th_capacity * flh
+                )
             else:
                 areas.loc[
                     areas.index[
                         areas.osm_id == selected_areas.osm_id.values[0]
                     ],
                     "demand",
-                ] -= (selected_chp.th_capacity * flh)
+                ] -= (
+                    selected_chp.th_capacity * flh
+                )
             areas = areas[areas.demand > 0]
 
         else:
@@ -370,7 +375,7 @@ def extension_district_heating(
                 SELECT
                 b.residential_and_service_demand - sum(a.el_capacity)*{flh_chp}
                 as demand, b.area_id,
-                ST_Transform(ST_Centroid(geom_polygon), 4326) as geom
+                ST_Transform(ST_PointOnSurface(geom_polygon), 4326) as geom
                 FROM
                 {targets['chp_table']['schema']}.
                 {targets['chp_table']['table']} a,
@@ -538,6 +543,7 @@ def extension_per_federal_state(federal_state, EgonChp):
             FROM {target_table['schema']}.
             {target_table['table']}
             WHERE sources::json->>'el_capacity' = 'MaStR'
+            AND carrier != 'biomass'
             AND ST_Intersects(geom, (
             SELECT ST_Union(geometry) FROM
             {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} b

@@ -1,10 +1,10 @@
+from shapely import wkb
+import geopandas as gpd
 import numpy as np
+import pandas as pd
 import psycopg2
 
-import geopandas as gpd
-import pandas as pd
 from egon.data import db
-from shapely import wkb
 
 
 def insert():
@@ -1140,8 +1140,6 @@ def insert():
 
         # set static column values
         insert_pv_parks["carrier"] = "solar"
-        insert_pv_parks["chp"] = False
-        insert_pv_parks["th_capacity"] = 0
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column

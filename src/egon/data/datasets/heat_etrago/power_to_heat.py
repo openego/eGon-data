@@ -98,6 +98,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         AND carrier = 'heat_pump'
         """,
         geom_col="geometry",
+        epsg=4326,
     )
 
     # Assign voltage level
@@ -137,6 +138,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         AND carrier = 'resistive_heater'
         """,
         geom_col="geometry",
+        epsg=4326,
     )
 
     # Assign voltage level
@@ -344,7 +346,8 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
         SELECT bus_id, geom FROM
         {sources['egon_mv_grid_district']['schema']}.
         {sources['egon_mv_grid_district']['table']}
-        """
+        """,
+        epsg=4326,
     )
 
     # Map zensus cells to district heating areas
@@ -363,7 +366,8 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
         WHERE a.scenario = 'eGon2035'
         AND b.scenario = 'eGon2035'
         GROUP BY (area_id, a.zensus_population_id, geom_point)
-        """
+        """,
+        epsg=4326,
     )
 
     # Select area_id per heat pump
