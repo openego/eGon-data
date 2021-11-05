@@ -100,7 +100,7 @@ setup(
         "rtree",
         "snakemake",
         "sqlalchemy<1.4",
-        "pypsa",
+        "pypsa==0.17.1",
         "xarray",
         "xlrd",
         "rioxarray",
