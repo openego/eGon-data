@@ -32,40 +32,29 @@ from egon.data.metadata import (
 import egon.data.config
 
 
-def download_files():
-    """Download BGR saline structures shape files."""
-    data_config = egon.data.config.datasets()
-    bgr_config = data_config["bgr"]["original_data"]
-
-    download_directory = Path(".") / "bgr"
-    # Create the folder, if it does not exists already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
-
-    target_file = download_directory / bgr_config["target"]["file"]
-
-    if not os.path.isfile(target_file):
-        urlretrieve(bgr_config["source"]["url"], target_file)
-
-
 def to_postgres():
     """Write BGR saline structures to database."""
 
     # Get information from data configuraiton file
     data_config = egon.data.config.datasets()
-    bgr_orig = data_config["bgr"]["original_data"]
     bgr_processed = data_config["bgr"]["processed"]
 
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {bgr_processed['schema']};")
 
-    zip_file = Path(".") / "bgr" / bgr_orig["target"]["file"]
+    shp_file_path = (
+        Path(".")
+        / "data_bundle_egon_data"
+        / "hydrogen_storage_potential_saltstructures"
+        / "saltstructures_updated.shp"
+    )
+
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
     for filename, table in bgr_processed["file_table_map"].items():
         # Open files and read .shp (within .zip) with geopandas
-        data = gpd.read_file(f"zip://{zip_file}/{filename}")
+        data = gpd.read_file(shp_file_path)
 
         # Set index column and format column headings
         data.index.set_names("salstructure_id", inplace=True)

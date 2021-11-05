@@ -35,11 +35,6 @@ vg250:
       "VG250_GEM.shp": "vg250_gem"
 
 bgr:
-  original_data:
-    source:
-      url: "file:///home/witt_fa/Documents/salstructures_InSpEE-DS.zip"
-    target:
-      file: "saltcavern-data.zip"
   processed:
     schema: "boundaries"
     file_table_map:
