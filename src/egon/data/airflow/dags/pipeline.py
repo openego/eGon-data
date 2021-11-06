@@ -9,12 +9,9 @@ import importlib_resources as resources
 from egon.data import db
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
-<<<<<<< HEAD
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_storages import CH4Storages
-=======
 from egon.data.datasets.saltcavern import SaltcavernData
->>>>>>> features/#474-insert-hydrogen-infrastructure
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
