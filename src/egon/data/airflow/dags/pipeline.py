@@ -11,7 +11,6 @@ from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_storages import CH4Storages
-from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
@@ -26,11 +25,6 @@ from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
-from egon.data.datasets.gas_prod import CH4Production
-from egon.data.processing.gas_areas import GasAreas
-from egon.data.datasets.ch4_storages import CH4Storages
-from egon.data.processing.h2_to_ch4 import H2toCH4toH2
-from egon.data.processing.power_to_h2 import PowertoH2toPower
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -41,13 +35,14 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_buildings import (
     map_houseprofiles_to_buildings,
 )
-from egon.data.datasets.hydrogen_etrago import (
-    HydrogenBusEtrago, HydrogenStoreEtrago
-)
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
     houseprofiles_in_census_cells,
     mv_grid_district_HH_electricity_load,
+)
+from egon.data.datasets.hydrogen_etrago import (
+    HydrogenBusEtrago,
+    HydrogenStoreEtrago,
 )
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
@@ -60,6 +55,7 @@ from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
+from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
@@ -69,7 +65,8 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.processing.gas_areas import GasAreas
-from egon.data.processing.power_to_h2 import PowertoH2
+from egon.data.processing.h2_to_ch4 import H2toCH4toH2
+from egon.data.processing.power_to_h2 import PowertoH2, PowertoH2toPower
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.substation as substation
