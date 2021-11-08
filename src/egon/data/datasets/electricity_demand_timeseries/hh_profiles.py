@@ -1471,6 +1471,13 @@ def mv_grid_district_HH_electricity_load(
         Multiindexed dataframe with `timestep` and `bus_id` as indexers.
         Demand is given in kWh.
     """
+
+    def tuple_format(x):
+        """Convert Profile ids from string to tuple (type, id)
+        Convert from (str)a000(int) to (str), (int)
+        """
+        return (x[:2], int(x[3:]))
+
     engine = db.engine()
 
     with db.session_scope() as session:
@@ -1486,8 +1493,10 @@ def mv_grid_district_HH_electricity_load(
     cells = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
+
+    # convert profile ids to tuple (type, id) format
     cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
-        lambda x: [(cat, int(profile_id)) for cat, profile_id in x]
+        lambda x: list(map(tuple_format, x))
     )
 
     # Read demand profiles from egon-data-bundle
