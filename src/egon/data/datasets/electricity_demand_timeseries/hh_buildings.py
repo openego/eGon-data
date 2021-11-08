@@ -1,33 +1,39 @@
 """
-Building assignment for Household electricity demand profiles
 
-Assignment of buildings for electricity demand timeseries and generation
-of synthetic buildings if no sufficient OSM-data. The
+Assignment of household electricity demand timeseries to OSM buildings and
+generation of randomly placed synthetic 5x5m buildings if no sufficient OSM-data
+available in the respective cencus cell.
 
 The resulting data is stored in two separate tables
 
 * `openstreetmap.osm_buildings_synthetic`:
+    Lists generated synthetic building with osm_id, cell_id and grid_id
 * `demand.egon_household_electricity_profile_of_buildings`:
+    Mapping of demand timeseries and buildings including cell_id, building
+    area and peak load
 
-  Both tables is created with :func:`map_houseprofiles_to_buildings`.
+Both tables are created within :func:`map_houseprofiles_to_buildings`.
 
-The following datasets are used for creating the data:
 
+**The following datasets from the database are used for creation:**
 
 * `demand.household_electricity_profiles_in_census_cells`:
-  Lists references and scaling parameters to time series data for each household
-   in a cell by
-  identifiers. This table is fundamental for creating subsequent data like
-  demand profiles on MV grid level or for determining the peak load at load
+    Lists references and scaling parameters to time series data for each
+    household in a cell by identifiers. This table is fundamental for creating
+    subsequent data like demand profiles on MV grid level or for determining
+    the peak load at load. Only the profile reference and the cell identifiers
+    are used.
 
-* society.egon_destatis_zensus_apartment_building_population_per_ha
-  (see :func:`generate_synthetic_buildings`)
-* boundaries.egon_map_zensus_buildings_filtered
-*
-*
+* `society.egon_destatis_zensus_apartment_building_population_per_ha`:
+    Lists number of apartments, buildings and population for each census cell.
+
+* `boundaries.egon_map_zensus_buildings_filtered`:
+    List of OSM tagged buildings which are considered in the LV-Grid calculation.
+
 
 **What is the goal?**
 
+To assign every household demand timeseries to a specific building.
 
 **How are these datasets combined?**
 
@@ -128,7 +134,8 @@ def match_osm_and_zensus_data(
     profiles_per_cell = egon_hh_profile_in_zensus_cell.cell_profile_ids.apply(
         len
     )
-    # add cell_id
+
+    # Add number of profiles per cell
     number_of_buildings_profiles_per_cell = pd.merge(
         left=profiles_per_cell,
         right=egon_hh_profile_in_zensus_cell["cell_id"],
@@ -482,7 +489,7 @@ def map_houseprofiles_to_buildings():
     in the db.
 
     Tables:
-
+    ----------
     synthetic_buildings:
         schema: openstreetmap
         tablename: osm_buildings_synthetic
