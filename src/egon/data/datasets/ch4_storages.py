@@ -100,7 +100,10 @@ def import_installed_ch4_storages():
 
 
 def import_ch4_grid_capacity():
-    """Define dataframe containing the gas storage modelling the ch4 grid storage capacity
+    """Define dataframe containing the modelling of the CH4 grid storage 
+    capacity. The whole storage capacity of the grid (130000 MWh, estimation of 
+    the Bundesnetzagentur) is split uniformly between all the german CH4 nodes 
+    of the grid. The capacities of the pipes are not considerated.
 
     Returns
     -------
@@ -108,9 +111,9 @@ def import_ch4_grid_capacity():
         Dataframe containing the gas stores in Germany modelling the gas grid storage capacity
     
     """ 
-    Gas_grid_capacity = 130000 # G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
+    Gas_grid_capacity = 130000 # Storage capacity of the CH4 grid - G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
     N_ch4_nodes_G = ch4_nodes_number_G(define_gas_nodes_list()) # Number of nodes in Germany
-    Store_capacity = Gas_grid_capacity / N_ch4_nodes_G
+    Store_capacity = Gas_grid_capacity / N_ch4_nodes_G # Storage capacity associated to each CH4 node of the german grid
     
     sql_gas = """SELECT bus_id, scn_name, carrier, geom
                 FROM grid.egon_etrago_bus
