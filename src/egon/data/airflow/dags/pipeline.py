@@ -66,7 +66,7 @@ from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.processing.gas_areas import GasAreas
 from egon.data.processing.h2_to_ch4 import H2toCH4toH2
-from egon.data.processing.power_to_h2 import PowertoH2, PowertoH2toPower
+from egon.data.processing.power_to_h2 import PowertoH2toPower
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.substation as substation
