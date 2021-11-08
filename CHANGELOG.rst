@@ -149,11 +149,10 @@ Added
   `#329 <https://github.com/openego/eGon-data/issues/329>`_
 * Add CH4 storages
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
-
-
-
 
 
 Changed
@@ -233,6 +232,8 @@ Changed
   `#335 <https://github.com/openego/eGon-data/issues/335>`_
 * Apply black and isort for all python scripts
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
+* Update deposit id for zenodo download
+  `#397 <https://github.com/openego/eGon-data/issues/498>`_
 
 
 Bug fixes
@@ -296,4 +297,6 @@ Bug fixes
   `#414 <https://github.com/openego/eGon-data/issues/414>`_
 * Exchange bus 0 and bus 1 in Power-to-H2 links
   `#458 <https://github.com/openego/eGon-data/issues/458>`_
+* Add `data_bundle` to `industrial_sites` task dependencies
+  `#468 <https://github.com/openego/eGon-data/issues/468>`_
 
