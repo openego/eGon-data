@@ -87,8 +87,8 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     cell_osm_ids = Column(String)  # , primary_key=True)
     cell_id = Column(Integer)
     # grid_id = Column(String)
-    cell_profile_ids = Column(ARRAY(String, dimensions=1))
-
+    # cell_profile_ids = Column(ARRAY(String, dimensions=1))
+    cell_profile_ids = Column(String)
 
 class OsmBuildingsSynthetic(Base):
     __tablename__ = "osm_buildings_synthetic"
