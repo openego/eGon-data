@@ -69,7 +69,11 @@ def weather_id():
     WHERE carrier IN ('wind_onshore', 'solar', 'wind_offshore') 
     """
     )
-
+    
+    # assert that the column "bus_id" is set as integer  
+    power_plants['bus_id'] = power_plants['bus_id'].apply(
+        lambda x: pd.NA if pd.isna(x) else int(x))
+    
     # Look for the maximum id in the table egon_power_plants
     sql = (
         "SELECT MAX(id) FROM "
