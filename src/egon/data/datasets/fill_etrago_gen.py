@@ -5,8 +5,6 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
-import egon.data.datasets.power_plants.__init__ as init_pp
-
 
 class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
@@ -58,7 +56,7 @@ def fill_etrago_generators():
         con=con,
     )
 
-    return 0
+    return "eTrago Generators tables filled successfully"
 
 
 def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
@@ -83,8 +81,10 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
-
-    max_id = etrago_gen_orig["generator_id"].max() + 1
+    if np.isnan(etrago_gen_orig["generator_id"].max()):
+        max_id = 0
+    else:
+        max_id = etrago_gen_orig["generator_id"].max() + 1
     etrago_pp["generator_id"] = list(range(max_id, max_id + len(etrago_pp)))
     etrago_pp.set_index("generator_id", inplace=True)
 
@@ -213,7 +213,7 @@ def power_timeser(weather_data):
     if len(set(weather_data)) <= 1:
         return weather_data.iloc[0]
     else:
-        return "multiple"
+        return -1
 
 
 def adjust_power_plants_table(power_plants, renew_feedin, cfg):
@@ -232,15 +232,6 @@ def adjust_power_plants_table(power_plants, renew_feedin, cfg):
     # convert renewable feedin lists to arrays
     renew_feedin["feedin"] = renew_feedin["feedin"].apply(np.array)
 
-    # Define bus_id for power plants without it
-    power_plants_no_busId = power_plants[power_plants.bus_id.isna()]
-    power_plants = power_plants[~power_plants.bus_id.isna()]
-
-    power_plants_no_busId = power_plants_no_busId.drop(columns="bus_id")
-    power_plants_no_busId = init_pp.assign_bus_id(power_plants_no_busId, cfg)
-
-    power_plants = power_plants.append(power_plants_no_busId)
-
     return power_plants
 
 
@@ -257,7 +248,7 @@ def delete_previuos_gen(cfg):
 def set_timeseries(power_plants, renew_feedin):
     def timeseries(pp):
         try:
-            if pp.weather_cell_id != "multiple":
+            if pp.weather_cell_id != -1:
                 feedin_time = renew_feedin[
                     (renew_feedin["w_id"] == pp.weather_cell_id)
                     & (renew_feedin["carrier"] == pp.carrier)
