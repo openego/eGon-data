@@ -54,6 +54,9 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
+import os
+import codecs
+import importlib_resources as resources
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
@@ -377,9 +380,7 @@ def generate_mapping_table(
     cells_with_buildings = osm_ids_per_cell.index.astype(int).values
     # cell ids of cells with profiles
     cells_with_profiles = (
-        egon_hh_profile_in_zensus_cell["cell_id"]
-        .astype(int)
-        .values
+        egon_hh_profile_in_zensus_cell["cell_id"].astype(int).values
     )
     # cell ids of cells with osm ids and profiles
     cell_with_profiles_and_buildings = np.intersect1d(
@@ -391,11 +392,9 @@ def generate_mapping_table(
 
     # reduced list of profile_ids per cell with both buildings and profiles
     # should be same like egon_hh_profile_in_zensus_cell.set_index('cell_id')['cell_profile_ids' ]
-    profile_ids_per_cell_reduced = (
-        egon_hh_profile_in_zensus_cell.set_index(
-            "cell_id"
-        ).loc[cell_with_profiles_and_buildings, "cell_profile_ids"]
-    )
+    profile_ids_per_cell_reduced = egon_hh_profile_in_zensus_cell.set_index(
+        "cell_id"
+    ).loc[cell_with_profiles_and_buildings, "cell_profile_ids"]
     # reduced list of osm_ids per cell with both buildings and profiles
     osm_ids_per_cell_reduced = osm_ids_per_cell.loc[
         cell_with_profiles_and_buildings, "osm_id"
@@ -581,6 +580,12 @@ def map_houseprofiles_to_buildings():
             HouseholdElectricityProfilesOfBuildings,
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
+
+    with codecs.open(
+        str(resources.files(egon.data.datasets.electricity_demand_timeseries) / "building_peak_load.sql"), "r", "utf-8-sig"
+    ) as fd:
+        sqlfile = fd.read()
+    db.execute_sql(sqlfile)
 
 
 setup = partial(
