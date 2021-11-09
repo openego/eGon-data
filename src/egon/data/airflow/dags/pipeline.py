@@ -50,6 +50,7 @@ from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
+from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
@@ -475,9 +476,9 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM 
+    # DSM
     components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
+        dependencies = [cts_electricity_demand_annual,
                         demand_curves_industry,
                         osmtgmod_pypsa])
 
@@ -505,5 +506,13 @@ with airflow.DAG(
             import_district_heating_areas,
             vg250,
             map_zensus_grid_districts,
+        ]
+    )
+
+    # Storages to eTrago
+
+    storage_etrago = StorageEtrago(dependencies=[
+            pumped_hydro,
+            setup_etrago,
         ]
     )
