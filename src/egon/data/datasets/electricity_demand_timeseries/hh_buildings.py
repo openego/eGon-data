@@ -84,11 +84,12 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, primary_key=True)
-    cell_osm_ids = Column(String)  # , primary_key=True)
+    cell_osm_ids = Column(String, index=True)  # , primary_key=True)
     cell_id = Column(Integer)
     # grid_id = Column(String)
     # cell_profile_ids = Column(ARRAY(String, dimensions=1))
-    cell_profile_ids = Column(String)
+    cell_profile_ids = Column(String, index=True)
+
 
 class OsmBuildingsSynthetic(Base):
     __tablename__ = "osm_buildings_synthetic"
