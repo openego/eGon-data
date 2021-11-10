@@ -255,6 +255,8 @@ Changed
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
 * Update deposit id for zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/498>`_
+* Add to etrago.setug.py the busmap table
+  `#484 <https://github.com/openego/eGon-data/issues/484>`_
 
 
 Bug fixes
