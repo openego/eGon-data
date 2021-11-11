@@ -161,8 +161,8 @@ def calculate_and_map_saltcavern_storage_potential():
     hydrogen_storage_potential.loc[2] = ["Schleswig-Holstein", 0, 413e6]
     hydrogen_storage_potential.loc[3] = ["Mecklenburg-Vorpommern", 25e6, 193e6]
     hydrogen_storage_potential.loc[4] = ["Nordrhein-Westfalen", 168e6, 0]
-    hydrogen_storage_potential.loc[5] = ["Sachsen-Anhalt", 318e6, 1614e6]
-    hydrogen_storage_potential.loc[6] = ["Thüringen", 595e6, 1614e6]
+    hydrogen_storage_potential.loc[5] = ["Sachsen-Anhalt", 318e6, 147e6]
+    hydrogen_storage_potential.loc[6] = ["Thüringen", 595e6, 0]
 
     hydrogen_storage_potential["total"] = (
         # currently only InSpEE saltstructure shapefiles are available
