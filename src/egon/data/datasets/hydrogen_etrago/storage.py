@@ -193,7 +193,8 @@ def calculate_and_map_saltcavern_storage_potential():
             )
             # write total potential in column, will be overwritten by actual
             # value later
-            saltcaverns_in_fed_state[
+            saltcaverns_in_fed_state.loc[
+                saltcaverns_in_fed_state["gen"] == federal_state,
                 "potential"
             ] = hydrogen_storage_potential.loc[row, "total"]
 
