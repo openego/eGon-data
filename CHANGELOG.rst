@@ -231,6 +231,8 @@ Changed
   `#335 <https://github.com/openego/eGon-data/issues/335>`_
 * Apply black and isort for all python scripts
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
+* Migrate dlr script to datasets
+  `#508 <https://github.com/openego/eGon-data/issues/508>`_
 
 
 Bug fixes
