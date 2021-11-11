@@ -1517,3 +1517,113 @@ def mv_grid_district_HH_electricity_load(
         chunksize=10000,
         index=False,
     )
+
+def create_metadata_iee_household_load_profiles():
+#Vorlage: "zensus_vg.py"
+
+hh_demand_config = egon.data.config.datasets()["hh_demand"]
+# noch leer
+
+    licenses = [
+        licenses(
+            attribution="Attribution 4.0 International (CC BY 4.0)"
+        )
+    ]
+
+    iee_household_load_profiles_source = {
+        "title": "Data bundle for egon-data",
+        "description": "egon-data provides a transparent and reproducible open data based "
+        "data processing pipeline for generating data models suitable for energy system modeling. "
+        "The data is customized for the requirements of the research project eGon. "
+        "The research project aims to develop tools for an open "
+        "and cross-sectoral planning of transmission and distribution grids. ",
+        "path": hh_demand_config["original_data"]["source"]["https://zenodo.org/record/5211145/#.YYLcFToo9hE"],
+        "licenses": Attribution 4.0 International (CC BY 4.0),
+    }
+
+    resources_fields = hh_demand_metadata_resources_fields()
+    resources_fields.extend(
+        [
+            {
+                "name": "electricity_demand_Wh",
+                "description": "Electricity in Wh",
+                "type": "float",
+                "unit": "Wh",
+            },
+
+        ]
+    )
+
+    metadata = {
+        "name": schema_table,
+        "title": (
+            "Data bundle for egon-data: A transparent and \
+             reproducible data processing pipeline for energy system modeling"
+        ),
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Annual profiles in hourly resolution of \
+         electricity demand of private households for different household types ",
+        "language": ["eng-ENG"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": "",
+        },
+        "temporal": {
+            "referenceDate": "",
+            "timeseries": {
+                "start": None,
+                "end": None,
+                "resolution": None,
+                "alignment": None,
+                "aggregationType": None,
+            },
+        },
+        "sources": [hh_demand_source],
+        "licenses": licenses,
+        "contributors": [
+            {
+                "title": "Jonathan Amme",
+                "email": "http://github.com/nesnoj",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Metadata extended",
+            },
+            {
+                "title": "Shaquille Henriques",
+                "email": "https://github.com/ShaquilleH",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported metadata",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": schema_table,
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": resources_fields,
+                    "primaryKey": ["id"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+#Denke das ist für die Tabelle selbst, nicht rausnehmen
+
+    meta_json = "'" + json.dumps(metadata) + "'"
+
+    db.submit_comment(
+        meta_json,
+        # Vg250GemPopulation.__table__.schema,
+        # Vg250GemPopulation.__table__.name,
+    )
+

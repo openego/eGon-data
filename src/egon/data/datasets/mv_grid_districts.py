@@ -795,3 +795,5 @@ mv_grid_districts_setup = partial(
     dependencies=[],
     tasks=(define_mv_grid_districts),
 )
+
+def create_metadata_egon_mv_grid_district():
