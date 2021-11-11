@@ -228,7 +228,7 @@ def calculate_and_map_saltcavern_storage_potential():
         SELECT * FROM grid.egon_hvmv_substation_voronoi
         """,
         index_col="bus_id",
-    ).to_crs(4326)
+    ).to_crs(4326).sort_index()
 
     # get substations
     substations = db.select_geodataframe(
@@ -242,7 +242,7 @@ def calculate_and_map_saltcavern_storage_potential():
     # epsg for buffer in line with original saltstructre data
     substations_inflation = gpd.GeoDataFrame(
         geometry=substations.to_crs(25832).buffer(500).to_crs(4326)
-    )
+    ).sort_index()
 
     # !!row wise!! intersection between the substations inflation and the
     # respective voronoi (overlay only allows for intersection to all
