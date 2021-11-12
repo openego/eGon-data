@@ -1623,7 +1623,7 @@ hh_demand_config = egon.data.config.datasets()["hh_demand"]
 
     db.submit_comment(
         meta_json,
-        # Vg250GemPopulation.__table__.schema,
-        # Vg250GemPopulation.__table__.name,
+        IeeHouseholdLoadProfiles.__table__.schema,
+        IeeHouseholdLoadProfiles.__table__.name,
     )
 
