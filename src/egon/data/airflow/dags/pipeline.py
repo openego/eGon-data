@@ -26,6 +26,7 @@ from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
+from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
@@ -495,3 +496,8 @@ with airflow.DAG(
             map_zensus_grid_districts,
         ]
     )
+    
+    # HTS to etrago table
+    hts_etrago_table = HtsEtragoTable(
+                        dependencies = [heat_time_series,mv_grid_districts,
+                                        district_heating_areas,heat_etrago])
