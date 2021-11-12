@@ -7,18 +7,30 @@ Available at:
 """
 from pathlib import Path
 
-import numpy as np
-import psycopg2
-
+from shapely.geometry import Point
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+import psycopg2
 import rioxarray
 import xarray as xr
+
 from egon.data import db
-from shapely.geometry import Point
+from egon.data.datasets import Dataset
+import egon.data.config
 
 
-def Calculate_DLR():
+class Calculate_dlr(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="dlr",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(dlr,),
+        )
+
+
+def dlr():
     """Calculate DLR and assign values to each line in the db
 
     Parameters
@@ -26,7 +38,7 @@ def Calculate_DLR():
     *No parameters required
 
     """
-
+    cfg = egon.data.config.datasets()["dlr"]
     weather_info_path = Path(".") / "cutouts" / "germany-2011-era5.nc"
 
     regions_shape_path = (
@@ -47,7 +59,11 @@ def Calculate_DLR():
     # Connect to the data base
     con = db.engine()
 
-    sql = "SELECT scn_name, line_id, geom, s_nom FROM grid.egon_etrago_line"
+    sql = f"""
+    SELECT scn_name, line_id, geom, s_nom FROM
+    {cfg['sources']['trans_lines']['schema']}.
+    {cfg['sources']['trans_lines']['table']}
+    """
     df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
     trans_lines_R = {}
@@ -109,15 +125,16 @@ def Calculate_DLR():
 
     # Delete existing data
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_etrago_line_timeseries;
+        f"""
+        DELETE FROM {cfg['sources']['line_timeseries']['schema']}.
+        {cfg['sources']['line_timeseries']['table']};
         """
     )
 
     # Insert into database
     trans_lines.to_sql(
-        "egon_etrago_line_timeseries",
-        schema="grid",
+        f"{cfg['targets']['line_timeseries']['table']}",
+        schema=f"{cfg['targets']['line_timeseries']['schema']}",
         con=db.engine(),
         if_exists="append",
         index=False,
