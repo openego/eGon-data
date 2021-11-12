@@ -1519,10 +1519,13 @@ def mv_grid_district_HH_electricity_load(
     )
 
 def create_metadata_iee_household_load_profiles():
-#Vorlage: "zensus_vg.py"
+    """
+    Create metadata JSON for hh_Demand_profiles
 
-hh_demand_config = egon.data.config.datasets()["hh_demand"]
-# noch leer
+    Creates a metdadata JSON string and writes it to the database table comment
+    """
+
+    hh_demand_config = egon.data.config.datasets()["hh_demand"]
 
     licenses = [
         licenses(
@@ -1538,7 +1541,7 @@ hh_demand_config = egon.data.config.datasets()["hh_demand"]
         "The research project aims to develop tools for an open "
         "and cross-sectoral planning of transmission and distribution grids. ",
         "path": hh_demand_config["original_data"]["source"]["https://zenodo.org/record/5211145/#.YYLcFToo9hE"],
-        "licenses": Attribution 4.0 International (CC BY 4.0),
+        "licenses": 'Attribution 4.0 International (CC BY 4.0)',
     }
 
     resources_fields = hh_demand_metadata_resources_fields()
