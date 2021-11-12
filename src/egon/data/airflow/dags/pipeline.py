@@ -362,8 +362,6 @@ with airflow.DAG(
                       download_weather_data,
             ]
     )
-    #download_data_bundle = tasks["data_bundle.download"]
-    #download_weather_data = tasks["era5.download-era5"]
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
