@@ -147,6 +147,8 @@ Added
   `#330 <https://github.com/openego/eGon-data/issues/330>`_
 * Distribute wind offshore capacities
   `#329 <https://github.com/openego/eGon-data/issues/329>`_
+* Add CH4 storages
+  `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
 
