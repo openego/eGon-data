@@ -150,26 +150,6 @@ def calculate_and_map_saltcavern_storage_potential():
         geom_col="geometry",
     )
 
-    # hydrogen storage potential data from InSpEE-DS report
-    hydrogen_storage_potential = pd.DataFrame(
-        columns=["federal_state", "INSPEEDS", "INSPEE"]
-    )
-
-    # values in MWh, modified to fit the saltstructure data
-    hydrogen_storage_potential.loc[0] = ["Brandenburg", 353e6, 159e6]
-    hydrogen_storage_potential.loc[1] = ["Niedersachsen", 253e6, 702e6]
-    hydrogen_storage_potential.loc[2] = ["Schleswig-Holstein", 0, 413e6]
-    hydrogen_storage_potential.loc[3] = ["Mecklenburg-Vorpommern", 25e6, 193e6]
-    hydrogen_storage_potential.loc[4] = ["Nordrhein-Westfalen", 168e6, 0]
-    hydrogen_storage_potential.loc[5] = ["Sachsen-Anhalt", 318e6, 147e6]
-    hydrogen_storage_potential.loc[6] = ["Thüringen", 595e6, 0]
-
-    hydrogen_storage_potential["total"] = (
-        # currently only InSpEE saltstructure shapefiles are available
-        # hydrogen_storage_potential["INSPEEDS"]
-        hydrogen_storage_potential["INSPEE"]
-    )
-
     # get saltcavern shapes
     saltcavern_data = db.select_geodataframe(
         f"""SELECT * FROM
@@ -179,11 +159,72 @@ def calculate_and_map_saltcavern_storage_potential():
         geom_col="geometry",
     )
 
+    # hydrogen storage potential data from InSpEE-DS report
+    hydrogen_storage_potential = pd.DataFrame(
+        columns=["INSPEEDS", "INSPEE"]
+    )
+
+    # values in MWh, modified to fit the saltstructure data
+    hydrogen_storage_potential.loc["Brandenburg"] = [353e6, 159e6]
+    hydrogen_storage_potential.loc["Mecklenburg-Vorpommern"] = [25e6, 193e6]
+    hydrogen_storage_potential.loc["Nordrhein-Westfalen"] = [168e6, 0]
+    hydrogen_storage_potential.loc["Sachsen-Anhalt"] = [318e6, 147e6]
+    hydrogen_storage_potential.loc["Thüringen"] = [595e6, 0]
+
+    # distribute SH/HH and NDS/HB potentials by area
+    # overlay saltstructures with federal state, calculate respective area
+    # map storage potential per federal state to area fraction of summed area
+    # potential_i = area_i / area_tot * potential_tot
+    pot_nds_hb = [253e6, 702e6]
+    pot_sh_hh = [0, 413e6]
+
+    potential_data_dict = {
+        0: {
+            "federal_states": ["Schleswig-Holstein", "Hamburg"],
+            "INSPEEDS": 0, "INSPEE": 413e6
+        },
+        1: {
+            "federal_states": ["Niedersachsen", "Bremen"],
+            "INSPEEDS": 253e6, "INSPEE": 702e6
+        }
+    }
+
+    # iterate over aggregated state data for SH/HH and NDS/HB
+    for data in potential_data_dict.values():
+        individual_areas = {}
+        # individual state areas
+        for federal_state in data["federal_states"]:
+            individual_areas[federal_state] = saltcavern_data.overlay(
+                vg250_data[vg250_data["gen"] == federal_state],
+                how="intersection"
+            ).to_crs(epsg=25832).area.sum()
+
+        # derives weights from fraction of individual state area to total area
+        total_area = sum(individual_areas.values())
+        weights = {
+            f: individual_areas[f] / total_area if total_area > 0 else 0
+            for f in data["federal_states"]
+        }
+        # write data into potential dataframe
+        for federal_state in data["federal_states"]:
+            hydrogen_storage_potential.loc[federal_state] = (
+                [
+                    data["INSPEEDS"] * weights[federal_state],
+                    data["INSPEE"] * weights[federal_state]
+                ]
+            )
+
+    # calculate total storage potential
+    hydrogen_storage_potential["total"] = (
+        # currently only InSpEE saltstructure shapefiles are available
+        # hydrogen_storage_potential["INSPEEDS"]
+        hydrogen_storage_potential["INSPEE"]
+    )
+
     saltcaverns_in_fed_state = gpd.GeoDataFrame()
 
     # intersection of saltstructures with federal state
-    for row in hydrogen_storage_potential.index:
-        federal_state = hydrogen_storage_potential.loc[row, "federal_state"]
+    for federal_state in hydrogen_storage_potential.index:
         federal_state_data = vg250_data[vg250_data["gen"] == federal_state]
 
         # skip if federal state not available (e.g. local testing)
@@ -196,7 +237,7 @@ def calculate_and_map_saltcavern_storage_potential():
             saltcaverns_in_fed_state.loc[
                 saltcaverns_in_fed_state["gen"] == federal_state,
                 "potential"
-            ] = hydrogen_storage_potential.loc[row, "total"]
+            ] = hydrogen_storage_potential.loc[federal_state, "total"]
 
     # drop all federal state data columns except name of the state
     saltcaverns_in_fed_state.drop(
