@@ -33,18 +33,11 @@ from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.hh_demand_buildings import (
-    map_houseprofiles_to_buildings,
-)
-from egon.data.datasets.hh_demand_profiles import (
-    hh_demand_setup,
-    houseprofiles_in_census_cells,
-    mv_grid_district_HH_electricity_load,
-)
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenStoreEtrago,
-)
+from egon.data.datasets.electricity_demand_timeseries import hh_profiles
+from egon.data.datasets.electricity_demand_timeseries import hh_buildings
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -395,37 +388,45 @@ with airflow.DAG(
 
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
-        python_callable=mv_grid_district_HH_electricity_load,
+        python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
         op_args=["eGon2035", 2035, "0.0.0"],
         op_kwargs={"drop_table": True},
     )
 
     mv_hh_electricity_load_2050 = PythonOperator(
         task_id="MV-hh-electricity-load-2050",
-        python_callable=mv_grid_district_HH_electricity_load,
+        python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
         op_args=["eGon100RE", 2050, "0.0.0"],
     )
 
-    hh_demand = hh_demand_setup(dependencies=[
-        vg250_clean_and_prepare,
-        zensus_misc_import,
-        map_zensus_grid_districts,
-        zensus_inside_ger,
-        demandregio,
-        osm_buildings_streets_preprocessing,
-    ],
-        tasks=(houseprofiles_in_census_cells,
+    hh_demand_profiles_setup = hh_profiles.setup(
+        dependencies=[
+            vg250_clean_and_prepare,
+            zensus_misc_import,
+            map_zensus_grid_districts,
+            zensus_inside_ger,
+            demandregio,
+            osm_buildings_streets_preprocessing,
+        ],
+        tasks=(hh_profiles.houseprofiles_in_census_cells,
                mv_hh_electricity_load_2035,
                mv_hh_electricity_load_2050,
-               map_houseprofiles_to_buildings)
+               )
     )
-    hh_demand.insert_into(pipeline)
+    hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
-        "hh_demand_profiles.houseprofiles-in-census-cells"
+        "electricity_demand_timeseries.hh_profiles.houseprofiles-in-census-cells"
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
-    map_houseprofiles_to_buildings = tasks["hh_demand_buildings.map-houseprofiles-to-buildings"]
+
+    # Household electricity demand buildings
+    hh_demand_buildings_setup = hh_buildings.setup(
+        dependencies=[householdprofiles_in_cencus_cells],
+    )
+
+    hh_demand_buildings_setup.insert_into(pipeline)
+    map_houseprofiles_to_buildings = tasks["electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"]
 
     # Industry
 
