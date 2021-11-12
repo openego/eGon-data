@@ -399,7 +399,7 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
 
         power_to_heat = demand_per_substation.reset_index()
 
-        power_to_heat.loc[:, "carrier"] = carrier
+        power_to_heat["carrier"] = carrier
 
         power_to_heat.loc[:, "voltage_level"] = heat_pumps.voltage_level[
             power_to_heat.area_id
@@ -459,7 +459,7 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
 
         power_to_heat = selected_substations
 
-        power_to_heat.loc[:, "carrier"] = carrier
+        power_to_heat["carrier"] = carrier
 
         power_to_heat.loc[:, "voltage_level"] = heat_pumps.voltage_level
 
