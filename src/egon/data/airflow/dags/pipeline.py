@@ -36,6 +36,7 @@ from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenStoreEtrago,
+)
 from egon.data.datasets.electricity_demand_timeseries import hh_profiles
 from egon.data.datasets.electricity_demand_timeseries import hh_buildings
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
