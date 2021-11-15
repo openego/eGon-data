@@ -767,6 +767,9 @@ storage_etrago:
     storage:
       table: 'egon_storages'
       schema: 'supply'
+    scenario_parameters:
+      table: 'egon_scenario_parameters'
+      schema: 'scenario'
   targets:
     storage:
       schema: 'grid'
