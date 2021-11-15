@@ -10,7 +10,7 @@ from egon.data.datasets import Dataset
 class H2toCH4toH2(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="PowertoH2toPower",
+            name="H2CH4Links",
             version="0.0.0",
             dependencies=dependencies,
             tasks=(insert_h2_to_ch4_to_h2),
