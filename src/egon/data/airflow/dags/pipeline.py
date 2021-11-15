@@ -514,5 +514,6 @@ with airflow.DAG(
     storage_etrago = StorageEtrago(dependencies=[
             pumped_hydro,
             setup_etrago,
+            scenario_parameters,
         ]
     )
