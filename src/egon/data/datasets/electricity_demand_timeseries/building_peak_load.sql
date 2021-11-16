@@ -1,12 +1,12 @@
-INSERT INTO demand.egon_building_peak_loads (cell_osm_ids, building_peak_load_in_kwh_2035,
-                                             building_peak_load_in_kwh_2050)
+INSERT INTO demand.egon_building_peak_loads (cell_osm_ids, building_peak_load_in_wh_2035,
+                                             building_peak_load_in_wh_2050)
 
 SELECT d.cell_osm_ids,
 -- 		max(d.building_load_in_kWh) as building_peak_load_in_kWh,
-       cast(max(d.building_load_in_kWh) * d.factor_2035 as REAL) as "building_peak_load_in_kWh_2035",
-       cast(max(d.building_load_in_kWh) * d.factor_2050 as REAL) as "building_peak_load_in_kWh_2050"
+       cast(max(d.building_load_in_wh) * d.factor_2035 as REAL) as "building_peak_load_in_wh_2035",
+       cast(max(d.building_load_in_wh) * d.factor_2050 as REAL) as "building_peak_load_in_wh_2050"
 FROM (
-         SELECT SUM(demand) as building_load_in_kWh, timestep, b.cell_osm_ids, b.factor_2035, b.factor_2050
+         SELECT SUM(demand) as building_load_in_wh, timestep, b.cell_osm_ids, b.factor_2035, b.factor_2050
          FROM (
                   SELECT t.cell_osm_ids, demand, timestep, t.factor_2035, t.factor_2050
                   FROM (
