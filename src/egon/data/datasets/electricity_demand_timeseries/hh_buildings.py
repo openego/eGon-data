@@ -54,15 +54,15 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
-import os
 import codecs
-import importlib_resources as resources
+import os
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
 from sqlalchemy import ARRAY, REAL, Column, Integer, String, Table, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import importlib_resources as resources
 import numpy as np
 import pandas as pd
 
@@ -105,6 +105,15 @@ class OsmBuildingsSynthetic(Base):
     cell_id = Column(String)
     building = Column(String(11))
     area = Column(REAL)
+
+
+class BuildingPeakLoads(Base):
+    __tablename__ = "egon_building_peak_loads"
+    __table_args__ = {"schema": "demand"}
+
+    cell_osm_ids = Column(String, primary_key=True)
+    building_peak_load_in_kwh_2035 = Column(REAL)
+    building_peak_load_in_kwh_2050 = Column(REAL)
 
 
 def match_osm_and_zensus_data(
@@ -481,6 +490,31 @@ def generate_mapping_table(
     return mapping_profiles_to_buildings
 
 
+def get_building_peak_loads():
+    """
+    Peak loads of buildings are determined by SQL-script.
+
+    Timeseries for every building are accumulated, the maximum value
+    determined and with the respective nuts3 factor scaled for 2035 and 2050
+    scenario.
+
+    """
+
+    BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+    BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+    with codecs.open(
+        str(
+            resources.files(egon.data.datasets.electricity_demand_timeseries)
+            / "building_peak_load.sql"
+        ),
+        "r",
+        "utf-8-sig",
+    ) as fd:
+        sqlfile = fd.read()
+    db.execute_sql(sqlfile)
+
+
 def map_houseprofiles_to_buildings():
     """
     Cencus hh demand profiles are assigned to buildings via osm ids. If no OSM
@@ -581,11 +615,8 @@ def map_houseprofiles_to_buildings():
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
 
-    with codecs.open(
-        str(resources.files(egon.data.datasets.electricity_demand_timeseries) / "building_peak_load.sql"), "r", "utf-8-sig"
-    ) as fd:
-        sqlfile = fd.read()
-    db.execute_sql(sqlfile)
+    # determine peak load for every building and write to db
+    get_building_peak_loads()
 
 
 setup = partial(

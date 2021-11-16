@@ -1,14 +1,5 @@
-DROP TABLE IF EXISTS demand.egon_building_peak_loads;
-CREATE TABLE IF NOT EXISTS demand.egon_building_peak_loads
-(
-    cell_osm_ids                   VARCHAR PRIMARY KEY,
-    building_peak_load_in_kWh_2035 REAL,
-    building_peak_load_in_kWh_2050 REAL
-
-);
-
-INSERT INTO demand.egon_building_peak_loads (cell_osm_ids, building_peak_load_in_kWh_2035,
-                                             building_peak_load_in_kWh_2050)
+INSERT INTO demand.egon_building_peak_loads (cell_osm_ids, building_peak_load_in_kwh_2035,
+                                             building_peak_load_in_kwh_2050)
 
 SELECT d.cell_osm_ids,
 -- 		max(d.building_load_in_kWh) as building_peak_load_in_kWh,
