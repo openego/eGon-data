@@ -9,6 +9,8 @@ import glob
 
 from egon.data import db, subprocess
 
+from datetime import datetime
+
 import xarray as xr
 from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 import egon.data.datasets.era5 as era
@@ -30,7 +32,7 @@ import egon
 class IdpProfiles:
     def __init__(self, df_index, **kwargs):
         index = pd.date_range(
-            pd.datetime(2011, 1, 1, 0), periods=8760, freq="H"
+            datetime(2011, 1, 1, 0), periods=8760, freq="H"
         )
 
         self.df = pd.DataFrame(index=df_index)
@@ -39,7 +41,7 @@ class IdpProfiles:
 
     def get_temperature_interval(self, how="geometric_series"):
         index = pd.date_range(
-            pd.datetime(2011, 1, 1, 0), periods=8760, freq="H"
+            datetime(2011, 1, 1, 0), periods=8760, freq="H"
         )
         """Appoints the corresponding temperature interval to each temperature
         in the temperature vector.
@@ -202,7 +204,7 @@ def temp_interval():
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
     temp_profile = temperature_profile_extract()
 
@@ -235,7 +237,7 @@ def idp_pool_generator():
         "household_heat_demand_profiles",
         "household_heat_demand_profiles.hdf5",
     )
-    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
 
     sfh = pd.read_hdf(path, key="SFH")
     mfh = pd.read_hdf(path, key="MFH")
@@ -920,7 +922,7 @@ def h_value():
         Extracted from demandlib.
 
     """
-    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 
