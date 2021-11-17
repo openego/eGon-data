@@ -194,10 +194,15 @@ def calculate_and_map_saltcavern_storage_potential():
         individual_areas = {}
         # individual state areas
         for federal_state in data["federal_states"]:
-            individual_areas[federal_state] = saltcavern_data.overlay(
-                vg250_data[vg250_data["gen"] == federal_state],
-                how="intersection"
-            ).to_crs(epsg=25832).area.sum()
+            print(vg250_data[vg250_data["gen"] == federal_state])
+            print(saltcavern_data)
+            try:
+                individual_areas[federal_state] = saltcavern_data.overlay(
+                    vg250_data[vg250_data["gen"] == federal_state],
+                    how="intersection"
+                ).to_crs(epsg=25832).area.sum()
+            except ValueError:
+                individual_areas[federal_state]=0
 
         # derives weights from fraction of individual state area to total area
         total_area = sum(individual_areas.values())
