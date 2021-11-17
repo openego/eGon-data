@@ -148,16 +148,18 @@ def import_ch4_storages():
     )    
     
     # Select next id value
-    new_id = db.next_etrago_id('store')
-    
-    gas_storages_list = pd.concat([import_installed_ch4_storages(), import_ch4_grid_capacity()])
-    gas_storages_list['store_id'] = range(new_id, new_id + len(gas_storages_list))
-    
+    gas_storages_list = pd.concat(
+        [import_installed_ch4_storages(), import_ch4_grid_capacity()]
+    )
     gas_storages_list =  gas_storages_list.reset_index(drop=True)
    
     # Insert data to db
-    gas_storages_list.to_sql('egon_etrago_store',
-                              engine,
-                              schema ='grid',
-                              index = False,
-                              if_exists = 'append')
+    db.to_db(
+        gas_storages_list,
+        'store',
+        name='egon_etrago_store',
+        con=engine,
+        schema ='grid',
+        index = False,
+        if_exists = 'append'
+    )

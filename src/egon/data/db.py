@@ -6,7 +6,9 @@ import geopandas as gpd
 import pandas as pd
 from egon.data import config
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
+from time import sleep
 
 
 def credentials():
@@ -238,3 +240,64 @@ def next_etrago_id(component):
         next_id = 1
 
     return next_id
+
+
+def to_db(data, component, retry=0, **kwargs):
+    """Write DataFrame or GeoDataFrame to database and allocate *_id column.
+
+    This method prevents errors, when multiple methods try to fetch their
+    *_id column values simultaneously before writing to the db. Blabla
+
+    Parameters
+    ----------
+    data : pandas.core.frame.DataFrame, geopandas.geodataframe.GeoDataFrame
+        Frame with data to write to db
+
+    component : str
+        Name of componenet
+
+    retry : int
+        Number of retries
+
+    kwargs : dict
+        Keyword arguments for to_postgis or to_sql method
+
+    Returns
+    -------
+    component_id : pandas.core.series.Series
+        *_id column values
+
+    """
+    next_id = next_etrago_id(component)
+    data[component + '_id'] = range(next_id, next_id + len(data))
+    try:
+        if isinstance(data, gpd.GeoDataFrame):
+                # test if geometry column is set: https://github.com/geopandas/geopandas/blob/17fe21ed15442d2cd30bd3d39171e1e6e2b44b68/geopandas/geodataframe.py#L201-L207
+                # if not, treat identical to DataFrame
+            if data._geometry_column_name in data:
+                data.to_postgis(**kwargs)
+            else:
+                data.to_sql(**kwargs)
+        elif isinstance(data, pd.DataFrame):
+            data.to_sql(**kwargs)
+        else:
+            msg = (
+                "Parameter 'data' must be a pandas.DataFrame or a "
+                "geopandas.GeoDataFrame."
+            )
+            raise TypeError(msg)
+    except IntegrityError:
+        if retry < 5:
+            # wait a second or two
+            # consider making this wait a random amount of hours and sometime
+            # in the future changing it to a small amount to claim we have
+            # accelerated the code.
+            # Maybe try sleep(-86400) so the run will have finished by yesterday
+            sleep(1)
+            to_db(data, component, retry=retry + 1, **kwargs)
+        else:
+            msg = "Some other error message"
+            raise ValueError(msg)
+
+    # return the assigned ids for further use
+    return data[component + '_id']
