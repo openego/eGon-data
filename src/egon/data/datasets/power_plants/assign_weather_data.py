@@ -1,13 +1,32 @@
-import pandas as pd
 import geopandas as gpd
-import numpy as np
+import pandas as pd
+
 from egon.data import db
-from shapely.geometry import Point
-from pathlib import Path
+from egon.data.datasets import Dataset
 import egon.data.config
+import egon.data.datasets.power_plants.__init__ as init_pp
 
 
-def weather_id():
+def weatherId_and_busId():
+    power_plants, cfg, con = find_weather_id()
+    power_plants = find_bus_id(power_plants, cfg)
+    write_power_plants_table(power_plants, cfg, con)
+
+
+def find_bus_id(power_plants, cfg):
+    # Define bus_id for power plants without it
+    power_plants_no_busId = power_plants[power_plants.bus_id.isna()]
+    power_plants = power_plants[~power_plants.bus_id.isna()]
+
+    power_plants_no_busId = power_plants_no_busId.drop(columns="bus_id")
+    power_plants_no_busId = init_pp.assign_bus_id(power_plants_no_busId, cfg)
+
+    power_plants = power_plants.append(power_plants_no_busId)
+
+    return power_plants
+
+
+def find_weather_id():
     """
     Assign weather data to the weather dependant generators (wind and solar)
 
@@ -19,10 +38,14 @@ def weather_id():
     # Connect to the data base
     con = db.engine()
 
-    cfg = egon.data.config.datasets()["power_plants"]
+    cfg = egon.data.config.datasets()["weather_BusID"]
 
     # Import table with power plants
-    sql = "SELECT * FROM supply.egon_power_plants"
+    sql = f"""
+    SELECT * FROM
+    {cfg['sources']['power_plants']['schema']}.
+    {cfg['sources']['power_plants']['table']}
+    """
     power_plants = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="geom"
     )
@@ -36,18 +59,31 @@ def weather_id():
     power_plants.set_index("id", inplace=True)
 
     # Import table with weather data for each technology
-    sql = "SELECT * FROM supply.egon_era5_renewable_feedin"
+    sql = f"""
+    SELECT * FROM
+    {cfg['sources']['renewable_feedin']['schema']}.
+    {cfg['sources']['renewable_feedin']['table']}
+    """
     weather_data = pd.read_sql_query(sql, con)
     weather_data.set_index("w_id", inplace=True)
 
     # Import weather cells with Id to match with the weather data
-    sql = "SELECT * FROM supply.egon_era5_weather_cells"
+    sql = f"""
+    SELECT * FROM
+    {cfg['sources']['weather_cells']['schema']}.
+    {cfg['sources']['weather_cells']['table']}
+    """
     weather_cells = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="geom"
     )
 
     # import Germany borders to speed up the matching process
     sql = "SELECT * FROM boundaries.vg250_sta"
+    sql = f"""
+    SELECT * FROM
+    {cfg['sources']['boundaries']['schema']}.
+    {cfg['sources']['boundaries']['table']}
+    """
     boundaries = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="geometry"
     )
@@ -62,21 +98,31 @@ def weather_id():
         power_plant_list = df.index.to_list()
         power_plants.loc[power_plant_list, "weather_cell_id"] = weather_id
 
+    return (power_plants, cfg, con)
+
+
+def write_power_plants_table(power_plants, cfg, con):
+
     # delete weather dependent power_plants from supply.egon_power_plants
     db.execute_sql(
         f""" 
-    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']} 
+    DELETE FROM {cfg['sources']['power_plants']['schema']}.
+    {cfg['sources']['power_plants']['table']} 
     WHERE carrier IN ('wind_onshore', 'solar', 'wind_offshore') 
     """
     )
 
-    # Look for the maximum id in the table egon_power_plants
-    sql = (
-        "SELECT MAX(id) FROM "
-        + cfg["target"]["schema"]
-        + "."
-        + cfg["target"]["table"]
+    # assert that the column "bus_id" is set as integer
+    power_plants["bus_id"] = power_plants["bus_id"].apply(
+        lambda x: pd.NA if pd.isna(x) else int(x)
     )
+
+    # Look for the maximum id in the table egon_power_plants
+    sql = f"""
+    SELECT MAX(id) FROM
+    {cfg['sources']['power_plants']['schema']}.
+    {cfg['sources']['power_plants']['table']}
+    """
     max_id = pd.read_sql(sql, con)
     max_id = max_id["max"].iat[0]
     if max_id == None:
@@ -92,10 +138,10 @@ def weather_id():
 
     # Insert into database
     power_plants.reset_index().to_postgis(
-        cfg["target"]["table"],
-        schema=cfg["target"]["schema"],
-        con=db.engine(),
+        name=f"{cfg['sources']['power_plants']['table']}",
+        schema=f"{cfg['sources']['power_plants']['schema']}",
+        con=con,
         if_exists="append",
     )
 
-    return 0
+    return "Bus_id and Weather_id were updated succesfully"

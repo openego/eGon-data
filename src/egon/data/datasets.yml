@@ -33,6 +33,24 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
+
+bgr:
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "saltstructures_updated.shp": "saltstructures_inspee"
+  sources:
+    vg250_federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    saltcaverns:
+      schema: 'boundaries'
+      table: 'saltstructures_inspee'
+  targets:
+    storage_potential:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+
 zensus_population:
   original_data:
     source:
@@ -309,17 +327,31 @@ power_plants:
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
       mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
       egon_mv_grid_district: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
       buses_data: "osmtgmod_results.bus_data"
       power_plants: 'supply.egon_power_plants'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
-      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
   target:
       table: 'egon_power_plants'
+      schema: 'supply'
+
+storages:
+  sources:
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
+      capacities: "supply.egon_scenario_capacities"
+      geom_germany: "boundaries.vg250_sta_union"
+      geom_federal_states: "boundaries.vg250_lan"
+      egon_mv_grid_district: "grid.egon_mv_grid_district"
+      ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
+  target:
+      table: 'egon_storages'
       schema: 'supply'
 
 landuse:
@@ -460,7 +492,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5211145
+      deposit_id: 5645351
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -553,6 +585,28 @@ etrago_heat:
     heat_links:
       schema: 'grid'
       table: 'egon_etrago_link'
+
+etrago_hydrogen:
+  sources:
+    saltcavern_data:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    H2_AC_map:
+      schema: 'grid'
+      table: 'egon_etrago_ac_h2'
+  targets:
+    hydrogen_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    hydrogen_links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    hydrogen_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
 
 industrial_sites:
   sources:
@@ -687,6 +741,7 @@ chp_location:
     vg250_lan:
       schema: 'boundaries'
       table: 'vg250_lan'
+    mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
   targets:
     chp_table:
       table: 'egon_chp_plants'
@@ -710,6 +765,9 @@ chp_etrago:
     link:
       schema: 'grid'
       table: 'egon_etrago_link'
+    generator:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
       
 DSM_CTS_industry:
   sources:
@@ -746,5 +804,59 @@ DSM_CTS_industry:
       table: 'egon_etrago_store'  
     store_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_store_timeseries' 
+      table: 'egon_etrago_store_timeseries'
 
+generators_etrago:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    etrago_generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    etrago_gen_time:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
+      
+weather_BusID:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_sta'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+
+dlr:
+  sources:
+    trans_lines:
+      schema: "grid"
+      table: "egon_etrago_line"
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"   
+  targets:
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"   

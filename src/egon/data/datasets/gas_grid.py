@@ -103,6 +103,26 @@ def define_gas_nodes_list():
     return gas_nodes_list
 
 
+def ch4_nodes_number_G(gas_nodes_list):
+    """Insert list of CH4 nodes from SciGRID_gas IGGIELGN data
+        Parameters
+    ----------
+    gas_nodes_list : dataframe
+        Dataframe containing the gas nodes (Europe)
+    Returns
+    -------
+        N_ch4_nodes_G : int
+            Number of CH4 buses in Germany (independantly from the mode used)
+    """
+
+    ch4_nodes_list = gas_nodes_list[
+        gas_nodes_list["country_code"].str.match("DE")
+    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    N_ch4_nodes_G = len(ch4_nodes_list)
+
+    return N_ch4_nodes_G
+
+
 def insert_CH4_nodes_list(gas_nodes_list):
     """Insert list of CH4 nodes from SciGRID_gas IGGIELGN data
         Parameters
@@ -111,7 +131,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
         Dataframe containing the gas nodes (Europe)
     Returns
     -------
-    None.
+    None
     """
     # Connect to local database
     engine = db.engine()
@@ -119,6 +139,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
     gas_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
     ]  # A remplacer evtmt par un test sur le NUTS0 ?
+
     # Cut data to federal state if in testmode
     NUTS1 = []
     for index, row in gas_nodes_list.iterrows():
@@ -176,47 +197,12 @@ def insert_CH4_nodes_list(gas_nodes_list):
     db.execute_sql(
         """
     DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'CH4';
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'H2';
     """
     )
 
     # Insert CH4 data to db
     print(gas_nodes_list)
     gas_nodes_list.to_postgis(
-        "egon_etrago_bus",
-        engine,
-        schema="grid",
-        index=False,
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
-
-
-def insert_H2_nodes_list():
-    """Insert the H2 buses to db, same buses than the CH4 buses
-    Returns
-    -------
-    None.
-    """
-    # Connect to local database
-    engine = db.engine()
-
-    # Select the CH4 buses
-    sql_CH4 = """SELECT bus_id, scn_name, geom
-                FROM grid.egon_etrago_bus
-                WHERE carrier = 'CH4';"""
-
-    gdf_H2 = db.select_geodataframe(sql_CH4, epsg=4326)
-
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
-    gdf_H2["carrier"] = "H2"
-    gdf_H2["bus_id"] = range(new_id, new_id + len(gdf_H2))
-
-    # Insert H2 data to db
-    print(gdf_H2)
-    gdf_H2.to_postgis(
         "egon_etrago_bus",
         engine,
         schema="grid",
@@ -466,6 +452,5 @@ def insert_gas_data():
     gas_nodes_list = define_gas_nodes_list()
 
     insert_CH4_nodes_list(gas_nodes_list)
-    insert_H2_nodes_list()
 
     insert_gas_pipeline_list(gas_nodes_list)

@@ -200,13 +200,13 @@ def create_H2_voronoi():
     )
 
     db.execute_sql(
-        """
+        f"""
         DROP TABLE IF EXISTS grid.egon_h2_bus CASCADE;
 
         SELECT bus_id, bus_id as id, geom as point
         INTO grid.egon_h2_bus
         FROM grid.egon_etrago_bus
-        WHERE carrier = 'H2';
+        WHERE carrier LIKE 'H2%%';
 
         """
     )
