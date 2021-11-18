@@ -20,7 +20,7 @@ class StorageEtrago(Dataset):
             name="StorageEtrago",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(),
+            tasks=(insert_PHES),
         )
 
 

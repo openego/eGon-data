@@ -264,7 +264,7 @@ with airflow.DAG(
     insert_power_to_h2_installations = PowertoH2(
         dependencies=[gas_grid_insert_data]
     )
-   
+
     # Create gas voronoi
     create_gas_polygons = GasAreas(
         dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
@@ -274,7 +274,7 @@ with airflow.DAG(
     gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
-    
+
     # CH4 storages import
     insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons])
@@ -509,7 +509,8 @@ with airflow.DAG(
 
     # Storages to eTrago
 
-    storage_etrago = StorageEtrago(dependencies=[
+    storage_etrago = StorageEtrago(
+        dependencies=[
             pumped_hydro,
             setup_etrago,
             scenario_parameters,
