@@ -592,7 +592,8 @@ def map_houseprofiles_to_buildings():
         [
             egon_map_zensus_buildings_filtered,
             synthetic_buildings[["osm_id", "grid_id", "cell_id"]],
-        ]
+        ],
+        ignore_index=True
     )
 
     # assign profiles to buildings
