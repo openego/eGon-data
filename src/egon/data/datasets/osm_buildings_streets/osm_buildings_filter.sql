@@ -20,6 +20,9 @@ CREATE TABLE openstreetmap.osm_buildings AS
     FROM openstreetmap.osm_polygon poly
     WHERE poly.building IS NOT NULL;
 
+-- add PK as some osm ids are not unique
+ALTER TABLE openstreetmap.osm_buildings ADD COLUMN id SERIAL PRIMARY KEY;
+
 CREATE INDEX ON openstreetmap.osm_buildings USING gist (geom);
 CREATE INDEX ON openstreetmap.osm_buildings USING gist (geom_point);
 
@@ -150,6 +153,9 @@ CREATE TABLE openstreetmap.osm_buildings_filtered as
         or bld.amenity like 'monastery'
         or bld.amenity like 'place_of_mourning'
         or bld.amenity like 'place_of_worship';
+
+ALTER TABLE openstreetmap.osm_buildings_filtered
+    ADD CONSTRAINT osm_buildings_filtered_id_pkey PRIMARY KEY (id);
 
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom);
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_point);

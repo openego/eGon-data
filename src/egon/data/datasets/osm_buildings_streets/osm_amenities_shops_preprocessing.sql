@@ -84,4 +84,8 @@ CREATE TABLE openstreetmap.osm_amenities_shops_filtered AS
         or pnt.amenity like 'place_of_worship'
         or pnt.amenity like 'shop'
         or pnt.shop IS NOT NULL;
+
+-- add PK as some osm ids are not unique
+ALTER TABLE openstreetmap.osm_amenities_shops_filtered ADD COLUMN id SERIAL PRIMARY KEY;
+
 CREATE INDEX ON openstreetmap.osm_amenities_shops_filtered USING gist (geom);
