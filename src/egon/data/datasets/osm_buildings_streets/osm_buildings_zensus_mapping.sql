@@ -10,7 +10,7 @@ drop table if exists boundaries.egon_map_zensus_buildings_filtered;
 CREATE TABLE boundaries.egon_map_zensus_buildings_filtered as
     select * from (
         select
-			bld.osm_id,
+			bld.id,
 			zensus.grid_id,
 			zensus.zensus_population_id as cell_id
         from openstreetmap.osm_buildings_filtered bld
