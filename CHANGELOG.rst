@@ -297,4 +297,5 @@ Bug fixes
   `#458 <https://github.com/openego/eGon-data/issues/458>`_
 * Add `data_bundle` to `industrial_sites` task dependencies
   `#468 <https://github.com/openego/eGon-data/issues/468>`_
-
+* Lift `geopandas` minimum requirement to `0.10.0`
+  `#504 <https://github.com/openego/eGon-data/issues/504>`_
