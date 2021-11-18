@@ -1,3 +1,6 @@
+CREATE INDEX IF NOT EXISTS osm_buildings_filtered_osm_id_idx ON openstreetmap.osm_buildings_filtered (osm_id);
+CREATE INDEX IF NOT EXISTS egon_household_electricity_profile_of_buildings_id_idx ON demand.egon_household_electricity_profile_of_buildings (cell_id);
+
 INSERT INTO demand.egon_building_peak_loads (cell_osm_ids, building_peak_load_in_wh_2035,
                                              building_peak_load_in_wh_2050)
 
@@ -18,7 +21,7 @@ FROM (
                                                     ON profiles.type = buildings.cell_profile_ids
 
                            WHERE buildings.cell_id = census.cell_id
--- 		limit 100
+--                            limit 10000
                        ) as t,
 
                        UNNEST(t.load_in_wh) WITH ORDINALITY x(demand, timestep)

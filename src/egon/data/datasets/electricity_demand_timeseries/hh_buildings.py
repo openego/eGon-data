@@ -88,7 +88,7 @@ class HouseholdElectricityProfilesOfBuildings(Base):
 
     id = Column(Integer, primary_key=True)
     cell_osm_ids = Column(String, index=True)  # , primary_key=True)
-    cell_id = Column(Integer)
+    cell_id = Column(Integer, index=True)
     # grid_id = Column(String)
     # cell_profile_ids = Column(ARRAY(String, dimensions=1))
     cell_profile_ids = Column(String, index=True)
