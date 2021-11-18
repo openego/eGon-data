@@ -616,8 +616,8 @@ def map_houseprofiles_to_buildings():
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
 
-    # determine peak load for every building and write to db
-    get_building_peak_loads()
+    # # determine peak load for every building and write to db
+    # get_building_peak_loads()
 
 
 setup = partial(
@@ -625,7 +625,7 @@ setup = partial(
     name="Demand_Building_Assignment",
     version="0.0.0",
     dependencies=[],
-    tasks=(map_houseprofiles_to_buildings),
+    tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )
 
 # if __name__ == "__main__":
