@@ -1,17 +1,11 @@
 import os
 
-import airflow
-import egon.data.datasets.gas_grid as gas_grid
-import egon.data.importing.zensus as import_zs
-import egon.data.processing.calculate_dlr as dlr
-import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.loadarea as loadarea
-import egon.data.processing.power_to_h2 as power_to_h2
-import egon.data.processing.substation as substation
-import importlib_resources as resources
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
+import airflow
+import importlib_resources as resources
+
 from egon.data import db
 from egon.data.datasets import database
 from egon.data.datasets.chp import Chp
@@ -29,6 +23,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
+from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hh_demand_profiles import (
@@ -44,18 +39,24 @@ from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
-from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
+from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+import egon.data.datasets.gas_grid as gas_grid
+import egon.data.importing.zensus as import_zs
+import egon.data.processing.calculate_dlr as dlr
+import egon.data.processing.gas_areas as gas_areas
+import egon.data.processing.loadarea as loadarea
+import egon.data.processing.power_to_h2 as power_to_h2
+import egon.data.processing.substation as substation
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
