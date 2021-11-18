@@ -193,7 +193,7 @@ def extension_to_areas(
                 possible_chp = existing_chp[
                     (
                         existing_chp.th_capacity * flh
-                        < selected_areas.demand.values[0]
+                        <= selected_areas.demand.values[0]
                     )
                     & (existing_chp.el_capacity <= additional_capacity)
                 ]
@@ -201,7 +201,7 @@ def extension_to_areas(
                 possible_chp = existing_chp[
                     (
                         existing_chp.el_capacity * flh
-                        < selected_areas.demand.values[0]
+                        <= selected_areas.demand.values[0]
                     )
                     & (existing_chp.el_capacity <= additional_capacity)
                 ]
@@ -338,7 +338,7 @@ def extension_district_heating(
 
     # Select all district heating areas without CHP
 
-    if federal_state not in ["Berlin", "Bremen", "Hamburg"]:
+    try:
         dh_areas = db.select_geodataframe(
             f"""
             SELECT
@@ -361,7 +361,7 @@ def extension_district_heating(
                 AND district_heating = TRUE)
             """
         )
-    else:
+    except:
         dh_areas = gpd.GeoDataFrame(
             columns=["demand", "area_id", "geom"]
         ).set_geometry("geom")

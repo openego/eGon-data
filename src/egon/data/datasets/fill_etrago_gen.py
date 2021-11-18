@@ -67,9 +67,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         "sources": numpy_nan,
         "source_id": numpy_nan,
         "carrier": consistency,
-        "chp": numpy_nan,  # consistency,
         "el_capacity": np.sum,
-        "th_capacity": numpy_nan,
         "bus_id": consistency,
         "voltage_level": numpy_nan,
         "weather_cell_id": power_timeser,
@@ -217,14 +215,6 @@ def power_timeser(weather_data):
 
 
 def adjust_power_plants_table(power_plants, renew_feedin, cfg):
-    ################ TASK: DEFINE WHAT TO DO WITH CHP POWER PLANTS ############
-    power_plants = power_plants[
-        (power_plants["th_capacity"].isnull())
-        | (power_plants["th_capacity"] == 0)
-    ]
-
-    ################ TASK: DEFINE WHAT TO DO WITH CHP POWER PLANTS ############
-
     # Define carrier 'solar' as 'pv'
     carrier_pv_mask = power_plants["carrier"] == "solar"
     power_plants.loc[carrier_pv_mask, "carrier"] = "pv"
