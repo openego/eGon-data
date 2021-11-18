@@ -7,7 +7,7 @@ available in the respective cencus cell.
 The resulting data is stored in two separate tables
 
 * `openstreetmap.osm_buildings_synthetic`:
-    Lists generated synthetic building with osm_id, cell_id and grid_id
+    Lists generated synthetic building with id, cell_id and grid_id
 * `demand.egon_household_electricity_profile_of_buildings`:
     Mapping of demand timeseries and buildings including cell_id, building
     area and peak load
@@ -87,7 +87,7 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, primary_key=True)
-    cell_osm_ids = Column(String, index=True)  # , primary_key=True)
+    building_ids = Column(String, index=True)  # , primary_key=True)
     cell_id = Column(Integer, index=True)
     # grid_id = Column(String)
     # cell_profile_ids = Column(ARRAY(String, dimensions=1))
@@ -98,7 +98,7 @@ class OsmBuildingsSynthetic(Base):
     __tablename__ = "osm_buildings_synthetic"
     __table_args__ = {"schema": "openstreetmap"}
 
-    osm_id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True)
     geom = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
     grid_id = Column(String(16))
@@ -111,7 +111,7 @@ class BuildingPeakLoads(Base):
     __tablename__ = "egon_building_peak_loads"
     __table_args__ = {"schema": "demand"}
 
-    cell_osm_ids = Column(String, primary_key=True)
+    building_ids = Column(String, primary_key=True)
     building_peak_load_in_wh_2035 = Column(REAL)
     building_peak_load_in_wh_2050 = Column(REAL)
 
@@ -156,11 +156,11 @@ def match_osm_and_zensus_data(
         right_index=True,
     )
 
-    # count buildings/osm_ids for each ell
+    # count buildings/ids for each ell
     buildings_per_cell = egon_map_zensus_buildings_filtered.groupby(
         "cell_id"
-    ).osm_id.count()
-    buildings_per_cell = buildings_per_cell.rename("osm_ids")
+    ).id.count()
+    buildings_per_cell = buildings_per_cell.rename("building_ids")
 
     # add buildings left join to have all the cells with assigned profiles
     number_of_buildings_profiles_per_cell = pd.merge(
@@ -176,7 +176,7 @@ def match_osm_and_zensus_data(
         number_of_buildings_profiles_per_cell.fillna(0).astype(int)
     )
     missing_buildings = number_of_buildings_profiles_per_cell.loc[
-        number_of_buildings_profiles_per_cell.osm_ids == 0,
+        number_of_buildings_profiles_per_cell.building_ids == 0,
         ["cell_id", "cell_profile_ids"],
     ].set_index("cell_id")
 
@@ -212,7 +212,7 @@ def match_osm_and_zensus_data(
 
     # exclude cells without buildings
     only_cells_with_buildings = (
-        number_of_buildings_profiles_per_cell["osm_ids"] != 0
+        number_of_buildings_profiles_per_cell["building_ids"] != 0
     )
     # get profile/building rate for each cell
     profile_building_rate = (
@@ -220,7 +220,7 @@ def match_osm_and_zensus_data(
             only_cells_with_buildings, "cell_profile_ids"
         ]
         / number_of_buildings_profiles_per_cell.loc[
-            only_cells_with_buildings, "osm_ids"
+            only_cells_with_buildings, "building_ids"
         ]
     )
 
@@ -333,10 +333,10 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     missing_buildings_geom["geom_point"] = points
     # replace cell geom with new building geom
     missing_buildings_geom["geom"] = buffer
-    missing_buildings_geom["osm_id"] = missing_buildings_geom["grid_id"]
+    missing_buildings_geom["id"] = missing_buildings_geom["grid_id"]
 
     missing_buildings_geom["building_id"] += 1
-    missing_buildings_geom["osm_id"] = (
+    missing_buildings_geom["id"] = (
         missing_buildings_geom["grid_id"]
         + "_"
         + missing_buildings_geom["building_id"].astype(str)
@@ -380,7 +380,7 @@ def generate_mapping_table(
 
     # group oms_ids by census cells and aggregate to list
     osm_ids_per_cell = (
-        egon_map_zensus_buildings_filtered_synth[["osm_id", "cell_id"]]
+        egon_map_zensus_buildings_filtered_synth[["id", "cell_id"]]
         .groupby("cell_id")
         .agg(list)
     )
@@ -406,8 +406,8 @@ def generate_mapping_table(
     ).loc[cell_with_profiles_and_buildings, "cell_profile_ids"]
     # reduced list of osm_ids per cell with both buildings and profiles
     osm_ids_per_cell_reduced = osm_ids_per_cell.loc[
-        cell_with_profiles_and_buildings, "osm_id"
-    ].rename("cell_osm_ids")
+        cell_with_profiles_and_buildings, "id"
+    ].rename("building_ids")
 
     # concat both lists by same cell_id
     mapping_profiles_to_buildings_reduced = pd.concat(
@@ -426,7 +426,7 @@ def generate_mapping_table(
         [
             rng.integers(0, buildings, profiles)
             for buildings, profiles in zip(
-                number_profiles_and_buildings_reduced["cell_osm_ids"].values,
+                number_profiles_and_buildings_reduced["building_ids"].values,
                 number_profiles_and_buildings_reduced[
                     "cell_profile_ids"
                 ].values,
@@ -547,7 +547,7 @@ def map_houseprofiles_to_buildings():
     with db.session_scope() as session:
         cells_query = session.query(egon_map_zensus_buildings_filtered)
     egon_map_zensus_buildings_filtered = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+        cells_query.statement, cells_query.session.bind, index_col='id'
     )
 
     with db.session_scope() as session:
@@ -577,7 +577,7 @@ def map_houseprofiles_to_buildings():
         if_exists="append",
         schema="openstreetmap",
         dtype={
-            "osm_id": OsmBuildingsSynthetic.osm_id.type,
+            "id": OsmBuildingsSynthetic.id.type,
             "building": OsmBuildingsSynthetic.building.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
             "grid_id": OsmBuildingsSynthetic.grid_id.type,
@@ -591,7 +591,7 @@ def map_houseprofiles_to_buildings():
     egon_map_zensus_buildings_filtered_synth = pd.concat(
         [
             egon_map_zensus_buildings_filtered,
-            synthetic_buildings[["osm_id", "grid_id", "cell_id"]],
+            synthetic_buildings[["id", "grid_id", "cell_id"]],
         ],
         ignore_index=True
     )
