@@ -797,3 +797,147 @@ mv_grid_districts_setup = partial(
 )
 
 def create_metadata_egon_mv_grid_district():
+    """
+    Create metadata JSON for mv_grid_district
+
+    Creates a metadata JSON string and writes it to the database table comment
+    """
+    egon_mv_grid_district_config = egon.data.config.datasets()["egon_mv_grid_district"]
+    schema_table = ".".join(
+        [
+            egon_mv_grid_district.__table__.schema,
+            egon_mv_grid_district.__table__.name,
+        ]
+    )
+
+    licenses = [
+        licenses_datenlizenz_deutschland(
+            attribution="© Bundesamt für Kartographie und Geodäsie "
+            "2020 (Daten verändert)"
+        )
+    ]
+
+    egon_mv_grid_district_source = {
+        "source" : "vg250",
+        "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
+        "description": "Medium-voltage grid districts describe the area supplied"
+                       "by one MV grid. Medium-voltage grid districts are defined"
+                       "by one polygon that represents the supply area."
+                       "Each MV grid district is connected to the HV grid via a single substation.",
+        "path": mv_grid_district_config["original_data"]["source"]["url"],
+        "licenses": licenses,
+    }
+
+    resources_fields = egon_mv_grid_district_metadata_resources_fields()
+    resources_fields.extend(
+        [
+            {
+                "name": "area_ha",
+                "description": "Area in ha",
+                "type": "float",
+                "unit": "ha",
+            },
+            {
+                "name": "area_km2",
+                "description": "Area in km2",
+                "type": "float",
+                "unit": "km2",
+            },
+            {
+                "name": "population_total",
+                "description": "Number of inhabitants",
+                "type": "integer",
+                "unit": "none",
+            },
+            {
+                "name": "cell_count",
+                "description": "Number of Zensus cells",
+                "type": "integer",
+                "unit": "none",
+            },
+            {
+                "name": "population_density",
+                "description": "Number of inhabitants per km2",
+                "type": "float",
+                "unit": "inhabitants/km²",
+            },
+        ]
+    )
+
+    metadata = {
+        "source" : vg250,
+        "name": schema_table,
+        "title": (
+            "Municipalities (BKG Verwaltungsgebiete 250) and population "
+            "(Destatis Zensus)"
+        ),
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Municipality data enriched by population data",
+        "language": ["de-DE"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": "1:250000",
+        },
+        "temporal": {
+            "referenceDate": "2020-01-01",
+            "timeseries": {
+                "start": None,
+                "end": None,
+                "resolution": None,
+                "alignment": None,
+                "aggregationType": None,
+            },
+        },
+        "sources": [vg250_source],
+        "licenses": licenses,
+        "contributors": [
+            {
+                "title": "Guido Pleßmann",
+                "email": "http://github.com/gplssm",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+            {
+                "title": "Jonathan Amme",
+                "email": "http://github.com/nesnoj",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Metadata extended",
+            },
+            {
+                "title": "Shaquille Henriques ",
+                "email": "https://github.com/ShaquilleH",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Added Metadata",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": schema_table,
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": resources_fields,
+                    "primaryKey": ["id"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    meta_json = "'" + json.dumps(metadata) + "'"
+
+    db.submit_comment(
+        meta_json,
+        egon_mv_grid_district.__table__.schema,
+        egon_mv_grid_district.__table__.name,
+    )
