@@ -776,3 +776,15 @@ storage_etrago:
       table: 'egon_etrago_storage'
 
 
+dlr:
+  sources:
+    trans_lines:
+      schema: "grid"
+      table: "egon_etrago_line"
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"   
+  targets:
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"   
