@@ -795,13 +795,13 @@ DSM_CTS_industry:
       table: 'egon_etrago_bus'
     link:
       schema: 'grid'
-      table: 'egon_etrago_link'  
+      table: 'egon_etrago_link'
     link_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_link_timeseries'   
+      table: 'egon_etrago_link_timeseries'
     store:
       schema: 'grid'
-      table: 'egon_etrago_store'  
+      table: 'egon_etrago_store'
     store_timeseries:
       schema: 'grid'
       table: 'egon_etrago_store_timeseries'
@@ -847,6 +847,19 @@ weather_BusID:
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
+
+storage_etrago:
+  sources:
+    storage:
+      table: 'egon_storages'
+      schema: 'supply'
+    scenario_parameters:
+      table: 'egon_scenario_parameters'
+      schema: 'scenario'
+  targets:
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
 
 dlr:
   sources:
