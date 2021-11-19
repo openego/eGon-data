@@ -307,3 +307,5 @@ Bug fixes
   `#468 <https://github.com/openego/eGon-data/issues/468>`_
 * Lift `geopandas` minimum requirement to `0.10.0`
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
+* Use inbuilt `datetime` package instead of `pandas.datetime`
+  `#516 <https://github.com/openego/eGon-data/issues/516>`_

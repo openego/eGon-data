@@ -1,27 +1,26 @@
-import pandas as pd
-import numpy as np
-import psycopg2
-import pandas.io.sql as sqlio
+from datetime import datetime
+import glob
+import os
+
+from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import os
-import glob
+import numpy as np
+import pandas as pd
+import pandas.io.sql as sqlio
+import psycopg2
+import xarray as xr
 
 from egon.data import db, subprocess
-
-import xarray as xr
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 import egon.data.datasets.era5 as era
 
-from sqlalchemy.ext.declarative import declarative_base
-
 try:
-    from disaggregator import config, data, spatial, temporal, plot
+    from disaggregator import config, data, plot, spatial, temporal
 except ImportError as e:
     pass
 
 from math import ceil
-
 
 from egon.data.datasets import Dataset
 import egon
@@ -30,7 +29,7 @@ import egon
 class IdpProfiles:
     def __init__(self, df_index, **kwargs):
         index = pd.date_range(
-            pd.datetime(2011, 1, 1, 0), periods=8760, freq="H"
+            datetime(2011, 1, 1, 0), periods=8760, freq="H"
         )
 
         self.df = pd.DataFrame(index=df_index)
@@ -39,7 +38,7 @@ class IdpProfiles:
 
     def get_temperature_interval(self, how="geometric_series"):
         index = pd.date_range(
-            pd.datetime(2011, 1, 1, 0), periods=8760, freq="H"
+            datetime(2011, 1, 1, 0), periods=8760, freq="H"
         )
         """Appoints the corresponding temperature interval to each temperature
         in the temperature vector.
@@ -202,7 +201,7 @@ def temp_interval():
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
     temp_profile = temperature_profile_extract()
 
@@ -235,7 +234,7 @@ def idp_pool_generator():
         "household_heat_demand_profiles",
         "household_heat_demand_profiles.hdf5",
     )
-    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
 
     sfh = pd.read_hdf(path, key="SFH")
     mfh = pd.read_hdf(path, key="MFH")
@@ -920,7 +919,7 @@ def h_value():
         Extracted from demandlib.
 
     """
-    index = pd.date_range(pd.datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 
@@ -1696,7 +1695,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
