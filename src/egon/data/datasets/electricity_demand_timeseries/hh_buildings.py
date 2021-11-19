@@ -112,8 +112,8 @@ class BuildingPeakLoads(Base):
     __table_args__ = {"schema": "demand"}
 
     building_id = Column(String, primary_key=True)
-    building_peak_load_in_wh_2035 = Column(REAL)
-    building_peak_load_in_wh_2050 = Column(REAL)
+    building_peak_load_in_w_2035 = Column(REAL)
+    building_peak_load_in_w_2050 = Column(REAL)
 
 
 def match_osm_and_zensus_data(
