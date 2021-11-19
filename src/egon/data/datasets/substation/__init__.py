@@ -1,9 +1,11 @@
 """The central module containing code to create substation tables
 
 """
-
+from airflow.operators.postgres_operator import PostgresOperator
+import importlib_resources as resources
 import egon.data.config
 from egon.data import db
+from egon.data.datasets import Dataset
 from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
@@ -95,6 +97,37 @@ class EgonEhvSubstationVoronoi(Base):
     )
     bus_id = Column(Integer)
     geom = Column(Geometry("Multipolygon", 4326))
+
+
+class SubstationExtraction(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="substation_extraction",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                create_tables,
+                create_sql_functions,
+                {
+                    PostgresOperator(
+                        task_id="hvmv_substation",
+                        sql=resources.read_text(
+                            __name__, "hvmv_substation.sql"
+                        ),
+                        postgres_conn_id="egon_data",
+                        autocommit=True,
+                    ),
+                    PostgresOperator(
+                        task_id="ehv_substation",
+                        sql=resources.read_text(
+                            __name__, "ehv_substation.sql"
+                        ),
+                        postgres_conn_id="egon_data",
+                        autocommit=True,
+                    ),
+                },
+            ),
+        )
 
 
 def create_tables():

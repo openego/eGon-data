@@ -49,6 +49,7 @@ from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import PumpedHydro
+from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
@@ -60,7 +61,7 @@ import egon.data.importing.zensus as import_zs
 import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
-import egon.data.processing.substation as substation
+
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -185,43 +186,14 @@ with airflow.DAG(
     mastr_data.insert_into(pipeline)
     retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
-    # Substation extraction
-    substation_tables = PythonOperator(
-        task_id="create_substation_tables",
-        python_callable=substation.create_tables,
-    )
-
-    substation_functions = PythonOperator(
-        task_id="substation_functions",
-        python_callable=substation.create_sql_functions,
-    )
-
-    hvmv_substation_extraction = PostgresOperator(
-        task_id="hvmv_substation_extraction",
-        sql=resources.read_text(substation, "hvmv_substation.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
-
-    ehv_substation_extraction = PostgresOperator(
-        task_id="ehv_substation_extraction",
-        sql=resources.read_text(substation, "ehv_substation.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
-
-    osm_add_metadata >> substation_tables >> substation_functions
-    substation_functions >> hvmv_substation_extraction
-    substation_functions >> ehv_substation_extraction
-    vg250_clean_and_prepare >> hvmv_substation_extraction
-    vg250_clean_and_prepare >> ehv_substation_extraction
+    substation_extraction = SubstationExtraction(
+        dependencies=[osm_add_metadata, vg250_clean_and_prepare])
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
         dependencies=[
             osm_download,
-            ehv_substation_extraction,
-            hvmv_substation_extraction,
+            substation_extraction,
             setup_etrago,
         ]
     )
@@ -263,7 +235,7 @@ with airflow.DAG(
     insert_power_to_h2_installations = PowertoH2(
         dependencies=[gas_grid_insert_data]
     )
-   
+
     # Create gas voronoi
     create_gas_polygons = GasAreas(
         dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
@@ -273,7 +245,7 @@ with airflow.DAG(
     gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
-    
+
     # CH4 storages import
     insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons])
@@ -426,6 +398,7 @@ with airflow.DAG(
         dependencies=[
             setup,
             renewable_feedin,
+            substation_extraction,
             mv_grid_districts,
             mastr_data,
             re_potential_areas,
@@ -443,8 +416,6 @@ with airflow.DAG(
         "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
     ]
 
-    hvmv_substation_extraction >> generate_wind_farms
-    hvmv_substation_extraction >> generate_pv_ground_mounted
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
     elec_household_demands_zensus >> solar_rooftop_etrago
@@ -473,9 +444,9 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM 
+    # DSM
     components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
+        dependencies = [cts_electricity_demand_annual,
                         demand_curves_industry,
                         osmtgmod_pypsa])
 
@@ -505,7 +476,7 @@ with airflow.DAG(
             map_zensus_grid_districts,
         ]
     )
-    
+
     # HTS to etrago table
     hts_etrago_table = HtsEtragoTable(
                         dependencies = [heat_time_series,mv_grid_districts,
