@@ -190,43 +190,46 @@ electrical_demands_cts:
       schema: 'demand'
       table: 'egon_demandregio_zensus_electricity'
 
-hvmv_substation:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_hvmv_substation"
-ehv_substation:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_ehv_substation"
-hvmv_substation_voronoi:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_hvmv_substation_voronoi"
-ehv_substation_voronoi:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_ehv_substation_voronoi"
+substation_extraction:
+  sources:
+    osm_ways:
+      schema: 'openstreetmap'
+      table: 'osm_ways'
+    osm_nodes:
+      schema: 'openstreetmap'
+      table: 'osm_nodes'
+    osm_points:
+      schema: 'openstreetmap'
+      table: 'osm_point'
+    osm_lines:
+      schema: 'openstreetmap'
+      table: 'osm_line'
+  targets:
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
 
+substation_voronoi:
+  sources:
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+  targets:
+    hvmv_substation_voronoi:
+      schema: 'grid'
+      table: 'egon_hvmv_substation_voronoi'
+    ehv_substation_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
 
 society_prognosis:
   soucres:
@@ -868,8 +871,8 @@ dlr:
       table: "egon_etrago_line"
     line_timeseries:
       schema: "grid"
-      table: "egon_etrago_line_timeseries"   
+      table: "egon_etrago_line_timeseries"
   targets:
     line_timeseries:
       schema: "grid"
-      table: "egon_etrago_line_timeseries"   
+      table: "egon_etrago_line_timeseries"
