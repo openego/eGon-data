@@ -65,8 +65,8 @@ from functools import partial
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.db import session_scope
-from egon.data.processing.substation import (EgonHvmvSubstation,
-                                             EgonHvmvSubstationVoronoi)
+from egon.data.datasets.substation import EgonHvmvSubstation
+from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from geoalchemy2.types import Geometry
 from sqlalchemy import (ARRAY, Boolean, Column, Float, Integer, Numeric,
                         Sequence, String, func)

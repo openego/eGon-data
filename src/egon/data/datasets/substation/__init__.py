@@ -107,7 +107,7 @@ def create_tables():
     -------
     None.
     """
-    cfg_targets = egon.data.config.datasets()["ehv_substation"]
+    cfg_targets = egon.data.config.datasets()["substation_extraction"]["targets"]
 
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS {cfg_targets['hvmv_substation']['schema']};"
