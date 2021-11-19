@@ -1384,6 +1384,7 @@ def get_hh_profiles_from_db(profile_ids):
         cells_query.statement, cells_query.session.bind, index_col="type"
     )
 
+    # convert array to Dataframe
     df_profile_loads = pd.DataFrame.from_records(
         df_profile_loads["load_in_wh"], index=df_profile_loads.index
     ).T

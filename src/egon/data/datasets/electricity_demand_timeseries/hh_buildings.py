@@ -7,7 +7,7 @@ available in the respective cencus cell.
 The resulting data is stored in two separate tables
 
 * `openstreetmap.osm_buildings_synthetic`:
-    Lists generated synthetic building with osm_id, cell_id and grid_id
+    Lists generated synthetic building with id, cell_id and grid_id
 * `demand.egon_household_electricity_profile_of_buildings`:
     Mapping of demand timeseries and buildings including cell_id, building
     area and peak load
@@ -54,15 +54,15 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
-import os
 import codecs
-import importlib_resources as resources
+import os
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
 from sqlalchemy import ARRAY, REAL, Column, Integer, String, Table, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import importlib_resources as resources
 import numpy as np
 import pandas as pd
 
@@ -87,24 +87,33 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, primary_key=True)
-    cell_osm_ids = Column(String, index=True)  # , primary_key=True)
-    cell_id = Column(Integer)
+    building_id = Column(String, index=True)  # , primary_key=True)
+    cell_id = Column(Integer, index=True)
     # grid_id = Column(String)
     # cell_profile_ids = Column(ARRAY(String, dimensions=1))
-    cell_profile_ids = Column(String, index=True)
+    profile_id = Column(String, index=True)
 
 
 class OsmBuildingsSynthetic(Base):
     __tablename__ = "osm_buildings_synthetic"
     __table_args__ = {"schema": "openstreetmap"}
 
-    osm_id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True)
     geom = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
     grid_id = Column(String(16))
     cell_id = Column(String)
     building = Column(String(11))
     area = Column(REAL)
+
+
+class BuildingPeakLoads(Base):
+    __tablename__ = "egon_building_peak_loads"
+    __table_args__ = {"schema": "demand"}
+
+    building_id = Column(String, primary_key=True)
+    building_peak_load_in_w_2035 = Column(REAL)
+    building_peak_load_in_w_2050 = Column(REAL)
 
 
 def match_osm_and_zensus_data(
@@ -147,11 +156,11 @@ def match_osm_and_zensus_data(
         right_index=True,
     )
 
-    # count buildings/osm_ids for each ell
+    # count buildings/ids for each cell
     buildings_per_cell = egon_map_zensus_buildings_filtered.groupby(
-        "cell_id"
-    ).osm_id.count()
-    buildings_per_cell = buildings_per_cell.rename("osm_ids")
+        "id"
+    ).id.count()
+    buildings_per_cell = buildings_per_cell.rename("building_ids")
 
     # add buildings left join to have all the cells with assigned profiles
     number_of_buildings_profiles_per_cell = pd.merge(
@@ -167,7 +176,7 @@ def match_osm_and_zensus_data(
         number_of_buildings_profiles_per_cell.fillna(0).astype(int)
     )
     missing_buildings = number_of_buildings_profiles_per_cell.loc[
-        number_of_buildings_profiles_per_cell.osm_ids == 0,
+        number_of_buildings_profiles_per_cell.building_ids == 0,
         ["cell_id", "cell_profile_ids"],
     ].set_index("cell_id")
 
@@ -203,7 +212,7 @@ def match_osm_and_zensus_data(
 
     # exclude cells without buildings
     only_cells_with_buildings = (
-        number_of_buildings_profiles_per_cell["osm_ids"] != 0
+        number_of_buildings_profiles_per_cell["building_ids"] != 0
     )
     # get profile/building rate for each cell
     profile_building_rate = (
@@ -211,7 +220,7 @@ def match_osm_and_zensus_data(
             only_cells_with_buildings, "cell_profile_ids"
         ]
         / number_of_buildings_profiles_per_cell.loc[
-            only_cells_with_buildings, "osm_ids"
+            only_cells_with_buildings, "building_ids"
         ]
     )
 
@@ -324,10 +333,10 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     missing_buildings_geom["geom_point"] = points
     # replace cell geom with new building geom
     missing_buildings_geom["geom"] = buffer
-    missing_buildings_geom["osm_id"] = missing_buildings_geom["grid_id"]
+    missing_buildings_geom["id"] = missing_buildings_geom["grid_id"]
 
     missing_buildings_geom["building_id"] += 1
-    missing_buildings_geom["osm_id"] = (
+    missing_buildings_geom["id"] = (
         missing_buildings_geom["grid_id"]
         + "_"
         + missing_buildings_geom["building_id"].astype(str)
@@ -371,7 +380,7 @@ def generate_mapping_table(
 
     # group oms_ids by census cells and aggregate to list
     osm_ids_per_cell = (
-        egon_map_zensus_buildings_filtered_synth[["osm_id", "cell_id"]]
+        egon_map_zensus_buildings_filtered_synth[["id", "cell_id"]]
         .groupby("cell_id")
         .agg(list)
     )
@@ -397,8 +406,8 @@ def generate_mapping_table(
     ).loc[cell_with_profiles_and_buildings, "cell_profile_ids"]
     # reduced list of osm_ids per cell with both buildings and profiles
     osm_ids_per_cell_reduced = osm_ids_per_cell.loc[
-        cell_with_profiles_and_buildings, "osm_id"
-    ].rename("cell_osm_ids")
+        cell_with_profiles_and_buildings, "id"
+    ].rename("building_ids")
 
     # concat both lists by same cell_id
     mapping_profiles_to_buildings_reduced = pd.concat(
@@ -417,7 +426,7 @@ def generate_mapping_table(
         [
             rng.integers(0, buildings, profiles)
             for buildings, profiles in zip(
-                number_profiles_and_buildings_reduced["cell_osm_ids"].values,
+                number_profiles_and_buildings_reduced["building_ids"].values,
                 number_profiles_and_buildings_reduced[
                     "cell_profile_ids"
                 ].values,
@@ -478,7 +487,41 @@ def generate_mapping_table(
         right_index=True,
     )
 
+    # rename columns
+    mapping_profiles_to_buildings.rename(
+        columns={
+            'building_ids': 'building_id',
+            'cell_profile_ids': 'profile_id'
+        },
+        inplace=True
+    )
+
     return mapping_profiles_to_buildings
+
+
+def get_building_peak_loads():
+    """
+    Peak loads of buildings are determined by SQL-script.
+
+    Timeseries for every building are accumulated, the maximum value
+    determined and with the respective nuts3 factor scaled for 2035 and 2050
+    scenario.
+
+    """
+
+    BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+    BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+    with codecs.open(
+        str(
+            resources.files(egon.data.datasets.electricity_demand_timeseries)
+            / "building_peak_load.sql"
+        ),
+        "r",
+        "utf-8-sig",
+    ) as fd:
+        sqlfile = fd.read()
+    db.execute_sql(sqlfile)
 
 
 def map_houseprofiles_to_buildings():
@@ -543,7 +586,7 @@ def map_houseprofiles_to_buildings():
         if_exists="append",
         schema="openstreetmap",
         dtype={
-            "osm_id": OsmBuildingsSynthetic.osm_id.type,
+            "id": OsmBuildingsSynthetic.id.type,
             "building": OsmBuildingsSynthetic.building.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
             "grid_id": OsmBuildingsSynthetic.grid_id.type,
@@ -557,8 +600,9 @@ def map_houseprofiles_to_buildings():
     egon_map_zensus_buildings_filtered_synth = pd.concat(
         [
             egon_map_zensus_buildings_filtered,
-            synthetic_buildings[["osm_id", "grid_id", "cell_id"]],
-        ]
+            synthetic_buildings[["id", "grid_id", "cell_id"]],
+        ],
+        ignore_index=True
     )
 
     # assign profiles to buildings
@@ -581,11 +625,8 @@ def map_houseprofiles_to_buildings():
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
 
-    with codecs.open(
-        str(resources.files(egon.data.datasets.electricity_demand_timeseries) / "building_peak_load.sql"), "r", "utf-8-sig"
-    ) as fd:
-        sqlfile = fd.read()
-    db.execute_sql(sqlfile)
+    # # determine peak load for every building and write to db
+    # get_building_peak_loads()
 
 
 setup = partial(
@@ -593,7 +634,7 @@ setup = partial(
     name="Demand_Building_Assignment",
     version="0.0.0",
     dependencies=[],
-    tasks=(map_houseprofiles_to_buildings),
+    tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )
 
 # if __name__ == "__main__":
