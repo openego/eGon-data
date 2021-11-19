@@ -50,6 +50,7 @@ from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.substation import SubstationExtraction
+from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
@@ -201,16 +202,16 @@ with airflow.DAG(
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
     osmtgmod_substation = tasks["osmtgmod_substation"]
 
-    # create Voronoi for MV grid districts
-    create_voronoi_substation = PythonOperator(
-        task_id="create-voronoi-substations",
-        python_callable=substation.create_voronoi,
-    )
-    osmtgmod_substation >> create_voronoi_substation
+    # create Voronoi polygons
+    substation_voronoi = SubstationVoronoi(
+        dependencies=[
+            osmtgmod_substation,
+            vg250,
+            ])
 
     # MV grid districts
     mv_grid_districts = mv_grid_districts_setup(
-        dependencies=[create_voronoi_substation]
+        dependencies=[substation_voronoi]
     )
     mv_grid_districts.insert_into(pipeline)
     define_mv_grid_districts = tasks[
