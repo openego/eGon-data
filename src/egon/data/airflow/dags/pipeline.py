@@ -11,7 +11,6 @@ from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_storages import CH4Storages
-from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
@@ -23,6 +22,10 @@ from egon.data.datasets.electricity_demand import (
     HouseholdElectricityDemand,
 )
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
+from egon.data.datasets.electricity_demand_timeseries import (
+    hh_buildings,
+    hh_profiles,
+)
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
@@ -37,8 +40,6 @@ from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenStoreEtrago,
 )
-from egon.data.datasets.electricity_demand_timeseries import hh_profiles
-from egon.data.datasets.electricity_demand_timeseries import hh_buildings
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
