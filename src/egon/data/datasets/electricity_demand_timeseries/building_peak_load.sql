@@ -1,5 +1,3 @@
-CREATE INDEX IF NOT EXISTS egon_household_electricity_profile_of_buildings_id_idx ON demand.egon_household_electricity_profile_of_buildings (cell_id);
-
 INSERT INTO demand.egon_building_peak_loads (building_id, building_peak_load_in_wh_2035,
                                              building_peak_load_in_wh_2050)
 
