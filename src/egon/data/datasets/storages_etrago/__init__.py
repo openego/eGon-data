@@ -59,6 +59,7 @@ def insert_PHES():
     phes["efficiency_store"] = scenario_parameters.electricity("eGon2035")["phes_efficiency_store"]
     phes["efficiency_dispatch"] = scenario_parameters.electricity("eGon2035")["phes_efficiency_dispatch"]
     phes["standing_loss"] = scenario_parameters.electricity("eGon2035")["phes_standing_loss"]
+    phes["control"] = scenario_parameters.electricity("eGon2035")["phes_control"]
 
     # Write data to db
     phes.to_sql(
