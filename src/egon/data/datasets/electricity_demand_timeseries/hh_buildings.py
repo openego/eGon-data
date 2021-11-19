@@ -156,9 +156,9 @@ def match_osm_and_zensus_data(
         right_index=True,
     )
 
-    # count buildings/ids for each ell
+    # count buildings/ids for each cell
     buildings_per_cell = egon_map_zensus_buildings_filtered.groupby(
-        "cell_id"
+        "id"
     ).id.count()
     buildings_per_cell = buildings_per_cell.rename("building_ids")
 
@@ -547,7 +547,7 @@ def map_houseprofiles_to_buildings():
     with db.session_scope() as session:
         cells_query = session.query(egon_map_zensus_buildings_filtered)
     egon_map_zensus_buildings_filtered = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col='id'
+        cells_query.statement, cells_query.session.bind, index_col=None
     )
 
     with db.session_scope() as session:
