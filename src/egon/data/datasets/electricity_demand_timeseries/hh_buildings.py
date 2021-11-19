@@ -490,9 +490,10 @@ def generate_mapping_table(
     # rename columns
     mapping_profiles_to_buildings.rename(
         columns={
-            'buildings_id': 'building_id',
+            'building_ids': 'building_id',
             'cell_profile_ids': 'profile_id'
-        }
+        },
+        inplace=True
     )
 
     return mapping_profiles_to_buildings
