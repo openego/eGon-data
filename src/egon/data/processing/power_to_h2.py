@@ -16,7 +16,7 @@ from shapely import geometry
 class PowertoH2toPower(Dataset):
      def __init__(self, dependencies):
          super().__init__(
-             name="PowertoH2toPower",
+             name="H2PowerLinks",
              version="0.0.0",
              dependencies=dependencies,
              tasks=(insert_power_to_h2_to_power),
