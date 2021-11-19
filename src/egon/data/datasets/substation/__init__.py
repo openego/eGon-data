@@ -2,13 +2,14 @@
 
 """
 from airflow.operators.postgres_operator import PostgresOperator
-import importlib_resources as resources
-import egon.data.config
-from egon.data import db
-from egon.data.datasets import Dataset
+from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
+import importlib_resources as resources
+
+from egon.data import db
+from egon.data.datasets import Dataset
+import egon.data.config
 
 Base = declarative_base()
 
@@ -69,7 +70,6 @@ class EgonHvmvSubstation(Base):
     status = Column(Integer)
 
 
-
 class SubstationExtraction(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -107,7 +107,9 @@ def create_tables():
     -------
     None.
     """
-    cfg_targets = egon.data.config.datasets()["substation_extraction"]["targets"]
+    cfg_targets = egon.data.config.datasets()["substation_extraction"][
+        "targets"
+    ]
 
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS {cfg_targets['hvmv_substation']['schema']};"

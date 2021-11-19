@@ -63,7 +63,6 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 
-
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
@@ -188,7 +187,8 @@ with airflow.DAG(
     retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
     substation_extraction = SubstationExtraction(
-        dependencies=[osm_add_metadata, vg250_clean_and_prepare])
+        dependencies=[osm_add_metadata, vg250_clean_and_prepare]
+    )
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
@@ -207,7 +207,8 @@ with airflow.DAG(
         dependencies=[
             osmtgmod_substation,
             vg250,
-            ])
+        ]
+    )
 
     # MV grid districts
     mv_grid_districts = mv_grid_districts_setup(
@@ -248,8 +249,7 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons])
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -295,10 +295,11 @@ with airflow.DAG(
 
     # Calculate dynamic line rating for HV trans lines
     dlr = Calculate_dlr(
-        dependencies=[osmtgmod_pypsa,
-                      download_data_bundle,
-                      download_weather_data,
-            ]
+        dependencies=[
+            osmtgmod_pypsa,
+            download_data_bundle,
+            download_weather_data,
+        ]
     )
 
     # Map zensus grid districts
@@ -386,7 +387,14 @@ with airflow.DAG(
     )
 
     # CHP locations
-    chp = Chp(dependencies=[mv_grid_districts, mastr_data, industrial_sites, create_gas_polygons])
+    chp = Chp(
+        dependencies=[
+            mv_grid_districts,
+            mastr_data,
+            industrial_sites,
+            create_gas_polygons,
+        ]
+    )
 
     chp_locations_nep = tasks["chp.insert-chp-egon2035"]
     chp_heat_bus = tasks["chp.assign-heat-bus"]
@@ -446,10 +454,13 @@ with airflow.DAG(
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # DSM
-    components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual,
-                        demand_curves_industry,
-                        osmtgmod_pypsa])
+    components_dsm = dsm_Potential(
+        dependencies=[
+            cts_electricity_demand_annual,
+            demand_curves_industry,
+            osmtgmod_pypsa,
+        ]
+    )
 
     # Pumped hydro units
 
@@ -480,5 +491,10 @@ with airflow.DAG(
 
     # HTS to etrago table
     hts_etrago_table = HtsEtragoTable(
-                        dependencies = [heat_time_series,mv_grid_districts,
-                                        district_heating_areas,heat_etrago])
+        dependencies=[
+            heat_time_series,
+            mv_grid_districts,
+            district_heating_areas,
+            heat_etrago,
+        ]
+    )
