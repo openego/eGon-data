@@ -1,29 +1,26 @@
-import pandas as pd
-import numpy as np
-import psycopg2
-import pandas.io.sql as sqlio
+from datetime import datetime
+import glob
+import os
+
+from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import os
-import glob
+import numpy as np
+import pandas as pd
+import pandas.io.sql as sqlio
+import psycopg2
+import xarray as xr
 
 from egon.data import db, subprocess
-
-from datetime import datetime
-
-import xarray as xr
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
 import egon.data.datasets.era5 as era
 
-from sqlalchemy.ext.declarative import declarative_base
-
 try:
-    from disaggregator import config, data, spatial, temporal, plot
+    from disaggregator import config, data, plot, spatial, temporal
 except ImportError as e:
     pass
 
 from math import ceil
-
 
 from egon.data.datasets import Dataset
 import egon
