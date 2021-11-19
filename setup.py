@@ -87,6 +87,7 @@ setup(
         "cdsapi",
         "click",
         "geopandas>=0.10.0",
+        "geopy",
         "importlib-resources",
         "loguru",
         "matplotlib",

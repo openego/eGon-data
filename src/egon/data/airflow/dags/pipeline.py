@@ -505,7 +505,6 @@ with airflow.DAG(
             data_bundle,
             zensus_mv_grid_districts,
             district_heating_areas,
-            power_plants,
             zensus_mv_grid_districts,
             chp,
         ]

@@ -2,7 +2,7 @@
 The module containing code allocating pumped hydro plants based on
 data from MaStR and NEP.
 """
-
+   
 import pandas as pd
 import geopandas as gpd
 import egon.data.config
@@ -16,6 +16,7 @@ from egon.data.datasets.power_plants import (
 )
 from egon.data.datasets.chp.match_nep import match_nep_chp
 from egon.data.datasets.chp.small_chp import assign_use_case
+from geopy.geocoders import Nominatim
 from sqlalchemy.orm import sessionmaker
 
 
@@ -273,9 +274,6 @@ def get_location(unmatched):
         Units with a geolocation based on their city information
 
     """
-
-    # import geolocator
-    from geopy.geocoders import Nominatim
 
     geolocator = Nominatim(user_agent="egon_data")
 
