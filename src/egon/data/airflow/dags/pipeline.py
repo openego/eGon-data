@@ -258,7 +258,7 @@ with airflow.DAG(
         dependencies=[
             saltcavern_storage,
             gas_grid_insert_data,
-            create_voronoi_substation
+            substation_voronoi
         ]
     )
 
