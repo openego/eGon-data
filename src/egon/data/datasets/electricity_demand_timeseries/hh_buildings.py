@@ -87,11 +87,11 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, primary_key=True)
-    building_ids = Column(String, index=True)  # , primary_key=True)
+    building_id = Column(String, index=True)  # , primary_key=True)
     cell_id = Column(Integer, index=True)
     # grid_id = Column(String)
     # cell_profile_ids = Column(ARRAY(String, dimensions=1))
-    cell_profile_ids = Column(String, index=True)
+    profile_id = Column(String, index=True)
 
 
 class OsmBuildingsSynthetic(Base):
@@ -111,7 +111,7 @@ class BuildingPeakLoads(Base):
     __tablename__ = "egon_building_peak_loads"
     __table_args__ = {"schema": "demand"}
 
-    building_ids = Column(String, primary_key=True)
+    building_id = Column(String, primary_key=True)
     building_peak_load_in_wh_2035 = Column(REAL)
     building_peak_load_in_wh_2050 = Column(REAL)
 
@@ -485,6 +485,14 @@ def generate_mapping_table(
         ),
         left_index=True,
         right_index=True,
+    )
+
+    # rename columns
+    mapping_profiles_to_buildings.rename(
+        columns={
+            'buildings_id': 'building_id',
+            'cell_profile_ids': 'profile_id'
+        }
     )
 
     return mapping_profiles_to_buildings
