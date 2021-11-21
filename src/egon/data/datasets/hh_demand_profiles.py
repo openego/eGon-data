@@ -1522,7 +1522,7 @@ def create_metadata_iee_household_load_profiles():
     """
     Create metadata JSON for hh_Demand_profiles
 
-    Creates a metdadata JSON string and writes it to the database table comment
+    Creates a metadata JSON string and writes it to the database table comment
     """
 
     hh_demand_config = egon.data.config.datasets()["hh_demand"]
@@ -1620,7 +1620,6 @@ def create_metadata_iee_household_load_profiles():
         "metaMetadata": meta_metadata(),
     }
 
-#Denke das ist für die Tabelle selbst, nicht rausnehmen
 
     meta_json = "'" + json.dumps(metadata) + "'"
 
@@ -1630,3 +1629,240 @@ def create_metadata_iee_household_load_profiles():
         IeeHouseholdLoadProfiles.__table__.name,
     )
 
+def create_metadata_HouseholdElectricityProfilesInCensusCells():
+    """
+    Create metadata JSON for HouseholdElectricityProfilesInCensusCells
+
+    Creates a metadata JSON string and writes it to the database table comment
+    """
+    egon_household_electricity_profile_config = egon.data.config.datasets()["egon_household_electricity_profile"]
+    schema_table = ".".join(
+        [
+            egon_household_electricity_profile.__table__.schema,
+            egon_household_electricity_profile.__table__.name,
+        ]
+    )
+
+    licenses = [
+        licenses_datenlizenz_deutschland(
+            attribution="Attribution 4.0 International (CC BY 4.0) "
+        )
+    ]
+
+    egon_household_electricity_profile_source = {
+        "title": "Annual profiles in hourly resolution of electricity demand"
+        "of private households for different household types"
+        " (singles, couples, other) with varying number of elderly and children."
+        "The profiles were created using a bottom-up load profile"
+        " generator by Fraunhofer IEE developed in the Bachelor's"
+        " thesis <Auswirkungen verschiedener Haushaltslastprofile "
+        "auf PV-Batterie-Systeme> by Jonas Haack, Fachhochschule"
+        "Flensburg, December 2012. The columns are named as "
+        "follows: <HH_TYPE_PREFIX>a<PROFILE_ID>, e.g. P2a0000 is the first"
+        "profile of a couple's household with 2 children." ,
+        "path": egon_household_electricity_profile_config["original_data"]["source"]["https://zenodo.org/record/5211145/#.YZpXvzoo--k"],
+        "licenses": "Attribution 4.0 International (CC BY 4.0)",
+    }
+
+    resources_fields = egon_household_electricity_profile_metadata_resources_fields()
+    resources_fields.extend(
+        [
+            {
+                "name": "grid_id",
+                "description": "Grid number of source",
+                "type": "string",
+                "unit": "none",
+            },
+            {
+                "name": "cell_id",
+                "description": "Unique identifier",
+                "type": "string",
+                "unit": "integer",
+            },
+            {
+                "name": "factor_2035",
+                "description": "",
+                "type": "float",
+                "unit": "none",
+            },
+            {
+                "name": "factor_2050",
+                "description": "",
+                "type": "float",
+                "unit": "none",
+            },
+        ]
+    )
+
+    metadata = {
+        "name": schema_table,
+        "title": (
+            "Data bundle for egon-data: A transparent and \
+             reproducible data processing pipeline for energy system modeling"
+        ),
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Annual profiles in hourly resolution of \
+         electricity demand of private households for different household types ",
+        "language": ["eng-ENG"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": "",
+        },
+        "temporal": {
+            "referenceDate": "",
+            "timeseries": {
+                "start": None,
+                "end": None,
+                "resolution": None,
+                "alignment": None,
+                "aggregationType": None,
+            },
+        },
+        "sources": [hh_demand_source],
+        "licenses": licenses,
+        "contributors": [
+            {
+                "title": "Guido Pleßmann",
+                "email": "http://github.com/gplssm",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+            {
+                "title": "Jonathan Amme",
+                "email": "http://github.com/nesnoj",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Metadata extended",
+            },
+            {
+                "title": "Shaquille Henriques",
+                "email": "https://github.com/ShaquilleH",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported metadata",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": schema_table,
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": resources_fields,
+                    "primaryKey": ["id"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    meta_json = "'" + json.dumps(metadata) + "'"
+
+    db.submit_comment(
+        meta_json,
+        Vg250GemPopulation.__table__.schema,
+        Vg250GemPopulation.__table__.name,
+    )
+
+
+def create_metadata_EgonEtragoElectricityHouseholds():
+    """
+    Create metadata JSON for HouseholdElectricityProfilesInCensusCells
+
+    Creates a metadata JSON string and writes it to the database table comment
+    """
+    egon_etrago_electricity_households_config = egon.data.config.datasets()["egon_etrago_electricity_households"]
+    schema_table = ".".join(
+        [
+            egon_etrago_electricity_households.__table__.schema,
+            egon_etrago_electricity_households.__table__.name,
+        ]
+    )
+
+    licenses = [
+        licenses_datenlizenz_deutschland(
+            attribution="Attribution 4.0 International (CC BY 4.0) "
+        )
+    ]
+
+    resources_fields = vg250_metadata_resources_fields()
+    resources_fields.extend(
+        [
+            {
+                "name": "version",
+                "description": "",
+                "type": "string",
+                "unit": "none",
+            },
+            {
+                "name": "bus_id",
+                "description": "",
+                "type": "integer",
+                "unit": "none",
+            },
+            {
+                "name": "scn_name",
+                "description": "",
+                "type": "string",
+                "unit": "none",
+            },
+            {
+                "name": "p_set",
+                "description": "",
+                "type": "float array",
+                "unit": "",
+            },
+            {
+                "name": "q_set",
+                "description": "",
+                "type": "float array",
+                "unit": "",
+            },
+        ]
+    )
+
+    metadata = {
+        "sources": [vg250_source],
+        "licenses": licenses,
+        "contributors": [
+            {
+                "title": "Guido Pleßmann",
+                "email": "http://github.com/gplssm",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+            {
+                "title": "Jonathan Amme",
+                "email": "http://github.com/nesnoj",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "",
+            },
+            {
+                "title": "Shaquille Henriques",
+                "email": "https://github.com/ShaquilleH",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported metadata",
+            },
+        ],
+
+        "metaMetadata": meta_metadata(),
+    }
+    
+    meta_json = "'" + json.dumps(metadata) + "'"
+
+    db.submit_comment(
+        meta_json,
+        Vg250GemPopulation.__table__.schema,
+        Vg250GemPopulation.__table__.name,
+    )
