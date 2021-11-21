@@ -1830,7 +1830,7 @@ def create_metadata_EgonEtragoElectricityHouseholds():
     )
 
     metadata = {
-        "sources": [vg250_source],
+        "sources": [egon_etrago_electricity_households_source],
         "licenses": licenses,
         "contributors": [
             {
@@ -1858,11 +1858,11 @@ def create_metadata_EgonEtragoElectricityHouseholds():
 
         "metaMetadata": meta_metadata(),
     }
-    
+
     meta_json = "'" + json.dumps(metadata) + "'"
 
     db.submit_comment(
         meta_json,
-        Vg250GemPopulation.__table__.schema,
-        Vg250GemPopulation.__table__.name,
+        egon_etrago_electricity_households.__table__.schema,
+        egon_etrago_electricity_households.__table__.name,
     )
