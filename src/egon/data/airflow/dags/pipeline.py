@@ -43,6 +43,7 @@ from egon.data.datasets.hydrogen_etrago import (
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
+from egon.data.datasets.loadarea import LoadArea
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
@@ -67,7 +68,6 @@ from egon.data.processing.gas_areas import GasAreas
 from egon.data.processing.h2_to_ch4 import H2toCH4toH2
 from egon.data.processing.power_to_h2 import PowertoH2toPower
 import egon.data.importing.zensus as import_zs
-import egon.data.processing.loadarea as loadarea
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -295,21 +295,7 @@ with airflow.DAG(
     )
 
     # Extract landuse areas from osm data set
-    create_landuse_table = PythonOperator(
-        task_id="create-landuse-table",
-        python_callable=loadarea.create_landuse_table,
-    )
-
-    landuse_extraction = PostgresOperator(
-        task_id="extract-osm_landuse",
-        sql=resources.read_text(loadarea, "osm_landuse_extraction.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
-    setup >> create_landuse_table
-    create_landuse_table >> landuse_extraction
-    osm_add_metadata >> landuse_extraction
-    vg250_clean_and_prepare >> landuse_extraction
+    load_area = LoadArea(dependencies=[osm, vg250])
 
     # Import weather data
     weather_data = WeatherData(
@@ -422,7 +408,7 @@ with airflow.DAG(
             industrial_sites,
             demandregio_demand_cts_ind,
             osm,
-            landuse_extraction,
+            load_area,
         ]
     )
 
