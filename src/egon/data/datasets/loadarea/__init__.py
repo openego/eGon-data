@@ -4,6 +4,9 @@ extraction.
 
 from egon.data import db
 import egon.data.config
+from egon.data.datasets import Dataset
+from airflow.operators.postgres_operator import PostgresOperator
+import importlib_resources as resources
 
 from sqlalchemy import Column, Float, Integer, String
 from geoalchemy2.types import Geometry
@@ -26,6 +29,25 @@ class OsmPolygonUrban(Base):
     tags = Column(HSTORE)
     vg250 = Column(String(10))
     geom = Column(Geometry("MultiPolygon", 3035))
+
+
+class LoadArea(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="LoadArea",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(create_landuse_table,
+                   PostgresOperator(
+                        task_id="osm_landuse_extraction",
+                        sql=resources.read_text(
+                            __name__, "osm_landuse_extraction.sql"
+                        ),
+                        postgres_conn_id="egon_data",
+                        autocommit=True,
+                    ),
+                   ),
+        )
 
 
 def create_landuse_table():

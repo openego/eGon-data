@@ -38,6 +38,7 @@ from egon.data.datasets.hh_demand_profiles import (
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
+from egon.data.datasets.loadarea import LoadArea
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
@@ -58,7 +59,6 @@ from egon.data.processing.power_to_h2 import PowertoH2
 import egon.data.datasets.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
 import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
 
@@ -263,7 +263,7 @@ with airflow.DAG(
     insert_power_to_h2_installations = PowertoH2(
         dependencies=[gas_grid_insert_data]
     )
-   
+
     # Create gas voronoi
     create_gas_polygons = GasAreas(
         dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
@@ -273,7 +273,7 @@ with airflow.DAG(
     gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
-    
+
     # CH4 storages import
     insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons])
@@ -284,21 +284,10 @@ with airflow.DAG(
     )
 
     # Extract landuse areas from osm data set
-    create_landuse_table = PythonOperator(
-        task_id="create-landuse-table",
-        python_callable=loadarea.create_landuse_table,
+    load_area = LoadArea(
+        dependencies=[osm, vg250]
     )
 
-    landuse_extraction = PostgresOperator(
-        task_id="extract-osm_landuse",
-        sql=resources.read_text(loadarea, "osm_landuse_extraction.sql"),
-        postgres_conn_id="egon_data",
-        autocommit=True,
-    )
-    setup >> create_landuse_table
-    create_landuse_table >> landuse_extraction
-    osm_add_metadata >> landuse_extraction
-    vg250_clean_and_prepare >> landuse_extraction
 
     # Import weather data
     weather_data = WeatherData(
@@ -402,7 +391,7 @@ with airflow.DAG(
             industrial_sites,
             demandregio_demand_cts_ind,
             osm,
-            landuse_extraction,
+            load_area,
         ]
     )
 
@@ -473,9 +462,9 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM 
+    # DSM
     components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
+        dependencies = [cts_electricity_demand_annual,
                         demand_curves_industry,
                         osmtgmod_pypsa])
 
@@ -505,7 +494,7 @@ with airflow.DAG(
             map_zensus_grid_districts,
         ]
     )
-    
+
     # HTS to etrago table
     hts_etrago_table = HtsEtragoTable(
                         dependencies = [heat_time_series,mv_grid_districts,
