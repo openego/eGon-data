@@ -24,10 +24,10 @@ from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.gas_prod import CH4Production
-from egon.data.processing.gas_areas import GasAreas
+from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.ch4_storages import CH4Storages
-from egon.data.processing.h2_to_ch4 import H2toCH4toH2
-from egon.data.processing.power_to_h2 import PowertoH2toPower
+from egon.data.datasets.h2_to_ch4 import H2toCH4toH2
+from egon.data.datasets.power_to_h2 import PowertoH2toPower
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
@@ -59,11 +59,8 @@ from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-import egon.data.datasets.gas_grid as gas_grid
 import egon.data.importing.zensus as import_zs
-import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
-import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
 
 with airflow.DAG(
