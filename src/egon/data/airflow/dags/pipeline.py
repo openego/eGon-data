@@ -275,8 +275,7 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons])
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -284,10 +283,7 @@ with airflow.DAG(
     )
 
     # Extract landuse areas from osm data set
-    load_area = LoadArea(
-        dependencies=[osm, vg250]
-    )
-
+    load_area = LoadArea(dependencies=[osm, vg250])
 
     # Import weather data
     weather_data = WeatherData(
@@ -311,10 +307,11 @@ with airflow.DAG(
 
     # Calculate dynamic line rating for HV trans lines
     dlr = Calculate_dlr(
-        dependencies=[osmtgmod_pypsa,
-                      download_data_bundle,
-                      download_weather_data,
-            ]
+        dependencies=[
+            osmtgmod_pypsa,
+            download_data_bundle,
+            download_weather_data,
+        ]
     )
 
     # Map zensus grid districts
@@ -402,7 +399,14 @@ with airflow.DAG(
     )
 
     # CHP locations
-    chp = Chp(dependencies=[mv_grid_districts, mastr_data, industrial_sites, create_gas_polygons])
+    chp = Chp(
+        dependencies=[
+            mv_grid_districts,
+            mastr_data,
+            industrial_sites,
+            create_gas_polygons,
+        ]
+    )
 
     chp_locations_nep = tasks["chp.insert-chp-egon2035"]
     chp_heat_bus = tasks["chp.assign-heat-bus"]
@@ -463,10 +467,13 @@ with airflow.DAG(
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # DSM
-    components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual,
-                        demand_curves_industry,
-                        osmtgmod_pypsa])
+    components_dsm = dsm_Potential(
+        dependencies=[
+            cts_electricity_demand_annual,
+            demand_curves_industry,
+            osmtgmod_pypsa,
+        ]
+    )
 
     # Pumped hydro units
 
@@ -497,5 +504,10 @@ with airflow.DAG(
 
     # HTS to etrago table
     hts_etrago_table = HtsEtragoTable(
-                        dependencies = [heat_time_series,mv_grid_districts,
-                                        district_heating_areas,heat_etrago])
+        dependencies=[
+            heat_time_series,
+            mv_grid_districts,
+            district_heating_areas,
+            heat_etrago,
+        ]
+    )
