@@ -153,7 +153,9 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
-
+* Include feedin time series for wind offshore
+  `#531 <https://github.com/openego/eGon-data/issues/531>`_
+  
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 

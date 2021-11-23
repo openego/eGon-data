@@ -17,9 +17,9 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
-            tasks=(wind, pv, solar_thermal),
+            tasks={wind, pv, solar_thermal, wind_offshore},
         )
 
 
@@ -305,7 +305,43 @@ def wind():
         if_exists="append",
     )
 
+def wind_offshore():
+    """Insert feed-in timeseries for wind offshore turbines to database
 
+    Returns
+    -------
+    None.
+
+    """
+
+    cfg = egon.data.config.datasets()["renewable_feedin"]["targets"]
+
+    # Get weather cells in and arround Germany
+    weather_cells = weather_cells_in_germany()
+
+    # Select weather data for Germany
+    cutout = import_cutout(boundary="Germany")
+    
+    # Select weather year from cutout
+    weather_year = cutout.name.split("-")[1]
+
+    # Calculate feedin timeseries
+    ts_wind_offshore = cutout.wind(
+        "Vestas_V164_7MW_offshore",
+        per_unit=True,
+        shapes=weather_cells.to_crs(4326).geom,
+    )
+
+    db.execute_sql(
+        f"""
+                   DELETE FROM {cfg['feedin_table']['schema']}.
+                   {cfg['feedin_table']['table']}
+                   WHERE carrier = 'wind_offshore'"""
+    )
+
+    # Create dataframe and insert to database
+    insert_feedin(ts_wind_offshore, "wind_offshore", weather_year)
+    
 def pv():
     """Insert feed-in timeseries for pv plants to database
 
