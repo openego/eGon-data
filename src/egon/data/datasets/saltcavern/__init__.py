@@ -42,24 +42,30 @@ def to_postgres():
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {bgr_processed['schema']};")
 
-    shp_file_path = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "hydrogen_storage_potential_saltstructures"
-        / "saltstructures_updated.shp"
-    )
-
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
     for filename, table in bgr_processed["file_table_map"].items():
         # Open files and read .shp (within .zip) with geopandas
-        data = gpd.read_file(shp_file_path)
+        shp_file_path = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "hydrogen_storage_potential_saltstructures"
+            / filename
+        )
+        data = gpd.read_file(shp_file_path).to_crs(epsg=4326)
+        data = data[
+            (data['Bewertung'] == 'Eignung InSpEE-DS') |
+            (data['Bewertung'] == 'geeignet')
+        ].drop(
+            columns=['Bewertung', 'Typ', 'Salzstrukt']
+        ).rename(
+            columns={'Shape_Area': 'shape_star', 'Shape_Leng': 'shape_stle'}
+        )
 
         # Set index column and format column headings
-        data.index.set_names("salstructure_id", inplace=True)
+        data.index.set_names("saltstructure_id", inplace=True)
         data.columns = [x.lower() for x in data.columns]
-        # data.potential = 1e9  # to fill with respective data at later time
 
         # Drop table before inserting data
         db.execute_sql(
@@ -80,7 +86,7 @@ def to_postgres():
         # add primary key
         db.execute_sql(
             f"ALTER TABLE {bgr_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (salstructure_id);"
+            f"ADD PRIMARY KEY (saltstructure_id);"
         )
 
         # Add index on geometry column

@@ -175,8 +175,6 @@ def calculate_and_map_saltcavern_storage_potential():
     # overlay saltstructures with federal state, calculate respective area
     # map storage potential per federal state to area fraction of summed area
     # potential_i = area_i / area_tot * potential_tot
-    pot_nds_hb = [253e6, 702e6]
-    pot_sh_hh = [0, 413e6]
 
     potential_data_dict = {
         0: {
@@ -222,7 +220,7 @@ def calculate_and_map_saltcavern_storage_potential():
     # calculate total storage potential
     hydrogen_storage_potential["total"] = (
         # currently only InSpEE saltstructure shapefiles are available
-        # hydrogen_storage_potential["INSPEEDS"]
+        hydrogen_storage_potential["INSPEEDS"] +
         hydrogen_storage_potential["INSPEE"]
     )
 
