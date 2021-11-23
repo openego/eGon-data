@@ -1,26 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing all code dealing with the definition of the power-to-H2 installations
+Module containing the definition of the AC grid to H2 links
 """
 import numpy as np
 from pyproj import Geod
 
 import pandas as pd
 from egon.data import db
-from egon.data.datasets import Dataset
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
 from shapely import geometry
-
-
-class PowertoH2toPower(Dataset):
-     def __init__(self, dependencies):
-         super().__init__(
-             name="H2PowerLinks",
-             version="0.0.0",
-             dependencies=dependencies,
-             tasks=(insert_power_to_h2_to_power),
-         )
 
 
 def insert_power_to_h2_to_power():
@@ -137,9 +126,6 @@ def insert_power_to_h2_to_power():
         # Select next id value
         new_id = db.next_etrago_id("link")
         gdf["link_id"] = range(new_id, new_id + len(gdf))
-
-        print(new_id)
-        print(gdf)
 
         # Insert data to db
         gdf.to_postgis(
