@@ -10,25 +10,12 @@ isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from pathlib import Path
-from urllib.request import urlretrieve
-import codecs
-import datetime
-import json
-import os
-import time
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
-import pandas as pd
 
 from egon.data import db
-from egon.data.config import settings
 from egon.data.datasets import Dataset
-from egon.data.metadata import (
-    context,
-    licenses_datenlizenz_deutschland,
-    meta_metadata,
-)
 import egon.data.config
 
 
@@ -54,13 +41,18 @@ def to_postgres():
             / filename
         )
         data = gpd.read_file(shp_file_path).to_crs(epsg=4326)
-        data = data[
-            (data['Bewertung'] == 'Eignung InSpEE-DS') |
-            (data['Bewertung'] == 'geeignet')
-        ].drop(
-            columns=['Bewertung', 'Typ', 'Salzstrukt']
-        ).rename(
-            columns={'Shape_Area': 'shape_star', 'Shape_Leng': 'shape_stle'}
+        data = (
+            data[
+                (data["Bewertung"] == "Eignung InSpEE-DS")
+                | (data["Bewertung"] == "geeignet")
+            ]
+            .drop(columns=["Bewertung", "Typ", "Salzstrukt"])
+            .rename(
+                columns={
+                    "Shape_Area": "shape_star",
+                    "Shape_Leng": "shape_stle",
+                }
+            )
         )
 
         # Set index column and format column headings

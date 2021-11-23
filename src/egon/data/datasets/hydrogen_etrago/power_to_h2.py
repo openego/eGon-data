@@ -2,14 +2,14 @@
 """
 Module containing the definition of the AC grid to H2 links
 """
-import numpy as np
-from pyproj import Geod
-
-import pandas as pd
-from egon.data import db
 from geoalchemy2.types import Geometry
+from pyproj import Geod
 from scipy.spatial import cKDTree
 from shapely import geometry
+import numpy as np
+import pandas as pd
+
+from egon.data import db
 
 
 def insert_power_to_h2_to_power():
@@ -30,24 +30,15 @@ def insert_power_to_h2_to_power():
     gdf = map_buses()
 
     bus_ids = {
-        'PtH2': gdf[['bus0', 'bus1']],
-        'H2tP': gdf[['bus0', 'bus1']].rename(
+        "PtH2": gdf[["bus0", "bus1"]],
+        "H2tP": gdf[["bus0", "bus1"]].rename(
             columns={"bus0": "bus1", "bus1": "bus0"}
-        )
+        ),
     }
 
-    geom = {
-        'PtH2': [],
-        'H2tP': []
-    }
-    topo = {
-        'PtH2': [],
-        'H2tP': []
-    }
-    p_nom_max = {
-        'PtH2': [],
-        'H2tP': []
-    }
+    geom = {"PtH2": [], "H2tP": []}
+    topo = {"PtH2": [], "H2tP": []}
+    p_nom_max = {"PtH2": [], "H2tP": []}
     length = []
 
     geod = Geod(ellps="WGS84")
@@ -56,15 +47,13 @@ def insert_power_to_h2_to_power():
     for index, row in gdf.iterrows():
         # Connect AC to gas
         line = geometry.LineString([row["geom_AC"], row["geom_gas"]])
-        geom['PtH2'].append(geometry.MultiLineString([line]))
-        topo['PtH2'].append(line)
+        geom["PtH2"].append(geometry.MultiLineString([line]))
+        topo["PtH2"].append(line)
 
         # Connect gas to AC
-        line = geometry.LineString(
-            [row["geom_gas"], row["geom_AC"]]
-        )
-        geom['H2tP'].append(geometry.MultiLineString([line]))
-        topo['H2tP'].append(line)
+        line = geometry.LineString([row["geom_gas"], row["geom_AC"]])
+        geom["H2tP"].append(geometry.MultiLineString([line]))
+        topo["H2tP"].append(line)
 
         lenght_km = (
             geod.geometry_length(line) / 1000
@@ -73,33 +62,28 @@ def insert_power_to_h2_to_power():
         if (
             lenght_km > 0.5
         ):  # If the distance is>500m, the max capacity of the power-to-gas installation is limited to 1 MW
-            p_nom_max['PtH2'].append(1)
-            p_nom_max['H2tP'].append(1)
+            p_nom_max["PtH2"].append(1)
+            p_nom_max["H2tP"].append(1)
         else:
-            p_nom_max['PtH2'].append(float("Inf"))
-            p_nom_max['H2tP'].append(float("Inf"))
+            p_nom_max["PtH2"].append(float("Inf"))
+            p_nom_max["H2tP"].append(float("Inf"))
 
     # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
-    carrier = {
-        'PtH2': 'power-to-H2',
-        'H2tP': 'H2-to-power'
-    }
+    carrier = {"PtH2": "power-to-H2", "H2tP": "H2-to-power"}
     efficiency = {
-        'PtH2': 0.8,  # H2 electrolysis - Brown et al. 2018
-        'H2tP': 0.58  # H2 fuel cell - Brown et al. 2018
+        "PtH2": 0.8,  # H2 electrolysis - Brown et al. 2018
+        "H2tP": 0.58,  # H2 fuel cell - Brown et al. 2018
     }
     capital_cost = {
-        'PtH2': 350000,  # H2 electrolysis - Brown et al. 2018
-        'H2tP': 339000  # H2 fuel cell - Brown et al. 2018
+        "PtH2": 350000,  # H2 electrolysis - Brown et al. 2018
+        "H2tP": 339000,  # H2 fuel cell - Brown et al. 2018
     }
 
     # Drop unused columns
-    gdf.drop(
-        columns=["geom_gas", "geom_AC", "dist"], inplace=True
-    )
+    gdf.drop(columns=["geom_gas", "geom_AC", "dist"], inplace=True)
 
     # Iterate over carriers
-    for key in geom.keys():
+    for key in geom:
 
         gdf["geom"] = geom[key]
         gdf = gdf.set_geometry("geom", crs=4326)
@@ -111,10 +95,10 @@ def insert_power_to_h2_to_power():
         gdf["bus1"] = bus_ids[key]["bus1"]
 
         gdf["p_nom_max"] = p_nom_max[key]
-        gdf['carrier'] = carrier[key]
-        gdf['efficiency_fixed'] = efficiency[key]
+        gdf["carrier"] = carrier[key]
+        gdf["efficiency_fixed"] = efficiency[key]
 
-        gdf['capital_cost'] = capital_cost[key]
+        gdf["capital_cost"] = capital_cost[key]
 
         gdf["length"] = length
 
@@ -154,6 +138,7 @@ def insert_power_to_h2_to_power():
         DROP TABLE grid.egon_etrago_h2_link;
             """
         )
+
 
 def map_buses():
     """Map H2 buses to nearest HV AC bus.

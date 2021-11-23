@@ -5,7 +5,6 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
 
 
 def insert_H2_overground_storage():
@@ -73,7 +72,7 @@ def insert_H2_saltcavern_storage():
         SELECT *
         FROM {sources['saltcavern_data']['schema']}.
         {sources['saltcavern_data']['table']}""",
-        geom_col="geometry"
+        geom_col="geometry",
     )
 
     H2_AC_bus_map = db.select_dataframe(
@@ -88,20 +87,26 @@ def insert_H2_saltcavern_storage():
     )
 
     # print(storage_potentials["storage_potential"])
-    storage_potentials["summed_potential_per_bus"] = storage_potentials.groupby("bus_id")["storage_potential"].transform("sum")
+    storage_potentials[
+        "summed_potential_per_bus"
+    ] = storage_potentials.groupby("bus_id")["storage_potential"].transform(
+        "sum"
+    )
 
-    storages = storage_potentials[["summed_potential_per_bus", "bus_id"]].copy()
-    storages.drop_duplicates('bus_id', keep='last', inplace=True)
+    storages = storage_potentials[
+        ["summed_potential_per_bus", "bus_id"]
+    ].copy()
+    storages.drop_duplicates("bus_id", keep="last", inplace=True)
 
     # map AC buses in potetial data to respective H2 buses
     storages = storages.merge(
-        H2_AC_bus_map, left_on='bus_id', right_on='bus_AC'
-    ).reindex(columns=['bus_H2', 'summed_potential_per_bus', 'scn_name'])
+        H2_AC_bus_map, left_on="bus_id", right_on="bus_AC"
+    ).reindex(columns=["bus_H2", "summed_potential_per_bus", "scn_name"])
 
     # rename columns
     storages.rename(
-        columns={'bus_H2': 'bus', 'summed_potential_per_bus': 'e_nom_max'},
-        inplace=True
+        columns={"bus_H2": "bus", "summed_potential_per_bus": "e_nom_max"},
+        inplace=True,
     )
 
     # add missing columns
@@ -127,9 +132,9 @@ def insert_H2_saltcavern_storage():
 
     # # Insert data to db
     storages.to_sql(
-        targets['hydrogen_stores']['table'],
+        targets["hydrogen_stores"]["table"],
         db.engine(),
-        schema=targets['hydrogen_stores']['schema'],
+        schema=targets["hydrogen_stores"]["schema"],
         index=False,
         if_exists="append",
     )
@@ -160,9 +165,7 @@ def calculate_and_map_saltcavern_storage_potential():
     )
 
     # hydrogen storage potential data from InSpEE-DS report
-    hydrogen_storage_potential = pd.DataFrame(
-        columns=["INSPEEDS", "INSPEE"]
-    )
+    hydrogen_storage_potential = pd.DataFrame(columns=["INSPEEDS", "INSPEE"])
 
     # values in MWh, modified to fit the saltstructure data
     hydrogen_storage_potential.loc["Brandenburg"] = [353e6, 159e6]
@@ -179,12 +182,14 @@ def calculate_and_map_saltcavern_storage_potential():
     potential_data_dict = {
         0: {
             "federal_states": ["Schleswig-Holstein", "Hamburg"],
-            "INSPEEDS": 0, "INSPEE": 413e6
+            "INSPEEDS": 0,
+            "INSPEE": 413e6,
         },
         1: {
             "federal_states": ["Niedersachsen", "Bremen"],
-            "INSPEEDS": 253e6, "INSPEE": 702e6
-        }
+            "INSPEEDS": 253e6,
+            "INSPEE": 702e6,
+        },
     }
 
     # iterate over aggregated state data for SH/HH and NDS/HB
@@ -195,12 +200,16 @@ def calculate_and_map_saltcavern_storage_potential():
             print(vg250_data[vg250_data["gen"] == federal_state])
             print(saltcavern_data)
             try:
-                individual_areas[federal_state] = saltcavern_data.overlay(
-                    vg250_data[vg250_data["gen"] == federal_state],
-                    how="intersection"
-                ).to_crs(epsg=25832).area.sum()
+                individual_areas[federal_state] = (
+                    saltcavern_data.overlay(
+                        vg250_data[vg250_data["gen"] == federal_state],
+                        how="intersection",
+                    )
+                    .to_crs(epsg=25832)
+                    .area.sum()
+                )
             except ValueError:
-                individual_areas[federal_state]=0
+                individual_areas[federal_state] = 0
 
         # derives weights from fraction of individual state area to total area
         total_area = sum(individual_areas.values())
@@ -210,18 +219,16 @@ def calculate_and_map_saltcavern_storage_potential():
         }
         # write data into potential dataframe
         for federal_state in data["federal_states"]:
-            hydrogen_storage_potential.loc[federal_state] = (
-                [
-                    data["INSPEEDS"] * weights[federal_state],
-                    data["INSPEE"] * weights[federal_state]
-                ]
-            )
+            hydrogen_storage_potential.loc[federal_state] = [
+                data["INSPEEDS"] * weights[federal_state],
+                data["INSPEE"] * weights[federal_state],
+            ]
 
     # calculate total storage potential
     hydrogen_storage_potential["total"] = (
         # currently only InSpEE saltstructure shapefiles are available
-        hydrogen_storage_potential["INSPEEDS"] +
-        hydrogen_storage_potential["INSPEE"]
+        hydrogen_storage_potential["INSPEEDS"]
+        + hydrogen_storage_potential["INSPEE"]
     )
 
     saltcaverns_in_fed_state = gpd.GeoDataFrame()
@@ -238,8 +245,7 @@ def calculate_and_map_saltcavern_storage_potential():
             # write total potential in column, will be overwritten by actual
             # value later
             saltcaverns_in_fed_state.loc[
-                saltcaverns_in_fed_state["gen"] == federal_state,
-                "potential"
+                saltcaverns_in_fed_state["gen"] == federal_state, "potential"
             ] = hydrogen_storage_potential.loc[federal_state, "total"]
 
     # drop all federal state data columns except name of the state
@@ -267,12 +273,16 @@ def calculate_and_map_saltcavern_storage_potential():
     ).area
 
     # get substation voronois
-    substation_voronoi = db.select_geodataframe(
-        f"""
+    substation_voronoi = (
+        db.select_geodataframe(
+            f"""
         SELECT * FROM grid.egon_hvmv_substation_voronoi
         """,
-        index_col="bus_id",
-    ).to_crs(4326).sort_index()
+            index_col="bus_id",
+        )
+        .to_crs(4326)
+        .sort_index()
+    )
 
     # get substations
     substations = db.select_geodataframe(
