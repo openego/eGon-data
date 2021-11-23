@@ -238,6 +238,8 @@ Changed
   `#397 <https://github.com/openego/eGon-data/issues/498>`_
 * Migrate dlr script to datasets
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 
 
 Bug fixes
