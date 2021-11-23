@@ -26,8 +26,6 @@ from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.ch4_storages import CH4Storages
-from egon.data.datasets.h2_to_ch4 import H2toCH4toH2
-from egon.data.datasets.power_to_h2 import PowertoH2toPower
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
@@ -35,7 +33,8 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hydrogen_etrago import (
-    HydrogenBusEtrago, HydrogenStoreEtrago
+    HydrogenBusEtrago, HydrogenStoreEtrago, HydrogenMethaneLinkEtrago,
+    HydrogenPowerLinkEtrago
 )
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
@@ -276,12 +275,12 @@ with airflow.DAG(
         dependencies=[insert_hydrogen_buses])
 
     # Power-to-gas-to-power chain installations
-    insert_power_to_h2_installations = PowertoH2toPower(
+    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
         dependencies=[insert_hydrogen_buses, ]
     )
 
     # Link between methane grid and respective hydrogen buses
-    insert_h2_to_ch4_grid_links = H2toCH4toH2(
+    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
         dependencies=[insert_hydrogen_buses, ]
     )
 
