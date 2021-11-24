@@ -137,6 +137,8 @@ Added
 * Extend zensus by a combined table with all cells where
   there's either building, apartment or population data
   `#359 <https://github.com/openego/eGon-data/issues/359>`_
+* Include allocation of pumped hydro units
+  `#332 <https://github.com/openego/eGon-data/issues/332>`_
 * Add example metadata for OSM, VG250 and Zensus VG250.
   Add metadata templates for licences, context and some helper
   functions. Extend docs on how to create metadata for tables.
@@ -305,4 +307,7 @@ Bug fixes
   `#511 <https://github.com/openego/eGon-data/issues/511>`_
 * Add `data_bundle` to `industrial_sites` task dependencies
   `#468 <https://github.com/openego/eGon-data/issues/468>`_
-
+* Lift `geopandas` minimum requirement to `0.10.0`
+  `#504 <https://github.com/openego/eGon-data/issues/504>`_
+* Use inbuilt `datetime` package instead of `pandas.datetime`
+  `#516 <https://github.com/openego/eGon-data/issues/516>`_

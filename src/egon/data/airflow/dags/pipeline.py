@@ -10,6 +10,7 @@ from egon.data import db
 from egon.data.datasets import database
 from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.calculate_dlr import Calculate_dlr
+from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
@@ -27,6 +28,7 @@ from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.gas_grid import GasNodesandPipes
+from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
@@ -54,6 +56,7 @@ from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
+from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
@@ -494,11 +497,22 @@ with airflow.DAG(
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # DSM
-    components_dsm = dsm_Potential(
+    components_dsm =  dsm_Potential(
+        dependencies = [cts_electricity_demand_annual,
+                        demand_curves_industry,
+                        osmtgmod_pypsa])
+
+    # Pumped hydro units
+
+    pumped_hydro = PumpedHydro(
         dependencies=[
-            cts_electricity_demand_annual,
-            demand_curves_industry,
-            osmtgmod_pypsa,
+            setup,
+            mv_grid_districts,
+            mastr_data,
+            scenario_parameters,
+            scenario_capacities,
+            Vg250MvGridDistricts,
+            power_plants,
         ]
     )
 
