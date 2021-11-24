@@ -10,7 +10,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -20,6 +20,9 @@ def fill_etrago_generators():
     # Connect to the data base
     con = db.engine()
     cfg = egon.data.config.datasets()["generators_etrago"]
+
+    # Delete power plants from previous iterations of this script
+    delete_previuos_gen(cfg)    
 
     # Load required tables
     (
@@ -34,8 +37,6 @@ def fill_etrago_generators():
         power_plants=power_plants, renew_feedin=renew_feedin, cfg=cfg
     )
 
-    delete_previuos_gen(cfg)
-
     etrago_pp = group_power_plants(
         power_plants=power_plants,
         renew_feedin=renew_feedin,
@@ -43,11 +44,11 @@ def fill_etrago_generators():
         cfg=cfg,
     )
 
-    fill_etrago_gen_table(
+    etrago_gen_table = fill_etrago_gen_table(
         etrago_pp2=etrago_pp, etrago_gen_orig=etrago_gen_orig, cfg=cfg, con=con
     )
 
-    fill_etrago_gen_time_table(
+    etrago_gen_time_table = fill_etrago_gen_time_table(
         etrago_pp=etrago_pp,
         power_plants=power_plants,
         renew_feedin=renew_feedin,
@@ -79,6 +80,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
+    
     if np.isnan(etrago_gen_orig["generator_id"].max()):
         max_id = 0
     else:
@@ -108,7 +110,7 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
         con=con,
         if_exists="append",
     )
-    return "etrago_gen_table filled successfully"
+    return etrago_pp
 
 
 def fill_etrago_gen_time_table(
@@ -152,7 +154,7 @@ def fill_etrago_gen_time_table(
         con=con,
         if_exists="append",
     )
-    return "etrago_gen_time_table was filled successfully"
+    return etrago_pp
 
 
 def load_tables(con, cfg):
