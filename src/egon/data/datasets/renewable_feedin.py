@@ -17,7 +17,7 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(wind, pv, solar_thermal),
         )
@@ -101,6 +101,7 @@ def federal_states_per_weather_cell():
             .set_index("w_id")
         )
 
+    
     weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
     return weather_cells.to_crs(4326)
