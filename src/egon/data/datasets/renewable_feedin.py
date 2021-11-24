@@ -17,9 +17,9 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.1",
+            version="0.0.3",
             dependencies=dependencies,
-            tasks=(wind, pv, solar_thermal),
+            tasks={wind, pv, solar_thermal, heat_pump_cop},
         )
 
 
@@ -100,7 +100,7 @@ def federal_states_per_weather_cell():
             .drop_duplicates(subset="w_id", keep="first")
             .set_index("w_id")
         )
-        
+
         weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
     return weather_cells.to_crs(4326)
@@ -364,6 +364,73 @@ def solar_thermal():
 
     # Create dataframe and insert to database
     insert_feedin(ts_solar_thermal, "solar_thermal", weather_year)
+
+
+def heat_pump_cop():
+    """
+    Calculate coefficient of performance for heat pumps according to
+    T. Brown et al: "Synergies of sector coupling and transmission
+    reinforcement in a cost-optimised, highlyrenewable European energy system",
+    2018, p. 8
+
+    Returns
+    -------
+    None.
+
+    """
+    # Assume temperature of heating system to 55°C according to Brown et. al
+    t_sink = 55
+
+    carrier = "heat_pump_cop"
+
+    # Load configuration
+    cfg = egon.data.config.datasets()["renewable_feedin"]
+
+    # Get weather cells in Germany
+    weather_cells = weather_cells_in_germany()
+
+    # Select weather data for Germany
+    cutout = import_cutout(boundary="Germany")
+
+    # Select weather year from cutout
+    weather_year = cutout.name.split("-")[1]
+
+    # Calculate feedin timeseries
+    temperature = cutout.temperature(
+        shapes=weather_cells.to_crs(4326).geom
+    ).transpose()
+
+    t_source = temperature.to_pandas()
+
+    delta_t = t_sink - t_source
+
+    # Calculate coefficient of performance for air sourced heat pumps
+    # according to Brown et. al
+    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t ** 2
+
+    df = pd.DataFrame(
+        index=temperature.to_pandas().index,
+        columns=["weather_year", "carrier", "feedin"],
+        data={"weather_year": weather_year, "carrier": carrier},
+    )
+
+    df.feedin = cop.values.tolist()
+
+    # Delete existing rows for carrier
+    db.execute_sql(
+        f"""
+                   DELETE FROM {cfg['targets']['feedin_table']['schema']}.
+                   {cfg['targets']['feedin_table']['table']}
+                   WHERE carrier = '{carrier}'"""
+    )
+
+    # Insert values into database
+    df.to_sql(
+        cfg["targets"]["feedin_table"]["table"],
+        schema=cfg["targets"]["feedin_table"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
 
 
 def insert_feedin(data, carrier, weather_year):
