@@ -1,11 +1,12 @@
+import codecs
+import functools
 from contextlib import contextmanager
 
+import geopandas as gpd
+import pandas as pd
+from egon.data import config
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import pandas as pd
-import geopandas as gpd
-
-from egon.data import config
 
 
 def credentials():
@@ -66,8 +67,8 @@ def submit_comment(json, schema, table):
     """Add comment to table.
 
     We use `Open Energy Metadata <https://github.com/OpenEnergyPlatform/
-    oemetadata/blob/develop/metadata/v140/metadata_key_description.md>`_
-    standard for describging our data. Metadata is stored as JSON in the table
+    oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_
+    standard for describing our data. Metadata is stored as JSON in the table
     comment.
 
     Parameters
@@ -81,10 +82,8 @@ def submit_comment(json, schema, table):
     """
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
-    check_json_str = (
-        "SELECT obj_description('{0}.{1}'::regclass)::json".format(
-            schema, table
-        )
+    check_json_str = "SELECT obj_description('{0}.{1}'::regclass)::json".format(
+        schema, table
     )
 
     execute_sql(prefix_str + json + ";")
@@ -92,6 +91,27 @@ def submit_comment(json, schema, table):
     # Query table comment and cast it into JSON
     # The query throws an error if JSON is invalid
     execute_sql(check_json_str)
+
+
+def execute_sql_script(script, encoding="utf-8-sig"):
+    """Execute a SQL script given as a file name.
+
+    Parameters
+    ----------
+    script : str
+        Path of the SQL-script
+    encoding : str
+        Encoding which is used for the SQL file. The default is "utf-8-sig".
+    Returns
+    -------
+    None.
+
+    """
+
+    with codecs.open(script, "r", encoding) as fd:
+        sqlfile = fd.read()
+
+    execute_sql(sqlfile)
 
 
 @contextmanager
@@ -107,6 +127,33 @@ def session_scope():
         raise
     finally:
         session.close()
+
+
+def session_scoped(function):
+    """Provide a session scope to a function.
+
+    Can be used as a decorator like this:
+
+    >>> @session_scoped
+    ... def get_bind(session):
+    ...     return session.get_bind()
+    ...
+    >>> get_bind()
+    Engine(postgresql+psycopg2://egon:***@127.0.0.1:59734/egon-data)
+
+    Note that the decorated function needs to accept a parameter named
+    `session`, but is called without supplying a value for that parameter
+    because the parameter's value will be filled in by `session_scoped`.
+    Using this decorator allows saving an indentation level when defining
+    such functions but it also has other usages.
+    """
+
+    @functools.wraps(function)
+    def wrapped(*xs, **ks):
+        with session_scope() as session:
+            return function(session=session, *xs, **ks)
+
+    return wrapped
 
 
 def select_dataframe(sql, index_col=None):
@@ -133,7 +180,8 @@ def select_dataframe(sql, index_col=None):
 
     return df
 
-def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
+
+def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
     """ Select data from local database as geopandas.GeoDataFrame
 
     Parameters
@@ -156,9 +204,37 @@ def select_geodataframe(sql, index_col=None, geom_col='geom', epsg=3035):
 
     gdf = gpd.read_postgis(
         sql, engine(), index_col=index_col, geom_col=geom_col
-        ).to_crs(epsg=epsg)
+    ).to_crs(epsg=epsg)
 
     if gdf.size == 0:
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return gdf
+
+
+def next_etrago_id(component):
+    """ Select next id value for components in etrago tables
+
+    Parameters
+    ----------
+    component : str
+        Name of componenet
+
+    Returns
+    -------
+    next_id : int
+        Next index value
+
+    """
+    max_id = select_dataframe(
+        f"""
+        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
+        """
+    )["max"][0]
+
+    if max_id:
+        next_id = max_id + 1
+    else:
+        next_id = 1
+
+    return next_id

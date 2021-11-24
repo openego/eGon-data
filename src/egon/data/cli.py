@@ -14,26 +14,26 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
-from multiprocessing import Process
-from pathlib import Path
 import os
 import socket
 import subprocess
 import sys
 import time
+from multiprocessing import Process
+from pathlib import Path
 
-from psycopg2 import OperationalError as PSPGOE
-from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError as SQLAOE
-from sqlalchemy.orm import Session
 import click
-import importlib_resources as resources
 import yaml
+from psycopg2 import OperationalError as PSPGOE
 
-from egon.data import logger
 import egon.data
 import egon.data.airflow
 import egon.data.config as config
+import importlib_resources as resources
+from egon.data import logger
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError as SQLAOE
+from sqlalchemy.orm import Session
 
 
 @click.group(
@@ -118,6 +118,36 @@ import egon.data.config as config
         " You usually can stick to the default, unless you run into errors"
         " due to clashing names and don't want to delete or rename your old"
         " containers."
+    ),
+    show_default=True,
+)
+@click.option(
+    "--compose-project-name",
+    default="egon-data",
+    metavar="PROJECT",
+    help=(
+        "The name of the Docker project."
+        " Different compose_project_names are needed to run multiple instances"
+        " of egon-data on the same machine."
+    ),
+    show_default=True,
+)
+@click.option(
+    "--airflow-port",
+    default=8080,
+    metavar="AIRFLOW_PORT",
+    help=("Specify the port on which airflow runs."),
+    show_default=True,
+)
+@click.option(
+    "--random-seed",
+    default=42,
+    metavar="RANDOM_SEED",
+    help=(
+        "Random seed used by some tasks in the pipeline to ensure "
+        " deterministic behaviour. All published results in the eGon project "
+        " will be created with the default value so keep it if you want to "
+        " make sure to get the same results."
     ),
     show_default=True,
 )
@@ -268,7 +298,10 @@ def egon_data(context, **kwargs):
         update=False,
         inserts=options,
         airflow=resources.files(egon.data.airflow),
+        gid=os.getgid(),
+        uid=os.getuid(),
     )
+    (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
@@ -276,7 +309,14 @@ def egon_data(context, **kwargs):
         )
     if code != 0:
         subprocess.run(
-            ["docker-compose", "up", "-d", "--build"],
+            [
+                "docker-compose",
+                "-p",
+                options["--compose-project-name"],
+                "up",
+                "-d",
+                "--build",
+            ],
             cwd=str((Path(".") / "docker").absolute()),
         )
         time.sleep(1.5)  # Give the container time to boot.
@@ -339,6 +379,12 @@ def egon_data(context, **kwargs):
     airflow.add(connection)
     airflow.commit()
 
+    # TODO: This should probably rather be done during the database
+    #       initialization workflow task.
+    from egon.data.datasets import setup
+
+    setup()
+
 
 @egon_data.command(
     add_help_option=False,
@@ -349,7 +395,13 @@ def airflow(context):
     subprocess.run(["airflow"] + context.args)
 
 
-@egon_data.command(context_settings={"help_option_names": ["-h", "--help"]})
+@egon_data.command(
+    context_settings={
+        "allow_extra_args": True,
+        "help_option_names": ["-h", "--help"],
+        "ignore_unknown_options": True,
+    }
+)
 @click.pass_context
 def serve(context):
     """Start the airflow webapp controlling the egon-data pipeline.
@@ -359,6 +411,12 @@ def serve(context):
     doesn't exist and starting the scheduler in the background before starting
     the webserver.
 
+    Any OPTIONS other than `-h`/`--help` will be forwarded to
+    `airflow webserver`, so you can for example specify an alternate port
+    for the webapp to listen on via `egon-data serve -p PORT_NUMBER`.
+    Find out more about the possible webapp options via:
+
+        `egon-data airflow webserver --help`.
     """
     scheduler = Process(
         target=subprocess.run,
@@ -366,7 +424,7 @@ def serve(context):
         kwargs=dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL),
     )
     scheduler.start()
-    subprocess.run(["airflow", "webserver"])
+    subprocess.run(["airflow", "webserver"] + context.args)
 
 
 def main():
