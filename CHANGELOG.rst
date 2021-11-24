@@ -153,7 +153,9 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
-
+* Include time-dependent coefficient of performance for heat pumps
+  `#532 <https://github.com/openego/eGon-data/issues/532>`_
+  
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
