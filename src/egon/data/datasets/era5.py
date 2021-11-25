@@ -23,7 +23,7 @@ class WeatherData(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Era5",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=({create_tables, download_era5}, insert_weather_cells),
         )
@@ -57,7 +57,7 @@ def create_tables():
 
 
 def import_cutout(boundary="Europe"):
-    """ Import weather data from cutout
+    """Import weather data from cutout
 
     Returns
     -------
@@ -82,6 +82,10 @@ def import_cutout(boundary="Europe"):
         )
         xs = slice(geom_de.bounds.minx[0], geom_de.bounds.maxx[0])
         ys = slice(geom_de.bounds.miny[0], geom_de.bounds.maxy[0])
+
+    elif boundary == "Germany-offshore":
+        xs = slice(5.5, 14.5)
+        ys = slice(55.5, 53.5)
 
     else:
         print(
@@ -111,7 +115,7 @@ def import_cutout(boundary="Europe"):
 
 
 def download_era5():
-    """ Download weather data from era5
+    """Download weather data from era5
 
     Returns
     -------
@@ -141,9 +145,15 @@ def download_era5():
 
         cutout.prepare()
 
+    cutout = import_cutout("Germany-offshore")
+
+    if not cutout.prepared:
+
+        cutout.prepare()
+
 
 def insert_weather_cells():
-    """ Insert weather cells from era5 into database table
+    """Insert weather cells from era5 into database table
 
     Returns
     -------

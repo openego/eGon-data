@@ -1460,6 +1460,7 @@ def cts_demand_per_aggregation_level(aggregation_level,scenario):
             mv_grid.index.difference(district_heating.index), :
         ]
         mv_grid_ind = mv_grid_ind.reset_index()
+
         CTS_per_grid = pd.merge(
             CTS_per_zensus,
             mv_grid_ind[["bus_id", "zensus_population_id"]],
@@ -1755,7 +1756,6 @@ def demand_profile_generator(aggregation_level="district"):
             if_exists="replace",
             index=True,
         )
-
     else:
         total_demands_zensus = pd.concat(
             [residential_demand_zensus, CTS_demand_zensus]
@@ -1795,7 +1795,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )

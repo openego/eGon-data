@@ -46,6 +46,29 @@ def weather_cells_in_germany(geom_column="geom"):
     )
 
 
+def offshore_weather_cells(geom_column="geom"):
+    """Get weather cells which intersect with Germany
+
+    Returns
+    -------
+    GeoPandas.GeoDataFrame
+        Index and points of weather cells inside Germany
+
+    """
+
+    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+
+    return db.select_geodataframe(
+        f"""SELECT w_id, geom_point, geom
+        FROM {cfg['weather_cells']['schema']}.
+        {cfg['weather_cells']['table']}
+        WHERE ST_Intersects('SRID=4326;
+        POLYGON((5.5 55.5, 14.5 55.5, 5.5 53.5, 14.5 53.5, 5.5 55.5))', geom)""",
+        geom_col=geom_column,
+        index_col="w_id",
+    )
+
+
 def federal_states_per_weather_cell():
     """Assings a federal state to each weather cell in Germany.
 
@@ -148,7 +171,7 @@ def turbine_per_weather_cell():
 
 
 def feedin_per_turbine():
-    """ Calculate feedin timeseries per turbine type and weather cell
+    """Calculate feedin timeseries per turbine type and weather cell
 
     Returns
     -------
@@ -252,7 +275,7 @@ def feedin_per_turbine():
 
 
 def wind():
-    """ Insert feed-in timeseries for wind onshore turbines to database
+    """Insert feed-in timeseries for wind onshore turbines to database
 
     Returns
     -------
@@ -305,6 +328,7 @@ def wind():
         if_exists="append",
     )
 
+
 def wind_offshore():
     """Insert feed-in timeseries for wind offshore turbines to database
 
@@ -314,16 +338,14 @@ def wind_offshore():
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["targets"]
+    # Get offshore weather cells arround Germany
+    weather_cells = offshore_weather_cells()
 
-    # Get weather cells in and arround Germany
-    weather_cells = weather_cells_in_germany()
+    # Select weather data for German coast
+    cutout = import_cutout(boundary="Germany-offshore")
 
-    # Select weather data for Germany
-    cutout = import_cutout(boundary="Germany")
-    
     # Select weather year from cutout
-    weather_year = cutout.name.split("-")[1]
+    weather_year = cutout.name.split("-")[2]
 
     # Calculate feedin timeseries
     ts_wind_offshore = cutout.wind(
@@ -332,18 +354,12 @@ def wind_offshore():
         shapes=weather_cells.to_crs(4326).geom,
     )
 
-    db.execute_sql(
-        f"""
-                   DELETE FROM {cfg['feedin_table']['schema']}.
-                   {cfg['feedin_table']['table']}
-                   WHERE carrier = 'wind_offshore'"""
-    )
-
     # Create dataframe and insert to database
     insert_feedin(ts_wind_offshore, "wind_offshore", weather_year)
-    
+
+
 def pv():
-    """ Insert feed-in timeseries for pv plants to database
+    """Insert feed-in timeseries for pv plants to database
 
     Returns
     -------
@@ -373,7 +389,7 @@ def pv():
 
 
 def solar_thermal():
-    """ Insert feed-in timeseries for pv plants to database
+    """Insert feed-in timeseries for pv plants to database
 
     Returns
     -------
@@ -403,7 +419,7 @@ def solar_thermal():
 
 
 def insert_feedin(data, carrier, weather_year):
-    """ Insert feedin data into database
+    """Insert feedin data into database
 
     Parameters
     ----------
