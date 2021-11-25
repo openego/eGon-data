@@ -62,6 +62,30 @@ def insert():
         "Suchraum Gemeinde Papendorf": "32063539",
         "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
     }
+    w_id = {
+        "Büttel": "16331",
+        "Heide/West": "16516",
+        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "16326",
+        "Suchraum Zensenbusch": "16139",
+        "Rommerskirchen": "16139",
+        "Oberzier": "16139",
+        "Garrel/Ost": "16139",
+        "Diele": "16138",
+        "Dörpen/West": "15952",
+        "Emden/Borßum":	"15762",
+        "Emden/Ost": "16140",
+        "Hagermarsch": "15951",
+        "Hanekenfähr": "16139",
+        "Inhausen": "15769",
+        "Unterweser": "16517",
+        "Wehrendorf": "16139",
+        "Wilhelmshaven 2": "16517",
+        "Rastede": "16139",
+        "Bentwisch": "16734",
+        "Lubmin": "16548",
+        "Suchraum Gemeinde Papendorf": "16352",
+        "Suchraum Gemeinden Brünzow/Kemnitz": "16548",
+    }
 
     # Match wind offshore table with the corresponding OSM_id
     offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
@@ -103,7 +127,10 @@ def insert():
             offshore.at[index, "geom"] = busses.at[bus_ind, "point"]
         else:
             print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
-
+            
+    
+    offshore["weather_cell_id"] = offshore['Netzverknuepfungspunkt'].map(w_id)
+    offshore['weather_cell_id'] = offshore['weather_cell_id'].apply(int)
     # Drop offshore wind farms without found connexion point
     offshore.dropna(subset=["bus_id"], inplace=True)
 
