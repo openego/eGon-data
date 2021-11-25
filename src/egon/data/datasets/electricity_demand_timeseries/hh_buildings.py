@@ -70,6 +70,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
+    get_household_demand_profiles_raw,
 )
 import egon.data.config
 
@@ -490,38 +491,111 @@ def generate_mapping_table(
     # rename columns
     mapping_profiles_to_buildings.rename(
         columns={
-            'building_ids': 'building_id',
-            'cell_profile_ids': 'profile_id'
+            "building_ids": "building_id",
+            "cell_profile_ids": "profile_id",
         },
-        inplace=True
+        inplace=True,
     )
 
     return mapping_profiles_to_buildings
 
 
-def get_building_peak_loads():
+# def get_building_peak_loads():
+#     """
+#     Peak loads of buildings are determined by SQL-script.
+#
+#     Timeseries for every building are accumulated, the maximum value
+#     determined and with the respective nuts3 factor scaled for 2035 and 2050
+#     scenario.
+#
+#     """
+#
+#     BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+#     BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+#
+#     with codecs.open(
+#         str(
+#             resources.files(egon.data.datasets.electricity_demand_timeseries)
+#             / "building_peak_load.sql"
+#         ),
+#         "r",
+#         "utf-8-sig",
+#     ) as fd:
+#         sqlfile = fd.read()
+#     db.execute_sql(sqlfile)
+
+
+def get_building_peak_loads(iterate_over="cell_id"):
     """
-    Peak loads of buildings are determined by SQL-script.
+    Peak loads of buildings are determined.
 
     Timeseries for every building are accumulated, the maximum value
     determined and with the respective nuts3 factor scaled for 2035 and 2050
     scenario.
 
+    Parameters
+    ----------
+    iterate_over: str
+        - cell_id -> slower but avoids massive RAM-usage
+        - nuts3  -> faster but might end up in full RAM
     """
 
-    BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-    BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+    with db.session_scope() as session:
+        cells_query = session.query(
+            HouseholdElectricityProfilesOfBuildings,
+            HouseholdElectricityProfilesInCensusCells.nuts3,
+            HouseholdElectricityProfilesInCensusCells.factor_2035,
+            HouseholdElectricityProfilesInCensusCells.factor_2050,
+        ).filter(
+            HouseholdElectricityProfilesOfBuildings.cell_id
+            == HouseholdElectricityProfilesInCensusCells.cell_id
+        )
 
-    with codecs.open(
-        str(
-            resources.files(egon.data.datasets.electricity_demand_timeseries)
-            / "building_peak_load.sql"
-        ),
-        "r",
-        "utf-8-sig",
-    ) as fd:
-        sqlfile = fd.read()
-    db.execute_sql(sqlfile)
+        df_buildings_and_profiles = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col="id"
+        )
+        # TODO: first 77 ids get lost
+
+        # Read demand profiles from egon-data-bundle
+        df_profiles = get_household_demand_profiles_raw()
+
+        df_building_peak_loads = pd.DataFrame()
+
+        for nuts3, df in df_buildings_and_profiles.groupby(by=iterate_over):
+            df_building_peak_load_nuts3 = df_profiles.loc[:, df.profile_id]
+
+            m_index = pd.MultiIndex.from_arrays(
+                [df.profile_id, df.building_id],
+                names=("profile_id", "building_id"),
+            )
+            df_building_peak_load_nuts3.columns = m_index
+            df_building_peak_load_nuts3 = df_building_peak_load_nuts3.sum(
+                level="building_id", axis=1
+            ).max()
+
+            df_building_peak_load_nuts3 = pd.DataFrame(
+                [
+                    df_building_peak_load_nuts3 * df["factor_2035"].unique(),
+                    df_building_peak_load_nuts3 * df["factor_2050"].unique(),
+                ],
+                index=["2035", "2050"],
+            ).T
+
+            df_building_peak_loads = pd.concat(
+                [df_building_peak_loads, df_building_peak_load_nuts3], axis=0
+            )
+
+        df_building_peak_loads.reset_index(inplace=True)
+
+        BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+        BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+        # Write peak loads into db
+        with db.session_scope() as session:
+            session.bulk_insert_mappings(
+                BuildingPeakLoads,
+                df_building_peak_loads.to_dict(orient="records"),
+            )
 
 
 def map_houseprofiles_to_buildings():
@@ -602,7 +676,7 @@ def map_houseprofiles_to_buildings():
             egon_map_zensus_buildings_filtered,
             synthetic_buildings[["id", "grid_id", "cell_id"]],
         ],
-        ignore_index=True
+        ignore_index=True,
     )
 
     # assign profiles to buildings
