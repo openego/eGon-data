@@ -97,7 +97,7 @@ def hts_to_etrago():
         etrago_load_timeseries['scn_name'] = scenario
         etrago_load_timeseries['load_id'] = bus_ts.load_id
         etrago_load_timeseries['temp_id'] = 1
-        etrago_load_timeseries['p_set'] = bus_ts.iloc[:,2]
+        etrago_load_timeseries['p_set'] = bus_ts.iloc[:,3]
         
         etrago_load_timeseries.to_sql(
             'egon_etrago_load_timeseries',
@@ -112,7 +112,7 @@ class HtsEtragoTable(Dataset):
      def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(hts_to_etrago),
         )
