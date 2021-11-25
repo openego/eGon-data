@@ -230,9 +230,9 @@ def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
     Examples
     --------
     >>> from egon.data.metadata import generate_resource_fields_from_db_table
-    ... resources = generate_resource_fields_from_db_table(
+    >>> resources = generate_resource_fields_from_db_table(
     ...     'openstreetmap', 'osm_point', ['geom', 'geom_centroid']
-    >>> )
+    ... )  # doctest: +SKIP
 
     Parameters
     ----------
