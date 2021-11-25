@@ -170,6 +170,8 @@ Added
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
 * Include hydrogen infrastructure for eGon2035 scenario
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
+* Include feedin time series for wind offshore
+  `#531 <https://github.com/openego/eGon-data/issues/531>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
