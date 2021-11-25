@@ -309,3 +309,5 @@ Bug fixes
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Delete only AC loads for eTraGo in electricity_demand_etrago
+  `#535 <https://github.com/openego/eGon-data/issues/535>`_
