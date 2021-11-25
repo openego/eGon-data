@@ -192,7 +192,7 @@ def generate_resource_fields_from_sqla_model(model):
     Examples
     --------
     >>> from egon.data.metadata import generate_resource_fields_from_sqla_model
-    ... from egon.data.datasets.zensus_vg250 import Vg250Sta
+    >>> from egon.data.datasets.zensus_vg250 import Vg250Sta
     >>> resources = generate_resource_fields_from_sqla_model(Vg250Sta)
 
     Parameters
