@@ -360,6 +360,7 @@ def solar_thermal():
         orientation={"slope": 45.0, "azimuth": 180.0},
         per_unit=True,
         shapes=weather_cells.to_crs(4326).geom,
+        capacity_factor=False,
     )
 
     # Create dataframe and insert to database
@@ -451,20 +452,24 @@ def insert_feedin(data, carrier, weather_year):
 
     """
     # Transpose DataFrame
-    data = data.transpose()
+    data = data.transpose().to_pandas()
 
     # Load configuration
     cfg = egon.data.config.datasets()["renewable_feedin"]
 
     # Initialize DataFrame
     df = pd.DataFrame(
-        index=data.to_pandas().index,
+        index=data.index,
         columns=["weather_year", "carrier", "feedin"],
         data={"weather_year": weather_year, "carrier": carrier},
     )
 
+    # Convert solar thermal data from W/m^2 to MW/(1000m^2) = kW/m^2
+    if carrier == "solar_thermal":
+        data *= 1e-3
+
     # Insert feedin into DataFrame
-    df.feedin = data.to_pandas().values.tolist()
+    df.feedin = data.values.tolist()
 
     # Delete existing rows for carrier
     db.execute_sql(
