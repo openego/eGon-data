@@ -2,12 +2,22 @@
 
 """
 from egon.data import db
+from egon.data.datasets import Dataset
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+class GasAreas(Dataset):
+     def __init__(self, dependencies):
+         super().__init__(
+             name="GasAreas",
+             version="0.0.0",
+             dependencies=dependencies,
+             tasks=(create_voronoi),
+         )
 
+
+Base = declarative_base()
 
 class EgonCH4VoronoiTmp(Base):
     __tablename__ = "egon_ch4_voronoi_tmp"

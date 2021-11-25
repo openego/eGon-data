@@ -308,13 +308,32 @@ power_plants:
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
+      mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
       egon_mv_grid_district: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
+      buses_data: "osmtgmod_results.bus_data"
+      power_plants: 'supply.egon_power_plants'
+      nep_2035: "NEP2035_V2021_scnC2035.xlsx"
   target:
       table: 'egon_power_plants'
+      schema: 'supply'
+
+storages:
+  sources:
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
+      capacities: "supply.egon_scenario_capacities"
+      geom_germany: "boundaries.vg250_sta_union"
+      geom_federal_states: "boundaries.vg250_lan"
+      egon_mv_grid_district: "grid.egon_mv_grid_district"
+      ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
+  target:
+      table: 'egon_storages'
       schema: 'supply'
 
 landuse:
@@ -455,7 +474,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5211145
+      deposit_id: 5645351
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -532,6 +551,9 @@ etrago_heat:
     heat_demand:
       schema: 'demand'
       table: 'egon_peta_heat'
+    ch4_voronoi:
+      schema: 'grid'
+      table: 'egon_voronoi_ch4'
   targets:
     heat_buses:
       schema: 'grid'
@@ -740,3 +762,15 @@ DSM_CTS_industry:
       schema: 'grid'
       table: 'egon_etrago_store_timeseries' 
 
+dlr:
+  sources:
+    trans_lines:
+      schema: "grid"
+      table: "egon_etrago_line"
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"   
+  targets:
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"   
