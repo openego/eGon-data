@@ -578,7 +578,7 @@ def get_building_peak_loads(iterate_over="cell_id"):
                     df_building_peak_load_nuts3 * df["factor_2035"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
-                index=["2035", "2050"],
+                index=["building_peak_load_in_w_2035", "building_peak_load_in_w_2050"],
             ).T
 
             df_building_peak_loads = pd.concat(
@@ -698,9 +698,6 @@ def map_houseprofiles_to_buildings():
             HouseholdElectricityProfilesOfBuildings,
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
-
-    # # determine peak load for every building and write to db
-    # get_building_peak_loads()
 
 
 setup = partial(
