@@ -10,7 +10,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -233,6 +233,8 @@ def delete_previuos_gen(cfg):
                    {cfg['targets']['etrago_generators']['schema']}.
                    {cfg['targets']['etrago_generators']['table']}
                    WHERE carrier <> 'CH4' AND carrier <> 'solar_rooftop'
+                   AND carrier <> 'solar_thermal_collector'
+                   AND carrier <> 'geo_thermal'
                    """
     )
 

@@ -19,7 +19,9 @@ def find_bus_id(power_plants, cfg):
     power_plants = power_plants[~power_plants.bus_id.isna()]
 
     power_plants_no_busId = power_plants_no_busId.drop(columns="bus_id")
-    power_plants_no_busId = init_pp.assign_bus_id(power_plants_no_busId, cfg)
+    
+    if len(power_plants_no_busId) > 0:
+        power_plants_no_busId = init_pp.assign_bus_id(power_plants_no_busId, cfg)
 
     power_plants = power_plants.append(power_plants_no_busId)
 
@@ -50,11 +52,11 @@ def find_weather_id():
         sql, con, crs="EPSG:4326", geom_col="geom"
     )
 
-    # select the power_plants that are weather dependant
+    # select the power_plants that are weather dependant (wind offshore is
+    # not included here, because it alredy has weather_id assigned)
     power_plants = power_plants[
         (power_plants["carrier"] == "solar")
         | (power_plants["carrier"] == "wind_onshore")
-        | (power_plants["carrier"] == "wind_offshore")
     ]
     power_plants.set_index("id", inplace=True)
 
@@ -108,7 +110,7 @@ def write_power_plants_table(power_plants, cfg, con):
         f""" 
     DELETE FROM {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']} 
-    WHERE carrier IN ('wind_onshore', 'solar', 'wind_offshore') 
+    WHERE carrier IN ('wind_onshore', 'solar') 
     """
     )
 
