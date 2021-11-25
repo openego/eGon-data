@@ -119,6 +119,11 @@ def write_power_plants_table(power_plants, cfg, con):
         lambda x: pd.NA if pd.isna(x) else int(x)
     )
 
+    # assert that the column "weather_cell_id" is set as integer
+    power_plants["weather_cell_id"] = power_plants["weather_cell_id"].apply(
+        lambda x: pd.NA if pd.isna(x) else int(x)
+    )
+
     # Look for the maximum id in the table egon_power_plants
     sql = f"""
     SELECT MAX(id) FROM
