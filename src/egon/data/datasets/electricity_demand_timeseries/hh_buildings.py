@@ -525,7 +525,7 @@ def generate_mapping_table(
 #     db.execute_sql(sqlfile)
 
 
-def get_building_peak_loads(iterate_over="cell_id"):
+def get_building_peak_loads(iterate_over="nuts3"):
     """
     Peak loads of buildings are determined.
 
