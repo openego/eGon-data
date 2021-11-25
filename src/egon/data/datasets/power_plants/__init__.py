@@ -517,11 +517,23 @@ def assign_bus_id(power_plants, cfg):
     power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
 
     if len(power_plants_ehv) > 0:
-        power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+        ehv_join = gpd.sjoin(
             power_plants[power_plants.index.isin(power_plants_ehv)],
             ehv_grid_districts,
-        ).bus_id_right
-
+        )
+        
+        if 'bus_id_right' in ehv_join.columns:
+            power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+                power_plants[power_plants.index.isin(power_plants_ehv)],
+                ehv_grid_districts,
+            ).bus_id_right
+        
+        else:
+            power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+                power_plants[power_plants.index.isin(power_plants_ehv)],
+                ehv_grid_districts,
+            ).bus_id
+            
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
     not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
