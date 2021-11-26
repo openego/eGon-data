@@ -63,7 +63,7 @@ def offshore_weather_cells(geom_column="geom"):
         FROM {cfg['weather_cells']['schema']}.
         {cfg['weather_cells']['table']}
         WHERE ST_Intersects('SRID=4326;
-        POLYGON((5.5 55.5, 14.5 55.5, 5.5 53.5, 14.5 53.5, 5.5 55.5))', geom)""",
+        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))', geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -124,7 +124,8 @@ def federal_states_per_weather_cell():
             .set_index("w_id")
         )
 
-        weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
+    weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
+
 
     return weather_cells.to_crs(4326)
 
