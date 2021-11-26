@@ -229,17 +229,17 @@ def match_osm_and_zensus_data(
     building_count_fillna = missing_buildings.loc[
         missing_buildings["building_count"].isna(), "cell_profile_ids"
     ]
-    # devide by mean profile/building rate
+    # devide by median profile/building rate
     building_count_fillna = (
-        building_count_fillna / profile_building_rate.mean()
+        building_count_fillna / profile_building_rate.median()
     )
     # replace missing building counts
     missing_buildings["building_count"] = missing_buildings[
         "building_count"
     ].fillna(value=building_count_fillna)
 
-    # round and make type int
-    missing_buildings = missing_buildings.round().astype(int)
+    # ceil to have at least one building each cell and make type int
+    missing_buildings = missing_buildings.apply(np.ceil).astype(int)
     # generate list of building ids for each cell
     missing_buildings["building_count"] = missing_buildings[
         "building_count"
