@@ -549,12 +549,11 @@ def get_building_peak_loads(iterate_over="nuts3"):
         ).filter(
             HouseholdElectricityProfilesOfBuildings.cell_id
             == HouseholdElectricityProfilesInCensusCells.cell_id
-        )
+        ).order_by(HouseholdElectricityProfilesOfBuildings.id)
 
         df_buildings_and_profiles = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col="id"
         )
-        # TODO: first 77 ids get lost
 
         # Read demand profiles from egon-data-bundle
         df_profiles = get_household_demand_profiles_raw()
