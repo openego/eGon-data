@@ -152,3 +152,4 @@ def write_power_plants_table(power_plants, cfg, con):
     )
 
     return "Bus_id and Weather_id were updated succesfully"
+    
