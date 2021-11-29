@@ -33,9 +33,10 @@ def hts_to_etrago():
             
             #district heating time series time series
             disct_time_series = db.select_dataframe(
-                                """
+                                f"""
                                 SELECT * FROM 
                                 demand.egon_timeseries_district_heating
+                                WHERE scenario ='{scenario}'                                
                                 """
                                 )
             #bus_id connected to corresponding time series
@@ -65,14 +66,37 @@ def hts_to_etrago():
             
             #individual heating time series
             ind_time_series = db.select_dataframe(
-                                """
+                                f"""
                                 SELECT * FROM 
                                 demand.egon_etrago_timeseries_individual_heating
+                                WHERE scenario ='{scenario}'
                                 """
                                 )
             
             # bus_id connected to corresponding time series
             bus_ts = pd.merge(bus_sub,ind_time_series, on='bus_id', how = 'inner')
+            
+            
+        # Delete existing data from database
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_load
+            WHERE scn_name = '{scenario}'
+            AND carrier = '{carrier}'
+            """
+        )
+
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            grid.egon_etrago_load_timeseries
+            WHERE scn_name = '{scenario}'
+            AND load_id NOT IN (
+            SELECT load_id FROM
+            grid.egon_etrago_load
+            WHERE scn_name = '{scenario}')
+            """
+        )
               
         next_id = next_etrago_id('load')
         
