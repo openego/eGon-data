@@ -153,6 +153,8 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Fill egon-etrago-generators table
+  `#485 <https://github.com/openego/eGon-data/issues/485>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

@@ -23,6 +23,7 @@ from egon.data.datasets.electricity_demand import (
 from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
+from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -61,6 +62,7 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 import egon.data.processing.substation as substation
+
 
 with airflow.DAG(
     "egon-data-processing-pipeline",
@@ -311,7 +313,7 @@ with airflow.DAG(
     feedin_wind_onshore = tasks["renewable_feedin.wind"]
     feedin_pv = tasks["renewable_feedin.pv"]
     feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
-
+    
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
         dependencies=[heat_demand_Germany, scenario_parameters]
@@ -389,6 +391,10 @@ with airflow.DAG(
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
+
+    # Fill eTraGo Generators tables
+    fill_etrago_generators = Egon_etrago_gen(
+        dependencies=[power_plants, weather_data])
 
     # Industry
 
