@@ -81,6 +81,9 @@ def hts_to_etrago():
                 bus_sub, ind_time_series, on="bus_id", how="inner"
             )
 
+            # Connect  heat loads to heat buses
+            bus_ts.loc[:, "bus_id"] = bus_ts.loc[:, "heat_bus_id"]
+
         # Delete existing data from database
         db.execute_sql(
             f"""
@@ -140,7 +143,7 @@ class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(hts_to_etrago),
         )
