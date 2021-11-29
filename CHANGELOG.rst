@@ -153,9 +153,11 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Fill egon-etrago-generators table
+  `#485 <https://github.com/openego/eGon-data/issues/485>`_
 * Include time-dependent coefficient of performance for heat pumps
   `#532 <https://github.com/openego/eGon-data/issues/532>`_
-  
+
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
@@ -238,6 +240,8 @@ Changed
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
 * Update deposit id for zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/498>`_
+* Add to etrago.setug.py the busmap table
+  `#484 <https://github.com/openego/eGon-data/issues/484>`_
 * Migrate dlr script to datasets
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
 

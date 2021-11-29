@@ -2,22 +2,22 @@
 Central module containing all code dealing with processing era5 weather data.
 """
 
-import numpy as np
-
-import egon.data.config
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.era5 import import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.config
 
 
 class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks={wind, pv, solar_thermal, heat_pump_cop},
         )
@@ -101,7 +101,8 @@ def federal_states_per_weather_cell():
             .set_index("w_id")
         )
 
-        weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
+    
+    weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
     return weather_cells.to_crs(4326)
 

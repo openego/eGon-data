@@ -763,7 +763,49 @@ DSM_CTS_industry:
       table: 'egon_etrago_store'  
     store_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_store_timeseries' 
+      table: 'egon_etrago_store_timeseries'
+
+generators_etrago:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    etrago_generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    etrago_gen_time:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
+      
+weather_BusID:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_sta'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
 
 dlr:
   sources:
