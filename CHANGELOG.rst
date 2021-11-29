@@ -172,6 +172,8 @@ Added
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include feedin time series for wind offshore
   `#531 <https://github.com/openego/eGon-data/issues/531>`_
+* Include time-dependent coefficient of performance for heat pumps
+  `#532 <https://github.com/openego/eGon-data/issues/532>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
