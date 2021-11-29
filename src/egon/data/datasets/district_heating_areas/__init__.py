@@ -23,7 +23,7 @@ import geopandas as gpd
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon
 from matplotlib import pyplot as plt
-from egon.data.processing.district_heating_areas.plot import (
+from egon.data.datasets.district_heating_areas.plot import (
     plot_heat_density_sorted,
 )
 
@@ -45,7 +45,7 @@ class DistrictHeatingAreas(Dataset):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.0",  # maybe rethink the naming
+            version="0.0.1",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )

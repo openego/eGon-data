@@ -242,6 +242,8 @@ Changed
   `#484 <https://github.com/openego/eGon-data/issues/484>`_
 * Migrate dlr script to datasets
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
+* Migrate plot.py to dataset of district heating areas
+  `#527 <https://github.com/openego/eGon-data/issues/527>`_
 
 
 Bug fixes
