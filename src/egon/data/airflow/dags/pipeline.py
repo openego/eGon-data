@@ -392,10 +392,6 @@ with airflow.DAG(
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
-    # Fill eTraGo Generators tables
-    fill_etrago_generators = Egon_etrago_gen(
-        dependencies=[power_plants, weather_data])
-
     # Industry
 
     industrial_sites = MergeIndustrialSites(
@@ -457,6 +453,10 @@ with airflow.DAG(
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
+    # Fill eTraGo Generators tables
+    fill_etrago_generators = Egon_etrago_gen(
+        dependencies=[power_plants, weather_data])
+    
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[
