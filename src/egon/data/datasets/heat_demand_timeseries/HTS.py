@@ -157,7 +157,7 @@ def temperature_profile_extract():
 
     """
 
-    cutout = era.import_cutout(boundary="Europe")
+    cutout = era.import_cutout(boundary="Germany")
     coordinates_path = os.path.join(
         os.getcwd(),
         "data_bundle_egon_data",
@@ -1257,21 +1257,8 @@ def residential_demand_scale(aggregation_level):
             district_grid.drop("Station", axis=1, inplace=True)
             district_grid = district_grid.groupby(district_grid.index).sum()
     
-            heat_demand_profile_mv = pd.merge(
-                demand_curves_mv,
-                district_grid,
-                how="inner",
-                right_on=demand_curves_mv.index,
-                left_on=district_grid.index,
-            )
-    
-            heat_demand_profile_mv.rename(
-                columns={"key_0": "bus_id"}, inplace=True
-            )
-            heat_demand_profile_mv.set_index("bus_id", inplace=True)
-            heat_demand_profile_mv = heat_demand_profile_mv[
-                heat_demand_profile_mv.columns[:-1]
-            ].multiply(heat_demand_profile_mv[scenario], axis=0)
+            heat_demand_profile_mv = demand_curves_mv.transpose().mul(
+                district_grid[scenario]).transpose()
             
             heat_demand_profile_mv.insert(0,'scenario',scenario)
             residential_individual_profile = residential_individual_profile.append(heat_demand_profile_mv)
