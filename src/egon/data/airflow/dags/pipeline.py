@@ -269,7 +269,7 @@ with airflow.DAG(
     insert_power_to_h2_installations = PowertoH2(
         dependencies=[gas_grid_insert_data]
     )
-   
+
     # Create gas voronoi
     create_gas_polygons = GasAreas(
         dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
@@ -279,7 +279,7 @@ with airflow.DAG(
     gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons]
     )
-    
+
     # CH4 storages import
     insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons])
@@ -365,14 +365,14 @@ with airflow.DAG(
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon2035", 2035, "0.0.0"],
+        op_args=["eGon2035", 2035],
         op_kwargs={"drop_table": True},
     )
 
     mv_hh_electricity_load_2050 = PythonOperator(
         task_id="MV-hh-electricity-load-2050",
         python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon100RE", 2050, "0.0.0"],
+        op_args=["eGon100RE", 2050],
     )
 
     hh_demand_profiles_setup = hh_profiles.setup(
@@ -487,9 +487,9 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM 
+    # DSM
     components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual, 
+        dependencies = [cts_electricity_demand_annual,
                         demand_curves_industry,
                         osmtgmod_pypsa])
 
@@ -519,7 +519,7 @@ with airflow.DAG(
             map_zensus_grid_districts,
         ]
     )
-    
+
     # HTS to etrago table
     hts_etrago_table = HtsEtragoTable(
                         dependencies = [heat_time_series,mv_grid_districts,

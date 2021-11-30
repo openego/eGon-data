@@ -225,7 +225,6 @@ class EgonEtragoElectricityHouseholds(Base):
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
 
-    version = Column(String, primary_key=True)
     bus_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
@@ -1445,7 +1444,7 @@ def get_scaled_profiles_from_db(
 
 
 def mv_grid_district_HH_electricity_load(
-    scenario_name, scenario_year, version, drop_table=False
+    scenario_name, scenario_year, drop_table=False
 ):
     """
     Aggregated household demand time series at HV/MV substation level
@@ -1460,8 +1459,6 @@ def mv_grid_district_HH_electricity_load(
         Scenario name identifier, i.e. "eGon2035"
     scenario_year: int
         Scenario year according to `scenario_name`
-    version: str
-        Version identifier
     drop_table: bool
         Toggle to True for dropping table at beginning of this function.
         Be careful, delete any data.
@@ -1524,7 +1521,6 @@ def mv_grid_district_HH_electricity_load(
     mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Add remaining columns
-    mvgd_profiles["version"] = version
     mvgd_profiles["scn_name"] = scenario_name
 
     if drop_table:
