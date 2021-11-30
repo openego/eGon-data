@@ -315,3 +315,5 @@ Bug fixes
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Add missing 'sign' for CH4 and H2 loads
+  `#516 <https://github.com/openego/eGon-data/issues/538>`_
