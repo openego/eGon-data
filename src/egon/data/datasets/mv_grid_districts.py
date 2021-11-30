@@ -62,15 +62,25 @@ see :func:`define_mv_grid_districts`.
 
 from functools import partial
 
+from geoalchemy2.types import Geometry
+from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Column,
+    Float,
+    Integer,
+    Numeric,
+    Sequence,
+    String,
+    func,
+)
+from sqlalchemy.ext.declarative import declarative_base
+
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.substation import EgonHvmvSubstation
+from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
-from egon.data.processing.substation import (EgonHvmvSubstation,
-                                             EgonHvmvSubstationVoronoi)
-from geoalchemy2.types import Geometry
-from sqlalchemy import (ARRAY, Boolean, Column, Float, Integer, Numeric,
-                        Sequence, String, func)
-from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -202,8 +212,10 @@ def substations_in_municipalities():
             .group_by(Vg250GemClean.id)
         )
 
-        muns_with_subst = HvmvSubstPerMunicipality.__table__.insert().from_select(
-            HvmvSubstPerMunicipality.__table__.columns, q
+        muns_with_subst = (
+            HvmvSubstPerMunicipality.__table__.insert().from_select(
+                HvmvSubstPerMunicipality.__table__.columns, q
+            )
         )
         session.execute(muns_with_subst)
         session.commit()
@@ -212,15 +224,17 @@ def substations_in_municipalities():
         already_inserted_muns = session.query(
             HvmvSubstPerMunicipality.id
         ).subquery()
-        muns_without_subst = HvmvSubstPerMunicipality.__table__.insert().from_select(
-            [
-                _
-                for _ in HvmvSubstPerMunicipality.__table__.columns
-                if _.name != "subst_count"
-            ],
-            session.query(Vg250GemClean).filter(
-                Vg250GemClean.id.notin_(already_inserted_muns)
-            ),
+        muns_without_subst = (
+            HvmvSubstPerMunicipality.__table__.insert().from_select(
+                [
+                    _
+                    for _ in HvmvSubstPerMunicipality.__table__.columns
+                    if _.name != "subst_count"
+                ],
+                session.query(Vg250GemClean).filter(
+                    Vg250GemClean.id.notin_(already_inserted_muns)
+                ),
+            )
         )
         session.execute(muns_without_subst)
         session.commit()
@@ -345,13 +359,15 @@ def split_multi_substation_municipalities():
             .subquery()
         )
 
-        originally_1subst = VoronoiMunicipalityCutsAssigned.__table__.insert().from_select(
-            [
-                _
-                for _ in VoronoiMunicipalityCutsAssigned.__table__.columns
-                if _.name != "temp_id"
-            ],
-            cut_1subst,
+        originally_1subst = (
+            VoronoiMunicipalityCutsAssigned.__table__.insert().from_select(
+                [
+                    _
+                    for _ in VoronoiMunicipalityCutsAssigned.__table__.columns
+                    if _.name != "temp_id"
+                ],
+                cut_1subst,
+            )
         )
         session.execute(originally_1subst)
         session.commit()
@@ -515,13 +531,15 @@ def assign_substation_municipality_fragments(
         .subquery()
     )
 
-    cut_0subst_insert = VoronoiMunicipalityCutsAssigned.__table__.insert().from_select(
-        [
-            c
-            for c in cut_0subst_nearest_neighbor.columns
-            if c.name not in ["temp_id"]
-        ],
-        cut_0subst_nearest_neighbor,
+    cut_0subst_insert = (
+        VoronoiMunicipalityCutsAssigned.__table__.insert().from_select(
+            [
+                c
+                for c in cut_0subst_nearest_neighbor.columns
+                if c.name not in ["temp_id"]
+            ],
+            cut_0subst_nearest_neighbor,
+        )
     )
     session.execute(cut_0subst_insert)
     session.commit()
@@ -562,13 +580,15 @@ def merge_polygons_to_grid_district():
             ),
         ).group_by(VoronoiMunicipalityCutsAssigned.bus_id)
 
-        joined_municipality_parts_insert = MvGridDistrictsDissolved.__table__.insert().from_select(
-            [
-                c
-                for c in MvGridDistrictsDissolved.__table__.columns
-                if c.name != "id"
-            ],
-            joined_municipality_parts.subquery(),
+        joined_municipality_parts_insert = (
+            MvGridDistrictsDissolved.__table__.insert().from_select(
+                [
+                    c
+                    for c in MvGridDistrictsDissolved.__table__.columns
+                    if c.name != "id"
+                ],
+                joined_municipality_parts.subquery(),
+            )
         )
         session.execute(joined_municipality_parts_insert)
         session.commit()
@@ -591,13 +611,15 @@ def merge_polygons_to_grid_district():
             )
         )
 
-        one_substation_insert = MvGridDistrictsDissolved.__table__.insert().from_select(
-            [
-                c
-                for c in MvGridDistrictsDissolved.__table__.columns
-                if c.name != "id"
-            ],
-            one_substation.subquery(),
+        one_substation_insert = (
+            MvGridDistrictsDissolved.__table__.insert().from_select(
+                [
+                    c
+                    for c in MvGridDistrictsDissolved.__table__.columns
+                    if c.name != "id"
+                ],
+                one_substation.subquery(),
+            )
         )
         session.execute(one_substation_insert)
         session.commit()
@@ -650,9 +672,11 @@ def merge_polygons_to_grid_district():
             func.sum(MvGridDistrictsDissolved.area).label("area"),
         ).group_by(MvGridDistrictsDissolved.bus_id)
 
-        joined_mv_grid_district_parts_insert = MvGridDistricts.__table__.insert().from_select(
-            MvGridDistricts.__table__.columns,
-            joined_mv_grid_district_parts.subquery(),
+        joined_mv_grid_district_parts_insert = (
+            MvGridDistricts.__table__.insert().from_select(
+                MvGridDistricts.__table__.columns,
+                joined_mv_grid_district_parts.subquery(),
+            )
         )
         session.execute(joined_mv_grid_district_parts_insert)
         session.commit()
@@ -745,13 +769,15 @@ def nearest_polygon_with_substation(
     ).distinct(all_nearest_neighbors.c.id)
 
     # Insert polygons with newly assigned substation
-    assigned_polygons_insert = MvGridDistrictsDissolved.__table__.insert().from_select(
-        [
-            c
-            for c in MvGridDistrictsDissolved.__table__.columns
-            if c.name not in ["id"]
-        ],
-        nearest_neighbors,
+    assigned_polygons_insert = (
+        MvGridDistrictsDissolved.__table__.insert().from_select(
+            [
+                c
+                for c in MvGridDistrictsDissolved.__table__.columns
+                if c.name not in ["id"]
+            ],
+            nearest_neighbors,
+        )
     )
     session.execute(assigned_polygons_insert)
     session.commit()

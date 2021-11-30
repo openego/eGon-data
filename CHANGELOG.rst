@@ -244,6 +244,8 @@ Changed
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
 * Migrate plot.py to dataset of district heating areas
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
+* Migrate substation scripts to datasets
+  `#304 <https://github.com/openego/eGon-data/issues/304>`_
 
 
 Bug fixes
