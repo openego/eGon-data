@@ -4,8 +4,7 @@ name: "Tests, code style & coverage"
 on:
   push:
     branches:
-      - dev
-      - main
+      - '**'
   pull_request:
     branches:
       - dev
