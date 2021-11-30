@@ -155,6 +155,8 @@ Added
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
 * Fill egon-etrago-generators table
   `#485 <https://github.com/openego/eGon-data/issues/485>`_
+* Include time-dependent coefficient of performance for heat pumps
+  `#532 <https://github.com/openego/eGon-data/issues/532>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

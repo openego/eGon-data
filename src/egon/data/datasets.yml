@@ -545,7 +545,7 @@ etrago_heat:
     weather_cells:
       schema: 'supply'
       table: 'egon_era5_weather_cells'
-    solar_thermal_feedin:
+    feedin_timeseries:
       schema: 'supply'
       table: 'egon_era5_renewable_feedin'
     egon_mv_grid_district:
@@ -570,6 +570,9 @@ etrago_heat:
     heat_links:
       schema: 'grid'
       table: 'egon_etrago_link'
+    heat_link_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_link_timeseries'
 
 industrial_sites:
   sources:

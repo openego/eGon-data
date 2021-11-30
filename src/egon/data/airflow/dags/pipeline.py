@@ -450,7 +450,7 @@ with airflow.DAG(
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[heat_supply, mv_grid_districts, setup_etrago]
+        dependencies=[heat_supply, mv_grid_districts, setup_etrago, renewable_feedin]
     )
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
