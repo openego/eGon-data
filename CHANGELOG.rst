@@ -273,6 +273,8 @@ Changed
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
 * Update deposit_id for zenodo download
   `#540 <https://github.com/openego/eGon-data/issues/540>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 
 
 Bug fixes
