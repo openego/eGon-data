@@ -672,6 +672,9 @@ etrago_electricity:
     cts_curves:
       schema: 'demand'
       table: 'egon_etrago_electricity_cts'
+    household_curves:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_households'
   targets:
     etrago_load:
       schema: 'grid'
@@ -788,7 +791,7 @@ generators_etrago:
     etrago_gen_time:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
-      
+
 weather_BusID:
   sources:
     power_plants:
