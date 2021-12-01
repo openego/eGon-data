@@ -19,7 +19,7 @@ on:
 
 jobs:
   build:
-    name: Tests (${{ matrix.platform }})
+    name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
 
     strategy:
