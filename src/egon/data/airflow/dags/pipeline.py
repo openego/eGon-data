@@ -72,6 +72,7 @@ import egon.data.importing.zensus as import_zs
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
+
 with airflow.DAG(
     "egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
@@ -388,6 +389,7 @@ with airflow.DAG(
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
+
     # Household electricity demand buildings
     hh_demand_buildings_setup = hh_buildings.setup(
         dependencies=[householdprofiles_in_cencus_cells],
@@ -395,6 +397,7 @@ with airflow.DAG(
 
     hh_demand_buildings_setup.insert_into(pipeline)
     map_houseprofiles_to_buildings = tasks["electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"]
+
 
     # Industry
 

@@ -17,7 +17,7 @@ class IndustrialGasDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemand",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand),
         )
@@ -276,7 +276,7 @@ def import_industrial_gas_demand():
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035"}
+    c = {"scn_name": "eGon2035", "sign": -1}
     industrial_gas_demand = industrial_gas_demand.assign(**c)
 
     industrial_gas_demand = industrial_gas_demand.reset_index(drop=True)
@@ -309,7 +309,7 @@ def import_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
     # Adjust columns
     egon_etrago_load_gas_timeseries = egon_etrago_load_gas_timeseries.drop(
-        columns=["carrier", "bus"]
+        columns=["carrier", "bus", "sign"]
     )
     egon_etrago_load_gas_timeseries["temp_id"] = 1
 
