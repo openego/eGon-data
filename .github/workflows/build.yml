@@ -33,9 +33,17 @@ jobs:
       - uses: "actions/setup-python@v2"
         with:
           python-version: "3.7"
+      - name: "Check Python install location contents"
+        run: |
+          echo ${{ env.pythonLocation }}
+          ls ${{ env.pythonLocation }}
       - uses: "actions/setup-python@v2"
         with:
           python-version: "3.8"
+      - name: "Check Python install location contents"
+        run: |
+          echo ${{ env.pythonLocation }}
+          ls ${{ env.pythonLocation }}
       - name: "Install dependencies"
         run: |
           python -mpip install --progress-bar=off tox -r'ci/requirements.txt'
