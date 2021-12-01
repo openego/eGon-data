@@ -44,5 +44,5 @@ jobs:
           tox --version
           which python3.7
           which python3.8
-      - name: "Run tox"
+      - name: "Tox"
         run: "python -m tox -vv"
