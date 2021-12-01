@@ -1,5 +1,5 @@
 # NB: this name is used in the status badge
-name: "Tests, code style & coverage"
+name: "build"
 
 on:
   push:
