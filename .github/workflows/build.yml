@@ -36,7 +36,7 @@ jobs:
       - name: "Check Python install location contents"
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
-          ln -s ${{ env.pythonLocation }}/python.exe ${{ env.pythonLocation }}/python3.7.exe
+          ln ${{ env.pythonLocation }}/python.exe ${{ env.pythonLocation }}/python3.7.exe
           echo ${{ env.pythonLocation }}
           ls ${{ env.pythonLocation }}
       - uses: "actions/setup-python@v2"
@@ -45,7 +45,7 @@ jobs:
       - name: "Check Python install location contents"
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
-          ln -s ${{ env.pythonLocation }}/python.exe ${{ env.pythonLocation }}/python3.8.exe
+          ln ${{ env.pythonLocation }}/python.exe ${{ env.pythonLocation }}/python3.8.exe
           echo ${{ env.pythonLocation }}
           ls ${{ env.pythonLocation }}
       - name: "Install dependencies"
