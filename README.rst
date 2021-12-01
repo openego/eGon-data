@@ -179,7 +179,7 @@ to it.
 Run the workflow
 ================
 
-The :py:mod:`egon.data` package installs a command line application
+The :code:`egon.data` package installs a command line application
 called :code:`egon-data` with which you can control the workflow so once
 the installation is successful, you can explore the command line
 interface starting with :code:`egon-data --help`.
@@ -200,7 +200,7 @@ solution.
 .. warning::
 
    A complete run of the workflow might require much computing power and
-   can't be run on laptop. Use the :ref:`test mode <Test mode>` for
+   can't be run on laptop. Use the `test mode <#test-mode>`_ for
    experimenting.
 
 .. warning::

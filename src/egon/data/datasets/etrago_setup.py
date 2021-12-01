@@ -1,4 +1,6 @@
 # coding: utf-8
+from geoalchemy2.types import Geometry
+from shapely.geometry import LineString
 from sqlalchemy import (
     ARRAY,
     BigInteger,
@@ -12,13 +14,11 @@ from sqlalchemy import (
     Text,
     text,
 )
-from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+
 from egon.data import db
 from egon.data.datasets import Dataset
-
-import geopandas as gpd
-from shapely.geometry import LineString
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -362,6 +362,17 @@ class EgonPfHvTransformerTimeseries(Base):
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
+    
+
+class EgonPfHvBusmap(Base):
+    __tablename__ = "egon_etrago_hv_busmap"
+    __table_args__ = {"schema": "grid"}
+     
+    scn_name = Column(Text, primary_key=True, nullable=False)
+    bus0 = Column(Text, primary_key=True, nullable=False)
+    bus1 = Column(Text, primary_key=True, nullable=False)
+    path_length = Column(Numeric)
+    version = Column(Text, primary_key=True, nullable=False)
 
 
 def create_tables():
@@ -467,6 +478,7 @@ def create_tables():
     EgonPfHvTempResolution.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvTransformer.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvBusmap.__table__.drop(bind=engine, checkfirst=True)
     # Create new tables
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
@@ -488,6 +500,7 @@ def create_tables():
     EgonPfHvTransformerTimeseries.__table__.create(
         bind=engine, checkfirst=True
     )
+    EgonPfHvBusmap.__table__.create(bind=engine, checkfirst=True)
 
 
 def temp_resolution():

@@ -7,9 +7,19 @@ from pyproj import Geod
 
 import pandas as pd
 from egon.data import db
+from egon.data.datasets import Dataset
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
 from shapely import geometry
+
+class PowertoH2(Dataset):
+     def __init__(self, dependencies):
+         super().__init__(
+             name="PowertoH2",
+             version="0.0.0",
+             dependencies=dependencies,
+             tasks=(insert_power_to_h2),
+         )
 
 
 def insert_power_to_h2():
