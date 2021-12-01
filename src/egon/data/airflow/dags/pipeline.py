@@ -17,6 +17,7 @@ from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
+from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -32,6 +33,7 @@ from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
+from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
@@ -50,6 +52,7 @@ from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_plants import PowerPlants
+from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
@@ -60,6 +63,7 @@ from egon.data.datasets.storages import PumpedHydro
 from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
+from egon.data.datasets.tyndp import Tyndp
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import (
@@ -113,6 +117,8 @@ with airflow.DAG(
     # Scenario table
     scenario_parameters = ScenarioParameters(dependencies=[setup])
     scenario_input_import = tasks["scenario_parameters.insert-scenarios"]
+
+    tyndp_data = Tyndp(dependencies=[setup])
 
     # Zensus population import
     zensus_population = ZensusPopulation(dependencies=[setup, vg250])
@@ -219,6 +225,12 @@ with airflow.DAG(
     heat_demand_Germany = HeatDemandImport(
         dependencies=[vg250, scenario_parameters, zensus_vg250]
     )
+
+    # Future national heat demands for foreign countries based on Hotmaps
+    # download only, processing in PyPSA-Eur-Sec fork
+    hd_abroad = HeatDemandEurope(dependencies=[setup])
+    hd_abroad.insert_into(pipeline)
+    heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
     # Gas grid import
     gas_grid_insert_data = GasNodesandPipes(
@@ -388,6 +400,21 @@ with airflow.DAG(
 
     electrical_load_etrago = ElectricalLoadEtrago(
         dependencies=[demand_curves_industry, cts_electricity_demand_annual]
+    )
+
+    # run pypsa-eur-sec
+    run_pypsaeursec = PypsaEurSec(
+        dependencies=[
+            weather_data,
+            hd_abroad,
+            osmtgmod,
+            setup_etrago,
+            data_bundle,
+        ]
+    )
+
+    foreign_lines = ElectricalNeighbours(
+        dependencies=[run_pypsaeursec, tyndp_data]
     )
 
     # CHP locations

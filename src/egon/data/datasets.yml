@@ -262,6 +262,9 @@ scenario_input:
     paths:
       "capacities": "NEP2035_V2021_scnC2035.xlsx"
       "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
+  eGon100RE:
+    paths:
+      "capacities": "nodal_capacities.csv"
 
 mastr:
   technologies:
@@ -323,6 +326,13 @@ peta5_0_1_ser_heat_demands:
     schema: "demand"
     file_table_map:
     table: # 2015 heat demand data not stored in database
+
+hotmaps_current_policy_scenario_heat_demands_buildings:
+  original_data:
+    source:
+      url: "https://gitlab.com/hotmaps/scen_current_building_demand/-/raw/master/data/scen_current_building_demand.csv?inline=false"
+    target:
+      path: "scen_current_building_demand.csv"
 
 power_plants:
   sources:
@@ -879,3 +889,56 @@ dlr:
     line_timeseries:
       schema: "grid"
       table: "egon_etrago_line_timeseries"
+
+electrical_neighbours:
+  sources:
+    electricity_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_etrago_line'
+    german_borders:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+    osmtgmod_bus:
+      schema: 'osmtgmod_results'
+      table: 'bus_data'
+    osmtgmod_branch:
+      schema: 'osmtgmod_results'
+      table: 'branch_data'
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    tyndp_demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+    tyndp_demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_etrago_line'
+    transformers:
+      schema: 'grid'
+      table: 'egon_etrago_transformer'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+
+tyndp:
+  sources:
+      capacities: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+      capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
