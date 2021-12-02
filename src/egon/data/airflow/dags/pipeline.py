@@ -136,7 +136,11 @@ with airflow.DAG(
 
     # Society prognosis
     society_prognosis = SocietyPrognosis(
-        dependencies=[demandregio, zensus_vg250, zensus_population,]
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            zensus_population,
+        ]
     )
 
     # OSM buildings, streets, amenities
@@ -185,7 +189,11 @@ with airflow.DAG(
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
-        dependencies=[osm_download, substation_extraction, setup_etrago,]
+        dependencies=[
+            osm_download,
+            substation_extraction,
+            setup_etrago,
+        ]
     )
     osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
@@ -193,7 +201,10 @@ with airflow.DAG(
 
     # create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[osmtgmod_substation, vg250,]
+        dependencies=[
+            osmtgmod_substation,
+            vg250,
+        ]
     )
 
     # MV grid districts
@@ -241,12 +252,16 @@ with airflow.DAG(
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[insert_hydrogen_buses,]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[insert_hydrogen_buses,]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Create gas voronoi
@@ -332,14 +347,14 @@ with airflow.DAG(
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon2035", 2035, "0.0.0"],
+        op_args=["eGon2035", 2035],
         op_kwargs={"drop_table": True},
     )
 
     mv_hh_electricity_load_2050 = PythonOperator(
         task_id="MV-hh-electricity-load-2050",
         python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon100RE", 2050, "0.0.0"],
+        op_args=["eGon100RE", 2050],
     )
 
     hh_demand_profiles_setup = hh_profiles.setup(
@@ -364,7 +379,6 @@ with airflow.DAG(
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
 
-
     # Household electricity demand buildings
     hh_demand_buildings_setup = hh_buildings.setup(
         dependencies=[householdprofiles_in_cencus_cells],
@@ -374,7 +388,6 @@ with airflow.DAG(
     map_houseprofiles_to_buildings = tasks[
         "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
     ]
-
 
     # Industry
 
@@ -460,7 +473,8 @@ with airflow.DAG(
 
     # Fill eTraGo Generators tables
     fill_etrago_generators = Egon_etrago_gen(
-        dependencies=[power_plants, weather_data])
+        dependencies=[power_plants, weather_data]
+    )
 
     # Heat supply
     heat_supply = HeatSupply(
@@ -510,8 +524,8 @@ with airflow.DAG(
             power_plants,
         ]
     )
-    
-# Storages to eTrago
+
+    # Storages to eTrago
 
     storage_etrago = StorageEtrago(
         dependencies=[

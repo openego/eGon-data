@@ -229,17 +229,17 @@ def match_osm_and_zensus_data(
     building_count_fillna = missing_buildings.loc[
         missing_buildings["building_count"].isna(), "cell_profile_ids"
     ]
-    # devide by mean profile/building rate
+    # devide by median profile/building rate
     building_count_fillna = (
-        building_count_fillna / profile_building_rate.mean()
+        building_count_fillna / profile_building_rate.median()
     )
     # replace missing building counts
     missing_buildings["building_count"] = missing_buildings[
         "building_count"
     ].fillna(value=building_count_fillna)
 
-    # round and make type int
-    missing_buildings = missing_buildings.round().astype(int)
+    # ceil to have at least one building each cell and make type int
+    missing_buildings = missing_buildings.apply(np.ceil).astype(int)
     # generate list of building ids for each cell
     missing_buildings["building_count"] = missing_buildings[
         "building_count"
@@ -549,12 +549,11 @@ def get_building_peak_loads(iterate_over="nuts3"):
         ).filter(
             HouseholdElectricityProfilesOfBuildings.cell_id
             == HouseholdElectricityProfilesInCensusCells.cell_id
-        )
+        ).order_by(HouseholdElectricityProfilesOfBuildings.id)
 
         df_buildings_and_profiles = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col="id"
         )
-        # TODO: first 77 ids get lost
 
         # Read demand profiles from egon-data-bundle
         df_profiles = get_household_demand_profiles_raw()
