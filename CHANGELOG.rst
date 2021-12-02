@@ -159,6 +159,8 @@ Added
   `#532 <https://github.com/openego/eGon-data/issues/532>`_
 * Limit number of parallel processes per task
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
+* Include biomass CHP plants to eTraGo tables
+  `#498 <https://github.com/openego/eGon-data/issues/498>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
