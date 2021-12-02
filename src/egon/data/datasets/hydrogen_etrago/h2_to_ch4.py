@@ -1,20 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing all code dealing with the definition of the CH4 grid to H2 connecitons
+Module containing the definition of the CH4 grid to H2 links
 """
 
 from egon.data import db
-from egon.data.datasets import Dataset
-
-
-class H2toCH4toH2(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="H2CH4Links",
-            version="0.0.0",
-            dependencies=dependencies,
-            tasks=(insert_h2_to_ch4_to_h2),
-        )
 
 
 def insert_h2_to_ch4_to_h2():
