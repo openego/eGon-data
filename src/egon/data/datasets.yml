@@ -38,7 +38,7 @@ bgr:
   processed:
     schema: "boundaries"
     file_table_map:
-      "saltstructures_updated.shp": "saltstructures_inspee"
+      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "saltstructures_inspee"
   sources:
     vg250_federal_states:
       schema: 'boundaries'
