@@ -18,6 +18,18 @@ on:
 #    - LANG=en_US.UTF-8
 
 jobs:
+  docs:
+    name: docs
+    steps:
+      - uses: "actions/checkout@v2"
+      - name: "Install dependencies"
+        run: |
+          python -mpip install --progress-bar=off tox -r'ci/requirements.txt'
+          virtualenv --version
+          pip --version
+          tox --version
+      - name: "Build documentation"
+        run: "python -m tox -vv -e docs"
   tests:
     name: tests (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
