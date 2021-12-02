@@ -510,6 +510,16 @@ with airflow.DAG(
             power_plants,
         ]
     )
+    
+# Storages to eTrago
+
+    storage_etrago = StorageEtrago(
+        dependencies=[
+            pumped_hydro,
+            setup_etrago,
+            scenario_parameters,
+        ]
+    )
 
     # Heat time Series
     heat_time_series = HeatTimeSeries(
