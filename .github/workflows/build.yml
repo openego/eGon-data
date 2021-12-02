@@ -36,7 +36,7 @@ jobs:
       - name: "Check Python install location contents"
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
-          mklink ${{ env.pythonLocation }}/python3.7.exe ${{ env.pythonLocation }}/python.exe
+          New-Item -ItemType SymbolicLink -Path ${{ env.pythonLocation }}/python3.7.exe -Target ${{ env.pythonLocation }}/python.exe
           echo ${{ env.pythonLocation }}
           ls ${{ env.pythonLocation }}
       - uses: "actions/setup-python@v2"
