@@ -34,22 +34,18 @@ jobs:
       - uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
-      - name: "Check Python install location contents"
+      - name: "Create correctly named executable on Windows"
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           cd ${{ env.pythonLocation }}
           New-Item -ItemType SymbolicLink `
               -Path python${{ matrix.python-version }}.exe `
               -Target ${{ env.pythonLocation }}/python.exe
-          echo ${{ env.pythonLocation }}
-          ls ${{ env.pythonLocation }}
       - name: "Install dependencies"
         run: |
           python -mpip install --progress-bar=off tox -r'ci/requirements.txt'
           virtualenv --version
           pip --version
           tox --version
-          which python3.7
-          which python3.8
       - name: "Run tests"
         run: "python -m tox -vv -e py${{ matrix.python-version }}-nocover"
