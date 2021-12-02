@@ -18,8 +18,8 @@ on:
 #    - LANG=en_US.UTF-8
 
 jobs:
-  build:
-    name: Build (${{ matrix.platform }})
+  tests:
+    name: tests (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
 
     strategy:
