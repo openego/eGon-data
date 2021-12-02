@@ -72,9 +72,6 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-from egon.data.processing.h2_to_ch4 import H2toCH4toH2
-from egon.data.processing.power_to_h2 import PowertoH2toPower
-import egon.data.importing.zensus as import_zs
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
