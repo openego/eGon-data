@@ -25,6 +25,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.7", "3.8"]
       max-parallel: 4
       fail-fast: false
 
@@ -32,22 +33,14 @@ jobs:
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
         with:
-          python-version: "3.7"
+          python-version: "${{ matrix.python-version }}"
       - name: "Check Python install location contents"
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           cd ${{ env.pythonLocation }}
-          New-Item -ItemType SymbolicLink -Path python3.7.exe `
+          New-Item -ItemType SymbolicLink `
+              -Path python${{ matrix.python-version }}.exe `
               -Target ${{ env.pythonLocation }}/python.exe
-          echo ${{ env.pythonLocation }}
-          ls ${{ env.pythonLocation }}
-      - uses: "actions/setup-python@v2"
-        with:
-          python-version: "3.8"
-      - name: "Check Python install location contents"
-        if: ${{ matrix.platform == 'windows-latest' }}
-        run: |
-          ln ${{ env.pythonLocation }}/python.exe ${{ env.pythonLocation }}/python3.8.exe
           echo ${{ env.pythonLocation }}
           ls ${{ env.pythonLocation }}
       - name: "Install dependencies"
@@ -58,5 +51,5 @@ jobs:
           tox --version
           which python3.7
           which python3.8
-      - name: "Tox"
-        run: "python -m tox -vv"
+      - name: "Run tests"
+        run: "python -m tox -vv -e py${{ matrix.python-version }}-nocover"
