@@ -66,4 +66,4 @@ jobs:
           pip --version
           tox --version
       - name: "Run tests"
-        run: "python -m tox -vv -e py${{ matrix.python-version }}-nocover"
+        run: "python -m tox -vv -e py${{ matrix.python-version }}-nocov"
