@@ -172,43 +172,46 @@ electrical_demands_cts:
       schema: 'demand'
       table: 'egon_demandregio_zensus_electricity'
 
-hvmv_substation:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_hvmv_substation"
-ehv_substation:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_ehv_substation"
-hvmv_substation_voronoi:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_hvmv_substation_voronoi"
-ehv_substation_voronoi:
-  original_data:
-    source:
-      url:
-    target:
-      path:
-  processed:
-    schema: "grid"
-    table: "egon_ehv_substation_voronoi"
+substation_extraction:
+  sources:
+    osm_ways:
+      schema: 'openstreetmap'
+      table: 'osm_ways'
+    osm_nodes:
+      schema: 'openstreetmap'
+      table: 'osm_nodes'
+    osm_points:
+      schema: 'openstreetmap'
+      table: 'osm_point'
+    osm_lines:
+      schema: 'openstreetmap'
+      table: 'osm_line'
+  targets:
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
 
+substation_voronoi:
+  sources:
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+  targets:
+    hvmv_substation_voronoi:
+      schema: 'grid'
+      table: 'egon_hvmv_substation_voronoi'
+    ehv_substation_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
 
 society_prognosis:
   soucres:
@@ -309,6 +312,7 @@ power_plants:
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
       mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
@@ -320,6 +324,19 @@ power_plants:
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
   target:
       table: 'egon_power_plants'
+      schema: 'supply'
+
+storages:
+  sources:
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
+      capacities: "supply.egon_scenario_capacities"
+      geom_germany: "boundaries.vg250_sta_union"
+      geom_federal_states: "boundaries.vg250_lan"
+      egon_mv_grid_district: "grid.egon_mv_grid_district"
+      ehv_voronoi: "grid.egon_ehv_substation_voronoi"
+      nep_conv: "supply.egon_nep_2021_conventional_powerplants"
+  target:
+      table: 'egon_storages'
       schema: 'supply'
 
 landuse:
@@ -460,7 +477,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5211145
+      deposit_id: 5645351
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -528,7 +545,7 @@ etrago_heat:
     weather_cells:
       schema: 'supply'
       table: 'egon_era5_weather_cells'
-    solar_thermal_feedin:
+    feedin_timeseries:
       schema: 'supply'
       table: 'egon_era5_renewable_feedin'
     egon_mv_grid_district:
@@ -553,6 +570,9 @@ etrago_heat:
     heat_links:
       schema: 'grid'
       table: 'egon_etrago_link'
+    heat_link_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_link_timeseries'
 
 industrial_sites:
   sources:
@@ -714,7 +734,7 @@ chp_etrago:
     generator:
       schema: 'grid'
       table: 'egon_etrago_generator'
-      
+
 DSM_CTS_industry:
   sources:
     cts_loadcurves:
@@ -741,14 +761,68 @@ DSM_CTS_industry:
       table: 'egon_etrago_bus'
     link:
       schema: 'grid'
-      table: 'egon_etrago_link'  
+      table: 'egon_etrago_link'
     link_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_link_timeseries'   
+      table: 'egon_etrago_link_timeseries'
     store:
       schema: 'grid'
-      table: 'egon_etrago_store'  
+      table: 'egon_etrago_store'
     store_timeseries:
       schema: 'grid'
-      table: 'egon_etrago_store_timeseries' 
+      table: 'egon_etrago_store_timeseries'
 
+generators_etrago:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    etrago_generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    etrago_gen_time:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
+      
+weather_BusID:
+  sources:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+    renewable_feedin:
+      schema: 'supply'
+      table: 'egon_era5_renewable_feedin'
+    weather_cells:
+      schema: 'supply'
+      table: 'egon_era5_weather_cells'
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_sta'
+    egon_mv_grid_district: 'grid.egon_mv_grid_district'
+    ehv_voronoi: 'grid.egon_ehv_substation_voronoi'
+  targets:
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
+
+dlr:
+  sources:
+    trans_lines:
+      schema: "grid"
+      table: "egon_etrago_line"
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"
+  targets:
+    line_timeseries:
+      schema: "grid"
+      table: "egon_etrago_line_timeseries"

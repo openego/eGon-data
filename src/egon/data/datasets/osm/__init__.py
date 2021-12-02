@@ -56,17 +56,18 @@ def download():
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(num_processes=1, cache_size=4096):
+def to_postgres(cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
     ----------
-    num_processes : int, optional
-        Number of parallel processes used for processing during data import
     cache_size: int, optional
         Memory used during data import
 
     """
+    # Read maximum number of threads per task from egon-data.configuration.yaml
+    num_processes = settings()["egon-data"]["--processes-per-task"]
+
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 

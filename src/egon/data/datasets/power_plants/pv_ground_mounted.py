@@ -368,7 +368,7 @@ def insert():
         # build pv farms in selected areas
 
         # calculation of centroids
-        pv_pot["centroid"] = pv_pot["geom"].centroid
+        pv_pot["centroid"] = pv_pot["geom"].representative_point()
 
         # calculation of power in kW
         pv_pot["installed capacity in kW"] = pd.Series()
@@ -488,7 +488,7 @@ def insert():
         pv_per_distr = gpd.GeoDataFrame()
         pv_per_distr["geom"] = distr["geom"].copy()
         centroids = potentials.copy()
-        centroids["geom"] = centroids["geom"].centroid
+        centroids["geom"] = centroids["geom"].representative_point()
 
         overlay = gpd.sjoin(centroids, distr)
 
@@ -528,7 +528,7 @@ def insert():
         )
 
         # calculate centroid
-        pv_per_distr["centroid"] = pv_per_distr["geom"].centroid
+        pv_per_distr["centroid"] = pv_per_distr["geom"].representative_point()
 
         return pv_per_distr
 
