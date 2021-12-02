@@ -53,13 +53,28 @@ def settings() -> dict[str, dict[str, str]]:
     """
     files = paths(pid="*") + paths()
     if not files[0].exists():
-        # TODO: Fatal errors should be raised as exceptions, so one can figure
-        #       out where they are coming from without having to debug.
-        logger.error(
-            f"Unable to determine settings.\nConfiguration file:"
-            f"\n\n{files[0]}\n\nnot found.\nExiting."
+        logger.warning(
+            f"Configuration file:"
+            f"\n\n{files[0]}\n\nnot found.\nUsing defaults."
         )
-        sys.exit(-1)
+        return {
+            "egon-data": {
+                "--airflow-database-name": "airflow",
+                "--airflow-port": 8080,
+                "--compose-project-name": "egon-data",
+                "--database-host": "127.0.0.1",
+                "--database-name": "egon-data",
+                "--database-password": "data",
+                "--database-port": "59734",
+                "--database-user": "egon",
+                "--dataset-boundary": "Everything",
+                "--docker-container-name":
+                    "egon-data-local-database-container",
+                "--jobs": 1,
+                "--random-seed": 42,
+                "--processes-per-task": 1,
+            }
+        }
     with open(files[0]) as f:
         return yaml.safe_load(f)
 
