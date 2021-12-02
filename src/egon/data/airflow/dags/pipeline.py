@@ -7,6 +7,7 @@ import airflow
 import importlib_resources as resources
 
 from egon.data import db
+from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_storages import CH4Storages
@@ -64,6 +65,9 @@ import egon.data.processing.gas_areas as gas_areas
 import egon.data.processing.loadarea as loadarea
 import egon.data.processing.power_to_h2 as power_to_h2
 
+
+# Set number of threads used by numpy and pandas
+set_numexpr_threads()
 
 with airflow.DAG(
     "egon-data-processing-pipeline",

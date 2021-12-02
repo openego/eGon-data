@@ -102,3 +102,17 @@ def datasets(config_file=None):
         config_file = os.path.join(package_path, "datasets.yml")
 
     return yaml.load(open(config_file), Loader=yaml.SafeLoader)
+
+def set_numexpr_threads():
+    """Sets maximum threads used by NumExpr
+
+    Returns
+    -------
+    None
+
+    """
+    # Read maximum number of threads per task from egon-data.configuration.yaml
+    num_processes = settings()["egon-data"]["--processes-per-task"]
+
+    os.environ['NUMEXPR_MAX_THREADS'] = str(num_processes)
+    os.environ['NUMEXPR_NUM_THREADS'] = str(num_processes)
