@@ -162,8 +162,6 @@ Added
   `#329 <https://github.com/openego/eGon-data/issues/329>`_
 * Add CH4 storages
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
-* Fill egon-etrago-generators table
-  `#485 <https://github.com/openego/eGon-data/issues/485>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
 * Include allocation of conventional (non CHP) power plants
@@ -271,6 +269,12 @@ Changed
   `#525 <https://github.com/openego/eGon-data/issues/525>`_
 * Migrate plot.py to dataset of district heating areas
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
+* Migrate substation scripts to datasets
+  `#304 <https://github.com/openego/eGon-data/issues/304>`_
+* Update deposit_id for zenodo download
+  `#540 <https://github.com/openego/eGon-data/issues/540>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 
 
 Bug fixes
