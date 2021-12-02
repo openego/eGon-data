@@ -433,8 +433,6 @@ def wind_power_states(
 
     # Set static column values
     insert_wind_farms["carrier"] = source
-    insert_wind_farms["chp"] = False
-    insert_wind_farms["th_capacity"] = 0
     insert_wind_farms["scenario"] = scenario_year
 
     # Change name and crs of geometry column

@@ -103,6 +103,7 @@ def export_to_db():
             DELETE FROM
             {targets['etrago_load']['schema']}.{targets['etrago_load']['table']}
             WHERE scn_name = '{scenario}'
+            AND carrier = 'AC'
             """
         )
 
@@ -111,6 +112,11 @@ def export_to_db():
             DELETE FROM
             {targets['etrago_load_curves']['schema']}.{targets['etrago_load_curves']['table']}
             WHERE scn_name = '{scenario}'
+            AND load_id NOT IN (
+            SELECT load_id FROM
+            {targets['etrago_load']['schema']}.
+            {targets['etrago_load']['table']}
+            WHERE scn_name = '{scenario}')
             """
         )
 
@@ -181,7 +187,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )
