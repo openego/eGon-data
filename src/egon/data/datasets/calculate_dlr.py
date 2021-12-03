@@ -5,17 +5,32 @@ Inspired mainly on Planungsgrundsaetze-2020
 Available at:
 <https://www.transnetbw.de/files/pdf/netzentwicklung/netzplanungsgrundsaetze/UENB_PlGrS_Juli2020.pdf>
 """
-import geopandas as gpd
-import pandas as pd
-import numpy as np
-from egon.data import db
-import xarray as xr
-import rioxarray
-from shapely.geometry import Point
-import psycopg2
 from pathlib import Path
 
-def Calculate_DLR():
+from shapely.geometry import Point
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import psycopg2
+import rioxarray
+import xarray as xr
+
+from egon.data import db
+from egon.data.datasets import Dataset
+import egon.data.config
+
+
+class Calculate_dlr(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="dlr",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(dlr,),
+        )
+
+
+def dlr():
     """Calculate DLR and assign values to each line in the db
 
     Parameters
@@ -23,18 +38,20 @@ def Calculate_DLR():
     *No parameters required
 
     """
-
-    weather_info_path = (
-        Path(".") / "cutouts" / "germany-2011-era5.nc")
+    cfg = egon.data.config.datasets()["dlr"]
+    weather_info_path = Path(".") / "cutouts" / "germany-2011-era5.nc"
 
     regions_shape_path = (
-        Path(".") /
-        "data_bundle_egon_data" /
-        "regions_dynamic_line_rating" /
-        "Germany_regions.shp")
+        Path(".")
+        / "data_bundle_egon_data"
+        / "regions_dynamic_line_rating"
+        / "Germany_regions.shp"
+    )
 
     # Calculate hourly DLR per region
-    dlr_hourly_dic, dlr_hourly = DLR_Regions(weather_info_path, regions_shape_path)
+    dlr_hourly_dic, dlr_hourly = DLR_Regions(
+        weather_info_path, regions_shape_path
+    )
 
     regions = gpd.read_file(regions_shape_path)
     regions = regions.sort_values(by=["Region"])
@@ -42,7 +59,11 @@ def Calculate_DLR():
     # Connect to the data base
     con = db.engine()
 
-    sql = "SELECT scn_name, line_id, geom, s_nom FROM grid.egon_etrago_line"
+    sql = f"""
+    SELECT scn_name, line_id, geom, s_nom FROM
+    {cfg['sources']['trans_lines']['schema']}.
+    {cfg['sources']['trans_lines']['table']}
+    """
     df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
     trans_lines_R = {}
@@ -97,19 +118,23 @@ def Calculate_DLR():
     trans_lines.drop(columns=["in_regions", "s_nom", "geometry"], inplace=True)
 
     # Modify column "s_max_pu" to fit the requirement of the table
-    trans_lines["s_max_pu"] = trans_lines.apply(lambda x: list(x["s_max_pu"]), axis=1)
+    trans_lines["s_max_pu"] = trans_lines.apply(
+        lambda x: list(x["s_max_pu"]), axis=1
+    )
     trans_lines["temp_id"] = 1
 
     # Delete existing data
     db.execute_sql(
+        f"""
+        DELETE FROM {cfg['sources']['line_timeseries']['schema']}.
+        {cfg['sources']['line_timeseries']['table']};
         """
-        DELETE FROM grid.egon_etrago_line_timeseries;
-        """)
+    )
 
     # Insert into database
     trans_lines.to_sql(
-        "egon_etrago_line_timeseries",
-        schema="grid",
+        f"{cfg['targets']['line_timeseries']['table']}",
+        schema=f"{cfg['targets']['line_timeseries']['schema']}",
         con=db.engine(),
         if_exists="append",
         index=False,
@@ -135,14 +160,11 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     regions = regions.sort_values(by=["Region"])
 
     # The data downloaded using Atlite is loaded in 'weather_data_raw'.
-    path = (Path(".") / "cutouts" / "germany-2011-era5.nc")
+    path = Path(".") / "cutouts" / "germany-2011-era5.nc"
     weather_data_raw = xr.open_mfdataset(str(path))
     weather_data_raw = weather_data_raw.rio.write_crs(4326)
     weather_data_raw = weather_data_raw.rio.clip_box(
-        minx=5.5,
-        miny=47,
-        maxx=15.5,
-        maxy=55.5,
+        minx=5.5, miny=47, maxx=15.5, maxy=55.5
     )
 
     wind_speed_raw = weather_data_raw.wnd100m.values
@@ -164,7 +186,9 @@ def DLR_Regions(weather_info_path, regions_shape_path):
                 weather_data[count, 1] = index["y"][row]
                 weather_data[count, 2] = index["x"][column]
                 weather_data[count, 3] = ws_50m
-                weather_data[count, 4] = temperature_raw[hour, row, column] - 273.15
+                weather_data[count, 4] = (
+                    temperature_raw[hour, row, column] - 273.15
+                )
                 count += 1
 
     weather_data = pd.DataFrame(
@@ -182,9 +206,13 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     # Mask weather information for each region defined by NEP 2020
     for reg in regions.index:
         weather_region = gpd.clip(region_selec, regions.loc[reg][0])
-        region_selec["region"][region_selec.isin(weather_region).any(axis=1)] = reg
+        region_selec["region"][
+            region_selec.isin(weather_region).any(axis=1)
+        ] = reg
 
-    weather_data["region"] = region_selec["region"].tolist() * index["time"].size
+    weather_data["region"] = (
+        region_selec["region"].tolist() * index["time"].size
+    )
     weather_data = weather_data[weather_data["region"] != 0]
 
     # Create data frame to save results(Min wind speed, max temperature and %DLR per region along 8760h in a year)
@@ -233,8 +261,12 @@ def DLR_Regions(weather_info_path, regions_shape_path):
             step = df.shape[0] / len(time)
             low_limit = int(t * step)
             up_limit = int(step * (t + 1))
-            dlr.iloc[t, 0 + int(reg - 1) * 3] = min(df.iloc[low_limit:up_limit, 3])
-            dlr.iloc[t, 1 + int(reg - 1) * 3] = max(df.iloc[low_limit:up_limit, 4])
+            dlr.iloc[t, 0 + int(reg - 1) * 3] = min(
+                df.iloc[low_limit:up_limit, 3]
+            )
+            dlr.iloc[t, 1 + int(reg - 1) * 3] = max(
+                df.iloc[low_limit:up_limit, 4]
+            )
 
     # The next loop use the min wind speed and max temperature calculated previously to
     # define the hourly DLR in for each region based on the table given by NEP 2020 pag 31

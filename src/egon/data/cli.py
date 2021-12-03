@@ -14,26 +14,26 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
-from multiprocessing import Process
-from pathlib import Path
 import os
 import socket
 import subprocess
 import sys
 import time
+from multiprocessing import Process
+from pathlib import Path
 
-from psycopg2 import OperationalError as PSPGOE
-from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError as SQLAOE
-from sqlalchemy.orm import Session
 import click
-import importlib_resources as resources
 import yaml
+from psycopg2 import OperationalError as PSPGOE
 
-from egon.data import logger
 import egon.data
 import egon.data.airflow
 import egon.data.config as config
+import importlib_resources as resources
+from egon.data import logger
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError as SQLAOE
+from sqlalchemy.orm import Session
 
 
 @click.group(
@@ -110,6 +110,17 @@ import egon.data.config as config
     show_default=True,
 )
 @click.option(
+    "--processes-per-task",
+    default=1,
+    metavar="N_PROCESS",
+    help=(
+        "Each task can use at maximum N_PROCESS parallel processes. Remember"
+        " that in addition to that, tasks can run in parallel (see N) and"
+        " there's always the scheduler and probably the serverrunning."
+    ),
+    show_default=True,
+)
+@click.option(
     "--docker-container-name",
     default="egon-data-local-database-container",
     metavar="NAME",
@@ -121,7 +132,6 @@ import egon.data.config as config
     ),
     show_default=True,
 )
-
 @click.option(
     "--compose-project-name",
     default="egon-data",
@@ -133,7 +143,6 @@ import egon.data.config as config
     ),
     show_default=True,
 )
-
 @click.option(
     "--airflow-port",
     default=8080,
@@ -141,7 +150,6 @@ import egon.data.config as config
     help=("Specify the port on which airflow runs."),
     show_default=True,
 )
-
 @click.option(
     "--random-seed",
     default=42,
@@ -154,7 +162,6 @@ import egon.data.config as config
     ),
     show_default=True,
 )
-
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
@@ -313,8 +320,14 @@ def egon_data(context, **kwargs):
         )
     if code != 0:
         subprocess.run(
-            ["docker-compose", "-p", options["--compose-project-name"],
-             "up", "-d", "--build"],
+            [
+                "docker-compose",
+                "-p",
+                options["--compose-project-name"],
+                "up",
+                "-d",
+                "--build",
+            ],
             cwd=str((Path(".") / "docker").absolute()),
         )
         time.sleep(1.5)  # Give the container time to boot.

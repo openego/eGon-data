@@ -108,6 +108,10 @@ Added
   `#198 <https://github.com/openego/eGon-data/issues/198>`_
 * Integrate data bundle
   `#272 <https://github.com/openego/eGon-data/issues/272>`_
+* Add household electricity demand time series, mapping of
+  demand profiles to census cells and aggregated household
+  electricity demand time series at MV grid district level
+  `#256 <https://github.com/openego/eGon-data/issues/256>`_
 * Integrate power-to-gas installation potential links
   `#293 <https://github.com/openego/eGon-data/issues/293>`_
 * Integrate distribution of wind onshore and pv ground mounted generation
@@ -130,6 +134,35 @@ Added
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
 * Add random seed to CLI parameters
   `#351 <https://github.com/openego/eGon-data/issues/351>`_
+* Extend zensus by a combined table with all cells where
+  there's either building, apartment or population data
+  `#359 <https://github.com/openego/eGon-data/issues/359>`_
+* Include allocation of pumped hydro units
+  `#332 <https://github.com/openego/eGon-data/issues/332>`_
+* Add example metadata for OSM, VG250 and Zensus VG250.
+  Add metadata templates for licences, context and some helper
+  functions. Extend docs on how to create metadata for tables.
+  `#139 <https://github.com/openego/eGon-data/issues/139>`_
+* Integrate DSM potentials for CTS and industry
+  `#259 <https://github.com/openego/eGon-data/issues/259>`_
+* Assign weather cell id to weather dependant power plants
+  `#330 <https://github.com/openego/eGon-data/issues/330>`_
+* Distribute wind offshore capacities
+  `#329 <https://github.com/openego/eGon-data/issues/329>`_
+* Add CH4 storages
+  `#405 <https://github.com/openego/eGon-data/issues/405>`_
+* Include allocation of conventional (non CHP) power plants
+  `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Fill egon-etrago-generators table
+  `#485 <https://github.com/openego/eGon-data/issues/485>`_
+* Include time-dependent coefficient of performance for heat pumps
+  `#532 <https://github.com/openego/eGon-data/issues/532>`_
+* Limit number of parallel processes per task
+  `#265 <https://github.com/openego/eGon-data/issues/265>`_
+* Include biomass CHP plants to eTraGo tables
+  `#498 <https://github.com/openego/eGon-data/issues/498>`_
+
+.. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
 Changed
@@ -193,6 +226,35 @@ Changed
   `#391 <https://github.com/openego/eGon-data/issues/391>`_
 * Update version of zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/397>`_
+* Rename columns gid to id
+  `#169 <https://github.com/openego/eGon-data/issues/169>`_
+* Remove upper version limit of pandas
+  `#383 <https://github.com/openego/eGon-data/issues/383>`_
+* Use random seed from CLI parameters for CHP and society prognosis functions
+  `#351 <https://github.com/openego/eGon-data/issues/351>`_
+* Changed demand.egon_schmidt_industrial_sites - table and merged table (industrial_sites)
+  `#423 <https://github.com/openego/eGon-data/issues/423>`_
+* Replace 'gas' carrier with 'CH4' and 'H2' carriers
+  `#436 <https://github.com/openego/eGon-data/issues/436>`_
+* Adjust file path for industrial sites import
+  `#397 <https://github.com/openego/eGon-data/issues/418>`_
+* Rename columns subst_id to bus_id
+  `#335 <https://github.com/openego/eGon-data/issues/335>`_
+* Apply black and isort for all python scripts
+  `#463 <https://github.com/openego/eGon-data/issues/463>`_
+* Update deposit id for zenodo download
+  `#397 <https://github.com/openego/eGon-data/issues/498>`_
+* Add to etrago.setug.py the busmap table
+  `#484 <https://github.com/openego/eGon-data/issues/484>`_
+* Migrate dlr script to datasets
+  `#508 <https://github.com/openego/eGon-data/issues/508>`_
+* Migrate loadarea scripts to datasets
+  `#525 <https://github.com/openego/eGon-data/issues/525>`_
+* Migrate plot.py to dataset of district heating areas
+  `#527 <https://github.com/openego/eGon-data/issues/527>`_
+* Migrate substation scripts to datasets
+  `#304 <https://github.com/openego/eGon-data/issues/304>`_
+
 
 Bug fixes
 ---------
@@ -247,4 +309,21 @@ Bug fixes
   `#412 <https://github.com/openego/eGon-data/issues/412>`_
 * Add prefix egon to MV grid district tables
   `#349 <https://github.com/openego/eGon-data/issues/349>`_
-
+* Bump MV grid district version no
+  `#432 <https://github.com/openego/eGon-data/issues/432>`_
+* Add curl to prerequisites in the docs
+  `#440 <https://github.com/openego/eGon-data/issues/440>`_
+* Replace NAN by 0 to avoid empty p_set column in DB
+  `#414 <https://github.com/openego/eGon-data/issues/414>`_
+* Exchange bus 0 and bus 1 in Power-to-H2 links
+  `#458 <https://github.com/openego/eGon-data/issues/458>`_
+* Fix missing cts demands for eGon2035
+  `#511 <https://github.com/openego/eGon-data/issues/511>`_
+* Add `data_bundle` to `industrial_sites` task dependencies
+  `#468 <https://github.com/openego/eGon-data/issues/468>`_
+* Lift `geopandas` minimum requirement to `0.10.0`
+  `#504 <https://github.com/openego/eGon-data/issues/504>`_
+* Use inbuilt `datetime` package instead of `pandas.datetime`
+  `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Delete only AC loads for eTraGo in electricity_demand_etrago
+  `#535 <https://github.com/openego/eGon-data/issues/535>`_

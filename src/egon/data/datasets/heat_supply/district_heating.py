@@ -2,11 +2,11 @@
 for district heating areas.
 
 """
-import pandas as pd
 import geopandas as gpd
-from egon.data import db, config
-
+import pandas as pd
+from egon.data import config, db
 from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
+
 
 def capacity_per_district_heating_category(district_heating_areas, scenario):
     """ Calculates target values per district heating category and technology
@@ -24,7 +24,7 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
         Installed capacities per technology and size category
 
     """
-    sources = config.datasets()['heat_supply']['sources']
+    sources = config.datasets()["heat_supply"]["sources"]
 
     target_values = db.select_dataframe(
         f"""
@@ -37,30 +37,47 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
             'urban_central_geo_thermal',
             'urban_central_solar_thermal_collector')
         """,
-        index_col='technology')
-
+        index_col="technology",
+    )
 
     capacity_per_category = pd.DataFrame(
-        index=['small', 'medium', 'large'],
-        columns=['solar_thermal_collector',
-                 'heat_pump', 'geo_thermal', 'demand'])
+        index=["small", "medium", "large"],
+        columns=[
+            "solar_thermal_collector",
+            "resistive_heater",
+            "heat_pump",
+            "geo_thermal",
+            "demand",
+        ],
+    )
 
     capacity_per_category.demand = district_heating_areas.groupby(
-        district_heating_areas.category).demand.sum()
+        district_heating_areas.category
+    ).demand.sum()
 
     capacity_per_category.loc[
-        ['small', 'medium'],'solar_thermal_collector'] = (
-            target_values.capacity['solar_thermal_collector']
-            *capacity_per_category.demand
-            /capacity_per_category.demand[['small', 'medium']].sum())
+        ["small", "medium"], "solar_thermal_collector"
+    ] = (
+        target_values.capacity["solar_thermal_collector"]
+        * capacity_per_category.demand
+        / capacity_per_category.demand[["small", "medium"]].sum()
+    )
 
-    capacity_per_category.loc[:, 'heat_pump'] = (
-        target_values.capacity['heat_pump']
-        *capacity_per_category.demand
-        /capacity_per_category.demand.sum())
+    capacity_per_category.loc[:, "heat_pump"] = (
+        target_values.capacity["heat_pump"]
+        * capacity_per_category.demand
+        / capacity_per_category.demand.sum()
+    )
 
-    capacity_per_category.loc['large', 'geo_thermal'] = (
-        target_values.capacity['geo_thermal'])
+    capacity_per_category.loc[:, "resistive_heater"] = (
+        target_values.capacity["resistive_heater"]
+        * capacity_per_category.demand
+        / capacity_per_category.demand.sum()
+    )
+
+    capacity_per_category.loc["large", "geo_thermal"] = target_values.capacity[
+        "geo_thermal"
+    ]
 
     return capacity_per_category
 
@@ -74,13 +91,20 @@ def set_technology_data():
         List of parameters per technology
 
     """
-    return  pd.DataFrame(
-        index = ['CHP', 'solar_thermal_collector',
-                 'heat_pump', 'geo_thermal'],
-        columns = ['estimated_flh', 'priority'],
-        data = {
-            'estimated_flh': [8760, 1330, 7000, 3000],
-            'priority': [4, 2 ,1 ,3]})
+    return pd.DataFrame(
+        index=[
+            "CHP",
+            "solar_thermal_collector",
+            "heat_pump",
+            "geo_thermal",
+            "resistive_heater",
+        ],
+        columns=["estimated_flh", "priority"],
+        data={
+            "estimated_flh": [8760, 1330, 7000, 3000, 400],
+            "priority": [5, 3, 2, 4, 1],
+        },
+    )
 
 
 def select_district_heating_areas(scenario):
@@ -98,14 +122,14 @@ def select_district_heating_areas(scenario):
 
     """
 
-    sources = config.datasets()['heat_supply']['sources']
+    sources = config.datasets()["heat_supply"]["sources"]
 
     max_demand_medium_district_heating = 96000
 
     max_demand_small_district_heating = 2400
 
     district_heating_areas = db.select_geodataframe(
-         f"""
+        f"""
          SELECT id as district_heating_id,
          residential_and_service_demand as demand,
          geom_polygon as geom
@@ -113,28 +137,31 @@ def select_district_heating_areas(scenario):
         {sources['district_heating_areas']['table']}
          WHERE scenario = '{scenario}'
          """,
-         index_col='district_heating_id')
+        index_col="district_heating_id",
+    )
 
-    district_heating_areas['category'] = 'large'
-
-    district_heating_areas.loc[
-        district_heating_areas[
-            district_heating_areas.demand
-            < max_demand_medium_district_heating].index,
-        'category'] = 'medium'
+    district_heating_areas["category"] = "large"
 
     district_heating_areas.loc[
         district_heating_areas[
-            district_heating_areas.demand
-            < max_demand_small_district_heating].index,
-        'category'] = 'small'
+            district_heating_areas.demand < max_demand_medium_district_heating
+        ].index,
+        "category",
+    ] = "medium"
+
+    district_heating_areas.loc[
+        district_heating_areas[
+            district_heating_areas.demand < max_demand_small_district_heating
+        ].index,
+        "category",
+    ] = "small"
 
     return district_heating_areas
 
 
 def cascade_per_technology(
-        areas, technologies, capacity_per_category, size_dh,
-        max_geothermal_costs = 2):
+    areas, technologies, capacity_per_category, size_dh, max_geothermal_costs=2
+):
 
     """ Add plants of one technology suppliing district heating
 
@@ -161,13 +188,13 @@ def cascade_per_technology(
         List of plants per district heating grid for the selected technology
 
     """
-    sources = config.datasets()['heat_supply']['sources']
+    sources = config.datasets()["heat_supply"]["sources"]
 
-    tech = technologies[technologies.priority==technologies.priority.max()]
+    tech = technologies[technologies.priority == technologies.priority.max()]
 
     # Assign CHP plants inside district heating area
     # TODO: This has to be updaten when all chp plants are available!
-    if tech.index == 'CHP':
+    if tech.index == "CHP":
 
         # Select chp plants from database
         gdf_chp = db.select_geodataframe(
@@ -180,51 +207,69 @@ def cascade_per_technology(
             AND a.district_heating_area_id = c.area_id
             AND a.scenario = 'eGon2035'
             AND c.scenario = 'eGon2035'
-            """)
+            """
+        )
 
         gdf_chp = gdf_chp[gdf_chp.area_id.isin(areas.index)]
 
-        append_df = pd.DataFrame(
-            gdf_chp.groupby('area_id').capacity.sum()).reset_index().rename(
-                {'area_id': 'district_heating_id'}, axis=1)
+        append_df = (
+            pd.DataFrame(gdf_chp.groupby("area_id").capacity.sum())
+            .reset_index()
+            .rename({"area_id": "district_heating_id"}, axis=1)
+        )
 
     # Distribute solar thermal and heatpumps linear to remaining demand.
     # Geothermal plants are distributed to areas with geothermal potential.
-    if tech.index in ['solar_thermal_collector', 'heat_pump', 'geo_thermal']:
+    if tech.index in [
+        "resistive_heater",
+        "solar_thermal_collector",
+        "heat_pump",
+        "geo_thermal",
+    ]:
 
-        if tech.index == 'geo_thermal':
+        if tech.index == "geo_thermal":
             # Select areas with geothermal potential considering costs
             gdf_geothermal = calc_geothermal_costs(max_geothermal_costs)
             # Select areas which intersect with district heating areas
             join = gpd.sjoin(
-                gdf_geothermal.to_crs(4326), areas, rsuffix='area')
+                gdf_geothermal.to_crs(4326), areas, rsuffix="area"
+            )
             # Calculate share of installed capacity
             share_per_area = (
-                join.groupby('index_area')['remaining_demand'].sum()/
-                join['remaining_demand'].sum().sum())
+                join.groupby("index_area")["remaining_demand"].sum()
+                / join["remaining_demand"].sum().sum()
+            )
 
         else:
             share_per_area = (
-                areas['remaining_demand']/areas['remaining_demand'].sum())
+                areas["remaining_demand"] / areas["remaining_demand"].sum()
+            )
         # Prepare list of heat supply technologies
         append_df = pd.DataFrame(
             (share_per_area).mul(
                 capacity_per_category.loc[size_dh, tech.index].values[0]
-                )).reset_index()
+            )
+        ).reset_index()
         # Rename columns
-        append_df.rename({
-            'index_area':'district_heating_id',
-            'remaining_demand':'capacity'}, axis = 1, inplace=True)
+        append_df.rename(
+            {
+                "index_area": "district_heating_id",
+                "remaining_demand": "capacity",
+            },
+            axis=1,
+            inplace=True,
+        )
     # Add heat supply to overall list
     if append_df.size > 0:
-        append_df['carrier'] = tech.index[0]
-        append_df['category'] = size_dh
-        areas.loc[append_df.district_heating_id,
-                  'remaining_demand'] -= append_df.set_index(
-                      'district_heating_id').capacity.mul(
-                          tech.estimated_flh.values[0])
+        append_df["carrier"] = tech.index[0]
+        append_df["category"] = size_dh
+        areas.loc[
+            append_df.district_heating_id, "remaining_demand"
+        ] -= append_df.set_index("district_heating_id").capacity.mul(
+            tech.estimated_flh.values[0]
+        )
     # Select district heating areas which need an additional supply technology
-    areas = areas[areas.remaining_demand>=0]
+    areas = areas[areas.remaining_demand >= 0]
 
     # Delete inserted technology from list
     technologies = technologies.drop(tech.index)
@@ -260,30 +305,43 @@ def cascade_heat_supply(scenario, plotting=True):
 
     # Select technolgies per district heating size
     map_dh_technologies = {
-        'small': ['CHP', 'solar_thermal_collector', 'heat_pump'],
-        'medium': ['CHP', 'solar_thermal_collector', 'heat_pump'],
-        'large': ['CHP', 'geo_thermal', 'heat_pump'],
-        }
+        "small": [
+            "CHP",
+            "solar_thermal_collector",
+            "heat_pump",
+            "resistive_heater",
+        ],
+        "medium": [
+            "CHP",
+            "solar_thermal_collector",
+            "heat_pump",
+            "resistive_heater",
+        ],
+        "large": ["CHP", "geo_thermal", "heat_pump", "resistive_heater"],
+    }
 
     # Assign capacities per district heating category
     capacity_per_category = capacity_per_district_heating_category(
-        district_heating_areas, scenario)
+        district_heating_areas, scenario
+    )
 
     # Initalize Dataframe for results
     resulting_capacities = pd.DataFrame(
-        columns=['district_heating_id', 'carrier', 'capacity', 'category'])
+        columns=["district_heating_id", "carrier", "capacity", "category"]
+    )
 
     # Set technology data according to Kurzstudie KWK, NEP 2021
     technology_data = set_technology_data()
 
-    for size_dh in ['small', 'medium', 'large']:
+    for size_dh in ["small", "medium", "large"]:
 
         # Select areas in size-category
         areas = district_heating_areas[
-            district_heating_areas.category==size_dh].to_crs(4326)
+            district_heating_areas.category == size_dh
+        ].to_crs(4326)
 
         # Set remaining_demand to demand for first iteration
-        areas['remaining_demand'] = areas['demand']
+        areas["remaining_demand"] = areas["demand"]
 
         # Select technologies which can be use in this size-category
         technologies = technology_data.loc[map_dh_technologies[size_dh], :]
@@ -293,10 +351,12 @@ def cascade_heat_supply(scenario, plotting=True):
         while (len(technologies) > 0) and (len(areas) > 0):
 
             areas, technologies, append_df = cascade_per_technology(
-                areas, technologies, capacity_per_category, size_dh)
+                areas, technologies, capacity_per_category, size_dh
+            )
 
             resulting_capacities = resulting_capacities.append(
-                append_df, ignore_index=True)
+                append_df, ignore_index=True
+            )
 
     # Plot results per district heating area
     if plotting:
@@ -304,28 +364,67 @@ def cascade_heat_supply(scenario, plotting=True):
 
     return gpd.GeoDataFrame(
         resulting_capacities,
-        geometry = district_heating_areas.geom[
-            resulting_capacities.district_heating_id].centroid.values)
+        geometry=district_heating_areas.geom[
+            resulting_capacities.district_heating_id
+        ].centroid.values,
+    )
+
+
+def backup_gas_boilers(scenario):
+    """Adds backup gas boilers to district heating grids.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    Geopandas.GeoDataFrame
+        List of gas boilers for district heating
+
+    """
+
+    # Select district heating areas from database
+    district_heating_areas = select_district_heating_areas(scenario)
+
+    return gpd.GeoDataFrame(
+        data={
+            "district_heating_id": district_heating_areas.index,
+            "capacity": district_heating_areas.demand.div(8000),
+            "carrier": "gas_boiler",
+            "category": district_heating_areas.category,
+            "geometry": district_heating_areas.geom.centroid,
+            "scenario": scenario,
+        }
+    )
 
 
 def plot_heat_supply(resulting_capacities):
 
     from matplotlib import pyplot as plt
 
-    district_heating_areas = select_district_heating_areas('eGon2035')
+    district_heating_areas = select_district_heating_areas("eGon2035")
 
-    for c in ['CHP', 'solar_thermal_collector', 'geo_thermal', 'heat_pump']:
-        district_heating_areas[c] = resulting_capacities[
-            resulting_capacities.carrier==c].set_index(
-                'district_heating_id').capacity
+    for c in ["CHP", "solar_thermal_collector", "geo_thermal", "heat_pump"]:
+        district_heating_areas[c] = (
+            resulting_capacities[resulting_capacities.carrier == c]
+            .set_index("district_heating_id")
+            .capacity
+        )
 
         fig, ax = plt.subplots(1, 1)
-        district_heating_areas.boundary.plot(linewidth=0.2,ax=ax, color='black')
+        district_heating_areas.boundary.plot(
+            linewidth=0.2, ax=ax, color="black"
+        )
         district_heating_areas.plot(
             ax=ax,
             column=c,
-            cmap='magma_r',
+            cmap="magma_r",
             legend=True,
-            legend_kwds={'label': f"Installed {c} in MW",
-                         'orientation': "vertical"})
-        plt.savefig(f'plots/heat_supply_{c}.png', dpi=300)
+            legend_kwds={
+                "label": f"Installed {c} in MW",
+                "orientation": "vertical",
+            },
+        )
+        plt.savefig(f"plots/heat_supply_{c}.png", dpi=300)

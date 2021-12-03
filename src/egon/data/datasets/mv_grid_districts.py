@@ -1,16 +1,63 @@
 """
-Implements the methods for creating medium-voltage grid district areas from
-HV-MV substation locations and municipality borders
+Medium-voltage grid districts describe the area supplied by one MV grid
 
-Methods are heavily inspired by `Hülk et al. (2017)
+Medium-voltage grid districts are defined by one polygon that represents the
+supply area. Each MV grid district is connected to the HV grid via a single
+substation.
+
+The methods used for identifying the MV grid districts are heavily inspired
+by `Hülk et al. (2017)
 <https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531>`_
-(section 2.3), but differ in detail.
-Direct adjacency is preferred over proximity. For polygons of municipalities
-without a substation inside it is iteratively checked for direct adjacent
-other polygons that have a substation inside. Hence, MV grid districts grow
-around a polygon with a substation inside.
+(section 2.3), but the implementation differs in detail.
+The main difference is that direct adjacency is preferred over proximity.
+For polygons of municipalities
+without a substation inside, it is iteratively checked for direct adjacent
+other polygons that have a substation inside. Speaking visually, a MV grid
+district grows around a polygon with a substation inside.
 
-See :func:`define_mv_grid_districts` for more details.
+The grid districts are identified using three data sources
+
+1. Polygons of municipalities (:class:`Vg250GemClean`)
+2. HV-MV substations (:class:`EgonHvmvSubstation`)
+3. HV-MV substation voronoi polygons (:class:`EgonHvmvSubstationVoronoi`)
+
+Fundamentally, it is assumed that grid districts (supply areas) often go
+along borders of administrative units, in particular along the borders of
+municipalities due to the concession levy.
+Furthermore, it is assumed that one grid district is supplied via a single
+substation and that locations of substations and grid districts are designed
+for aiming least lengths of grid line and cables.
+
+With these assumptions, the three data sources from above are processed as
+follows:
+
+* Find the number of substations inside each municipality
+* Split municipalities with more than one substation inside
+  * Cut polygons of municipalities with voronoi polygons of respective
+    substations
+  * Assign resulting municipality polygon fragments to nearest substation
+* Assign municipalities without a single substation to nearest substation in
+  the neighborhood
+* Merge all municipality polygons and parts of municipality polygons to a
+  single polygon grouped by the assigned substation
+
+For finding the nearest substation, as already said, direct adjacency is
+preferred over closest distance. This means, the nearest substation does not
+necessarily have to be the closest substation in the sense of beeline distance.
+But it is the substation definitely located in a neighboring polygon. This
+prevents the algorithm to find solutions where a MV grid districts consists of
+multi-polygons with some space in between.
+Nevertheless, beeline distance still plays an important role, as the algorithm
+acts in two steps
+
+1. Iteratively look for neighboring polygons until there are no further
+   polygons
+2. Find a polygon to assign to by minimum beeline distance
+
+The second step is required in order to cover edge cases, such as islands.
+
+For understanding how this is implemented into separate functions, please
+see :func:`define_mv_grid_districts`.
 """
 
 from functools import partial
@@ -31,11 +78,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.substation import EgonHvmvSubstation
+from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
-from egon.data.processing.substation import (
-    EgonHvmvSubstation,
-    EgonHvmvSubstationVoronoi,
-)
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -81,7 +126,7 @@ class HvmvSubstPerMunicipality(Base):
 
 
 class VoronoiMunicipalityCutsBase(object):
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     municipality_id = Column(Integer)
     voronoi_id = Column(Integer)
     ags_0 = Column(String)
@@ -122,7 +167,7 @@ class MvGridDistrictsDissolved(Base):
         Sequence(f"{__tablename__}_id_seq", schema="grid"),
         primary_key=True,
     )
-    subst_id = Column(Integer)
+    bus_id = Column(Integer)
     geom = Column(Geometry("MultiPolygon", 3035))
     area = Column(Float)
 
@@ -131,7 +176,7 @@ class MvGridDistricts(Base):
     __tablename__ = "egon_mv_grid_district"
     __table_args__ = {"schema": "grid"}
 
-    subst_id = Column(Integer, primary_key=True)
+    bus_id = Column(Integer, primary_key=True)
     geom = Column(Geometry("MultiPolygon", 3035))
     area = Column(Float)
 
@@ -262,7 +307,7 @@ def split_multi_substation_municipalities():
                 VoronoiMunicipalityCuts.municipality_id,
                 VoronoiMunicipalityCuts.ags_0,
                 VoronoiMunicipalityCuts.geom,
-                VoronoiMunicipalityCuts.subst_id,
+                VoronoiMunicipalityCuts.bus_id,
                 VoronoiMunicipalityCuts.voronoi_id,
             ],
             q,
@@ -298,7 +343,7 @@ def split_multi_substation_municipalities():
         ).update(
             {
                 "subst_count": cuts_substation_subquery.c.subst_count,
-                "subst_id": cuts_substation_subquery.c.bus_id,
+                "bus_id": cuts_substation_subquery.c.bus_id,
                 "geom_sub": cuts_substation_subquery.c.geom_sub,
             },
             synchronize_session="fetch",
@@ -397,7 +442,7 @@ def assign_substation_municipality_fragments(
     with_substation, without_substation, strategy, session
 ):
     """
-    Assign subst_id from next neighboring polygon to municipality fragment
+    Assign bus_id from next neighboring polygon to municipality fragment
 
     For parts municipalities without a substation inside their polygon the
     next municipality polygon part is found and assigned.
@@ -427,7 +472,7 @@ def assign_substation_municipality_fragments(
     different in detail.
     """
     # Determine nearest neighboring polygon that has a substation
-    columns_from_cut1_subst = ["subst_id", "subst_count", "geom_sub"]
+    columns_from_cut1_subst = ["bus_id", "subst_count", "geom_sub"]
 
     if strategy == "touches":
         neighboring_criterion = func.ST_Touches(
@@ -526,14 +571,14 @@ def merge_polygons_to_grid_district():
         # Step 1: Merge municipality parts cut by voronoi polygons according
         # to prior determined associated substation
         joined_municipality_parts = session.query(
-            VoronoiMunicipalityCutsAssigned.subst_id,
+            VoronoiMunicipalityCutsAssigned.bus_id,
             func.ST_Multi(
                 func.ST_Union(VoronoiMunicipalityCutsAssigned.geom)
             ).label("geom"),
             func.sum(func.ST_Area(VoronoiMunicipalityCutsAssigned.geom)).label(
                 "area"
             ),
-        ).group_by(VoronoiMunicipalityCutsAssigned.subst_id)
+        ).group_by(VoronoiMunicipalityCutsAssigned.bus_id)
 
         joined_municipality_parts_insert = (
             MvGridDistrictsDissolved.__table__.insert().from_select(
@@ -585,7 +630,7 @@ def merge_polygons_to_grid_district():
         while True:
             previous_ids_length = len(already_assigned)
             with_substation = session.query(
-                MvGridDistrictsDissolved.subst_id,
+                MvGridDistrictsDissolved.bus_id,
                 MvGridDistrictsDissolved.geom,
                 MvGridDistrictsDissolved.id,
             ).subquery()
@@ -615,7 +660,7 @@ def merge_polygons_to_grid_district():
         # Step 4: Merge MV grid district parts
         # Forms one (multi-)polygon for each substation
         joined_mv_grid_district_parts = session.query(
-            MvGridDistrictsDissolved.subst_id,
+            MvGridDistrictsDissolved.bus_id,
             func.ST_Multi(
                 func.ST_Buffer(
                     func.ST_Buffer(
@@ -625,7 +670,7 @@ def merge_polygons_to_grid_district():
                 )
             ).label("geom"),
             func.sum(MvGridDistrictsDissolved.area).label("area"),
-        ).group_by(MvGridDistrictsDissolved.subst_id)
+        ).group_by(MvGridDistrictsDissolved.bus_id)
 
         joined_mv_grid_district_parts_insert = (
             MvGridDistricts.__table__.insert().from_select(
@@ -688,7 +733,7 @@ def nearest_polygon_with_substation(
         session.query(
             without_substation.c.id,
             func.ST_Multi(without_substation.c.geom).label("geom"),
-            with_substation.c.subst_id,
+            with_substation.c.bus_id,
             func.ST_Area(func.ST_Multi(without_substation.c.geom)).label(
                 "area"
             ),
@@ -718,7 +763,7 @@ def nearest_polygon_with_substation(
 
     # Take only one candidate polygon for assgning it
     nearest_neighbors = session.query(
-        all_nearest_neighbors.c.subst_id,
+        all_nearest_neighbors.c.bus_id,
         all_nearest_neighbors.c.geom,
         all_nearest_neighbors.c.area,
     ).distinct(all_nearest_neighbors.c.id)
@@ -772,7 +817,7 @@ def define_mv_grid_districts():
 mv_grid_districts_setup = partial(
     Dataset,
     name="MvGridDistricts",
-    version="0.0.0",
+    version="0.0.2",
     dependencies=[],
     tasks=(define_mv_grid_districts),
 )

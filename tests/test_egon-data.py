@@ -32,9 +32,9 @@ def test_airflow():
     assert result.output == ""
 
 
-def test_pipeline_and_tasks_importability():
+def test_pipeline_importability():
     error = None
-    for m in ["egon.data.airflow.dags.pipeline", "egon.data.airflow.tasks"]:
+    for m in ["egon.data.airflow.dags.pipeline"]:
         try:
             import_module(m)
         except Exception as e:

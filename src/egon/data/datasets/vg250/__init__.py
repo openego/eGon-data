@@ -11,6 +11,9 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
+import time
+import datetime
+import codecs
 import json
 import os
 
@@ -21,6 +24,11 @@ from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
+from egon.data.metadata import (
+    context,
+    meta_metadata,
+    licenses_datenlizenz_deutschland,
+)
 
 
 def download_files():
@@ -79,7 +87,7 @@ def to_postgres():
                 ]
 
         # Set index column and format column headings
-        data.index.set_names("gid", inplace=True)
+        data.index.set_names("id", inplace=True)
         data.columns = [x.lower() for x in data.columns]
 
         # Drop table before inserting data
@@ -100,7 +108,7 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {vg250_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (gid);"
+            f"ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
@@ -149,124 +157,83 @@ def add_metadata():
         },
     }
 
-    url = vg250_config["original_data"]["source"]["url"]
-
-    # Insert metadata for each table
     licenses = [
-        {
-            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
-            "path": "www.govdata.de/dl-de/by-2-0",
-            "instruction": (
-                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
-                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
-                "bereitgestellten Daten und Metadaten dürfen für die "
-                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
-                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
-                "bearbeitet sowie an Dritte übermittelt werden;\n "
-                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
-                "zu selbständigen neuen Datensätzen verbunden werden;\n "
-                "(3) in interne und externe Geschäftsprozesse, Produkte und "
-                "Anwendungen in öffentlichen und nicht öffentlichen "
-                "elektronischen Netzwerken eingebunden werden."
-            ),
-            "attribution": "© Bundesamt für Kartographie und Geodäsie",
-        }
+        licenses_datenlizenz_deutschland(
+            attribution="© Bundesamt für Kartographie und Geodäsie "
+            "2020 (Daten verändert)"
+        )
     ]
+
+    vg250_source = {
+        "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
+        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+        "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+        "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+        "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+        "Verwaltungsebene des jeweiligen Landes.",
+        "path": vg250_config["original_data"]["source"]["url"],
+        "licenses": licenses,
+    }
+
     for table in vg250_config["processed"]["file_table_map"].values():
+        schema_table = ".".join([vg250_config["processed"]["schema"], table])
         meta = {
+            "name": schema_table,
             "title": title_and_description[table]["title"],
+            "id": "WILL_BE_SET_AT_PUBLICATION",
             "description": title_and_description[table]["title"],
-            "language": ["DE"],
+            "language": ["de-DE"],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": context(),
             "spatial": {
-                "location": "",
+                "location": None,
                 "extent": "Germany",
-                "resolution": "vector",
+                "resolution": "1:250000",
             },
             "temporal": {
                 "referenceDate": "2020-01-01",
                 "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
+                    "start": None,
+                    "end": None,
+                    "resolution": None,
+                    "alignment": None,
+                    "aggregationType": None,
                 },
             },
-            "sources": [
-                {
-                    "title": "Dienstleistungszentrum des Bundes für "
-                    "Geoinformation und Geodäsie - Open Data",
-                    "description": "Dieser Datenbestand steht über "
-                    "Geodatendienste gemäß "
-                    "Geodatenzugangsgesetz (GeoZG) "
-                    "(http://www.geodatenzentrum.de/auftrag/pdf"
-                    "/geodatenzugangsgesetz.pdf) für die "
-                    "kommerzielle und nicht kommerzielle "
-                    "Nutzung geldleistungsfrei zum Download "
-                    "und zur Online-Nutzung zur Verfügung. Die "
-                    "Nutzung der Geodaten und Geodatendienste "
-                    "wird durch die Verordnung zur Festlegung "
-                    "der Nutzungsbestimmungen für die "
-                    "Bereitstellung von Geodaten des Bundes "
-                    "(GeoNutzV) (http://www.geodatenzentrum.de"
-                    "/auftrag/pdf/geonutz.pdf) geregelt. "
-                    "Insbesondere hat jeder Nutzer den "
-                    "Quellenvermerk zu allen Geodaten, "
-                    "Metadaten und Geodatendiensten erkennbar "
-                    "und in optischem Zusammenhang zu "
-                    "platzieren. Veränderungen, Bearbeitungen, "
-                    "neue Gestaltungen oder sonstige "
-                    "Abwandlungen sind mit einem "
-                    "Veränderungshinweis im Quellenvermerk zu "
-                    "versehen. Quellenvermerk und "
-                    "Veränderungshinweis sind wie folgt zu "
-                    "gestalten. Bei der Darstellung auf einer "
-                    "Webseite ist der Quellenvermerk mit der "
-                    "URL http://www.bkg.bund.de zu verlinken. "
-                    "© GeoBasis-DE / BKG <Jahr des letzten "
-                    "Datenbezugs> © GeoBasis-DE / BKG "
-                    "<Jahr des letzten Datenbezugs> "
-                    "(Daten verändert) Beispiel: "
-                    "© GeoBasis-DE / BKG 2013",
-                    "path": url,
-                    "licenses": "Geodatenzugangsgesetz (GeoZG)",
-                    "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
-                },
-                {
-                    "title": "BKG - Verwaltungsgebiete 1:250.000 (vg250)",
-                    "description": "Der Datenbestand umfasst sämtliche "
-                    "Verwaltungseinheiten aller hierarchischen "
-                    "Verwaltungsebenen vom Staat bis zu den "
-                    "Gemeinden mit ihren Verwaltungsgrenzen, "
-                    "statistischen Schlüsselzahlen und dem "
-                    "Namen der Verwaltungseinheit sowie der "
-                    "spezifischen Bezeichnung der "
-                    "Verwaltungsebene des jeweiligen "
-                    "Bundeslandes.",
-                    "path": "http://www.bkg.bund.de",
-                    "licenses": licenses,
-                },
-            ],
+            "sources": [vg250_source],
             "licenses": licenses,
             "contributors": [
                 {
                     "title": "Guido Pleßmann",
                     "email": "http://github.com/gplssm",
-                    "date": "2020-12-04",
-                    "object": "",
+                    "date": time.strftime("%Y-%m-%d"),
+                    "object": None,
                     "comment": "Imported data",
+                },
+                {
+                    "title": "Jonathan Amme",
+                    "email": "http://github.com/nesnoj",
+                    "date": time.strftime("%Y-%m-%d"),
+                    "object": None,
+                    "comment": "Metadata extended",
+                },
+            ],
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": schema_table,
+                    "path": None,
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": vg250_metadata_resources_fields(),
+                        "primaryKey": ["id"],
+                        "foreignKeys": [],
+                    },
+                    "dialect": {"delimiter": None, "decimalSeparator": "."},
                 }
             ],
-            "metaMetadata": {
-                "metadataVersion": "OEP-1.4.0",
-                "metadataLicense": {
-                    "name": "CC0-1.0",
-                    "title": "Creative Commons Zero v1.0 Universal",
-                    "path": (
-                        "https://creativecommons.org/publicdomain/zero/1.0/"
-                    ),
-                },
-            },
+            "metaMetadata": meta_metadata(),
         }
 
         meta_json = "'" + json.dumps(meta) + "'"
@@ -290,6 +257,180 @@ def cleaning_and_preperation():
     )
 
 
+def vg250_metadata_resources_fields():
+
+    return [
+        {
+            "description": "Index",
+            "name": "id",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative level",
+            "name": "ade",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Geofactor",
+            "name": "gf",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Particular areas",
+            "name": "bsg",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Territorial code",
+            "name": "ars",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Official Municipality Key",
+            "name": "ags",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Seat of the administration (territorial code)",
+            "name": "sdv_ars",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Geographical name",
+            "name": "gen",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Designation of the administrative unit",
+            "name": "bez",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Identifier",
+            "name": "ibz",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Note",
+            "name": "bem",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Name generation",
+            "name": "nbd",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Land (state)",
+            "name": "sn_l",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative district",
+            "name": "sn_r",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "District",
+            "name": "sn_k",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative association – front part",
+            "name": "sn_v1",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Administrative association – rear part",
+            "name": "sn_v2",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Municipality",
+            "name": "sn_g",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Function of the 3rd key digit",
+            "name": "fk_s3",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "European statistics key",
+            "name": "nuts",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Filled territorial code",
+            "name": "ars_0",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Filled Official Municipality Key",
+            "name": "ags_0",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Effectiveness",
+            "name": "wsk",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "DLM identifier",
+            "name": "debkg_id",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Territorial code (deprecated column)",
+            "name": "rs",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Seat of the administration (territorial code, deprecated column)",
+            "name": "sdv_rs",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Filled territorial code (deprecated column)",
+            "name": "rs_0",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Geometry of areas as WKB",
+            "name": "geometry",
+            "type": "Geometry(Polygon, srid=4326)",
+            "unit": "none",
+        },
+    ]
+
+
 class Vg250(Dataset):
 
     filename = egon.data.config.datasets()["vg250"]["original_data"]["source"][
@@ -299,7 +440,7 @@ class Vg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="VG250",
-            version=self.filename + "-0.0.2",
+            version=self.filename + "-0.0.4",
             dependencies=dependencies,
             tasks=(
                 download_files,

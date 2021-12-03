@@ -11,15 +11,23 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
+import datetime
 import json
 import os
 import shutil
 import time
+import re
 
 import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
+from egon.data.metadata import (
+    context,
+    license_odbl,
+    meta_metadata,
+    generate_resource_fields_from_db_table,
+)
 from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subprocess
@@ -48,17 +56,18 @@ def download():
         urlretrieve(source_url, target_file)
 
 
-def to_postgres(num_processes=1, cache_size=4096):
+def to_postgres(cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
 
     Parameters
     ----------
-    num_processes : int, optional
-        Number of parallel processes used for processing during data import
     cache_size: int, optional
         Memory used during data import
 
     """
+    # Read maximum number of threads per task from egon-data.configuration.yaml
+    num_processes = settings()["egon-data"]["--processes-per-task"]
+
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 
@@ -114,7 +123,9 @@ def to_postgres(num_processes=1, cache_size=4096):
 
 
 def add_metadata():
-    """Writes metadata JSON string into table comment."""
+    """Writes metadata JSON string into table comment.
+
+    """
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]
 
@@ -125,66 +136,56 @@ def add_metadata():
         osm_url = osm_config["original_data"]["source"]["url_testmode"]
         input_filename = osm_config["original_data"]["target"]["file_testmode"]
 
-    spatial_and_date = Path(input_filename).name.split("-")
-    spatial_extend = spatial_and_date[0]
-    osm_data_date = (
-        "20"
-        + spatial_and_date[1][0:2]
-        + "-"
-        + spatial_and_date[1][2:4]
-        + "-"
-        + spatial_and_date[1][4:6]
-    )
+    # Extract spatial extend and date
+    (spatial_extend, osm_data_date) = re.compile(
+        "^([\\w-]*).*-(\\d+)$"
+    ).findall(Path(input_filename).name.split(".")[0])[0]
+    osm_data_date = datetime.datetime.strptime(
+        osm_data_date, "%y%m%d"
+    ).strftime("%y-%m-%d")
 
     # Insert metadata for each table
-    licenses = [
-        {
-            "name": "Open Data Commons Open Database License 1.0",
-            "title": "",
-            "path": "https://opendatacommons.org/licenses/odbl/1.0/",
-            "instruction": (
-                "You are free: To Share, To Create, To Adapt;"
-                " As long as you: Attribute, Share-Alike, Keep open!"
-            ),
-            "attribution": "© Reiner Lemoine Institut",
-        }
-    ]
+    licenses = [license_odbl(attribution="© OpenStreetMap contributors")]
+
     for table in osm_config["processed"]["tables"]:
+        schema_table = ".".join([osm_config["processed"]["schema"], table])
         table_suffix = table.split("_")[1]
         meta = {
+            "name": schema_table,
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
+            "id": "WILL_BE_SET_AT_PUBLICATION",
             "description": (
                 "OpenStreetMap is a free, editable map of the"
                 " whole world that is being built by volunteers"
                 " largely from scratch and released with"
-                " an open-content license."
+                " an open-content license.\n\n"
+                "The OpenStreetMap data here is the result of an PostgreSQL "
+                "database import using osm2pgsql with a custom style file."
             ),
-            "language": ["EN", "DE"],
+            "language": ["en-EN", "de-DE"],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": context(),
             "spatial": {
-                "location": "",
+                "location": None,
                 "extent": f"{spatial_extend}",
-                "resolution": "",
+                "resolution": None,
             },
             "temporal": {
                 "referenceDate": f"{osm_data_date}",
                 "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
+                    "start": None,
+                    "end": None,
+                    "resolution": None,
+                    "alignment": None,
+                    "aggregationType": None,
                 },
             },
             "sources": [
                 {
-                    "title": (
-                        "Geofabrik - Download - OpenStreetMap Data Extracts"
-                    ),
+                    "title": "OpenStreetMap Data Extracts (Geofabrik)",
                     "description": (
-                        'Data dump taken on "referenceDate",'
-                        f" i.e. {osm_data_date}."
-                        " A subset of this is selected using osm2pgsql"
-                        ' using the style file "oedb.style".'
+                        "Full data extract of OpenStreetMap data for defined "
+                        "spatial extent at ''referenceDate''"
                     ),
                     "path": f"{osm_url}",
                     "licenses": licenses,
@@ -196,20 +197,35 @@ def add_metadata():
                     "title": "Guido Pleßmann",
                     "email": "http://github.com/gplssm",
                     "date": time.strftime("%Y-%m-%d"),
-                    "object": "",
+                    "object": None,
                     "comment": "Imported data",
+                },
+                {
+                    "title": "Jonathan Amme",
+                    "email": "http://github.com/nesnoj",
+                    "date": time.strftime("%Y-%m-%d"),
+                    "object": None,
+                    "comment": "Metadata extended",
+                },
+            ],
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": schema_table,
+                    "path": None,
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": generate_resource_fields_from_db_table(
+                            osm_config["processed"]["schema"], table
+                        ),
+                        "primaryKey": ["id"],
+                        "foreignKeys": [],
+                    },
+                    "dialect": {"delimiter": None, "decimalSeparator": "."},
                 }
             ],
-            "metaMetadata": {
-                "metadataVersion": "OEP-1.4.0",
-                "metadataLicense": {
-                    "name": "CC0-1.0",
-                    "title": "Creative Commons Zero v1.0 Universal",
-                    "path": (
-                        "https://creativecommons.org/publicdomain/zero/1.0/"
-                    ),
-                },
-            },
+            "metaMetadata": meta_metadata(),
         }
 
         meta_json = "'" + json.dumps(meta) + "'"
@@ -220,7 +236,7 @@ def add_metadata():
 def modify_tables():
     """Adjust primary keys, indices and schema of OSM tables.
 
-    * The Column "gid" is added and used as the new primary key.
+    * The Column "id" is added and used as the new primary key.
     * Indices (GIST, GIN) are reset
     * The tables are moved to the schema configured as the "output_schema".
     """
@@ -239,10 +255,10 @@ def modify_tables():
         # Drop primary keys
         sql_statements.append(f"DROP INDEX IF EXISTS {table}_pkey;")
 
-        # Add primary key on newly created column "gid"
-        sql_statements.append(f"ALTER TABLE public.{table} ADD gid SERIAL;")
+        # Add primary key on newly created column "id"
+        sql_statements.append(f"ALTER TABLE public.{table} ADD id SERIAL;")
         sql_statements.append(
-            f"ALTER TABLE public.{table} ADD PRIMARY KEY (gid);"
+            f"ALTER TABLE public.{table} ADD PRIMARY KEY (id);"
         )
         sql_statements.append(
             f"ALTER TABLE public.{table} RENAME COLUMN way TO geom;"
@@ -285,7 +301,7 @@ class OpenStreetMap(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OpenStreetMap",
-            version="0.0.1",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(download, to_postgres, modify_tables, add_metadata),
         )

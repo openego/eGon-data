@@ -109,15 +109,18 @@ packages are required too. Right now these are:
 * `postgis <https://postgis.net/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install postgis`.
+
 * osmTGmod resp. osmosis needs `java <https://www.java.com/>`_.
   On recent Ubuntu version you can install it via
   :code:`sudo apt install default-jre` and
   :code:`sudo apt install default-jdk`.
 
-
 * `gdal <https://gdal.org/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install gdal-bin`.
+
+* curl is required.
+  You can install it via :code:`sudo apt install curl`.
 
 * To download ERA5 weather data you need to register at the CDS
   registration page and install the CDS API key as described
@@ -167,7 +170,7 @@ to it.
 Run the workflow
 ================
 
-The :py:mod:`egon.data` package installs a command line application
+The :code:`egon.data` package installs a command line application
 called :code:`egon-data` with which you can control the workflow so once
 the installation is successful, you can explore the command line
 interface starting with :code:`egon-data --help`.
@@ -188,7 +191,7 @@ solution.
 .. warning::
 
    A complete run of the workflow might require much computing power and
-   can't be run on laptop. Use the :ref:`test mode <Test mode>` for
+   can't be run on laptop. Use the `test mode <#test-mode>`_ for
    experimenting.
 
 .. warning::
