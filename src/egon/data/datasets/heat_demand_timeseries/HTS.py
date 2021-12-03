@@ -610,8 +610,8 @@ def annual_demand_generator():
         ON a.zensus_population_id = b.id
         WHERE a.sector = 'residential'
         """,
-        epsg=4326
-        )
+        epsg=4326,
+    )
 
     temperature_zones = gpd.read_file(
         os.path.join(
@@ -668,19 +668,26 @@ def annual_demand_generator():
         SELECT * FROM 
         society.egon_destatis_zensus_building_per_ha
         WHERE attribute = 'GEBTYPGROESSE'
-        """)
+        """
+    )
 
     house_count["Household Stock"] = ""
 
-    house_count.loc[house_count["characteristics_text"].isin(sfh_chartext),
-               "Household Stock"] = "SFH"
+    house_count.loc[
+        house_count["characteristics_text"].isin(sfh_chartext),
+        "Household Stock",
+    ] = "SFH"
 
-    house_count.loc[house_count["characteristics_text"].isin(mfh_chartext),
-               "Household Stock"] = "MFH"
+    house_count.loc[
+        house_count["characteristics_text"].isin(mfh_chartext),
+        "Household Stock",
+    ] = "MFH"
 
-    house_count = house_count.groupby(
-        ["zensus_population_id", "Household Stock"]
-    ).sum("quantity").reset_index()
+    house_count = (
+        house_count.groupby(["zensus_population_id", "Household Stock"])
+        .sum("quantity")
+        .reset_index()
+    )
 
     house_count = house_count.pivot_table(
         values="quantity",
@@ -1101,6 +1108,7 @@ def residential_demand_scale(aggregation_level):
     district_heating = psycop_df_AF(
         "demand.egon_map_zensus_district_heating_areas"
     )
+
     district_heating = district_heating.pivot_table(
         values="area_id", index="zensus_population_id", columns="scenario"
     )
