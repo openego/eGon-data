@@ -602,42 +602,16 @@ def annual_demand_generator():
         respective associated Station
 
     """
-
-    demand = psycop_df_AF("demand.egon_peta_heat")
-    a_pha = psycop_df_AF("society.egon_destatis_zensus_apartment_per_ha")
-    b_pha = psycop_df_AF("society.egon_destatis_zensus_building_per_ha")
-    h_pha = psycop_df_AF("society.egon_destatis_zensus_household_per_ha")
-
-    zp_pha = psycop_gdf_AF("society.destatis_zensus_population_per_ha")
-
-    demand = demand[demand["sector"] == "residential"]
-
-    a_pha_1 = a_pha[["zensus_population_id", "grid_id"]]
-    a_pha_1 = a_pha_1.drop_duplicates(subset="zensus_population_id")
-    b_pha_1 = b_pha[["zensus_population_id", "grid_id"]]
-    b_pha_1 = b_pha_1.drop_duplicates(subset="zensus_population_id")
-    h_pha_1 = h_pha[["zensus_population_id", "grid_id"]]
-    h_pha_1 = h_pha_1.drop_duplicates(subset="zensus_population_id")
-
-    all_grid = a_pha_1.append(b_pha_1).append(h_pha_1)
-    all_grid = all_grid.drop_duplicates(subset="zensus_population_id")
-    demand_grid = pd.merge(
-        demand, all_grid, how="inner", on="zensus_population_id"
+    demand_geom = db.select_geodataframe(
+        """
+        SELECT a.demand, b.geom, a.zensus_population_id, a.scenario
+        FROM demand.egon_peta_heat a
+        JOIN society.destatis_zensus_population_per_ha b
+        ON a.zensus_population_id = b.id
+        WHERE a.sector = 'residential'
+        """,
+        epsg=4326,
     )
-
-    all_geom = zp_pha.drop(
-        zp_pha.columns.difference(["grid_id", "geom"]), axis=1
-    )
-    demand_geom = pd.merge(demand_grid, all_geom, how="inner", on="grid_id")
-
-    demand_geom = gpd.GeoDataFrame(demand_geom, geometry="geom")
-    demand_geom = demand_geom.drop(
-        demand_geom.columns.difference(
-            ["demand", "grid_id", "geom", "zensus_population_id", "scenario"]
-        ),
-        1,
-    )
-    demand_geom["geom"] = demand_geom["geom"].to_crs(epsg=4326)
 
     temperature_zones = gpd.read_file(
         os.path.join(
@@ -689,40 +663,32 @@ def annual_demand_generator():
         "Anderer Gebäudetyp",
     ]
 
-    bg_pha = b_pha[b_pha["attribute"] == "GEBTYPGROESSE"]
-
-    def household_stock(x):
+    house_count = db.select_dataframe(
         """
-
-
-        Parameters
-        ----------
-        x : str
-            household characteristics
-
-        Returns
-        -------
-        output : str
-            Categorized to either SFH or MFH
-
+        SELECT * FROM 
+        society.egon_destatis_zensus_building_per_ha
+        WHERE attribute = 'GEBTYPGROESSE'
         """
-        if x in sfh_chartext:
-            output = "SFH"
-        if x in mfh_chartext:
-            output = "MFH"
-        return output
-
-    bg_pha["Household Stock"] = bg_pha["characteristics_text"].apply(
-        household_stock
     )
 
-    house_count = bg_pha[
-        ["zensus_population_id", "quantity", "Household Stock"]
-    ]
-    house_count = house_count.groupby(
-        ["zensus_population_id", "Household Stock"]
-    ).sum("quantity")
-    house_count = house_count.reset_index()
+    house_count["Household Stock"] = ""
+
+    house_count.loc[
+        house_count["characteristics_text"].isin(sfh_chartext),
+        "Household Stock",
+    ] = "SFH"
+
+    house_count.loc[
+        house_count["characteristics_text"].isin(mfh_chartext),
+        "Household Stock",
+    ] = "MFH"
+
+    house_count = (
+        house_count.groupby(["zensus_population_id", "Household Stock"])
+        .sum("quantity")
+        .reset_index()
+    )
+
     house_count = house_count.pivot_table(
         values="quantity",
         index="zensus_population_id",
@@ -1142,6 +1108,7 @@ def residential_demand_scale(aggregation_level):
     district_heating = psycop_df_AF(
         "demand.egon_map_zensus_district_heating_areas"
     )
+
     district_heating = district_heating.pivot_table(
         values="area_id", index="zensus_population_id", columns="scenario"
     )
