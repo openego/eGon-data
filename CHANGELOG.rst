@@ -254,7 +254,8 @@ Changed
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
 * Migrate substation scripts to datasets
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
-
+* Integrate fuel and CO2 costs for eGon2035 to scenario parameters
+  `#549 <https://github.com/openego/eGon-data/issues/549>`_
 
 Bug fixes
 ---------

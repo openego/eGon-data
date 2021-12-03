@@ -18,7 +18,27 @@ def global_settings(scenario):
     """
 
     if scenario == "eGon2035":
-        parameters = {"weather_year": 2011, "population_year": 2035}
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2035,
+            "fuel_costs": { # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
+                "oil": 73.8, # [EUR/MWh]
+                "gas": 25.6, # [EUR/MWh]
+                "coal": 20.2, # [EUR/MWh]
+                "lignite": 4.0, # [EUR/MWh]
+                "nuclear": 1.7, # [EUR/MWh]
+            },
+            "co2_costs": 76.5, # [EUR/t_CO2]
+            "co2_emissions":{ # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "waste": 0.165, # [t_CO2/MW_th]
+                "lignite": 0.393, # [t_CO2/MW_th]
+                "gas": 0.201, # [t_CO2/MW_th]
+                "nuclear": 0.0, # [t_CO2/MW_th]
+                "oil": 0.288, # [t_CO2/MW_th]
+                "coal": 0.335, # [t_CO2/MW_th]
+                "other_non_renewable": 0.268 # [t_CO2/MW_th]
+                }
+           }
 
     elif scenario == "eGon100RE":
         parameters = {"weather_year": 2011, "population_year": 2050}
