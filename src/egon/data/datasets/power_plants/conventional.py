@@ -7,7 +7,7 @@ data from MaStR and NEP.
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 import egon.data.config
 
 
@@ -75,59 +75,16 @@ def select_no_chp_combustion_mastr(carrier):
         SELECT  "EinheitMastrNummer",
                 el_capacity,
                 ST_setSRID(geometry, 4326) as geometry,
-                carrier
+                carrier,
+                plz,
+                city,
+                federal_state
             FROM {cfg['sources']['mastr_combustion_without_chp']}
             WHERE carrier = '{carrier}';
         """,
         index_col=None,
         geom_col="geometry",
         epsg=4326,
-    )
-
-    # Temporary code to add plz and city to mastr df from bnetza_mastr_combustion_cleaned.csv
-
-    sources = config.datasets()["chp_location"]["sources"]
-    # Read-in data from MaStR
-    MaStR_konv = pd.read_csv(
-        sources["mastr_combustion"],
-        delimiter=",",
-        usecols=["EinheitMastrNummer", "Postleitzahl", "Ort"],
-    )
-
-    # Rename columns
-    MaStR_konv = MaStR_konv.rename(
-        columns={"Postleitzahl": "plz", "Ort": "city"}
-    )
-
-    # Merge data together
-    mastr.EinheitMastrNummer = mastr.EinheitMastrNummer.str.slice(stop=15)
-    mastr = mastr.merge(
-        MaStR_konv,
-        how="left",
-        left_on=["EinheitMastrNummer"],
-        right_on=["EinheitMastrNummer"],
-    )
-
-    # Import geodataframe on federal states and their borders
-
-    fs = db.select_geodataframe(
-        f"""
-        SELECT  gen,
-                geometry
-            FROM {cfg['sources']['geom_federal_states']}
-            WHERE gf = 4;
-        """,
-        index_col=None,
-        geom_col="geometry",
-        epsg=4326,
-    )
-
-    # Spatial join to add name of federal state to dataframe containing MaStR data
-
-    mastr = (
-        gpd.sjoin(mastr, fs, how="inner", op="intersects")
-        .drop(columns=["index_right"])
-        .rename(columns={"gen": "federal_state"})
     )
 
     return mastr

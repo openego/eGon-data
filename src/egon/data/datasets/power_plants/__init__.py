@@ -53,7 +53,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -521,19 +521,19 @@ def assign_bus_id(power_plants, cfg):
             power_plants[power_plants.index.isin(power_plants_ehv)],
             ehv_grid_districts,
         )
-        
+
         if 'bus_id_right' in ehv_join.columns:
             power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,
             ).bus_id_right
-        
+
         else:
             power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,
             ).bus_id
-            
+
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
     not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""

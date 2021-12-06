@@ -21,7 +21,6 @@ from egon.data.datasets.chp.small_chp import (
     extension_per_federal_state,
     select_target,
 )
-from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -332,7 +331,13 @@ def insert_chp_egon2035():
 
     gpd.GeoDataFrame(
         MaStR_konv[
-            ["EinheitMastrNummer", "el_capacity", "geometry", "carrier"]
+            ["EinheitMastrNummer",
+             "el_capacity",
+             "geometry",
+             "carrier",
+             'plz',
+             'city',
+             'federal_state']
         ]
     ).to_postgis(
         targets["mastr_conventional_without_chp"]["table"],
@@ -438,7 +443,7 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_tables,
