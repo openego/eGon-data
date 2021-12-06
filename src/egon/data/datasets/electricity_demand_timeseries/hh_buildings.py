@@ -159,8 +159,8 @@ def match_osm_and_zensus_data(
 
     # count buildings/ids for each cell
     buildings_per_cell = egon_map_zensus_buildings_filtered.groupby(
-        "id"
-    ).id.count()
+        "cell_id"
+    )["id"].count()
     buildings_per_cell = buildings_per_cell.rename("building_ids")
 
     # add buildings left join to have all the cells with assigned profiles
