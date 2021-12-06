@@ -127,20 +127,20 @@ def match_nep_no_chp(
         {
             "Hamburg": "HH",
             "Sachsen": "SN",
-            "Mecklenburg-Vorpommern": "MV",
-            "Thüringen": "TH",
-            "Schleswig-Holstein": "SH",
+            "MecklenburgVorpommern": "MV",
+            "Thueringen": "TH",
+            "SchleswigHolstein": "SH",
             "Bremen": "HB",
             "Saarland": "SL",
             "Bayern": "BY",
-            "Baden-Württemberg": "BW",
+            "BadenWuerttemberg": "BW",
             "Brandenburg": "BB",
             "Hessen": "HE",
-            "Nordrhein-Westfalen": "NW",
+            "NordrheinWestfalen": "NW",
             "Berlin": "BE",
             "Niedersachsen": "NI",
-            "Sachsen-Anhalt": "ST",
-            "Rheinland-Pfalz": "RP",
+            "SachsenAnhalt": "ST",
+            "RheinlandPfalz": "RP",
         }
     )
 
