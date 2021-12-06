@@ -174,8 +174,11 @@ def buses(scenario, sources, targets):
 
     # Add buses for other voltage levels
     foreign_buses = get_cross_border_buses(scenario, sources)
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        foreign_buses = foreign_buses[foreign_buses.country != "DE"]
     vnom_per_country = foreign_buses.groupby("country").v_nom.unique().copy()
     for cntr in vnom_per_country.index:
+        print(cntr)
         if 110.0 in vnom_per_country[cntr]:
             central_buses = central_buses.append(
                 {
@@ -294,6 +297,8 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     # Calculate cross-border busses and lines from osmtgmod
     foreign_buses = get_cross_border_buses(scenario, sources)
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        foreign_buses = foreign_buses[foreign_buses.country != "DE"]
     lines = get_cross_border_lines(scenario, sources)
 
     # Select bus outside of Germany from border-crossing lines
@@ -320,12 +325,16 @@ def cross_border_lines(scenario, sources, targets, central_buses):
         .loc[lines.foreign_bus, "country"]
         .values
     )
+
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        new_lines = new_lines[~new_lines.country.isnull()]
     new_lines.line_id = range(
-        db.next_etrago_id("line"), db.next_etrago_id("line") + len(lines)
+        db.next_etrago_id("line"), db.next_etrago_id("line") + len(new_lines)
     )
 
     # Set bus in center of foreogn countries as bus1
     for i, row in new_lines.iterrows():
+        print(row)
         new_lines.loc[i, "bus1"] = central_buses.bus_id[
             (central_buses.country == row.country)
             & (central_buses.v_nom == row.v_nom)
@@ -358,12 +367,15 @@ def cross_border_lines(scenario, sources, targets, central_buses):
         new_lines[parameter] = (
             new_lines[parameter] * old_length / new_lines["length"]
         )
+
     # Drop intermediate columns
     new_lines.drop(
         ["foreign_bus", "country", "geom_bus0", "geom_bus1", "geom"],
         axis="columns",
         inplace=True,
     )
+
+    new_lines = new_lines[new_lines.bus0 != new_lines.bus1]
 
     # Set scn_name
 
