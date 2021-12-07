@@ -156,8 +156,9 @@ with airflow.DAG(
         dependencies=[osm, zensus_misc_import]
     )
     osm_buildings_streets.insert_into(pipeline)
-    osm_buildings_streets_preprocessing = tasks["osm_buildings_streets.preprocessing"]
-
+    osm_buildings_streets_preprocessing = tasks[
+        "osm_buildings_streets.preprocessing"
+    ]
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -281,8 +282,7 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons])
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -328,10 +328,11 @@ with airflow.DAG(
 
     # Calculate dynamic line rating for HV trans lines
     dlr = Calculate_dlr(
-        dependencies=[osmtgmod_pypsa,
-                      download_data_bundle,
-                      download_weather_data,
-            ]
+        dependencies=[
+            osmtgmod_pypsa,
+            download_data_bundle,
+            download_weather_data,
+        ]
     )
 
     # Map zensus grid districts
@@ -384,10 +385,11 @@ with airflow.DAG(
             demandregio,
             osm_buildings_streets_preprocessing,
         ],
-        tasks=(hh_profiles.houseprofiles_in_census_cells,
-               mv_hh_electricity_load_2035,
-               mv_hh_electricity_load_2050,
-               )
+        tasks=(
+            hh_profiles.houseprofiles_in_census_cells,
+            mv_hh_electricity_load_2035,
+            mv_hh_electricity_load_2050,
+        ),
     )
     hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
@@ -402,7 +404,9 @@ with airflow.DAG(
     )
 
     hh_demand_buildings_setup.insert_into(pipeline)
-    map_houseprofiles_to_buildings = tasks["electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"]
+    map_houseprofiles_to_buildings = tasks[
+        "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
+    ]
 
     # Industry
 
@@ -427,7 +431,14 @@ with airflow.DAG(
     )
 
     # CHP locations
-    chp = Chp(dependencies=[mv_grid_districts, mastr_data, industrial_sites, create_gas_polygons])
+    chp = Chp(
+        dependencies=[
+            mv_grid_districts,
+            mastr_data,
+            industrial_sites,
+            create_gas_polygons,
+        ]
+    )
 
     chp_locations_nep = tasks["chp.insert-chp-egon2035"]
     chp_heat_bus = tasks["chp.assign-heat-bus"]
@@ -488,10 +499,13 @@ with airflow.DAG(
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # DSM
-    components_dsm =  dsm_Potential(
-        dependencies = [cts_electricity_demand_annual,
-                        demand_curves_industry,
-                        osmtgmod_pypsa])
+    components_dsm = dsm_Potential(
+        dependencies=[
+            cts_electricity_demand_annual,
+            demand_curves_industry,
+            osmtgmod_pypsa,
+        ]
+    )
 
     # Pumped hydro units
 
@@ -517,10 +531,16 @@ with airflow.DAG(
             import_district_heating_areas,
             vg250,
             map_zensus_grid_districts,
+            hh_demand_buildings_setup,
         ]
     )
 
     # HTS to etrago table
     hts_etrago_table = HtsEtragoTable(
-                        dependencies = [heat_time_series,mv_grid_districts,
-                                        district_heating_areas,heat_etrago])
+        dependencies=[
+            heat_time_series,
+            mv_grid_districts,
+            district_heating_areas,
+            heat_etrago,
+        ]
+    )
