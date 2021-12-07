@@ -254,6 +254,8 @@ Changed
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
 * Migrate substation scripts to datasets
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
+* Add information on plz, city and federal state to data on mastr without chp
+  `#425 <https://github.com/openego/eGon-data/issues/425>`_
 
 
 Bug fixes
