@@ -663,38 +663,46 @@ def annual_demand_generator():
         "Anderer Gebäudetyp",
     ]
 
-    house_count = db.select_dataframe(
+    house_count_MFH = db.select_dataframe(
         """
-        SELECT * FROM 
-        society.egon_destatis_zensus_building_per_ha
-        WHERE attribute = 'GEBTYPGROESSE'
+        
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+        (
+        SELECT cell_id, COUNT(*), building_id
+        FROM demand.egon_household_electricity_profile_of_buildings
+        GROUP BY (cell_id, building_id)
+        ) a
+        
+        WHERE a.count >1
+        GROUP BY cell_id
+        """,
+        index_col="zensus_population_id",
+    )
+
+    house_count_SFH = db.select_dataframe(
         """
+        
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+        (
+        SELECT cell_id, COUNT(*), building_id
+        FROM demand.egon_household_electricity_profile_of_buildings
+        GROUP BY (cell_id, building_id)
+        ) a 
+        WHERE a.count = 1
+        GROUP BY cell_id
+        """,
+        index_col="zensus_population_id",
     )
 
-    house_count["Household Stock"] = ""
-
-    house_count.loc[
-        house_count["characteristics_text"].isin(sfh_chartext),
-        "Household Stock",
-    ] = "SFH"
-
-    house_count.loc[
-        house_count["characteristics_text"].isin(mfh_chartext),
-        "Household Stock",
-    ] = "MFH"
-
-    house_count = (
-        house_count.groupby(["zensus_population_id", "Household Stock"])
-        .sum("quantity")
-        .reset_index()
+    house_count = pd.DataFrame(
+        index=house_count_SFH.index.append(house_count_MFH.index).unique(),
+        data={"SFH": 0, "MFH": 0},
     )
 
-    house_count = house_count.pivot_table(
-        values="quantity",
-        index="zensus_population_id",
-        columns="Household Stock",
-    )
-    house_count = house_count.fillna(0)
+    house_count["SFH"] = house_count_SFH.number
+    house_count["MFH"] = house_count_MFH.number
+
+    house_count.fillna(0, inplace=True)
 
     demand_count = pd.merge(
         house_count,
@@ -1808,7 +1816,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
