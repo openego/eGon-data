@@ -56,10 +56,7 @@ from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
-from egon.data.datasets.zensus import (
-    ZensusPopulation,
-    ZensusMiscellaneous,
-)
+from egon.data.datasets.zensus import ZensusPopulation, ZensusMiscellaneous
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.processing.gas_areas import GasAreas
@@ -118,8 +115,9 @@ with airflow.DAG(
     zensus_vg250 = ZensusVg250(dependencies=[vg250, zensus_population])
 
     # Download and import zensus data on households, buildings and apartments
-    zensus_miscellaneous = ZensusMiscellaneous(dependencies=[zensus_population, zensus_vg250])
-
+    zensus_miscellaneous = ZensusMiscellaneous(
+        dependencies=[zensus_population, zensus_vg250]
+    )
 
     # DemandRegio data import
     demandregio = DemandRegio(
@@ -129,11 +127,7 @@ with airflow.DAG(
 
     # Society prognosis
     society_prognosis = SocietyPrognosis(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            zensus_population,
-        ]
+        dependencies=[demandregio, zensus_vg250, zensus_population]
     )
 
     # Distribute household electrical demands to zensus cells
@@ -171,11 +165,7 @@ with airflow.DAG(
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
-        dependencies=[
-            osm_download,
-            substation_extraction,
-            setup_etrago,
-        ]
+        dependencies=[osm_download, substation_extraction, setup_etrago]
     )
     osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
@@ -183,10 +173,7 @@ with airflow.DAG(
 
     # create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[
-            osmtgmod_substation,
-            vg250,
-        ]
+        dependencies=[osmtgmod_substation, vg250]
     )
 
     # MV grid districts
@@ -252,10 +239,13 @@ with airflow.DAG(
 
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
-        dependencies=[heat_demand_Germany, scenario_parameters, zensus_miscellaneous]
+        dependencies=[
+            heat_demand_Germany,
+            scenario_parameters,
+            zensus_miscellaneous,
+        ]
     )
     import_district_heating_areas = tasks["district_heating_areas.demarcation"]
-
 
     # Calculate dynamic line rating for HV trans lines
     dlr = Calculate_dlr(
@@ -396,8 +386,9 @@ with airflow.DAG(
 
     # Fill eTraGo Generators tables
     fill_etrago_generators = Egon_etrago_gen(
-        dependencies=[power_plants, weather_data])
-    
+        dependencies=[power_plants, weather_data]
+    )
+
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[
@@ -411,7 +402,12 @@ with airflow.DAG(
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[heat_supply, mv_grid_districts, setup_etrago, renewable_feedin]
+        dependencies=[
+            heat_supply,
+            mv_grid_districts,
+            setup_etrago,
+            renewable_feedin,
+        ]
     )
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
