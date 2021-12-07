@@ -286,7 +286,7 @@ with airflow.DAG(
     feedin_wind_onshore = tasks["renewable_feedin.wind"]
     feedin_pv = tasks["renewable_feedin.pv"]
     feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
-    
+
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
         dependencies=[heat_demand_Germany, scenario_parameters]
@@ -385,7 +385,11 @@ with airflow.DAG(
     # Electrical loads to eTraGo
 
     electrical_load_etrago = ElectricalLoadEtrago(
-        dependencies=[demand_curves_industry, cts_electricity_demand_annual]
+        dependencies=[
+            demand_curves_industry,
+            cts_electricity_demand_annual,
+            hh_demand,
+            ]
     )
 
     # CHP locations
@@ -436,7 +440,7 @@ with airflow.DAG(
     # Fill eTraGo Generators tables
     fill_etrago_generators = Egon_etrago_gen(
         dependencies=[power_plants, weather_data])
-    
+
     # Heat supply
     heat_supply = HeatSupply(
         dependencies=[
