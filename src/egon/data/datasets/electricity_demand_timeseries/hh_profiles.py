@@ -214,7 +214,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
 
     cell_id = Column(Integer, primary_key=True)
     grid_id = Column(String)
-    cell_profile_ids = Column(ARRAY(String, dimensions=2))
+    cell_profile_ids = Column(ARRAY(String, dimensions=1))
     nuts3 = Column(String)
     nuts1 = Column(String)
     factor_2035 = Column(Float)
@@ -225,14 +225,13 @@ class EgonEtragoElectricityHouseholds(Base):
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
 
-    version = Column(String, primary_key=True)
     bus_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
     q_set = Column(ARRAY(Float))
 
 
-hh_demand_setup = partial(
+setup = partial(
     Dataset,
     name="HH Demand",
     version="0.0.2",
@@ -1159,6 +1158,12 @@ def houseprofiles_in_census_cells():
     the database as pandas
 
     """
+
+    def gen_profile_names(n):
+        """Join from Format (str),(int) to (str)a000(int)"""
+        a = f"{n[0]}a{int(n[1]):04d}"
+        return a
+
     # Init random generators using global seed
     random.seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
@@ -1204,6 +1209,18 @@ def houseprofiles_in_census_cells():
     )
     df_cell_demand_metadata = df_cell_demand_metadata.reset_index(drop=False)
 
+    df_cell_demand_metadata["cell_id"] = df_cell_demand_metadata[
+        "cell_id"
+    ].astype(int)
+
+    # df_cell_demand_metadata["cell_profile_ids"] = df_cell_demand_metadata[
+    #     "cell_profile_ids"
+    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+
+    df_cell_demand_metadata["cell_profile_ids"] = df_cell_demand_metadata[
+        "cell_profile_ids"
+    ].apply(lambda x: list(map(gen_profile_names, x)))
+
     # Insert Zensus-cell-profile metadata-table into respective database table
     engine = db.engine()
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
@@ -1212,9 +1229,7 @@ def houseprofiles_in_census_cells():
     HouseholdElectricityProfilesInCensusCells.__table__.create(
         bind=engine, checkfirst=True
     )
-    df_cell_demand_metadata["cell_id"] = df_cell_demand_metadata[
-        "cell_id"
-    ].astype(int)
+
     with db.session_scope() as session:
         session.bulk_insert_mappings(
             HouseholdElectricityProfilesInCensusCells,
@@ -1242,9 +1257,9 @@ def get_houseprofiles_in_census_cells():
             q.statement, q.session.bind, index_col="cell_id"
         )
 
-    census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
-        "cell_profile_ids"
-    ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+    # census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
+    #     "cell_profile_ids"
+    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     return census_profile_mapping
 
@@ -1324,9 +1339,9 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     cell_demand_metadata = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
-    cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
-        "cell_profile_ids"
-    ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+    # cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
+    #     "cell_profile_ids"
+    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
     return cell_demand_metadata
 
 
@@ -1336,8 +1351,9 @@ def get_hh_profiles_from_db(profile_ids):
 
     Parameters
     ----------
-    profile_ids: list of tuple (str, int)
-        tuple consists of (category, profile number)
+    profile_ids: list of str (str, int)
+        (type)a00..(profile number) with number having exactly 4 digits
+
 
     See Also
     --------
@@ -1349,13 +1365,13 @@ def get_hh_profiles_from_db(profile_ids):
          Selection of household demand profiles
     """
 
-    def gen_profile_names(n):
-        """Join from Format (str),(int) to (str)a000(int)"""
-        a = f"{n[0]}a{int(n[1]):04d}"
-        return a
-
-    # Format profile ids to query
-    profile_ids = list(map(gen_profile_names, profile_ids))
+    # def gen_profile_names(n):
+    #     """Join from Format (str),(int) to (str)a000(int)"""
+    #     a = f"{n[0]}a{int(n[1]):04d}"
+    #     return a
+    #
+    # # Format profile ids to query
+    # profile_ids = list(map(gen_profile_names, profile_ids))
 
     # Query load profiles
     with db.session_scope() as session:
@@ -1367,6 +1383,7 @@ def get_hh_profiles_from_db(profile_ids):
         cells_query.statement, cells_query.session.bind, index_col="type"
     )
 
+    # convert array to Dataframe
     df_profile_loads = pd.DataFrame.from_records(
         df_profile_loads["load_in_wh"], index=df_profile_loads.index
     ).T
@@ -1427,7 +1444,7 @@ def get_scaled_profiles_from_db(
 
 
 def mv_grid_district_HH_electricity_load(
-    scenario_name, scenario_year, version, drop_table=False
+    scenario_name, scenario_year, drop_table=False
 ):
     """
     Aggregated household demand time series at HV/MV substation level
@@ -1442,8 +1459,6 @@ def mv_grid_district_HH_electricity_load(
         Scenario name identifier, i.e. "eGon2035"
     scenario_year: int
         Scenario year according to `scenario_name`
-    version: str
-        Version identifier
     drop_table: bool
         Toggle to True for dropping table at beginning of this function.
         Be careful, delete any data.
@@ -1454,6 +1469,13 @@ def mv_grid_district_HH_electricity_load(
         Multiindexed dataframe with `timestep` and `bus_id` as indexers.
         Demand is given in kWh.
     """
+
+    def tuple_format(x):
+        """Convert Profile ids from string to tuple (type, id)
+        Convert from (str)a000(int) to (str), (int)
+        """
+        return (x[:2], int(x[3:]))
+
     engine = db.engine()
 
     with db.session_scope() as session:
@@ -1469,8 +1491,10 @@ def mv_grid_district_HH_electricity_load(
     cells = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
+
+    # convert profile ids to tuple (type, id) format
     cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
-        lambda x: [(cat, int(profile_id)) for cat, profile_id in x]
+        lambda x: list(map(tuple_format, x))
     )
 
     # Read demand profiles from egon-data-bundle
@@ -1497,7 +1521,6 @@ def mv_grid_district_HH_electricity_load(
     mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Add remaining columns
-    mvgd_profiles["version"] = version
     mvgd_profiles["scn_name"] = scenario_name
 
     if drop_table:
