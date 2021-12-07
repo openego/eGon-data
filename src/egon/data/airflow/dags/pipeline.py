@@ -409,7 +409,7 @@ with airflow.DAG(
 
     # Electrical loads to eTraGo
 
-        electrical_load_etrago = ElectricalLoadEtrago(
+    electrical_load_etrago = ElectricalLoadEtrago(
         dependencies=[
             demand_curves_industry,
             cts_electricity_demand_annual,
