@@ -39,6 +39,8 @@ from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.electricity_demand_timeseries import hh_profiles
+from egon.data.datasets.electricity_demand_timeseries import hh_buildings
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenMethaneLinkEtrago,
@@ -549,6 +551,7 @@ with airflow.DAG(
             import_district_heating_areas,
             vg250,
             map_zensus_grid_districts,
+            hh_demand_buildings_setup,
         ]
     )
 
