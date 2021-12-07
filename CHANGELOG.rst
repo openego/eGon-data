@@ -161,6 +161,8 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include Pypsa default values in table creation
+  `#544 <https://github.com/openego/eGon-data/issues/544>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

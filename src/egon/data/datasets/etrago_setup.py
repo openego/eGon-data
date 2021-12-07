@@ -73,7 +73,7 @@ class EgonPfHvGenerator(Base):
     p_nom_extendable = Column(Boolean)
     p_nom_min = Column(Float(53))
     p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
+    p_min_pu_fixed = Column(Float(53), server_default=0.)
     p_max_pu_fixed = Column(Float(53))
     p_set_fixed = Column(Float(53))
     q_set_fixed = Column(Float(53))
@@ -360,12 +360,12 @@ class EgonPfHvTransformerTimeseries(Base):
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
-    
+
 
 class EgonPfHvBusmap(Base):
     __tablename__ = "egon_etrago_hv_busmap"
     __table_args__ = {"schema": "grid"}
-     
+
     scn_name = Column(Text, primary_key=True, nullable=False)
     bus0 = Column(Text, primary_key=True, nullable=False)
     bus1 = Column(Text, primary_key=True, nullable=False)
