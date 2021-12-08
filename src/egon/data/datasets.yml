@@ -479,6 +479,14 @@ data-bundle:
     file:
       'data_bundle_egon_data.zip'
 
+pypsa-technology-data:
+  sources:
+    zenodo:
+      deposit_id: 5544025
+  targets:
+    file:
+      'pypsa_technology_data_egon_data.zip'
+
 heat_supply:
   sources:
     scenario_capacities:
