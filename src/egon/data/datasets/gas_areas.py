@@ -49,7 +49,7 @@ class EgonH2VoronoiTmp(Base):
     geom = Column(Geometry("Polygon", 4326))
 
 
-def create_CH4_voronoi():
+def create_CH4_voronoi(scn_name='eGon2035'):
     """
     Creates voronoi polygons for CH4 buses
 
@@ -81,13 +81,13 @@ def create_CH4_voronoi():
     )
 
     db.execute_sql(
-        """
+        f"""
         DROP TABLE IF EXISTS grid.egon_ch4_bus CASCADE;
 
         SELECT bus_id, bus_id as id, geom as point
         INTO grid.egon_ch4_bus
         FROM grid.egon_etrago_bus
-        WHERE carrier = 'CH4';
+        WHERE carrier = 'CH4' AND scn_name = '{scn_name}';
 
         """
     )
@@ -168,7 +168,7 @@ def create_CH4_voronoi():
     )
 
 
-def create_H2_voronoi():
+def create_H2_voronoi(scn_name='eGon2035'):
     """
     Creates voronoi polygons for H2 buses
 
@@ -206,7 +206,7 @@ def create_H2_voronoi():
         SELECT bus_id, bus_id as id, geom as point
         INTO grid.egon_h2_bus
         FROM grid.egon_etrago_bus
-        WHERE carrier LIKE 'H2%%';
+        WHERE carrier LIKE 'H2%%' AND scn_name = '{scn_name}';
 
         """
     )
