@@ -254,6 +254,8 @@ Changed
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
 * Migrate substation scripts to datasets
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 
 
 Bug fixes
