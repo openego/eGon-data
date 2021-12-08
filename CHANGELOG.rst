@@ -161,6 +161,8 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include feedin time series for wind offshore
+  `#531 <https://github.com/openego/eGon-data/issues/531>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

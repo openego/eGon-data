@@ -17,9 +17,9 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
-            tasks={wind, pv, solar_thermal, heat_pump_cop},
+            tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore},
         )
 
 
@@ -41,6 +41,29 @@ def weather_cells_in_germany(geom_column="geom"):
         {cfg['weather_cells']['table']}
         WHERE ST_Intersects('SRID=4326;
         POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
+        geom_col=geom_column,
+        index_col="w_id",
+    )
+
+
+def offshore_weather_cells(geom_column="geom"):
+    """Get weather cells which intersect with Germany
+
+    Returns
+    -------
+    GeoPandas.GeoDataFrame
+        Index and points of weather cells inside Germany
+
+    """
+
+    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+
+    return db.select_geodataframe(
+        f"""SELECT w_id, geom_point, geom
+        FROM {cfg['weather_cells']['schema']}.
+        {cfg['weather_cells']['table']}
+        WHERE ST_Intersects('SRID=4326;
+        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))', geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -305,6 +328,35 @@ def wind():
         con=db.engine(),
         if_exists="append",
     )
+
+
+def wind_offshore():
+    """Insert feed-in timeseries for wind offshore turbines to database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Get offshore weather cells arround Germany
+    weather_cells = offshore_weather_cells()
+
+    # Select weather data for German coast
+    cutout = import_cutout(boundary="Germany-offshore")
+
+    # Select weather year from cutout
+    weather_year = cutout.name.split("-")[2]
+
+    # Calculate feedin timeseries
+    ts_wind_offshore = cutout.wind(
+        "Vestas_V164_7MW_offshore",
+        per_unit=True,
+        shapes=weather_cells.to_crs(4326).geom,
+    )
+
+    # Create dataframe and insert to database
+    insert_feedin(ts_wind_offshore, "wind_offshore", weather_year)
 
 
 def pv():
