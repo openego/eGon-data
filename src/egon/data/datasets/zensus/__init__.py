@@ -15,6 +15,36 @@ import pandas as pd
 from egon.data import db, subprocess
 from egon.data.config import settings
 import egon.data.config
+from egon.data.datasets import Dataset
+
+
+
+class ZensusPopulation(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ZensusPopulation",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                download_zensus_pop,
+                create_zensus_pop_table,
+                population_to_postgres,
+                ),
+        )
+
+
+class ZensusMiscellaneous(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ZensusMiscellaneous",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                download_zensus_misc,
+                create_zensus_misc_tables,
+                zensus_misc_to_postgres,
+                ),
+        )
 
 
 def download_zensus_pop():
@@ -60,13 +90,12 @@ def download_zensus_misc():
             urlretrieve(url, target_file_misc)
 
 
-def create_zensus_tables():
+def create_zensus_pop_table():
     """Create tables for zensus data in postgres database"""
 
     # Get information from data configuration file
     data_config = egon.data.config.datasets()
     zensus_population_processed = data_config["zensus_population"]["processed"]
-    zensus_misc_processed = data_config["zensus_misc"]["processed"]
 
     # Create target schema
     db.execute_sql(
@@ -94,6 +123,18 @@ def create_zensus_tables():
               PRIMARY KEY (id)
         );
         """
+    )
+
+def create_zensus_misc_tables():
+    """Create tables for zensus data in postgres database"""
+
+    # Get information from data configuration file
+    data_config = egon.data.config.datasets()
+    zensus_misc_processed = data_config["zensus_misc"]["processed"]
+
+    # Create target schema
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {zensus_misc_processed['schema']};"
     )
 
     # Create tables for household, apartment and building

@@ -12,7 +12,7 @@ from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 
 def insert_buses(carrier, scenario="eGon2035"):
-    """ Insert heat buses to etrago table
+    """Insert heat buses to etrago table
 
     Heat buses are divided into central and individual heating
 
@@ -88,7 +88,7 @@ def insert_buses(carrier, scenario="eGon2035"):
 
 
 def insert_central_direct_heat(scenario="eGon2035"):
-    """ Insert renewable heating technologies (solar and geo thermal)
+    """Insert renewable heating technologies (solar and geo thermal)
 
     Parameters
     ----------
@@ -183,8 +183,8 @@ def insert_central_direct_heat(scenario="eGon2035"):
     feedin = db.select_dataframe(
         f"""
         SELECT w_id, feedin
-        FROM {sources['solar_thermal_feedin']['schema']}.
-            {sources['solar_thermal_feedin']['table']}
+        FROM {sources['feedin_timeseries']['schema']}.
+            {sources['feedin_timeseries']['table']}
         WHERE carrier = 'solar_thermal'
         AND weather_year = 2011
         """,
@@ -372,7 +372,7 @@ def insert_rural_gas_boilers(scenario="eGon2035", efficiency=0.98):
 
 
 def buses():
-    """ Insert individual and district heat buses into eTraGo-tables
+    """Insert individual and district heat buses into eTraGo-tables
 
     Parameters
     ----------
@@ -388,7 +388,7 @@ def buses():
 
 
 def supply():
-    """ Insert individual and district heat supply into eTraGo-tables
+    """Insert individual and district heat supply into eTraGo-tables
 
     Parameters
     ----------
@@ -411,7 +411,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(buses, supply),
         )
