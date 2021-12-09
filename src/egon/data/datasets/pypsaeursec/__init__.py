@@ -143,7 +143,7 @@ def eGon100_capacities():
             / "results"
             / data_config["run"]
             / "csvs"
-            /"nodal_capacities.csv"
+            / "nodal_capacities.csv"
         )
 
     else:
@@ -153,97 +153,125 @@ def eGon100_capacities():
             / "pypsa_eur_sec"
             / "2021-egondata-integration"
             / "csvs"
-            /"nodal_capacities.csv"
+            / "nodal_capacities.csv"
         )
 
     df = pd.read_csv(target_file, skiprows=5)
     df.columns = ["component", "country", "carrier", "p_nom"]
 
-    
-    df.set_index('carrier', inplace=True)
-    
-    df = df[df.country.str[:2]=="DE"]
-    
+    df.set_index("carrier", inplace=True)
+
+    df = df[df.country.str[:2] == "DE"]
+
     # Drop country column
     df.drop("country", axis=1, inplace=True)
-    
+
     # Drop copmponents which will be optimized in eGo
-    unused_carrier = ["BEV charger", "DAC", "H2 Electrolysis",
-                      "electricity distribution grid", "home battery charger",
-                      "home battery discharger", "H2", "Li ion", "home battery",
-                      "residential rural water tanks charger", 
-                      "residential rural water tanks discharger",
-                      "services rural water tanks charger", 
-                      "services rural water tanks discharger", 
-                      "residential rural water tanks",
-                      "services rural water tanks", 
-                      "urban central water tanks",
-                      "urban central water tanks charger",
-                      "urban central water tanks discharger",
-                      "H2 Fuel Cell"]
-    
+    unused_carrier = [
+        "BEV charger",
+        "DAC",
+        "H2 Electrolysis",
+        "electricity distribution grid",
+        "home battery charger",
+        "home battery discharger",
+        "H2",
+        "Li ion",
+        "home battery",
+        "residential rural water tanks charger",
+        "residential rural water tanks discharger",
+        "services rural water tanks charger",
+        "services rural water tanks discharger",
+        "residential rural water tanks",
+        "services rural water tanks",
+        "urban central water tanks",
+        "urban central water tanks charger",
+        "urban central water tanks discharger",
+        "H2 Fuel Cell",
+    ]
+
     df = df[~df.index.isin(unused_carrier)]
-    
-    df.index = df.index.str.replace(' ', '_')
-    
+
+    df.index = df.index.str.replace(" ", "_")
+
     # Aggregate offshore wind
-    df = df.append(pd.DataFrame(
-            index = ["wind_offshore"],
-            data= {
-                "p_nom": (df.p_nom["offwind-ac"]+df.p_nom["offwind-dc"]),
-                "component": df.component["offwind-ac"]
-                   }))    
+    df = df.append(
+        pd.DataFrame(
+            index=["wind_offshore"],
+            data={
+                "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
+                "component": df.component["offwind-ac"],
+            },
+        )
+    )
     df = df.drop(["offwind-ac", "offwind-dc"])
-    
+
     # Aggregate technologies with and without carbon_capture (CC)
     for carrier in ["SMR", "urban_central_gas_CHP"]:
-        df.p_nom[carrier] += df.p_nom[f'{carrier}_CC']
-        df = df.drop([f'{carrier}_CC'])
-    
-    
+        df.p_nom[carrier] += df.p_nom[f"{carrier}_CC"]
+        df = df.drop([f"{carrier}_CC"])
+
     # Aggregate residential and services rural heat supply
-    for merge_carrier in ["rural_resistive_heater", "rural_ground_heat_pump", "rural_gas_boiler", "rural_solar_thermal"]:
-        df = df.append(pd.DataFrame(
-            index = [merge_carrier],
-            data= {
-                'p_nom': (df.p_nom[f'residential_{merge_carrier}']+df.p_nom[f'services_{merge_carrier}']),
-                "component": df.component[f'residential_{merge_carrier}']
-                   }))
-        df = df.drop([f'residential_{merge_carrier}', f'services_{merge_carrier}'])
-        
+    for merge_carrier in [
+        "rural_resistive_heater",
+        "rural_ground_heat_pump",
+        "rural_gas_boiler",
+        "rural_solar_thermal",
+    ]:
+        df = df.append(
+            pd.DataFrame(
+                index=[merge_carrier],
+                data={
+                    "p_nom": (
+                        df.p_nom[f"residential_{merge_carrier}"]
+                        + df.p_nom[f"services_{merge_carrier}"]
+                    ),
+                    "component": df.component[f"residential_{merge_carrier}"],
+                },
+            )
+        )
+        df = df.drop(
+            [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
+        )
+
     # Rename carriers
-    df.rename({"onwind": "wind_onshore",
-               "ror": "run_of_river",
-               "PHS": "pumped_hydro",
-               "OCGT": "gas",
-               "rural_ground_heat_pump": "rural_heat_pump"},
-              inplace=True)
-    
+    df.rename(
+        {
+            "onwind": "wind_onshore",
+            "ror": "run_of_river",
+            "PHS": "pumped_hydro",
+            "OCGT": "gas",
+            "rural_ground_heat_pump": "rural_heat_pump",
+        },
+        inplace=True,
+    )
+
     # Reset index
     df = df.reset_index()
-    
-    # Rename columns
-    df.rename({"p_nom":"capacity", "index": "carrier"}, axis="columns", inplace=True)
 
-    df["scenario_name"] = "eGon100RE"    
+    # Rename columns
+    df.rename(
+        {"p_nom": "capacity", "index": "carrier"}, axis="columns", inplace=True
+    )
+
+    df["scenario_name"] = "eGon100RE"
     df["nuts"] = "DE"
 
-    
     db.execute_sql(
         """
         DELETE FROM supply.egon_scenario_capacities
         WHERE scenario_name='eGon100RE'
-        """)
-        
+        """
+    )
+
     df.to_sql(
         "egon_scenario_capacities",
         schema="supply",
         con=db.engine(),
         if_exists="append",
-        index=False)
-    
+        index=False,
+    )
 
-    
+
 def neighbor_reduction():
 
     # Set execute_pypsa_eur_sec to False until optional task is implemented
