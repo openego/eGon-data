@@ -31,7 +31,7 @@ def run_pypsa_eur_sec():
     pypsa_eur_repos = filepath / "pypsa-eur"
     technology_data_repos = filepath / "technology-data"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-    pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data/"
+    pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data"
 
     if not pypsa_eur_repos.exists():
         subproc.run(
@@ -51,13 +51,13 @@ def run_pypsa_eur_sec():
         )
 
         file_to_copy = os.path.join(
-            __path__[0] + "/datasets" + "/pypsaeursec/pypsaeur/Snakefile"
+            __path__[0], "datasets", "pypsaeursec", "pypsaeur", "Snakefile"
         )
 
         subproc.run(["cp", file_to_copy, pypsa_eur_repos])
 
         # Read YAML file
-        path_to_env = pypsa_eur_repos / "envs/environment.yaml"
+        path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
         with open(path_to_env, "r") as stream:
             env = yaml.safe_load(stream)
 
@@ -143,7 +143,8 @@ def pypsa_eur_sec_eGon100_capacities():
         pypsa_eur_sec_repos
         / "results"
         / data_config["run"]
-        / "csvs/nodal_capacities.csv"
+        / "csvs"
+        /"nodal_capacities.csv"
     )
 
     df = pd.read_csv(target_file, skiprows=5)
