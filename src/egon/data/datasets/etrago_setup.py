@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -27,9 +28,9 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
-            tasks=(create_tables, temp_resolution),
+            tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
 
 
@@ -360,12 +361,12 @@ class EgonPfHvTransformerTimeseries(Base):
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
-    
+
 
 class EgonPfHvBusmap(Base):
     __tablename__ = "egon_etrago_hv_busmap"
     __table_args__ = {"schema": "grid"}
-     
+
     scn_name = Column(Text, primary_key=True, nullable=False)
     bus0 = Column(Text, primary_key=True, nullable=False)
     bus1 = Column(Text, primary_key=True, nullable=False)
@@ -502,7 +503,7 @@ def create_tables():
 
 
 def temp_resolution():
-    """ Insert temporal resolution for etrago
+    """Insert temporal resolution for etrago
 
     Returns
     -------
@@ -519,8 +520,75 @@ def temp_resolution():
     )
 
 
+def insert_carriers():
+    """Insert list of carriers into eTraGo table
+
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing entries
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_etrago_carrier
+        """
+    )
+
+    # List carrier names from all components
+    df = pd.DataFrame(
+        data={
+            "name": [
+                "biomass",
+                "CH4",
+                "pv",
+                "wind_offshore",
+                "wind_onshore",
+                "central_heat_pump",
+                "central_resistive_heater",
+                "CH4-to-H2",
+                "dsm",
+                "H2-feedin",
+                "H2-to-CH4",
+                "H2-to-power",
+                "rural_heat_pump",
+                "industrial_biomass_CHP",
+                "industrial_gas_CHP",
+                "central_biomass_CHP_heat",
+                "central_biomass_CHP",
+                "central_gas_CHP",
+                "central_gas_CHP_heat",
+                "power-to-H2",
+                "rural_gas_boiler",
+                "central_gas_boiler",
+                "H2_overground",
+                "H2_underground",
+                "solar_thermal_collector",
+                "geo_thermal",
+                "AC",
+                "central_heat",
+                "H2",
+                "rural_heat",
+                "H2_grid",
+                "H2_saltcavern",
+                "biogas_feedin",
+                "natural_gas_feedin",
+            ],
+        }
+    )
+
+    # Insert data into database
+    df.to_sql(
+        "egon_etrago_carrier",
+        schema="grid",
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+
 def link_geom_from_buses(df, scn_name):
-    """ Add LineString geometry accoring to geometry of buses to links
+    """Add LineString geometry accoring to geometry of buses to links
 
     Parameters
     ----------
