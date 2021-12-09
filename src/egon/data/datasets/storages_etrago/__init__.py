@@ -43,7 +43,7 @@ def insert_PHES():
 
     # Select data on PSH units from database
     phes = db.select_dataframe(
-        f"""SELECT scenario as scn_name, id as storage_id, bus_id as bus, carrier, el_capacity as p_nom
+        f"""SELECT scenario as scn_name, bus_id as bus, carrier, el_capacity as p_nom
         FROM {sources['storage']['schema']}.{sources['storage']['table']}
         WHERE carrier = 'pumped_hydro'
         AND scenario= 'eGon2035'
@@ -53,6 +53,7 @@ def insert_PHES():
 
     # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
 
+    phes["storage_id"] = db.next_etrago_id("storage")
     phes["p_nom_extendable"] = scenario_parameters.electricity("eGon2035")["phes_p_nom_extendable"]
     phes["marginal_cost_fixed"] = scenario_parameters.electricity("eGon2035")["re_marginal_cost_fixed"]
     phes["max_hours"] = scenario_parameters.electricity("eGon2035")["phes_max_hours"]
