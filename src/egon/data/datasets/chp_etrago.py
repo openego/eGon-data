@@ -88,7 +88,7 @@ def insert():
                     int
                 ),
                 "p_nom": chp_dh.loc[chp_link_dh, "el_capacity"],
-                "carrier": "urban central gas CHP",
+                "carrier": "central_gas_CHP",
             },
         ),
         "eGon2035",
@@ -114,7 +114,7 @@ def insert():
                 "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"].astype(int),
                 "bus1": chp_dh.loc[chp_link_dh, "heat_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[chp_link_dh, "th_capacity"],
-                "carrier": "urban central gas CHP heat",
+                "carrier": "central_gas_CHP_heat",
             },
         ),
         "eGon2035",
@@ -141,7 +141,7 @@ def insert():
                 int
             ),
             "p_nom": chp_dh.loc[chp_generator_dh, "el_capacity"],
-            "carrier": "urban central biomass CHP",
+            "carrier": "central_biomass_CHP",
         },
     )
 
@@ -164,7 +164,7 @@ def insert():
             "scn_name": "eGon2035",
             "bus": chp_dh.loc[chp_generator_dh, "heat_bus_id"].astype(int),
             "p_nom": chp_dh.loc[chp_generator_dh, "th_capacity"],
-            "carrier": "urban central biomass CHP heat",
+            "carrier": "central_biomass_CHP_heat",
         },
     )
 
@@ -207,7 +207,7 @@ def insert():
                     chp_link_ind, "electrical_bus_id"
                 ].astype(int),
                 "p_nom": chp_industry.loc[chp_link_ind, "el_capacity"],
-                "carrier": "industrial gas CHP",
+                "carrier": "industrial_gas_CHP",
             },
         ),
         "eGon2035",
@@ -232,7 +232,7 @@ def insert():
                 chp_generator_ind, "electrical_bus_id"
             ].astype(int),
             "p_nom": chp_industry.loc[chp_generator_ind, "el_capacity"],
-            "carrier": "industrial biomass CHP",
+            "carrier": "industrial_biomass_CHP",
         },
     )
 
