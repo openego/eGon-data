@@ -54,15 +54,12 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
-import codecs
-import os
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
-from sqlalchemy import ARRAY, REAL, Column, Integer, String, Table, inspect
+from sqlalchemy import REAL, Column, Integer, String, Table, func, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
-import importlib_resources as resources
 import numpy as np
 import pandas as pd
 
