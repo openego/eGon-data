@@ -163,6 +163,8 @@ Added
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
 * Include feedin time series for wind offshore
   `#531 <https://github.com/openego/eGon-data/issues/531>`_
+* Include carrier names in eTraGo table
+  `#551 <https://github.com/openego/eGon-data/issues/551>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
