@@ -850,7 +850,7 @@ def insert_storage(capacities):
             scn_name="eGon2035",
             storage_id=int(db.next_etrago_id("storage")),
             bus=row.bus,
-            max_hours=(6 if row.carrier == "battery" else 168),
+            max_hours=6,
             carrier=row.carrier,
             p_nom=row.cap_2035,
         )
