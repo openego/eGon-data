@@ -42,7 +42,7 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name '{scn_name}';
+        scn_name = '{scn_name}';
         """
     )
 
@@ -61,7 +61,7 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     )
 
 
-def insert_H2_saltcavern_storage():
+def insert_H2_saltcavern_storage(scn_name='eGon2035'):
     """Insert H2 saltcavern storage for every H2_saltcavern bus in the table."""
 
     # Datatables sources and targets
@@ -122,7 +122,8 @@ def insert_H2_saltcavern_storage():
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE "carrier" = '{carrier}';
+        DELETE FROM grid.egon_etrago_store WHERE "carrier" = '{carrier}'
+        and scn_name = '{scn_name}';
         """
     )
 

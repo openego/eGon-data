@@ -242,7 +242,7 @@ def assign_ch4_bus_id(dataframe, scn_name):
 
     CH4_voronoi = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_voronoi_ch4 WHERE scn_name = '{scn_name}';
+        SELECT * FROM grid.egon_voronoi_ch4;
         """,
         epsg=4326,
     )
@@ -277,7 +277,7 @@ def assign_h2_bus_id(dataframe, scn_name):
 
     H2_voronoi = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_voronoi_h2 WHERE scn_name = '{scn_name}';
+        SELECT * FROM grid.egon_voronoi_h2;
         """,
         epsg=4326,
     )

@@ -409,7 +409,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
     # Insert data to db
     db.execute_sql(
         f"""DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4' AND
-           scn_name = '{scn_name}' AND country = 'DE';
+           scn_name = '{scn_name}';
         """
     )
 

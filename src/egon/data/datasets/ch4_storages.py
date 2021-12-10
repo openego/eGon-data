@@ -119,38 +119,36 @@ def import_ch4_grid_capacity(scn_name):
     -------
     Gas_storages_list :
         Dataframe containing the gas stores in Germany modelling the gas grid storage capacity
-    
-    """ 
+
+    """
     Gas_grid_capacity = 130000 # Storage capacity of the CH4 grid - G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
     N_ch4_nodes_G = ch4_nodes_number_G(define_gas_nodes_list()) # Number of nodes in Germany
     Store_capacity = Gas_grid_capacity / N_ch4_nodes_G # Storage capacity associated to each CH4 node of the german grid
 
     sql_gas = f"""SELECT bus_id, scn_name, carrier, geom
                 FROM grid.egon_etrago_bus
-                WHERE carrier = 'CH4' WHERE scn_name = '{scn_name}'
+                WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
                 AND country = 'DE';"""
     Gas_storages_list = db.select_geodataframe(sql_gas, epsg=4326)
-    
-    # Add missing column    
+
+    # Add missing column
     Gas_storages_list['e_nom'] = Store_capacity
     Gas_storages_list['bus'] = Gas_storages_list['bus_id']
-    
+
     # Remove useless columns
     Gas_storages_list = Gas_storages_list.drop(columns=['bus_id', 'geom'])
 
     return Gas_storages_list
 
 
-def import_ch4_storages(scn_name):
+def import_ch4_storages():
     """Insert list of gas storages units in database
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
     """
     # Connect to local database
     engine = db.engine()
+
+    # TODO move this to function call, how to do it is directly called in task list?
+    scn_name = "eGon2035"
 
     # Clean table
     db.execute_sql(
