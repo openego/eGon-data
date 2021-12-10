@@ -524,7 +524,7 @@ def reduce_synthetic_buildings(mapping_profiles_to_buildings,
     synth_ids_used = mapping_profiles_to_buildings.loc[
         mapping_profiles_to_buildings['building_id']
         >
-        len(buildings_filtered), 'building_id'].unique()
+        buildings_filtered, 'building_id'].unique()
 
     synthetic_buildings = synthetic_buildings.loc[synthetic_buildings['id'].isin(synth_ids_used)]
     # id_mapping = dict(
