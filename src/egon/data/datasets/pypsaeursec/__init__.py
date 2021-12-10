@@ -4,22 +4,20 @@ the pysa-eur-sec scenario parameter creation
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import tarfile
 import os
+import tarfile
 
+from shapely.geometry import LineString
+import geopandas as gpd
 import importlib_resources as resources
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import LineString
+import pypsa
+import yaml
 
-from egon.data import db
-from egon.data import __path__
+from egon.data import __path__, db
+from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subproc
-import yaml
-from egon.data.datasets import Dataset
-
-import pypsa
 
 
 def run_pypsa_eur_sec():

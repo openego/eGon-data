@@ -1,13 +1,15 @@
 """The central module containing all code dealing with electrical neighbours
 """
 
+import zipfile
+
+from shapely.geometry import LineString
+from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
-from egon.data import db, config
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
-from shapely.geometry import LineString
-import zipfile
-from sqlalchemy.orm import sessionmaker
 import egon.data.datasets.etrago_setup as etrago
 
 
