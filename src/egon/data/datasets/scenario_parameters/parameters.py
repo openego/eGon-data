@@ -1,11 +1,28 @@
 """The module containing all parameters for the scenario table
 """
-from urllib.request import urlretrieve
-import zipfile
 
-import egon.data.config
-from pathlib import Path
-import shutil
+import pandas as pd
+
+
+def read_costs(year, technology, parameter, value_only=True):
+
+    costs = pd.read_csv(
+        f"PyPSA-technology-data-94085a8/outputs/costs_{year}.csv"
+    )
+
+    result = costs.loc[
+        (costs.technology == technology) & (costs.parameter == parameter)
+    ].squeeze()
+
+    # Rescale costs to EUR/MW
+    if "EUR/kW" in result.unit:
+        result.value *= 1e3
+        result.unit = result.unit.replace("kW", "MW")
+
+    if value_only:
+        return result.value
+    else:
+        return result
 
 
 def global_settings(scenario):
