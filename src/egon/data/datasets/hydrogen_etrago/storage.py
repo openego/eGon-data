@@ -86,7 +86,6 @@ def insert_H2_saltcavern_storage():
         storage_potentials["area_fraction"] * storage_potentials["potential"]
     )
 
-    # print(storage_potentials["storage_potential"])
     storage_potentials[
         "summed_potential_per_bus"
     ] = storage_potentials.groupby("bus_id")["storage_potential"].transform(
@@ -197,8 +196,6 @@ def calculate_and_map_saltcavern_storage_potential():
         individual_areas = {}
         # individual state areas
         for federal_state in data["federal_states"]:
-            print(vg250_data[vg250_data["gen"] == federal_state])
-            print(saltcavern_data)
             try:
                 individual_areas[federal_state] = (
                     saltcavern_data.overlay(

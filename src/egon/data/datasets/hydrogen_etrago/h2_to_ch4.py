@@ -30,6 +30,7 @@ def insert_h2_to_ch4_to_h2():
     methanation["carrier"] = "H2-to-CH4"
     methanation["capital_cost"] = 1e6  # 1000€ / kW
     methanation["efficiency_fixed"] = 0.6
+    methanation["p_nom_extendable"] = True
 
     # 10.1016/j.ijhydene.2017.05.219
     # SALKUYEH_2017_Techno-economic analysis and life cycle assessment of hydrogen production from natural gas using curernt and emerging technologies
@@ -42,11 +43,13 @@ def insert_h2_to_ch4_to_h2():
     SMR["capital_cost"] = 383540 / 1.0537 * 1.41  # pp. 18903-18904
     # CO2 emissions?
     SMR["efficiency_fixed"] = 0.66  # pp. 18903-18904
+    SMR["p_nom_extendable"] = True
 
     # How to implement feed in restriction?
     feed_in["carrier"] = "H2-feedin"
     feed_in["capital_cost"] = 0
     feed_in["efficiency_fixed"] = 1
+    feed_in["p_nom_extendable"] = True
 
     # Delete old entries
     db.execute_sql(
