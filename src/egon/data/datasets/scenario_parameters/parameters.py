@@ -296,7 +296,7 @@ def heat(scenario):
             "central_water_tank": read_costs(
                 2035, "central water tank storage", "investment"
             ),
-            "rual_water_tank": read_costs(
+            "rural_water_tank": read_costs(
                 2035, "decentral water tank storage", "investment"
             ),
         }
