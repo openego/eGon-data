@@ -1,5 +1,6 @@
 """The central module containing all code dealing with scenario table.
 """
+import egon.data.config
 from egon.data import db
 from sqlalchemy import Column, String, VARCHAR
 from sqlalchemy.orm import sessionmaker
@@ -165,4 +166,20 @@ class ScenarioParameters(Dataset):
             version="0.0.1",
             dependencies=dependencies,
             tasks=(create_table, insert_scenarios),
+        )
+
+
+class PyPSATechnologyData(Dataset):
+    def __init__(self, dependencies):
+        deposit_id = egon.data.config.datasets()["pypsa-technology-data"][
+            "sources"
+        ]["zenodo"]["deposit_id"]
+        super().__init__(
+            name="PyPSATechnologyData",
+            version=str(deposit_id) + "-0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                parameters.download_pypsa_technology_data,
+                parameters.insert_pypsa_technology_data
+            ),
         )

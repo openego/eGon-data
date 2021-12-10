@@ -2,6 +2,7 @@
 """
 from urllib.request import urlretrieve
 import zipfile
+import pandas as pd
 
 import egon.data.config
 from pathlib import Path
@@ -159,7 +160,7 @@ def download_pypsa_technology_data():
         shutil.rmtree(data_path)
     # Get parameters from config and set download URL
     sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"]["zenodo"]
-    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/technology-data-v0.3.0.zip"""
+    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
     target_file = egon.data.config.datasets()["pypsa-technology-data"]["targets"]["file"]
 
     # Retrieve files
@@ -169,21 +170,21 @@ def download_pypsa_technology_data():
         zip_ref.extractall(".")
 
 
-def insert_pypsa_technology_data(scenario):
+def insert_pypsa_technology_data(scn_name):
     """Insert the technology data from pypsa into the scenario table.
 
     Parameters
     ----------
-    scenario : str
+    scn_name : str
         Name of the scenario.
     """
-    if scenario == "eGon2035":
+    if scn_name == "eGon2035":
         data = '2035'
 
-    elif scenario == "eGon100RE":
+    elif scn_name == "eGon100RE":
         data = '2050'
 
     else:
-        print(f"Scenario name {scenario} is not valid.")
-    #do_stuff
-    return
+        print(f"Scenario name {scn_name} is not valid.")
+
+    df = pd.read_csv(egon.data.config.datasets()["pypsa-technology-data"]["targets"]["data_dir"] + 'costs_' + data + '.csv')

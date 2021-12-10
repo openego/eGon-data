@@ -483,9 +483,12 @@ pypsa-technology-data:
   sources:
     zenodo:
       deposit_id: 5544025
+      file: 'PyPSA/technology-data-v0.3.0.zip'
   targets:
     file:
       'pypsa_technology_data_egon_data.zip'
+    data_dir:
+      'PyPSA-technology-data-94085a8/outputs/'
 
 heat_supply:
   sources:
