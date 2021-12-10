@@ -9,6 +9,7 @@ from egon.data.datasets.heat_etrago.power_to_heat import (
 )
 from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_buses(carrier, scenario="eGon2035"):
@@ -219,15 +220,13 @@ def insert_central_direct_heat(scenario="eGon2035"):
     )
 
 
-def insert_central_gas_boilers(scenario="eGon2035", efficiency=1):
+def insert_central_gas_boilers(scenario="eGon2035"):
     """Inserts gas boilers for district heating to eTraGo-table
 
     Parameters
     ----------
     scenario : str, optional
         Name of the scenario. The default is 'eGon2035'.
-    efficiency : float, optional
-        Efficiency of central gas boilers in p.u.. The default is 1.
 
     Returns
     -------
@@ -270,7 +269,9 @@ def insert_central_gas_boilers(scenario="eGon2035", efficiency=1):
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
     # Add efficiency of gas boilers
-    central_boilers["efficiency_fixed"] = efficiency
+    central_boilers["efficiency_fixed"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["efficiency"]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     central_boilers["p_nom"] = central_boilers.capacity.div(
@@ -295,15 +296,13 @@ def insert_central_gas_boilers(scenario="eGon2035", efficiency=1):
     )
 
 
-def insert_rural_gas_boilers(scenario="eGon2035", efficiency=0.98):
+def insert_rural_gas_boilers(scenario="eGon2035"):
     """Inserts gas boilers for individual heating to eTraGo-table
 
     Parameters
     ----------
     scenario : str, optional
         Name of the scenario. The default is 'eGon2035'.
-    efficiency : float, optional
-        Efficiency of central gas boilers in p.u.. The default is 0.98.
 
     Returns
     -------
@@ -346,7 +345,9 @@ def insert_rural_gas_boilers(scenario="eGon2035", efficiency=0.98):
     rural_boilers = link_geom_from_buses(rural_boilers, scenario)
 
     # Add efficiency of gas boilers
-    rural_boilers["efficiency_fixed"] = efficiency
+    rural_boilers["efficiency_fixed"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["efficiency"]["rural_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     rural_boilers["p_nom"] = rural_boilers.capacity.div(
@@ -411,7 +412,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(buses, supply),
         )
