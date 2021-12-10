@@ -195,8 +195,9 @@ def insert_CH4_nodes_list(gas_nodes_list):
 
     # Insert data to db
     db.execute_sql(
-        """
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'CH4';
+        f"""
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'CH4' AND
+    scn_name = '{c['scn_name']}' AND country = 'DE';
     """
     )
 
@@ -312,7 +313,8 @@ def insert_gas_pipeline_list(gas_nodes_list):
         # A completer avec nodes related to pipelines which have an end in the selected area
 
     # Add missing columns
-    gas_pipelines_list["scn_name"] = "eGon2035"
+    scn_name = "eGon2035"
+    gas_pipelines_list["scn_name"] = scn_name
     gas_pipelines_list["carrier"] = "CH4"
 
     diameter = []
@@ -406,7 +408,8 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
     # Insert data to db
     db.execute_sql(
-        """DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4';
+        f"""DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4' AND
+           scn_name = '{scn_name}' AND country = 'DE';
         """
     )
 

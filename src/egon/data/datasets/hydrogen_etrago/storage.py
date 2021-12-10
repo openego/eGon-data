@@ -7,7 +7,7 @@ import pandas as pd
 from egon.data import config, db
 
 
-def insert_H2_overground_storage():
+def insert_H2_overground_storage(scn_name='eGon2035'):
     """Insert H2 steel tank storage for every H2 bus."""
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -18,7 +18,8 @@ def insert_H2_overground_storage():
         f"""
         SELECT bus_id, scn_name, geom
         FROM {sources['buses']['schema']}.
-        {sources['buses']['table']} WHERE carrier LIKE 'H2%%'""",
+        {sources['buses']['table']} WHERE carrier LIKE 'H2%%'
+        AND scn_name = '{scn_name}' AND country = 'DE'""",
         index_col="bus_id",
     )
 
@@ -40,7 +41,8 @@ def insert_H2_overground_storage():
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE "carrier" = '{carrier}';
+        DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
+        scn_name '{scn_name}';
         """
     )
 
@@ -66,7 +68,6 @@ def insert_H2_saltcavern_storage():
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     targets = config.datasets()["etrago_hydrogen"]["targets"]
 
-    # Place storage at every H2 bus
     storage_potentials = db.select_geodataframe(
         f"""
         SELECT *
@@ -75,6 +76,7 @@ def insert_H2_saltcavern_storage():
         geom_col="geometry",
     )
 
+    # Place storage at every H2 bus from the H2 AC saltcavern map
     H2_AC_bus_map = db.select_dataframe(
         f"""
         SELECT *

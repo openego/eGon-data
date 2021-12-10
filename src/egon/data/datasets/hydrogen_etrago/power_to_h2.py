@@ -12,22 +12,23 @@ import pandas as pd
 from egon.data import db
 
 
-def insert_power_to_h2_to_power():
+def insert_power_to_h2_to_power(scn_name='eGon2035'):
     """Define power-to-H2-to-power capacities and insert in etrago_link table.
 
     The potentials for power-to-h2 in electrolysis and h2-to-power in fuel
     cells are created between each H2 bus and its closest HV power bus.
 
-    Returns
-    -------
-    None.
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     """
 
     # Connect to local database
     engine = db.engine()
 
     # create bus connections
-    gdf = map_buses()
+    gdf = map_buses(scn_name)
 
     bus_ids = {
         "PtH2": gdf[["bus0", "bus1"]],
@@ -69,7 +70,7 @@ def insert_power_to_h2_to_power():
             p_nom_max["H2tP"].append(float("Inf"))
 
     # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
-    carrier = {"PtH2": "power-to-H2", "H2tP": "H2-to-power"}
+    carrier = {"PtH2": "power_to_H2", "H2tP": "H2_to_power"}
     efficiency = {
         "PtH2": 0.8,  # H2 electrolysis - Brown et al. 2018
         "H2tP": 0.58,  # H2 fuel cell - Brown et al. 2018
@@ -140,8 +141,13 @@ def insert_power_to_h2_to_power():
         )
 
 
-def map_buses():
+def map_buses(scn_name):
     """Map H2 buses to nearest HV AC bus.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
 
     Returns
     -------
@@ -149,12 +155,15 @@ def map_buses():
         GeoDataFrame with connected buses.
     """
     # Create dataframes containing all gas buses and all the HV power buses
-    sql_AC = """SELECT bus_id, geom
+    sql_AC = f"""SELECT bus_id, geom
                 FROM grid.egon_etrago_bus
-                WHERE carrier = 'AC';"""
-    sql_gas = """SELECT bus_id, scn_name, geom
+                WHERE carrier = 'AC' AND scn_name = '{scn_name}'
+                AND country = 'DE';
+                """
+    sql_gas = f"""SELECT bus_id, scn_name, geom
                 FROM grid.egon_etrago_bus
-                WHERE carrier LIKE 'H2%%';"""
+                WHERE carrier LIKE 'H2%%' AND scn_name = '{scn_name}'
+                AND country = 'DE';"""
 
     gdf_AC = db.select_geodataframe(sql_AC, epsg=4326)
     gdf_gas = db.select_geodataframe(sql_gas, epsg=4326)

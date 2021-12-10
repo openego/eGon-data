@@ -6,7 +6,7 @@ Module containing the definition of the CH4 grid to H2 links
 from egon.data import db
 
 
-def insert_h2_to_ch4_to_h2():
+def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
     """
     Define methanisation, feed in and SMR capacities and insert in etrago_link.
 
@@ -18,7 +18,7 @@ def insert_h2_to_ch4_to_h2():
 
     # Select CH4 and corresponding H2 buses
     # No geometry required in this case!
-    buses = db.select_dataframe(f"""SELECT * FROM grid.egon_etrago_ch4_h2""")
+    buses = db.select_dataframe(f"""SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = '{scn_name}'""")
 
     methanation = buses.copy().rename(
         columns={"bus_H2": "bus0", "bus_CH4": "bus1"}
@@ -27,14 +27,14 @@ def insert_h2_to_ch4_to_h2():
     feed_in = methanation.copy()
 
     # Cost basis specified correctly?
-    methanation["carrier"] = "H2-to-CH4"
+    methanation["carrier"] = "H2_to_CH4"
     methanation["capital_cost"] = 1e6  # 1000€ / kW
     methanation["efficiency_fixed"] = 0.6
     methanation["p_nom_extendable"] = True
 
     # 10.1016/j.ijhydene.2017.05.219
     # SALKUYEH_2017_Techno-economic analysis and life cycle assessment of hydrogen production from natural gas using curernt and emerging technologies
-    SMR["carrier"] = "CH4-to-H2"
+    SMR["carrier"] = "CH4_to_H2"
     # capital cost ($ 2016) per MW hydrogen: 0.383  Mio$ / MW
     # 1.0537 $ 2016 (eoy) = 1 €
     # 1 € (2016) = 1 € * 1.025 ** 14 = 1.41 € (2030) check interest rate value (p. 35 Abschlussbericht eGo)
@@ -46,16 +46,16 @@ def insert_h2_to_ch4_to_h2():
     SMR["p_nom_extendable"] = True
 
     # How to implement feed in restriction?
-    feed_in["carrier"] = "H2-feedin"
+    feed_in["carrier"] = "H2_feedin"
     feed_in["capital_cost"] = 0
     feed_in["efficiency_fixed"] = 1
     feed_in["p_nom_extendable"] = True
 
     # Delete old entries
     db.execute_sql(
-        """
+        f"""
         DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
-        ('H2-to-CH4', 'H2-feedin', 'CH4-to-H2');
+        ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}';
         """
     )
 

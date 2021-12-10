@@ -224,11 +224,15 @@ def load_biogas_generators():
     return biogas_generators_list
 
 
-def assign_ch4_bus_id(dataframe):
+def assign_ch4_bus_id(dataframe, scn_name):
     """Assigns bus_ids (for CH4 buses) to points (contained in a dataframe) according to location
+
     Parameters
     ----------
-    dataframe : pandas.DataFrame cointaining points
+    dataframe : pandas.DataFrame
+        DataFrame cointaining points
+    scn_name : str
+        Name of the scenario
 
     Returns
     -------
@@ -237,8 +241,8 @@ def assign_ch4_bus_id(dataframe):
     """
 
     CH4_voronoi = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_voronoi_ch4
+        f"""
+        SELECT * FROM grid.egon_voronoi_ch4 WHERE scn_name = '{scn_name}';
         """,
         epsg=4326,
     )
@@ -255,11 +259,15 @@ def assign_ch4_bus_id(dataframe):
     return res
 
 
-def assign_h2_bus_id(dataframe):
+def assign_h2_bus_id(dataframe, scn_name):
     """Assigns bus_ids (for H2 buses) to points (contained in a dataframe) according to location
+
     Parameters
     ----------
-    dataframe : pandas.DataFrame cointaining points
+    dataframe : pandas.DataFrame
+        DataFrame cointaining points
+    scn_name : str
+        Name of the scenario
 
     Returns
     -------
@@ -268,8 +276,8 @@ def assign_h2_bus_id(dataframe):
     """
 
     H2_voronoi = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_voronoi_h2
+        f"""
+        SELECT * FROM grid.egon_voronoi_h2 WHERE scn_name = '{scn_name}';
         """,
         epsg=4326,
     )
@@ -284,22 +292,25 @@ def assign_h2_bus_id(dataframe):
     return res
 
 
-def import_gas_generators():
+def import_gas_generators(scn_name='eGon2035'):
     """Insert list of gas production units in database
 
-    Returns
-    -------
-     None.
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     """
     # Connect to local database
     engine = db.engine()
 
     # Clean table
     db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4' AND
+        scn_name = '{scn_name}';
         """
-    DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4';
-    """
     )
+    # TODO:AND country = 'DE';????
 
     # Select next id value
     new_id = db.next_etrago_id("generator")
@@ -313,13 +324,13 @@ def import_gas_generators():
 
     # Add missing columns
     #    CH4_generators_list['p_set_fixed'] = CH4_generators_list['p_nom']
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": "CH4"}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     CH4_generators_list = CH4_generators_list.reset_index(drop=True)
 
     # Match to associated CH4 bus
-    CH4_generators_list = assign_ch4_bus_id(CH4_generators_list)
+    CH4_generators_list = assign_ch4_bus_id(CH4_generators_list, scn_name)
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])
