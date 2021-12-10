@@ -392,7 +392,13 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
 
 def choose_transformer(s_nom):
-    """Select representative transformer from existing data model
+    """Select transformer and parameters from existing data in the grid model
+
+    It is assumed that transformers in the foreign countries are not limiting
+    the electricity flow, so the capacitiy s_nom is set to the minimum sum
+    of attached AC-lines.
+    The electrical parameters are set according to already inserted
+    transformers in the grid model for Germany.
 
     Parameters
     ----------
