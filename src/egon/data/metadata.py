@@ -328,4 +328,21 @@ def sources():
                 "© Statistische Ämter des Bundes und der Länder 2014"
             ),
         },
+        "bgr": {
+            "title": "Übersicht der in InSpEE und InSpEE-DS ausgewerteten Salinarbereiche und Salzstrukturen",
+            "description": "The data include availability of saltstructures for energy storage and energy "
+            "storage potential per federal state in Germany. The data-bundle provdides the shapefiles "
+            "corresponding to the data provided in figure 7-1 (Donadei, S., et al., 2020, p. 7-5). The "
+            "energy storage potential data are accumulated per federal state and provided in table "
+            "7-1 (Donadei, S., et al., 2020, p. 7-5).\n"
+            "Donadei, S., Horváth, B., Horváth, P.-L., Keppliner, J., Schneider, G.-S., & Zander-Schiebenhöfer, D. (2020). "
+            "Teilprojekt Bewertungskriterien und Potenzialabschätzung. BGR. Informationssystem Salz: Planungsgrundlagen, "
+            "Auswahlkriterien und Potenzialabschätzung für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren "
+            "Energien (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten: "
+            "InSpEE-DS. Sachbericht. Hannover: BGR.",
+            "path": "https://dx.doi.org/10.5281/zenodo.4896526",
+            "license": license_geonutzv(
+                "Datenquellen: InSpEE-Salzstrukturen, © BGR, Hannover, 2015 & Flach lagernde Salze, © BGR, Hannover, 2021"
+            ),
+        },
     }
