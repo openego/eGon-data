@@ -328,21 +328,80 @@ def sources():
                 "© Statistische Ämter des Bundes und der Länder 2014"
             ),
         },
-        "bgr": {
-            "title": "Übersicht der in InSpEE und InSpEE-DS ausgewerteten Salinarbereiche und Salzstrukturen",
-            "description": "The data include availability of saltstructures for energy storage and energy "
-            "storage potential per federal state in Germany. The data-bundle provdides the shapefiles "
-            "corresponding to the data provided in figure 7-1 (Donadei, S., et al., 2020, p. 7-5). The "
-            "energy storage potential data are accumulated per federal state and provided in table "
-            "7-1 (Donadei, S., et al., 2020, p. 7-5).\n"
-            "Donadei, S., Horváth, B., Horváth, P.-L., Keppliner, J., Schneider, G.-S., & Zander-Schiebenhöfer, D. (2020). "
-            "Teilprojekt Bewertungskriterien und Potenzialabschätzung. BGR. Informationssystem Salz: Planungsgrundlagen, "
-            "Auswahlkriterien und Potenzialabschätzung für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren "
-            "Energien (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten: "
-            "InSpEE-DS. Sachbericht. Hannover: BGR.",
+        "bgr_inspeeds_data_bundle": {
+            "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
+            "Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien (Wasserstoff und Druckluft) – "
+            "Doppelsalinare und flach lagernde Salzschichten. Teilprojekt Bewertungskriterien und Potenzialabschätzung",
+            "description": "The data-bundle provides the shapefiles corresponding to the data provided in figure 7-1 "
+            "(Donadei, S., et al., 2020, p. 7-5). The energy storage potential data are provided per federal state "
+            " in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include all bgr data sources when using "
+            "the data.",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
             "license": license_geonutzv(
-                "Datenquellen: InSpEE-Salzstrukturen, © BGR, Hannover, 2015 & Flach lagernde Salze, © BGR, Hannover, 2021"
+                "???"
+            ),
+        },
+        "bgr_inspeeds_report": {
+            "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
+            "Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien (Wasserstoff und Druckluft) – "
+            "Doppelsalinare und flach lagernde Salzschichten. Teilprojekt Bewertungskriterien und Potenzialabschätzung",
+            "description": "The report includes availability of saltstructures for energy storage and energy "
+            "storage potential accumulated per federal state in Germany.",
+            "path": "https://www.bgr.bund.de/DE/Themen/Nutzung_tieferer_Untergrund_CO2Speicherung/Downloads/InSpeeDS_TP_Bewertungskriterien.pdf?__blob=publicationFile&v=3",
+            "license": license_geonutzv(
+                "© BGR, Hannover, 2021"
+            ),
+        },
+        "bgr_inspee": {
+            "title": "Salt structures in Northern Germany",
+            "description": "The application \"Information System Salt Structures\" provides information about the "
+            "areal distribution of salt structures (stocks and pillows) in Northern Germany. With general structural "
+            "describing information, such as depth, secondary thickness, types of use or state of exploration, queries "
+            "can be conducted. Contours of the salt structures can be displayed at horizontal cross-sections at four "
+            "different depths up to a maximum depth of 2000 m below NN. A data sheet with information and further "
+            "reading is provided for every single salt structure. Taking into account the fact that this work was "
+            "undertaken at a scale for providing an overview and not for investigation of single structures, the scale "
+            "of display is limited to a minimum of 1:300.000. This web application is the product of a BMWi-funded "
+            "research project \"InSpEE\" running from the year 2012 to 2015. The acronym stands for \"Information system "
+            "salt structures: planning basis, selection criteria and estimation of the potential for the construction "
+            "of salt caverns for the storage of renewable energies (hydrogen and compressed air)\".",
+            "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=338136ea-261a-4569-a2bf-92999d09bad2",
+            "license": license_geonutzv(
+                "© BGR, Hannover, 2015"
+            ),
+        },
+        "bgr_inspeeds": {
+            "title": "Flat layered salts in Germany",
+            "description": "Which salt formations are suitable for storing hydrogen or compressed air? "
+            "In the InSpEE-DS research project, scientists developed requirements and criteria for the assessment "
+            "of suitable sites even if their exploration is still at an early stage and there is little knowledge of "
+            "the salinaries' structures. Scientists at DEEP.KBB GmbH in Hanover, worked together with their project "
+            "partners at the Federal Institute for Geosciences and Natural Resources and the Leibniz University "
+            "Hanover, Institute for Geotechnics Hanover, to develop the planning basis for the site selection and for "
+            "the construction of storage caverns in flat layered salt and multiple or double saliniferous formations. "
+            "Such caverns could store renewable energy in the form of hydrogen or compressed air. While the previous "
+            "project InSpEE was limited to salt formations of great thickness in Northern Germany, salt horizons of "
+            "different ages have now been examined all over Germany. To estimate the potential, depth contour maps of "
+            "the top and the base as well as thickness maps of the respective stratigraphic units and reference "
+            "profiles were developed. Information on compressed air and hydrogen storage potential were given for the "
+            "identified areas and for the individual federal states. The web service "
+            "\"Information system for flat layered salt\" gives access to this data. The scale of display is limited "
+            "to a minimum of 1:300.000. This geographic information is product of a BMWi-funded research project "
+            "\"InSpEE-DS\" running from the year 2015 to 2019. The acronym stands for \"Information system salt: "
+            "planning basis, selection criteria and estimation of the potential for the construction of salt caverns "
+            "for the storage of renewable energies (hydrogen and compressed air) - double saline and flat salt layers\".",
+            "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=630430b8-4025-4d6f-9a62-025b53bc8b3d",
+            "license": license_geonutzv(
+                "© BGR, Hannover, 2021"
+            ),
+        },
+        "openffe_gas": {
+            "title": "Load Curves of the Industry Sector – eXtremOS solidEU Scenario (Europe NUTS-3)",
+            "description": "Load Curves of the Industry Sector for the eXtremOS solidEU Scenario Scenario at NUTS-3-Level. "
+            "More information at https://extremos.ffe.de/.",
+            "path": "http://opendata.ffe.de/dataset/load-curves-of-the-industry-sector-extremos-solideu-scenario-europe-nuts-3/",
+            "license": license_ccby(
+                "© FfE, eXtremOS Project"
             ),
         },
     }
