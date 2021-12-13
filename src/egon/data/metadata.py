@@ -396,6 +396,7 @@ def sources():
                 "combination of the foregoing",
                 "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
             },
+        },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
