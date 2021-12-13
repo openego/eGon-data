@@ -274,6 +274,94 @@ def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
 
 def sources():
     return {
+        "bgr_inspee": {
+            "title": "Salt structures in Northern Germany",
+            "description": 'The application "Information System Salt Structures" provides information about the '
+            "areal distribution of salt structures (stocks and pillows) in Northern Germany. With general structural "
+            "describing information, such as depth, secondary thickness, types of use or state of exploration, queries "
+            "can be conducted. Contours of the salt structures can be displayed at horizontal cross-sections at four "
+            "different depths up to a maximum depth of 2000 m below NN. A data sheet with information and further "
+            "reading is provided for every single salt structure. Taking into account the fact that this work was "
+            "undertaken at a scale for providing an overview and not for investigation of single structures, the scale "
+            "of display is limited to a minimum of 1:300.000. This web application is the product of a BMWi-funded "
+            'research project "InSpEE" running from the year 2012 to 2015. The acronym stands for "Information system '
+            "salt structures: planning basis, selection criteria and estimation of the potential for the construction "
+            'of salt caverns for the storage of renewable energies (hydrogen and compressed air)".',
+            "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=338136ea-261a-4569-a2bf-92999d09bad2",
+            "license": license_geonutzv("© BGR, Hannover, 2015"),
+        },
+        "bgr_inspeeds": {
+            "title": "Flat layered salts in Germany",
+            "description": "Which salt formations are suitable for storing hydrogen or compressed air? "
+            "In the InSpEE-DS research project, scientists developed requirements and criteria for the assessment "
+            "of suitable sites even if their exploration is still at an early stage and there is little knowledge of "
+            "the salinaries' structures. Scientists at DEEP.KBB GmbH in Hanover, worked together with their project "
+            "partners at the Federal Institute for Geosciences and Natural Resources and the Leibniz University "
+            "Hanover, Institute for Geotechnics Hanover, to develop the planning basis for the site selection and for "
+            "the construction of storage caverns in flat layered salt and multiple or double saliniferous formations. "
+            "Such caverns could store renewable energy in the form of hydrogen or compressed air. While the previous "
+            "project InSpEE was limited to salt formations of great thickness in Northern Germany, salt horizons of "
+            "different ages have now been examined all over Germany. To estimate the potential, depth contour maps of "
+            "the top and the base as well as thickness maps of the respective stratigraphic units and reference "
+            "profiles were developed. Information on compressed air and hydrogen storage potential were given for the "
+            "identified areas and for the individual federal states. The web service "
+            '"Information system for flat layered salt" gives access to this data. The scale of display is limited '
+            "to a minimum of 1:300.000. This geographic information is product of a BMWi-funded research project "
+            '"InSpEE-DS" running from the year 2015 to 2019. The acronym stands for "Information system salt: '
+            "planning basis, selection criteria and estimation of the potential for the construction of salt caverns "
+            'for the storage of renewable energies (hydrogen and compressed air) - double saline and flat salt layers".',
+            "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=630430b8-4025-4d6f-9a62-025b53bc8b3d",
+            "license": license_geonutzv("© BGR, Hannover, 2021"),
+        },
+        "bgr_inspeeds_data_bundle": {
+            "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
+            "Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien (Wasserstoff und Druckluft) – "
+            "Doppelsalinare und flach lagernde Salzschichten. Teilprojekt Bewertungskriterien und Potenzialabschätzung",
+            "description": "The data-bundle provides the shapefiles corresponding to the data provided in figure 7-1 "
+            "(Donadei, S., et al., 2020, p. 7-5). The energy storage potential data are provided per federal state "
+            " in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include all bgr data sources when using "
+            "the data.",
+            "path": "https://dx.doi.org/10.5281/zenodo.4896526",
+            "license": license_geonutzv("???"),
+        },
+        "bgr_inspeeds_report": {
+            "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
+            "Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien (Wasserstoff und Druckluft) – "
+            "Doppelsalinare und flach lagernde Salzschichten. Teilprojekt Bewertungskriterien und Potenzialabschätzung",
+            "description": "The report includes availability of saltstructures for energy storage and energy "
+            "storage potential accumulated per federal state in Germany.",
+            "path": "https://www.bgr.bund.de/DE/Themen/Nutzung_tieferer_Untergrund_CO2Speicherung/Downloads/InSpeeDS_TP_Bewertungskriterien.pdf?__blob=publicationFile&v=3",
+            "license": license_geonutzv("© BGR, Hannover, 2021"),
+        },
+        "demandregio": {
+            "title": "DemandRegio",
+            "description": "Harmonisierung und Entwicklung von Verfahren zur regionalen und "
+            "zeitlichen Auflösung von Energienachfragen",
+            "path": "https://doi.org/10.34805/ffe-119-20",
+            "license": license_ccby("© FZJ, TUB, FfE"),
+        },
+        "era5": {
+            "title": "ERA5 global reanalysis",
+            "description": "ERA5 is the fifth generation ECMWF reanalysis for the global climate "
+            "and weather for the past 4 to 7 decades. Currently data is available from 1950, "
+            "split into Climate Data Store entries for 1950-1978 (preliminary back extension) and f"
+            "rom 1979 onwards (final release plus timely updates, this page). ERA5 replaces the ERA-Interim reanalysis. "
+            "See the online ERA5 documentation "
+            "(https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency) "
+            "for more information.",
+            "path": "https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency",
+            "license": {
+                "name": "Licence to use Copernicus Products",
+                "title": "Licence to use Copernicus Products",
+                "path": "https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf",
+                "instruction": "This Licence is free of charge, worldwide, non-exclusive, royalty free and perpetual. "
+                "Access to Copernicus Products is given for any purpose in so far as it is lawful, whereas use "
+                "may include, but is not limited to: reproduction; distribution; communication to the public; "
+                "adaptation, modification and combination with other data and information; or any "
+                "combination of the foregoing",
+                "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
+            },
+        },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
@@ -284,7 +372,9 @@ def sources():
             "titel": "scen_current_building_demand",
             "description": "Energy demand scenarios in buidlings until the year 2050 - current policy scenario",
             "path": "https://gitlab.com/hotmaps/scen_current_building_demand",
-            "licenses": license_ccby("© 2016-2018: Michael Hartner, Lukas Kranzl, Sebastian Forthuber, Sara Fritz, Andreas Müller"),
+            "licenses": license_ccby(
+                "© 2016-2018: Michael Hartner, Lukas Kranzl, Sebastian Forthuber, Sara Fritz, Andreas Müller"
+            ),
         },
         "mastr": {
             "title": "open-MaStR power unit registry",
@@ -297,12 +387,59 @@ def sources():
                 "© 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen"
             ),
         },
+        "nep2021": {
+            "title": "Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf",
+            "description": "Die vier deutschen Übertragungsnetzbetreiber zeigen mit "
+            "diesem ersten Entwurf des Netzentwicklungsplans 2035, Version 2021, den "
+            "benötigten Netzausbau für die nächsten Jahre auf. Der NEP-Bericht beschreibt "
+            "keine konkreten Trassenverläufe von Übertragungsleitungen, sondern er "
+            "dokumentiert den notwendigen Übertragungsbedarf zwischen Netzknoten. "
+            "Das heißt, es werden Anfangs- und Endpunkte von zukünftigen Leitungsverbindungen "
+            "definiert sowie konkrete Empfehlungen für den Aus- und Neubau der Übertragungsnetze "
+            "an Land und auf See in Deutschland gemäß den Detailanforderungen im § 12 EnWG gegeben.",
+            "path": "https://zenodo.org/record/5743452#.YbCoz7so8go",
+            "license": license_ccby("© Übertragungsnetzbetreiber"),
+        },
+        "openffe_gas": {
+            "title": "Load Curves of the Industry Sector – eXtremOS solidEU Scenario (Europe NUTS-3)",
+            "description": "Load Curves of the Industry Sector for the eXtremOS solidEU Scenario Scenario at NUTS-3-Level. "
+            "More information at https://extremos.ffe.de/.",
+            "path": "http://opendata.ffe.de/dataset/load-curves-of-the-industry-sector-extremos-solideu-scenario-europe-nuts-3/",
+            "license": license_ccby("© FfE, eXtremOS Project"),
+        },
         "openstreetmap": {
             "title": "OpenStreetMap Data Extracts (Geofabrik)",
             "description": "Full data extract of OpenStreetMap data for defined "
             "spatial extent at ''referenceDate''",
             "path": "https://download.geofabrik.de/europe/germany-210101.osm.pbf",
             "licenses": license_odbl("© OpenStreetMap contributors"),
+        },
+        "peta": {
+            "title": "Pan-European Thermal Atlas, Peta version 5.0.1",
+            "description": "Modelled Heat Demand distribution (in GJ per hectare grid cell) for residential and service "
+            "heat demands for space heating and hot water for the year 2015 using HRE4 data and the combined "
+            "top-down bottom-up approach of HRE4. "
+            "National sector-specific heat demand data, derived by the FORECAST model in HRE4 for residential "
+            "(delivered energy, for space heating and hot water) and service-sector (delivered energy, for space heating, hot "
+            "water and process heat) buildings for the year 2015, were distributed using modelled, spatial "
+            "statistics based floor areas in 100x100m grids and a population grid. "
+            "For further information please see the documentation available on the Heat Roadmap Europe website, "
+            "in particular D2.3 report 'Methodologies and assumptions used in the mapping'.",
+            "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/search",
+            "license": license_ccby(
+                "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
+            ),
+        },
+        "tyndp": {
+            "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
+            "description": "ENTSOs’ TYNDP 2020 Scenario Report describes possible European energy futures up to 2050. "
+            "Scenarios are not forecasts; they set out a range of possible futures used by the ENTSOs to test future "
+            "electricity and gas infrastructure needs and projects. The scenarios are ambitious as they deliver "
+            "a low carbon energy system for Europe by 2050. The ENTSOs have developed credible scenarios that are "
+            "guided by technically sound pathways, while reflecting country by country specifics, so that a pan-European "
+            "low carbon future is achieved.",
+            "path": "https://tyndp.entsoe.eu/maps-data",
+            "license": license_ccby("© ENTSO-E and ENTSOG"),
         },
         "vg250": {
             "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
@@ -326,23 +463,6 @@ def sources():
             "path": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnisse/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380?nn=3065474",
             "license": licenses_datenlizenz_deutschland(
                 "© Statistische Ämter des Bundes und der Länder 2014"
-            ),
-        },
-        "bgr": {
-            "title": "Übersicht der in InSpEE und InSpEE-DS ausgewerteten Salinarbereiche und Salzstrukturen",
-            "description": "The data include availability of saltstructures for energy storage and energy "
-            "storage potential per federal state in Germany. The data-bundle provdides the shapefiles "
-            "corresponding to the data provided in figure 7-1 (Donadei, S., et al., 2020, p. 7-5). The "
-            "energy storage potential data are accumulated per federal state and provided in table "
-            "7-1 (Donadei, S., et al., 2020, p. 7-5).\n"
-            "Donadei, S., Horváth, B., Horváth, P.-L., Keppliner, J., Schneider, G.-S., & Zander-Schiebenhöfer, D. (2020). "
-            "Teilprojekt Bewertungskriterien und Potenzialabschätzung. BGR. Informationssystem Salz: Planungsgrundlagen, "
-            "Auswahlkriterien und Potenzialabschätzung für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren "
-            "Energien (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten: "
-            "InSpEE-DS. Sachbericht. Hannover: BGR.",
-            "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "license": license_geonutzv(
-                "Datenquellen: InSpEE-Salzstrukturen, © BGR, Hannover, 2015 & Flach lagernde Salze, © BGR, Hannover, 2021"
             ),
         },
     }
