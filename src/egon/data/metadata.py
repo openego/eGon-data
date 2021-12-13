@@ -316,7 +316,7 @@ def sources():
             "salt structures: planning basis, selection criteria and estimation of the potential for the construction "
             'of salt caverns for the storage of renewable energies (hydrogen and compressed air)".',
             "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=338136ea-261a-4569-a2bf-92999d09bad2",
-            "license": license_geonutzv("© BGR, Hannover, 2015"),
+            "license": [license_geonutzv("© BGR, Hannover, 2015")],
         },
         "bgr_inspeeds": {
             "title": "Flat layered salts in Germany",
@@ -339,7 +339,7 @@ def sources():
             "planning basis, selection criteria and estimation of the potential for the construction of salt caverns "
             'for the storage of renewable energies (hydrogen and compressed air) - double saline and flat salt layers".',
             "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=630430b8-4025-4d6f-9a62-025b53bc8b3d",
-            "license": license_geonutzv("© BGR, Hannover, 2021"),
+            "license": [license_geonutzv("© BGR, Hannover, 2021")],
         },
         "bgr_inspeeds_data_bundle": {
             "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
@@ -350,7 +350,7 @@ def sources():
             " in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include all bgr data sources when using "
             "the data.",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "license": license_geonutzv("???"),
+            "license": [license_geonutzv("???")],
         },
         "bgr_inspeeds_report": {
             "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
@@ -359,21 +359,21 @@ def sources():
             "description": "The report includes availability of saltstructures for energy storage and energy "
             "storage potential accumulated per federal state in Germany.",
             "path": "https://www.bgr.bund.de/DE/Themen/Nutzung_tieferer_Untergrund_CO2Speicherung/Downloads/InSpeeDS_TP_Bewertungskriterien.pdf?__blob=publicationFile&v=3",
-            "license": license_geonutzv("© BGR, Hannover, 2021"),
+            "license": [license_geonutzv("© BGR, Hannover, 2021")],
         },
         "demandregio": {
             "title": "DemandRegio",
             "description": "Harmonisierung und Entwicklung von Verfahren zur regionalen und "
             "zeitlichen Auflösung von Energienachfragen",
             "path": "https://doi.org/10.34805/ffe-119-20",
-            "license": license_ccby("© FZJ, TUB, FfE"),
+            "license": [license_ccby("© FZJ, TUB, FfE")],
         },
         "egon-data": {
             "titel": "eGon-data",
             "description": "Workflow to download, process and generate data sets"
             "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
             "path": "https://github.com/openego/eGon-data",
-            "licenses": license_agpl("© Jonathan Amme, Clara Büttner, Ilka Cußman, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte")
+            "licenses": [license_agpl("© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte")]
         },
         "era5": {
             "title": "ERA5 global reanalysis",
@@ -385,7 +385,7 @@ def sources():
             "(https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency) "
             "for more information.",
             "path": "https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency",
-            "license": {
+            "license": [{
                 "name": "Licence to use Copernicus Products",
                 "title": "Licence to use Copernicus Products",
                 "path": "https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf",
@@ -395,21 +395,21 @@ def sources():
                 "adaptation, modification and combination with other data and information; or any "
                 "combination of the foregoing",
                 "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
-            },
+            },]
         },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
             "path": "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database",
-            "licenses": license_ccby("© 2016-2018: Pia Manz, Tobias Fleiter"),
+            "licenses": [license_ccby("© 2016-2018: Pia Manz, Tobias Fleiter")],
         },
         "hotmaps_scen_buildings": {
             "titel": "scen_current_building_demand",
             "description": "Energy demand scenarios in buidlings until the year 2050 - current policy scenario",
             "path": "https://gitlab.com/hotmaps/scen_current_building_demand",
-            "licenses": license_ccby(
+            "licenses": [license_ccby(
                 "© 2016-2018: Michael Hartner, Lukas Kranzl, Sebastian Forthuber, Sara Fritz, Andreas Müller"
-            ),
+            )],
         },
         "mastr": {
             "title": "open-MaStR power unit registry",
@@ -418,9 +418,9 @@ def sources():
             "There are duplicates included. For further information read in the documentation"
             "of the original data source: https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html",
             "path": "https://sandbox.zenodo.org/record/808086",
-            "licenses": licenses_datenlizenz_deutschland(
+            "licenses": [licenses_datenlizenz_deutschland(
                 "© 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen"
-            ),
+            )],
         },
         "nep2021": {
             "title": "Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf",
@@ -433,21 +433,21 @@ def sources():
             "definiert sowie konkrete Empfehlungen für den Aus- und Neubau der Übertragungsnetze "
             "an Land und auf See in Deutschland gemäß den Detailanforderungen im § 12 EnWG gegeben.",
             "path": "https://zenodo.org/record/5743452#.YbCoz7so8go",
-            "license": license_ccby("© Übertragungsnetzbetreiber"),
+            "license": [license_ccby("© Übertragungsnetzbetreiber")],
         },
         "openffe_gas": {
             "title": "Load Curves of the Industry Sector – eXtremOS solidEU Scenario (Europe NUTS-3)",
             "description": "Load Curves of the Industry Sector for the eXtremOS solidEU Scenario Scenario at NUTS-3-Level. "
             "More information at https://extremos.ffe.de/.",
             "path": "http://opendata.ffe.de/dataset/load-curves-of-the-industry-sector-extremos-solideu-scenario-europe-nuts-3/",
-            "license": license_ccby("© FfE, eXtremOS Project"),
+            "license": [license_ccby("© FfE, eXtremOS Project")],
         },
         "openstreetmap": {
             "title": "OpenStreetMap Data Extracts (Geofabrik)",
             "description": "Full data extract of OpenStreetMap data for defined"
             "spatial extent at ''referenceDate''",
             "path": "https://download.geofabrik.de/europe/germany-210101.osm.pbf",
-            "licenses": license_odbl("© OpenStreetMap contributors"),
+            "licenses": [license_odbl("© OpenStreetMap contributors")],
         },
         "peta": {
             "title": "Pan-European Thermal Atlas, Peta version 5.0.1",
@@ -461,9 +461,9 @@ def sources():
             "For further information please see the documentation available on the Heat Roadmap Europe website, "
             "in particular D2.3 report 'Methodologies and assumptions used in the mapping'.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/search",
-            "license": license_ccby(
+            "license": [license_ccby(
                 "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
-            ),
+            )],
         },
         "schmidt": {
             "title": "Supplementary material to the masters thesis: "
@@ -472,14 +472,14 @@ def sources():
             "for the estimation of NUTS-3 load shifting potential of suitable electrically powered industrial processes"
             "(cement milling, mechanical pulping, paper production, air separation).",
             "path": "https://zenodo.org/record/3613767",
-            "licenses": license_ccby("© 2019 Danielle Schmidt"),
+            "licenses": [license_ccby("© 2019 Danielle Schmidt")],
         },
         "seenergies": {
             "title": "D5 1 Industry Dataset With Demand Data",
             "description": "Georeferenced EU28 industrial sites with quantified annual excess heat volumes and demand data"
             "within main sectors: Chemical industry, Iron and steel, Non-ferrous metals, Non-metallic minerals, Paper and printing, and Refineries.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0/about",
-            "licenses": license_ccby("© Europa-Universität Flensburg")
+            "licenses": [license_ccby("© Europa-Universität Flensburg")]
         },
         "tyndp": {
             "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
@@ -490,7 +490,7 @@ def sources():
             "guided by technically sound pathways, while reflecting country by country specifics, so that a pan-European "
             "low carbon future is achieved.",
             "path": "https://tyndp.entsoe.eu/maps-data",
-            "license": license_ccby("© ENTSO-E and ENTSOG"),
+            "license": [license_ccby("© ENTSO-E and ENTSOG")],
         },
         "vg250": {
             "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
@@ -500,10 +500,10 @@ def sources():
             "Verwaltungseinheit sowie die spezifische Bezeichnung der "
             "Verwaltungsebene des jeweiligen Landes.",
             "path": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip",
-            "licenses": licenses_datenlizenz_deutschland(
+            "licenses": [licenses_datenlizenz_deutschland(
                 "© Bundesamt für Kartographie und Geodäsie "
                 "2020 (Daten verändert)"
-            ),
+            )],
         },
         "zensus": {
             "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download",
@@ -512,8 +512,8 @@ def sources():
             "und Familien- sowie Gebäude- und Wohnungs­merkmalen. Die Ergebnisse liegen auf Bundes-, "
             "Länder-, Kreis- und Gemeinde­ebene vor. Außerdem sind einzelne Ergebnisse für Gitterzellen verfügbar.",
             "path": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnisse/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380?nn=3065474",
-            "license": licenses_datenlizenz_deutschland(
+            "license": [licenses_datenlizenz_deutschland(
                 "© Statistische Ämter des Bundes und der Länder 2014"
-            ),
+            )],
         },
     }
