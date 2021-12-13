@@ -473,11 +473,20 @@ def insert_data_nep():
 
 
 def add_metadata():
+    """Add metdata to supply.egon_scenario_capacities
 
+    Returns
+    -------
+    None.
+
+    """
+
+    # Import column names and datatypes
     fields = pd.DataFrame(
         generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
     ).set_index("name")
 
+    # Set descriptions and units
     fields.loc["index", "description"] = "Index"
     fields.loc[
         "component", "description"
@@ -492,6 +501,7 @@ def add_metadata():
         "scenario_name", "description"
     ] = "Name of corresponding eGon scenario"
 
+    # Reformat pandas.DataFrame to dict
     fields = fields.reset_index().to_dict(orient="records")
 
     meta = {
@@ -512,11 +522,13 @@ def add_metadata():
             sources()["vg250"],
             sources()["zensus"],
         ],
-        "licenses": [license_ccby(
-            "© Übertragungsnetzbetreiber; "
-            "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
-            "© Statistische Ämter des Bundes und der Länder 2014",
-        )],
+        "licenses": [
+            license_ccby(
+                "© Übertragungsnetzbetreiber; "
+                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Statistische Ämter des Bundes und der Länder 2014",
+            )
+        ],
         "contributors": [
             {
                 "title": "Clara Büttner",
@@ -543,11 +555,11 @@ def add_metadata():
         ],
         "metaMetadata": meta_metadata(),
     }
-    with open('metadata_scenario_capacities.json', 'w') as outfile:
-        json.dump(meta, outfile, indent=4)
 
+    # Create json dump
     meta_json = "'" + json.dumps(meta) + "'"
 
+    # Add metadata as a comment to the table
     db.submit_comment(
         meta_json,
         EgonScenarioCapacities.__table__.schema,
