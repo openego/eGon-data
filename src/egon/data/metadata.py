@@ -274,6 +274,36 @@ def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
 
 def sources():
     return {
+        "hotmaps_industrial_sites": {
+            "titel": "industrial_sites_Industrial_Database",
+            "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
+            "path": "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database",
+            "licenses": license_ccby("© 2016-2018: Pia Manz, Tobias Fleiter"),
+        },
+        "hotmaps_scen_buildings": {
+            "titel": "scen_current_building_demand",
+            "description": "Energy demand scenarios in buidlings until the year 2050 - current policy scenario",
+            "path": "https://gitlab.com/hotmaps/scen_current_building_demand",
+            "licenses": license_ccby("© 2016-2018: Michael Hartner, Lukas Kranzl, Sebastian Forthuber, Sara Fritz, Andreas Müller"),
+        },
+        "mastr": {
+            "title": "open-MaStR power unit registry",
+            "description": "Raw data download Marktstammdatenregister (MaStR) data "
+            "using the webservice. All data from the Marktstammdatenregister is included."
+            "There are duplicates included. For further information read in the documentation"
+            "of the original data source: https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html",
+            "path": "https://sandbox.zenodo.org/record/808086",
+            "licenses": licenses_datenlizenz_deutschland(
+                "© 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen"
+            ),
+        },
+        "openstreetmap": {
+            "title": "OpenStreetMap Data Extracts (Geofabrik)",
+            "description": "Full data extract of OpenStreetMap data for defined "
+            "spatial extent at ''referenceDate''",
+            "path": "https://download.geofabrik.de/europe/germany-210101.osm.pbf",
+            "licenses": license_odbl("© OpenStreetMap contributors"),
+        },
         "vg250": {
             "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
             "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
