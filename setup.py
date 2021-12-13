@@ -97,6 +97,7 @@ setup(
         "pandas>1.2.0",
         "psycopg2",
         "pyaml",
+        "pypsa==0.17.1",
         "rasterio",
         "rtree",
         "sqlalchemy<1.4",
