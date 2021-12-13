@@ -9,11 +9,22 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import pandas as pd
+import time
+import datetime
 
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
+from egon.data.metadata import (
+    context,
+    meta_metadata,
+    license_ccby,
+    sources,
+    generate_resource_fields_from_sqla_model,
+)
+import json
+
 
 ### will be later imported from another file ###
 Base = declarative_base()
@@ -60,9 +71,9 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
-            tasks=(create_table, insert_data_nep),
+            tasks=(create_table, insert_data_nep, add_metadata),
         )
 
 
@@ -234,7 +245,7 @@ def insert_capacities_per_federal_state_nep():
 
 
 def population_share():
-    """ Calulate share of population in testmode
+    """Calulate share of population in testmode
 
     Returns
     -------
@@ -459,3 +470,86 @@ def insert_data_nep():
     insert_capacities_per_federal_state_nep()
 
     insert_nep_list_powerplants()
+
+
+def add_metadata():
+
+    fields = pd.DataFrame(
+        generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
+    ).set_index("name")
+
+    fields.loc["index", "description"] = "Index"
+    fields.loc[
+        "component", "description"
+    ] = "Name of representative PyPSA component"
+    fields.loc["carrier", "description"] = "Name of carrier"
+    fields.loc["capacity", "description"] = "Installed capacity"
+    fields.loc["capacity", "unit"] = "MW"
+    fields.loc[
+        "nuts", "description"
+    ] = "NUTS region, either federal state or Germany"
+    fields.loc[
+        "scenario_name", "description"
+    ] = "Name of corresponding eGon scenario"
+
+    fields = fields.reset_index().to_dict(orient="records")
+
+    meta = {
+        "name": "supply.egon_scenario_capacities",
+        "title": "eGon scenario capacities",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Installed capacities of scenarios used in the eGon project",
+        "language": ["de-DE"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["nep2021"],
+            sources()["vg250"],
+            sources()["zensus"],
+        ],
+        "licenses": [license_ccby(
+            "© Übertragungsnetzbetreiber; "
+            "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+            "© Statistische Ämter des Bundes und der Länder 2014",
+        )],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_scenario_capacities",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+    with open('metadata_scenario_capacities.json', 'w') as outfile:
+        json.dump(meta, outfile, indent=4)
+
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    db.submit_comment(
+        meta_json,
+        EgonScenarioCapacities.__table__.schema,
+        EgonScenarioCapacities.__table__.name,
+    )
