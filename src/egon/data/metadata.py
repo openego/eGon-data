@@ -178,6 +178,34 @@ def license_geonutzv(attribution):
         "attribution": attribution,
     }
 
+def license_agpl(attribution):
+    """
+    License information for GNU Affero General Public License v3.0
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g. '© GeoBasis-DE / BKG'
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+    return {
+        "name": "AGPL-3.0 License",
+        "title": "GNU Affero General Public License v3.0",
+        "path": "https://www.gnu.org/licenses/agpl-3.0.de.html",
+        "instruction": "Permissions of this strongest copyleft license are"
+        "conditioned on making available complete source code of licensed "
+        "works and modifications, which include larger works using a licensed"
+        "work, under the same license. Copyright and license notices must be"
+        "preserved. Contributors provide an express grant of patent rights."
+        "When a modified version is used to provide a service over a network,"
+        "the complete source code of the modified version must be made available.",
+        "attribution": attribution,
+    }
+
 
 def generate_resource_fields_from_sqla_model(model):
     """Generate a template for the resource fields for metadata from a SQL
@@ -340,6 +368,13 @@ def sources():
             "path": "https://doi.org/10.34805/ffe-119-20",
             "license": license_ccby("© FZJ, TUB, FfE"),
         },
+        "egon-data": {
+            "titel": "eGon-data",
+            "description": "Workflow to download, process and generate data sets"
+            "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
+            "path": "https://github.com/openego/eGon-data",
+            "licenses": license_agpl("© Jonathan Amme, Clara Büttner, Ilka Cußman, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte")
+        },
         "era5": {
             "title": "ERA5 global reanalysis",
             "description": "ERA5 is the fifth generation ECMWF reanalysis for the global climate "
@@ -361,7 +396,6 @@ def sources():
                 "combination of the foregoing",
                 "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
             },
-        },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
@@ -409,7 +443,7 @@ def sources():
         },
         "openstreetmap": {
             "title": "OpenStreetMap Data Extracts (Geofabrik)",
-            "description": "Full data extract of OpenStreetMap data for defined "
+            "description": "Full data extract of OpenStreetMap data for defined"
             "spatial extent at ''referenceDate''",
             "path": "https://download.geofabrik.de/europe/germany-210101.osm.pbf",
             "licenses": license_odbl("© OpenStreetMap contributors"),
@@ -429,6 +463,22 @@ def sources():
             "license": license_ccby(
                 "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
             ),
+        },
+        "schmidt": {
+            "title": "Supplementary material to the masters thesis: "
+            "NUTS-3 Regionalization of Industrial Load Shifting Potential in Germany using a Time-Resolved Model",
+            "description": "Supplementary material to the named masters thesis, containing data on industrial processes"
+            "for the estimation of NUTS-3 load shifting potential of suitable electrically powered industrial processes"
+            "(cement milling, mechanical pulping, paper production, air separation).",
+            "path": "https://zenodo.org/record/3613767",
+            "licenses": license_ccby("© 2019 Danielle Schmidt"),
+        },
+        "seenergies": {
+            "title": "D5 1 Industry Dataset With Demand Data",
+            "description": "Georeferenced EU28 industrial sites with quantified annual excess heat volumes and demand data"
+            "within main sectors: Chemical industry, Iron and steel, Non-ferrous metals, Non-metallic minerals, Paper and printing, and Refineries.",
+            "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0/about",
+            "licenses": license_ccby("© Europa-Universität Flensburg")
         },
         "tyndp": {
             "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
