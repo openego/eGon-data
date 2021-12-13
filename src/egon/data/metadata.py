@@ -375,6 +375,16 @@ def sources():
             "path": "https://github.com/openego/eGon-data",
             "licenses": [license_agpl("© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte")]
         },
+        "Einspeiseatlas": {
+            "title": "Einspeiseatlas",
+            "description": "Im Einspeiseatlas finden sie sich die Informationen "
+            "zu realisierten und geplanten Biomethanaufbereitungsanlagen - mit "
+            "und ohne Einspeisung ins Gasnetz - in Deutschland und weltweit.",
+            "path": "https://www.biogaspartner.de/einspeiseatlas/",
+            "license": license_ccby(
+            "Deutsche Energie-Agentur (dena, 2021)"
+            ),
+        },
         "era5": {
             "title": "ERA5 global reanalysis",
             "description": "ERA5 is the fifth generation ECMWF reanalysis for the global climate "
@@ -465,6 +475,16 @@ def sources():
                 "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
             )],
         },
+        "pipeline_classification": {
+                    "title": "Technical pipeline characteristics for high pressure pipelines",
+                    "description": "Parameters for the classification of gas pipelines, "
+                    "the whole documentation could is available at: "
+                    "https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf",
+                    "path": "https://zenodo.org/record/5743452",
+                    "license": license_ccby(
+                    "Â© DIW Berlin, 2017"
+                    ),
+        },
         "schmidt": {
             "title": "Supplementary material to the masters thesis: "
             "NUTS-3 Regionalization of Industrial Load Shifting Potential in Germany using a Time-Resolved Model",
@@ -473,6 +493,18 @@ def sources():
             "(cement milling, mechanical pulping, paper production, air separation).",
             "path": "https://zenodo.org/record/3613767",
             "licenses": [license_ccby("© 2019 Danielle Schmidt")],
+        },
+        "SciGRID_gas": {
+                    "title": "SciGRID_gas IGGIELGN",
+                    "description": "The SciGRID_gas dataset represents the European "
+                    "gas transport network (pressure levels of 20 bars and higher) "
+                    "including the geo-referenced transport pipelines,  compressor "
+                    "stations, LNG terminals, storage, production sites, gas power "
+                    "plants, border points, and demand time series. ",
+                    "path": "https://dx.doi.org/10.5281/zenodo.4896526",
+                    "license": license_ccby(
+                    " Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
+                    ),
         },
         "seenergies": {
             "title": "D5 1 Industry Dataset With Demand Data",
