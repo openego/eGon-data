@@ -8,16 +8,26 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.era5 import import_cutout
+from egon.data.datasets.era5 import import_cutout, EgonRenewableFeedIn
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
+import time
+import datetime
+from egon.data.metadata import (
+    context,
+    meta_metadata,
+    license_ccby,
+    sources,
+    generate_resource_fields_from_sqla_model,
+)
+import json
 
 
 class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore},
         )
@@ -124,7 +134,6 @@ def federal_states_per_weather_cell():
             .set_index("w_id")
         )
 
-    
     weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
     return weather_cells.to_crs(4326)
@@ -538,4 +547,104 @@ def insert_feedin(data, carrier, weather_year):
         schema=cfg["targets"]["feedin_table"]["schema"],
         con=db.engine(),
         if_exists="append",
+    )
+
+
+def add_metadata():
+    """Add metdata to supply.egon_era5_renewable_feedin
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Import column names and datatypes
+    fields = [
+        {
+            "description": "Weather cell index",
+            "name": "w_id",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Weather year",
+            "name": "weather_year",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Energy carrier",
+            "name": "carrier",
+            "type": "string",
+            "unit": "none",
+        },
+        {
+            "description": "Weather-dependent feedin timeseries",
+            "name": "feedin",
+            "type": "array",
+            "unit": "p.u.",
+        },
+    ]
+
+    meta = {
+        "name": "supply.egon_era5_renewable_feedin",
+        "title": "eGon feedin timeseries for RES",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Weather-dependent feedin timeseries for RES",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+        ],
+        "licenses": [
+            license_ccby(
+                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Copernicus Climate Change Service (C3S) Climate Data Store "
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+            )
+        ],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_scenario_capacities",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Create json dump
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        meta_json,
+        EgonRenewableFeedIn.__table__.schema,
+        EgonRenewableFeedIn.__table__.name,
     )
