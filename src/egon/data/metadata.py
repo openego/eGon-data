@@ -180,7 +180,7 @@ def license_geonutzv(attribution):
 
 
 def generate_resource_fields_from_sqla_model(model):
-    """ Generate a template for the resource fields for metadata from a SQL
+    """Generate a template for the resource fields for metadata from a SQL
     Alchemy model.
 
     For details on the fields see field 14.6.1 of `Open Energy Metadata
@@ -218,7 +218,7 @@ def generate_resource_fields_from_sqla_model(model):
 
 
 def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
-    """ Generate a template for the resource fields for metadata from a
+    """Generate a template for the resource fields for metadata from a
     database table.
 
     For details on the fields see field 14.6.1 of `Open Energy Metadata
@@ -270,3 +270,32 @@ def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
         }
         for col in table.c
     ]
+
+
+def sources():
+    return {
+        "vg250": {
+            "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
+            "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+            "Verwaltungsebene des jeweiligen Landes.",
+            "path": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip",
+            "licenses": licenses_datenlizenz_deutschland(
+                "© Bundesamt für Kartographie und Geodäsie "
+                "2020 (Daten verändert)"
+            ),
+        },
+        "zensus": {
+            "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download",
+            "description": "Als Download bieten wir Ihnen auf dieser Seite zusätzlich zur "
+            "Zensusdatenbank CSV- und teilweise Excel-Tabellen mit umfassenden Personen-, Haushalts- "
+            "und Familien- sowie Gebäude- und Wohnungs­merkmalen. Die Ergebnisse liegen auf Bundes-, "
+            "Länder-, Kreis- und Gemeinde­ebene vor. Außerdem sind einzelne Ergebnisse für Gitterzellen verfügbar.",
+            "path": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnisse/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380?nn=3065474",
+            "license": licenses_datenlizenz_deutschland(
+                "© Statistische Ämter des Bundes und der Länder 2014"
+            ),
+        },
+    }
