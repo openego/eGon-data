@@ -333,6 +333,35 @@ def sources():
             "path": "https://www.bgr.bund.de/DE/Themen/Nutzung_tieferer_Untergrund_CO2Speicherung/Downloads/InSpeeDS_TP_Bewertungskriterien.pdf?__blob=publicationFile&v=3",
             "license": license_geonutzv("© BGR, Hannover, 2021"),
         },
+        "demandregio": {
+            "title": "DemandRegio",
+            "description": "Harmonisierung und Entwicklung von Verfahren zur regionalen und "
+            "zeitlichen Auflösung von Energienachfragen",
+            "path": "https://doi.org/10.34805/ffe-119-20",
+            "license": license_ccby("© FZJ, TUB, FfE"),
+        },
+        "era5": {
+            "title": "ERA5 global reanalysis",
+            "description": "ERA5 is the fifth generation ECMWF reanalysis for the global climate "
+            "and weather for the past 4 to 7 decades. Currently data is available from 1950, "
+            "split into Climate Data Store entries for 1950-1978 (preliminary back extension) and f"
+            "rom 1979 onwards (final release plus timely updates, this page). ERA5 replaces the ERA-Interim reanalysis. "
+            "See the online ERA5 documentation "
+            "(https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency) "
+            "for more information.",
+            "path": "https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency",
+            "license": {
+                "name": "Licence to use Copernicus Products",
+                "title": "Licence to use Copernicus Products",
+                "path": "https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf",
+                "instruction": "This Licence is free of charge, worldwide, non-exclusive, royalty free and perpetual. "
+                "Access to Copernicus Products is given for any purpose in so far as it is lawful, whereas use "
+                "may include, but is not limited to: reproduction; distribution; communication to the public; "
+                "adaptation, modification and combination with other data and information; or any "
+                "combination of the foregoing",
+                "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
+            },
+        },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
@@ -358,6 +387,19 @@ def sources():
                 "© 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen"
             ),
         },
+        "nep2021": {
+            "title": "Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf",
+            "description": "Die vier deutschen Übertragungsnetzbetreiber zeigen mit "
+            "diesem ersten Entwurf des Netzentwicklungsplans 2035, Version 2021, den "
+            "benötigten Netzausbau für die nächsten Jahre auf. Der NEP-Bericht beschreibt "
+            "keine konkreten Trassenverläufe von Übertragungsleitungen, sondern er "
+            "dokumentiert den notwendigen Übertragungsbedarf zwischen Netzknoten. "
+            "Das heißt, es werden Anfangs- und Endpunkte von zukünftigen Leitungsverbindungen "
+            "definiert sowie konkrete Empfehlungen für den Aus- und Neubau der Übertragungsnetze "
+            "an Land und auf See in Deutschland gemäß den Detailanforderungen im § 12 EnWG gegeben.",
+            "path": "https://zenodo.org/record/5743452#.YbCoz7so8go",
+            "license": license_ccby("© Übertragungsnetzbetreiber"),
+        },
         "openffe_gas": {
             "title": "Load Curves of the Industry Sector – eXtremOS solidEU Scenario (Europe NUTS-3)",
             "description": "Load Curves of the Industry Sector for the eXtremOS solidEU Scenario Scenario at NUTS-3-Level. "
@@ -371,6 +413,33 @@ def sources():
             "spatial extent at ''referenceDate''",
             "path": "https://download.geofabrik.de/europe/germany-210101.osm.pbf",
             "licenses": license_odbl("© OpenStreetMap contributors"),
+        },
+        "peta": {
+            "title": "Pan-European Thermal Atlas, Peta version 5.0.1",
+            "description": "Modelled Heat Demand distribution (in GJ per hectare grid cell) for residential and service "
+            "heat demands for space heating and hot water for the year 2015 using HRE4 data and the combined "
+            "top-down bottom-up approach of HRE4. "
+            "National sector-specific heat demand data, derived by the FORECAST model in HRE4 for residential "
+            "(delivered energy, for space heating and hot water) and service-sector (delivered energy, for space heating, hot "
+            "water and process heat) buildings for the year 2015, were distributed using modelled, spatial "
+            "statistics based floor areas in 100x100m grids and a population grid. "
+            "For further information please see the documentation available on the Heat Roadmap Europe website, "
+            "in particular D2.3 report 'Methodologies and assumptions used in the mapping'.",
+            "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/search",
+            "license": license_ccby(
+                "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
+            ),
+        },
+        "tyndp": {
+            "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
+            "description": "ENTSOs’ TYNDP 2020 Scenario Report describes possible European energy futures up to 2050. "
+            "Scenarios are not forecasts; they set out a range of possible futures used by the ENTSOs to test future "
+            "electricity and gas infrastructure needs and projects. The scenarios are ambitious as they deliver "
+            "a low carbon energy system for Europe by 2050. The ENTSOs have developed credible scenarios that are "
+            "guided by technically sound pathways, while reflecting country by country specifics, so that a pan-European "
+            "low carbon future is achieved.",
+            "path": "https://tyndp.entsoe.eu/maps-data",
+            "license": license_ccby("© ENTSO-E and ENTSOG"),
         },
         "vg250": {
             "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
