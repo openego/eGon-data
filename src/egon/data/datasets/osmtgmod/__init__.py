@@ -555,7 +555,8 @@ def to_pypsa():
 
             -- BRANCH DATA
             INSERT INTO grid.egon_etrago_line (scn_name, line_id, bus0,
-                                              bus1, x, r, b, s_nom, cables, v_nom,
+                                              bus1, x, r, b, s_nom, s_nom_min, s_nom_extendable,
+                                              cables, v_nom,
                                               geom, topo)
             SELECT
               {scenario_name},
@@ -566,6 +567,8 @@ def to_pypsa():
               br_r AS r,
               br_b as b,
               rate_a as s_nom,
+              rate_a as s_nom_min,
+              TRUE,
               cables,
               branch_voltage/1000 as v_nom,
               geom,
@@ -578,7 +581,7 @@ def to_pypsa():
             -- TRANSFORMER DATA
             INSERT INTO grid.egon_etrago_transformer (scn_name,
                                                      trafo_id, bus0, bus1, x,
-                                                     s_nom, tap_ratio,
+                                                     s_nom, s_nom_min, s_nom_extendable, tap_ratio,
                                                      phase_shift, geom, topo)
             SELECT
               {scenario_name},
@@ -587,6 +590,8 @@ def to_pypsa():
               t_bus AS bus1,
               br_x/100 AS x,
               rate_a as s_nom,
+              rate_a as s_nom_min,
+              TRUE,
               tap AS tap_ratio,
               shift AS phase_shift,
               geom,
