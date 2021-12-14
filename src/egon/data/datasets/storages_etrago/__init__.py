@@ -50,10 +50,12 @@ def insert_PHES():
         """
     )
 
-
+    # Select unused index of buses
+    next_bus_id = db.next_etrago_id("storage")
+    
     # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
 
-    phes["storage_id"] = db.next_etrago_id("storage")
+    phes["storage_id"] = range(next_bus_id, next_bus_id + len(heat_buses))
     phes["p_nom_extendable"] = scenario_parameters.electricity("eGon2035")["phes_p_nom_extendable"]
     phes["marginal_cost_fixed"] = scenario_parameters.electricity("eGon2035")["re_marginal_cost_fixed"]
     phes["max_hours"] = scenario_parameters.electricity("eGon2035")["phes_max_hours"]
