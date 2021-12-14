@@ -569,7 +569,7 @@ def reduce_synthetic_buildings(mapping_profiles_to_buildings,
 #     db.execute_sql(sqlfile)
 
 
-def get_building_peak_loads(iterate_over="nuts3"):
+def get_building_peak_loads():
     """
     Peak loads of buildings are determined.
 
@@ -605,6 +605,18 @@ def get_building_peak_loads(iterate_over="nuts3"):
 
         # Read demand profiles from egon-data-bundle
         df_profiles = get_household_demand_profiles_raw()
+
+        def ve(s):
+            raise (ValueError(s))
+
+        dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+        iterate_over = (
+            "nuts3"
+            if dataset == "Everything"
+            else "cell_id"
+            if dataset == "Schleswig-Holstein"
+            else ve(f"'{dataset}' is not a valid dataset boundary.")
+        )
 
         df_building_peak_loads = pd.DataFrame()
 
