@@ -52,6 +52,7 @@ from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import PumpedHydro
+from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.vg250 import Vg250
@@ -255,7 +256,9 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
+    insert_data_ch4_storages = CH4Storages(
+	dependencies=[create_gas_polygons]
+    )
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -276,7 +279,7 @@ with airflow.DAG(
     feedin_wind_onshore = tasks["renewable_feedin.wind"]
     feedin_pv = tasks["renewable_feedin.pv"]
     feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
-    
+
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
         dependencies=[heat_demand_Germany, scenario_parameters]
@@ -440,7 +443,12 @@ with airflow.DAG(
 
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
-        dependencies=[heat_supply, mv_grid_districts, setup_etrago, renewable_feedin]
+        dependencies=[
+            heat_supply,
+            mv_grid_districts,
+            setup_etrago,
+            renewable_feedin,
+        ]
     )
 
     heat_etrago_buses = tasks["heat_etrago.buses"]
@@ -492,5 +500,15 @@ with airflow.DAG(
             mv_grid_districts,
             district_heating_areas,
             heat_etrago,
+        ]
+    )
+
+    # Storages to eTrago
+
+    storage_etrago = StorageEtrago(
+        dependencies=[
+            pumped_hydro,
+            setup_etrago,
+            scenario_parameters,
         ]
     )
