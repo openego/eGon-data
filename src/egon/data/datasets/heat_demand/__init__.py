@@ -48,7 +48,7 @@ class HeatDemandImport(Dataset):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.1",  # maybe rethink the naming
+            version="0.0.2",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
@@ -526,11 +526,17 @@ def adjust_residential_heat_to_zensus(scenario):
     df = db.select_dataframe(
         f"""SELECT *
         FROM  demand.egon_peta_heat
-        WHERE scenario = {'scenario'} and sector = 'residential'
+        WHERE scenario = {'scenario'} 
+        AND sector = 'residential'
         AND zensus_population_id IN (
             SELECT id
             FROM society.destatis_zensus_population_per_ha_inside_germany
-            )""",
+            )
+        AND zensus_population_id IN (
+            SELECT zensus_population_id 
+            FROM society.egon_destatis_zensus_building_per_ha
+            WHERE attribute = 'GEBTYPGROESSE')
+        """,
         index_col="id",
     )
 
