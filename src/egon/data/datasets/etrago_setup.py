@@ -1,4 +1,7 @@
 # coding: utf-8
+import datetime
+import json
+
 from geoalchemy2.types import Geometry
 from shapely.geometry import LineString
 from sqlalchemy import (
@@ -12,15 +15,100 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    schema, #???
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
+import pypsa
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_sqla_model,
+    license_ccby,
+    meta_metadata,
+    sources,
+)
 
 Base = declarative_base()
 metadata = Base.metadata
+
+network = pypsa.Network()
+# add Storage key (called StorageUnit in PyPSA)
+network.component_attrs['Storage'] = network.component_attrs['StorageUnit']
+
+
+def get_pypsa_field_descriptors(component):
+
+    ident = component.lower() + "_id"
+
+    data = network.component_attrs[component].rename({"name": ident})
+    data.loc[ident, "type"] = "int"
+    data.loc["scn_name"] = [
+        "string",
+        "n/a",
+        "n/a",
+        "Name of the eGon scenario",
+        "Input",
+    ]
+
+    return data
+
+
+def get_meta(
+    schema, component, description='TODO', source_list=[], license_list=[], contributor_list=[]
+):
+
+    table = "egon_etrago_" + component.lower()
+    fields = (
+        get_pypsa_field_descriptors(component)
+        .reset_index()
+        .to_dict(orient="records")
+    )
+    # geometry column still missing
+
+    meta = {
+        "name": schema + "." + table,
+        "title": component,
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        # no automatic description? PyPSA descriptions do not quite fit our
+        # scope
+        "description": description,
+        "language": ["en-EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": source_list,
+        "licenses": license_list,
+        "contributors": contributor_list,
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": schema + "." + table,
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["scn_name", component.lower() + "_id"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Create json dump
+    meta_json = "'" + json.dumps(meta, indent=4) + "'"
+
+    return meta_json
 
 
 class EtragoSetup(Dataset):
@@ -35,7 +123,7 @@ class EtragoSetup(Dataset):
 
 class EgonPfHvBus(Base):
     __tablename__ = "egon_etrago_bus"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Bus")}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -61,7 +149,10 @@ class EgonPfHvBusTimeseries(Base):
 
 class EgonPfHvGenerator(Base):
     __tablename__ = "egon_etrago_generator"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta("grid", "Generator"),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -110,7 +201,7 @@ class EgonPfHvGeneratorTimeseries(Base):
 
 class EgonPfHvLine(Base):
     __tablename__ = "egon_etrago_line"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Line")}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -151,7 +242,7 @@ class EgonPfHvLineTimeseries(Base):
 
 class EgonPfHvLink(Base):
     __tablename__ = "egon_etrago_link"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Link")}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -191,7 +282,7 @@ class EgonPfHvLinkTimeseries(Base):
 
 class EgonPfHvLoad(Base):
     __tablename__ = "egon_etrago_load"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Load")}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -227,7 +318,7 @@ class EgonPfHvCarrier(Base):
 
 class EgonPfHvStorage(Base):
     __tablename__ = "egon_etrago_storage"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Storage")}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -274,7 +365,7 @@ class EgonPfHvStorageTimeseries(Base):
 
 class EgonPfHvStore(Base):
     __tablename__ = "egon_etrago_store"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Store")}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -323,7 +414,10 @@ class EgonPfHvTempResolution(Base):
 
 class EgonPfHvTransformer(Base):
     __tablename__ = "egon_etrago_transformer"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta("grid", "Transformer"),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
