@@ -648,21 +648,6 @@ def annual_demand_generator():
     )
     scenario_zone.drop_duplicates("zensus_population_id", inplace=True)
 
-    sfh_chartext = [
-        "Freistehendes Einfamilienhaus",
-        "Einfamilienhaus: Doppelhaushälfte",
-        "Einfamilienhaus: Reihenhaus",
-        "Freistehendes Zweifamilienhaus",
-        "Zweifamilienhaus: Doppelhaushälfte",
-        "Zweifamilienhaus: Reihenhaus",
-    ]
-    mfh_chartext = [
-        "Mehrfamilienhaus: 3-6 Wohnungen",
-        "Mehrfamilienhaus: 7-12 Wohnungen",
-        "Mehrfamilienhaus: 13 und mehr Wohnungen",
-        "Anderer Gebäudetyp",
-    ]
-
     house_count_MFH = db.select_dataframe(
         """
         
@@ -800,6 +785,22 @@ def profile_selector():
             ]
             .zensus_population_id.values
         )
+        
+        result_SFH["building_id"] = db.select_dataframe(
+            
+            """
+        
+            SELECT cell_id as zensus_population_id, building_id FROM 
+            (
+            SELECT cell_id, COUNT(*), building_id
+            FROM demand.egon_household_electricity_profile_of_buildings
+            GROUP BY (cell_id, building_id)
+            ) a 
+            WHERE a.count = 1
+            """,
+            index_col="zensus_population_id",
+        ).loc[result_SFH["zensus_population_id"].unique(), "building_id"].values
+        
 
         result_MFH["zensus_population_id"] = (
             annual_demand[annual_demand.Station == station]
@@ -812,6 +813,22 @@ def profile_selector():
             ]
             .zensus_population_id.values
         )
+        
+        result_MFH["building_id"] = db.select_dataframe(
+            
+            """
+        
+            SELECT cell_id as zensus_population_id, building_id FROM 
+            (
+            SELECT cell_id, COUNT(*), building_id
+            FROM demand.egon_household_electricity_profile_of_buildings
+            GROUP BY (cell_id, building_id)
+            ) a 
+            WHERE a.count > 1
+            """,
+            index_col="zensus_population_id",
+        ).loc[result_MFH["zensus_population_id"].unique(), "building_id"].values
+        
 
         result_SFH.set_index("zensus_population_id", inplace=True)
         result_MFH.set_index("zensus_population_id", inplace=True)
@@ -847,6 +864,7 @@ def profile_selector():
         __table_args__ = {"schema": "demand"}
         ID = Column(Integer, primary_key=True)
         zensus_population_id = Column(Integer, primary_key=True)
+        building_id = Column(Integer, primary_key=True)
         selected_idp_profiles = Column(String)
 
     engine = db.engine()
@@ -1816,7 +1834,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
