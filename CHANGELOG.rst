@@ -256,6 +256,8 @@ Changed
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
 * Migrate substation scripts to datasets
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
+* Add household demand profiles to etrago table
+  `#381 <https://github.com/openego/eGon-data/issues/381>`_
 * Migrate zensus scripts to datasets
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
 
