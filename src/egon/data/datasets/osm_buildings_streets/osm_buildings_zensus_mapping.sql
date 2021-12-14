@@ -6,6 +6,9 @@
 -------------------------------------------------------
 -- Create mapping table of buildings to zensus cells --
 -------------------------------------------------------
+-- Only selecting buildings wihtin the purged census cells
+-- purged of cells with unpopulated areas
+-- https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
 drop table if exists boundaries.egon_map_zensus_buildings_filtered;
 CREATE TABLE boundaries.egon_map_zensus_buildings_filtered as
     select * from (

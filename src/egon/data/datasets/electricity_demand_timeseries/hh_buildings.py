@@ -54,15 +54,12 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
-import codecs
-import os
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
-from sqlalchemy import ARRAY, REAL, Column, Integer, String, Table, inspect
+from sqlalchemy import REAL, Column, Integer, String, Table, func, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
-import importlib_resources as resources
 import numpy as np
 import pandas as pd
 
@@ -82,16 +79,12 @@ RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 
 
 class HouseholdElectricityProfilesOfBuildings(Base):
-    # class HouseholdElectricityProfilesInBuilding(Base):
-    #     __tablename__ = "egon_household_electricity_profile_in_building"
     __tablename__ = "egon_household_electricity_profile_of_buildings"
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, primary_key=True)
-    building_id = Column(String, index=True)  # , primary_key=True)
+    building_id = Column(Integer, index=True)
     cell_id = Column(Integer, index=True)
-    # grid_id = Column(String)
-    # cell_profile_ids = Column(ARRAY(String, dimensions=1))
     profile_id = Column(String, index=True)
 
 
@@ -158,9 +151,9 @@ def match_osm_and_zensus_data(
     )
 
     # count buildings/ids for each cell
-    buildings_per_cell = egon_map_zensus_buildings_filtered.groupby(
-        "cell_id"
-    )["id"].count()
+    buildings_per_cell = egon_map_zensus_buildings_filtered.groupby("cell_id")[
+        "id"
+    ].count()
     buildings_per_cell = buildings_per_cell.rename("building_ids")
 
     # add buildings left join to have all the cells with assigned profiles
@@ -334,14 +327,25 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     missing_buildings_geom["geom_point"] = points
     # replace cell geom with new building geom
     missing_buildings_geom["geom"] = buffer
-    missing_buildings_geom["id"] = missing_buildings_geom["grid_id"]
 
-    missing_buildings_geom["building_id"] += 1
-    missing_buildings_geom["id"] = (
-        missing_buildings_geom["grid_id"]
-        + "_"
-        + missing_buildings_geom["building_id"].astype(str)
-    )
+    # missing_buildings_geom["id"] = missing_buildings_geom["grid_id"]
+    # missing_buildings_geom["building_id"] += 1
+    # missing_buildings_geom["id"] = (
+    #     missing_buildings_geom["grid_id"]
+    #     + "_"
+    #     + missing_buildings_geom["building_id"].astype(str)
+    # )
+
+    buildings_filtered = Table('osm_buildings',
+                               Base.metadata, schema='openstreetmap')
+    # get table metadata from db by name and schema
+    inspect(engine).reflecttable(buildings_filtered, None)
+
+    with db.session_scope() as session:
+        buildings_filtered = session.execute(func.max(buildings_filtered.c.id)).scalar()
+
+    missing_buildings_geom['id'] = range(buildings_filtered + 1, buildings_filtered + len(missing_buildings_geom) + 1)
+
     missing_buildings_geom = missing_buildings_geom.drop(
         columns=["building_id", "profiles"]
     )
@@ -500,6 +504,46 @@ def generate_mapping_table(
     return mapping_profiles_to_buildings
 
 
+def reduce_synthetic_buildings(mapping_profiles_to_buildings,
+                               synthetic_buildings):
+    """Reduced list of synthetic buildings to amount actually used.
+
+    Not all are used, due to randomised assignment with replacing
+    Id's are adapted to continuous number sequence following
+    egon_map_zensus_buildings_filtered"""
+
+    buildings_filtered = Table('osm_buildings',
+                               Base.metadata, schema='openstreetmap')
+    # get table metadata from db by name and schema
+    inspect(engine).reflecttable(buildings_filtered, None)
+
+    # total number of buildings
+    with db.session_scope() as session:
+        buildings_filtered = session.execute(func.max(buildings_filtered.c.id)).scalar()
+
+    synth_ids_used = mapping_profiles_to_buildings.loc[
+        mapping_profiles_to_buildings['building_id']
+        >
+        buildings_filtered, 'building_id'].unique()
+
+    synthetic_buildings = synthetic_buildings.loc[synthetic_buildings['id'].isin(synth_ids_used)]
+    # id_mapping = dict(
+    #     list(
+    #         zip(
+    #             synth_ids_used,
+    #             range(
+    #                 buildings_filtered,
+    #                 buildings_filtered
+    #                 + len(synth_ids_used) + 1
+    #             )
+    #         )
+    #     )
+    # )
+
+    # time expensive because of regex
+    # mapping_profiles_to_buildings['building_id'] = mapping_profiles_to_buildings['building_id'].replace(id_mapping)
+    return synthetic_buildings
+
 # def get_building_peak_loads():
 #     """
 #     Peak loads of buildings are determined by SQL-script.
@@ -541,15 +585,19 @@ def get_building_peak_loads(iterate_over="nuts3"):
     """
 
     with db.session_scope() as session:
-        cells_query = session.query(
-            HouseholdElectricityProfilesOfBuildings,
-            HouseholdElectricityProfilesInCensusCells.nuts3,
-            HouseholdElectricityProfilesInCensusCells.factor_2035,
-            HouseholdElectricityProfilesInCensusCells.factor_2050,
-        ).filter(
-            HouseholdElectricityProfilesOfBuildings.cell_id
-            == HouseholdElectricityProfilesInCensusCells.cell_id
-        ).order_by(HouseholdElectricityProfilesOfBuildings.id)
+        cells_query = (
+            session.query(
+                HouseholdElectricityProfilesOfBuildings,
+                HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2050,
+            )
+            .filter(
+                HouseholdElectricityProfilesOfBuildings.cell_id
+                == HouseholdElectricityProfilesInCensusCells.cell_id
+            )
+            .order_by(HouseholdElectricityProfilesOfBuildings.id)
+        )
 
         df_buildings_and_profiles = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col="id"
@@ -577,7 +625,10 @@ def get_building_peak_loads(iterate_over="nuts3"):
                     df_building_peak_load_nuts3 * df["factor_2035"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
-                index=["building_peak_load_in_w_2035", "building_peak_load_in_w_2050"],
+                index=[
+                    "building_peak_load_in_w_2035",
+                    "building_peak_load_in_w_2050",
+                ],
             ).T
 
             df_building_peak_loads = pd.concat(
@@ -649,6 +700,26 @@ def map_houseprofiles_to_buildings():
         missing_buildings, edge_length=5
     )
 
+    # add synthetic buildings to df
+    egon_map_zensus_buildings_filtered_synth = pd.concat(
+        [
+            egon_map_zensus_buildings_filtered,
+            synthetic_buildings[["id", "grid_id", "cell_id"]],
+        ],
+        ignore_index=True,
+    )
+
+    # assign profiles to buildings
+    mapping_profiles_to_buildings = generate_mapping_table(
+        egon_map_zensus_buildings_filtered_synth,
+        egon_hh_profile_in_zensus_cell,
+    )
+
+    # reduce list to only used synthetic buildings
+    synthetic_buildings = reduce_synthetic_buildings(
+        mapping_profiles_to_buildings,
+        synthetic_buildings)
+
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
 
@@ -667,21 +738,6 @@ def map_houseprofiles_to_buildings():
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
             "area": OsmBuildingsSynthetic.area.type,
         },
-    )
-
-    # add synthetic buildings to df
-    egon_map_zensus_buildings_filtered_synth = pd.concat(
-        [
-            egon_map_zensus_buildings_filtered,
-            synthetic_buildings[["id", "grid_id", "cell_id"]],
-        ],
-        ignore_index=True,
-    )
-
-    # assign profiles to buildings
-    mapping_profiles_to_buildings = generate_mapping_table(
-        egon_map_zensus_buildings_filtered_synth,
-        egon_hh_profile_in_zensus_cell,
     )
 
     HouseholdElectricityProfilesOfBuildings.__table__.drop(
