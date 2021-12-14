@@ -36,6 +36,8 @@ Base = declarative_base()
 metadata = Base.metadata
 
 network = pypsa.Network()
+# add Storage key (called StorageUnit in PyPSA)
+network.component_attrs['Storage'] = network.component_attrs['StorageUnit']
 
 
 def get_pypsa_field_descriptors(component):
@@ -56,7 +58,7 @@ def get_pypsa_field_descriptors(component):
 
 
 def get_meta(
-    schema, component, source_list=[], license_list=[], contributor_list=[]
+    schema, component, description='TODO', source_list=[], license_list=[], contributor_list=[]
 ):
 
     table = "egon_etrago_" + component.lower()
@@ -73,7 +75,7 @@ def get_meta(
         "id": "WILL_BE_SET_AT_PUBLICATION",
         # no automatic description? PyPSA descriptions do not quite fit our
         # scope
-        "description": "TODO",
+        "description": description,
         "language": ["en-EN"],
         "publicationDate": datetime.date.today().isoformat(),
         "context": context(),
