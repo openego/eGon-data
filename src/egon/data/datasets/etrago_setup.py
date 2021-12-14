@@ -573,6 +573,8 @@ def insert_carriers():
                 "H2_saltcavern",
                 "biogas_feedin",
                 "natural_gas_feedin",
+                "pumped_hydro",
+                "battery",
             ],
         }
     )
