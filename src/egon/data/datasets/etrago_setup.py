@@ -74,7 +74,7 @@ class EgonPfHvGenerator(Base):
     p_nom_min = Column(Float(53))
     p_nom_max = Column(Float(53))
     p_min_pu_fixed = Column(Float(53), server_default=0.)
-    p_max_pu_fixed = Column(Float(53))
+    p_max_pu_fixed = Column(Float(53), server_default=1.)
     p_set_fixed = Column(Float(53))
     q_set_fixed = Column(Float(53))
     sign = Column(Float(53))
