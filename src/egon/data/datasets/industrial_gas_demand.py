@@ -122,7 +122,8 @@ def download_CH4_industrial_demand():
     ).set_geometry("geom", crs=4326)
 
     # Match to associated gas bus
-    industrial_loads_list = assign_ch4_bus_id(industrial_loads_list)
+    scn_name = "eGon2035"
+    industrial_loads_list = assign_ch4_bus_id(industrial_loads_list, scn_name)
 
     # Add carrier
     c = {"carrier": "CH4"}
@@ -235,7 +236,8 @@ def download_H2_industrial_demand():
     ).set_geometry("geom", crs=4326)
 
     # Match to associated gas bus
-    industrial_loads_list = assign_h2_bus_id(industrial_loads_list)
+    scn_name = "eGon2035"
+    industrial_loads_list = assign_h2_bus_id(industrial_loads_list, scn_name)
 
     # Add carrier
     c = {"carrier": "H2"}

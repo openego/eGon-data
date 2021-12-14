@@ -9,6 +9,7 @@ import importlib_resources as resources
 from egon.data import db
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
+from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
@@ -25,6 +26,7 @@ from egon.data.datasets.electricity_demand_etrago import ElectricalLoadEtrago
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -32,6 +34,10 @@ from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.hydrogen_etrago import (
+    HydrogenBusEtrago, HydrogenStoreEtrago, HydrogenMethaneLinkEtrago,
+    HydrogenPowerLinkEtrago
+)
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
     houseprofiles_in_census_cells,
@@ -59,12 +65,6 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusPopulation, ZensusMiscellaneous
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-from egon.data.processing.gas_areas import GasAreas
-from egon.data.processing.power_to_h2 import PowertoH2
-import egon.data.datasets.gas_grid as gas_grid
-import egon.data.processing.gas_areas as gas_areas
-import egon.data.processing.power_to_h2 as power_to_h2
-
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -144,6 +144,8 @@ with airflow.DAG(
         "electricity_demand.distribute-household-demands"
     ]
 
+    saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
+
     # NEP data import
     scenario_capacities = ScenarioCapacities(
         dependencies=[setup, vg250, data_bundle, zensus_population]
@@ -199,14 +201,32 @@ with airflow.DAG(
         dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
     )
 
-    # Power-to-gas installations creation
-    insert_power_to_h2_installations = PowertoH2(
-        dependencies=[gas_grid_insert_data]
+    # Insert hydrogen buses
+    insert_hydrogen_buses = HydrogenBusEtrago(
+        dependencies=[
+            saltcavern_storage,
+            gas_grid_insert_data,
+            substation_voronoi
+        ]
+    )
+
+    # H2 steel tanks and saltcavern storage
+    insert_H2_storage = HydrogenStoreEtrago(
+        dependencies=[insert_hydrogen_buses])
+
+    # Power-to-gas-to-power chain installations
+    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
+        dependencies=[insert_hydrogen_buses, ]
+    )
+
+    # Link between methane grid and respective hydrogen buses
+    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
+        dependencies=[insert_hydrogen_buses, ]
     )
 
     # Create gas voronoi
     create_gas_polygons = GasAreas(
-        dependencies=[gas_grid_insert_data, vg250_clean_and_prepare]
+        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
     )
 
     # Gas prod import
