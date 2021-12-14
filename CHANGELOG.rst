@@ -157,6 +157,12 @@ Added
   `#485 <https://github.com/openego/eGon-data/issues/485>`_
 * Include time-dependent coefficient of performance for heat pumps
   `#532 <https://github.com/openego/eGon-data/issues/532>`_
+* Limit number of parallel processes per task
+  `#265 <https://github.com/openego/eGon-data/issues/265>`_
+* Include biomass CHP plants to eTraGo tables
+  `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include feedin time series for wind offshore
+  `#531 <https://github.com/openego/eGon-data/issues/531>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -244,12 +250,18 @@ Changed
   `#484 <https://github.com/openego/eGon-data/issues/484>`_
 * Migrate dlr script to datasets
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
+* Migrate loadarea scripts to datasets
+  `#525 <https://github.com/openego/eGon-data/issues/525>`_
 * Migrate plot.py to dataset of district heating areas
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
 * Migrate substation scripts to datasets
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
 * Update deposit_id for zenodo download
   `#540 <https://github.com/openego/eGon-data/issues/540>`_
+* Add household demand profiles to etrago table
+  `#381 <https://github.com/openego/eGon-data/issues/381>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 
 
 Bug fixes
@@ -321,5 +333,7 @@ Bug fixes
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Add missing 'sign' for CH4 and H2 loads
+  `#516 <https://github.com/openego/eGon-data/issues/538>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
