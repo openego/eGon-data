@@ -1,9 +1,11 @@
-import pandas as pd
+from pathlib import Path
+
+from shapely.geometry import Point
 import geopandas as gpd
 import numpy as np
+import pandas as pd
+
 from egon.data import db
-from shapely.geometry import Point
-from pathlib import Path
 import egon.data.config
 
 
@@ -144,11 +146,9 @@ def insert():
 
     # Assign static values
     offshore["carrier"] = "wind_offshore"
-    offshore["chp"] = False
     offshore["el_capacity"] = offshore["C 2035"]
     offshore["scenario"] = "eGon2035"
-    offshore["th_capacity"] = 0
-
+    
     # Delete unnecessary columns
     offshore.drop(
         [

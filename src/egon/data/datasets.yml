@@ -33,6 +33,24 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
+
+bgr:
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "saltstructures_inspee"
+  sources:
+    vg250_federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    saltcaverns:
+      schema: 'boundaries'
+      table: 'saltstructures_inspee'
+  targets:
+    storage_potential:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+
 zensus_population:
   original_data:
     source:
@@ -583,6 +601,28 @@ etrago_heat:
       schema: 'grid'
       table: 'egon_etrago_link_timeseries'
 
+etrago_hydrogen:
+  sources:
+    saltcavern_data:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    H2_AC_map:
+      schema: 'grid'
+      table: 'egon_etrago_ac_h2'
+  targets:
+    hydrogen_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    hydrogen_links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    hydrogen_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
 industrial_sites:
   sources:
     hotmaps:
@@ -681,6 +721,9 @@ etrago_electricity:
     cts_curves:
       schema: 'demand'
       table: 'egon_etrago_electricity_cts'
+    household_curves:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_households'
   targets:
     etrago_load:
       schema: 'grid'
@@ -716,6 +759,7 @@ chp_location:
     vg250_lan:
       schema: 'boundaries'
       table: 'vg250_lan'
+    mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
   targets:
     chp_table:
       table: 'egon_chp_plants'
@@ -739,6 +783,9 @@ chp_etrago:
     link:
       schema: 'grid'
       table: 'egon_etrago_link'
+    generator:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
 
 DSM_CTS_industry:
   sources:
@@ -797,7 +844,7 @@ generators_etrago:
     etrago_gen_time:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
-      
+
 weather_BusID:
   sources:
     power_plants:
