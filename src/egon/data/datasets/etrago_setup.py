@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    text,
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -27,7 +28,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(create_tables, temp_resolution),
         )
@@ -48,6 +49,7 @@ class EgonPfHvBus(Base):
     x = Column(Float(53))
     y = Column(Float(53))
     geom = Column(Geometry("POINT", 4326), index=True)
+    country = Column(Text, server_default=text("'DE'::text"))
 
 
 class EgonPfHvBusTimeseries(Base):
