@@ -792,7 +792,7 @@ generators_etrago:
     etrago_gen_time:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
-      
+
 weather_BusID:
   sources:
     power_plants:
@@ -822,6 +822,9 @@ storage_etrago:
     scenario_parameters:
       table: 'egon_scenario_parameters'
       schema: 'scenario'
+    bus:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
   targets:
     storage:
       schema: 'grid'

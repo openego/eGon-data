@@ -32,12 +32,15 @@ def insert_PHES():
 
     engine = db.engine()
 
-    # Delete outdated data on pumped hydro units (PHES) from database
+    # Delete outdated data on pumped hydro units (PHES) inside Germany from database
     db.execute_sql(
         f"""
         DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE carrier = 'pumped_hydro'
         AND scn_name = 'eGon2035'
+        AND bus NOT IN (SELECT bus_id FROM {targets['bus']['schema']}.{targets['bus']['table']}
+                       WHERE scn_name = 'eGon2035'
+                       AND country = 'DE');
         """
     )
 
@@ -52,7 +55,7 @@ def insert_PHES():
 
     # Select unused index of buses
     next_bus_id = db.next_etrago_id("storage")
-    
+
     # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
 
     phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
