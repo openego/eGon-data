@@ -165,7 +165,9 @@ Added
   `#531 <https://github.com/openego/eGon-data/issues/531>`_
 * Include hydrogen infrastructure for eGon2035 scenario
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
-
+* Include downloaded pypsa-eur-sec results
+  `#138 <https://github.com/openego/eGon-data/issues/138>`_
+  
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 
