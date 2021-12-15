@@ -546,11 +546,11 @@ def insert_carriers():
                 "wind_onshore",
                 "central_heat_pump",
                 "central_resistive_heater",
-                "CH4-to-H2",
+                "CH4_to_H2",
                 "dsm",
-                "H2-feedin",
-                "H2-to-CH4",
-                "H2-to-power",
+                "H2_feedin",
+                "H2_to_CH4",
+                "H2_to_power",
                 "rural_heat_pump",
                 "industrial_biomass_CHP",
                 "industrial_gas_CHP",
@@ -558,7 +558,7 @@ def insert_carriers():
                 "central_biomass_CHP",
                 "central_gas_CHP",
                 "central_gas_CHP_heat",
-                "power-to-H2",
+                "power_to_H2",
                 "rural_gas_boiler",
                 "central_gas_boiler",
                 "H2_overground",
@@ -595,14 +595,14 @@ def link_geom_from_buses(df, scn_name):
     Parameters
     ----------
     df : pandas.DataFrame
-        List of eTraGo links with bus0 and bus 1 but without topology
+        List of eTraGo links with bus0 and bus1 but without topology
     scn_name : str
         Scenario name
 
     Returns
     -------
     gdf : geopandas.GeoDataFrame
-        List of eTraGo links with bus0 and bus 1 but with topology
+        List of eTraGo links with bus0 and bus1 but with topology
 
     """
 
