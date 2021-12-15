@@ -161,6 +161,15 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include PHS in eTraGo tables
+  `#333 <https://github.com/openego/eGon-data/issues/333>`_
+* Include feedin time series for wind offshore
+  `#531 <https://github.com/openego/eGon-data/issues/531>`_
+* Include hydrogen infrastructure for eGon2035 scenario
+  `#474 <https://github.com/openego/eGon-data/issues/474>`_
+* Include downloaded pypsa-eur-sec results
+  `#138 <https://github.com/openego/eGon-data/issues/138>`_
+  
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -254,6 +263,12 @@ Changed
   `#527 <https://github.com/openego/eGon-data/issues/527>`_
 * Migrate substation scripts to datasets
   `#304 <https://github.com/openego/eGon-data/issues/304>`_
+* Update deposit_id for zenodo download
+  `#540 <https://github.com/openego/eGon-data/issues/540>`_
+* Add household demand profiles to etrago table
+  `#381 <https://github.com/openego/eGon-data/issues/381>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Add information on plz, city and federal state to data on mastr without chp
   `#425 <https://github.com/openego/eGon-data/issues/425>`_
 
@@ -327,5 +342,7 @@ Bug fixes
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Add missing 'sign' for CH4 and H2 loads
+  `#516 <https://github.com/openego/eGon-data/issues/538>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_

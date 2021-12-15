@@ -28,18 +28,14 @@ import egon
 
 class IdpProfiles:
     def __init__(self, df_index, **kwargs):
-        index = pd.date_range(
-            datetime(2011, 1, 1, 0), periods=8760, freq="H"
-        )
+        index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
 
         self.df = pd.DataFrame(index=df_index)
 
         self.temperature = kwargs.get("temperature")
 
     def get_temperature_interval(self, how="geometric_series"):
-        index = pd.date_range(
-            datetime(2011, 1, 1, 0), periods=8760, freq="H"
-        )
+        index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
         """Appoints the corresponding temperature interval to each temperature
         in the temperature vector.
         """
@@ -157,7 +153,7 @@ def temperature_profile_extract():
 
     """
 
-    cutout = era.import_cutout(boundary="Europe")
+    cutout = era.import_cutout(boundary="Germany")
     coordinates_path = os.path.join(
         os.getcwd(),
         "data_bundle_egon_data",
@@ -415,7 +411,6 @@ def idp_pool_generator():
         """
         this_classes = globals()["{}_classes".format(station.lower())]
         for classes in this_classes:
-            # this_itteration = globals()[f'{station.lower()}_{household_stock.lower()}'].loc[temp_class[f'Class_{station}']==classes,:]
             this_itteration = globals()[
                 "{}_{}".format(station.lower(), household_stock.lower())
             ].loc[temp_class["Class_{}".format(station)] == classes, :]
@@ -607,43 +602,16 @@ def annual_demand_generator():
         respective associated Station
 
     """
-
-    demand = psycop_df_AF("demand.egon_peta_heat")
-    a_pha = psycop_df_AF("society.egon_destatis_zensus_apartment_per_ha")
-    b_pha = psycop_df_AF("society.egon_destatis_zensus_building_per_ha")
-    h_pha = psycop_df_AF("society.egon_destatis_zensus_household_per_ha")
-
-    zp_pha = psycop_gdf_AF("society.destatis_zensus_population_per_ha")
-
-    demand = demand[demand["scenario"] == "eGon2035"]
-    demand = demand[demand["sector"] == "residential"]
-
-    a_pha_1 = a_pha[["zensus_population_id", "grid_id"]]
-    a_pha_1 = a_pha_1.drop_duplicates(subset="zensus_population_id")
-    b_pha_1 = b_pha[["zensus_population_id", "grid_id"]]
-    b_pha_1 = b_pha_1.drop_duplicates(subset="zensus_population_id")
-    h_pha_1 = h_pha[["zensus_population_id", "grid_id"]]
-    h_pha_1 = h_pha_1.drop_duplicates(subset="zensus_population_id")
-
-    all_grid = a_pha_1.append(b_pha_1).append(h_pha_1)
-    all_grid = all_grid.drop_duplicates(subset="zensus_population_id")
-    demand_grid = pd.merge(
-        demand, all_grid, how="inner", on="zensus_population_id"
+    demand_geom = db.select_geodataframe(
+        """
+        SELECT a.demand, b.geom, a.zensus_population_id, a.scenario
+        FROM demand.egon_peta_heat a
+        JOIN society.destatis_zensus_population_per_ha b
+        ON a.zensus_population_id = b.id
+        WHERE a.sector = 'residential'
+        """,
+        epsg=4326,
     )
-
-    all_geom = zp_pha.drop(
-        zp_pha.columns.difference(["grid_id", "geom"]), axis=1
-    )
-    demand_geom = pd.merge(demand_grid, all_geom, how="inner", on="grid_id")
-
-    demand_geom = gpd.GeoDataFrame(demand_geom, geometry="geom")
-    demand_geom = demand_geom.drop(
-        demand_geom.columns.difference(
-            ["demand", "grid_id", "geom", "zensus_population_id"]
-        ),
-        1,
-    )
-    demand_geom["geom"] = demand_geom["geom"].to_crs(epsg=4326)
 
     temperature_zones = gpd.read_file(
         os.path.join(
@@ -662,7 +630,23 @@ def annual_demand_generator():
         demand_geom, temperature_zones, how="inner", op="intersects"
     )
 
-    demand_zone.drop_duplicates(["grid_id"], inplace=True)
+    scenario_demand = pd.pivot_table(
+        data=demand_zone[
+            ["zensus_population_id", "demand", "scenario", "Zone", "Station"]
+        ],
+        values="demand",
+        index="zensus_population_id",
+        columns="scenario",
+    )
+
+    scenario_zone = pd.merge(
+        scenario_demand,
+        demand_zone[["zensus_population_id", "Zone", "Station"]],
+        left_on=scenario_demand.index,
+        right_on="zensus_population_id",
+        how="left",
+    )
+    scenario_zone.drop_duplicates("zensus_population_id", inplace=True)
 
     sfh_chartext = [
         "Freistehendes Einfamilienhaus",
@@ -679,40 +663,32 @@ def annual_demand_generator():
         "Anderer Gebäudetyp",
     ]
 
-    bg_pha = b_pha[b_pha["attribute"] == "GEBTYPGROESSE"]
-
-    def household_stock(x):
+    house_count = db.select_dataframe(
         """
-
-
-        Parameters
-        ----------
-        x : str
-            household characteristics
-
-        Returns
-        -------
-        output : str
-            Categorized to either SFH or MFH
-
+        SELECT * FROM 
+        society.egon_destatis_zensus_building_per_ha
+        WHERE attribute = 'GEBTYPGROESSE'
         """
-        if x in sfh_chartext:
-            output = "SFH"
-        if x in mfh_chartext:
-            output = "MFH"
-        return output
-
-    bg_pha["Household Stock"] = bg_pha["characteristics_text"].apply(
-        household_stock
     )
 
-    house_count = bg_pha[
-        ["zensus_population_id", "quantity", "Household Stock"]
-    ]
-    house_count = house_count.groupby(
-        ["zensus_population_id", "Household Stock"]
-    ).sum("quantity")
-    house_count = house_count.reset_index()
+    house_count["Household Stock"] = ""
+
+    house_count.loc[
+        house_count["characteristics_text"].isin(sfh_chartext),
+        "Household Stock",
+    ] = "SFH"
+
+    house_count.loc[
+        house_count["characteristics_text"].isin(mfh_chartext),
+        "Household Stock",
+    ] = "MFH"
+
+    house_count = (
+        house_count.groupby(["zensus_population_id", "Household Stock"])
+        .sum("quantity")
+        .reset_index()
+    )
+
     house_count = house_count.pivot_table(
         values="quantity",
         index="zensus_population_id",
@@ -721,18 +697,13 @@ def annual_demand_generator():
     house_count = house_count.fillna(0)
 
     demand_count = pd.merge(
-        demand_zone, house_count, how="inner", on="zensus_population_id"
+        house_count,
+        scenario_zone,
+        left_on=house_count.index,
+        right_on="zensus_population_id",
     )
 
-    demand_count.drop("index_right", axis=1, inplace=True)
-
-    demand_count.drop(
-        demand_count.columns.difference(
-            ["zensus_population_id", "demand", "SFH", "MFH", "Station"]
-        ),
-        axis=1,
-        inplace=True,
-    )
+    demand_count.drop_duplicates(["zensus_population_id"], inplace=True)
 
     return demand_count
 
@@ -982,11 +953,10 @@ def profile_generator(aggregation_level):
         else
             heat profiles for every zensus_poppulation_id
     """
+
     annual_demand, idp_df, selected_profiles = profile_selector()
     y = idp_df["idp"].reset_index()
-    heat_profile_idp = pd.DataFrame(
-        index=selected_profiles.index.sort_values()
-    )
+    heat_profile = pd.DataFrame(index=selected_profiles.index.sort_values())
 
     for i in selected_profiles.columns:
         col = selected_profiles[i]
@@ -996,71 +966,106 @@ def profile_generator(aggregation_level):
         col[i] = col["idp"]
         col.drop("idp", axis=1, inplace=True)
         col.set_index("zensus_population_id", inplace=True)
-        heat_profile_idp[i] = col[i].values
+        heat_profile[i] = col[i].values
         y.rename(columns={i: "index"}, inplace=True)
 
-    if aggregation_level == "district":
-        district_heating = psycop_df_AF(
-            "demand.egon_map_zensus_district_heating_areas"
-        )
-        district_heating = district_heating[
-            district_heating.scenario == "eGon2035"
-        ]
+    scenarios = ["eGon2035", "eGon100RE"]
 
-        heat_profile_dist = pd.merge(
-            heat_profile_idp,
-            district_heating[["area_id", "zensus_population_id"]],
-            on="zensus_population_id",
-            how="inner",
-        )
-        heat_profile_dist.sort_values("area_id", inplace=True)
-        heat_profile_dist.set_index("area_id", inplace=True)
-        heat_profile_dist.drop("zensus_population_id", axis=1, inplace=True)
+    district_heating = psycop_df_AF(
+        "demand.egon_map_zensus_district_heating_areas"
+    )
 
-        mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-        mv_grid = mv_grid.set_index("zensus_population_id")
-        district_heating = district_heating.set_index("zensus_population_id")
+    profile_idp = pd.DataFrame()
+    profile_dist = pd.DataFrame()
 
-        mv_grid_ind = mv_grid.loc[
-            mv_grid.index.difference(district_heating.index), :
-        ]
+    for scenario in scenarios:
+        if aggregation_level == "district":
 
-        heat_profile_idp = pd.merge(
-            heat_profile_idp,
-            mv_grid_ind["bus_id"],
-            left_on=selected_profiles.index,
-            right_on=mv_grid_ind.index,
-            how="inner",
-        )
+            scenario_district_heating_cells = district_heating[
+                district_heating.scenario == scenario
+            ]
 
-        heat_profile_idp.sort_values("bus_id", inplace=True)
-        heat_profile_idp.set_index("bus_id", inplace=True)
-        heat_profile_idp.drop("key_0", axis=1, inplace=True)
+            heat_profile_dist = pd.merge(
+                heat_profile,
+                scenario_district_heating_cells[
+                    ["area_id", "zensus_population_id"]
+                ],
+                on="zensus_population_id",
+                how="inner",
+            )
+            heat_profile_dist.sort_values("area_id", inplace=True)
 
-        heat_profile_dist = heat_profile_dist.groupby(
-            lambda x: x, axis=0
-        ).sum()
-        heat_profile_dist = heat_profile_dist.transpose()
-        heat_profile_dist = heat_profile_dist.apply(lambda x: x.explode())
-        heat_profile_dist.reset_index(drop=True, inplace=True)
-        heat_profile_dist = heat_profile_dist.apply(lambda x: x / x.sum())
+            heat_profile_dist.drop(
+                "zensus_population_id", axis=1, inplace=True
+            )
+            heat_profile_dist.set_index("area_id", inplace=True)
 
-        heat_profile_idp = heat_profile_idp.groupby(lambda x: x, axis=0).sum()
-        heat_profile_idp = heat_profile_idp.transpose()
-        heat_profile_idp = heat_profile_idp.apply(lambda x: x.explode())
-        heat_profile_idp.reset_index(drop=True, inplace=True)
-        heat_profile_idp = heat_profile_idp.apply(lambda x: x / x.sum())
+            mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
+            mv_grid = mv_grid.set_index("zensus_population_id")
+            scenario_district_heating_cells = (
+                scenario_district_heating_cells.set_index(
+                    "zensus_population_id"
+                )
+            )
 
-    else:
-        heat_profile_dist = 0
+            mv_grid_ind = mv_grid.loc[
+                mv_grid.index.difference(
+                    scenario_district_heating_cells.index
+                ),
+                :,
+            ]
 
-        heat_profile_idp = heat_profile_idp.groupby(lambda x: x, axis=0).sum()
-        heat_profile_idp = heat_profile_idp.transpose()
-        heat_profile_idp = heat_profile_idp.apply(lambda x: x.explode())
-        heat_profile_idp.reset_index(drop=True, inplace=True)
-        heat_profile_idp = heat_profile_idp.apply(lambda x: x / x.sum())
+            heat_profile_idp = pd.merge(
+                heat_profile,
+                mv_grid_ind["bus_id"],
+                left_on=selected_profiles.index,
+                right_on=mv_grid_ind.index,
+                how="inner",
+            )
+            heat_profile_idp.sort_values("bus_id", inplace=True)
+            heat_profile_idp.set_index("bus_id", inplace=True)
+            heat_profile_idp.drop("key_0", axis=1, inplace=True)
 
-    return annual_demand, heat_profile_dist, heat_profile_idp
+            heat_profile_dist = heat_profile_dist.groupby(
+                lambda x: x, axis=0
+            ).sum()
+            heat_profile_dist = heat_profile_dist.transpose()
+            heat_profile_dist = heat_profile_dist.apply(lambda x: x.explode())
+            heat_profile_dist.reset_index(drop=True, inplace=True)
+            heat_profile_dist = heat_profile_dist.apply(lambda x: x / x.sum())
+            heat_profile_dist = heat_profile_dist.transpose()
+            heat_profile_dist.index.name = "area_id"
+            heat_profile_dist.insert(0, "scenario", scenario)
+
+            heat_profile_idp = heat_profile_idp.groupby(
+                lambda x: x, axis=0
+            ).sum()
+            heat_profile_idp = heat_profile_idp.transpose()
+            heat_profile_idp = heat_profile_idp.apply(lambda x: x.explode())
+            heat_profile_idp.reset_index(drop=True, inplace=True)
+            heat_profile_idp = heat_profile_idp.apply(lambda x: x / x.sum())
+            heat_profile_idp = heat_profile_idp.transpose()
+            heat_profile_idp.index.name = "bus_id"
+            heat_profile_idp.insert(0, "scenario", scenario)
+
+            profile_dist = profile_dist.append(heat_profile_dist)
+            profile_idp = profile_idp.append(heat_profile_idp)
+
+        else:
+            heat_profile_dist = 0
+            heat_profile_idp = heat_profile_idp.groupby(
+                lambda x: x, axis=0
+            ).sum()
+            heat_profile_idp = heat_profile_idp.transpose()
+            heat_profile_idp = heat_profile_idp.apply(lambda x: x.explode())
+            heat_profile_idp.reset_index(drop=True, inplace=True)
+            heat_profile_idp = heat_profile_idp.apply(lambda x: x / x.sum())
+            heat_profile_idp = heat_profile_idp.transpose()
+            heat_profile_idp.index.name = "zensus_population_id"
+            heat_profile_idp.insert(0, "scenario", scenario)
+            profile_idp = profile_idp.append(heat_profile_idp)
+
+    return annual_demand, profile_dist, profile_idp
 
 
 def residential_demand_scale(aggregation_level):
@@ -1100,194 +1105,232 @@ def residential_demand_scale(aggregation_level):
     h = h_value()
     h = h.reset_index(drop=True)
 
-    if aggregation_level == "district":
+    district_heating = psycop_df_AF(
+        "demand.egon_map_zensus_district_heating_areas"
+    )
 
-        district_heating = psycop_df_AF(
-            "demand.egon_map_zensus_district_heating_areas"
-        )
-        district_heating = district_heating[
-            district_heating.scenario == "eGon2035"
-        ]
+    district_heating = district_heating.pivot_table(
+        values="area_id", index="zensus_population_id", columns="scenario"
+    )
 
-        district_station = pd.merge(
-            district_heating[["area_id", "zensus_population_id"]],
-            annual_demand[["zensus_population_id", "Station", "demand"]],
-            on="zensus_population_id",
-            how="inner",
-        )
+    mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
 
-        district_station.sort_values("area_id", inplace=True)
-        district_station.drop("zensus_population_id", axis=1, inplace=True)
-        district_station = district_station.groupby(
-            ["area_id", "Station"]
-        ).sum()
-        district_station.reset_index("Station", inplace=True)
+    mv_grid_ind = mv_grid.loc[
+        mv_grid.index.difference(district_heating.index), :
+    ]
+    mv_grid_ind = mv_grid_ind.reset_index()
 
-        demand_curves_dist = pd.DataFrame()
+    scenarios = ["eGon2035", "eGon100RE"]
 
-        for j in range(len(heat_profile_dist.columns)):
-            current_district = heat_profile_dist.iloc[:, j]
-            area_id = heat_profile_dist.columns[j]
-            station = district_station[district_station.index == area_id][
-                "Station"
-            ][area_id]
-            if type(station) != str:
-                station = station.reset_index()
-                multiple_stations = pd.DataFrame()
-                for i in station.index:
-                    current_station = station.Station[i]
-                    multiple_stations[i] = current_district.multiply(
-                        h[current_station], axis=0
-                    )
-                multiple_stations = multiple_stations.sum(axis=1)
-                demand_curves_dist[area_id] = multiple_stations
-            else:
-                demand_curves_dist[area_id] = current_district.multiply(
-                    h[station], axis=0
-                )
-        demand_curves_dist = demand_curves_dist.apply(lambda x: x / x.sum())
-        demand_curves_dist = demand_curves_dist.transpose()
+    residential_dist_profile = pd.DataFrame()
+    residential_individual_profile = pd.DataFrame()
+    residential_zensus_profile = pd.DataFrame()
 
-        district_station.drop("Station", axis=1, inplace=True)
-        district_station = district_station.groupby(
-            district_station.index
-        ).sum()
+    for scenario in scenarios:
+        if aggregation_level == "district":
 
-        heat_demand_profile_dist = pd.merge(
-            demand_curves_dist,
-            district_station[["demand"]],
-            how="inner",
-            right_on=demand_curves_dist.index,
-            left_on=district_station.index,
-        )
+            scenario_ids = district_heating[scenario]
+            scenario_ids.dropna(inplace=True)
+            scenario_ids = scenario_ids.to_frame()
+            scenario_ids.rename(columns={scenario: "area_id"}, inplace=True)
+            scenario_ids = scenario_ids.area_id.astype(int)
 
-        heat_demand_profile_dist.rename(
-            columns={"key_0": "area_id"}, inplace=True
-        )
-        heat_demand_profile_dist.set_index("area_id", inplace=True)
-        heat_demand_profile_dist = heat_demand_profile_dist[
-            heat_demand_profile_dist.columns[:-1]
-        ].multiply(heat_demand_profile_dist.demand, axis=0)
-
-        mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-
-        mv_grid = mv_grid.set_index("zensus_population_id")
-        district_heating = district_heating.set_index("zensus_population_id")
-        mv_grid_ind = mv_grid.loc[
-            mv_grid.index.difference(district_heating.index), :
-        ]
-        mv_grid_ind = mv_grid_ind.reset_index()
-        district_grid = pd.merge(
-            mv_grid_ind[["bus_id", "zensus_population_id"]],
-            annual_demand[["zensus_population_id", "Station", "demand"]],
-            on="zensus_population_id",
-            how="inner",
-        )
-
-        district_grid.sort_values("bus_id", inplace=True)
-        district_grid.drop("zensus_population_id", axis=1, inplace=True)
-        district_grid = district_grid.groupby(["bus_id", "Station"]).sum()
-        district_grid.reset_index("Station", inplace=True)
-
-        demand_curves_mv = pd.DataFrame()
-        for j in range(len(heat_profile_idp.columns)):
-            current_district = heat_profile_idp.iloc[:, j]
-            bus_id = heat_profile_idp.columns[j]
-            station = district_grid[district_grid.index == bus_id][
-                "Station"
-            ][bus_id]
-            if type(station) != str:
-                station = station.reset_index()
-                multiple_stations = pd.DataFrame()
-                for i in station.index:
-                    current_station = station.Station[i]
-                    multiple_stations[i] = current_district.multiply(
-                        h[current_station], axis=0
-                    )
-                multiple_stations = multiple_stations.sum(axis=1)
-                demand_curves_mv[bus_id] = multiple_stations
-            else:
-                demand_curves_mv[bus_id] = current_district.multiply(
-                    h[station], axis=0
-                )
-        demand_curves_mv = demand_curves_mv.apply(lambda x: x / x.sum())
-        demand_curves_mv = demand_curves_mv.transpose()
-
-        district_grid.drop("Station", axis=1, inplace=True)
-        district_grid = district_grid.groupby(district_grid.index).sum()
-
-        heat_demand_profile_mv = pd.merge(
-            demand_curves_mv,
-            district_grid[["demand"]],
-            how="inner",
-            right_on=demand_curves_mv.index,
-            left_on=district_grid.index,
-        )
-
-        heat_demand_profile_mv.rename(
-
-            columns={"key_0": "bus_id"}, inplace=True
-        )
-        heat_demand_profile_mv.set_index("bus_id", inplace=True)
-        heat_demand_profile_mv = heat_demand_profile_mv[
-            heat_demand_profile_mv.columns[:-1]
-        ].multiply(heat_demand_profile_mv.demand, axis=0)
-
-        heat_demand_profile_zensus = 0
-    else:
-        heat_demand_profile_dist = 0
-        heat_demand_profile_mv = 0
-        heat_demand_profile_zensus = pd.DataFrame()
-        for j in h.columns:
-            station = j
-            current_zensus = annual_demand[annual_demand.Station == station]
-            heat_profile_station = pd.merge(
-                current_zensus["zensus_population_id"],
-                heat_profile_idp.transpose(),
-                left_on="zensus_population_id",
-                right_on=heat_profile_idp.transpose().index,
+            district_station = pd.merge(
+                scenario_ids,
+                annual_demand[["zensus_population_id", "Station", scenario]],
+                on="zensus_population_id",
                 how="inner",
             )
-            heat_profile_station = heat_profile_station.set_index(
-                "zensus_population_id"
+
+            district_station.sort_values("area_id", inplace=True)
+            district_station.drop("zensus_population_id", axis=1, inplace=True)
+            district_station = district_station.groupby(
+                ["area_id", "Station"]
+            ).sum()
+            district_station.reset_index("Station", inplace=True)
+
+            scenario_profiles_dist = (
+                heat_profile_dist[heat_profile_dist.scenario == scenario]
+                .drop(["scenario"], axis=1)
+                .transpose()
             )
 
-            heat_profile_station = heat_profile_station.multiply(
-                h[station], axis=1
-            )
-            heat_profile_station = heat_profile_station.transpose()
-            heat_profile_station = heat_profile_station.apply(
+            demand_curves_dist = pd.DataFrame()
+
+            for j in range(len(scenario_profiles_dist.columns)):
+                current_district = scenario_profiles_dist.iloc[:, j]
+
+                area_id = scenario_profiles_dist.columns[j]
+                station = district_station[district_station.index == area_id][
+                    "Station"
+                ][area_id]
+                if type(station) != str:
+                    station = station.reset_index()
+                    multiple_stations = pd.DataFrame()
+                    for i in station.index:
+                        current_station = station.Station[i]
+                        multiple_stations[i] = current_district.multiply(
+                            h[current_station], axis=0
+                        )
+                    multiple_stations = multiple_stations.sum(axis=1)
+                    demand_curves_dist[area_id] = multiple_stations
+                else:
+                    demand_curves_dist[area_id] = current_district.multiply(
+                        h[station], axis=0
+                    )
+            demand_curves_dist = demand_curves_dist.apply(
                 lambda x: x / x.sum()
             )
-            heat_profile_station = heat_profile_station.transpose()
-            heat_demand_profile_zensus = pd.concat(
-                [heat_demand_profile_zensus, heat_profile_station], axis=1
+            demand_curves_dist = demand_curves_dist.transpose()
+
+            scenario_demand = district_station.loc[:, scenario]
+            scenario_demand = scenario_demand.groupby(
+                scenario_demand.index
+            ).sum()
+
+            heat_demand_profile_dist = (
+                pd.merge(
+                    demand_curves_dist.reset_index(),
+                    scenario_demand.reset_index(),
+                    how="inner",
+                    right_on="area_id",
+                    left_on="index",
+                )
+                .drop("index", axis=1)
+                .set_index("area_id")
             )
 
-        heat_demand_profile_zensus.reset_index(inplace=True)
+            heat_demand_profile_dist = heat_demand_profile_dist[
+                heat_demand_profile_dist.columns[:-1]
+            ].multiply(heat_demand_profile_dist[scenario], axis=0)
 
-        heat_demand_profile_zensus = pd.merge(
-            heat_demand_profile_zensus,
-            annual_demand[["zensus_population_id", "demand"]],
-            how="inner",
-            on="zensus_population_id",
-        )
+            heat_demand_profile_dist.insert(0, "scenario", scenario)
 
-        heat_demand_profile_zensus.set_index(
-            "zensus_population_id", inplace=True
-        )
-        heat_demand_profile_zensus = heat_demand_profile_zensus[
-            heat_demand_profile_zensus.columns[:-1]
-        ].multiply(heat_demand_profile_zensus.demand, axis=0)
+            residential_dist_profile = residential_dist_profile.append(
+                heat_demand_profile_dist
+            )
+
+            district_grid = pd.merge(
+                mv_grid_ind[["bus_id", "zensus_population_id"]],
+                annual_demand[["zensus_population_id", "Station", scenario]],
+                on="zensus_population_id",
+                how="inner",
+            )
+
+            district_grid.sort_values("bus_id", inplace=True)
+            district_grid.drop("zensus_population_id", axis=1, inplace=True)
+            district_grid = district_grid.groupby(["bus_id", "Station"]).sum()
+            district_grid.reset_index("Station", inplace=True)
+
+            scenario_profiles_idp = (
+                heat_profile_idp[heat_profile_idp.scenario == scenario]
+                .drop(["scenario"], axis=1)
+                .transpose()
+            )
+
+            demand_curves_mv = pd.DataFrame()
+            for j in range(len(scenario_profiles_idp.columns)):
+                current_district = scenario_profiles_idp.iloc[:, j]
+                bus_id = scenario_profiles_idp.columns[j]
+                station = district_grid[district_grid.index == bus_id][
+                    "Station"
+                ][bus_id]
+                if type(station) != str:
+                    station = station.reset_index()
+                    multiple_stations = pd.DataFrame()
+                    for i in station.index:
+                        current_station = station.Station[i]
+                        multiple_stations[i] = current_district.multiply(
+                            h[current_station], axis=0
+                        )
+                    multiple_stations = multiple_stations.sum(axis=1)
+                    demand_curves_mv[bus_id] = multiple_stations
+                else:
+                    demand_curves_mv[bus_id] = current_district.multiply(
+                        h[station], axis=0
+                    )
+            demand_curves_mv = demand_curves_mv.apply(lambda x: x / x.sum())
+            demand_curves_mv = demand_curves_mv.transpose()
+
+            district_grid.drop("Station", axis=1, inplace=True)
+            district_grid = district_grid.groupby(district_grid.index).sum()
+
+            heat_demand_profile_mv = (
+                demand_curves_mv.transpose()
+                .mul(district_grid[scenario])
+                .transpose()
+            )
+
+            heat_demand_profile_mv.insert(0, "scenario", scenario)
+            residential_individual_profile = (
+                residential_individual_profile.append(heat_demand_profile_mv)
+            )
+
+            residential_zensus_profile = 0
+
+        else:
+            residential_dist_profile = 0
+            residential_individual_profile = 0
+            heat_demand_profile_zensus = pd.DataFrame()
+            annual_demand = annual_demand[
+                ["zensus_population_id", "Station", scenario]
+            ]
+
+            for j in annual_demand.Station.unique():
+                station = j
+                current_zensus = annual_demand[
+                    annual_demand.Station == station
+                ]
+                heat_profile_station = pd.merge(
+                    current_zensus[["zensus_population_id", scenario]],
+                    heat_profile_idp[heat_profile_idp.scenario == scenario],
+                    left_on="zensus_population_id",
+                    right_on=heat_profile_idp.index,
+                    how="inner",
+                )
+
+                heat_profile_station = heat_profile_station.set_index(
+                    "zensus_population_id"
+                )
+
+                heat_profile_station = heat_profile_station.multiply(
+                    h[station], axis=1
+                )
+                heat_profile_station = heat_profile_station.transpose()
+                heat_profile_station = heat_profile_station.apply(
+                    lambda x: x / x.sum()
+                )
+                heat_profile_station = heat_profile_station.transpose()
+
+                heat_profile_station = pd.merge(
+                    heat_profile_station,
+                    current_zensus[["zensus_population_id", scenario]],
+                    left_on=heat_profile_station.index,
+                    right_on="zensus_population_id",
+                )
+                heat_profile_station.drop(scenario, axis=1)
+                heat_profile_station = heat_profile_station[
+                    heat_profile_station.columns[:-1]
+                ].multiply(heat_profile_station.demand, axis=0)
+
+                heat_demand_profile_zensus = heat_demand_profile_zensus.append(
+                    heat_profile_station
+                )
+
+            heat_demand_profile_zensus.insert(0, "scenario", scenario)
+
+            residential_zensus_profile = residential_zensus_profile.append(
+                heat_demand_profile_zensus
+            )
 
     return (
-        heat_demand_profile_dist,
-        heat_demand_profile_mv,
-        heat_demand_profile_zensus,
+        residential_dist_profile,
+        residential_individual_profile,
+        residential_zensus_profile,
     )
 
 
-def cts_demand_per_aggregation_level(aggregation_level):
+def cts_demand_per_aggregation_level(aggregation_level, scenario):
     """
 
     Description: Create dataframe assigining the CTS demand curve to individual zensus cell
@@ -1329,7 +1372,7 @@ def cts_demand_per_aggregation_level(aggregation_level):
 
     demand = psycop_df_AF("demand.egon_peta_heat")
     demand = demand[
-        (demand["sector"] == "service") & (demand["scenario"] == "eGon2035")
+        (demand["sector"] == "service") & (demand["scenario"] == scenario)
     ]
     demand.drop(
         demand.columns.difference(["demand", "zensus_population_id"]),
@@ -1391,7 +1434,7 @@ def cts_demand_per_aggregation_level(aggregation_level):
             "demand.egon_map_zensus_district_heating_areas"
         )
         district_heating = district_heating[
-            district_heating.scenario == "eGon2035"
+            district_heating.scenario == scenario
         ]
 
         CTS_per_district = pd.merge(
@@ -1480,116 +1523,148 @@ def CTS_demand_scale(aggregation_level):
            Profiles scaled up to annual demand
 
     """
+    scenarios = ["eGon2035", "eGon100RE"]
 
-    (
-        CTS_per_district,
-        CTS_per_grid,
-        CTS_per_zensus,
-    ) = cts_demand_per_aggregation_level(aggregation_level)
-    CTS_per_district = CTS_per_district.transpose()
-    CTS_per_grid = CTS_per_grid.transpose()
-    CTS_per_zensus = CTS_per_zensus.transpose()
+    all_heat_demand = psycop_df_AF("demand.egon_peta_heat")
 
-    demand = psycop_df_AF("demand.egon_peta_heat")
-    demand = demand[
-        (demand["sector"] == "service") & (demand["scenario"] == "eGon2035")
-    ]
-    demand.drop(
-        demand.columns.difference(["demand", "zensus_population_id"]),
-        axis=1,
-        inplace=True,
+    all_district_heating = psycop_df_AF(
+        "demand.egon_map_zensus_district_heating_areas"
     )
-    demand.sort_values("zensus_population_id", inplace=True)
 
-    if aggregation_level == "district":
-        district_heating = psycop_df_AF(
-            "demand.egon_map_zensus_district_heating_areas"
-        )
-        district_heating = district_heating[
-            district_heating.scenario == "eGon2035"
-        ]
+    CTS_district = pd.DataFrame()
+    CTS_grid = pd.DataFrame()
+    CTS_zensus = pd.DataFrame()
 
-        CTS_demands_district = pd.merge(
-            demand,
-            district_heating[["zensus_population_id", "area_id"]],
-            on="zensus_population_id",
-            how="inner",
-        )
-        CTS_demands_district.drop("zensus_population_id", axis=1, inplace=True)
-        CTS_demands_district = CTS_demands_district.groupby("area_id").sum()
-
-        CTS_per_district = pd.merge(
+    for scenario in scenarios:
+        (
             CTS_per_district,
-            CTS_demands_district[["demand"]],
-            how="inner",
-            right_on=CTS_per_district.index,
-            left_on=CTS_demands_district.index,
-        )
-
-        CTS_per_district = CTS_per_district.rename(
-            columns={"key_0": "area_id"}
-        )
-        CTS_per_district.set_index("area_id", inplace=True)
-
-        CTS_per_district = CTS_per_district[
-            CTS_per_district.columns[:-1]
-        ].multiply(CTS_per_district.demand, axis=0)
-
-        mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-        mv_grid = mv_grid.set_index("zensus_population_id")
-        district_heating = district_heating.set_index("zensus_population_id")
-        mv_grid_ind = mv_grid.loc[
-            mv_grid.index.difference(district_heating.index), :
-        ]
-        mv_grid_ind = mv_grid_ind.reset_index()
-
-        CTS_demands_grid = pd.merge(
-            demand,
-            mv_grid_ind[["bus_id", "zensus_population_id"]],
-            on="zensus_population_id",
-            how="inner",
-        )
-
-        CTS_demands_grid.drop("zensus_population_id", axis=1, inplace=True)
-        CTS_demands_grid = CTS_demands_grid.groupby("bus_id").sum()
-
-        CTS_per_grid = pd.merge(
             CTS_per_grid,
-            CTS_demands_grid[["demand"]],
-            how="inner",
-            right_on=CTS_per_grid.index,
-            left_on=CTS_demands_grid.index,
-        )
-
-
-        CTS_per_grid = CTS_per_grid.rename(columns={"key_0": "bus_id"})
-        CTS_per_grid.set_index("bus_id", inplace=True)
-
-        CTS_per_grid = CTS_per_grid[CTS_per_grid.columns[:-1]].multiply(
-            CTS_per_grid.demand, axis=0
-        )
-
-        CTS_per_zensus = 0
-
-    else:
-        CTS_per_district = 0
-        CTS_per_grid = 0
-
-        CTS_per_zensus = pd.merge(
             CTS_per_zensus,
-            demand,
-            how="inner",
-            right_on=CTS_per_zensus.index,
-            left_on=demand.zensus_population_id,
-        )
-        CTS_per_zensus = CTS_per_zensus.drop("key_0", axis=1)
-        CTS_per_zensus.set_index("zensus_population_id", inplace=True)
+        ) = cts_demand_per_aggregation_level(aggregation_level, scenario)
+        CTS_per_district = CTS_per_district.transpose()
+        CTS_per_grid = CTS_per_grid.transpose()
+        CTS_per_zensus = CTS_per_zensus.transpose()
 
-        CTS_per_zensus = CTS_per_zensus[CTS_per_zensus.columns[:-1]].multiply(
-            CTS_per_zensus.demand, axis=0
+        demand = all_heat_demand[
+            (all_heat_demand["sector"] == "service")
+            & (all_heat_demand["scenario"] == scenario)
+        ]
+        demand.drop(
+            demand.columns.difference(["demand", "zensus_population_id"]),
+            axis=1,
+            inplace=True,
         )
+        demand.sort_values("zensus_population_id", inplace=True)
 
-    return CTS_per_district, CTS_per_grid, CTS_per_zensus
+        if aggregation_level == "district":
+
+            district_heating = all_district_heating[
+                all_district_heating.scenario == scenario
+            ]
+
+            CTS_demands_district = pd.merge(
+                demand,
+                district_heating[["zensus_population_id", "area_id"]],
+                on="zensus_population_id",
+                how="inner",
+            )
+            CTS_demands_district.drop(
+                "zensus_population_id", axis=1, inplace=True
+            )
+            CTS_demands_district = CTS_demands_district.groupby(
+                "area_id"
+            ).sum()
+
+            CTS_per_district = pd.merge(
+                CTS_per_district,
+                CTS_demands_district[["demand"]],
+                how="inner",
+                right_on=CTS_per_district.index,
+                left_on=CTS_demands_district.index,
+            )
+
+            CTS_per_district = CTS_per_district.rename(
+                columns={"key_0": "area_id"}
+            )
+            CTS_per_district.set_index("area_id", inplace=True)
+
+            CTS_per_district = CTS_per_district[
+                CTS_per_district.columns[:-1]
+            ].multiply(CTS_per_district.demand, axis=0)
+
+            CTS_per_district.insert(0, "scenario", scenario)
+
+            CTS_district = CTS_district.append(CTS_per_district)
+            CTS_district = CTS_district.sort_index()
+
+            mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
+            mv_grid = mv_grid.set_index("zensus_population_id")
+            district_heating = district_heating.set_index(
+                "zensus_population_id"
+            )
+            mv_grid_ind = mv_grid.loc[
+                mv_grid.index.difference(district_heating.index), :
+            ]
+            mv_grid_ind = mv_grid_ind.reset_index()
+
+            CTS_demands_grid = pd.merge(
+                demand,
+                mv_grid_ind[["bus_id", "zensus_population_id"]],
+                on="zensus_population_id",
+                how="inner",
+            )
+
+            CTS_demands_grid.drop("zensus_population_id", axis=1, inplace=True)
+            CTS_demands_grid = CTS_demands_grid.groupby("bus_id").sum()
+
+            CTS_per_grid = pd.merge(
+                CTS_per_grid,
+                CTS_demands_grid[["demand"]],
+                how="inner",
+                right_on=CTS_per_grid.index,
+                left_on=CTS_demands_grid.index,
+            )
+
+            CTS_per_grid = CTS_per_grid.rename(columns={"key_0": "bus_id"})
+            CTS_per_grid.set_index("bus_id", inplace=True)
+
+            CTS_per_grid = CTS_per_grid[CTS_per_grid.columns[:-1]].multiply(
+                CTS_per_grid.demand, axis=0
+            )
+
+            CTS_per_grid.insert(0, "scenario", scenario)
+
+            CTS_grid = CTS_grid.append(CTS_per_grid)
+            CTS_grid = CTS_grid.sort_index()
+
+            CTS_per_zensus = 0
+
+        else:
+            CTS_per_district = 0
+            CTS_per_grid = 0
+
+            CTS_per_zensus = pd.merge(
+                CTS_per_zensus,
+                demand,
+                how="inner",
+                right_on=CTS_per_zensus.index,
+                left_on=demand.zensus_population_id,
+            )
+            CTS_per_zensus = CTS_per_zensus.drop("key_0", axis=1)
+            CTS_per_zensus.set_index("zensus_population_id", inplace=True)
+
+            CTS_per_zensus = CTS_per_zensus[
+                CTS_per_zensus.columns[:-1]
+            ].multiply(CTS_per_zensus.demand, axis=0)
+            CTS_per_zensus.insert(0, "scenario", scenario)
+
+            CTS_per_zensus.reset_index(inplace=True)
+
+            CTS_zensus = CTS_zensus.append(CTS_per_grid)
+            CTS_zensus = CTS_zensus.set_index("bus_id")
+            CTS_zensus = CTS_zensus.sort_index()
+
+    return CTS_district, CTS_grid, CTS_zensus
 
 
 def demand_profile_generator(aggregation_level="district"):
@@ -1608,12 +1683,14 @@ def demand_profile_generator(aggregation_level="district"):
     None.
 
     """
+    scenarios = ["eGon2035", "eGon100RE"]
 
     (
         residential_demand_dist,
         residential_demand_grid,
         residential_demand_zensus,
     ) = residential_demand_scale(aggregation_level)
+
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level
     )
@@ -1623,22 +1700,35 @@ def demand_profile_generator(aggregation_level="district"):
             [residential_demand_dist, CTS_demand_dist]
         )
         total_demands_dist.sort_index(inplace=True)
-        total_demands_dist = total_demands_dist.groupby(
-            lambda x: x, axis=0
-        ).sum()
-        total_demands_dist.index.name = "area_id"
 
-        final_heat_profiles_dist = pd.DataFrame(index=total_demands_dist.index)
-        final_heat_profiles_dist[
-            "dist_aggregated_mw"
-        ] = total_demands_dist.values.tolist()
+        final_heat_profiles_dist = pd.DataFrame()
+        for scenario in scenarios:
+            scenario_demand = (
+                total_demands_dist[total_demands_dist.scenario == scenario]
+                .drop("scenario", axis=1)
+                .groupby(lambda x: x, axis=0)
+                .sum()
+            )
+
+            scenario_demand_list = pd.DataFrame(index=scenario_demand.index)
+            scenario_demand_list[
+                "dist_aggregated_mw"
+            ] = scenario_demand.values.tolist()
+
+            scenario_demand_list.insert(0, "scenario", scenario)
+
+            final_heat_profiles_dist = final_heat_profiles_dist.append(
+                scenario_demand_list
+            )
+
+        final_heat_profiles_dist.index.name = "area_id"
+
         final_heat_profiles_dist.to_sql(
             "egon_timeseries_district_heating",
             con=db.engine(),
             schema="demand",
             if_exists="replace",
             index=True,
-            dtype=ARRAY(Float()),
         )
 
         total_demands_grid = pd.concat(
@@ -1646,46 +1736,69 @@ def demand_profile_generator(aggregation_level="district"):
         )
         total_demands_grid.sort_index(inplace=True)
 
-        total_demands_grid = total_demands_grid.groupby(
-            lambda x: x, axis=0
-        ).sum()
-        total_demands_grid.index.name = "bus_id"
+        final_heat_profiles_grid = pd.DataFrame()
+        for scenario in scenarios:
+            scenario_demand = (
+                total_demands_grid[total_demands_grid.scenario == scenario]
+                .drop("scenario", axis=1)
+                .groupby(lambda x: x, axis=0)
+                .sum()
+            )
 
-        final_heat_profiles_grid = pd.DataFrame(index=total_demands_grid.index)
-        final_heat_profiles_grid[
-            "grid_aggregated_mw"
-        ] = total_demands_grid.values.tolist()
+            scenario_demand_list = pd.DataFrame(index=scenario_demand.index)
+            scenario_demand_list[
+                "dist_aggregated_mw"
+            ] = scenario_demand.values.tolist()
+
+            scenario_demand_list.insert(0, "scenario", scenario)
+
+            final_heat_profiles_grid = final_heat_profiles_grid.append(
+                scenario_demand_list
+            )
+
+        final_heat_profiles_grid.index.name = "bus_id"
+
         final_heat_profiles_grid.to_sql(
             "egon_etrago_timeseries_individual_heating",
             con=db.engine(),
             schema="demand",
             if_exists="replace",
             index=True,
-            dtype=ARRAY(Float()),
         )
-
     else:
         total_demands_zensus = pd.concat(
             [residential_demand_zensus, CTS_demand_zensus]
         )
         total_demands_zensus.sort_index(inplace=True)
-        total_demands_zensus = total_demands_zensus.groupby(
-            lambda x: x, axis=0
-        ).sum()
 
-        final_heat_profiles_zensus = pd.DataFrame(
-            index=total_demands_dist.index
-        )
-        final_heat_profiles_zensus[
-            "zensus_aggregated_mw"
-        ] = total_demands_zensus.values.tolist()
+        final_heat_profiles_zensus = pd.DataFrame()
+        for scenario in scenarios:
+            scenario_demand = (
+                total_demands_zensus[total_demands_zensus.scenario == scenario]
+                .drop("scenario", axis=1)
+                .groupby(lambda x: x, axis=0)
+                .sum()
+            )
+
+            scenario_demand_list = pd.DataFrame(index=scenario_demand.index)
+            scenario_demand_list[
+                "dist_aggregated_mw"
+            ] = scenario_demand.values.tolist()
+
+            scenario_demand_list.insert(0, "scenario", scenario)
+
+            final_heat_profiles_zensus = final_heat_profiles_zensus.append(
+                scenario_demand_list
+            )
+
+        final_heat_profiles_grid.index.name = "zensus_population_id"
+
         final_heat_profiles_zensus.to_sql(
             "egon_heat_time_series_zensus",
             con=db.engine(),
             schema="demand",
             if_exists="replace",
             index=True,
-            dtype=ARRAY(Float()),
         )
 
     return None
@@ -1695,7 +1808,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
