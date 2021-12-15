@@ -4,14 +4,17 @@
 import pandas as pd
 
 
-def read_costs(year, technology, parameter, value_only=True):
+def read_csv(year):
 
-    costs = pd.read_csv(
+    return pd.read_csv(
         f"PyPSA-technology-data-94085a8/outputs/costs_{year}.csv"
     )
 
-    result = costs.loc[
-        (costs.technology == technology) & (costs.parameter == parameter)
+
+def read_costs(df, technology, parameter, value_only=True):
+
+    result = df.loc[
+        (df.technology == technology) & (df.parameter == parameter)
     ].squeeze()
 
     # Rescale costs to EUR/MW
@@ -88,22 +91,25 @@ def electricity(scenario):
     """
 
     if scenario == "eGon2035":
+
+        costs = read_csv(2035)
+
         parameters = {"grid_topology": "Status Quo"}
 
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
-            "oil": read_costs(2035, "oil", "efficiency"),
+            "oil": read_costs(costs, "oil", "efficiency"),
             "battery": {
-                "store": read_costs(2035, "battery inverter", "efficiency")
+                "store": read_costs(costs, "battery inverter", "efficiency")
                 ** 0.5,
-                "dispatch": read_costs(2035, "battery inverter", "efficiency")
+                "dispatch": read_costs(costs, "battery inverter", "efficiency")
                 ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
             },
             "pumped_hydro": {
-                "store": read_costs(2035, "PHS", "efficiency") ** 0.5,
-                "dispatch": read_costs(2035, "PHS", "efficiency") ** 0.5,
+                "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
             },
@@ -159,16 +165,16 @@ def electricity(scenario):
             "transformer_380_110": 17.33e3,  # [EUR/MVA]
             "transformer_380_220": 13.33e3,  # [EUR/MVA]
             "transformer_220_110": 17.5e3,  # [EUR/MVA]
-            "battery": read_costs(2035, "battery inverter", "investment")
+            "battery": read_costs(costs, "battery inverter", "investment")
             + parameters["efficiency"]["battery"]["max_hours"]
-            * read_costs(2035, "battery storage", "investment"),  # [EUR/MW]
+            * read_costs(costs, "battery storage", "investment"),  # [EUR/MW]
         }
 
         # Insert marginal_costs in EUR/MWh
         # marginal cost can include fuel, C02 and operation and maintenance costs
         parameters["marginal_cost"] = {
             "oil": global_settings(scenario)["fuel_costs"]["oil"]
-            + read_costs(2035, "oil", "VOM")
+            + read_costs(costs, "oil", "VOM")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["oil"],
             "other_non_renewable": global_settings(scenario)["fuel_costs"][
@@ -178,10 +184,10 @@ def electricity(scenario):
             * global_settings(scenario)["co2_emissions"][
                 "other_non_renewable"
             ],
-            "wind_offshore": read_costs(2035, "offwind", "VOM"),
-            "wind_onshore": read_costs(2035, "onwind", "VOM"),
-            "pv": read_costs(2035, "solar", "VOM"),
-            "OCGT": read_costs(2035, "OCGT", "VOM"),
+            "wind_offshore": read_costs(costs, "offwind", "VOM"),
+            "wind_onshore": read_costs(costs, "onwind", "VOM"),
+            "pv": read_costs(costs, "solar", "VOM"),
+            "OCGT": read_costs(costs, "OCGT", "VOM"),
         }
 
     elif scenario == "eGon100RE":
@@ -263,6 +269,9 @@ def heat(scenario):
     """
 
     if scenario == "eGon2035":
+
+        costs = read_csv(2035)
+
         parameters = {
             "DE_demand_reduction_residential": 0.854314018923104,
             "DE_demand_reduction_service": 0.498286864771128,
@@ -272,32 +281,32 @@ def heat(scenario):
         # Insert efficiency in p.u.
         parameters["efficiency"] = {
             "water_tank_charger": read_costs(
-                2035, "water tank charger", "efficiency"
+                costs, "water tank charger", "efficiency"
             ),
             "water_tank_discharger": read_costs(
-                2035, "water tank discharger", "efficiency"
+                costs, "water tank discharger", "efficiency"
             ),
             "central_resistive_heater": read_costs(
-                2035, "central resistive heater", "efficiency"
+                costs, "central resistive heater", "efficiency"
             ),
             "central_gas_boiler": read_costs(
-                2035, "central gas boiler", "efficiency"
+                costs, "central gas boiler", "efficiency"
             ),
             "rural_resistive_heater": read_costs(
-                2035, "decentral resistive heater", "efficiency"
+                costs, "decentral resistive heater", "efficiency"
             ),
             "rural_gas_boiler": read_costs(
-                2035, "decentral gas boiler", "efficiency"
+                costs, "decentral gas boiler", "efficiency"
             ),
         }
 
         # Insert capital costs, in EUR/MWh
         parameters["capital_cost"] = {
             "central_water_tank": read_costs(
-                2035, "central water tank storage", "investment"
+                costs, "central water tank storage", "investment"
             ),
             "rual_water_tank": read_costs(
-                2035, "decentral water tank storage", "investment"
+                costs, "decentral water tank storage", "investment"
             ),
         }
 
@@ -305,14 +314,14 @@ def heat(scenario):
         # marginal cost can include fuel, C02 and operation and maintenance costs
         parameters["marginal_cost"] = {
             "central_heat_pump": read_costs(
-                2035, "central air-sourced heat pump", "VOM"
+                costs, "central air-sourced heat pump", "VOM"
             ),
-            "central_gas_chp": read_costs(2035, "central gas CHP", "VOM"),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
             "central_gas_boiler": read_costs(
-                2035, "central gas boiler", "VOM"
+                costs, "central gas boiler", "VOM"
             ),
             "central_resistive_heater": read_costs(
-                2035, "central resistive heater", "VOM"
+                costs, "central resistive heater", "VOM"
             ),
             "geo_thermal": 2.9,  # Danish Energy Agency
         }
