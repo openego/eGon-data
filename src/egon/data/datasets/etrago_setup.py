@@ -30,6 +30,7 @@ from egon.data.metadata import (
     license_ccby,
     meta_metadata,
     sources,
+    contributors
 )
 
 Base = declarative_base()
@@ -364,6 +365,22 @@ class EgonPfHvStorageTimeseries(Base):
 
 
 class EgonPfHvStore(Base):
+    so = sources()
+    source_list = [
+        so['bgr_inspee'], so['bgr_inspeeds'], so['bgr_inspeeds_data_bundle'],
+        so['bgr_inspeeds_data_bundle'], so['bgr_inspeeds_report']
+    ]
+    co = contributors()
+    contributor_list = [
+        co['an'].update(
+            {"comment": "Add CH4 storage"}
+        ),
+        co['fw'].update(
+            {"comment": "Add H2 storage"}
+        ),
+    ]
+    li = contributors()
+    license_list = []
     __tablename__ = "egon_etrago_store"
     __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Store")}
 

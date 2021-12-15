@@ -1,3 +1,5 @@
+import time
+
 from egon.data.db import engine
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
@@ -345,7 +347,7 @@ def sources():
             "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
             "Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien (Wasserstoff und Druckluft) – "
             "Doppelsalinare und flach lagernde Salzschichten. Teilprojekt Bewertungskriterien und Potenzialabschätzung",
-            "description": "The data-bundle provides the shapefiles corresponding to the data provided in figure 7-1 "
+            "description": "Shapefiles corresponding to the data provided in figure 7-1 "
             "(Donadei, S., et al., 2020, p. 7-5). The energy storage potential data are provided per federal state "
             " in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include all bgr data sources when using "
             "the data.",
@@ -547,5 +549,58 @@ def sources():
             "license": [licenses_datenlizenz_deutschland(
                 "© Statistische Ämter des Bundes und der Länder 2014"
             )],
+        },
+    }
+
+
+def contributors():
+    return {
+        "am": {
+            "title": "Aadit Malla",
+            "email": "https://github.com/aadit879",
+        },
+        "an": {
+            "title": "Amélia Nadal",
+            "email": "https://github.com/AmeliaNadal",
+        },
+        "cb": {
+            "title": "Clara Büttner",
+            "email": "https://github.com/ClaraBuettner",
+        },
+        "ce": {
+            "title": "Carlos Epia",
+            "email": "https://github.com/CarlosEpia",
+        },
+        "fw": {
+            "title": "Francesco Witte",
+            "email": "https://github.com/fwitte",
+        },
+        "gp": {
+            "title": "Guido Pleßmann",
+            "email": "https://github.com/gplssm",
+        },
+        "ik": {
+            "title": "Ilka Cußmann",
+            "email": "https://github.com/IlkaCu",
+        },
+        "ja": {
+            "title": "Jonathan Amme",
+            "email": "https://github.com/nesnoj",
+        },
+        "je": {
+            "title": "Jane Doe",
+            "email": "https://github.com/JaneDoe",
+        },
+        "ke": {
+            "title": "Katharina Esterl",
+            "email": "https://github.com/KathiEsterl",
+        },
+        "sg": {
+            "title": "Stephan Günther",
+            "email": "https://github.com/gnn",
+        },
+        "um": {
+            "title": "Ulf Müller",
+            "email": "https://github.com/ulfmueller",
         },
     }
