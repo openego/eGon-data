@@ -591,6 +591,46 @@ def insert_carriers():
     )
 
 
+def check_carriers():
+    """Check if any eTraGo table has carriers not included in the carrier table.
+
+    Raises
+    ------
+    ValueError if carriers that are not defined in the carriers table are
+    used in any eTraGo table.
+    """
+    carriers = db.select_dataframe(
+        f"""
+        SELECT name FROM grid.egon_etrago_carrier
+        """
+    )
+    unknown_carriers = {}
+    tables = ['bus', 'store', 'storage', 'link', 'line', 'generator', 'load']
+
+    for table in tables:
+    # Delete existing entries
+        data = db.select_dataframe(
+            f"""
+            SELECT carrier FROM grid.egon_etrago_{table}
+            """
+        )
+        unknown_carriers[table] = (
+            data[~data['carrier'].isin(carriers)]['carrier'].unique()
+        )
+
+    if len(unknown_carriers) > 0:
+        msg = (
+            "The eTraGo tables contain carriers, that are not included in the "
+            "carrier table:\n"
+        )
+        for table, carriers in unknown_carriers.items():
+            carriers = [str(c) for c in carriers]
+            if len(carriers) > 0:
+                msg += table + ": '" + "', '".join(carriers) + "'\n"
+
+        raise ValueError(msg)
+
+
 def link_geom_from_buses(df, scn_name):
     """Add LineString geometry accoring to geometry of buses to links
 
