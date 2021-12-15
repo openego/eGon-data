@@ -161,6 +161,8 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include PHS in eTraGo tables
+  `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
   `#531 <https://github.com/openego/eGon-data/issues/531>`_
 * Include hydrogen infrastructure for eGon2035 scenario
@@ -168,6 +170,7 @@ Added
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
   
+
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
 

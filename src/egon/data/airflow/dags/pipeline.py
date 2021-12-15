@@ -61,6 +61,7 @@ from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import PumpedHydro
+from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.tyndp import Tyndp
@@ -247,7 +248,9 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
+    insert_data_ch4_storages = CH4Storages(
+	dependencies=[create_gas_polygons]
+    )
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -510,5 +513,15 @@ with airflow.DAG(
             mv_grid_districts,
             district_heating_areas,
             heat_etrago,
+        ]
+    )
+
+    # Storages to eTrago
+
+    storage_etrago = StorageEtrago(
+        dependencies=[
+            pumped_hydro,
+            setup_etrago,
+            scenario_parameters,
         ]
     )

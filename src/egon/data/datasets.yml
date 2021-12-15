@@ -866,6 +866,23 @@ weather_BusID:
       schema: 'supply'
       table: 'egon_power_plants'
 
+storage_etrago:
+  sources:
+    storage:
+      table: 'egon_storages'
+      schema: 'supply'
+    scenario_parameters:
+      table: 'egon_scenario_parameters'
+      schema: 'scenario'
+    bus:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
+  targets:
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+
+
 dlr:
   sources:
     trans_lines:
