@@ -513,9 +513,12 @@ pypsa-technology-data:
   sources:
     zenodo:
       deposit_id: 5544025
+      file: 'PyPSA/technology-data-v0.3.0.zip'
   targets:
     file:
       'pypsa_technology_data_egon_data.zip'
+    data_dir:
+      'PyPSA-technology-data-94085a8/outputs/'
 
 heat_supply:
   sources:
@@ -609,6 +612,28 @@ etrago_heat:
       schema: 'grid'
       table: 'egon_etrago_link_timeseries'
     heat_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+etrago_hydrogen:
+  sources:
+    saltcavern_data:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    H2_AC_map:
+      schema: 'grid'
+      table: 'egon_etrago_ac_h2'
+  targets:
+    hydrogen_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    hydrogen_links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    hydrogen_stores:
       schema: 'grid'
       table: 'egon_etrago_store'
 
