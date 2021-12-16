@@ -669,7 +669,7 @@ def inhabitants_to_households(
     return df_households_by_type
 
 
-def process_nuts1_zensus_data(df_zensus):
+def process_nuts1_zensus_data(df_census_households_raw):
     """Make data compatible with household demand profile categories
 
     Groups, removes and reorders categories which are not needed to fit data to household types of
@@ -681,7 +681,7 @@ def process_nuts1_zensus_data(df_zensus):
 
     Parameters
     ----------
-    df_zensus: pd.DataFrame
+    df_census_households_raw: pd.DataFrame
         cleaned zensus household type x age category data
 
     Returns
@@ -689,6 +689,10 @@ def process_nuts1_zensus_data(df_zensus):
     pd.DataFrame
         Aggregated zensus household data on NUTS-1 level
     """
+
+    # Clean data to int only
+    df_census_households = df_census_households_raw.applymap(clean).applymap(int)
+
     # Group data to fit Load Profile Generator categories
     # define kids/adults/seniors
     kids = ["Unter 3", "3 - 5", "6 - 14"]  # < 15
@@ -704,15 +708,15 @@ def process_nuts1_zensus_data(df_zensus):
 
     # sum groups of kids, adults and seniors and concat
     df_kids = (
-        df_zensus.loc[:, (slice(None), kids)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), kids)].groupby(level=0, axis=1).sum()
     )
     df_adults = (
-        df_zensus.loc[:, (slice(None), adults)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), adults)].groupby(level=0, axis=1).sum()
     )
     df_seniors = (
-        df_zensus.loc[:, (slice(None), seniors)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), seniors)].groupby(level=0, axis=1).sum()
     )
-    df_zensus = pd.concat(
+    df_census_households = pd.concat(
         [df_kids, df_adults, df_seniors],
         axis=1,
         keys=["Kids", "Adults", "Seniors"],
@@ -721,21 +725,21 @@ def process_nuts1_zensus_data(df_zensus):
 
     # reduce column names to state only
     mapping_state = {
-        i: i.split()[1] for i in df_zensus.index.get_level_values(level=0)
+        i: i.split()[1] for i in df_census_households.index.get_level_values(level=0)
     }
 
     # rename index
-    df_zensus = df_zensus.rename(index=mapping_state, level=0)
+    df_census_households = df_census_households.rename(index=mapping_state, level=0)
     # rename axis
-    df_zensus = df_zensus.rename_axis(["state", "type"])
+    df_census_households = df_census_households.rename_axis(["state", "type"])
     # unstack
-    df_zensus = df_zensus.unstack()
+    df_census_households = df_census_households.unstack()
     # reorder levels
-    df_zensus = df_zensus.reorder_levels(
+    df_census_households = df_census_households.reorder_levels(
         order=["type", "persons", "age"], axis=1
     )
 
-    return df_zensus
+    return df_census_households
 
 
 def enrich_zensus_data_at_cell_level(df_zensus):
@@ -1182,17 +1186,14 @@ def houseprofiles_in_census_cells():
     df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     # Download zensus household type x age category data
-    df_households_raw = get_zensus_households_raw()
-
-    # Clean data to int only
-    df_households = df_households_raw.applymap(clean).applymap(int)
+    df_census_households_raw = get_zensus_households_raw()
 
     # Restructure data to be compatible with household demand profile categories
     # Reduce age intervals and aggregate data to NUTS-1 level
-    df_zensus_nuts1 = process_nuts1_zensus_data(df_households)
+    df_census_households_nuts1 = process_nuts1_zensus_data(df_census_households_raw)
 
     # Enrich census cell data with nuts1 level attributes
-    df_zensus_cells = enrich_zensus_data_at_cell_level(df_zensus_nuts1)
+    df_census_households_cells = enrich_zensus_data_at_cell_level(df_census_households_nuts1)
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
@@ -1206,7 +1207,7 @@ def houseprofiles_in_census_cells():
 
     # Finally create table that stores profile ids for each cell
     df_hh_profiles_in_census_cells = get_cell_demand_metadata(
-        df_zensus_cells, df_iee_profiles
+        df_census_households_cells, df_iee_profiles
     )
     df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
         df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
