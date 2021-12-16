@@ -36,6 +36,7 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
             'urban_central_resistive_heater',
             'urban_central_geo_thermal',
             'urban_central_solar_thermal_collector')
+        AND scenario_name = '{scenario}'
         """,
         index_col="technology",
     )

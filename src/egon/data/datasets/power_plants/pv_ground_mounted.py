@@ -1072,7 +1072,7 @@ def insert():
             pv_per_distr_100RE,
         )
 
-    def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
+    def insert_pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
         """Write to database.
 
@@ -1238,7 +1238,7 @@ def insert():
         or pv_per_distr["installed capacity in kW"].sum()
     ):
 
-        pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, "eGon2035")
+        pv_parks = insert_pv_parks(pv_rora, pv_agri, pv_per_distr, "eGon2035")
 
     else:
 
@@ -1250,7 +1250,7 @@ def insert():
         or pv_per_distr_100RE["installed capacity in kW"].sum()
     ):
 
-        pv_parks_100RE = pv_parks(
+        pv_parks_100RE = insert_pv_parks(
             pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, "eGon100RE"
         )
 
