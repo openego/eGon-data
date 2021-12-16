@@ -102,14 +102,7 @@ def electricity(scenario):
 
         parameters = {
             "grid_topology": "Status Quo",
-            "re_marginal_cost_fixed": 0,
-            "phes_efficiency_store": 0.88, # according to Acatech2015
-            "phes_efficiency_dispatch": 0.89, # according to Acatech2015
-            "phes_standing_loss": 0.00052, # according to Acatech2015
-            "phes_max_hours": 6, # max_hours as an average for existing German PSH, as in open_eGo
-            "phes_control": "PV",
-            "phes_p_nom_extendable": False
-                      }
+        }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "oil": read_costs(costs, "oil", "efficiency"),
