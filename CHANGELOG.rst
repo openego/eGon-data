@@ -169,7 +169,8 @@ Added
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
-  
+* Add extendable batteries and heat stores
+  `#566 <https://github.com/openego/eGon-data/issues/566>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
