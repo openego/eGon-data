@@ -61,6 +61,7 @@ from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import PumpedHydro
+from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.tyndp import Tyndp
@@ -207,6 +208,7 @@ with airflow.DAG(
     hd_abroad = HeatDemandEurope(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
+
 
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
@@ -510,5 +512,15 @@ with airflow.DAG(
             mv_grid_districts,
             district_heating_areas,
             heat_etrago,
+        ]
+    )
+
+    # Storages to eTrago
+
+    storage_etrago = StorageEtrago(
+        dependencies=[
+            pumped_hydro,
+            setup_etrago,
+            scenario_parameters,
         ]
     )
