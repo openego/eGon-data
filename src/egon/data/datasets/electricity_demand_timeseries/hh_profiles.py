@@ -70,7 +70,8 @@ the number of categories of cell-level household data.
   as weighted average in :var:`OO_factor`
 * The distribution to refine household types at cell level are the same for each federal state
 * Refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
-* 100 x 100 m cells are matched to NUTS via centroid location
+#TODO check nearest int or ceil?!
+* 100 x 100 m cells are matched to NUTS via cells centroid location
 * Cells with households in unpopulated areas are removed
 
 **Drawbacks and limitations of the data**
@@ -81,6 +82,9 @@ the number of categories of cell-level household data.
   NUTS-3 level, but it is not matching the demand regio time series profile
 * Due to secrecy, some census data are highly modified under certain attributes
  (quantity_q = 2). This cell data is not corrected, but excluded.
+* There is deviation in the Census data from table to table. The statistical
+ methods are not stringent. Hence, there are cases in which data contradict
+ each other. For example:
 * Census data with attribute 'HHTYP_FAM' is missing for some cells with small
  amount of households. This data is generated using the average share of
  household types for cells with similar household number. For some cells the
@@ -114,6 +118,7 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
 Base = declarative_base()
+engine = db.engine()
 
 
 # Get random seed from config
@@ -392,7 +397,7 @@ def process_household_demand_profiles(hh_profiles):
         [hh_profiles.columns.str[:2], hh_profiles.columns.str[3:]]
     )
 
-    # Cast profile ids into int
+    # Cast profile ids into tuple of type and int
     hh_profiles.columns = pd.MultiIndex.from_tuples(
         [(a, int(b)) for a, b in hh_profiles.columns]
     )
@@ -1180,11 +1185,11 @@ def houseprofiles_in_census_cells():
     # Download zensus household type x age category data
     df_households_raw = get_zensus_households_raw()
 
-    # Clean data
+    # Clean data to int only
     df_households = df_households_raw.applymap(clean).applymap(int)
 
-    # Make data compatible with household demand profile categories
-    # Use less age interval and aggregate data to NUTS-1 level
+    # Restructure data to be compatible with household demand profile categories
+    # Reduce age intervals and aggregate data to NUTS-1 level
     df_zensus_nuts1 = process_nuts1_zensus_data(df_households)
 
     # Enrich census cell data with nuts1 level attributes
@@ -1217,12 +1222,12 @@ def houseprofiles_in_census_cells():
     #     "cell_profile_ids"
     # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
+    # Cast profile ids back to initial str format
     df_hh_profiles_in_census_cells["cell_profile_ids"] = df_hh_profiles_in_census_cells[
         "cell_profile_ids"
     ].apply(lambda x: list(map(gen_profile_names, x)))
 
-    # Insert Zensus-cell-profile metadata-table into respective database table
-    engine = db.engine()
+    # Write allocation table into database
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
         bind=engine, checkfirst=True
     )
@@ -1256,7 +1261,7 @@ def get_houseprofiles_in_census_cells():
         census_profile_mapping = pd.read_sql(
             q.statement, q.session.bind, index_col="cell_id"
         )
-
+    # Cast profiles ids to tuple of type and int
     # census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
     #     "cell_profile_ids"
     # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
@@ -1339,6 +1344,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     cell_demand_metadata = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
+    # Cast profiles ids to tuple of type and int
     # cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
     #     "cell_profile_ids"
     # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
@@ -1474,9 +1480,7 @@ def mv_grid_district_HH_electricity_load(
         """Convert Profile ids from string to tuple (type, id)
         Convert from (str)a000(int) to (str), (int)
         """
-        return (x[:2], int(x[3:]))
-
-    engine = db.engine()
+        return x[:2], int(x[3:])
 
     with db.session_scope() as session:
         cells_query = session.query(

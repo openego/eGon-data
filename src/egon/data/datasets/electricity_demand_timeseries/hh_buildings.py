@@ -4,13 +4,14 @@ Assignment of household electricity demand timeseries to OSM buildings and
 generation of randomly placed synthetic 5x5m buildings if no sufficient OSM-data
 available in the respective cencus cell.
 
-The resulting data is stored in two separate tables
+The resulting data is stored in separate tables
 
 * `openstreetmap.osm_buildings_synthetic`:
     Lists generated synthetic building with id, cell_id and grid_id
 * `demand.egon_household_electricity_profile_of_buildings`:
     Mapping of demand timeseries and buildings including cell_id, building
     area and peak load
+* 'demand.egon
 
 Both tables are created within :func:`map_houseprofiles_to_buildings`.
 
@@ -577,11 +578,11 @@ def get_building_peak_loads():
     determined and with the respective nuts3 factor scaled for 2035 and 2050
     scenario.
 
-    Parameters
+    Note
     ----------
-    iterate_over: str
-        - cell_id -> slower but avoids massive RAM-usage
-        - nuts3  -> faster but might end up in full RAM
+    In test-mode 'SH' the iteration takes place by 'cell_id' to avoid
+    intensive RAM usage. For whole Germany 'nuts3' are taken and
+    RAM > 32GB is necessary.
     """
 
     with db.session_scope() as session:
@@ -770,10 +771,11 @@ def map_houseprofiles_to_buildings():
 setup = partial(
     Dataset,
     name="Demand_Building_Assignment",
-    version="0.0.0",
+    version="0.0.0.dev",
     dependencies=[],
     tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )
 
-# if __name__ == "__main__":
-#     map_houseprofiles_to_buildings()
+if __name__ == "__main__":
+    # map_houseprofiles_to_buildings()
+    get_building_peak_loads()
