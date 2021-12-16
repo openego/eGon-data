@@ -344,3 +344,5 @@ Bug fixes
   `#516 <https://github.com/openego/eGon-data/issues/538>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
+* Filter target values by scenario name
+  `#570 <https://github.com/openego/eGon-data/issues/570>`_
