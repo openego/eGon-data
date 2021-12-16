@@ -3,11 +3,17 @@
 
 import pandas as pd
 
+import egon.data.config
+
 
 def read_csv(year):
 
+    source = egon.data.config.datasets()["pypsa-technology-data"]["targets"][
+        "data_dir"
+    ]
+
     return pd.read_csv(
-        f"PyPSA-technology-data-94085a8/outputs/costs_{year}.csv"
+        f"{source}costs_{year}.csv"
     )
 
 
