@@ -208,52 +208,6 @@ with airflow.DAG(
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
-    # Gas grid import
-    gas_grid_insert_data = GasNodesandPipes(
-        dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
-    )
-
-    # Insert hydrogen buses
-    insert_hydrogen_buses = HydrogenBusEtrago(
-        dependencies=[
-            saltcavern_storage,
-            gas_grid_insert_data,
-            substation_voronoi
-        ]
-    )
-
-    # H2 steel tanks and saltcavern storage
-    insert_H2_storage = HydrogenStoreEtrago(
-        dependencies=[insert_hydrogen_buses])
-
-    # Power-to-gas-to-power chain installations
-    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[insert_hydrogen_buses, ]
-    )
-
-    # Link between methane grid and respective hydrogen buses
-    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[insert_hydrogen_buses, ]
-    )
-
-    # Create gas voronoi
-    create_gas_polygons = GasAreas(
-        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
-    )
-
-    # Gas prod import
-    gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons]
-    )
-
-    # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
-
-    # Insert industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand(
-        dependencies=[create_gas_polygons]
-    )
-
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
 
@@ -389,6 +343,52 @@ with airflow.DAG(
 
     foreign_lines = ElectricalNeighbours(
         dependencies=[run_pypsaeursec, tyndp_data]
+    )
+
+    # Gas grid import
+    gas_grid_insert_data = GasNodesandPipes(
+        dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa, foreign_lines]
+    )
+
+    # Insert hydrogen buses
+    insert_hydrogen_buses = HydrogenBusEtrago(
+        dependencies=[
+            saltcavern_storage,
+            gas_grid_insert_data,
+            substation_voronoi
+        ]
+    )
+
+    # H2 steel tanks and saltcavern storage
+    insert_H2_storage = HydrogenStoreEtrago(
+        dependencies=[insert_hydrogen_buses])
+
+    # Power-to-gas-to-power chain installations
+    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
+        dependencies=[insert_hydrogen_buses, ]
+    )
+
+    # Link between methane grid and respective hydrogen buses
+    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
+        dependencies=[insert_hydrogen_buses, ]
+    )
+
+    # Create gas voronoi
+    create_gas_polygons = GasAreas(
+        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
+    )
+
+    # Gas prod import
+    gas_production_insert_data = CH4Production(
+        dependencies=[create_gas_polygons]
+    )
+
+    # CH4 storages import
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
+
+    # Insert industrial gas demand
+    industrial_gas_demand = IndustrialGasDemand(
+        dependencies=[create_gas_polygons]
     )
 
     # CHP locations
