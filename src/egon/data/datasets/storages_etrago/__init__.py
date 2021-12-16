@@ -17,7 +17,7 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(insert_PHES),
         )
@@ -64,6 +64,9 @@ def insert_PHES():
     phes["efficiency_store"] = parameters["store"]
     phes["efficiency_dispatch"] = parameters["dispatch"]
     phes["standing_loss"] = parameters["standing_loss"]
+    phes["control"] = scenario_parameters.electricity("eGon2035")["control"][
+        "pumped_hydro"
+    ]
 
     # Write data to db
     phes.to_sql(

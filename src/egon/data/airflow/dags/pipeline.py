@@ -422,6 +422,7 @@ with airflow.DAG(
             scenario_capacities,
             Vg250MvGridDistricts,
             chp,
+            scenario_parameters,
         ]
     )
 
