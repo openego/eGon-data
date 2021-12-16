@@ -669,7 +669,7 @@ def inhabitants_to_households(
     return df_households_by_type
 
 
-def process_nuts1_zensus_data(df_census_households_raw):
+def process_nuts1_census_data(df_census_households_raw):
     """Make data compatible with household demand profile categories
 
     Groups, removes and reorders categories which are not needed to fit data to household types of
@@ -1190,10 +1190,15 @@ def houseprofiles_in_census_cells():
 
     # Restructure data to be compatible with household demand profile categories
     # Reduce age intervals and aggregate data to NUTS-1 level
-    df_census_households_nuts1 = process_nuts1_zensus_data(df_census_households_raw)
+    df_census_households_nuts1 = process_nuts1_census_data(df_census_households_raw)
 
     # Enrich census cell data with nuts1 level attributes
     df_census_households_cells = enrich_zensus_data_at_cell_level(df_census_households_nuts1)
+
+    # Finally create table that stores profile ids for each cell
+    df_hh_profiles_in_census_cells = get_cell_demand_metadata(
+        df_census_households_cells, df_iee_profiles
+    )
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
@@ -1205,10 +1210,6 @@ def houseprofiles_in_census_cells():
         index_col=["year", "nuts3"],
     )
 
-    # Finally create table that stores profile ids for each cell
-    df_hh_profiles_in_census_cells = get_cell_demand_metadata(
-        df_census_households_cells, df_iee_profiles
-    )
     df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
         df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
     )
