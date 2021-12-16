@@ -988,7 +988,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_iee_profiles):
         cell.
     """
 
-    df_cell_demand_metadata = pd.DataFrame(
+    df_hh_profiles_in_census_cells = pd.DataFrame(
         index=df_zensus_cells.grid_id.unique(),
         columns=[
             "cell_profile_ids",
@@ -1000,7 +1000,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_iee_profiles):
         ],
     )
     # 'peak_loads_hh', 'peak_load_cell',
-    df_cell_demand_metadata = df_cell_demand_metadata.rename_axis("grid_id")
+    df_hh_profiles_in_census_cells = df_hh_profiles_in_census_cells.rename_axis("grid_id")
 
     pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
 
@@ -1013,25 +1013,25 @@ def get_cell_demand_metadata(df_zensus_cells, df_iee_profiles):
         # the aggregated profiles.
         cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size)
 
-        df_cell_demand_metadata.at[grid_id, "cell_id"] = df_cell.loc[
+        df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_cell_demand_metadata.at[
+        df_hh_profiles_in_census_cells.at[
             grid_id, "cell_profile_ids"
         ] = cell_profile_ids
-        df_cell_demand_metadata.at[grid_id, "nuts3"] = df_cell.loc[
+        df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
-        df_cell_demand_metadata.at[grid_id, "nuts1"] = df_cell.loc[
+        df_hh_profiles_in_census_cells.at[grid_id, "nuts1"] = df_cell.loc[
             :, "nuts1"
         ].unique()[0]
 
-    return df_cell_demand_metadata
+    return df_hh_profiles_in_census_cells
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def adjust_to_demand_regio_nuts3_annual(
-    df_cell_demand_metadata, df_iee_profiles, df_demand_regio
+    df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
 ):
     """
     Computes the profile scaling factor for alignment to demand regio data
@@ -1042,7 +1042,7 @@ def adjust_to_demand_regio_nuts3_annual(
 
     Parameters
     ----------
-    df_cell_demand_metadata: pd.DataFrame
+    df_hh_profiles_in_census_cells: pd.DataFrame
         Result of :func:`get_cell_demand_metadata`.
     df_iee_profiles: pd.DataFrame
         Household load profile data
@@ -1060,7 +1060,7 @@ def adjust_to_demand_regio_nuts3_annual(
         Returns the same data as :func:`get_cell_demand_metadata`, but with
         filled columns `factor_2035` and `factor_2050`.
     """
-    for nuts3_id, df_nuts3 in df_cell_demand_metadata.groupby(by="nuts3"):
+    for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(by="nuts3"):
         nuts3_cell_ids = df_nuts3.index
         nuts3_profile_ids = df_nuts3.loc[:, "cell_profile_ids"].sum()
 
@@ -1074,22 +1074,22 @@ def adjust_to_demand_regio_nuts3_annual(
         # ##############
         # demand regio in MWh
         # profiles in Wh
-        df_cell_demand_metadata.loc[nuts3_cell_ids, "factor_2035"] = (
+        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2035"] = (
             df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
             * 1e3
             / (nuts3_profiles_sum_annual / 1e3)
         )
-        df_cell_demand_metadata.loc[nuts3_cell_ids, "factor_2050"] = (
+        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2050"] = (
             df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
             * 1e3
             / (nuts3_profiles_sum_annual / 1e3)
         )
 
-    return df_cell_demand_metadata
+    return df_hh_profiles_in_census_cells
 
 
 def get_load_timeseries(
-    df_iee_profiles, df_cell_demand_metadata, cell_ids, year, peak_load_only=False
+    df_iee_profiles, df_hh_profiles_in_census_cells, cell_ids, year, peak_load_only=False
 ):
     """
     Get peak load for one load area in MWh
@@ -1106,7 +1106,7 @@ def get_load_timeseries(
         * Columns: pd.MultiIndex with (`HH_TYPE`, `id`)
 
         Used to calculate the peak load from.
-    df_cell_demand_metadata: pd.DataFrame
+    df_hh_profiles_in_census_cells: pd.DataFrame
         Return value of :func:`adjust_to_demand_regio_nuts3_annual`.
     cell_ids: list
         Zensus cell ids that define one group of zensus cells that belong to
@@ -1129,7 +1129,7 @@ def get_load_timeseries(
     full_load = pd.Series(
         data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
     )
-    load_area_meta = df_cell_demand_metadata.loc[
+    load_area_meta = df_hh_profiles_in_census_cells.loc[
         cell_ids, ["cell_profile_ids", "nuts3", f"factor_{year}"]
     ]
     # loop over nuts3 (part_load) and sum (full_load) as the scaling factor applies at nuts3 level
@@ -1201,23 +1201,23 @@ def houseprofiles_in_census_cells():
     )
 
     # Finally create table that stores profile ids for each cell
-    df_cell_demand_metadata = get_cell_demand_metadata(
+    df_hh_profiles_in_census_cells = get_cell_demand_metadata(
         df_zensus_cells, df_iee_profiles
     )
-    df_cell_demand_metadata = adjust_to_demand_regio_nuts3_annual(
-        df_cell_demand_metadata, df_iee_profiles, df_demand_regio
+    df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
+        df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
     )
-    df_cell_demand_metadata = df_cell_demand_metadata.reset_index(drop=False)
+    df_hh_profiles_in_census_cells = df_hh_profiles_in_census_cells.reset_index(drop=False)
 
-    df_cell_demand_metadata["cell_id"] = df_cell_demand_metadata[
+    df_hh_profiles_in_census_cells["cell_id"] = df_hh_profiles_in_census_cells[
         "cell_id"
     ].astype(int)
 
-    # df_cell_demand_metadata["cell_profile_ids"] = df_cell_demand_metadata[
+    # df_hh_profiles_in_census_cells["cell_profile_ids"] = df_hh_profiles_in_census_cells[
     #     "cell_profile_ids"
     # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
-    df_cell_demand_metadata["cell_profile_ids"] = df_cell_demand_metadata[
+    df_hh_profiles_in_census_cells["cell_profile_ids"] = df_hh_profiles_in_census_cells[
         "cell_profile_ids"
     ].apply(lambda x: list(map(gen_profile_names, x)))
 
@@ -1233,7 +1233,7 @@ def houseprofiles_in_census_cells():
     with db.session_scope() as session:
         session.bulk_insert_mappings(
             HouseholdElectricityProfilesInCensusCells,
-            df_cell_demand_metadata.to_dict(orient="records"),
+            df_hh_profiles_in_census_cells.to_dict(orient="records"),
         )
 
 
@@ -1435,7 +1435,7 @@ def get_scaled_profiles_from_db(
 
     scaled_profiles = get_load_timeseries(
         df_iee_profiles=df_iee_profiles,
-        df_cell_demand_metadata=cell_demand_metadata,
+        df_hh_profiles_in_census_cells=cell_demand_metadata,
         cell_ids=cell_demand_metadata.index.to_list(),
         year=year,
         peak_load_only=peak_load_only,
@@ -1508,7 +1508,7 @@ def mv_grid_district_HH_electricity_load(
     for grid_district, data in cells.groupby("bus_id"):
         mvgd_profile = get_load_timeseries(
             df_iee_profiles=df_iee_profiles,
-            df_cell_demand_metadata=data,
+            df_hh_profiles_in_census_cells=data,
             cell_ids=data.index,
             year=scenario_year,
             peak_load_only=False,
