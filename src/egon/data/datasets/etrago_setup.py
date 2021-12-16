@@ -577,6 +577,7 @@ def insert_carriers():
                 "natural_gas_feedin",
                 "pumped_hydro",
                 "battery",
+                "OCGT",
             ],
         }
     )
