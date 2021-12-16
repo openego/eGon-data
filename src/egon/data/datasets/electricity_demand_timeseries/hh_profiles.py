@@ -22,7 +22,7 @@ The following datasets are used for creating the data:
 
 * Electricity demand time series for household categories
   produced by demand profile generator (DPG) from Fraunhofer IEE
-  (see :func:`download_process_household_demand_profiles_raw`)
+  (see :func:`get_iee_hh_demand_profiles_raw`)
 * Spatial information about people living in households by Zensus 2011 at
   federal state level
     * Type of household (family status)
@@ -378,9 +378,8 @@ def get_iee_hh_demand_profiles_raw():
     return df_hh_profiles
 
 
-def process_household_demand_profiles(hh_profiles):
-    """Process household demand profiles in a more easy to use format.
-    The profile type is splitted into type and number and set as multiindex.
+def set_multiindex_to_profiles(hh_profiles):
+    """The profile id is split into type and number and set as multiindex.
 
     Parameters
     ----------
@@ -1180,7 +1179,7 @@ def houseprofiles_in_census_cells():
     write_hh_profiles_to_db(df_iee_profiles)
 
     # Process profiles for further use
-    df_iee_profiles = process_household_demand_profiles(df_iee_profiles)
+    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     # Download zensus household type x age category data
     df_households_raw = get_zensus_households_raw()
@@ -1437,7 +1436,7 @@ def get_scaled_profiles_from_db(
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
     df_iee_profiles = get_hh_profiles_from_db(profile_ids)
-    df_iee_profiles = process_household_demand_profiles(df_iee_profiles)
+    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     scaled_profiles = get_load_timeseries(
         df_iee_profiles=df_iee_profiles,
@@ -1505,7 +1504,7 @@ def mv_grid_district_HH_electricity_load(
     df_iee_profiles = get_iee_hh_demand_profiles_raw()
 
     # Process profiles for further use
-    df_iee_profiles = process_household_demand_profiles(df_iee_profiles)
+    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     # Create aggregated load profile for each MV grid district
     mvgd_profiles_dict = {}
