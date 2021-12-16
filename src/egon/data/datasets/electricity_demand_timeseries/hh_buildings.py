@@ -67,7 +67,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
-    get_household_demand_profiles_raw,
+    get_iee_hh_demand_profiles_raw,
 )
 import egon.data.config
 
@@ -604,7 +604,7 @@ def get_building_peak_loads():
         )
 
         # Read demand profiles from egon-data-bundle
-        df_profiles = get_household_demand_profiles_raw()
+        df_profiles = get_iee_hh_demand_profiles_raw()
 
         def ve(s):
             raise (ValueError(s))
