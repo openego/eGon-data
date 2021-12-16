@@ -269,6 +269,8 @@ Changed
   `#381 <https://github.com/openego/eGon-data/issues/381>`_
 * Migrate zensus scripts to datasets
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
+* Integrate fuel and CO2 costs for eGon2035 to scenario parameters
+  `#549 <https://github.com/openego/eGon-data/issues/549>`_
 
 
 Bug fixes
