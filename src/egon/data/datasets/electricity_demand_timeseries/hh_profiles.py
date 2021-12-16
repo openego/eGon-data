@@ -958,7 +958,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
-def get_cell_demand_metadata(df_zensus_cells, df_profiles):
+def get_cell_demand_metadata(df_zensus_cells, df_iee_profiles):
     """
     Defines information about profiles for each zensus cell
 
@@ -972,7 +972,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     df_zensus_cells: pd.DataFrame
         Household type parameters. Each row representing one household. Hence,
         multiple rows per zensus cell.
-    df_profiles: pd.DataFrame
+    df_iee_profiles: pd.DataFrame
         Household load profile data
 
         * Index: Times steps as serial integers
@@ -1002,7 +1002,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
     # 'peak_loads_hh', 'peak_load_cell',
     df_cell_demand_metadata = df_cell_demand_metadata.rename_axis("grid_id")
 
-    pool_size = df_profiles.groupby(level=0, axis=1).size()
+    pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
 
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
 
@@ -1031,7 +1031,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def adjust_to_demand_regio_nuts3_annual(
-    df_cell_demand_metadata, df_profiles, df_demand_regio
+    df_cell_demand_metadata, df_iee_profiles, df_demand_regio
 ):
     """
     Computes the profile scaling factor for alignment to demand regio data
@@ -1044,7 +1044,7 @@ def adjust_to_demand_regio_nuts3_annual(
     ----------
     df_cell_demand_metadata: pd.DataFrame
         Result of :func:`get_cell_demand_metadata`.
-    df_profiles: pd.DataFrame
+    df_iee_profiles: pd.DataFrame
         Household load profile data
 
         * Index: Times steps as serial integers
@@ -1067,7 +1067,7 @@ def adjust_to_demand_regio_nuts3_annual(
         # take all profiles of one nuts3, aggregate and sum
         # profiles in Wh
         nuts3_profiles_sum_annual = (
-            df_profiles.loc[:, nuts3_profile_ids].sum().sum()
+            df_iee_profiles.loc[:, nuts3_profile_ids].sum().sum()
         )
 
         # Scaling Factor
@@ -1089,7 +1089,7 @@ def adjust_to_demand_regio_nuts3_annual(
 
 
 def get_load_timeseries(
-    df_profiles, df_cell_demand_metadata, cell_ids, year, peak_load_only=False
+    df_iee_profiles, df_cell_demand_metadata, cell_ids, year, peak_load_only=False
 ):
     """
     Get peak load for one load area in MWh
@@ -1099,7 +1099,7 @@ def get_load_timeseries(
 
     Parameters
     ----------
-    df_profiles: pd.DataFrame
+    df_iee_profiles: pd.DataFrame
         Household load profile data in Wh
 
         * Index: Times steps as serial integers
@@ -1125,7 +1125,7 @@ def get_load_timeseries(
         Aggregated time series for given `cell_ids` or peak load of this time
         series in MWh.
     """
-    timesteps = len(df_profiles)
+    timesteps = len(df_iee_profiles)
     full_load = pd.Series(
         data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
     )
@@ -1137,7 +1137,7 @@ def get_load_timeseries(
         by=["nuts3", f"factor_{year}"]
     ):
         part_load = (
-            df_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
+            df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
             * factor
             / 1e6
         )  # from Wh to MWh
@@ -1169,13 +1169,13 @@ def houseprofiles_in_census_cells():
     np.random.seed(RANDOM_SEED)
 
     # Read demand profiles from egon-data-bundle
-    df_profiles = get_household_demand_profiles_raw()
+    df_iee_profiles = get_household_demand_profiles_raw()
 
     # Write raw profiles into db
-    write_hh_profiles_to_db(df_profiles)
+    write_hh_profiles_to_db(df_iee_profiles)
 
     # Process profiles for further use
-    df_profiles = process_household_demand_profiles(df_profiles)
+    df_iee_profiles = process_household_demand_profiles(df_iee_profiles)
 
     # Download zensus household type x age category data
     df_households_raw = get_zensus_households_raw()
@@ -1202,10 +1202,10 @@ def houseprofiles_in_census_cells():
 
     # Finally create table that stores profile ids for each cell
     df_cell_demand_metadata = get_cell_demand_metadata(
-        df_zensus_cells, df_profiles
+        df_zensus_cells, df_iee_profiles
     )
     df_cell_demand_metadata = adjust_to_demand_regio_nuts3_annual(
-        df_cell_demand_metadata, df_profiles, df_demand_regio
+        df_cell_demand_metadata, df_iee_profiles, df_demand_regio
     )
     df_cell_demand_metadata = df_cell_demand_metadata.reset_index(drop=False)
 
@@ -1430,11 +1430,11 @@ def get_scaled_profiles_from_db(
     )
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
-    df_profiles = get_hh_profiles_from_db(profile_ids)
-    df_profiles = process_household_demand_profiles(df_profiles)
+    df_iee_profiles = get_hh_profiles_from_db(profile_ids)
+    df_iee_profiles = process_household_demand_profiles(df_iee_profiles)
 
     scaled_profiles = get_load_timeseries(
-        df_profiles=df_profiles,
+        df_iee_profiles=df_iee_profiles,
         df_cell_demand_metadata=cell_demand_metadata,
         cell_ids=cell_demand_metadata.index.to_list(),
         year=year,
@@ -1498,16 +1498,16 @@ def mv_grid_district_HH_electricity_load(
     )
 
     # Read demand profiles from egon-data-bundle
-    df_profiles = get_household_demand_profiles_raw()
+    df_iee_profiles = get_household_demand_profiles_raw()
 
     # Process profiles for further use
-    df_profiles = process_household_demand_profiles(df_profiles)
+    df_iee_profiles = process_household_demand_profiles(df_iee_profiles)
 
     # Create aggregated load profile for each MV grid district
     mvgd_profiles_dict = {}
     for grid_district, data in cells.groupby("bus_id"):
         mvgd_profile = get_load_timeseries(
-            df_profiles=df_profiles,
+            df_iee_profiles=df_iee_profiles,
             df_cell_demand_metadata=data,
             cell_ids=data.index,
             year=scenario_year,
