@@ -117,7 +117,7 @@ def ch4_nodes_number_G(gas_nodes_list):
 
     ch4_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
-    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    ]
     N_ch4_nodes_G = len(ch4_nodes_list)
 
     return N_ch4_nodes_G
@@ -260,9 +260,11 @@ def insert_gas_pipeline_list(gas_nodes_list):
     # Select the links having at least one bus in Germany
     gas_pipelines_list = gas_pipelines_list[
         gas_pipelines_list["country_code"].str.contains("DE")
-    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    ]
 
     # Remove links disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
+    # TODO: automatic test for disconnected links
+    # TODO: remove link test if length = 0
     gas_pipelines_list = gas_pipelines_list[
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
     ]
@@ -274,7 +276,7 @@ def insert_gas_pipeline_list(gas_nodes_list):
         new_id, new_id + len(gas_pipelines_list)
     )
     gas_pipelines_list["link_id"] = gas_pipelines_list["link_id"].astype(int)
-
+    
     # Cut data to federal state if in testmode
     NUTS1 = []
     for index, row in gas_pipelines_list.iterrows():
