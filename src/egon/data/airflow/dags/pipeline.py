@@ -37,8 +37,10 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hydrogen_etrago import (
-    HydrogenBusEtrago, HydrogenStoreEtrago, HydrogenMethaneLinkEtrago,
-    HydrogenPowerLinkEtrago
+    HydrogenBusEtrago,
+    HydrogenStoreEtrago,
+    HydrogenMethaneLinkEtrago,
+    HydrogenPowerLinkEtrago,
 )
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
@@ -174,7 +176,12 @@ with airflow.DAG(
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
-        dependencies=[osm_download, substation_extraction, setup_etrago]
+        dependencies=[
+            osm_download,
+            substation_extraction,
+            setup_etrago,
+            scenario_parameters,
+        ]
     )
     osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
@@ -219,22 +226,27 @@ with airflow.DAG(
         dependencies=[
             saltcavern_storage,
             gas_grid_insert_data,
-            substation_voronoi
+            substation_voronoi,
         ]
     )
 
     # H2 steel tanks and saltcavern storage
     insert_H2_storage = HydrogenStoreEtrago(
-        dependencies=[insert_hydrogen_buses])
+        dependencies=[insert_hydrogen_buses]
+    )
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[insert_hydrogen_buses, ]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[insert_hydrogen_buses, ]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Create gas voronoi
@@ -248,9 +260,7 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(
-	dependencies=[create_gas_polygons]
-    )
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -376,7 +386,7 @@ with airflow.DAG(
             demand_curves_industry,
             cts_electricity_demand_annual,
             hh_demand,
-            ]
+        ]
     )
 
     # run pypsa-eur-sec
