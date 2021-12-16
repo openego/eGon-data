@@ -221,6 +221,7 @@ def electricity(scenario):
             "reservoir": "PV",
             "gas": "PV",
             "biomass": "PV",
+            "pumped_hydro": "PV",
         }
 
     elif scenario == "eGon100RE":
