@@ -742,11 +742,13 @@ def process_nuts1_census_data(df_census_households_raw):
     return df_census_households
 
 
-def enrich_zensus_data_at_cell_level(df_zensus):
-    """The zensus data is processed to define the number and type of households per zensus cell.
-    Two subsets of the zensus data are merged to fit the IEE profiles specifications.
-    For this, the dataset 'HHGROESS_KLASS' is converted from people living in households to number of households
-    of specific size. Missing data in 'HHTYP_FAM' is substituted in :func:`create_missing_zensus_data`.
+def refine_census_data_at_cell_level(df_zensus):
+    """The zensus data is processed to define the number and type of households
+    per zensus cell. Two subsets of the zensus data are merged to fit the
+    IEE profiles specifications. For this, the dataset 'HHGROESS_KLASS' is
+    converted from people living in households to number of households of
+    specific size. Missing data in 'HHTYP_FAM' is substituted
+    in :func:`create_missing_zensus_data`.
 
     Parameters
     ----------
@@ -1192,10 +1194,10 @@ def houseprofiles_in_census_cells():
     # Reduce age intervals and aggregate data to NUTS-1 level
     df_census_households_nuts1 = process_nuts1_census_data(df_census_households_raw)
 
-    # Enrich census cell data with nuts1 level attributes
-    df_census_households_cells = enrich_zensus_data_at_cell_level(df_census_households_nuts1)
+    # Refine census cell data with additional nuts1 level attributes
+    df_census_households_cells = refine_census_data_at_cell_level(df_census_households_nuts1)
 
-    # Finally create table that stores profile ids for each cell
+    # Allocate profile ids to each cell by census data
     df_hh_profiles_in_census_cells = get_cell_demand_metadata(
         df_census_households_cells, df_iee_profiles
     )
@@ -1210,18 +1212,16 @@ def houseprofiles_in_census_cells():
         index_col=["year", "nuts3"],
     )
 
+    # Scale profiles to meet demand regio annual demand projections
     df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
         df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
     )
-    df_hh_profiles_in_census_cells = df_hh_profiles_in_census_cells.reset_index(drop=False)
 
+    df_hh_profiles_in_census_cells = df_hh_profiles_in_census_cells.reset_index(
+        drop=False)
     df_hh_profiles_in_census_cells["cell_id"] = df_hh_profiles_in_census_cells[
         "cell_id"
     ].astype(int)
-
-    # df_hh_profiles_in_census_cells["cell_profile_ids"] = df_hh_profiles_in_census_cells[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     # Cast profile ids back to initial str format
     df_hh_profiles_in_census_cells["cell_profile_ids"] = df_hh_profiles_in_census_cells[
@@ -1371,15 +1371,6 @@ def get_hh_profiles_from_db(profile_ids):
     pd.DataFrame
          Selection of household demand profiles
     """
-
-    # def gen_profile_names(n):
-    #     """Join from Format (str),(int) to (str)a000(int)"""
-    #     a = f"{n[0]}a{int(n[1]):04d}"
-    #     return a
-    #
-    # # Format profile ids to query
-    # profile_ids = list(map(gen_profile_names, profile_ids))
-
     # Query load profiles
     with db.session_scope() as session:
         cells_query = session.query(
