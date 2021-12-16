@@ -231,7 +231,29 @@ def gas(scenario):
     """
 
     if scenario == "eGon2035":
+
+        costs = read_csv(2035)
+
         parameters = {}
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
+            "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"), # CC?
+            "H2_feedin": 1,
+            "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
+        }
+        # Insert costs
+        parameters["capital_cost"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "investment"),
+            "H2_to_power": read_costs(costs, "fuel cell", "investment"),
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"), # CC?
+            "H2_feedin": 0,
+            "H2_to_CH4": read_costs(costs, "methanation", "investment"),
+            #  what about H2 compressors?
+            "H2_underground": read_costs(costs, "hydrogen storage underground", "investment"),
+            "H2_overground": read_costs(costs, "hydrogen storage tank", "investment"),
+        }
 
     elif scenario == "eGon100RE":
         parameters = {}
