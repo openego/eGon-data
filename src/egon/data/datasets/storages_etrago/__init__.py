@@ -88,9 +88,9 @@ def extendable_batteries_per_scenario(scenario):
         f"""
         DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE carrier = 'battery'
-        AND scn_name = 'eGon2035'
+        AND scn_name = '{scenario}'
         AND bus NOT IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
-                       WHERE scn_name = 'eGon2035'
+                       WHERE scn_name = '{scenario}'
                        AND country = 'DE');
         """
     )
