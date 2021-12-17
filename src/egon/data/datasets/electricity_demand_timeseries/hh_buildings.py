@@ -361,17 +361,23 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     missing_buildings_geom["geom"] = buffer
 
     # get
-    buildings_filtered = Table('osm_buildings',
-                               Base.metadata, schema='openstreetmap')
+    buildings_filtered = Table(
+        "osm_buildings", Base.metadata, schema="openstreetmap"
+    )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(buildings_filtered, None)
 
     # get max number of building ids
     with db.session_scope() as session:
-        buildings_filtered = session.execute(func.max(buildings_filtered.c.id)).scalar()
+        buildings_filtered = session.execute(
+            func.max(buildings_filtered.c.id)
+        ).scalar()
 
     # apply ids following the sequence of openstreetmap.osm_buildings id
-    missing_buildings_geom['id'] = range(buildings_filtered + 1, buildings_filtered + len(missing_buildings_geom) + 1)
+    missing_buildings_geom["id"] = range(
+        buildings_filtered + 1,
+        buildings_filtered + len(missing_buildings_geom) + 1,
+    )
 
     missing_buildings_geom = missing_buildings_geom.drop(
         columns=["building_id", "profiles"]
@@ -529,29 +535,35 @@ def generate_mapping_table(
     return mapping_profiles_to_buildings
 
 
-def reduce_synthetic_buildings(mapping_profiles_to_buildings,
-                               synthetic_buildings):
+def reduce_synthetic_buildings(
+    mapping_profiles_to_buildings, synthetic_buildings
+):
     """Reduced list of synthetic buildings to amount actually used.
 
     Not all are used, due to randomised assignment with replacing
     Id's are adapted to continuous number sequence following
     openstreetmap.osm_buildings"""
 
-    buildings_filtered = Table('osm_buildings',
-                               Base.metadata, schema='openstreetmap')
+    buildings_filtered = Table(
+        "osm_buildings", Base.metadata, schema="openstreetmap"
+    )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(buildings_filtered, None)
 
     # total number of buildings
     with db.session_scope() as session:
-        buildings_filtered = session.execute(func.max(buildings_filtered.c.id)).scalar()
+        buildings_filtered = session.execute(
+            func.max(buildings_filtered.c.id)
+        ).scalar()
 
     synth_ids_used = mapping_profiles_to_buildings.loc[
-        mapping_profiles_to_buildings['building_id']
-        >
-        buildings_filtered, 'building_id'].unique()
+        mapping_profiles_to_buildings["building_id"] > buildings_filtered,
+        "building_id",
+    ].unique()
 
-    synthetic_buildings = synthetic_buildings.loc[synthetic_buildings['id'].isin(synth_ids_used)]
+    synthetic_buildings = synthetic_buildings.loc[
+        synthetic_buildings["id"].isin(synth_ids_used)
+    ]
     # id_mapping = dict(
     #     list(
     #         zip(
@@ -610,7 +622,9 @@ def get_building_peak_loads():
         def ve(s):
             raise (ValueError(s))
 
-        dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+        dataset = egon.data.config.settings()["egon-data"][
+            "--dataset-boundary"
+        ]
         iterate_over = (
             "nuts3"
             if dataset == "Everything"
@@ -730,8 +744,8 @@ def map_houseprofiles_to_buildings():
 
     # reduce list to only used synthetic buildings
     synthetic_buildings = reduce_synthetic_buildings(
-        mapping_profiles_to_buildings,
-        synthetic_buildings)
+        mapping_profiles_to_buildings, synthetic_buildings
+    )
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)

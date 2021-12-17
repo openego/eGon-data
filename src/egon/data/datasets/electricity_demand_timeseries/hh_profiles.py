@@ -676,7 +676,9 @@ def process_nuts1_census_data(df_census_households_raw):
     """
 
     # Clean data to int only
-    df_census_households = df_census_households_raw.applymap(clean).applymap(int)
+    df_census_households = df_census_households_raw.applymap(clean).applymap(
+        int
+    )
 
     # Group data to fit Load Profile Generator categories
     # define kids/adults/seniors
@@ -693,13 +695,19 @@ def process_nuts1_census_data(df_census_households_raw):
 
     # sum groups of kids, adults and seniors and concat
     df_kids = (
-        df_census_households.loc[:, (slice(None), kids)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), kids)]
+        .groupby(level=0, axis=1)
+        .sum()
     )
     df_adults = (
-        df_census_households.loc[:, (slice(None), adults)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), adults)]
+        .groupby(level=0, axis=1)
+        .sum()
     )
     df_seniors = (
-        df_census_households.loc[:, (slice(None), seniors)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), seniors)]
+        .groupby(level=0, axis=1)
+        .sum()
     )
     df_census_households = pd.concat(
         [df_kids, df_adults, df_seniors],
@@ -710,11 +718,14 @@ def process_nuts1_census_data(df_census_households_raw):
 
     # reduce column names to state only
     mapping_state = {
-        i: i.split()[1] for i in df_census_households.index.get_level_values(level=0)
+        i: i.split()[1]
+        for i in df_census_households.index.get_level_values(level=0)
     }
 
     # rename index
-    df_census_households = df_census_households.rename(index=mapping_state, level=0)
+    df_census_households = df_census_households.rename(
+        index=mapping_state, level=0
+    )
     # rename axis
     df_census_households = df_census_households.rename_axis(["state", "type"])
     # unstack
@@ -1003,7 +1014,9 @@ def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         ],
     )
 
-    df_hh_profiles_in_census_cells = df_hh_profiles_in_census_cells.rename_axis("grid_id")
+    df_hh_profiles_in_census_cells = (
+        df_hh_profiles_in_census_cells.rename_axis("grid_id")
+    )
 
     pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
 
@@ -1063,7 +1076,9 @@ def adjust_to_demand_regio_nuts3_annual(
         Returns the same data as :func:`allocate_hh_demand_profiles_to_cells`, but with
         filled columns `factor_2035` and `factor_2050`.
     """
-    for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(by="nuts3"):
+    for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
+        by="nuts3"
+    ):
         nuts3_cell_ids = df_nuts3.index
         nuts3_profile_ids = df_nuts3.loc[:, "cell_profile_ids"].sum()
 
@@ -1092,7 +1107,11 @@ def adjust_to_demand_regio_nuts3_annual(
 
 
 def get_load_timeseries(
-    df_iee_profiles, df_hh_profiles_in_census_cells, cell_ids, year, peak_load_only=False
+    df_iee_profiles,
+    df_hh_profiles_in_census_cells,
+    cell_ids,
+    year,
+    peak_load_only=False,
 ):
     """
     Get peak load for one load area in MWh
@@ -1214,16 +1233,19 @@ def houseprofiles_in_census_cells():
         df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
     )
 
-    df_hh_profiles_in_census_cells = df_hh_profiles_in_census_cells.reset_index(
-        drop=False)
+    df_hh_profiles_in_census_cells = (
+        df_hh_profiles_in_census_cells.reset_index(drop=False)
+    )
     df_hh_profiles_in_census_cells["cell_id"] = df_hh_profiles_in_census_cells[
         "cell_id"
     ].astype(int)
 
     # Cast profile ids back to initial str format
-    df_hh_profiles_in_census_cells["cell_profile_ids"] = df_hh_profiles_in_census_cells[
+    df_hh_profiles_in_census_cells[
         "cell_profile_ids"
-    ].apply(lambda x: list(map(gen_profile_names, x)))
+    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+        lambda x: list(map(gen_profile_names, x))
+    )
 
     # Write allocation table into database
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
