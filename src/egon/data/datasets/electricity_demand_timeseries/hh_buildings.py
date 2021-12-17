@@ -1,4 +1,6 @@
 """
+Household electricity demand time series for scenarios in 2035 and 2050
+assigned to OSM-buildings.
 
 Assignment of household electricity demand timeseries to OSM buildings and
 generation of randomly placed synthetic 5x5m buildings if no sufficient OSM-data
@@ -34,14 +36,33 @@ Both tables are created within :func:`map_houseprofiles_to_buildings`.
 
 **What is the goal?**
 
-To assign every household demand timeseries to a specific building.
+To assign every household demand timeseries, which already exist at cell level,
+to a specific OSM building.
+
+**What is the challenge?**
+
+The census and the OSM dataset differ from each other. The census uses
+statistical methods and therefore lacks accuracy at high spatial resolution.
+The OSM datasets is community based dataset which is extended throughout and
+does not claim to be complete. By merging these datasets inconsistencies need
+to be addressed. For example.: not yet tagged buildings in OSM or new building
+areas not considered in census 2011.
 
 **How are these datasets combined?**
+
+The assignment of household demand timeseries to buildings takes place at cell
+level. Within each cell a pool of profiles exists, produced by the 'HH Demand"
+module. These profiles are randomly assigned to a filtered list of OSM buildings
+within this cell. The assignment takes place with replacement of every building
+after drew. Therefore multiple profiles can be assigned to one building, making
+it a multi-household building. Hence, every profile is assigned to a building
+but not every building needs to have a profile assigned as not all are
+residential.
 
 
 **What are central assumptions during the data processing?**
 
-*
+* Building
 
 **Drawbacks and limitations of the data**
 
@@ -511,7 +532,7 @@ def reduce_synthetic_buildings(mapping_profiles_to_buildings,
 
     Not all are used, due to randomised assignment with replacing
     Id's are adapted to continuous number sequence following
-    egon_map_zensus_buildings_filtered"""
+    openstreetmap.osm_buildings"""
 
     buildings_filtered = Table('osm_buildings',
                                Base.metadata, schema='openstreetmap')

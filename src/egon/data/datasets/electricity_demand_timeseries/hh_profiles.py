@@ -1,5 +1,6 @@
 """
-Household electricity demand time series for scenarios in 2035 and 2050
+Household electricity demand time series for scenarios in 2035 and 2050 at
+census cell level.
 
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
