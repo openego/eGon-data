@@ -33,9 +33,9 @@ def download_CH4_industrial_demand(scn_name="eGon2035"):
 
     Returns
     -------
-    CH4_industrial_demand : 
+    CH4_industrial_demand :
         Dataframe containing the CH4 industrial demand in Germany
-        
+
     """
     # Download the data and the id_region correspondance table
     correspondance_url = (
@@ -111,7 +111,7 @@ def download_CH4_industrial_demand(scn_name="eGon2035"):
 
     # Add the centroid point to each NUTS3 area
     sql_vg250 = """SELECT nuts as nuts3, geometry as geom
-                    FROM boundaries.vg250_krs 
+                    FROM boundaries.vg250_krs
                     WHERE gf = 4 ;"""
     gdf_vg250 = db.select_geodataframe(sql_vg250, epsg=4326)
 
@@ -155,9 +155,9 @@ def download_H2_industrial_demand(scn_name="eGon2035"):
 
     Returns
     -------
-    H2_industrial_demand : 
+    H2_industrial_demand :
         Dataframe containing the H2 industrial demand in Germany
-        
+
     """
     # Download the data and the id_region correspondance table
     correspondance_url = (
@@ -233,7 +233,7 @@ def download_H2_industrial_demand(scn_name="eGon2035"):
 
     # Add the centroid point to each NUTS3 area
     sql_vg250 = """SELECT nuts as nuts3, geometry as geom
-                    FROM boundaries.vg250_krs 
+                    FROM boundaries.vg250_krs
                     WHERE gf = 4 ;"""
     gdf_vg250 = db.select_geodataframe(sql_vg250, epsg=4326)
 
@@ -286,10 +286,12 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'CH4' AND
-        scn_name = {scn_name};
-        DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'H2' AND
-        scn_name = {scn_name};
+        DELETE FROM grid.egon_etrago_load WHERE "carrier" IN ('CH4', 'H2') AND
+        scn_name = {scn_name}
+        AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 
