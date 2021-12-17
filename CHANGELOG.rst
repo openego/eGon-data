@@ -169,7 +169,9 @@ Added
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
-  
+* Filter for DE in gas infrastructure deletion at beginning of respective tasks
+  `#567 <https://github.com/openego/eGon-data/issues/567>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 

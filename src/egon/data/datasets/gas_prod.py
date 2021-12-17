@@ -316,7 +316,6 @@ def import_gas_generators(scn_name='eGon2035'):
         scn_name = '{scn_name}' AND bus IN {buses};
         """
     )
-    # TODO:AND country = 'DE';????
 
     # Select next id value
     new_id = db.next_etrago_id("generator")
