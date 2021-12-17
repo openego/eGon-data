@@ -9,13 +9,14 @@ The cells are defined by the dataset Zensus 2011.
 The resulting data is stored in two separate tables
 
 * `demand.household_electricity_profiles_in_census_cells`:
-  Lists references and scaling parameters to time series data for each household in a cell by
-  identifiers. This table is fundamental for creating subsequent data like
-  demand profiles on MV grid level or for determining the peak load at load
-  area level. The table is created by :func:`houseprofiles_in_census_cells`.
+  Lists references and scaling parameters to time series data for each household
+  in a cell by identifiers. This table is fundamental for creating subsequent
+  data like demand profiles on MV grid level or for determining the peak load
+  at load area level.
+  The table is created by:func:`houseprofiles_in_census_cells`.
 * `demand.household_electricity_profiles_hvmv_substation`:
-  Household electricity demand profiles aggregated at MV grid district level in MWh.
-  Primarily used to create the eTraGo data model.
+  Household electricity demand profiles aggregated at MV grid district level
+  in MWh. Primarily used to create the eTraGo data model.
   The table is created with :func:`mv_grid_district_HH_electricity_load`.
 
 The following datasets are used for creating the data:
@@ -27,7 +28,7 @@ The following datasets are used for creating the data:
   federal state level
     * Type of household (family status)
     * Age
-    * Size
+    * Number of people
 * Spatial information about number of households per ha, categorized by type
   of household (family status) with 5 categories (also from Zensus 2011)
 * Demand-Regio annual household demand at NUTS3 level
@@ -68,9 +69,10 @@ the number of categories of cell-level household data.
   conversion from persons in household to number of
   households, number of inhabitants for multi-person households is estimated
   as weighted average in :var:`OO_factor`
-* The distribution to refine household types at cell level are the same for each federal state
-* Refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
-#TODO check nearest int or ceil?!
+* The distribution to refine household types at cell level are the same for
+  each federal state
+* Refining of household types lead to float number of profiles drew at cell
+  level and need to be rounded to nearest int by np.rint().
 * 100 x 100 m cells are matched to NUTS via cells centroid location
 * Cells with households in unpopulated areas are removed
 
@@ -83,8 +85,7 @@ the number of categories of cell-level household data.
 * Due to secrecy, some census data are highly modified under certain attributes
  (quantity_q = 2). This cell data is not corrected, but excluded.
 * There is deviation in the Census data from table to table. The statistical
- methods are not stringent. Hence, there are cases in which data contradict
- each other. For example:
+ methods are not stringent. Hence, there are cases in which data contradicts.
 * Census data with attribute 'HHTYP_FAM' is missing for some cells with small
  amount of households. This data is generated using the average share of
  household types for cells with similar household number. For some cells the

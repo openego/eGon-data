@@ -775,7 +775,3 @@ setup = partial(
     dependencies=[],
     tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )
-
-if __name__ == "__main__":
-    # map_houseprofiles_to_buildings()
-    get_building_peak_loads()
