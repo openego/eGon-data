@@ -79,7 +79,7 @@ class EgonPfHvGenerator(Base):
     q_set_fixed = Column(Float(53))
     sign = Column(Float(53),server_default=1)
     marginal_cost_fixed = Column(Float(53),server_default=0.)
-    capital_cost = Column(Float(53))
+    capital_cost = Column(Float(53),server_default=0.)
     efficiency = Column(Float(53))
     committable = Column(Boolean)
     start_up_cost = Column(Float(53))
