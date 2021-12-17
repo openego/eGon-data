@@ -21,7 +21,7 @@ def insert_buses(carrier, scenario):
     carrier : str
         Name of the carrier, either 'central_heat' or 'rural_heat'
     scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+        Name of the scenario.
 
     """
     sources = config.datasets()["etrago_heat"]["sources"]
