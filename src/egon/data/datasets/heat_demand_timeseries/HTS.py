@@ -785,10 +785,10 @@ def profile_selector():
             ]
             .zensus_population_id.values
         )
-        
-        result_SFH["building_id"] = db.select_dataframe(
-            
-            """
+
+        result_SFH["building_id"] = (
+            db.select_dataframe(
+                """
         
             SELECT cell_id as zensus_population_id, building_id FROM 
             (
@@ -798,9 +798,11 @@ def profile_selector():
             ) a 
             WHERE a.count = 1
             """,
-            index_col="zensus_population_id",
-        ).loc[result_SFH["zensus_population_id"].unique(), "building_id"].values
-        
+                index_col="zensus_population_id",
+            )
+            .loc[result_SFH["zensus_population_id"].unique(), "building_id"]
+            .values
+        )
 
         result_MFH["zensus_population_id"] = (
             annual_demand[annual_demand.Station == station]
@@ -813,10 +815,10 @@ def profile_selector():
             ]
             .zensus_population_id.values
         )
-        
-        result_MFH["building_id"] = db.select_dataframe(
-            
-            """
+
+        result_MFH["building_id"] = (
+            db.select_dataframe(
+                """
         
             SELECT cell_id as zensus_population_id, building_id FROM 
             (
@@ -826,12 +828,18 @@ def profile_selector():
             ) a 
             WHERE a.count > 1
             """,
-            index_col="zensus_population_id",
-        ).loc[result_MFH["zensus_population_id"].unique(), "building_id"].values
-        
+                index_col="zensus_population_id",
+            )
+            .loc[result_MFH["zensus_population_id"].unique(), "building_id"]
+            .values
+        )
 
-        result_SFH.set_index("zensus_population_id", inplace=True)
-        result_MFH.set_index("zensus_population_id", inplace=True)
+        result_SFH.set_index(
+            ["zensus_population_id", "building_id"], inplace=True
+        )
+        result_MFH.set_index(
+            ["zensus_population_id", "building_id"], inplace=True
+        )
 
         selected_idp_names = selected_idp_names.append(result_SFH)
         selected_idp_names = selected_idp_names.append(result_MFH)
@@ -842,9 +850,9 @@ def profile_selector():
         new_length = len(selected_idp_names)
         selected_this_station = selected_idp_names.iloc[length:new_length, :]
         selected_this_station[
-            "selected_idp"
+            "selected_idp_profiles"
         ] = selected_this_station.values.tolist()
-        selected_this_station = selected_this_station.selected_idp
+        selected_this_station = selected_this_station.selected_idp_profiles
         selected_this_station = selected_this_station.reset_index()
         selected_this_station.index = range(length, new_length)
 
@@ -902,7 +910,7 @@ def profile_selector():
 
     os.remove(filename_insert)
 
-    return annual_demand, idp_df, selected_idp_names
+    return annual_demand, idp_df, selected_idp_names.droplevel("building_id")
 
 
 def h_value():
