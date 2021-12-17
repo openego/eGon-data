@@ -124,11 +124,11 @@ engine = db.engine()
 # Get random seed from config
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 
-# Define mapping of zensus household categories to eurostat categories
-# - Adults living in househould type
-# - number of kids not included even if in housholdtype name
-# **! The Eurostat data only gives the amount of adults/seniors, excluding the amount of kids <15**
-# eurostat is used for demand-profile-generator @fraunhofer
+# Define mapping of census household family types to Eurostat household types
+# - Adults living in households type
+# - number of kids are  not included even if mentioned in household type name
+# **! The Eurostat data only counts adults/seniors, excluding kids <15**
+# Eurostat household types are used for demand-profile-generator @iee-fraunhofer
 HH_TYPES = {
     "SR": [
         ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Seniors"),
@@ -175,9 +175,10 @@ HH_TYPES = {
         ("Paare ohne Kind(er)", "6 und mehr Personen", "Seniors"),
     ],
     # no info about share of kids
-    # OO, O1, O2 have the same amount, as no information about the share of kids within zensus data set.
-    # if needed the total amount can be corrected in the hh_tools.get_hh_dist function
-    # using multi_adjust=True option
+    # OO, O1, O2 have the same amount, as no information about the share of kids
+    # within census data set. If needed the total amount can be estimated in the
+    # hh_tools.get_hh_dist function using multi_adjust=True option. The Eurostat
+    # share is then applied.
     "OO": [
         ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Adults"),
         ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Adults"),
@@ -210,7 +211,7 @@ class IeeHouseholdLoadProfiles(Base):
 
     id = Column(INTEGER, primary_key=True)
     type = Column(CHAR(7), index=True)
-    load_in_wh = Column(ARRAY(REAL))  # , dimensions=2))
+    load_in_wh = Column(ARRAY(REAL))
 
 
 class HouseholdElectricityProfilesInCensusCells(Base):
@@ -291,9 +292,6 @@ def write_hh_profiles_to_db(hh_profiles):
     Returns
     -------
     """
-
-    engine = db.engine()
-
     hh_profiles = hh_profiles.rename_axis("type", axis=1)
     hh_profiles = hh_profiles.rename_axis("timestep", axis=0)
     hh_profiles = hh_profiles.stack().rename("load_in_wh")
@@ -572,7 +570,8 @@ def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
             Data still needs to be converted from amount of people to amount
             of households
     """
-    # adjust multi with/without kids via eurostat share as not clearly derivable without infos about share of kids
+    # adjust multi with/without kids via eurostat share as not clearly derivable
+    # without infos about share of kids.
     if multi_adjust:
         adjust = {
             "SR": 1,
@@ -1159,9 +1158,9 @@ def get_load_timeseries(
 
 def houseprofiles_in_census_cells():
     """
-    Identify household electricity profiles for each census cell
+    Allocate household electricity demand profiles for each census cell.
 
-    Creates a table that maps household electricity demand profiles to zensus
+    Creates a table that maps household electricity demand profiles to census
     cells. Each row represents one cell and contains a list of profile IDs.
 
     Use :func:`get_houseprofiles_in_census_cells` to retrieve the data from
@@ -1245,7 +1244,7 @@ def houseprofiles_in_census_cells():
 
 def get_houseprofiles_in_census_cells():
     """
-    Retrieve household electricity demand profile mapping
+    Retrieve household electricity demand profile mapping from database
 
     See Also
     --------
