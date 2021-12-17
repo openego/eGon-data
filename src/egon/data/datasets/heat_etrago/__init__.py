@@ -11,7 +11,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 
-def insert_buses(carrier, scenario="eGon2035"):
+def insert_buses(carrier, scenario):
     """Insert heat buses to etrago table
 
     Heat buses are divided into central and individual heating
@@ -385,6 +385,8 @@ def buses():
 
     insert_buses("central_heat", scenario="eGon2035")
     insert_buses("rural_heat", scenario="eGon2035")
+    insert_buses("central_heat", scenario="eGon100RE")
+    insert_buses("rural_heat", scenario="eGon100RE")
 
 
 def supply():
@@ -411,7 +413,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(buses, supply),
         )
