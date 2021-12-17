@@ -785,7 +785,7 @@ def map_houseprofiles_to_buildings():
 setup = partial(
     Dataset,
     name="Demand_Building_Assignment",
-    version="0.0.0.dev",
+    version="0.0.0",
     dependencies=[],
     tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )
