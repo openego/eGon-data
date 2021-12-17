@@ -293,7 +293,7 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_load WHERE "carrier" IN ('CH4', 'H2') AND
-        scn_name = {scn_name} AND bus IN {buses};
+        scn_name = '{scn_name}' AND bus IN {buses};
         """
     )
 
