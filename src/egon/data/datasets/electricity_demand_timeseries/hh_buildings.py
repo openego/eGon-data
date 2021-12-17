@@ -566,30 +566,6 @@ def reduce_synthetic_buildings(mapping_profiles_to_buildings,
     # mapping_profiles_to_buildings['building_id'] = mapping_profiles_to_buildings['building_id'].replace(id_mapping)
     return synthetic_buildings
 
-# def get_building_peak_loads():
-#     """
-#     Peak loads of buildings are determined by SQL-script.
-#
-#     Timeseries for every building are accumulated, the maximum value
-#     determined and with the respective nuts3 factor scaled for 2035 and 2050
-#     scenario.
-#
-#     """
-#
-#     BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-#     BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
-#
-#     with codecs.open(
-#         str(
-#             resources.files(egon.data.datasets.electricity_demand_timeseries)
-#             / "building_peak_load.sql"
-#         ),
-#         "r",
-#         "utf-8-sig",
-#     ) as fd:
-#         sqlfile = fd.read()
-#     db.execute_sql(sqlfile)
-
 
 def get_building_peak_loads():
     """
