@@ -283,15 +283,17 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
     # Connect to local database
     engine = db.engine()
 
+    buses = tuple(db.select_dataframe(
+        f"""SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE';
+        """
+    )['bus_id'])
+
     # Clean table
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_load WHERE "carrier" IN ('CH4', 'H2') AND
-        scn_name = {scn_name}
-        AND bus IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
-        );
+        scn_name = {scn_name} AND bus IN {buses};
         """
     )
 
