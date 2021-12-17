@@ -311,3 +311,5 @@ Bug fixes
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Fix assignemnt of heat demand profiles at German borders
+  `#585 <https://github.com/openego/eGon-data/issues/585>`_
