@@ -960,12 +960,13 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     """
-    Defines information about profiles for each zensus cell
+    Allocates household demand profiles to each census cell.
 
     A table including the demand profile ids for each cell is created by using
-    :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled for each cell. The profiles
-    are not replaced to the pool within a cell but after. The number of households are rounded to the nearest integer
-    if float. This results in a small deviation for the course of the aggregated profiles.
+    :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled
+    for each cell. The profiles are not replaced to the pool within a cell but
+    after. The number of households are rounded to the nearest integer if float.
+    This results in a small deviation for the course of the aggregated profiles.
 
     Parameters
     ----------
