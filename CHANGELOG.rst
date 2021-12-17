@@ -238,6 +238,8 @@ Changed
   `#397 <https://github.com/openego/eGon-data/issues/498>`_
 * Migrate dlr script to datasets
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
+* Assign residentail heat demands to osm buildings
+  `#557 <https://github.com/openego/eGon-data/issues/557>`_
 
 
 Bug fixes
