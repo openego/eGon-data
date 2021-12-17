@@ -37,6 +37,14 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
         f"""
         DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}';
+        AND bus0 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        )
+        AND bus1 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 
