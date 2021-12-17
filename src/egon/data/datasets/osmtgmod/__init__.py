@@ -539,7 +539,7 @@ def to_pypsa():
             f"""
             -- BUS DATA
             INSERT INTO grid.egon_etrago_bus (scn_name, bus_id, v_nom,
-                                             geom, x, y, carrier)
+                                             geom, x, y, carrier, country)
             SELECT
               {scenario_name},
               bus_i AS bus_id,
@@ -547,7 +547,8 @@ def to_pypsa():
               geom,
               ST_X(geom) as x,
               ST_Y(geom) as y,
-              'AC' as carrier
+              'AC' as carrier,
+              cntr_id
               FROM osmtgmod_results.bus_data
               WHERE result_id = 1;
 
