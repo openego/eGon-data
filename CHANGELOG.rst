@@ -153,6 +153,9 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Assign household profiles to OSM buildings
+  `#435 <https://github.com/openego/eGon-data/issues/435>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
