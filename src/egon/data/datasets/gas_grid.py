@@ -377,33 +377,32 @@ def insert_gas_pipeline_list(
         NUTS1.append(param["nuts_id_1"])
     gas_pipelines_list["NUTS1"] = NUTS1
 
+    map_states = {
+        "Baden-Württemberg": "DE1",
+        "Nordrhein-Westfalen": "DEA",
+        "Hessen": "DE7",
+        "Brandenburg": "DE4",
+        "Bremen": "DE5",
+        "Rheinland-Pfalz": "DEB",
+        "Sachsen-Anhalt": "DEE",
+        "Schleswig-Holstein": "DEF",
+        "Mecklenburg-Vorpommern": "DE8",
+        "Thüringen": "DEG",
+        "Niedersachsen": "DE9",
+        "Sachsen": "DED",
+        "Hamburg": "DE6",
+        "Saarland": "DEC",
+        "Berlin": "DE3",
+        "Bayern": "DE2",
+        "Everything": "Nan",
+    }
+    gas_pipelines_list["NUTS1_0"] = [x[0] for x in gas_pipelines_list["NUTS1"]]
+    gas_pipelines_list["NUTS1_1"] = [x[1] for x in gas_pipelines_list["NUTS1"]]
+
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
     if boundary != "Everything":
-        map_states = {
-            "Baden-Württemberg": "DE1",
-            "Nordrhein-Westfalen": "DEA",
-            "Hessen": "DE7",
-            "Brandenburg": "DE4",
-            "Bremen": "DE5",
-            "Rheinland-Pfalz": "DEB",
-            "Sachsen-Anhalt": "DEE",
-            "Schleswig-Holstein": "DEF",
-            "Mecklenburg-Vorpommern": "DE8",
-            "Thüringen": "DEG",
-            "Niedersachsen": "DE9",
-            "Sachsen": "DED",
-            "Hamburg": "DE6",
-            "Saarland": "DEC",
-            "Berlin": "DE3",
-            "Bayern": "DE2",
-        }
-        gas_pipelines_list["NUTS1_0"] = [
-            x[0] for x in gas_pipelines_list["NUTS1"]
-        ]
-        gas_pipelines_list["NUTS1_1"] = [
-            x[1] for x in gas_pipelines_list["NUTS1"]
-        ]
+
         gas_pipelines_list = gas_pipelines_list[
             gas_pipelines_list["NUTS1_0"].str.contains(map_states[boundary])
             | gas_pipelines_list["NUTS1_1"].str.contains(map_states[boundary])
@@ -450,6 +449,14 @@ def insert_gas_pipeline_list(
         country_1.append(c[1])
     gas_pipelines_list["country_0"] = country_0
     gas_pipelines_list["country_1"] = country_1
+
+    # Correct non valid neighbouring country nodes
+    gas_pipelines_list.loc[
+        gas_pipelines_list["country_0"] == "XX", "country_0"
+    ] = "NO"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["country_1"] == "FI", "country_1"
+    ] = "SE"
 
     # Adjust columns
     bus0 = []
