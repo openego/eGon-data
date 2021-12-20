@@ -9,6 +9,7 @@ from egon.data.datasets.scenario_parameters import (
 )
 from egon.data.datasets.zensus_vg250 import (
     Vg250Gem,
+    Vg250GemPopulation,
     MapZensusVg250,
     DestatisZensusPopulationPerHaInsideGermany
 )
@@ -175,9 +176,9 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     """
     with db.session_scope() as session:
         query = session.query(
-            Vg250Gem.ags_0.label('ags'),
-            Vg250Gem.gen,
-            Vg250Gem.population_total.label('pop')
+            Vg250GemPopulation.ags_0.label('ags'),
+            Vg250GemPopulation.gen,
+            Vg250GemPopulation.population_total.label('pop')
         )
 
     muns = pd.read_sql(
