@@ -67,25 +67,6 @@ class ScenarioCapacities(Dataset):
         )
 
 
-def scenario_config(scn_name):
-    """Get scenario settings from datasets.yml
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario.
-
-    Returns
-    -------
-    dict
-        Configuration data for the specified scenario
-
-    """
-    data_config = egon.data.config.datasets()
-
-    return data_config["scenario_input"][scn_name]
-
-
 def create_table():
     """Create input tables for scenario setup
 
@@ -113,14 +94,20 @@ def insert_capacities_per_federal_state_nep():
 
     """
 
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
     # Connect to local database
     engine = db.engine()
 
     # Delete rows if already exist
     db.execute_sql(
-        "DELETE FROM supply.egon_scenario_capacities "
-        "WHERE scenario_name = 'eGon2035' "
-        "AND nuts != 'DE'"
+        f"""
+        DELETE FROM 
+        {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
+        WHERE scenario_name = 'eGon2035' 
+        AND nuts != 'DE'
+        """
     )
 
     # read-in installed capacities per federal state of germany
@@ -128,7 +115,7 @@ def insert_capacities_per_federal_state_nep():
         Path(".")
         / "data_bundle_egon_data"
         / "nep2035_version2021"
-        / scenario_config("eGon2035")["paths"]["capacities"]
+        / sources["eGon2035"]["capacities"]
     )
 
     df = pd.read_excel(
@@ -166,7 +153,10 @@ def insert_capacities_per_federal_state_nep():
 
     # nuts1 to federal state in Germany
     map_nuts = pd.read_sql(
-        "SELECT DISTINCT ON (nuts) gen, nuts FROM boundaries.vg250_lan",
+        f"""
+        SELECT DISTINCT ON (nuts) gen, nuts
+        FROM {sources['boundaries']['schema']}.{sources['boundaries']['table']}
+        """,
         engine,
         index_col="gen",
     )
@@ -223,9 +213,9 @@ def insert_capacities_per_federal_state_nep():
 
     # Insert data to db
     insert_data.to_sql(
-        "egon_scenario_capacities",
+        targets["scenario_capacities"]["table"],
         engine,
-        schema="supply",
+        schema=targets["scenario_capacities"]["schema"],
         if_exists="append",
         index=insert_data.index,
     )
@@ -244,11 +234,15 @@ def population_share():
 
     """
 
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+
     return (
         pd.read_sql(
-            """SELECT SUM(population)
-    FROM society.destatis_zensus_population_per_ha
-    WHERE population>0""",
+            f"""
+            SELECT SUM(population)
+            FROM {sources['zensus_population']['schema']}.{sources['zensus_population']['table']}
+            WHERE population>0
+            """,
             con=db.engine(),
         )["sum"][0]
         / 80324282
@@ -294,6 +288,9 @@ def insert_nep_list_powerplants():
     None.
 
     """
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
     # Connect to local database
     engine = db.engine()
 
@@ -302,7 +299,7 @@ def insert_nep_list_powerplants():
         Path(".")
         / "data_bundle_egon_data"
         / "nep2035_version2021"
-        / scenario_config("eGon2035")["paths"]["list_conv_pp"]
+        / sources["eGon2035"]["list_conv_pp"]
     )
 
     kw_liste_nep = pd.read_csv(target_file, delimiter=";", decimal=",")
@@ -373,9 +370,9 @@ def insert_nep_list_powerplants():
 
     # Insert data to db
     kw_liste_nep.to_sql(
-        "egon_nep_2021_conventional_powerplants",
+        targets["nep_conventional_powerplants"]["table"],
         engine,
-        schema="supply",
+        schema=targets["nep_conventional_powerplants"]["schema"],
         if_exists="replace",
     )
 
@@ -388,12 +385,15 @@ def district_heating_input():
     None.
 
     """
+
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+
     # import data to dataframe
     file = (
         Path(".")
         / "data_bundle_egon_data"
         / "nep2035_version2021"
-        / scenario_config("eGon2035")["paths"]["capacities"]
+        / sources["eGon2035"]["capacities"]
     )
     df = pd.read_excel(
         file, sheet_name="Kurzstudie_KWK", dtype={"Wert": float}
@@ -470,6 +470,10 @@ def eGon100_capacities():
     None.
 
     """
+
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
     # read-in installed capacities
     execute_pypsa_eur_sec = False
     cwd = Path(".")
@@ -487,7 +491,7 @@ def eGon100_capacities():
             / "results"
             / data_config["run"]
             / "csvs"
-            / "nodal_capacities.csv"
+            / sources["eGon100RE"]["capacities"]
         )
 
     else:
@@ -497,7 +501,7 @@ def eGon100_capacities():
             / "pypsa_eur_sec"
             / "2021-egondata-integration"
             / "csvs"
-            / "nodal_capacities.csv"
+            / sources["eGon100RE"]["capacities"]
         )
 
     df = pd.read_csv(target_file, skiprows=5)
@@ -601,15 +605,16 @@ def eGon100_capacities():
     df["nuts"] = "DE"
 
     db.execute_sql(
-        """
-        DELETE FROM supply.egon_scenario_capacities
+        f"""
+        DELETE FROM 
+        {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
         WHERE scenario_name='eGon100RE'
         """
     )
 
     df.to_sql(
-        "egon_scenario_capacities",
-        schema="supply",
+        targets["scenario_capacities"]["table"],
+        schema=targets["scenario_capacities"]["schema"],
         con=db.engine(),
         if_exists="append",
         index=False,
