@@ -41,7 +41,7 @@ CONFIG_EV = {
 
 def read_kba_data():
     """Read KBA data from CSV"""
-    return pd.from_csv(
+    return pd.read_csv(
         DOWNLOAD_DIRECTORY /
         egon.data.config.datasets()[
             "emobility_mit"]["original_data"][
@@ -51,7 +51,7 @@ def read_kba_data():
 
 def read_rs7_data():
     """Read RegioStaR7 data from CSV"""
-    return pd.from_csv(
+    return pd.read_csv(
         DOWNLOAD_DIRECTORY /
         egon.data.config.datasets()[
             "emobility_mit"]["original_data"][
