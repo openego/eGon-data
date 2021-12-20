@@ -94,7 +94,7 @@ def gas(scenario):
 
 
 def mobility(scenario):
-    """Returns paramaters of the mobility sector for the selected scenario.
+    """Returns parameters of the mobility sector for the selected scenario.
 
     Parameters
     ----------
