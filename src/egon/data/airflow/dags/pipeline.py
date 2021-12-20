@@ -70,6 +70,10 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusPopulation, ZensusMiscellaneous
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.emobility.motorized_individual_travel import (
+    MotorizedIndividualTravel
+)
+
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -523,5 +527,14 @@ with airflow.DAG(
             pumped_hydro,
             setup_etrago,
             scenario_parameters,
+        ]
+    )
+
+    # eMobility: motorized individual travel
+    emobility_mit = MotorizedIndividualTravel(
+        dependencies=[
+            scenario_parameters,
+            mv_grid_districts,
+            zensus_vg250
         ]
     )
