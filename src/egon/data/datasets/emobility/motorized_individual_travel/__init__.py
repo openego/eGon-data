@@ -133,7 +133,7 @@ def download_and_preprocess():
     )
     kba_data = kba_data.dropna()
     kba_data[["ags_reg_district",
-              "reg_district"]] = kba_data.Zulassungsbezirk.str.split(
+              "reg_district"]] = kba_data.reg_district.str.split(
         " ",
         1,
         expand=True,
