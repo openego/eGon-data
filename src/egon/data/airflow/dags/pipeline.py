@@ -37,8 +37,10 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hydrogen_etrago import (
-    HydrogenBusEtrago, HydrogenStoreEtrago, HydrogenMethaneLinkEtrago,
-    HydrogenPowerLinkEtrago
+    HydrogenBusEtrago,
+    HydrogenStoreEtrago,
+    HydrogenMethaneLinkEtrago,
+    HydrogenPowerLinkEtrago,
 )
 from egon.data.datasets.hh_demand_profiles import (
     hh_demand_setup,
@@ -153,20 +155,20 @@ with airflow.DAG(
 
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
 
-    # NEP data import
-    scenario_capacities = ScenarioCapacities(
-        dependencies=[setup, vg250, data_bundle, zensus_population]
+    # Import weather data
+    weather_data = WeatherData(
+        dependencies=[setup, scenario_parameters, vg250]
     )
+    download_weather_data = tasks["era5.download-era5"]
+
+    # Future national heat demands for foreign countries based on Hotmaps
+    # download only, processing in PyPSA-Eur-Sec fork
+    hd_abroad = HeatDemandEurope(dependencies=[setup])
 
     # setting etrago input tables
 
     setup_etrago = EtragoSetup(dependencies=[setup])
     etrago_input_data = tasks["etrago_setup.create-tables"]
-
-    # Retrieve MaStR data
-    mastr_data = mastr_data_setup(dependencies=[setup])
-    mastr_data.insert_into(pipeline)
-    retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
     substation_extraction = SubstationExtraction(
         dependencies=[osm_add_metadata, vg250_clean_and_prepare]
@@ -179,6 +181,33 @@ with airflow.DAG(
     osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
     osmtgmod_substation = tasks["osmtgmod_substation"]
+
+    # run pypsa-eur-sec
+    run_pypsaeursec = PypsaEurSec(
+        dependencies=[
+            weather_data,
+            hd_abroad,
+            osmtgmod,
+            setup_etrago,
+            data_bundle,
+        ]
+    )
+
+    # NEP data import
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[
+            setup,
+            vg250,
+            data_bundle,
+            zensus_population,
+            run_pypsaeursec,
+        ]
+    )
+
+    # Retrieve MaStR data
+    mastr_data = mastr_data_setup(dependencies=[setup])
+    mastr_data.insert_into(pipeline)
+    retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
     # create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
@@ -203,12 +232,6 @@ with airflow.DAG(
         dependencies=[vg250, scenario_parameters, zensus_vg250]
     )
 
-    # Future national heat demands for foreign countries based on Hotmaps
-    # download only, processing in PyPSA-Eur-Sec fork
-    hd_abroad = HeatDemandEurope(dependencies=[setup])
-    hd_abroad.insert_into(pipeline)
-    heat_demands_abroad_download = tasks["heat_demand_europe.download"]
-
     # Gas grid import
     gas_grid_insert_data = GasNodesandPipes(
         dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
@@ -219,22 +242,27 @@ with airflow.DAG(
         dependencies=[
             saltcavern_storage,
             gas_grid_insert_data,
-            substation_voronoi
+            substation_voronoi,
         ]
     )
 
     # H2 steel tanks and saltcavern storage
     insert_H2_storage = HydrogenStoreEtrago(
-        dependencies=[insert_hydrogen_buses])
+        dependencies=[insert_hydrogen_buses]
+    )
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[insert_hydrogen_buses, ]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[insert_hydrogen_buses, ]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Create gas voronoi
@@ -248,9 +276,7 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(
-	dependencies=[create_gas_polygons]
-    )
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
 
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
@@ -259,12 +285,6 @@ with airflow.DAG(
 
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
-
-    # Import weather data
-    weather_data = WeatherData(
-        dependencies=[setup, scenario_parameters, vg250]
-    )
-    download_weather_data = tasks["era5.download-era5"]
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
 
@@ -376,17 +396,6 @@ with airflow.DAG(
             demand_curves_industry,
             cts_electricity_demand_annual,
             hh_demand,
-            ]
-    )
-
-    # run pypsa-eur-sec
-    run_pypsaeursec = PypsaEurSec(
-        dependencies=[
-            weather_data,
-            hd_abroad,
-            osmtgmod,
-            setup_etrago,
-            data_bundle,
         ]
     )
 
