@@ -403,7 +403,7 @@ def allocate_evs():
         scenario_parameters = get_sector_parameters(
             "mobility",
             scenario=scenario_name
-        )["motorized_individual_travel"]#.get("NEP C 2035")
+        )["motorized_individual_travel"]
 
         print(f"========== SCENARIO: {scenario_name} ==========")
 
