@@ -18,6 +18,7 @@ import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
 class GasNodesandPipes(Dataset):
@@ -226,10 +227,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses : dataframe
         Dataframe containing the gas in the neighbouring countries and one in the center of Germany in test mode
     """
-    if scn_name == "eGon2035":
-        main_gas_carrier = "CH4"
-    elif scn_name == "eGon100RE":
-        main_gas_carrier = "H2"
+    main_gas_carrier = scenario_parameters.gas(scn_name)["main_gas_carrier"]
 
     # Connect to local database
     engine = db.engine()
@@ -311,12 +309,9 @@ def insert_gas_pipeline_list(
     None.
     """
     abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
-    if scn_name == "eGon2035":
-        main_gas_carrier = "CH4"
-    elif scn_name == "eGon100RE":
-        main_gas_carrier = "H2"
 
-    # Connect to local database
+    main_gas_carrier = scenario_parameters.gas(scn_name)["main_gas_carrier"]
+
     engine = db.engine()
 
     # Select next id value

@@ -349,7 +349,11 @@ with airflow.DAG(
 
     # Gas grid import
     gas_grid_insert_data = GasNodesandPipes(
-        dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa, foreign_lines]
+        dependencies=[etrago_input_data,
+                      download_data_bundle,
+                      osmtgmod_pypsa,
+                      foreign_lines,
+                      scenario_parameters]
     )
 
     # Insert hydrogen buses
