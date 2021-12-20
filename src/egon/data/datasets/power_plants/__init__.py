@@ -41,9 +41,7 @@ class EgonPowerPlants(Base):
     sources = Column(JSONB)
     source_id = Column(JSONB)
     carrier = Column(String)
-    chp = Column(Boolean)
     el_capacity = Column(Float)
-    th_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
     weather_cell_id = Column(Integer)
@@ -55,7 +53,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.4",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -66,8 +64,8 @@ class PowerPlants(Dataset):
                     pv_ground_mounted.insert,
                     pv_rooftop_per_mv_grid,
                 },
-                assign_weather_data.weather_id,
                 wind_offshore.insert,
+                assign_weather_data.weatherId_and_busId,
             ),
         )
 
@@ -261,12 +259,11 @@ def insert_biomass_plants(scenario):
     else:
         level = "country"
 
-    # Scale capacities to meet target values
-    mastr = scale_prox2now(mastr, target, level=level)
-
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-    # TODO: Deal with power plants without geometry
+
+    # Scale capacities to meet target values
+    mastr_loc = scale_prox2now(mastr_loc, target, level=level)
 
     # Assign bus_id
     if len(mastr_loc) > 0:
@@ -275,24 +272,22 @@ def insert_biomass_plants(scenario):
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
+
     for i, row in mastr_loc.iterrows():
-        entry = EgonPowerPlants(
-            sources={
-                "chp": "MaStR",
-                "el_capacity": "MaStR scaled with NEP 2021",
-                "th_capacity": "MaStR",
-            },
-            source_id={"MastrNummer": row.EinheitMastrNummer},
-            carrier="biomass",
-            chp=type(row.KwkMastrNummer) != float,
-            el_capacity=row.Nettonennleistung,
-            th_capacity=row.ThermischeNutzleistung / 1000,
-            scenario=scenario,
-            bus_id=row.bus_id,
-            voltage_level=row.voltage_level,
-            geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
-        )
-        session.add(entry)
+        if not row.ThermischeNutzleistung > 0:
+            entry = EgonPowerPlants(
+                sources={
+                    "el_capacity": "MaStR scaled with NEP 2021",
+                },
+                source_id={"MastrNummer": row.EinheitMastrNummer},
+                carrier="biomass",
+                el_capacity=row.Nettonennleistung,
+                scenario=scenario,
+                bus_id=row.bus_id,
+                voltage_level=row.voltage_level,
+                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+            )
+            session.add(entry)
 
     session.commit()
 
@@ -371,12 +366,10 @@ def insert_hydro_plants(scenario):
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
                 sources={
-                    "chp": "MaStR",
                     "el_capacity": "MaStR scaled with NEP 2021",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
-                chp=type(row.KwkMastrNummer) != float,
                 el_capacity=row.Nettonennleistung,
                 scenario=scenario,
                 bus_id=row.bus_id,
@@ -524,11 +517,23 @@ def assign_bus_id(power_plants, cfg):
     power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
 
     if len(power_plants_ehv) > 0:
-        power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+        ehv_join = gpd.sjoin(
             power_plants[power_plants.index.isin(power_plants_ehv)],
             ehv_grid_districts,
-        ).bus_id_right
-
+        )
+        
+        if 'bus_id_right' in ehv_join.columns:
+            power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+                power_plants[power_plants.index.isin(power_plants_ehv)],
+                ehv_grid_districts,
+            ).bus_id_right
+        
+        else:
+            power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+                power_plants[power_plants.index.isin(power_plants_ehv)],
+                ehv_grid_districts,
+            ).bus_id
+            
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
     not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
