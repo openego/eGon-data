@@ -5,9 +5,7 @@ Motorized Individual Travel (MIT)
 from egon.data.datasets import Dataset
 from egon.data import db
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
-    calc_evs_per_reg_district,
-    calc_evs_per_municipality,
-    calc_evs_per_grid_district
+    allocate_evs
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
@@ -181,8 +179,6 @@ class MotorizedIndividualTravel(Dataset):
             tasks=(
                 create_tables,
                 download_and_preprocess,
-                calc_evs_per_reg_district,
-                calc_evs_per_municipality,
-                calc_evs_per_grid_district
+                allocate_evs
             ),
         )

@@ -415,7 +415,7 @@ def allocate_evs():
             # Calc EV data per registration district
             ev_data = calc_evs_per_reg_district(
                 scenario_variation_parameters,
-                kba_data=kba_data
+                kba_data
             )
             print(ev_data)
 
