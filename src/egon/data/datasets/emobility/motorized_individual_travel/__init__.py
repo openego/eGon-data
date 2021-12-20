@@ -4,7 +4,7 @@ Motorized Individual Travel (MIT)
 
 from egon.data.datasets import Dataset
 from egon.data import db
-from ev_allocation import (
+from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
     calc_evs_per_reg_district,
     calc_evs_per_municipality,
     calc_evs_per_grid_district
