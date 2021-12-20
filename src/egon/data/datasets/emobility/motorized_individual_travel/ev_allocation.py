@@ -14,35 +14,12 @@ from egon.data.datasets.zensus_vg250 import (
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
-from . import COLUMNS_KBA, read_kba_data, read_rs7_data
-
-
-CONFIG_EV = {
-    'BEV_mini': {'column': 'mini',
-                 'tech_share': 'BEV_mini_share',
-                 'share': 'mini_share',
-                 'factor': 'mini_factor'},
-    'BEV_medium': {'column': 'medium',
-                   'tech_share': 'BEV_medium_share',
-                   'share': 'medium_share',
-                   'factor': 'medium_factor'},
-    'BEV_luxury': {'column': 'luxury',
-                   'tech_share': 'BEV_luxury_share',
-                   'share': 'luxury_share',
-                   'factor': 'luxury_factor'},
-    'PHEV_mini': {'column': 'mini',
-                  'tech_share': 'PHEV_mini_share',
-                  'share': 'mini_share',
-                  'factor': 'mini_factor'},
-    'PHEV_medium': {'column': 'medium',
-                    'tech_share': 'PHEV_medium_share',
-                    'share': 'medium_share',
-                    'factor': 'medium_factor'},
-    'PHEV_luxury': {'column': 'luxury',
-                    'tech_share': 'PHEV_luxury_share',
-                    'share': 'luxury_share',
-                    'factor': 'luxury_factor'},
-}
+from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    COLUMNS_KBA,
+    CONFIG_EV,
+    read_kba_data,
+    read_rs7_data
+)
 
 
 def fix_missing_ags_municipality_regiostar(muns, rs7_data):

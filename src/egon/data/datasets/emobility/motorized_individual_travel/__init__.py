@@ -9,29 +9,22 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
     calc_evs_per_municipality,
     calc_evs_per_grid_district
 )
+from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    COLUMNS_KBA,
+    DOWNLOAD_DIRECTORY
+)
 import egon.data.config
 from egon.data.datasets.scenario_parameters import (
     EgonScenario
 )
 
 import os
-from pathlib import Path
 from urllib.request import urlretrieve
 import pandas as pd
 import numpy as np
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, SmallInteger, ForeignKey
 Base = declarative_base()
-
-DOWNLOAD_DIRECTORY = Path(".") / "motorized_individual_travel"
-COLUMNS_KBA = [
-    'reg_district',
-    'total',
-    'mini',
-    'medium',
-    'luxury',
-    'unknown',
-]
 
 
 class EgonEvsPerRegistrationDistrict(Base):
@@ -177,26 +170,6 @@ def download_and_preprocess():
     rs7_data.to_csv(DOWNLOAD_DIRECTORY /
                     mit_sources["RS7"]["file_processed"],
                     index=None)
-
-
-def read_kba_data():
-    """Read KBA data from CSV"""
-    return pd.from_csv(
-        DOWNLOAD_DIRECTORY /
-        egon.data.config.datasets()[
-            "emobility_mit"]["original_data"][
-            "sources"]["KBA"]["file_processed"]
-    )
-
-
-def read_rs7_data():
-    """Read RegioStaR7 data from CSV"""
-    return pd.from_csv(
-        DOWNLOAD_DIRECTORY /
-        egon.data.config.datasets()[
-            "emobility_mit"]["original_data"][
-            "sources"]["RS7"]["file_processed"]
-    )
 
 
 class MotorizedIndividualTravel(Dataset):
