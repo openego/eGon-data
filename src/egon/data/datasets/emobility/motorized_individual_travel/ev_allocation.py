@@ -196,15 +196,15 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     muns.loc[muns['ags_reg_district'] == 7235,
              'ags_reg_district'] = 7211
 
-    # Remove duplicate municipalities (due to 'gf' in VG250) by summing
-    # up population
-    muns = muns[['ags', 'gen', 'ags_district', 'pop']].groupby(
-        ['ags', 'gen', 'ags_district']
+    # Remove multiple municipality entries (due to 'gf' in VG250)
+    # by summing up population
+    muns = muns[['ags', 'gen', 'ags_reg_district', 'pop']].groupby(
+        ['ags', 'gen', 'ags_reg_district']
     ).sum().reset_index()
 
     # Add population of registration district
-    pop_per_reg_district = muns[['ags_district', 'pop']].groupby(
-        'ags_district'
+    pop_per_reg_district = muns[['ags_reg_district', 'pop']].groupby(
+        'ags_reg_district'
     ).sum().rename(
         columns={'pop': 'pop_district'}
     ).reset_index()
@@ -215,10 +215,10 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     # Merge municipality, EV data and pop per district
     ev_data_muns = muns.merge(
         ev_data,
-        on='ags_district'
+        on='ags_reg_district'
     ).merge(
         pop_per_reg_district,
-        on='ags_district')
+        on='ags_reg_district')
 
     # Disaggregate EV numbers to municipality
     for tech in ev_data[CONFIG_EV.keys()]:
