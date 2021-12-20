@@ -21,6 +21,9 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     read_kba_data,
     read_rs7_data
 )
+from egon.data.datasets.emobility.motorized_individual_travel.tests import (
+    test_ev_numbers
+)
 
 
 def fix_missing_ags_municipality_regiostar(muns, rs7_data):
@@ -97,15 +100,7 @@ def fix_missing_ags_municipality_regiostar(muns, rs7_data):
     return rs7_data
 
 
-def validate_results():
-    """Validates some of the produced results"""
-    raise NotImplementedError
-
-
-def calc_evs_per_reg_district(
-    scenario_variation_parameters,
-    kba_data
-):
+def calc_evs_per_reg_district(scenario_variation_parameters, kba_data):
     """Calculate EVs per registration district
 
     Parameters
@@ -418,17 +413,29 @@ def allocate_evs():
                 scenario_variation_parameters,
                 kba_data
             )
-            print(ev_data)
+            test_ev_numbers(
+                "EVs in registration districts",
+                ev_data,
+                scenario_variation_parameters['EV_count']
+            )
 
             # Calc EV data per municpality
             ev_data_muns = calc_evs_per_municipality(
                 ev_data,
                 rs7_data
             )
-            print(ev_data_muns)
+            test_ev_numbers(
+                "EVs in municipalities",
+                ev_data_muns,
+                scenario_variation_parameters['EV_count']
+            )
 
             # Calc EV data per grid district
             ev_data_mvgds = calc_evs_per_grid_district(
                 ev_data_muns
             )
-            print(ev_data_mvgds)
+            test_ev_numbers(
+                "EVs in grid districts",
+                ev_data_mvgds,
+                scenario_variation_parameters['EV_count']
+            )
