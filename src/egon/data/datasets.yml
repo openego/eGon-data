@@ -509,6 +509,17 @@ data-bundle:
     file:
       'data_bundle_egon_data.zip'
 
+pypsa-technology-data:
+  sources:
+    zenodo:
+      deposit_id: 5544025
+      file: 'PyPSA/technology-data-v0.3.0.zip'
+  targets:
+    file:
+      'pypsa_technology_data_egon_data.zip'
+    data_dir:
+      'PyPSA-technology-data-94085a8/outputs/'
+
 heat_supply:
   sources:
     scenario_capacities:
@@ -865,6 +876,23 @@ weather_BusID:
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
+
+storage_etrago:
+  sources:
+    storage:
+      table: 'egon_storages'
+      schema: 'supply'
+    scenario_parameters:
+      table: 'egon_scenario_parameters'
+      schema: 'scenario'
+    bus:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
+  targets:
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+
 
 dlr:
   sources:
