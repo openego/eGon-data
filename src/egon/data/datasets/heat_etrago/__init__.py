@@ -148,6 +148,7 @@ def insert_central_direct_heat(scenario="eGon2035"):
         ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
         WHERE carrier = 'central_heat'
         AND scenario = '{scenario}'
+        AND scn_name = '{scenario}'
         """,
         index_col="id",
     )
