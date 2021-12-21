@@ -434,12 +434,18 @@ def allocate_evs():
                     ev_data,
                     ev_target
                 )
-            # Write to DB
+            # Add scenario columns and write to DB
+            ev_data["scenario"] = scenario_name
+            ev_data["scenario_variation"] = scenario_variation_name
+            ev_data.sort_values(
+                ['scenario', 'scenario_variation', 'ags_reg_district'],
+                inplace=True
+            )
             ev_data.to_sql(
                 name=EgonEvsPerRegistrationDistrict.__table__.name,
                 schema=EgonEvsPerRegistrationDistrict.__table__.schema,
                 con=db.engine(),
-                if_exists="replace",
+                if_exists="append",
                 index=False,
             )
 
@@ -457,6 +463,20 @@ def allocate_evs():
                     ev_data_muns,
                     ev_target
                 )
+            # Add scenario columns and write to DB
+            ev_data_muns["scenario"] = scenario_name
+            ev_data_muns["scenario_variation"] = scenario_variation_name
+            ev_data_muns.sort_values(
+                ['scenario', 'scenario_variation', 'ags'],
+                inplace=True
+            )
+            ev_data_muns.to_sql(
+                name=EgonEvsPerMunicipality.__table__.name,
+                schema=EgonEvsPerMunicipality.__table__.schema,
+                con=db.engine(),
+                if_exists="append",
+                index=False,
+            )
 
             #####################################
             #     EV data per grid district     #
@@ -471,3 +491,17 @@ def allocate_evs():
                     ev_data_mvgds,
                     ev_target
                 )
+            # Add scenario columns and write to DB
+            ev_data_mvgds["scenario"] = scenario_name
+            ev_data_mvgds["scenario_variation"] = scenario_variation_name
+            ev_data_mvgds.sort_values(
+                ['scenario', 'scenario_variation', 'bus_id'],
+                inplace=True
+            )
+            ev_data_mvgds.to_sql(
+                name=EgonEvsPerMvGridDistrict.__table__.name,
+                schema=EgonEvsPerMvGridDistrict.__table__.schema,
+                con=db.engine(),
+                if_exists="append",
+                index=False,
+            )
