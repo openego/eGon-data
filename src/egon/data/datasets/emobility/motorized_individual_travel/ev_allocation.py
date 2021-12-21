@@ -399,10 +399,7 @@ def allocate_evs():
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
 
-    # TODO: Add support for scenario variations
-    #for scenario_name in ["eGon2035", "eGon100RE"]:
-    for scenario_name in ["eGon2035"]:
-
+    for scenario_name in ["eGon2035", "eGon100RE"]:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
             "mobility",
