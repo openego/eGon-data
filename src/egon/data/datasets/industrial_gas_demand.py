@@ -10,6 +10,7 @@ from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.gas_prod import assign_ch4_bus_id, assign_h2_bus_id
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from shapely import wkt
 
 
@@ -43,10 +44,7 @@ def download_CH4_industrial_demand(scn_name="eGon2035"):
     )
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
-    if scn_name == 'eGon2035':
-        year = "2035"
-    else:
-        year = "2050"
+    year = get_sector_parameters("global", scn_name)["population_year"]
 
     internal_id = "2,11"  # Natural_Gas
     datafilter = "&&internal_id=eq.{" + internal_id + "}"
@@ -165,10 +163,7 @@ def download_H2_industrial_demand(scn_name="eGon2035"):
     )
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
-    if scn_name == 'eGon2035':
-        year = "2035"
-    else:
-        year = "2050"
+    year = get_sector_parameters("global", scn_name)["population_year"]
 
     internal_id = "2,162"  # Hydrogen
     datafilter = "&&internal_id=eq.{" + internal_id + "}"
@@ -283,17 +278,14 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
     # Connect to local database
     engine = db.engine()
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Clean table
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_load WHERE "carrier" IN ('CH4', 'H2') AND
-        scn_name = '{scn_name}' AND bus IN {buses};
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 

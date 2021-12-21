@@ -83,13 +83,6 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
     # Drop unused columns
     gdf.drop(columns=["geom_gas", "geom_AC", "dist"], inplace=True)
 
-
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Iterate over carriers
     for key in geom:
 
@@ -132,7 +125,13 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
         db.execute_sql(
             f"""
         DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier[key]}'
-        AND scn_name = '{scn_name}' AND bus0 IN {buses} AND bus1 IN {buses};
+        AND scn_name = '{scn_name}' AND bus0 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        ) AND bus1 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
 
         select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
 

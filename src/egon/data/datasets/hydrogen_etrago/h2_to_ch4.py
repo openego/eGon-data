@@ -51,18 +51,18 @@ def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
     feed_in["efficiency_fixed"] = 1
     feed_in["p_nom_extendable"] = True
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
-        ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}'
-        AND bus0 IN {buses} AND bus1 IN {buses};
+            DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
+            ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}'
+            AND bus0 IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = '{scn_name}' AND country = 'DE'
+            ) AND bus1 IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = '{scn_name}' AND country = 'DE'
+            );
         """
     )
 

@@ -406,16 +406,17 @@ def insert_gas_pipeline_list(gas_nodes_list):
         ]
     )
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Insert data to db
     db.execute_sql(
-        f"""DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4' AND
-           scn_name = '{scn_name}' AND bus0 IN {buses} AND bus1 IN {buses};
+        f"""
+            DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4' AND
+            scn_name = '{scn_name}' AND bus0 IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = '{scn_name}' AND country = 'DE'
+            ) AND bus1 IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = '{scn_name}' AND country = 'DE'
+            );
         """
     )
 

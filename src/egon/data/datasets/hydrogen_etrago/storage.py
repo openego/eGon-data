@@ -38,17 +38,14 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     # Remove useless columns
     storages.drop(columns=["geom"], inplace=True)
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Clean table
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}' AND bus IN {buses};
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 
@@ -125,17 +122,14 @@ def insert_H2_saltcavern_storage(scn_name='eGon2035'):
     # capital cost needs update, also see respective redmine issue
     storages["capital_cost"] = 8.4 * 1e3
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Clean table
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}' AND bus IN {buses};
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 

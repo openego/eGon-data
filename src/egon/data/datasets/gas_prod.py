@@ -303,17 +303,14 @@ def import_gas_generators(scn_name='eGon2035'):
     # Connect to local database
     engine = db.engine()
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE';
-        """
-    )['bus_id'])
-
     # Clean table
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4' AND
-        scn_name = '{scn_name}' AND bus IN {buses};
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 
