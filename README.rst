@@ -115,6 +115,15 @@ packages are required too. Right now these are:
   :code:`sudo apt install default-jre` and
   :code:`sudo apt install default-jdk`.
 
+* conda is needed for the subprocess of running pypsa-eur-sec.
+  For the installation of miniconda, check out the
+  `conda installation guide
+  <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_.
+
+* pypsa-eur-sec resp. Fiona needs the additional library :code:`libtbb2`.
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install libtbb2`
+
 * `gdal <https://gdal.org/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install gdal-bin`.
@@ -170,7 +179,7 @@ to it.
 Run the workflow
 ================
 
-The :py:mod:`egon.data` package installs a command line application
+The :code:`egon.data` package installs a command line application
 called :code:`egon-data` with which you can control the workflow so once
 the installation is successful, you can explore the command line
 interface starting with :code:`egon-data --help`.
@@ -191,7 +200,7 @@ solution.
 .. warning::
 
    A complete run of the workflow might require much computing power and
-   can't be run on laptop. Use the :ref:`test mode <Test mode>` for
+   can't be run on laptop. Use the `test mode <#test-mode>`_ for
    experimenting.
 
 .. warning::

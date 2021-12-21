@@ -26,7 +26,7 @@ def insert():
     )
 
     # target_power_df has the expected capacity of each federal state
-    sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities"
+    sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities WHERE scenario_name='eGon2035'"
     target_power_df = pd.read_sql(sql, con)
 
     # mv_districts has geographic info of medium voltage districts in Germany
@@ -433,8 +433,6 @@ def wind_power_states(
 
     # Set static column values
     insert_wind_farms["carrier"] = source
-    insert_wind_farms["chp"] = False
-    insert_wind_farms["th_capacity"] = 0
     insert_wind_farms["scenario"] = scenario_year
 
     # Change name and crs of geometry column

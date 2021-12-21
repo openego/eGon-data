@@ -19,14 +19,17 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.power_plants.conventional import (
+    match_nep_no_chp,
+    select_nep_power_plants,
+    select_no_chp_combustion_mastr,
+)
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 import egon.data.config
+import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
+import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
-import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
-
-import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
-import egon.data.datasets.power_plants.wind_farms as wind_onshore
 
 Base = declarative_base()
 
@@ -38,9 +41,7 @@ class EgonPowerPlants(Base):
     sources = Column(JSONB)
     source_id = Column(JSONB)
     carrier = Column(String)
-    chp = Column(Boolean)
     el_capacity = Column(Float)
-    th_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
     weather_cell_id = Column(Integer)
@@ -52,16 +53,19 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.2",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 insert_hydro_biomass,
-                wind_onshore.insert,
-                pv_ground_mounted.insert,
-                pv_rooftop_per_mv_grid,
-                assign_weather_data.weather_id,
-                 wind_offshore.insert,               
+                allocate_conventional_non_chp_power_plants,
+                {
+                    wind_onshore.insert,
+                    pv_ground_mounted.insert,
+                    pv_rooftop_per_mv_grid,
+                },
+                wind_offshore.insert,
+                assign_weather_data.weatherId_and_busId,
             ),
         )
 
@@ -255,12 +259,11 @@ def insert_biomass_plants(scenario):
     else:
         level = "country"
 
-    # Scale capacities to meet target values
-    mastr = scale_prox2now(mastr, target, level=level)
-
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-    # TODO: Deal with power plants without geometry
+
+    # Scale capacities to meet target values
+    mastr_loc = scale_prox2now(mastr_loc, target, level=level)
 
     # Assign bus_id
     if len(mastr_loc) > 0:
@@ -269,24 +272,22 @@ def insert_biomass_plants(scenario):
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
+
     for i, row in mastr_loc.iterrows():
-        entry = EgonPowerPlants(
-            sources={
-                "chp": "MaStR",
-                "el_capacity": "MaStR scaled with NEP 2021",
-                "th_capacity": "MaStR",
-            },
-            source_id={"MastrNummer": row.EinheitMastrNummer},
-            carrier="biomass",
-            chp=type(row.KwkMastrNummer) != float,
-            el_capacity=row.Nettonennleistung,
-            th_capacity=row.ThermischeNutzleistung / 1000,
-            scenario=scenario,
-            bus_id=row.bus_id,
-            voltage_level=row.voltage_level,
-            geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
-        )
-        session.add(entry)
+        if not row.ThermischeNutzleistung > 0:
+            entry = EgonPowerPlants(
+                sources={
+                    "el_capacity": "MaStR scaled with NEP 2021",
+                },
+                source_id={"MastrNummer": row.EinheitMastrNummer},
+                carrier="biomass",
+                el_capacity=row.Nettonennleistung,
+                scenario=scenario,
+                bus_id=row.bus_id,
+                voltage_level=row.voltage_level,
+                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+            )
+            session.add(entry)
 
     session.commit()
 
@@ -365,12 +366,10 @@ def insert_hydro_plants(scenario):
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
                 sources={
-                    "chp": "MaStR",
                     "el_capacity": "MaStR scaled with NEP 2021",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
-                chp=type(row.KwkMastrNummer) != float,
                 el_capacity=row.Nettonennleistung,
                 scenario=scenario,
                 bus_id=row.bus_id,
@@ -518,11 +517,23 @@ def assign_bus_id(power_plants, cfg):
     power_plants_ehv = power_plants[power_plants.voltage_level < 3].index
 
     if len(power_plants_ehv) > 0:
-        power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+        ehv_join = gpd.sjoin(
             power_plants[power_plants.index.isin(power_plants_ehv)],
             ehv_grid_districts,
-        ).bus_id_right
-
+        )
+        
+        if 'bus_id_right' in ehv_join.columns:
+            power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+                power_plants[power_plants.index.isin(power_plants_ehv)],
+                ehv_grid_districts,
+            ).bus_id_right
+        
+        else:
+            power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
+                power_plants[power_plants.index.isin(power_plants_ehv)],
+                ehv_grid_districts,
+            ).bus_id
+            
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
     not attached to a bus: {power_plants[power_plants.bus_id.isnull()]}"""
@@ -581,3 +592,162 @@ def insert_hydro_biomass():
     for scenario in ["eGon2035"]:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
+
+
+def allocate_conventional_non_chp_power_plants():
+
+    carrier = ["oil", "gas", "other_non_renewable"]
+
+    cfg = egon.data.config.datasets()["power_plants"]
+
+    # Delete existing CHP in the target table
+    db.execute_sql(
+        f"""
+         DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
+         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
+         AND scenario='eGon2035';
+         """
+    )
+
+    for carrier in carrier:
+
+        nep = select_nep_power_plants(carrier)
+
+        if nep.empty:
+            print(f"DataFrame from NEP for carrier {carrier} is empty!")
+
+        else:
+
+            mastr = select_no_chp_combustion_mastr(carrier)
+
+            # Assign voltage level to MaStR
+            mastr["voltage_level"] = assign_voltage_level(
+                mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1), cfg
+            )
+
+            # Initalize DataFrame for matching power plants
+            matched = gpd.GeoDataFrame(
+                columns=[
+                    "carrier",
+                    "el_capacity",
+                    "scenario",
+                    "geometry",
+                    "MaStRNummer",
+                    "source",
+                    "voltage_level",
+                ]
+            )
+
+            # Match combustion plants of a certain carrier from NEP list
+            # using PLZ and capacity
+            matched, mastr, nep = match_nep_no_chp(
+                nep,
+                mastr,
+                matched,
+                buffer_capacity=0.1,
+                consider_carrier=False,
+            )
+
+            # Match plants from NEP list using city and capacity
+            matched, mastr, nep = match_nep_no_chp(
+                nep,
+                mastr,
+                matched,
+                buffer_capacity=0.1,
+                consider_carrier=False,
+                consider_location="city",
+            )
+
+            # Match plants from NEP list using plz,
+            # neglecting the capacity
+            matched, mastr, nep = match_nep_no_chp(
+                nep,
+                mastr,
+                matched,
+                consider_location="plz",
+                consider_carrier=False,
+                consider_capacity=False,
+            )
+
+            # Match plants from NEP list using city,
+            # neglecting the capacity
+            matched, mastr, nep = match_nep_no_chp(
+                nep,
+                mastr,
+                matched,
+                consider_location="city",
+                consider_carrier=False,
+                consider_capacity=False,
+            )
+
+            # Match remaining plants from NEP using the federal state
+            matched, mastr, nep = match_nep_no_chp(
+                nep,
+                mastr,
+                matched,
+                buffer_capacity=0.1,
+                consider_location="federal_state",
+                consider_carrier=False,
+            )
+
+            # Match remaining plants from NEP using the federal state
+            matched, mastr, nep = match_nep_no_chp(
+                nep,
+                mastr,
+                matched,
+                buffer_capacity=0.7,
+                consider_location="federal_state",
+                consider_carrier=False,
+            )
+
+            print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
+            print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
+
+            matched.crs = "EPSG:4326"
+
+            # Assign bus_id
+            # Load grid district polygons
+            mv_grid_districts = db.select_geodataframe(
+                f"""
+            SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+            """,
+                epsg=4326,
+            )
+
+            ehv_grid_districts = db.select_geodataframe(
+                f"""
+            SELECT * FROM {cfg['sources']['ehv_voronoi']}
+            """,
+                epsg=4326,
+            )
+
+            # Perform spatial joins for plants in ehv and hv level seperately
+            power_plants_hv = gpd.sjoin(
+                matched[matched.voltage_level >= 3],
+                mv_grid_districts[["bus_id", "geom"]],
+                how="left",
+            ).drop(columns=["index_right"])
+            power_plants_ehv = gpd.sjoin(
+                matched[matched.voltage_level < 3],
+                ehv_grid_districts[["bus_id", "geom"]],
+                how="left",
+            ).drop(columns=["index_right"])
+
+            # Combine both dataframes
+            power_plants = pd.concat([power_plants_hv, power_plants_ehv])
+
+            # Insert into target table
+            session = sessionmaker(bind=db.engine())()
+            for i, row in power_plants.iterrows():
+                entry = EgonPowerPlants(
+                    sources={"el_capacity": row.source},
+                    source_id={"MastrNummer": row.MaStRNummer},
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    voltage_level=row.voltage_level,
+                    bus_id=row.bus_id,
+                    scenario=row.scenario,
+                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+                )
+                session.add(entry)
+            session.commit()
