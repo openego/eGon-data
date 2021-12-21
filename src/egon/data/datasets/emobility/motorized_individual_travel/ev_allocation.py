@@ -15,14 +15,16 @@ from egon.data.datasets.zensus_vg250 import (
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
-from egon.data.datasets.emobility.motorized_individual_travel import (
-    EgonEvsPerRegistrationDistrict
-)
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     CONFIG_EV,
     read_kba_data,
     read_rs7_data
+)
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+    EgonEvsPerRegistrationDistrict,
+    EgonEvsPerMunicipality,
+    EgonEvsPerMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.tests import (
     test_ev_numbers
