@@ -442,7 +442,7 @@ def allocate_evs():
                 name=EgonEvsPerRegistrationDistrict.__table__.name,
                 schema=EgonEvsPerRegistrationDistrict.__table__.schema,
                 con=db.engine(),
-                if_exists="append",
+                if_exists="replace",
                 index=False,
             )
 
@@ -471,7 +471,7 @@ def allocate_evs():
                 name=EgonEvsPerMunicipality.__table__.name,
                 schema=EgonEvsPerMunicipality.__table__.schema,
                 con=db.engine(),
-                if_exists="append",
+                if_exists="replace",
                 index=False,
             )
 
@@ -499,6 +499,6 @@ def allocate_evs():
                 name=EgonEvsPerMvGridDistrict.__table__.name,
                 schema=EgonEvsPerMvGridDistrict.__table__.schema,
                 con=db.engine(),
-                if_exists="append",
+                if_exists="replace",
                 index=False,
             )
