@@ -269,6 +269,8 @@ Changed
   `#381 <https://github.com/openego/eGon-data/issues/381>`_
 * Migrate zensus scripts to datasets
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
+* Add foreign gas buses and adjust cross bording pipelines
+  `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
 
@@ -346,3 +348,5 @@ Bug fixes
   `#516 <https://github.com/openego/eGon-data/issues/538>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
+* Filter target values by scenario name
+  `#570 <https://github.com/openego/eGon-data/issues/570>`_

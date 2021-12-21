@@ -234,7 +234,7 @@ def gas(scenario):
 
         costs = read_csv(2035)
 
-        parameters = {}
+        parameters = {"main_gas_carrier": "CH4"}
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
@@ -263,7 +263,7 @@ def gas(scenario):
         }
 
     elif scenario == "eGon100RE":
-        parameters = {}
+        parameters = {"main_gas_carrier": "H2"}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
