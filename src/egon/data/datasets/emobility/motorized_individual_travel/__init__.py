@@ -25,7 +25,7 @@ import numpy as np
 
 
 def create_tables():
-    """Create tables for district heating areas
+    """Create tables for electric vehicles
 
     Returns
     -------
