@@ -13,12 +13,11 @@ from egon.data.datasets.scenario_parameters import (
 )
 
 
-
 class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_PHES),
         )
@@ -57,15 +56,14 @@ def insert_PHES():
     next_bus_id = db.next_etrago_id("storage")
 
     # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
-
+    parameters = scenario_parameters.electricity("eGon2035")["efficiency"][
+        "pumped_hydro"
+    ]
     phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
-    phes["p_nom_extendable"] = scenario_parameters.electricity("eGon2035")["phes_p_nom_extendable"]
-    phes["marginal_cost_fixed"] = scenario_parameters.electricity("eGon2035")["re_marginal_cost_fixed"]
-    phes["max_hours"] = scenario_parameters.electricity("eGon2035")["phes_max_hours"]
-    phes["efficiency_store"] = scenario_parameters.electricity("eGon2035")["phes_efficiency_store"]
-    phes["efficiency_dispatch"] = scenario_parameters.electricity("eGon2035")["phes_efficiency_dispatch"]
-    phes["standing_loss"] = scenario_parameters.electricity("eGon2035")["phes_standing_loss"]
-    phes["control"] = scenario_parameters.electricity("eGon2035")["phes_control"]
+    phes["max_hours"] = parameters["max_hours"]
+    phes["efficiency_store"] = parameters["store"]
+    phes["efficiency_dispatch"] = parameters["dispatch"]
+    phes["standing_loss"] = parameters["standing_loss"]
 
     # Write data to db
     phes.to_sql(
@@ -75,4 +73,3 @@ def insert_PHES():
         if_exists="append",
         index=phes.index,
     )
-
