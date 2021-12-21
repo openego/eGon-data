@@ -353,3 +353,5 @@ Bug fixes
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
 * Filter target values by scenario name
   `#570 <https://github.com/openego/eGon-data/issues/570>`_
+* Preprocess buildings and amenities for LV grids
+  `#262 <https://github.com/openego/eGon-data/issues/262>`_

@@ -52,6 +52,7 @@ from egon.data.datasets.loadarea import LoadArea
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
+from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
@@ -137,6 +138,12 @@ with airflow.DAG(
     society_prognosis = SocietyPrognosis(
         dependencies=[demandregio, zensus_vg250, zensus_population]
     )
+
+    # OSM buildings, streets, amenities
+    osm_buildings_streets = OsmBuildingsStreets(
+        dependencies=[osm, zensus_misc_import]
+    )
+    osm_buildings_streets.insert_into(pipeline)
 
     # Distribute household electrical demands to zensus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
