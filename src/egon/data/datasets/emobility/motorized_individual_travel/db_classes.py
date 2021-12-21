@@ -11,10 +11,9 @@ class EgonEvsPerRegistrationDistrict(Base):
     __tablename__ = "egon_evs_per_registration_district"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, primary_key=True)
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     scenario_variation = Column(String, primary_key=True)
-    ags_reg_district = Column(Integer)
+    ags_reg_district = Column(Integer, primary_key=True)
     reg_district = Column(String)
     bev_mini = Column(Integer)
     bev_medium = Column(Integer)
@@ -28,9 +27,9 @@ class EgonEvsPerMunicipality(Base):
     __tablename__ = "egon_evs_per_municipality"
     __table_args__ = {"schema": "demand"}
 
-    ags = Column(Integer, primary_key=True)
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     scenario_variation = Column(String, primary_key=True)
+    ags = Column(Integer, primary_key=True)
     bev_mini = Column(Integer)
     bev_medium = Column(Integer)
     bev_luxury = Column(Integer)
@@ -44,9 +43,9 @@ class EgonEvsPerMvGridDistrict(Base):
     __tablename__ = "egon_evs_per_mv_grid_district"
     __table_args__ = {"schema": "demand"}
 
-    bus_id = Column(Integer, primary_key=True)
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     scenario_variation = Column(String, primary_key=True)
+    bus_id = Column(Integer, primary_key=True)
     bev_mini = Column(Integer)
     bev_medium = Column(Integer)
     bev_luxury = Column(Integer)
