@@ -3,7 +3,7 @@ import numpy as np
 from itertools import permutations
 from sqlalchemy.sql import func
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
@@ -24,6 +24,9 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.tests import (
     test_ev_numbers
 )
+
+TESTMODE_OFF = (config.settings()["egon-data"]["--dataset-boundary"] ==
+                "Everything")
 
 
 def fix_missing_ags_municipality_regiostar(muns, rs7_data):
@@ -204,8 +207,9 @@ def calc_evs_per_municipality(ev_data, rs7_data):
         columns={'pop': 'pop_district'}
     ).reset_index()
 
-    # Fix missing ags in mun data
-    rs7_data = fix_missing_ags_municipality_regiostar(muns, rs7_data)
+    # Fix missing ags in mun data if not in testmode
+    if TESTMODE_OFF:
+        rs7_data = fix_missing_ags_municipality_regiostar(muns, rs7_data)
 
     # Merge municipality, EV data and pop per district
     ev_data_muns = muns.merge(
@@ -408,34 +412,43 @@ def allocate_evs():
 
             print(f"===== SCENARIO VARIATION: {scenario_variation_name} =====")
 
+            # Get EV target
+            ev_target = scenario_variation_parameters['EV_count']
+
             # Calc EV data per registration district
             ev_data = calc_evs_per_reg_district(
                 scenario_variation_parameters,
                 kba_data
             )
-            test_ev_numbers(
-                "EVs in registration districts",
-                ev_data,
-                scenario_variation_parameters['EV_count']
-            )
+            # Check EV results if not in testmode
+            if TESTMODE_OFF:
+                test_ev_numbers(
+                    "EVs in registration districts",
+                    ev_data,
+                    ev_target
+                )
 
             # Calc EV data per municpality
             ev_data_muns = calc_evs_per_municipality(
                 ev_data,
                 rs7_data
             )
-            test_ev_numbers(
-                "EVs in municipalities",
-                ev_data_muns,
-                scenario_variation_parameters['EV_count']
-            )
+            # Check EV results if not in testmode
+            if TESTMODE_OFF:
+                test_ev_numbers(
+                    "EVs in municipalities",
+                    ev_data_muns,
+                    ev_target
+                )
 
             # Calc EV data per grid district
             ev_data_mvgds = calc_evs_per_grid_district(
                 ev_data_muns
             )
-            test_ev_numbers(
-                "EVs in grid districts",
-                ev_data_mvgds,
-                scenario_variation_parameters['EV_count']
-            )
+            # Check EV results if not in testmode
+            if TESTMODE_OFF:
+                test_ev_numbers(
+                    "EVs in grid districts",
+                    ev_data_mvgds,
+                    ev_target
+                )
