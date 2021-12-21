@@ -15,6 +15,9 @@ from egon.data.datasets.zensus_vg250 import (
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.datasets.emobility.motorized_individual_travel import (
+    EgonEvsPerRegistrationDistrict
+)
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     CONFIG_EV,
@@ -415,7 +418,9 @@ def allocate_evs():
             # Get EV target
             ev_target = scenario_variation_parameters['EV_count']
 
-            # Calc EV data per registration district
+            #####################################
+            # EV data per registration district #
+            #####################################
             ev_data = calc_evs_per_reg_district(
                 scenario_variation_parameters,
                 kba_data
@@ -427,8 +432,18 @@ def allocate_evs():
                     ev_data,
                     ev_target
                 )
+            # Write to DB
+            ev_data.to_sql(
+                name=EgonEvsPerRegistrationDistrict.__table__.name,
+                schema=EgonEvsPerRegistrationDistrict.__table__.schema,
+                con=db.engine(),
+                if_exists="replace",
+                index=False,
+            )
 
-            # Calc EV data per municpality
+            #####################################
+            #     EV data per municipality      #
+            #####################################
             ev_data_muns = calc_evs_per_municipality(
                 ev_data,
                 rs7_data
@@ -441,7 +456,9 @@ def allocate_evs():
                     ev_target
                 )
 
-            # Calc EV data per grid district
+            #####################################
+            #     EV data per grid district     #
+            #####################################
             ev_data_mvgds = calc_evs_per_grid_district(
                 ev_data_muns
             )
