@@ -53,6 +53,7 @@ from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
 from egon.data.datasets.osmtgmod import Osmtgmod
+from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
@@ -426,6 +427,10 @@ with airflow.DAG(
             Vg250MvGridDistricts,
             chp,
         ]
+    )
+
+    create_ocgt = OpenCycleGasTurbineEtrago(
+        dependencies=[create_gas_polygons, power_plants]
     )
 
     power_plant_import = tasks["power_plants.insert-hydro-biomass"]
