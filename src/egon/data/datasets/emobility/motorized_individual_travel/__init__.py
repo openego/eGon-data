@@ -110,10 +110,10 @@ def download_and_preprocess():
     rs7_data = rs7_data.rename(
         columns={
             'gem_20': 'ags',
-            'RegioStaR7': 'RS7_id'
+            'RegioStaR7': 'rs7_id'
         }
     )
-    rs7_data.RS7_id = rs7_data.RS7_id.astype('int')
+    rs7_data.rs7_id = rs7_data.rs7_id.astype('int')
 
     rs7_data.to_csv(DOWNLOAD_DIRECTORY /
                     mit_sources["RS7"]["file_processed"],
