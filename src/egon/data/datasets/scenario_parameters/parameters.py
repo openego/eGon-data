@@ -82,10 +82,10 @@ def gas(scenario):
     """
 
     if scenario == "eGon2035":
-        parameters = {}
+        parameters = {"main_gas_carrier": "CH4"}
 
     elif scenario == "eGon100RE":
-        parameters = {}
+        parameters = {"main_gas_carrier": "H2"}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
