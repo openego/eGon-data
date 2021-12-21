@@ -238,7 +238,7 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     ev_data_muns = ev_data_muns[cols]
 
     # Merge RS7 data
-    ev_data_muns = ev_data_muns.merge(rs7_data[['ags', 'RS7_id']], on='ags')
+    ev_data_muns = ev_data_muns.merge(rs7_data[['ags', 'rs7_id']], on='ags')
 
     # TODO: Data check
     # ev_data_muns[[_ for _ in ev_columns.keys()]].sum().sum()
@@ -353,13 +353,13 @@ def calc_evs_per_grid_district(ev_data_muns):
     # Set RS7 id for MVGD by using the RS7 id from the mun with the
     # highest share in population
     rs7_data_mvgds = ev_data_mvgds[
-        ['bus_id', 'pop_mun_in_mvgd', 'RS7_id']
-    ].groupby(['bus_id', 'RS7_id']).sum().sort_values(
+        ['bus_id', 'pop_mun_in_mvgd', 'rs7_id']
+    ].groupby(['bus_id', 'rs7_id']).sum().sort_values(
         ['bus_id', 'pop_mun_in_mvgd'],
         ascending=False,
         na_position='last').reset_index().drop_duplicates(
         'bus_id',
-        keep='first')[['bus_id', 'RS7_id']]
+        keep='first')[['bus_id', 'rs7_id']]
 
     # Join RS7 id and select columns
     columns = ['bus_id'] + [_ for _ in CONFIG_EV.keys()]
