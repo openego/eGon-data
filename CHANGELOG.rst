@@ -276,6 +276,8 @@ Changed
   `#381 <https://github.com/openego/eGon-data/issues/381>`_
 * Migrate zensus scripts to datasets
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
+* Assign residentail heat demands to osm buildings
+  `#557 <https://github.com/openego/eGon-data/issues/557>`_
 * Add foreign gas buses and adjust cross bording pipelines
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters

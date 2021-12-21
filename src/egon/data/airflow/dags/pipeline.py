@@ -538,6 +538,7 @@ with airflow.DAG(
             import_district_heating_areas,
             vg250,
             map_zensus_grid_districts,
+            hh_demand_buildings_setup,
         ]
     )
 
