@@ -1,13 +1,20 @@
 """The central module containing all code dealing with scenario table.
 """
-from egon.data import db
-from sqlalchemy import Column, String, VARCHAR
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from pathlib import Path
+from urllib.request import urlretrieve
+import shutil
+import zipfile
+
+from sqlalchemy import VARCHAR, Column, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import pandas as pd
-import egon.data.datasets.scenario_parameters.parameters as parameters
+
+from egon.data import db
 from egon.data.datasets import Dataset
+import egon.data.config
+import egon.data.datasets.scenario_parameters.parameters as parameters
 
 Base = declarative_base()
 
@@ -99,7 +106,7 @@ def insert_scenarios():
 
 
 def get_sector_parameters(sector, scenario=None):
-    """ Returns parameters for each sector as dictionary.
+    """Returns parameters for each sector as dictionary.
 
     If scenario=None data for all scenarios is returned as pandas.DataFrame.
     Otherwise the parameters of the specific scenario are returned as a dict.
@@ -158,11 +165,37 @@ def get_sector_parameters(sector, scenario=None):
     return values
 
 
+def download_pypsa_technology_data():
+    """Downlad PyPSA technology data results."""
+    data_path = Path(".") / "pypsa_technology_data"
+    # Delete folder if it already exists
+    if data_path.exists() and data_path.is_dir():
+        shutil.rmtree(data_path)
+    # Get parameters from config and set download URL
+    sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
+        "zenodo"
+    ]
+    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
+    target_file = egon.data.config.datasets()["pypsa-technology-data"][
+        "targets"
+    ]["file"]
+
+    # Retrieve files
+    urlretrieve(url, target_file)
+
+    with zipfile.ZipFile(target_file, "r") as zip_ref:
+        zip_ref.extractall(".")
+
+
 class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.2.dev",
+            version="0.0.4",
             dependencies=dependencies,
-            tasks=(create_table, insert_scenarios),
+            tasks=(
+                create_table,
+                download_pypsa_technology_data,
+                insert_scenarios,
+            ),
         )
