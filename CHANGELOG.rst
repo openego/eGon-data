@@ -173,6 +173,10 @@ Added
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
 * Insert open cycle gas turbines into eTraGo tables
   `#548 <https://github.com/openego/eGon-data/issues/548>`_
+* Preprocess buildings and amenities for LV grids
+  `#262 <https://github.com/openego/eGon-data/issues/262>`_
+* Assign household profiles to OSM buildings
+  `#435 <https://github.com/openego/eGon-data/issues/435>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -353,5 +357,3 @@ Bug fixes
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
 * Filter target values by scenario name
   `#570 <https://github.com/openego/eGon-data/issues/570>`_
-* Preprocess buildings and amenities for LV grids
-  `#262 <https://github.com/openego/eGon-data/issues/262>`_

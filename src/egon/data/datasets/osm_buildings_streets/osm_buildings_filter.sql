@@ -159,3 +159,4 @@ ALTER TABLE openstreetmap.osm_buildings_filtered
 
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom);
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_point);
+

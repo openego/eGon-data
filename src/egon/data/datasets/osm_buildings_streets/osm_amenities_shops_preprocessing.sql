@@ -89,3 +89,4 @@ CREATE TABLE openstreetmap.osm_amenities_shops_filtered AS
 ALTER TABLE openstreetmap.osm_amenities_shops_filtered ADD COLUMN id SERIAL PRIMARY KEY;
 
 CREATE INDEX ON openstreetmap.osm_amenities_shops_filtered USING gist (geom);
+
