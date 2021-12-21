@@ -24,7 +24,7 @@ voltage grids.
   building's centroid is located in.
   Resulting table: `boundaries.egon_map_zensus_buildings_filtered`
 * Enrich each building by number of apartments from Zensus table
-  `society.egon_destatis_zensus_apartment_building_population_per_ha zensus_apartments`
+  `society.egon_destatis_zensus_apartment_building_population_per_ha`
   by splitting up the cell's sum equally to the buildings. In some cases, a
   Zensus cell does not contain buildings but there's a building nearby which
   the no. of apartments is to be allocated to. To make sure apartments are
@@ -68,43 +68,38 @@ def execute_sql_script(script):
     script : str
         Filename of script
     """
-    db.execute_sql_script(
-        os.path.join(
-            os.path.dirname(__file__),
-            script
-        )
-    )
+    db.execute_sql_script(os.path.join(os.path.dirname(__file__), script))
 
 
 def preprocessing():
     sql_scripts = [
-        'osm_amenities_shops_preprocessing.sql',
-        'osm_buildings_filter.sql',
-        'osm_buildings_zensus_mapping.sql',
-        'osm_buildings_temp_tables.sql'
+        "osm_amenities_shops_preprocessing.sql",
+        "osm_buildings_filter.sql",
+        "osm_buildings_zensus_mapping.sql",
+        "osm_buildings_temp_tables.sql",
     ]
     for script in sql_scripts:
         execute_sql_script(script)
 
 
 def extract_buildings_w_amenities():
-    execute_sql_script('osm_results_buildings_w_amenities.sql')
+    execute_sql_script("osm_results_buildings_w_amenities.sql")
 
 
 def extract_buildings_wo_amenities():
-    execute_sql_script('osm_results_buildings_wo_amenities.sql')
+    execute_sql_script("osm_results_buildings_wo_amenities.sql")
 
 
 def extract_amenities():
-    execute_sql_script('osm_results_amenities.sql')
+    execute_sql_script("osm_results_amenities.sql")
 
 
 def extract_ways():
-    execute_sql_script('osm_ways_preprocessing.sql')
+    execute_sql_script("osm_ways_preprocessing.sql")
 
 
 def drop_temp_tables():
-    execute_sql_script('drop_temp_tables.sql')
+    execute_sql_script("drop_temp_tables.sql")
 
 
 def add_metadata():
@@ -119,11 +114,13 @@ class OsmBuildingsStreets(Dataset):
             dependencies=dependencies,
             tasks=(
                 preprocessing,
-                {extract_buildings_w_amenities,
-                 extract_buildings_wo_amenities,
-                 extract_amenities,
-                 extract_ways},
+                {
+                    extract_buildings_w_amenities,
+                    extract_buildings_wo_amenities,
+                    extract_amenities,
+                    extract_ways,
+                },
                 drop_temp_tables,
-                add_metadata
+                add_metadata,
             ),
         )
