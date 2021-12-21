@@ -112,13 +112,13 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "NEP C 2035": {
-                    "EV_count": 14000000,
-                    "BEV_mini_share": 0.1589,
-                    "BEV_medium_share": 0.3533,
-                    "BEV_luxury_share": 0.1053,
-                    "PHEV_mini_share": 0.0984,
-                    "PHEV_medium_share": 0.2189,
-                    "PHEV_luxury_share": 0.0652
+                    "ev_count": 14000000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652
                 }
             }
         }
@@ -127,31 +127,31 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "Reference 2050": {
-                    "EV_count": 25065000,
-                    "BEV_mini_share": 0.1589,
-                    "BEV_medium_share": 0.3533,
-                    "BEV_luxury_share": 0.1053,
-                    "PHEV_mini_share": 0.0984,
-                    "PHEV_medium_share": 0.2189,
-                    "PHEV_luxury_share": 0.0652
+                    "ev_count": 25065000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652
                 },
                 "Mobility Transition 2050": {
-                    "EV_count": 37745000,
-                    "BEV_mini_share": 0.1589,
-                    "BEV_medium_share": 0.3533,
-                    "BEV_luxury_share": 0.1053,
-                    "PHEV_mini_share": 0.0984,
-                    "PHEV_medium_share": 0.2189,
-                    "PHEV_luxury_share": 0.0652
+                    "ev_count": 37745000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652
                 },
                 "Electrification 2050": {
-                    "EV_count": 47700000,
-                    "BEV_mini_share": 0.1589,
-                    "BEV_medium_share": 0.3533,
-                    "BEV_luxury_share": 0.1053,
-                    "PHEV_mini_share": 0.0984,
-                    "PHEV_medium_share": 0.2189,
-                    "PHEV_luxury_share": 0.0652
+                    "ev_count": 47700000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652
                 },
             }
         }

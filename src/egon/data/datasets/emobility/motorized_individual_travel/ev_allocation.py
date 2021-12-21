@@ -125,27 +125,27 @@ def calc_evs_per_reg_district(scenario_variation_parameters, kba_data):
     """
 
     scenario_variation_parameters['mini_share'] = (
-        scenario_variation_parameters['BEV_mini_share'] +
-        scenario_variation_parameters['PHEV_mini_share']
+        scenario_variation_parameters['bev_mini_share'] +
+        scenario_variation_parameters['phev_mini_share']
     )
     scenario_variation_parameters['medium_share'] = (
-        scenario_variation_parameters['BEV_medium_share'] +
-        scenario_variation_parameters['PHEV_medium_share']
+        scenario_variation_parameters['bev_medium_share'] +
+        scenario_variation_parameters['phev_medium_share']
     )
     scenario_variation_parameters['luxury_share'] = (
-        scenario_variation_parameters['BEV_luxury_share'] +
-        scenario_variation_parameters['PHEV_luxury_share']
+        scenario_variation_parameters['bev_luxury_share'] +
+        scenario_variation_parameters['phev_luxury_share']
     )
 
     factor_dict = dict()
     factor_dict['mini_factor'] = (scenario_variation_parameters['mini_share'] *
-                                  scenario_variation_parameters['EV_count'] /
+                                  scenario_variation_parameters['ev_count'] /
                                   kba_data.mini.sum())
     factor_dict['medium_factor'] = (scenario_variation_parameters['medium_share'] *
-                                    scenario_variation_parameters['EV_count'] /
+                                    scenario_variation_parameters['ev_count'] /
                                     kba_data.medium.sum())
     factor_dict['luxury_factor'] = (scenario_variation_parameters['luxury_share'] *
-                                    scenario_variation_parameters['EV_count'] /
+                                    scenario_variation_parameters['ev_count'] /
                                     kba_data.luxury.sum())
 
     # Define shares and factors
@@ -415,7 +415,7 @@ def allocate_evs():
             print(f"===== SCENARIO VARIATION: {scenario_variation_name} =====")
 
             # Get EV target
-            ev_target = scenario_variation_parameters['EV_count']
+            ev_target = scenario_variation_parameters['ev_count']
 
             #####################################
             # EV data per registration district #
