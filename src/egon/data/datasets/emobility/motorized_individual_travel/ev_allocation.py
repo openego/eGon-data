@@ -230,8 +230,6 @@ def calc_evs_per_municipality(ev_data, rs7_data):
                                    ev_data_muns['pop'] /
                                    ev_data_muns['pop_district']).astype('int')
 
-    # TODO: data check
-
     # Filter columns
     cols = ['ags']
     cols.extend(CONFIG_EV.keys())
@@ -239,11 +237,6 @@ def calc_evs_per_municipality(ev_data, rs7_data):
 
     # Merge RS7 data
     ev_data_muns = ev_data_muns.merge(rs7_data[['ags', 'rs7_id']], on='ags')
-
-    # TODO: Data check
-    # ev_data_muns[[_ for _ in ev_columns.keys()]].sum().sum()
-    # check if merge matching is succesful for all ags_ZB
-    # len(ev_data_muns[ev_data_muns.isna().any(axis=1)]) == 0
 
     return ev_data_muns
 
@@ -365,10 +358,6 @@ def calc_evs_per_grid_district(ev_data_muns):
     columns = ['bus_id'] + [_ for _ in CONFIG_EV.keys()]
     ev_data_mvgds = ev_data_mvgds[columns].groupby('bus_id').agg('sum').merge(
         rs7_data_mvgds, on='bus_id', how='left')
-
-    # TODO: data check
-    #ev_data_mvgds[[_ for _ in CONFIG_EV.keys()]].sum().sum()
-    #ev_data_mvgds.RS7_id.isna().any()
 
     return ev_data_mvgds
 
