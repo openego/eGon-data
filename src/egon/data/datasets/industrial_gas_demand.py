@@ -44,7 +44,7 @@ def download_CH4_industrial_demand(scn_name="eGon2035"):
     )
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
-    year = get_sector_parameters("global", scn_name)["population_year"]
+    year = str(get_sector_parameters("global", scn_name)["population_year"])
 
     internal_id = "2,11"  # Natural_Gas
     datafilter = "&&internal_id=eq.{" + internal_id + "}"
@@ -163,7 +163,7 @@ def download_H2_industrial_demand(scn_name="eGon2035"):
     )
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
-    year = get_sector_parameters("global", scn_name)["population_year"]
+    year = str(get_sector_parameters("global", scn_name)["population_year"])
 
     internal_id = "2,162"  # Hydrogen
     datafilter = "&&internal_id=eq.{" + internal_id + "}"
