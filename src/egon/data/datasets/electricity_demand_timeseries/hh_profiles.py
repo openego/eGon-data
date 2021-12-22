@@ -242,7 +242,7 @@ class EgonEtragoElectricityHouseholds(Base):
 setup = partial(
     Dataset,
     name="HH Demand",
-    version="0.0.3",
+    version="0.0.4",
     dependencies=[],
     # Tasks are declared in pipeline as function is used multiple times with different args
     # To differentiate these tasks PythonOperator with specific id-names are used
