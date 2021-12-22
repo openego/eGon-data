@@ -165,13 +165,24 @@ Added
   `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
   `#531 <https://github.com/openego/eGon-data/issues/531>`_
+* Include carrier names in eTraGo table
+  `#551 <https://github.com/openego/eGon-data/issues/551>`_
 * Include hydrogen infrastructure for eGon2035 scenario
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
 * Filter for DE in gas infrastructure deletion at beginning of respective tasks
   `#567 <https://github.com/openego/eGon-data/issues/567>`_
-
+* Insert open cycle gas turbines into eTraGo tables
+  `#548 <https://github.com/openego/eGon-data/issues/548>`_
+* Preprocess buildings and amenities for LV grids
+  `#262 <https://github.com/openego/eGon-data/issues/262>`_
+* Assign household profiles to OSM buildings
+  `#435 <https://github.com/openego/eGon-data/issues/435>`_
+* Add link to meta creator to docs
+  `#599 <https://github.com/openego/eGon-data/issues/599>`_
+* Add extendable batteries and heat stores
+  `#566 <https://github.com/openego/eGon-data/issues/566>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -271,6 +282,12 @@ Changed
   `#381 <https://github.com/openego/eGon-data/issues/381>`_
 * Migrate zensus scripts to datasets
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
+* Assign residentail heat demands to osm buildings
+  `#557 <https://github.com/openego/eGon-data/issues/557>`_
+* Add foreign gas buses and adjust cross bording pipelines
+  `#545 <https://github.com/openego/eGon-data/issues/545>`_
+* Integrate fuel and CO2 costs for eGon2035 to scenario parameters
+  `#549 <https://github.com/openego/eGon-data/issues/549>`_
 
 
 Bug fixes

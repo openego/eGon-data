@@ -2,31 +2,33 @@
 """
 The central module containing all code dealing with importing data from SciGRID_gas IGGIELGN data
 """
-import ast
-import json
-import os
 from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
+import ast
+import json
+import os
 
-import numpy as np
-
+from geoalchemy2.types import Geometry
+from shapely import geometry
 import geopandas
+import numpy as np
 import pandas as pd
+
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from geoalchemy2.types import Geometry
-from shapely import geometry
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+
 
 class GasNodesandPipes(Dataset):
-     def __init__(self, dependencies):
-         super().__init__(
-             name="GasNodesandPipes",
-             version="0.0.0",
-             dependencies=dependencies,
-             tasks=(insert_gas_data),
-         )
+    def __init__(self, dependencies):
+        super().__init__(
+            name="GasNodesandPipes",
+            version="0.0.1",
+            dependencies=dependencies,
+            tasks=(insert_gas_data),
+        )
 
 
 def download_SciGRID_gas_data():
@@ -117,7 +119,7 @@ def ch4_nodes_number_G(gas_nodes_list):
 
     ch4_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
-    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    ]
     N_ch4_nodes_G = len(ch4_nodes_list)
 
     return N_ch4_nodes_G
@@ -213,17 +215,107 @@ def insert_CH4_nodes_list(gas_nodes_list):
     )
 
 
-def insert_gas_pipeline_list(gas_nodes_list):
+def insert_gas_buses_abroad(scn_name="eGon2035"):
+    """Insert central gas buses in foreign countries to db, same buses than the foreign AC buses
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    gdf_abroad_buses : dataframe
+        Dataframe containing the gas in the neighbouring countries and one in the center of Germany in test mode
+    """
+    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
+        "main_gas_carrier"
+    ]
+
+    # Connect to local database
+    engine = db.engine()
+    db.execute_sql(
+        f"""
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
+    scn_name = '{scn_name}' AND country != 'DE';
+    """
+    )
+
+    # Select the foreign buses
+    sql_abroad_buses = f"""SELECT bus_id, scn_name, x, y, carrier, country
+                            FROM grid.egon_etrago_bus
+                            WHERE country != 'DE'
+                            AND carrier = 'AC'
+                            AND scn_name = '{scn_name}';"""
+
+    gdf_abroad_buses = db.select_dataframe(sql_abroad_buses)
+    gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
+
+    # Select next id value
+    new_id = db.next_etrago_id("bus")
+
+    gdf_abroad_buses["carrier"] = main_gas_carrier
+    gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
+
+    # if in test mode, add bus in center of Germany
+    boundary = settings()["egon-data"]["--dataset-boundary"]
+
+    if boundary != "Everything":
+        gdf_abroad_buses = gdf_abroad_buses.append(
+            {
+                "scn_name": scn_name,
+                "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                "x": 10.4234469,
+                "y": 51.0834196,
+                "country": "DE",
+                "carrier": main_gas_carrier,
+            },
+            ignore_index=True,
+        )
+
+    gdf_abroad_buses = geopandas.GeoDataFrame(
+        gdf_abroad_buses,
+        geometry=geopandas.points_from_xy(
+            gdf_abroad_buses["x"], gdf_abroad_buses["y"]
+        ),
+    )
+    gdf_abroad_buses = gdf_abroad_buses.rename(
+        columns={"geometry": "geom"}
+    ).set_geometry("geom", crs=4326)
+
+    # Insert to db
+    print(gdf_abroad_buses)
+    gdf_abroad_buses.to_postgis(
+        "egon_etrago_bus",
+        engine,
+        schema="grid",
+        index=False,
+        if_exists="append",
+        dtype={"geom": Geometry()},
+    )
+    return gdf_abroad_buses
+
+
+def insert_gas_pipeline_list(
+    gas_nodes_list, abroad_gas_nodes_list, scn_name="eGon2035"
+):
     """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
     Parameters
     ----------
     gas_nodes_list : dataframe
         Dataframe containing the gas nodes (Europe)
+    scn_name : str
+        Name of the scenario
+
     Returns
     -------
     None.
     """
-    # Connect to local database
+    abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
+
+    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
+        "main_gas_carrier"
+    ]
+
     engine = db.engine()
 
     # Select next id value
@@ -260,9 +352,11 @@ def insert_gas_pipeline_list(gas_nodes_list):
     # Select the links having at least one bus in Germany
     gas_pipelines_list = gas_pipelines_list[
         gas_pipelines_list["country_code"].str.contains("DE")
-    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    ]
 
     # Remove links disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
+    # TODO: automatic test for disconnected links
+    # TODO: remove link test if length = 0
     gas_pipelines_list = gas_pipelines_list[
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
     ]
@@ -282,43 +376,42 @@ def insert_gas_pipeline_list(gas_nodes_list):
         NUTS1.append(param["nuts_id_1"])
     gas_pipelines_list["NUTS1"] = NUTS1
 
+    map_states = {
+        "Baden-Württemberg": "DE1",
+        "Nordrhein-Westfalen": "DEA",
+        "Hessen": "DE7",
+        "Brandenburg": "DE4",
+        "Bremen": "DE5",
+        "Rheinland-Pfalz": "DEB",
+        "Sachsen-Anhalt": "DEE",
+        "Schleswig-Holstein": "DEF",
+        "Mecklenburg-Vorpommern": "DE8",
+        "Thüringen": "DEG",
+        "Niedersachsen": "DE9",
+        "Sachsen": "DED",
+        "Hamburg": "DE6",
+        "Saarland": "DEC",
+        "Berlin": "DE3",
+        "Bayern": "DE2",
+        "Everything": "Nan",
+    }
+    gas_pipelines_list["NUTS1_0"] = [x[0] for x in gas_pipelines_list["NUTS1"]]
+    gas_pipelines_list["NUTS1_1"] = [x[1] for x in gas_pipelines_list["NUTS1"]]
+
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
     if boundary != "Everything":
-        map_states = {
-            "Baden-Württemberg": "DE1",
-            "Nordrhein-Westfalen": "DEA",
-            "Hessen": "DE7",
-            "Brandenburg": "DE4",
-            "Bremen": "DE5",
-            "Rheinland-Pfalz": "DEB",
-            "Sachsen-Anhalt": "DEE",
-            "Schleswig-Holstein": "DEF",
-            "Mecklenburg-Vorpommern": "DE8",
-            "Thüringen": "DEG",
-            "Niedersachsen": "DE9",
-            "Sachsen": "DED",
-            "Hamburg": "DE6",
-            "Saarland": "DEC",
-            "Berlin": "DE3",
-            "Bayern": "DE2",
-        }
-        gas_pipelines_list["NUTS1"] = [
-            x[0] for x in gas_pipelines_list["NUTS1"]
-        ]
-        gas_pipelines_list = gas_pipelines_list[
-            gas_pipelines_list["NUTS1"].str.contains(map_states[boundary])
-        ]
 
-        # A completer avec nodes related to pipelines which have an end in the selected area
+        gas_pipelines_list = gas_pipelines_list[
+            gas_pipelines_list["NUTS1_0"].str.contains(map_states[boundary])
+            | gas_pipelines_list["NUTS1_1"].str.contains(map_states[boundary])
+        ]
 
     # Add missing columns
-    scn_name = "eGon2035"
     gas_pipelines_list["scn_name"] = scn_name
-    gas_pipelines_list["carrier"] = "CH4"
+    gas_pipelines_list["carrier"] = main_gas_carrier
 
     diameter = []
-    length = []
     geom = []
     topo = []
 
@@ -326,7 +419,6 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
         param = ast.literal_eval(row["param"])
         diameter.append(param["diameter_mm"])
-        length.append(param["length_km"])
 
         long_e = json.loads(row["long"])
         lat_e = json.loads(row["lat"])
@@ -343,23 +435,121 @@ def insert_gas_pipeline_list(gas_nodes_list):
             lines.append(geometry.LineString([crd[i], crd[i + 1]]))
         geom.append(geometry.MultiLineString(lines))
 
-    print(topo)
     gas_pipelines_list["diameter"] = diameter
-    gas_pipelines_list["length"] = length
     gas_pipelines_list["geom"] = geom
     gas_pipelines_list["topo"] = topo
     gas_pipelines_list = gas_pipelines_list.set_geometry("geom", crs=4326)
 
+    country_0 = []
+    country_1 = []
+    for index, row in gas_pipelines_list.iterrows():
+        c = ast.literal_eval(row["country_code"])
+        country_0.append(c[0])
+        country_1.append(c[1])
+    gas_pipelines_list["country_0"] = country_0
+    gas_pipelines_list["country_1"] = country_1
+
+    # Correct non valid neighbouring country nodes
+    gas_pipelines_list.loc[
+        gas_pipelines_list["country_0"] == "XX", "country_0"
+    ] = "NO"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["country_1"] == "FI", "country_1"
+    ] = "SE"
+
     # Adjust columns
     bus0 = []
     bus1 = []
+    geom_adjusted = []
+    topo_adjusted = []
+    length_adjusted = []
     pipe_class = []
 
     for index, row in gas_pipelines_list.iterrows():
-
         buses = row["node_id"].strip("][").split(", ")
-        bus0.append(gas_nodes_list.loc[buses[0][1:-1], "bus_id"])
-        bus1.append(gas_nodes_list.loc[buses[1][1:-1], "bus_id"])
+
+        if (
+            (boundary != "Everything")
+            & (row["NUTS1_0"] != map_states[boundary])
+            & (row["country_0"] == "DE")
+        ):
+            bus0.append(abroad_gas_nodes_list.loc["DE", "bus_id"])
+            bus1.append(gas_nodes_list.loc[buses[1][1:-1], "bus_id"])
+            long_e = [
+                abroad_gas_nodes_list.loc["DE", "x"],
+                json.loads(row["long"])[1],
+            ]
+            lat_e = [
+                abroad_gas_nodes_list.loc["DE", "y"],
+                json.loads(row["lat"])[1],
+            ]
+            geom_pipe = geometry.MultiLineString(
+                [geometry.LineString(list(zip(long_e, lat_e)))]
+            )
+            topo_adjusted.append(geometry.LineString(list(zip(long_e, lat_e))))
+
+        elif row["country_0"] != "DE":
+            country = str(row["country_0"])
+            bus0.append(abroad_gas_nodes_list.loc[country, "bus_id"])
+            bus1.append(gas_nodes_list.loc[buses[1][1:-1], "bus_id"])
+            long_e = [
+                abroad_gas_nodes_list.loc[country, "x"],
+                json.loads(row["long"])[1],
+            ]
+            lat_e = [
+                abroad_gas_nodes_list.loc[country, "y"],
+                json.loads(row["lat"])[1],
+            ]
+            geom_pipe = geometry.MultiLineString(
+                [geometry.LineString(list(zip(long_e, lat_e)))]
+            )
+            topo_adjusted.append(geometry.LineString(list(zip(long_e, lat_e))))
+
+        elif (
+            (boundary != "Everything")
+            & (row["NUTS1_1"] != map_states[boundary])
+            & (row["country_1"] == "DE")
+        ):
+            bus0.append(gas_nodes_list.loc[buses[0][1:-1], "bus_id"])
+            bus1.append(abroad_gas_nodes_list.loc["DE", "bus_id"])
+            long_e = [
+                json.loads(row["long"])[0],
+                abroad_gas_nodes_list.loc["DE", "x"],
+            ]
+            lat_e = [
+                json.loads(row["lat"])[0],
+                abroad_gas_nodes_list.loc["DE", "y"],
+            ]
+            geom_pipe = geometry.MultiLineString(
+                [geometry.LineString(list(zip(long_e, lat_e)))]
+            )
+            topo_adjusted.append(geometry.LineString(list(zip(long_e, lat_e))))
+
+        elif row["country_1"] != "DE":
+            country = str(row["country_1"])
+            bus0.append(gas_nodes_list.loc[buses[0][1:-1], "bus_id"])
+            bus1.append(abroad_gas_nodes_list.loc[country, "bus_id"])
+            long_e = [
+                json.loads(row["long"])[0],
+                abroad_gas_nodes_list.loc[country, "x"],
+            ]
+            lat_e = [
+                json.loads(row["lat"])[0],
+                abroad_gas_nodes_list.loc[country, "y"],
+            ]
+            geom_pipe = geometry.MultiLineString(
+                [geometry.LineString(list(zip(long_e, lat_e)))]
+            )
+            topo_adjusted.append(geometry.LineString(list(zip(long_e, lat_e))))
+
+        else:
+            bus0.append(gas_nodes_list.loc[buses[0][1:-1], "bus_id"])
+            bus1.append(gas_nodes_list.loc[buses[1][1:-1], "bus_id"])
+            geom_pipe = row["geom"]
+            topo_adjusted.append(row["topo"])
+
+        geom_adjusted.append(geom_pipe)
+        length_adjusted.append(geom_pipe.length)
 
         if row["diameter"] >= 1000:
             pipe_class = "A"
@@ -378,6 +568,9 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
     gas_pipelines_list["bus0"] = bus0
     gas_pipelines_list["bus1"] = bus1
+    gas_pipelines_list["geom"] = geom_adjusted
+    gas_pipelines_list["topo"] = topo_adjusted
+    gas_pipelines_list["length"] = length_adjusted
     gas_pipelines_list["pipe_class"] = pipe_class
 
     gas_pipelines_list = gas_pipelines_list.merge(
@@ -390,13 +583,18 @@ def insert_gas_pipeline_list(gas_nodes_list):
         "max_transport_capacity_Gwh/d"
     ] * (1000 / 24)
 
+    # Remove useless columns
     gas_pipelines_list = gas_pipelines_list.drop(
         columns=[
             "id",
             "node_id",
             "param",
             "NUTS1",
+            "NUTS1_0",
+            "NUTS1_1",
             "country_code",
+            "country_0",
+            "country_1",
             "diameter",
             "pipe_class",
             "classification",
@@ -408,18 +606,12 @@ def insert_gas_pipeline_list(gas_nodes_list):
 
     # Insert data to db
     db.execute_sql(
-        f"""
-            DELETE FROM grid.egon_etrago_link WHERE "carrier" = 'CH4' AND
-            scn_name = '{scn_name}' AND bus0 IN (
-               SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = '{scn_name}' AND country = 'DE'
-            ) AND bus1 IN (
-               SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = '{scn_name}' AND country = 'DE'
-            );
+        f"""DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{main_gas_carrier}' AND
+           scn_name = '{scn_name}';
         """
     )
 
+    print(gas_pipelines_list)
     gas_pipelines_list.to_postgis(
         "egon_etrago_gas_link",
         engine,
@@ -462,5 +654,6 @@ def insert_gas_data():
     gas_nodes_list = define_gas_nodes_list()
 
     insert_CH4_nodes_list(gas_nodes_list)
+    abroad_gas_nodes_list = insert_gas_buses_abroad()
 
-    insert_gas_pipeline_list(gas_nodes_list)
+    insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
