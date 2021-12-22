@@ -37,16 +37,16 @@ def run_pypsa_eur_sec():
                 "git",
                 "clone",
                 "--branch",
-                "master",
+                "v0.4.0",
                 "https://github.com/PyPSA/pypsa-eur.git",
                 pypsa_eur_repos,
             ]
         )
 
-        subproc.run(
-            ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
-            cwd=pypsa_eur_repos,
-        )
+        # subproc.run(
+        #     ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
+        #     cwd=pypsa_eur_repos,
+        # )
 
         file_to_copy = os.path.join(
             __path__[0], "datasets", "pypsaeursec", "pypsaeur", "Snakefile"
@@ -58,9 +58,9 @@ def run_pypsa_eur_sec():
         path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
         with open(path_to_env, "r") as stream:
             env = yaml.safe_load(stream)
-
+    
         env["dependencies"].append("gurobi")
-
+    
         # Write YAML file
         with open(path_to_env, "w", encoding="utf8") as outfile:
             yaml.dump(
@@ -73,7 +73,7 @@ def run_pypsa_eur_sec():
                 "git",
                 "clone",
                 "--branch",
-                "v0.2.0",
+                "v0.3.0",
                 "https://github.com/PyPSA/technology-data.git",
                 technology_data_repos,
             ]
@@ -84,15 +84,17 @@ def run_pypsa_eur_sec():
             [
                 "git",
                 "clone",
+                "--branch",
+                "update-pes",
                 "https://github.com/openego/pypsa-eur-sec.git",
                 pypsa_eur_sec_repos,
             ]
         )
 
-    datafile = "pypsa-eur-sec-data-bundle-210418.tar.gz"
+    datafile = "pypsa-eur-sec-data-bundle.tar.gz"
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
-        urlretrieve(f"https://nworbmot.org/{datafile}", datapath)
+        urlretrieve(f"https://zenodo.org/record/5546517/files/{datafile}", datapath)
         tar = tarfile.open(datapath)
         tar.extractall(pypsa_eur_sec_repos_data)
 
@@ -125,7 +127,7 @@ def eGon100_capacities():
 
     """
     # read-in installed capacities
-    execute_pypsa_eur_sec = False
+    execute_pypsa_eur_sec = True
     cwd = Path(".")
 
     if execute_pypsa_eur_sec:
@@ -273,7 +275,7 @@ def eGon100_capacities():
 def neighbor_reduction():
 
     # Set execute_pypsa_eur_sec to False until optional task is implemented
-    execute_pypsa_eur_sec = False
+    execute_pypsa_eur_sec = True
     cwd = Path(".")
 
     if execute_pypsa_eur_sec:
@@ -951,7 +953,7 @@ def neighbor_reduction():
 
 
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
-execute_pypsa_eur_sec = False
+execute_pypsa_eur_sec = True
 
 if execute_pypsa_eur_sec:
     tasks = (run_pypsa_eur_sec, {eGon100_capacities, neighbor_reduction})
