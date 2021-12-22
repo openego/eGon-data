@@ -34,7 +34,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         WHERE link_id IN (
             SELECT link_id FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier = 'individual_heat_pump'
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
         """
@@ -43,7 +43,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier = 'individual_heat_pump'
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
         """
     )
 
@@ -80,7 +80,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     # Insert heatpumps
     insert_power_to_heat_per_level(
         heat_pumps,
-        carrier="individual_heat_pump",
+        carrier="rural_heat_pump",
         multiple_per_mv_grid=False,
         scenario="eGon2035",
     )

@@ -377,7 +377,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier  = 'urban_central_gas_boiler'
+        WHERE carrier  LIKE '%central_gas_boiler%'
         AND scn_name = '{scenario}'
         """
     )
@@ -422,7 +422,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     central_boilers.index.name = "link_id"
 
     # Set carrier name
-    central_boilers.carrier = "urban_central_gas_boiler"
+    central_boilers.carrier = "central_gas_boiler"
 
     central_boilers.reset_index().to_postgis(
         targets["heat_links"]["table"],
