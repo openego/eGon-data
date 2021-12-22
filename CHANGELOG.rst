@@ -179,6 +179,8 @@ Added
   `#435 <https://github.com/openego/eGon-data/issues/435>`_
 * Add link to meta creator to docs
   `#599 <https://github.com/openego/eGon-data/issues/599>`_
+* Add extendable batteries and heat stores
+  `#566 <https://github.com/openego/eGon-data/issues/566>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
