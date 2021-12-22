@@ -4,7 +4,9 @@ from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 
+
 from egon.data import config, db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_individual_power_to_heat(scenario="eGon2035"):
@@ -27,9 +29,21 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     # Delete existing entries
     db.execute_sql(
         f"""
+        DELETE FROM {targets['heat_link_timeseries']['schema']}.
+        {targets['heat_link_timeseries']['table']}
+        WHERE link_id IN (
+            SELECT link_id FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
+        AND scn_name = '{scenario}')
+        AND scn_name = '{scenario}'
+        """
+    )
+    db.execute_sql(
+        f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier = 'individual_heat_pump'
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
         """
     )
 
@@ -37,7 +51,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     heat_pumps = db.select_dataframe(
         f"""
         SELECT mv_grid_id as power_bus,
-        a.carrier, capacity, b.bus_id as heat_bus
+        a.carrier, capacity, b.bus_id as heat_bus, d.feedin as cop
         FROM {sources['individual_heating_supply']['schema']}.
             {sources['individual_heating_supply']['table']} a
         JOIN {targets['heat_buses']['schema']}.
@@ -45,10 +59,18 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         ON ST_Intersects(
             ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
             geom)
+        JOIN {sources['weather_cells']['schema']}.
+            {sources['weather_cells']['table']} c
+        ON ST_Intersects(
+            b.geom, c.geom)
+        JOIN {sources['feedin_timeseries']['schema']}.
+            {sources['feedin_timeseries']['table']} d
+        ON c.w_id = d.w_id
         WHERE scenario = '{scenario}'
         AND scn_name  = '{scenario}'
         AND a.carrier = 'heat_pump'
         AND b.carrier = 'rural_heat'
+        AND d.carrier = 'heat_pump_cop'
         """
     )
 
@@ -58,7 +80,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     # Insert heatpumps
     insert_power_to_heat_per_level(
         heat_pumps,
-        carrier="individual_heat_pump",
+        carrier="rural_heat_pump",
         multiple_per_mv_grid=False,
         scenario="eGon2035",
     )
@@ -84,18 +106,41 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     # Delete existing entries
     db.execute_sql(
         f"""
+        DELETE FROM {targets['heat_link_timeseries']['schema']}.
+        {targets['heat_link_timeseries']['table']}
+        WHERE link_id IN (
+            SELECT link_id FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier = 'central_heat_pump'
+        AND scn_name = '{scenario}')
+        AND scn_name = '{scenario}'
+        """
+    )
+
+    db.execute_sql(
+        f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier = 'central_heat_pump'
         """
     )
+
     # Select heat pumps in district heating
     central_heat_pumps = db.select_geodataframe(
         f"""
-        SELECT * FROM {sources['district_heating_supply']['schema']}.
-            {sources['district_heating_supply']['table']}
+        SELECT a.index, a.district_heating_id, a.carrier, a.category, a.capacity, a.geometry, a.scenario, d.feedin as cop 
+        FROM {sources['district_heating_supply']['schema']}.
+            {sources['district_heating_supply']['table']} a
+        JOIN {sources['weather_cells']['schema']}.
+            {sources['weather_cells']['table']} c
+        ON ST_Intersects(
+            ST_Transform(a.geometry, 4326), c.geom)
+        JOIN {sources['feedin_timeseries']['schema']}.
+            {sources['feedin_timeseries']['table']} d
+        ON c.w_id = d.w_id
         WHERE scenario = '{scenario}'
-        AND carrier = 'heat_pump'
+        AND a.carrier = 'heat_pump'
+        AND d.carrier = 'heat_pump_cop'
         """,
         geom_col="geometry",
         epsg=4326,
@@ -145,6 +190,11 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     central_resistive_heater = assign_voltage_level(
         central_resistive_heater, carrier="resistive_heater"
     )
+
+    # Set efficiency
+    central_resistive_heater["efficiency_fixed"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["efficiency"]["central_resistive_heater"]
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
@@ -250,6 +300,28 @@ def insert_power_to_heat_per_level(
         if_exists="append",
         con=db.engine(),
     )
+
+    if "cop" in gdf.columns:
+
+        # Create dataframe for time-dependent data
+        links_timeseries = pd.DataFrame(
+            index=links.index,
+            data={
+                "link_id": links.link_id,
+                "efficiency": gdf.cop,
+                "scn_name": scenario,
+                "temp_id": 1,
+            },
+        )
+
+        # Insert time-dependent data to database
+        links_timeseries.to_sql(
+            targets["heat_link_timeseries"]["table"],
+            schema=targets["heat_link_timeseries"]["schema"],
+            if_exists="append",
+            con=db.engine(),
+            index=False,
+        )
 
 
 def assign_voltage_level(heat_pumps, carrier="heat_pump"):
@@ -393,17 +465,23 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
     heat_pumps.set_index("area_id", inplace=True)
 
     # If district heating areas are supplied by multiple hvmv-substations,
-    # create one heatpup per electrical bus.
+    # create one heatpump per electrical bus.
     # The installed capacity is assigned regarding the share of heat demand.
     if multiple_per_mv_grid:
 
         power_to_heat = demand_per_substation.reset_index()
 
-        power_to_heat.loc[:, "carrier"] = carrier
+        power_to_heat["carrier"] = carrier
 
         power_to_heat.loc[:, "voltage_level"] = heat_pumps.voltage_level[
             power_to_heat.area_id
         ].values
+
+        if "heat_pump" in carrier:
+
+            power_to_heat.loc[:, "cop"] = heat_pumps.cop[
+                power_to_heat.area_id
+            ].values
 
         power_to_heat["share_demand"] = power_to_heat.groupby(
             "area_id"
@@ -459,9 +537,13 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
 
         power_to_heat = selected_substations
 
-        power_to_heat.loc[:, "carrier"] = carrier
+        power_to_heat["carrier"] = carrier
 
         power_to_heat.loc[:, "voltage_level"] = heat_pumps.voltage_level
+
+        if "heat_pump" in carrier:
+
+            power_to_heat.loc[:, "cop"] = heat_pumps.cop
 
         power_to_heat["capacity"] = heat_pumps.capacity[
             power_to_heat.index

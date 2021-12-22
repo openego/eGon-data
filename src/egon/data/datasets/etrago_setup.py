@@ -1,4 +1,6 @@
 # coding: utf-8
+from geoalchemy2.types import Geometry
+from shapely.geometry import LineString
 from sqlalchemy import (
     ARRAY,
     BigInteger,
@@ -10,14 +12,14 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    text,
 )
-from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
-
-import geopandas as gpd
-from shapely.geometry import LineString
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -27,9 +29,9 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.1",
+            version="0.0.3",
             dependencies=dependencies,
-            tasks=(create_tables, temp_resolution),
+            tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
 
 
@@ -48,6 +50,7 @@ class EgonPfHvBus(Base):
     x = Column(Float(53))
     y = Column(Float(53))
     geom = Column(Geometry("POINT", 4326), index=True)
+    country = Column(Text, server_default=text("'DE'::text"))
 
 
 class EgonPfHvBusTimeseries(Base):
@@ -362,6 +365,17 @@ class EgonPfHvTransformerTimeseries(Base):
     s_max_pu = Column(ARRAY(Float(precision=53)))
 
 
+class EgonPfHvBusmap(Base):
+    __tablename__ = "egon_etrago_hv_busmap"
+    __table_args__ = {"schema": "grid"}
+
+    scn_name = Column(Text, primary_key=True, nullable=False)
+    bus0 = Column(Text, primary_key=True, nullable=False)
+    bus1 = Column(Text, primary_key=True, nullable=False)
+    path_length = Column(Numeric)
+    version = Column(Text, primary_key=True, nullable=False)
+
+
 def create_tables():
     """Create tables for eTraGo input data.
     Returns
@@ -465,6 +479,7 @@ def create_tables():
     EgonPfHvTempResolution.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvTransformer.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvBusmap.__table__.drop(bind=engine, checkfirst=True)
     # Create new tables
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
@@ -486,10 +501,11 @@ def create_tables():
     EgonPfHvTransformerTimeseries.__table__.create(
         bind=engine, checkfirst=True
     )
+    EgonPfHvBusmap.__table__.create(bind=engine, checkfirst=True)
 
 
 def temp_resolution():
-    """ Insert temporal resolution for etrago
+    """Insert temporal resolution for etrago
 
     Returns
     -------
@@ -506,20 +522,130 @@ def temp_resolution():
     )
 
 
+def insert_carriers():
+    """Insert list of carriers into eTraGo table
+
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing entries
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_etrago_carrier
+        """
+    )
+
+    # List carrier names from all components
+    df = pd.DataFrame(
+        data={
+            "name": [
+                "biomass",
+                "CH4",
+                "pv",
+                "wind_offshore",
+                "wind_onshore",
+                "central_heat_pump",
+                "central_resistive_heater",
+                "CH4_to_H2",
+                "dsm",
+                "H2_feedin",
+                "H2_to_CH4",
+                "H2_to_power",
+                "rural_heat_pump",
+                "industrial_biomass_CHP",
+                "industrial_gas_CHP",
+                "central_biomass_CHP_heat",
+                "central_biomass_CHP",
+                "central_gas_CHP",
+                "central_gas_CHP_heat",
+                "power_to_H2",
+                "rural_gas_boiler",
+                "central_gas_boiler",
+                "H2_overground",
+                "H2_underground",
+                "solar_thermal_collector",
+                "geo_thermal",
+                "AC",
+                "central_heat",
+                "H2",
+                "rural_heat",
+                "H2_grid",
+                "H2_saltcavern",
+                "biogas_feedin",
+                "natural_gas_feedin",
+                "pumped_hydro",
+                "battery",
+                "OCGT",
+            ],
+        }
+    )
+
+    # Insert data into database
+    df.to_sql(
+        "egon_etrago_carrier",
+        schema="grid",
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+
+def check_carriers():
+    """Check if any eTraGo table has carriers not included in the carrier table.
+
+    Raises
+    ------
+    ValueError if carriers that are not defined in the carriers table are
+    used in any eTraGo table.
+    """
+    carriers = db.select_dataframe(
+        f"""
+        SELECT name FROM grid.egon_etrago_carrier
+        """
+    )
+    unknown_carriers = {}
+    tables = ['bus', 'store', 'storage', 'link', 'line', 'generator', 'load']
+
+    for table in tables:
+    # Delete existing entries
+        data = db.select_dataframe(
+            f"""
+            SELECT carrier FROM grid.egon_etrago_{table}
+            """
+        )
+        unknown_carriers[table] = (
+            data[~data['carrier'].isin(carriers)]['carrier'].unique()
+        )
+
+    if len(unknown_carriers) > 0:
+        msg = (
+            "The eTraGo tables contain carriers, that are not included in the "
+            "carrier table:\n"
+        )
+        for table, carriers in unknown_carriers.items():
+            carriers = [str(c) for c in carriers]
+            if len(carriers) > 0:
+                msg += table + ": '" + "', '".join(carriers) + "'\n"
+
+        raise ValueError(msg)
+
+
 def link_geom_from_buses(df, scn_name):
-    """ Add LineString geometry accoring to geometry of buses to links
+    """Add LineString geometry accoring to geometry of buses to links
 
     Parameters
     ----------
     df : pandas.DataFrame
-        List of eTraGo links with bus0 and bus 1 but without topology
+        List of eTraGo links with bus0 and bus1 but without topology
     scn_name : str
         Scenario name
 
     Returns
     -------
     gdf : geopandas.GeoDataFrame
-        List of eTraGo links with bus0 and bus 1 but with topology
+        List of eTraGo links with bus0 and bus1 but with topology
 
     """
 

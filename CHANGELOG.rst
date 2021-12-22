@@ -153,6 +153,30 @@ Added
   `#405 <https://github.com/openego/eGon-data/issues/405>`_
 * Include allocation of conventional (non CHP) power plants
   `#392 <https://github.com/openego/eGon-data/issues/392>`_
+* Fill egon-etrago-generators table
+  `#485 <https://github.com/openego/eGon-data/issues/485>`_
+* Include time-dependent coefficient of performance for heat pumps
+  `#532 <https://github.com/openego/eGon-data/issues/532>`_
+* Limit number of parallel processes per task
+  `#265 <https://github.com/openego/eGon-data/issues/265>`_
+* Include biomass CHP plants to eTraGo tables
+  `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include PHS in eTraGo tables
+  `#333 <https://github.com/openego/eGon-data/issues/333>`_
+* Include feedin time series for wind offshore
+  `#531 <https://github.com/openego/eGon-data/issues/531>`_
+* Include carrier names in eTraGo table
+  `#551 <https://github.com/openego/eGon-data/issues/551>`_
+* Include hydrogen infrastructure for eGon2035 scenario
+  `#474 <https://github.com/openego/eGon-data/issues/474>`_
+* Include downloaded pypsa-eur-sec results
+  `#138 <https://github.com/openego/eGon-data/issues/138>`_
+* Insert open cycle gas turbines into eTraGo tables
+  `#548 <https://github.com/openego/eGon-data/issues/548>`_
+* Preprocess buildings and amenities for LV grids
+  `#262 <https://github.com/openego/eGon-data/issues/262>`_
+* Assign household profiles to OSM buildings
+  `#435 <https://github.com/openego/eGon-data/issues/435>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -236,10 +260,28 @@ Changed
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
 * Update deposit id for zenodo download
   `#397 <https://github.com/openego/eGon-data/issues/498>`_
+* Add to etrago.setug.py the busmap table
+  `#484 <https://github.com/openego/eGon-data/issues/484>`_
 * Migrate dlr script to datasets
   `#508 <https://github.com/openego/eGon-data/issues/508>`_
+* Migrate loadarea scripts to datasets
+  `#525 <https://github.com/openego/eGon-data/issues/525>`_
+* Migrate plot.py to dataset of district heating areas
+  `#527 <https://github.com/openego/eGon-data/issues/527>`_
+* Migrate substation scripts to datasets
+  `#304 <https://github.com/openego/eGon-data/issues/304>`_
+* Update deposit_id for zenodo download
+  `#540 <https://github.com/openego/eGon-data/issues/540>`_
+* Add household demand profiles to etrago table
+  `#381 <https://github.com/openego/eGon-data/issues/381>`_
+* Migrate zensus scripts to datasets
+  `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Assign residentail heat demands to osm buildings
   `#557 <https://github.com/openego/eGon-data/issues/557>`_
+* Add foreign gas buses and adjust cross bording pipelines
+  `#545 <https://github.com/openego/eGon-data/issues/545>`_
+* Integrate fuel and CO2 costs for eGon2035 to scenario parameters
+  `#549 <https://github.com/openego/eGon-data/issues/549>`_
 
 
 Bug fixes
@@ -311,5 +353,11 @@ Bug fixes
   `#504 <https://github.com/openego/eGon-data/issues/504>`_
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
+* Add missing 'sign' for CH4 and H2 loads
+  `#516 <https://github.com/openego/eGon-data/issues/538>`_
+* Delete only AC loads for eTraGo in electricity_demand_etrago
+  `#535 <https://github.com/openego/eGon-data/issues/535>`_
+* Filter target values by scenario name
+  `#570 <https://github.com/openego/eGon-data/issues/570>`_
 * Fix assignemnt of heat demand profiles at German borders
   `#585 <https://github.com/openego/eGon-data/issues/585>`_

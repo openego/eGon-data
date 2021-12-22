@@ -2,24 +2,24 @@
 Central module containing all code dealing with processing era5 weather data.
 """
 
-import numpy as np
-
-import egon.data.config
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.era5 import import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.config
 
 
 class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.1",
+            version="0.0.5",
             dependencies=dependencies,
-            tasks=(wind, pv, solar_thermal),
+            tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore},
         )
 
 
@@ -41,6 +41,29 @@ def weather_cells_in_germany(geom_column="geom"):
         {cfg['weather_cells']['table']}
         WHERE ST_Intersects('SRID=4326;
         POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
+        geom_col=geom_column,
+        index_col="w_id",
+    )
+
+
+def offshore_weather_cells(geom_column="geom"):
+    """Get weather cells which intersect with Germany
+
+    Returns
+    -------
+    GeoPandas.GeoDataFrame
+        Index and points of weather cells inside Germany
+
+    """
+
+    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+
+    return db.select_geodataframe(
+        f"""SELECT w_id, geom_point, geom
+        FROM {cfg['weather_cells']['schema']}.
+        {cfg['weather_cells']['table']}
+        WHERE ST_Intersects('SRID=4326;
+        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))', geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -100,8 +123,9 @@ def federal_states_per_weather_cell():
             .drop_duplicates(subset="w_id", keep="first")
             .set_index("w_id")
         )
-        
-        weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
+
+    
+    weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
     return weather_cells.to_crs(4326)
 
@@ -306,6 +330,35 @@ def wind():
     )
 
 
+def wind_offshore():
+    """Insert feed-in timeseries for wind offshore turbines to database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Get offshore weather cells arround Germany
+    weather_cells = offshore_weather_cells()
+
+    # Select weather data for German coast
+    cutout = import_cutout(boundary="Germany-offshore")
+
+    # Select weather year from cutout
+    weather_year = cutout.name.split("-")[2]
+
+    # Calculate feedin timeseries
+    ts_wind_offshore = cutout.wind(
+        "Vestas_V164_7MW_offshore",
+        per_unit=True,
+        shapes=weather_cells.to_crs(4326).geom,
+    )
+
+    # Create dataframe and insert to database
+    insert_feedin(ts_wind_offshore, "wind_offshore", weather_year)
+
+
 def pv():
     """Insert feed-in timeseries for pv plants to database
 
@@ -360,10 +413,78 @@ def solar_thermal():
         orientation={"slope": 45.0, "azimuth": 180.0},
         per_unit=True,
         shapes=weather_cells.to_crs(4326).geom,
+        capacity_factor=False,
     )
 
     # Create dataframe and insert to database
     insert_feedin(ts_solar_thermal, "solar_thermal", weather_year)
+
+
+def heat_pump_cop():
+    """
+    Calculate coefficient of performance for heat pumps according to
+    T. Brown et al: "Synergies of sector coupling and transmission
+    reinforcement in a cost-optimised, highlyrenewable European energy system",
+    2018, p. 8
+
+    Returns
+    -------
+    None.
+
+    """
+    # Assume temperature of heating system to 55°C according to Brown et. al
+    t_sink = 55
+
+    carrier = "heat_pump_cop"
+
+    # Load configuration
+    cfg = egon.data.config.datasets()["renewable_feedin"]
+
+    # Get weather cells in Germany
+    weather_cells = weather_cells_in_germany()
+
+    # Select weather data for Germany
+    cutout = import_cutout(boundary="Germany")
+
+    # Select weather year from cutout
+    weather_year = cutout.name.split("-")[1]
+
+    # Calculate feedin timeseries
+    temperature = cutout.temperature(
+        shapes=weather_cells.to_crs(4326).geom
+    ).transpose()
+
+    t_source = temperature.to_pandas()
+
+    delta_t = t_sink - t_source
+
+    # Calculate coefficient of performance for air sourced heat pumps
+    # according to Brown et. al
+    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t ** 2
+
+    df = pd.DataFrame(
+        index=temperature.to_pandas().index,
+        columns=["weather_year", "carrier", "feedin"],
+        data={"weather_year": weather_year, "carrier": carrier},
+    )
+
+    df.feedin = cop.values.tolist()
+
+    # Delete existing rows for carrier
+    db.execute_sql(
+        f"""
+                   DELETE FROM {cfg['targets']['feedin_table']['schema']}.
+                   {cfg['targets']['feedin_table']['table']}
+                   WHERE carrier = '{carrier}'"""
+    )
+
+    # Insert values into database
+    df.to_sql(
+        cfg["targets"]["feedin_table"]["table"],
+        schema=cfg["targets"]["feedin_table"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
 
 
 def insert_feedin(data, carrier, weather_year):
@@ -384,20 +505,24 @@ def insert_feedin(data, carrier, weather_year):
 
     """
     # Transpose DataFrame
-    data = data.transpose()
+    data = data.transpose().to_pandas()
 
     # Load configuration
     cfg = egon.data.config.datasets()["renewable_feedin"]
 
     # Initialize DataFrame
     df = pd.DataFrame(
-        index=data.to_pandas().index,
+        index=data.index,
         columns=["weather_year", "carrier", "feedin"],
         data={"weather_year": weather_year, "carrier": carrier},
     )
 
+    # Convert solar thermal data from W/m^2 to MW/(1000m^2) = kW/m^2
+    if carrier == "solar_thermal":
+        data *= 1e-3
+
     # Insert feedin into DataFrame
-    df.feedin = data.to_pandas().values.tolist()
+    df.feedin = data.values.tolist()
 
     # Delete existing rows for carrier
     db.execute_sql(

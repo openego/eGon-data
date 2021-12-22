@@ -1,10 +1,10 @@
+from shapely import wkb
+import geopandas as gpd
 import numpy as np
+import pandas as pd
 import psycopg2
 
-import geopandas as gpd
-import pandas as pd
 from egon.data import db
-from shapely import wkb
 
 
 def insert():
@@ -368,7 +368,7 @@ def insert():
         # build pv farms in selected areas
 
         # calculation of centroids
-        pv_pot["centroid"] = pv_pot["geom"].centroid
+        pv_pot["centroid"] = pv_pot["geom"].representative_point()
 
         # calculation of power in kW
         pv_pot["installed capacity in kW"] = pd.Series()
@@ -488,7 +488,7 @@ def insert():
         pv_per_distr = gpd.GeoDataFrame()
         pv_per_distr["geom"] = distr["geom"].copy()
         centroids = potentials.copy()
-        centroids["geom"] = centroids["geom"].centroid
+        centroids["geom"] = centroids["geom"].representative_point()
 
         overlay = gpd.sjoin(centroids, distr)
 
@@ -528,7 +528,7 @@ def insert():
         )
 
         # calculate centroid
-        pv_per_distr["centroid"] = pv_per_distr["geom"].centroid
+        pv_per_distr["centroid"] = pv_per_distr["geom"].representative_point()
 
         return pv_per_distr
 
@@ -1072,7 +1072,7 @@ def insert():
             pv_per_distr_100RE,
         )
 
-    def pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
+    def insert_pv_parks(pv_rora, pv_agri, pv_per_distr, scenario_name):
 
         """Write to database.
 
@@ -1141,8 +1141,6 @@ def insert():
 
         # set static column values
         insert_pv_parks["carrier"] = "solar"
-        insert_pv_parks["chp"] = False
-        insert_pv_parks["th_capacity"] = 0
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column
@@ -1240,7 +1238,7 @@ def insert():
         or pv_per_distr["installed capacity in kW"].sum()
     ):
 
-        pv_parks = pv_parks(pv_rora, pv_agri, pv_per_distr, "eGon2035")
+        pv_parks = insert_pv_parks(pv_rora, pv_agri, pv_per_distr, "eGon2035")
 
     else:
 
@@ -1252,7 +1250,7 @@ def insert():
         or pv_per_distr_100RE["installed capacity in kW"].sum()
     ):
 
-        pv_parks_100RE = pv_parks(
+        pv_parks_100RE = insert_pv_parks(
             pv_rora_100RE, pv_agri_100RE, pv_per_distr_100RE, "eGon100RE"
         )
 
