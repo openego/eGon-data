@@ -401,7 +401,7 @@ def get_iee_hh_demand_profiles_raw():
     if len(df_hh_profiles) > timesteps_target:
         df_hh_profiles = df_hh_profiles[
             len(df_hh_profiles) - timesteps_target :
-        ]
+        ].reset_index(drop=True)
 
     return df_hh_profiles
 
