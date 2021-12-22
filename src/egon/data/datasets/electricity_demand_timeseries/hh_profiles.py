@@ -375,6 +375,13 @@ def get_iee_hh_demand_profiles_raw():
 
     df_hh_profiles = pd.read_hdf(hh_profiles_file)
 
+    # Use only last 8760 timesteps of profiles (for details see notes)
+    timesteps_target = 8760
+    if len(df_hh_profiles) > timesteps_target:
+        df_hh_profiles = df_hh_profiles[
+            len(df_hh_profiles) - timesteps_target:
+        ]
+
     return df_hh_profiles
 
 
