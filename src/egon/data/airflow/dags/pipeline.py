@@ -40,7 +40,6 @@ from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
-    HydrogenStoreEtrago,
     HydrogenMethaneLinkEtrago,
     HydrogenPowerLinkEtrago,
     HydrogenStoreEtrago,

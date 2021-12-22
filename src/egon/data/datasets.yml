@@ -637,28 +637,6 @@ etrago_hydrogen:
       schema: 'grid'
       table: 'egon_etrago_store'
 
-etrago_hydrogen:
-  sources:
-    saltcavern_data:
-      schema: 'grid'
-      table: 'egon_saltstructures_storage_potential'
-    buses:
-      schema: 'grid'
-      table: 'egon_etrago_bus'
-    H2_AC_map:
-      schema: 'grid'
-      table: 'egon_etrago_ac_h2'
-  targets:
-    hydrogen_buses:
-      schema: 'grid'
-      table: 'egon_etrago_bus'
-    hydrogen_links:
-      schema: 'grid'
-      table: 'egon_etrago_link'
-    hydrogen_stores:
-      schema: 'grid'
-      table: 'egon_etrago_store'
-
 industrial_sites:
   sources:
     hotmaps:
