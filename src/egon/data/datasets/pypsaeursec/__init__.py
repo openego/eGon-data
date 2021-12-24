@@ -27,6 +27,7 @@ def run_pypsa_eur_sec():
     filepath.mkdir(parents=True, exist_ok=True)
 
     pypsa_eur_repos = filepath / "pypsa-eur"
+    pypsa_eur_repos_data = pypsa_eur_repos / "data"
     technology_data_repos = filepath / "technology-data"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
     pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data"
@@ -66,6 +67,13 @@ def run_pypsa_eur_sec():
             yaml.dump(
                 env, outfile, default_flow_style=False, allow_unicode=True
             )
+            
+        datafile = "pypsa-eur-data-bundle.tar.xz"
+        datapath = pypsa_eur_repos / datafile
+        if not datapath.exists():
+            urlretrieve(f"https://zenodo.org/record/3517935/files/{datafile}", datapath)
+            tar = tarfile.open(datapath)
+            tar.extractall(pypsa_eur_repos_data)
 
     if not technology_data_repos.exists():
         subproc.run(
