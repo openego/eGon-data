@@ -88,10 +88,10 @@ class EgonPfHvGenerator(Base):
     min_down_time = Column(BigInteger,server_default=0)
     up_time_before = Column(BigInteger,server_default=0)
     down_time_before = Column(BigInteger,server_default=0)
-    ramp_limit_up = Column(Float(53))
-    ramp_limit_down = Column(Float(53))
-    ramp_limit_start_up = Column(Float(53))
-    ramp_limit_shut_down = Column(Float(53))
+    ramp_limit_up = Column(Float(53),server_default="NaN")
+    ramp_limit_down = Column(Float(53),server_default="NaN")
+    ramp_limit_start_up = Column(Float(53),server_default=1)
+    ramp_limit_shut_down = Column(Float(53),server_default=1)
 
 
 class EgonPfHvGeneratorTimeseries(Base):
