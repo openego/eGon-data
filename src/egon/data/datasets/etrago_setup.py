@@ -198,9 +198,9 @@ class EgonPfHvLoad(Base):
     bus = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
-    sign = Column(Float(53))
+    p_set_fixed = Column(Float(53), server_default=0.)
+    q_set_fixed = Column(Float(53), server_default=0.)
+    sign = Column(Float(53), server_default=-1.)
 
 
 class EgonPfHvLoadTimeseries(Base):
