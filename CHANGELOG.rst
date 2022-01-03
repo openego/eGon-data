@@ -177,6 +177,10 @@ Added
   `#262 <https://github.com/openego/eGon-data/issues/262>`_
 * Assign household profiles to OSM buildings
   `#435 <https://github.com/openego/eGon-data/issues/435>`_
+* Add link to meta creator to docs
+  `#599 <https://github.com/openego/eGon-data/issues/599>`_
+* Add extendable batteries and heat stores
+  `#566 <https://github.com/openego/eGon-data/issues/566>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -359,5 +363,7 @@ Bug fixes
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
 * Filter target values by scenario name
   `#570 <https://github.com/openego/eGon-data/issues/570>`_
+* Reduce number of timesteps of hh electricity demand profiles to 8760
+  `#593 <https://github.com/openego/eGon-data/issues/593>`_
 * Fix assignemnt of heat demand profiles at German borders
   `#585 <https://github.com/openego/eGon-data/issues/585>`_
