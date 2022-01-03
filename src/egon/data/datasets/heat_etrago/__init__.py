@@ -88,6 +88,142 @@ def insert_buses(carrier, scenario="eGon2035"):
     )
 
 
+def insert_store(scenario, carrier):
+
+    sources = config.datasets()["etrago_heat"]["sources"]
+    targets = config.datasets()["etrago_heat"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']}
+        WHERE carrier = '{carrier}_store'
+        AND scn_name = '{scenario}'
+        """
+    )
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_links']['schema']}.
+        {targets['heat_links']['table']}
+        WHERE carrier LIKE '{carrier}_store%'
+        AND scn_name = '{scenario}'
+        """
+    )
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_stores']['schema']}.
+        {targets['heat_stores']['table']}
+        WHERE carrier = '{carrier}_store'
+        AND scn_name = '{scenario}'
+        """
+    )
+
+    dh_bus = db.select_geodataframe(
+        f"""
+        SELECT * FROM
+        {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']}
+        WHERE carrier = '{carrier}'
+        AND scn_name = '{scenario}'
+        """,
+        epsg=4326,
+    )
+
+    water_tank_bus = dh_bus.copy()
+    water_tank_bus.carrier = carrier + "_store"
+    water_tank_bus.bus_id = range(
+        db.next_etrago_id("bus"),
+        db.next_etrago_id("bus") + len(water_tank_bus),
+    )
+
+    water_tank_bus.to_postgis(
+        targets['heat_buses']['table'],
+        schema=targets['heat_buses']['schema'],
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+    water_tank_charger = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "bus0": dh_bus.bus_id,
+            "bus1": water_tank_bus.bus_id,
+            "carrier": carrier + "_store_charger",
+            "efficiency_fixed": get_sector_parameters("heat", "eGon2035")[
+                "efficiency"
+            ]["water_tank_charger"],
+            "p_nom_extendable": True,
+            "link_id": range(
+                db.next_etrago_id("link"),
+                db.next_etrago_id("link") + len(water_tank_bus),
+            ),
+        }
+    )
+
+    water_tank_charger.to_sql(
+        targets['heat_links']['table'],
+        schema=targets['heat_links']['schema'],
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+    water_tank_discharger = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "bus0": water_tank_bus.bus_id,
+            "bus1": dh_bus.bus_id,
+            "carrier": carrier + "_store_discharger",
+            "efficiency_fixed": get_sector_parameters("heat", "eGon2035")[
+                "efficiency"
+            ]["water_tank_discharger"],
+            "p_nom_extendable": True,
+            "link_id": range(
+                db.next_etrago_id("link"),
+                db.next_etrago_id("link") + len(water_tank_bus),
+            ),
+        }
+    )
+
+    water_tank_discharger.to_sql(
+        targets['heat_links']['table'],
+        schema=targets['heat_links']['schema'],
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+    water_tank_store = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "bus": water_tank_bus.bus_id,
+            "carrier": carrier + "_store",
+            "capital_cost": get_sector_parameters("heat", "eGon2035")[
+                "capital_cost"
+            ][f"{carrier.split('_')[0]}_water_tank"],
+            "e_nom_extendable": True,
+            "store_id": range(
+                db.next_etrago_id("store"),
+                db.next_etrago_id("store") + len(water_tank_bus),
+            ),
+        }
+    )
+
+    water_tank_store.to_sql(
+        targets['heat_stores']['table'],
+        schema=targets['heat_stores']['schema'],
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+
+def store():
+    insert_store("eGon2035", "central_heat")
+    insert_store("eGon2035", "rural_heat")
+
+
 def insert_central_direct_heat(scenario="eGon2035"):
     """Insert renewable heating technologies (solar and geo thermal)
 
@@ -241,7 +377,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier  = 'urban_central_gas_boiler'
+        WHERE carrier  LIKE '%central_gas_boiler%'
         AND scn_name = '{scenario}'
         """
     )
@@ -286,7 +422,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     central_boilers.index.name = "link_id"
 
     # Set carrier name
-    central_boilers.carrier = "urban_central_gas_boiler"
+    central_boilers.carrier = "central_gas_boiler"
 
     central_boilers.reset_index().to_postgis(
         targets["heat_links"]["table"],
@@ -414,5 +550,5 @@ class HeatEtrago(Dataset):
             name="HeatEtrago",
             version="0.0.6",
             dependencies=dependencies,
-            tasks=(buses, supply),
+            tasks=(buses, supply, store),
         )
