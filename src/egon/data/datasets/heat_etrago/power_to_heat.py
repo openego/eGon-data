@@ -6,7 +6,7 @@ import pandas as pd
 
 
 from egon.data import config, db
-from egon.data.datasets.renewable_feedin import weather_cells_in_germany
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_individual_power_to_heat(scenario="eGon2035"):
@@ -34,7 +34,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         WHERE link_id IN (
             SELECT link_id FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier = 'individual_heat_pump'
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
         """
@@ -43,7 +43,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier = 'individual_heat_pump'
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
         """
     )
 
@@ -80,7 +80,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     # Insert heatpumps
     insert_power_to_heat_per_level(
         heat_pumps,
-        carrier="individual_heat_pump",
+        carrier="rural_heat_pump",
         multiple_per_mv_grid=False,
         scenario="eGon2035",
     )
@@ -190,6 +190,11 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     central_resistive_heater = assign_voltage_level(
         central_resistive_heater, carrier="resistive_heater"
     )
+
+    # Set efficiency
+    central_resistive_heater["efficiency_fixed"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["efficiency"]["central_resistive_heater"]
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
