@@ -118,7 +118,7 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
     control = pd.Series(
         get_sector_parameters("electricity", "eGon2035")["control"]
     )
-    etrago_pp[etrago_pp.carrier.isin(control.index)]["control"] = control[
+    etrago_pp["control"] = control[
         etrago_pp[etrago_pp.carrier.isin(control.index)].carrier
     ].values
 
