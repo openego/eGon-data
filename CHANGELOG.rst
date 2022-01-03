@@ -367,3 +367,5 @@ Bug fixes
   `#570 <https://github.com/openego/eGon-data/issues/570>`_
 * Reduce number of timesteps of hh electricity demand profiles to 8760
   `#593 <https://github.com/openego/eGon-data/issues/593>`_
+* Fix assignemnt of heat demand profiles at German borders
+  `#585 <https://github.com/openego/eGon-data/issues/585>`_
