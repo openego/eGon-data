@@ -374,3 +374,5 @@ Bug fixes
   `#593 <https://github.com/openego/eGon-data/issues/593>`_
 * Fix assignemnt of heat demand profiles at German borders
   `#585 <https://github.com/openego/eGon-data/issues/585>`_
+* Change source for H2 steel tank storage to Danish Energy Agency
+  `#605 <https://github.com/openego/eGon-data/issues/605>`_
