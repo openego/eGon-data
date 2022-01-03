@@ -4,13 +4,15 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
+
 
 class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.3",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -22,7 +24,7 @@ def fill_etrago_generators():
     cfg = egon.data.config.datasets()["generators_etrago"]
 
     # Delete power plants from previous iterations of this script
-    delete_previuos_gen(cfg)    
+    delete_previuos_gen(cfg)
 
     # Load required tables
     (
@@ -80,7 +82,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
-    
+
     if np.isnan(etrago_gen_orig["generator_id"].max()):
         max_id = 0
     else:
@@ -101,6 +103,24 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
             "scenario": "scn_name",
         }
     )
+
+    # Set marginal_cost according to scenario parameters
+    marginal_cost = pd.Series(
+        get_sector_parameters("electricity", "eGon2035")["marginal_cost"]
+    )
+    etrago_pp[etrago_pp.carrier.isin(marginal_cost.index)][
+        "marginal_cost_fixed"
+    ] = marginal_cost[
+        etrago_pp[etrago_pp.carrier.isin(marginal_cost.index)].carrier
+    ].values
+
+    # Set control according to scenario parameters
+    control = pd.Series(
+        get_sector_parameters("electricity", "eGon2035")["control"]
+    )
+    etrago_pp["control"] = control[
+        etrago_pp[etrago_pp.carrier.isin(control.index)].carrier
+    ].values
 
     etrago_pp = etrago_pp.reindex(columns=etrago_gen_orig.columns)
     etrago_pp = etrago_pp.drop(columns="generator_id")
@@ -157,7 +177,7 @@ def fill_etrago_gen_time_table(
     return etrago_pp
 
 
-def load_tables(con, cfg, scenario='eGon2035'):
+def load_tables(con, cfg, scenario="eGon2035"):
     sql = f"""
     SELECT * FROM
     {cfg['sources']['power_plants']['schema']}.
@@ -281,4 +301,3 @@ def set_timeseries(power_plants, renew_feedin):
     ####################### DELETE THIS EXCEPTION #############################
     ###########################################################################
     return timeseries
-   

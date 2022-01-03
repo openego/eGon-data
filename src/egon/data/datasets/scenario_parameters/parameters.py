@@ -12,9 +12,7 @@ def read_csv(year):
         "data_dir"
     ]
 
-    return pd.read_csv(
-        f"{source}costs_{year}.csv"
-    )
+    return pd.read_csv(f"{source}costs_{year}.csv")
 
 
 def read_costs(df, technology, parameter, value_only=True):
@@ -204,6 +202,26 @@ def electricity(scenario):
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "pv": read_costs(costs, "solar", "VOM"),
             "OCGT": read_costs(costs, "OCGT", "VOM"),
+        }
+
+        # Insert control strategies for generators and storage units
+        # According to 'Technische Anschlussbedingungen Mittelspannung,
+        # Westnetz, 2019' all power plants with an installed capacity > 475kW(p)
+        # have to be able to be PV-controlled.
+        # Assuming that only pv rooftop plants are < 475kWp, pv rooftop is
+        # 'PQ'-controlled, all other carriers get control='PV'.
+        parameters["control"] = {
+            "oil": "PV",
+            "other_non_renewable": "PV",
+            "wind_offshore": "PV",
+            "wind_onshore": "PV",
+            "pv": "PV",
+            "pv_rooftop": "PQ",
+            "run_of_river": "PV",
+            "reservoir": "PV",
+            "gas": "PV",
+            "biomass": "PV",
+            "pumped_hydro": "PV",
         }
 
     elif scenario == "eGon100RE":
