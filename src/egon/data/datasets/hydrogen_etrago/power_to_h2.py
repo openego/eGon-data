@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_power_to_h2_to_power(scn_name='eGon2035'):
@@ -69,15 +70,17 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
             p_nom_max["PtH2"].append(float("Inf"))
             p_nom_max["H2tP"].append(float("Inf"))
 
-    # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     carrier = {"PtH2": "power_to_H2", "H2tP": "H2_to_power"}
     efficiency = {
-        "PtH2": 0.8,  # H2 electrolysis - Brown et al. 2018
-        "H2tP": 0.58,  # H2 fuel cell - Brown et al. 2018
+        "PtH2": scn_params["efficiency"]["power_to_H2"],
+        "H2tP": scn_params["efficiency"]["H2_to_power"],
     }
     capital_cost = {
-        "PtH2": 350000,  # H2 electrolysis - Brown et al. 2018
-        "H2tP": 339000,  # H2 fuel cell - Brown et al. 2018
+        "PtH2": scn_params["capital_cost"]["power_to_H2"],
+        "H2tP": scn_params["capital_cost"]["H2_to_power"],
     }
 
     # Drop unused columns
