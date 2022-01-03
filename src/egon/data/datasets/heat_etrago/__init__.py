@@ -12,7 +12,7 @@ from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_buses(carrier, scenario="eGon2035"):
+def insert_buses(carrier, scenario):
     """Insert heat buses to etrago table
 
     Heat buses are divided into central and individual heating
@@ -22,7 +22,7 @@ def insert_buses(carrier, scenario="eGon2035"):
     carrier : str
         Name of the carrier, either 'central_heat' or 'rural_heat'
     scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+        Name of the scenario.
 
     """
     sources = config.datasets()["etrago_heat"]["sources"]
@@ -285,6 +285,7 @@ def insert_central_direct_heat(scenario="eGon2035"):
         ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
         WHERE carrier = 'central_heat'
         AND scenario = '{scenario}'
+        AND scn_name = '{scenario}'
         """,
         index_col="id",
     )
@@ -522,6 +523,8 @@ def buses():
 
     insert_buses("central_heat", scenario="eGon2035")
     insert_buses("rural_heat", scenario="eGon2035")
+    insert_buses("central_heat", scenario="eGon100RE")
+    insert_buses("rural_heat", scenario="eGon100RE")
 
 
 def supply():

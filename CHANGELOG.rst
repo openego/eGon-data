@@ -171,6 +171,8 @@ Added
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
+* Create heat buses for eGon100RE scenario
+  `#582 <https://github.com/openego/eGon-data/issues/582>`_
 * Insert open cycle gas turbines into eTraGo tables
   `#548 <https://github.com/openego/eGon-data/issues/548>`_
 * Preprocess buildings and amenities for LV grids
