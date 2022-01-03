@@ -241,7 +241,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     )
 
     # Select the foreign buses
-    sql_abroad_buses = f"""SELECT bus_id, scn_name, x, y, carrier, country 
+    sql_abroad_buses = f"""SELECT bus_id, scn_name, x, y, carrier, country
                             FROM grid.egon_etrago_bus
                             WHERE country != 'DE'
                             AND carrier = 'AC'

@@ -173,6 +173,8 @@ Added
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
 * Create heat buses for eGon100RE scenario
   `#582 <https://github.com/openego/eGon-data/issues/582>`_
+* Filter for DE in gas infrastructure deletion at beginning of respective tasks
+  `#567 <https://github.com/openego/eGon-data/issues/567>`_
 * Insert open cycle gas turbines into eTraGo tables
   `#548 <https://github.com/openego/eGon-data/issues/548>`_
 * Preprocess buildings and amenities for LV grids
@@ -183,6 +185,9 @@ Added
   `#599 <https://github.com/openego/eGon-data/issues/599>`_
 * Add extendable batteries and heat stores
   `#566 <https://github.com/openego/eGon-data/issues/566>`_
+* Add efficiency, capital_cost and marginal_cost to gas related data in
+  etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
