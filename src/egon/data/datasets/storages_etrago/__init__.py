@@ -17,7 +17,7 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
