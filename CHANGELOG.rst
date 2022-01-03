@@ -165,11 +165,22 @@ Added
   `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
   `#531 <https://github.com/openego/eGon-data/issues/531>`_
+* Include carrier names in eTraGo table
+  `#551 <https://github.com/openego/eGon-data/issues/551>`_
 * Include hydrogen infrastructure for eGon2035 scenario
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
-  
+* Insert open cycle gas turbines into eTraGo tables
+  `#548 <https://github.com/openego/eGon-data/issues/548>`_
+* Preprocess buildings and amenities for LV grids
+  `#262 <https://github.com/openego/eGon-data/issues/262>`_
+* Assign household profiles to OSM buildings
+  `#435 <https://github.com/openego/eGon-data/issues/435>`_
+* Add link to meta creator to docs
+  `#599 <https://github.com/openego/eGon-data/issues/599>`_
+* Add extendable batteries and heat stores
+  `#566 <https://github.com/openego/eGon-data/issues/566>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -271,6 +282,12 @@ Changed
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Add information on plz, city and federal state to data on mastr without chp
   `#425 <https://github.com/openego/eGon-data/issues/425>`_
+* Assign residentail heat demands to osm buildings
+  `#557 <https://github.com/openego/eGon-data/issues/557>`_
+* Add foreign gas buses and adjust cross bording pipelines
+  `#545 <https://github.com/openego/eGon-data/issues/545>`_
+* Integrate fuel and CO2 costs for eGon2035 to scenario parameters
+  `#549 <https://github.com/openego/eGon-data/issues/549>`_
 
 
 Bug fixes
@@ -346,3 +363,7 @@ Bug fixes
   `#516 <https://github.com/openego/eGon-data/issues/538>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
+* Filter target values by scenario name
+  `#570 <https://github.com/openego/eGon-data/issues/570>`_
+* Reduce number of timesteps of hh electricity demand profiles to 8760
+  `#593 <https://github.com/openego/eGon-data/issues/593>`_

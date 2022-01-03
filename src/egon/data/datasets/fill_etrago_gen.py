@@ -10,7 +10,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -157,11 +157,12 @@ def fill_etrago_gen_time_table(
     return etrago_pp
 
 
-def load_tables(con, cfg):
+def load_tables(con, cfg, scenario='eGon2035'):
     sql = f"""
     SELECT * FROM
     {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']}
+    WHERE scenario = '{scenario}'
     """
     power_plants = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", index_col="id"
@@ -185,6 +186,7 @@ def load_tables(con, cfg):
     SELECT * FROM
     {cfg['targets']['etrago_generators']['schema']}.
     {cfg['targets']['etrago_generators']['table']}
+    WHERE scn_name = '{scenario}'
     """
     etrago_gen_orig = pd.read_sql(sql, con)
 
@@ -192,6 +194,7 @@ def load_tables(con, cfg):
     SELECT * FROM
     {cfg['targets']['etrago_gen_time']['schema']}.
     {cfg['targets']['etrago_gen_time']['table']}
+    WHERE scn_name = '{scenario}'
     """
     pp_time = pd.read_sql(sql, con)
 
