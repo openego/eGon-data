@@ -637,7 +637,7 @@ def annual_demand_generator():
     # start with buffer
     buffer = 0
 
-    # increase buffer until every zensus cell is matched to a nuts3 region
+    # increase buffer until every zensus cell is matched to a climate zone
     while len(missing_cells) > 0:
         buffer += 100
         boundaries_buffer = temperature_zones.copy()
