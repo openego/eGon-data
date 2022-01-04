@@ -183,12 +183,12 @@ def download_pypsa_technology_data():
 
     with zipfile.ZipFile(target_file, "r") as zip_ref:
         zip_ref.extractall(".")
-        
+
 class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(create_table, download_pypsa_technology_data, insert_scenarios),
         )

@@ -253,7 +253,7 @@ def gas(scenario):
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             #  what about H2 compressors?
             "H2_underground": read_costs(costs, "hydrogen storage underground", "investment"),
-            "H2_overground": read_costs(costs, "hydrogen storage tank", "investment"),
+            "H2_overground": read_costs(costs, "hydrogen storage tank incl. compressor", "investment"),
         }
         parameters["marginal_cost"] = {
             "CH4": global_settings(scenario)["fuel_costs"]["gas"]
