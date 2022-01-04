@@ -228,7 +228,6 @@ with airflow.DAG(
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
-
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
 
@@ -573,5 +572,10 @@ with airflow.DAG(
 
     # eMobility: motorized individual travel
     emobility_mit = MotorizedIndividualTravel(
-        dependencies=[scenario_parameters, mv_grid_districts, zensus_vg250]
+        dependencies=[
+            scenario_parameters,
+            mv_grid_districts,
+            zensus_vg250,
+            data_bundle,
+        ]
     )
