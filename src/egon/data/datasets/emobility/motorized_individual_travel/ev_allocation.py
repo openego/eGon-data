@@ -3,7 +3,7 @@ import numpy as np
 from itertools import permutations
 from sqlalchemy.sql import func
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
@@ -18,6 +18,7 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     CONFIG_EV,
+    TESTMODE_OFF,
     read_kba_data,
     read_rs7_data
 )
@@ -29,9 +30,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 from egon.data.datasets.emobility.motorized_individual_travel.tests import (
     test_ev_numbers
 )
-
-TESTMODE_OFF = (config.settings()["egon-data"]["--dataset-boundary"] ==
-                "Everything")
 
 
 def fix_missing_ags_municipality_regiostar(muns, rs7_data):

@@ -2,6 +2,10 @@ import pandas as pd
 from pathlib import Path
 import egon.data.config
 
+TESTMODE_OFF = (
+    egon.data.config.settings()["egon-data"]["--dataset-boundary"] ==
+    "Everything"
+)
 DOWNLOAD_DIRECTORY = Path(".") / "motorized_individual_travel"
 COLUMNS_KBA = [
     'reg_district',
