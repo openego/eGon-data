@@ -41,6 +41,20 @@ CONFIG_EV = {
                     'share': 'luxury_share',
                     'factor': 'luxury_factor'},
 }
+TRIP_COLUMN_MAPPING = {
+    "location": "location",
+    "nominal_charging_capacity_kW": "charging_capacity_nominal",
+    "grid_charging_capacity_kW": "charging_capacity_grid",
+    "battery_charging_capacity_kW": "charging_capacity_battery",
+    "soc_start": "soc_start",
+    "soc_end": "soc_end",
+    "chargingdemand_kWh": "charging_demand",
+    "park_start_timesteps": "park_start",
+    "park_end_timesteps": "park_end",
+    "drive_start_timesteps": "drive_start",
+    "drive_end_timesteps": "drive_end",
+    "consumption_kWh": "consumption"
+}
 
 
 def read_kba_data():

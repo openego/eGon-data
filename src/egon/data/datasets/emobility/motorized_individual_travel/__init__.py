@@ -14,7 +14,8 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvsPerRegistrationDistrict,
     EgonEvsPerMunicipality,
-    EgonEvsPerMvGridDistrict
+    EgonEvsPerMvGridDistrict,
+    EgonEvsTripPool
 )
 import egon.data.config
 
@@ -39,6 +40,8 @@ def create_tables():
     EgonEvsPerMunicipality.__table__.create(bind=engine, checkfirst=True)
     EgonEvsPerMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvsPerMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
+    EgonEvsTripPool.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvsTripPool.__table__.create(bind=engine, checkfirst=True)
 
 
 def download_and_preprocess():
