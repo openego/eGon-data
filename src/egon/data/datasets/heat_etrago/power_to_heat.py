@@ -406,6 +406,7 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
         ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
         WHERE carrier = 'central_heat'
         AND scenario='eGon2035'
+        AND scn_name = 'eGon2035'
         """,
         index_col="id",
     )

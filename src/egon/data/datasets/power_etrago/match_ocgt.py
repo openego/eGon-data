@@ -9,6 +9,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
@@ -46,6 +47,11 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
         AND bus0 IN {buses} AND bus1 IN {buses};
         """
     )
+
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("electricity", scn_name)
+    gdf["efficiency_fixed"] = scn_params["efficiency"][carrier]
+    gdf["marginal_cost"] = scn_params["marginal_cost"][carrier]
 
     # Select next id value
     new_id = db.next_etrago_id("link")

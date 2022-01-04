@@ -611,6 +611,9 @@ etrago_heat:
     heat_link_timeseries:
       schema: 'grid'
       table: 'egon_etrago_link_timeseries'
+    heat_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
 
 etrago_hydrogen:
   sources:

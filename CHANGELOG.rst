@@ -171,12 +171,23 @@ Added
   `#474 <https://github.com/openego/eGon-data/issues/474>`_
 * Include downloaded pypsa-eur-sec results
   `#138 <https://github.com/openego/eGon-data/issues/138>`_
+* Create heat buses for eGon100RE scenario
+  `#582 <https://github.com/openego/eGon-data/issues/582>`_
+* Filter for DE in gas infrastructure deletion at beginning of respective tasks
+  `#567 <https://github.com/openego/eGon-data/issues/567>`_
 * Insert open cycle gas turbines into eTraGo tables
   `#548 <https://github.com/openego/eGon-data/issues/548>`_
 * Preprocess buildings and amenities for LV grids
   `#262 <https://github.com/openego/eGon-data/issues/262>`_
 * Assign household profiles to OSM buildings
   `#435 <https://github.com/openego/eGon-data/issues/435>`_
+* Add link to meta creator to docs
+  `#599 <https://github.com/openego/eGon-data/issues/599>`_
+* Add extendable batteries and heat stores
+  `#566 <https://github.com/openego/eGon-data/issues/566>`_
+* Add efficiency, capital_cost and marginal_cost to gas related data in
+  etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -276,6 +287,8 @@ Changed
   `#381 <https://github.com/openego/eGon-data/issues/381>`_
 * Migrate zensus scripts to datasets
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
+* Add information on plz, city and federal state to data on mastr without chp
+  `#425 <https://github.com/openego/eGon-data/issues/425>`_
 * Assign residentail heat demands to osm buildings
   `#557 <https://github.com/openego/eGon-data/issues/557>`_
 * Add foreign gas buses and adjust cross bording pipelines
@@ -359,3 +372,7 @@ Bug fixes
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
 * Filter target values by scenario name
   `#570 <https://github.com/openego/eGon-data/issues/570>`_
+* Reduce number of timesteps of hh electricity demand profiles to 8760
+  `#593 <https://github.com/openego/eGon-data/issues/593>`_
+* Fix assignemnt of heat demand profiles at German borders
+  `#585 <https://github.com/openego/eGon-data/issues/585>`_

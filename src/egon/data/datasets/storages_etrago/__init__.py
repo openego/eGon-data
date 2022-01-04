@@ -17,9 +17,9 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
-            tasks=(insert_PHES),
+            tasks=(insert_PHES, extendable_batteries),
         )
 
 
@@ -73,3 +73,82 @@ def insert_PHES():
         if_exists="append",
         index=phes.index,
     )
+
+
+def extendable_batteries_per_scenario(scenario):
+
+    # Get datasets configuration
+    sources = config.datasets()["storage_etrago"]["sources"]
+    targets = config.datasets()["storage_etrago"]["targets"]
+
+    engine = db.engine()
+
+    # Delete outdated data on extendable battetries inside Germany from database
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+        WHERE carrier = 'battery'
+        AND scn_name = '{scenario}'
+        AND bus NOT IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
+                       WHERE scn_name = '{scenario}'
+                       AND country = 'DE');
+        """
+    )
+
+    extendable_batteries = db.select_dataframe(
+        f"""
+        SELECT bus_id as bus, scn_name FROM
+        {sources['bus']['schema']}.
+        {sources['bus']['table']}
+        WHERE carrier = 'AC'
+        AND scn_name = '{scenario}'
+        AND bus_id IN (SELECT bus_id 
+                       FROM {sources['bus']['schema']}.{sources['bus']['table']}
+                       WHERE scn_name = '{scenario}'
+                       AND country = 'DE')
+        """,
+    )
+
+    # Update index
+    extendable_batteries[
+        "storage_id"
+    ] = extendable_batteries.index + db.next_etrago_id("storage")
+
+    # Set parameters
+    extendable_batteries["p_nom_extendable"] = True
+
+    extendable_batteries["capital_cost"] = get_sector_parameters(
+        "electricity", scenario
+    )["capital_cost"]["battery"]
+
+    extendable_batteries["max_hours"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["max_hours"]
+
+    extendable_batteries["efficiency_store"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["store"]
+
+    extendable_batteries["efficiency_dispatch"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["dispatch"]
+
+    extendable_batteries["standing_loss"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["standing_loss"]
+
+    extendable_batteries["carrier"] = "battery"
+
+    # Write data to db
+    extendable_batteries.to_sql(
+        targets["storage"]["table"],
+        engine,
+        schema=targets["storage"]["schema"],
+        if_exists="append",
+        index=False,
+    )
+
+
+def extendable_batteries():
+
+    extendable_batteries_per_scenario("eGon2035")

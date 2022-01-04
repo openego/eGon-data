@@ -5,6 +5,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_H2_overground_storage(scn_name='eGon2035'):
@@ -32,8 +33,9 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     storages["e_nom"] = 0
     storages["e_nom_extendable"] = True
 
-    # "Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system", p.4
-    storages["capital_cost"] = 8.4 * 1e3
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+    storages["capital_cost"] = scn_params["capital_cost"][carrier]
 
     # Remove useless columns
     storages.drop(columns=["geom"], inplace=True)
@@ -42,7 +44,10 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}';
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 
@@ -116,14 +121,18 @@ def insert_H2_saltcavern_storage(scn_name='eGon2035'):
     storages["e_nom"] = 0
     storages["e_nom_extendable"] = True
 
-    # capital cost needs update, also see respective redmine issue
-    storages["capital_cost"] = 8.4 * 1e3
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+    storages["capital_cost"] = scn_params["capital_cost"][carrier]
 
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE "carrier" = '{carrier}'
-        and scn_name = '{scn_name}';
+        DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
     )
 

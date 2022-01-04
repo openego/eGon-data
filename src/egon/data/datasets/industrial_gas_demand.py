@@ -10,6 +10,7 @@ from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.gas_prod import assign_ch4_bus_id, assign_h2_bus_id
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from shapely import wkt
 
 
@@ -23,14 +24,19 @@ class IndustrialGasDemand(Dataset):
         )
 
 
-def download_CH4_industrial_demand():
+def download_CH4_industrial_demand(scn_name="eGon2035"):
     """Download the CH4 industrial demand in Germany from the FfE open data portal
-    
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
     Returns
     -------
-    CH4_industrial_demand : 
+    CH4_industrial_demand :
         Dataframe containing the CH4 industrial demand in Germany
-        
+
     """
     # Download the data and the id_region correspondance table
     correspondance_url = (
@@ -38,8 +44,9 @@ def download_CH4_industrial_demand():
     )
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
+    year = str(get_sector_parameters("global", scn_name)["population_year"])
+
     internal_id = "2,11"  # Natural_Gas
-    year = "2035"  # 2050
     datafilter = "&&internal_id=eq.{" + internal_id + "}"
     request = url + year + datafilter
 
@@ -102,7 +109,7 @@ def download_CH4_industrial_demand():
 
     # Add the centroid point to each NUTS3 area
     sql_vg250 = """SELECT nuts as nuts3, geometry as geom
-                    FROM boundaries.vg250_krs 
+                    FROM boundaries.vg250_krs
                     WHERE gf = 4 ;"""
     gdf_vg250 = db.select_geodataframe(sql_vg250, epsg=4326)
 
@@ -122,7 +129,6 @@ def download_CH4_industrial_demand():
     ).set_geometry("geom", crs=4326)
 
     # Match to associated gas bus
-    scn_name = "eGon2035"
     industrial_loads_list = assign_ch4_bus_id(industrial_loads_list, scn_name)
 
     # Add carrier
@@ -137,14 +143,19 @@ def download_CH4_industrial_demand():
     return industrial_loads_list
 
 
-def download_H2_industrial_demand():
+def download_H2_industrial_demand(scn_name="eGon2035"):
     """Download the H2 industrial demand in Germany from the FfE open data portal
-    
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
     Returns
     -------
-    H2_industrial_demand : 
+    H2_industrial_demand :
         Dataframe containing the H2 industrial demand in Germany
-        
+
     """
     # Download the data and the id_region correspondance table
     correspondance_url = (
@@ -152,8 +163,9 @@ def download_H2_industrial_demand():
     )
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
+    year = str(get_sector_parameters("global", scn_name)["population_year"])
+
     internal_id = "2,162"  # Hydrogen
-    year = "2035"  # 2050
     datafilter = "&&internal_id=eq.{" + internal_id + "}"
     request = url + year + datafilter
 
@@ -216,7 +228,7 @@ def download_H2_industrial_demand():
 
     # Add the centroid point to each NUTS3 area
     sql_vg250 = """SELECT nuts as nuts3, geometry as geom
-                    FROM boundaries.vg250_krs 
+                    FROM boundaries.vg250_krs
                     WHERE gf = 4 ;"""
     gdf_vg250 = db.select_geodataframe(sql_vg250, epsg=4326)
 
@@ -236,7 +248,6 @@ def download_H2_industrial_demand():
     ).set_geometry("geom", crs=4326)
 
     # Match to associated gas bus
-    scn_name = "eGon2035"
     industrial_loads_list = assign_h2_bus_id(industrial_loads_list, scn_name)
 
     # Add carrier
@@ -251,34 +262,46 @@ def download_H2_industrial_demand():
     return industrial_loads_list
 
 
-def import_industrial_gas_demand():
+def import_industrial_gas_demand(scn_name="eGon2035"):
     """Insert list of industrial gas demand (one per NUTS3) in database
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
     Returns
-        industrial_gas_demand : Dataframe containing the industrial gas demand in Germany
+    -------
+        industrial_gas_demand : Dataframe containing the industrial gas demand
+        in Germany
     """
     # Connect to local database
     engine = db.engine()
 
     # Clean table
     db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_load WHERE "carrier" IN ('CH4', 'H2') AND
+        scn_name = '{scn_name}' AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        );
         """
-    DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'CH4';
-    DELETE FROM grid.egon_etrago_load WHERE "carrier" = 'H2';
-    """
     )
 
     # Select next id value
     new_id = db.next_etrago_id("load")
 
-    industrial_gas_demand = pd.concat(
-        [download_CH4_industrial_demand(), download_H2_industrial_demand()]
-    )
+    industrial_gas_demand = pd.concat([
+        download_CH4_industrial_demand(scn_name=scn_name),
+        download_H2_industrial_demand(scn_name=scn_name)
+    ])
     industrial_gas_demand["load_id"] = range(
         new_id, new_id + len(industrial_gas_demand)
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "sign": -1}
+    c = {"scn_name": scn_name, "sign": -1}
     industrial_gas_demand = industrial_gas_demand.assign(**c)
 
     industrial_gas_demand = industrial_gas_demand.reset_index(drop=True)
@@ -300,6 +323,7 @@ def import_industrial_gas_demand():
 
 def import_industrial_gas_demand_time_series(egon_etrago_load_gas):
     """Insert list of industrial gas demand time series (one per NUTS3) in database
+
     Returns
     -------
     None.
@@ -327,11 +351,12 @@ def import_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
 def insert_industrial_gas_demand():
     """Overall function for inserting the industrial gas demand
+
     Returns
     -------
     None.
     """
 
-    egon_etrago_load_gas = import_industrial_gas_demand()
+    egon_etrago_load_gas = import_industrial_gas_demand(scn_name="eGon2035")
 
     import_industrial_gas_demand_time_series(egon_etrago_load_gas)

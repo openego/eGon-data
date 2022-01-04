@@ -604,7 +604,7 @@ def annual_demand_generator():
     """
     demand_geom = db.select_geodataframe(
         """
-        SELECT a.demand, b.geom, a.zensus_population_id, a.scenario
+        SELECT a.demand, b.geom_point as geom, a.zensus_population_id, a.scenario
         FROM demand.egon_peta_heat a
         JOIN society.destatis_zensus_population_per_ha b
         ON a.zensus_population_id = b.id
@@ -627,8 +627,28 @@ def annual_demand_generator():
     temperature_zones.drop(columns=["index", "Id"], inplace=True, axis=0)
 
     demand_zone = gpd.sjoin(
-        demand_geom, temperature_zones, how="inner", op="intersects"
+        demand_geom,
+        temperature_zones,
+        how="inner",
     )
+
+    missing_cells = demand_geom[~demand_geom.index.isin(demand_zone.index)]
+
+    # start with buffer
+    buffer = 0
+
+    # increase buffer until every zensus cell is matched to a climate zone
+    while len(missing_cells) > 0:
+        buffer += 100
+        boundaries_buffer = temperature_zones.copy()
+        boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
+        join_missing = gpd.sjoin(
+            missing_cells, boundaries_buffer, how="inner", op="intersects"
+        )
+        demand_zone = demand_zone.append(join_missing)
+        missing_cells = demand_geom[~demand_geom.index.isin(demand_zone.index)]
+
+    print(f"Maximal buffer to match zensus points to climate zones: {buffer}m")
 
     scenario_demand = pd.pivot_table(
         data=demand_zone[
@@ -1842,7 +1862,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )

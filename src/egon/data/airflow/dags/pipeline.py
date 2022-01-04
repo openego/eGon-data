@@ -188,7 +188,12 @@ with airflow.DAG(
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
-        dependencies=[osm_download, substation_extraction, setup_etrago]
+        dependencies=[
+            osm_download,
+            substation_extraction,
+            setup_etrago,
+            scenario_parameters,
+        ]
     )
     osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
@@ -222,6 +227,7 @@ with airflow.DAG(
     hd_abroad = HeatDemandEurope(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
+
 
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
