@@ -12,9 +12,9 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
-    EgonEvsPerMunicipality,
-    EgonEvsPerMvGridDistrict,
-    EgonEvsPerRegistrationDistrict,
+    EgonEvCountRegistrationDistrict,
+    EgonEvCountMunicipality,
+    EgonEvCountMvGridDistrict,
     EgonEvsTripPool,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
@@ -38,14 +38,14 @@ def create_tables():
     """
 
     engine = db.engine()
-    EgonEvsPerRegistrationDistrict.__table__.drop(bind=engine, checkfirst=True)
-    EgonEvsPerRegistrationDistrict.__table__.create(
+    EgonEvCountRegistrationDistrict.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvCountRegistrationDistrict.__table__.create(
         bind=engine, checkfirst=True
     )
-    EgonEvsPerMunicipality.__table__.drop(bind=engine, checkfirst=True)
-    EgonEvsPerMunicipality.__table__.create(bind=engine, checkfirst=True)
-    EgonEvsPerMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
-    EgonEvsPerMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
+    EgonEvCountMunicipality.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvCountMunicipality.__table__.create(bind=engine, checkfirst=True)
+    EgonEvCountMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvCountMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
     EgonEvsTripPool.__table__.drop(bind=engine, checkfirst=True)
     EgonEvsTripPool.__table__.create(bind=engine, checkfirst=True)
 

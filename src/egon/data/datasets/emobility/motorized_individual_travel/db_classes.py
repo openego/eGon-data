@@ -80,10 +80,10 @@ class EgonEvsTripPool(Base):
     consumption = Column(Float)
 
 
-class EgonEvsPerRegistrationDistrict(Base):
+class EgonEvCountRegistrationDistrict(Base):
     """Electric vehicle counts per registration district"""
 
-    __tablename__ = "egon_evs_per_registration_district"
+    __tablename__ = "egon_ev_count_registration_district"
     __table_args__ = {"schema": "demand"}
 
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
@@ -98,10 +98,10 @@ class EgonEvsPerRegistrationDistrict(Base):
     phev_luxury = Column(Integer)
 
 
-class EgonEvsPerMunicipality(Base):
+class EgonEvCountMunicipality(Base):
     """Electric vehicle counts per municipality"""
 
-    __tablename__ = "egon_evs_per_municipality"
+    __tablename__ = "egon_ev_count_municipality"
     __table_args__ = {"schema": "demand"}
 
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
@@ -116,10 +116,10 @@ class EgonEvsPerMunicipality(Base):
     rs7_id = Column(SmallInteger)
 
 
-class EgonEvsPerMvGridDistrict(Base):
+class EgonEvCountMvGridDistrict(Base):
     """Electric vehicle counts per MV grid district"""
 
-    __tablename__ = "egon_evs_per_mv_grid_district"
+    __tablename__ = "egon_ev_count_mv_grid_district"
     __table_args__ = {"schema": "demand"}
 
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)

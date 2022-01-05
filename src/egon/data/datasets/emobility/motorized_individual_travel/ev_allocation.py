@@ -23,9 +23,9 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     read_rs7_data
 )
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
-    EgonEvsPerRegistrationDistrict,
-    EgonEvsPerMunicipality,
-    EgonEvsPerMvGridDistrict
+    EgonEvCountRegistrationDistrict,
+    EgonEvCountMunicipality,
+    EgonEvCountMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.tests import (
     test_ev_numbers
@@ -426,8 +426,8 @@ def allocate_evs():
                 inplace=True
             )
             ev_data.to_sql(
-                name=EgonEvsPerRegistrationDistrict.__table__.name,
-                schema=EgonEvsPerRegistrationDistrict.__table__.schema,
+                name=EgonEvCountRegistrationDistrict.__table__.name,
+                schema=EgonEvCountRegistrationDistrict.__table__.schema,
                 con=db.engine(),
                 if_exists="append",
                 index=False,
@@ -455,8 +455,8 @@ def allocate_evs():
                 inplace=True
             )
             ev_data_muns.to_sql(
-                name=EgonEvsPerMunicipality.__table__.name,
-                schema=EgonEvsPerMunicipality.__table__.schema,
+                name=EgonEvCountMunicipality.__table__.name,
+                schema=EgonEvCountMunicipality.__table__.schema,
                 con=db.engine(),
                 if_exists="append",
                 index=False,
@@ -483,8 +483,8 @@ def allocate_evs():
                 inplace=True
             )
             ev_data_mvgds.to_sql(
-                name=EgonEvsPerMvGridDistrict.__table__.name,
-                schema=EgonEvsPerMvGridDistrict.__table__.schema,
+                name=EgonEvCountMvGridDistrict.__table__.name,
+                schema=EgonEvCountMvGridDistrict.__table__.schema,
                 con=db.engine(),
                 if_exists="append",
                 index=False,
