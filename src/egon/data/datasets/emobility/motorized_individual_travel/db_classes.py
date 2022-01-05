@@ -136,3 +136,19 @@ class EgonEvCountMvGridDistrict(Base):
     phev_medium = Column(Integer)
     phev_luxury = Column(Integer)
     rs7_id = Column(SmallInteger)
+
+
+class EgonEvMvGridDistrict(Base):
+    """List of electric vehicles per MV grid district"""
+
+    __tablename__ = "egon_ev_mv_grid_district"
+    __table_args__ = {"schema": "demand"}
+
+    scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
+    scenario_variation = Column(String, primary_key=True)
+    bus_id = Column(
+        Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
+    )
+    egon_ev_trip_pool_id = Column(
+        Integer, ForeignKey(EgonEvTripPool.id), primary_key=True
+    )
