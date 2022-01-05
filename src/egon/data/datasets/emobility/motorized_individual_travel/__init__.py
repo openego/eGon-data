@@ -189,6 +189,7 @@ def write_evs_trips_to_db():
     evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
 
     trip_data.drop(columns=["rs7_id", "simbev_ev_id"], inplace=True)
+    trip_data.sort_index(inplace=True)
 
     # Write EVs to DB
     evs_unique.to_sql(
