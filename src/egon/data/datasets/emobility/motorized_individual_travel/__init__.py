@@ -19,7 +19,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
-    allocate_evs,
+    allocate_evs_numbers,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
@@ -180,6 +180,7 @@ class MotorizedIndividualTravel(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                {(download_and_preprocess, allocate_evs), write_trips_to_db},
+                {(download_and_preprocess, allocate_evs_numbers),
+                 write_trips_to_db},
             ),
         )

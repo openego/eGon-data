@@ -360,7 +360,7 @@ def calc_evs_per_grid_district(ev_data_muns):
     return ev_data_mvgds
 
 
-def allocate_evs():
+def allocate_evs_numbers():
     """Allocate electric vehicles to different spatial levels.
 
     Accocation uses today's vehicles registration data per registration
