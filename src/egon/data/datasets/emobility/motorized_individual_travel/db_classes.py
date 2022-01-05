@@ -7,8 +7,8 @@ from egon.data.datasets.scenario_parameters import EgonScenario
 Base = declarative_base()
 
 
-class EgonEvTripPool(Base):
-    """Trip pool for motorized individual travel
+class EgonEvPool(Base):
+    """EV pool for motorized individual travel
 
     Each row is one event of a specific electric vehicle (EV) which is
     uniquely defined by `rs7_id`, `ev_id` and `event_id`.
@@ -61,7 +61,7 @@ class EgonEvTripPool(Base):
         Energy demand during driving event in kWh
     """
 
-    __tablename__ = "egon_ev_trip_pool"
+    __tablename__ = "egon_ev_pool"
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, index=True, unique=True)
@@ -150,5 +150,5 @@ class EgonEvMvGridDistrict(Base):
         Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
     )
     egon_ev_trip_pool_id = Column(
-        Integer, ForeignKey(EgonEvTripPool.id), primary_key=True
+        Integer, ForeignKey(EgonEvPool.id), primary_key=True
     )

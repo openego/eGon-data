@@ -15,7 +15,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
-    EgonEvTripPool,
+    EgonEvPool,
     EgonEvMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
@@ -49,8 +49,8 @@ def create_tables():
     EgonEvCountMunicipality.__table__.create(bind=engine, checkfirst=True)
     EgonEvCountMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvCountMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
-    EgonEvTripPool.__table__.drop(bind=engine, checkfirst=True)
-    EgonEvTripPool.__table__.create(bind=engine, checkfirst=True)
+    EgonEvPool.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvPool.__table__.create(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
 
@@ -164,8 +164,8 @@ def write_trips_to_db():
     trip_data = trip_data[cols]
 
     trip_data.to_sql(
-        name=EgonEvTripPool.__table__.name,
-        schema=EgonEvTripPool.__table__.schema,
+        name=EgonEvPool.__table__.name,
+        schema=EgonEvPool.__table__.schema,
         con=db.engine(),
         if_exists="append",
         index=True,
