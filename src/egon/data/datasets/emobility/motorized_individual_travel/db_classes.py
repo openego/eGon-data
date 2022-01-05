@@ -1,6 +1,9 @@
 from sqlalchemy import Column, Float, ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
+
+from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.scenario_parameters import EgonScenario
+from egon.data.datasets.zensus_vg250 import Vg250Gem
 
 Base = declarative_base()
 
@@ -106,7 +109,7 @@ class EgonEvCountMunicipality(Base):
 
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     scenario_variation = Column(String, primary_key=True)
-    ags = Column(Integer, primary_key=True)
+    ags = Column(Integer, ForeignKey(Vg250Gem.ags), primary_key=True)
     bev_mini = Column(Integer)
     bev_medium = Column(Integer)
     bev_luxury = Column(Integer)
@@ -124,7 +127,9 @@ class EgonEvCountMvGridDistrict(Base):
 
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     scenario_variation = Column(String, primary_key=True)
-    bus_id = Column(Integer, primary_key=True)
+    bus_id = Column(
+        Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
+    )
     bev_mini = Column(Integer)
     bev_medium = Column(Integer)
     bev_luxury = Column(Integer)
