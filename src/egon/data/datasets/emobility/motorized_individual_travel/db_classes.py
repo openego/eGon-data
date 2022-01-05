@@ -81,6 +81,8 @@ class EgonEvsTripPool(Base):
 
 
 class EgonEvsPerRegistrationDistrict(Base):
+    """Electric vehicle counts per registration district"""
+
     __tablename__ = "egon_evs_per_registration_district"
     __table_args__ = {"schema": "demand"}
 
@@ -97,6 +99,8 @@ class EgonEvsPerRegistrationDistrict(Base):
 
 
 class EgonEvsPerMunicipality(Base):
+    """Electric vehicle counts per municipality"""
+
     __tablename__ = "egon_evs_per_municipality"
     __table_args__ = {"schema": "demand"}
 
@@ -113,6 +117,8 @@ class EgonEvsPerMunicipality(Base):
 
 
 class EgonEvsPerMvGridDistrict(Base):
+    """Electric vehicle counts per MV grid district"""
+
     __tablename__ = "egon_evs_per_mv_grid_district"
     __table_args__ = {"schema": "demand"}
 
