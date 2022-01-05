@@ -195,4 +195,4 @@ class EgonEvMvGridDistrict(Base):
         Integer, ForeignKey(EgonEvPool.ev_id), primary_key=True
     )
 
-    ev = relationship("EgonEvMvGridDistrict", back_populates="mvgds")
+    ev = relationship("EgonEvPool", back_populates="mvgds")
