@@ -489,3 +489,8 @@ def allocate_evs_numbers():
                 if_exists="append",
                 index=False,
             )
+
+
+def allocate_evs_to_grid_districts():
+    """Allocate EVs to MV grid districts"""
+    pass
