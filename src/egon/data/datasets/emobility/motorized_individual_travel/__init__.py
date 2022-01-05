@@ -16,6 +16,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
     EgonEvPool,
+    EgonEvTrip,
     EgonEvMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
@@ -36,7 +37,7 @@ def create_tables():
 
     Returns
     -------
-        None
+    None
     """
 
     engine = db.engine()
@@ -52,8 +53,11 @@ def create_tables():
     EgonEvCountMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
     EgonEvPool.__table__.drop(bind=engine, checkfirst=True)
     EgonEvPool.__table__.create(bind=engine, checkfirst=True)
+    EgonEvTrip.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvTrip.__table__.create(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
+
 
 def download_and_preprocess():
     """Downloads and preprocesses data from KBA and BMVI
@@ -138,7 +142,7 @@ def write_trips_to_db():
     def import_csv(f):
         df = pd.read_csv(f, usecols=TRIP_COLUMN_MAPPING.keys())
         df["rs7_id"] = int(f.parent.name)
-        df["ev_id"] = "_".join(f.name.split("_")[0:3])
+        df["simbev_ev_id"] = "_".join(f.name.split("_")[0:3])
         return df
 
     trip_dir_root = Path(
@@ -159,14 +163,44 @@ def write_trips_to_db():
     # Read, concat and reorder cols
     trip_data = pd.concat(map(import_csv, trip_files))
     trip_data.rename(columns=TRIP_COLUMN_MAPPING, inplace=True)
-    trip_data = trip_data.reset_index().rename(columns={"index": "event_id"})
-    cols = ["rs7_id", "ev_id", "event_id"] + list(TRIP_COLUMN_MAPPING.values())
-    trip_data.index.name = "id"
+    trip_data = trip_data.reset_index().rename(
+        columns={"index": "simbev_event_id"}
+    )
+    cols = (["rs7_id", "simbev_ev_id", "simbev_event_id"] +
+            list(TRIP_COLUMN_MAPPING.values()))
+    trip_data.index.name = "event_id"
     trip_data = trip_data[cols]
 
-    trip_data.to_sql(
+    # Extract EVs from trips
+    evs_unique = trip_data[["rs7_id", "simbev_ev_id"]].drop_duplicates()
+    evs_unique = evs_unique.reset_index().drop(columns=["event_id"])
+    evs_unique.index.name = "ev_id"
+
+    # Add EV id to trip DF
+    trip_data["egon_ev_pool_ev_id"] = pd.merge(
+        trip_data, evs_unique.reset_index(),
+        on=["rs7_id", "simbev_ev_id"])["ev_id"]
+
+    # Split simBEV id into type and id
+    evs_unique[["type", "simbev_ev_id"]] = evs_unique[
+        "simbev_ev_id"].str.rsplit("_", 1, expand=True)
+    evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
+
+    trip_data.drop(columns=["rs7_id", "simbev_ev_id"], inplace=True)
+
+    # Write EVs to DB
+    evs_unique.to_sql(
         name=EgonEvPool.__table__.name,
         schema=EgonEvPool.__table__.schema,
+        con=db.engine(),
+        if_exists="append",
+        index=True,
+    )
+
+    # Write trips to DB
+    trip_data.to_sql(
+        name=EgonEvTrip.__table__.name,
+        schema=EgonEvTrip.__table__.schema,
         con=db.engine(),
         if_exists="append",
         index=True,

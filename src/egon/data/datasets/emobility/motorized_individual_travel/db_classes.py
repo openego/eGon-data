@@ -8,21 +8,52 @@ Base = declarative_base()
 
 
 class EgonEvPool(Base):
-    """EV pool for motorized individual travel
+    """Motorized individual travel: EV pool
 
-    Each row is one event of a specific electric vehicle (EV) which is
+    Each row is one EV, uniquely defined by either (`ev_id`) or
+    (`rs7_id`, `type`, `simbev_id`).
+
+    Columns
+    -------
+    ev_id:
+        Unique id of EV
+    rs7_id:
+        id of RegioStar7 region
+    type:
+        type of EV, one of
+            * bev_mini
+            * bev_medium
+            * bev_luxury
+            * phev_mini
+            * phev_medium
+            * phev_luxury
+    simbev_ev_id:
+        id of EV as exported by simBEV
+    """
+
+    __tablename__ = "egon_ev_pool"
+    __table_args__ = {"schema": "demand"}
+
+    ev_id = Column(Integer, primary_key=True)
+    rs7_id = Column(SmallInteger)
+    type = Column(String(11))
+    simbev_ev_id = Column(Integer)
+
+
+class EgonEvTrip(Base):
+    """Motorized individual travel: EVs' trips
+
+    Each row is one event of a specific electric vehicle which is
     uniquely defined by `rs7_id`, `ev_id` and `event_id`.
 
     Columns
     -------
-    id:
-        Unique id of EV event
-    rs7_id:
-        id of RegioStar7 region
-    ev_id:
-        id of EV
     event_id:
-        id of EV event, unique in a specific EV dataset
+        Unique id of EV event
+    egon_ev_pool_ev_id:
+        id of EV, references EgonEvPool.ev_id
+    simbev_event_id:
+        id of EV event, unique within a specific EV dataset
     location:
         Location of EV event, one of
             * 0_work
@@ -61,13 +92,14 @@ class EgonEvPool(Base):
         Energy demand during driving event in kWh
     """
 
-    __tablename__ = "egon_ev_pool"
+    __tablename__ = "egon_ev_trip"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, index=True, unique=True)
-    rs7_id = Column(SmallInteger, primary_key=True)
-    ev_id = Column(String(20), primary_key=True)
     event_id = Column(Integer, primary_key=True)
+    egon_ev_pool_ev_id = Column(
+        Integer, ForeignKey(EgonEvPool.ev_id), nullable=False
+    )
+    simbev_event_id = Column(Integer)
     location = Column(String(21))
     charging_capacity_nominal = Column(Float)
     charging_capacity_grid = Column(Float)
@@ -149,6 +181,6 @@ class EgonEvMvGridDistrict(Base):
     bus_id = Column(
         Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
     )
-    egon_ev_trip_pool_id = Column(
-        Integer, ForeignKey(EgonEvPool.id), primary_key=True
+    egon_ev_trip_pool_ev_id = Column(
+        Integer, ForeignKey(EgonEvPool.ev_id), primary_key=True
     )
