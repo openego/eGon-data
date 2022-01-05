@@ -7,7 +7,7 @@ from egon.data.datasets.scenario_parameters import EgonScenario
 Base = declarative_base()
 
 
-class EgonEvsTripPool(Base):
+class EgonEvTripPool(Base):
     """Trip pool for motorized individual travel
 
     Each row is one event of a specific electric vehicle (EV) which is
@@ -61,7 +61,7 @@ class EgonEvsTripPool(Base):
         Energy demand during driving event in kWh
     """
 
-    __tablename__ = "egon_evs_trip_pool"
+    __tablename__ = "egon_ev_trip_pool"
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, index=True)

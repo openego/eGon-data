@@ -12,10 +12,10 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
-    EgonEvCountRegistrationDistrict,
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
-    EgonEvsTripPool,
+    EgonEvCountRegistrationDistrict,
+    EgonEvTripPool,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
     allocate_evs,
@@ -38,7 +38,9 @@ def create_tables():
     """
 
     engine = db.engine()
-    EgonEvCountRegistrationDistrict.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvCountRegistrationDistrict.__table__.drop(
+        bind=engine, checkfirst=True
+    )
     EgonEvCountRegistrationDistrict.__table__.create(
         bind=engine, checkfirst=True
     )
@@ -46,8 +48,8 @@ def create_tables():
     EgonEvCountMunicipality.__table__.create(bind=engine, checkfirst=True)
     EgonEvCountMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvCountMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
-    EgonEvsTripPool.__table__.drop(bind=engine, checkfirst=True)
-    EgonEvsTripPool.__table__.create(bind=engine, checkfirst=True)
+    EgonEvTripPool.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvTripPool.__table__.create(bind=engine, checkfirst=True)
 
 
 def download_and_preprocess():
@@ -160,8 +162,8 @@ def write_trips_to_db():
     trip_data = trip_data[cols]
 
     trip_data.to_sql(
-        name=EgonEvsTripPool.__table__.name,
-        schema=EgonEvsTripPool.__table__.schema,
+        name=EgonEvTripPool.__table__.name,
+        schema=EgonEvTripPool.__table__.schema,
         con=db.engine(),
         if_exists="append",
         index=True,
