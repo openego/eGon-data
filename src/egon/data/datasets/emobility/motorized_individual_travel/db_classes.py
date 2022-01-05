@@ -64,7 +64,7 @@ class EgonEvTripPool(Base):
     __tablename__ = "egon_ev_trip_pool"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, index=True)
+    id = Column(Integer, index=True, unique=True)
     rs7_id = Column(SmallInteger, primary_key=True)
     ev_id = Column(String(20), primary_key=True)
     event_id = Column(Integer, primary_key=True)
