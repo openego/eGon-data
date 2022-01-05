@@ -323,7 +323,8 @@ For previous discussions on metadata, you may want to check
 Helpers
 ^^^^^^^
 
-You can use the `Metadata creator <https://meta.rl-institut.de>`_ **GUI**.
+You can use the
+`Metadata creator <https://meta.rl-institut.de/meta_creator/141>`_ **GUI**.
 Fill the fields and hit `Edit JSON` to get the metadata string. Vice versa,
 you can paste a metadata string into this box and the fields will be filled
 automatically which may be helpful if you want to amend existing strings.
