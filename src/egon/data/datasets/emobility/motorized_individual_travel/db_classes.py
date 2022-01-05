@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Float, ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.scenario_parameters import EgonScenario
@@ -38,6 +39,13 @@ class EgonEvPool(Base):
     rs7_id = Column(SmallInteger)
     type = Column(String(11))
     simbev_ev_id = Column(Integer)
+
+    trips = relationship(
+        "EgonEvTrip", cascade="all, delete", back_populates="ev"
+    )
+    mvgds = relationship(
+        "EgonEvMvGridDistrict", cascade="all, delete", back_populates="ev"
+    )
 
 
 class EgonEvTrip(Base):
@@ -113,6 +121,8 @@ class EgonEvTrip(Base):
     drive_end = Column(Integer)
     consumption = Column(Float)
 
+    ev = relationship("EgonEvPool", back_populates="trips")
+
 
 class EgonEvCountRegistrationDistrict(Base):
     """Electric vehicle counts per registration district"""
@@ -184,3 +194,5 @@ class EgonEvMvGridDistrict(Base):
     egon_ev_trip_pool_ev_id = Column(
         Integer, ForeignKey(EgonEvPool.ev_id), primary_key=True
     )
+
+    ev = relationship("EgonEvMvGridDistrict", back_populates="mvgds")
