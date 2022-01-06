@@ -152,7 +152,7 @@ def write_evs_trips_to_db():
     )
 
     if TESTMODE_OFF:
-        trip_files = trip_dir_root.glob("*/*.csv")
+        trip_files = list(trip_dir_root.glob("*/*.csv"))
     else:
         # Load only 100 EVs per region if in test mode
         trip_files = [
@@ -163,6 +163,7 @@ def write_evs_trips_to_db():
         trip_files = [i for sub in trip_files for i in sub]
 
     # Read, concat and reorder cols
+    print(f"Importing {len(trip_files)} EV trip CSV files...")
     trip_data = pd.concat(map(import_csv, trip_files))
     trip_data.rename(columns=TRIP_COLUMN_MAPPING, inplace=True)
     trip_data = trip_data.reset_index().rename(
@@ -192,6 +193,7 @@ def write_evs_trips_to_db():
     trip_data.sort_index(inplace=True)
 
     # Write EVs to DB
+    print("Writing EVs to DB pool...")
     evs_unique.to_sql(
         name=EgonEvPool.__table__.name,
         schema=EgonEvPool.__table__.schema,
@@ -201,6 +203,7 @@ def write_evs_trips_to_db():
     )
 
     # Write trips to CSV and import to DB
+    print("Writing EV trips to CSV file...")
     trip_file = "trip_data.csv"
     trip_data.to_csv(trip_file)
 
@@ -217,6 +220,7 @@ def write_evs_trips_to_db():
         rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
     ]
 
+    print("Importing EV trips from CSV file to DB...")
     subprocess.run(
         ["psql"] + host + port + pgdb + user + command,
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
