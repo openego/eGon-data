@@ -186,6 +186,7 @@ class EgonEvMvGridDistrict(Base):
     __tablename__ = "egon_ev_mv_grid_district"
     __table_args__ = {"schema": "demand"}
 
+    id = Column(Integer, primary_key=True)
     scenario = Column(String, ForeignKey(EgonScenario.name), index=True)
     scenario_variation = Column(String, index=True)
     bus_id = Column(Integer, ForeignKey(MvGridDistricts.bus_id), index=True)
