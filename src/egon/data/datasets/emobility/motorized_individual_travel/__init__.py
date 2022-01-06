@@ -204,8 +204,8 @@ def write_evs_trips_to_db():
     trip_file = "trip_data.csv"
     trip_data.to_csv(trip_file)
 
+    # Get DB config
     docker_db_config = db.credentials()
-
     host = ["-h", f"{docker_db_config['HOST']}"]
     port = ["-p", f"{docker_db_config['PORT']}"]
     pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
