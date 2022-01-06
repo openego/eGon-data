@@ -6,11 +6,12 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 
+
 class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -22,7 +23,7 @@ def fill_etrago_generators():
     cfg = egon.data.config.datasets()["generators_etrago"]
 
     # Delete power plants from previous iterations of this script
-    delete_previuos_gen(cfg)    
+    delete_previuos_gen(cfg)
 
     # Load required tables
     (
@@ -80,7 +81,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
-    
+
     if np.isnan(etrago_gen_orig["generator_id"].max()):
         max_id = 0
     else:
@@ -238,6 +239,11 @@ def delete_previuos_gen(cfg):
                    WHERE carrier <> 'CH4' AND carrier <> 'solar_rooftop'
                    AND carrier <> 'solar_thermal_collector'
                    AND carrier <> 'geo_thermal'
+                   AND bus IN (
+                       SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
+                       {cfg['sources']['bus']['table']}
+                       WHERE country = 'DE'
+                       AND carrier = 'AC')
                    """
     )
 
@@ -281,4 +287,3 @@ def set_timeseries(power_plants, renew_feedin):
     ####################### DELETE THIS EXCEPTION #############################
     ###########################################################################
     return timeseries
-   
