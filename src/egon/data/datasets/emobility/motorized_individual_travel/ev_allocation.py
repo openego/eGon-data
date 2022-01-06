@@ -419,7 +419,7 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 test_ev_numbers(
-                    "EVs in registration districts",
+                    "EV count in registration districts",
                     ev_data,
                     ev_target
                 )
@@ -448,7 +448,7 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 test_ev_numbers(
-                    "EVs in municipalities",
+                    "EV count in municipalities",
                     ev_data_muns,
                     ev_target
                 )
@@ -476,7 +476,7 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 test_ev_numbers(
-                    "EVs in grid districts",
+                    "EV count in grid districts",
                     ev_data_mvgds,
                     ev_target
                 )
