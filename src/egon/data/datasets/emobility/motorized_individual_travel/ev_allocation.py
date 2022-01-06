@@ -3,6 +3,7 @@ import numpy as np
 from itertools import permutations
 from sqlalchemy.sql import func
 
+import egon.data.config
 from egon.data import db
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
@@ -25,11 +26,15 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountRegistrationDistrict,
     EgonEvCountMunicipality,
-    EgonEvCountMvGridDistrict
+    EgonEvCountMvGridDistrict,
+    EgonEvMvGridDistrict,
+    EgonEvPool
 )
 from egon.data.datasets.emobility.motorized_individual_travel.tests import (
     test_ev_numbers
 )
+
+RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 
 
 def fix_missing_ags_municipality_regiostar(muns, rs7_data):
@@ -492,5 +497,62 @@ def allocate_evs_numbers():
 
 
 def allocate_evs_to_grid_districts():
-    """Allocate EVs to MV grid districts"""
-    pass
+    """Allocate EVs to MV grid districts for all scenarios
+
+    Each grid district in
+    :class:`egon.data.datasets.mv_grid_districts.MvGridDistricts`
+    is assigned a list of electric vehicles from the EV pool in
+    :class:`EgonEvPool` based on the RegioStar7 region and the
+    counts per EV type in :class:`EgonEvCountMvGridDistrict`.
+    Results are written to :class:`EgonEvMvGridDistrict`.
+    """
+
+    def get_random_evs(row):
+        """Get random EV sample for EV type and RS7 region"""
+        return ev_pool.loc[
+            (ev_pool.rs7_id == row.rs7_id) &
+            (ev_pool["type"] == row["type"])
+        ].sample(row["count"], replace=True).ev_id.to_list()
+
+    # Load EVs per grid district
+    with db.session_scope() as session:
+        query = session.query(EgonEvCountMvGridDistrict)
+    ev_per_mvgd = pd.read_sql(
+        query.statement, query.session.bind, index_col=None
+    )
+
+    # Convert EV types' wide to long format
+    ev_per_mvgd = pd.melt(
+        ev_per_mvgd,
+        id_vars=["scenario", "scenario_variation", "bus_id",
+                 "rs7_id"],
+        value_vars=CONFIG_EV.keys(),
+        var_name="type",
+        value_name="count"
+    )
+
+    # Load EV pool
+    with db.session_scope() as session:
+        query = session.query(EgonEvPool)
+    ev_pool = pd.read_sql(
+        query.statement, query.session.bind, index_col=None, )
+
+    # Draw EVs randomly for each grid district from pool
+    np.random.seed(RANDOM_SEED)
+    ev_per_mvgd["egon_ev_pool_ev_id"] = ev_per_mvgd.apply(get_random_evs,
+                                                          axis=1)
+    ev_per_mvgd.drop(columns=["rs7_id", "type", "count"], inplace=True)
+
+    # EV lists to rows
+    ev_per_mvgd = ev_per_mvgd.explode("egon_ev_pool_ev_id")
+
+    # Write trips to DB
+    ev_per_mvgd.to_sql(
+        name=EgonEvMvGridDistrict.__table__.name,
+        schema=EgonEvMvGridDistrict.__table__.schema,
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+        method="multi",
+        chunksize=10000
+    )
