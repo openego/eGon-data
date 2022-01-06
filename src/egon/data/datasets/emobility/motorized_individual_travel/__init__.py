@@ -154,9 +154,9 @@ def write_evs_trips_to_db():
     if TESTMODE_OFF:
         trip_files = list(trip_dir_root.glob("*/*.csv"))
     else:
-        # Load only 100 EVs per region if in test mode
+        # Load only 1000 EVs per region if in test mode
         trip_files = [
-            list(rdir.glob("*.csv"))[:100]
+            list(rdir.glob("*.csv"))[:1000]
             for rdir in [_ for _ in trip_dir_root.iterdir() if _.is_dir()]
         ]
         # Flatten
