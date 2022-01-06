@@ -200,31 +200,29 @@ def write_evs_trips_to_db():
         index=True,
     )
 
-    # Get DB config
+    # Write trips to CSV and import to DB
+    trip_file = "trip_data.csv"
+    trip_data.to_csv(trip_file)
+
     docker_db_config = db.credentials()
+
     host = ["-h", f"{docker_db_config['HOST']}"]
     port = ["-p", f"{docker_db_config['PORT']}"]
     pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
     user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
+    command = [
+        "-c",
+        rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
+        rf"({','.join(trip_data.reset_index().columns)})"
+        rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
+    ]
 
-    # Write trips to CSV and import to DB
-    # This is done in 10 chunks to keep RAM usage low
-    for idx, chunk in enumerate(np.array_split(trip_data, 10)):
-        trip_file = f"trip_data_{idx}.csv"
-        chunk.to_csv(trip_file)
+    subprocess.run(
+        ["psql"] + host + port + pgdb + user + command,
+        env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+    )
 
-        command = [
-            "-c",
-            rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
-            rf"({','.join(trip_data.reset_index().columns)})"
-            rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
-        ]
-        subprocess.run(
-            ["psql"] + host + port + pgdb + user + command,
-            env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-        )
-
-        os.remove(trip_file)
+    os.remove(trip_file)
 
 
 class MotorizedIndividualTravel(Dataset):
