@@ -191,7 +191,7 @@ class EgonEvMvGridDistrict(Base):
     bus_id = Column(
         Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
     )
-    egon_ev_trip_pool_ev_id = Column(
+    egon_ev_pool_ev_id = Column(
         Integer, ForeignKey(EgonEvPool.ev_id), primary_key=True
     )
 
