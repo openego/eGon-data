@@ -37,7 +37,7 @@ def insert_PHES():
         DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE carrier = 'pumped_hydro'
         AND scn_name = 'eGon2035'
-        AND bus NOT IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
+        AND bus IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
                        WHERE scn_name = 'eGon2035'
                        AND country = 'DE');
         """
@@ -89,7 +89,7 @@ def extendable_batteries_per_scenario(scenario):
         DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE carrier = 'battery'
         AND scn_name = '{scenario}'
-        AND bus NOT IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
+        AND bus IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
                        WHERE scn_name = '{scenario}'
                        AND country = 'DE');
         """
