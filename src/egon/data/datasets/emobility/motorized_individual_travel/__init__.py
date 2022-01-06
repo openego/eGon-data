@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, subprocess
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
@@ -200,14 +200,42 @@ def write_evs_trips_to_db():
         index=True,
     )
 
-    # Write trips to DB
-    trip_data.to_sql(
-        name=EgonEvTrip.__table__.name,
-        schema=EgonEvTrip.__table__.schema,
-        con=db.engine(),
-        if_exists="append",
-        index=True,
+    # # Write trips to DB
+    # trip_data.to_sql(
+    #     name=EgonEvTrip.__table__.name,
+    #     schema=EgonEvTrip.__table__.schema,
+    #     con=db.engine(),
+    #     if_exists="append",
+    #     index=True,
+    # )
+
+    # Write trips to CSV and import to DB
+    trip_file = "trip_data.csv"
+    trip_data.to_csv(trip_file)
+
+    docker_db_config = db.credentials()
+
+    selected_profiles_table = (
+        f"{EgonEvTrip.__table__.schema}"
+        f".{EgonEvTrip.__table__.name}"
     )
+
+    host = ["-h", f"{docker_db_config['HOST']}"]
+    port = ["-p", f"{docker_db_config['PORT']}"]
+    pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
+    user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
+    command = [
+        "-c",
+        rf"\copy {selected_profiles_table}"
+        rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
+    ]
+
+    subprocess.run(
+        ["psql"] + host + port + pgdb + user + command,
+        env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+    )
+
+    os.remove(trip_file)
 
 
 class MotorizedIndividualTravel(Dataset):
