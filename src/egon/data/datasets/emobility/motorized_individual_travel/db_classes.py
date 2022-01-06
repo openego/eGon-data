@@ -40,12 +40,12 @@ class EgonEvPool(Base):
     type = Column(String(11))
     simbev_ev_id = Column(Integer)
 
-    trips = relationship(
-        "EgonEvTrip", cascade="all, delete", back_populates="ev"
-    )
-    mvgds = relationship(
-        "EgonEvMvGridDistrict", cascade="all, delete", back_populates="ev"
-    )
+    # trips = relationship(
+    #     "EgonEvTrip", cascade="all, delete", back_populates="ev"
+    # )
+    # mvgds = relationship(
+    #     "EgonEvMvGridDistrict", cascade="all, delete", back_populates="ev"
+    # )
 
 
 class EgonEvTrip(Base):
@@ -121,7 +121,7 @@ class EgonEvTrip(Base):
     drive_end = Column(Integer)
     consumption = Column(Float)
 
-    ev = relationship("EgonEvPool", back_populates="trips")
+    #ev = relationship("EgonEvPool", back_populates="trips")
 
 
 class EgonEvCountRegistrationDistrict(Base):
@@ -191,4 +191,4 @@ class EgonEvMvGridDistrict(Base):
     bus_id = Column(Integer, ForeignKey(MvGridDistricts.bus_id), index=True)
     egon_ev_pool_ev_id = Column(Integer, ForeignKey(EgonEvPool.ev_id))
 
-    ev = relationship("EgonEvPool", back_populates="mvgds")
+    #ev = relationship("EgonEvPool", back_populates="mvgds")
