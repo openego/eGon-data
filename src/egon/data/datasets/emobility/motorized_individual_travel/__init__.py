@@ -213,7 +213,7 @@ def write_evs_trips_to_db():
     command = [
         "-c",
         rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
-        rf"({'.'.join(trip_data.columns)})"
+        rf"({','.join(trip_data.reset_index().columns)})"
         rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
     ]
 
