@@ -556,3 +556,29 @@ def allocate_evs_to_grid_districts():
         method="multi",
         chunksize=10000
     )
+
+    # Check EV result sums for all scenario variations if not in testmode
+    if TESTMODE_OFF:
+        ev_per_mvgd_counts_per_scn = ev_per_mvgd.drop(
+            columns=["bus_id"]
+        ).groupby(["scenario", "scenario_variation"]).count()
+
+        for (scn, scn_var), ev_actual in ev_per_mvgd_counts_per_scn.iterrows():
+            scenario_parameters = get_sector_parameters(
+                "mobility",
+                scenario=scn
+            )["motorized_individual_travel"]
+            for (scn_var_name,
+                 scn_var_parameters) in scenario_parameters.items():
+                # Get EV target
+                ev_target = scn_var_parameters['ev_count']
+
+                np.testing.assert_allclose(
+                    int(ev_actual),
+                    ev_target,
+                    rtol=0.0001,
+                    err_msg=f"Dataset on EV numbers allocated to MVGDs "
+                            f"seems to be flawed. "
+                            f"Scenario: [{scn}], "
+                            f"Scenario variation: [{scn_var_name}]."
+                )
