@@ -200,25 +200,11 @@ def write_evs_trips_to_db():
         index=True,
     )
 
-    # # Write trips to DB
-    # trip_data.to_sql(
-    #     name=EgonEvTrip.__table__.name,
-    #     schema=EgonEvTrip.__table__.schema,
-    #     con=db.engine(),
-    #     if_exists="append",
-    #     index=True,
-    # )
-
     # Write trips to CSV and import to DB
     trip_file = "trip_data.csv"
     trip_data.to_csv(trip_file)
 
     docker_db_config = db.credentials()
-
-    selected_profiles_table = (
-        f"{EgonEvTrip.__table__.schema}"
-        f".{EgonEvTrip.__table__.name}"
-    )
 
     host = ["-h", f"{docker_db_config['HOST']}"]
     port = ["-p", f"{docker_db_config['PORT']}"]
@@ -226,7 +212,8 @@ def write_evs_trips_to_db():
     user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
     command = [
         "-c",
-        rf"\copy {selected_profiles_table}"
+        rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
+        rf"({'.'.join(trip_data.columns)})"
         rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
     ]
 
