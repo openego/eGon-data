@@ -25,7 +25,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
-    DOWNLOAD_DIRECTORY,
+    WORKING_DIR,
     TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
 )
@@ -75,14 +75,14 @@ def download_and_preprocess():
     ]["sources"]
 
     # Create the folder, if it does not exists
-    if not os.path.exists(DOWNLOAD_DIRECTORY):
-        os.mkdir(DOWNLOAD_DIRECTORY)
+    if not os.path.exists(WORKING_DIR):
+        os.mkdir(WORKING_DIR)
 
     ################################
     # Download and import KBA data #
     ################################
     url = mit_sources["KBA"]["url"]
-    file = DOWNLOAD_DIRECTORY / mit_sources["KBA"]["file"]
+    file = WORKING_DIR / mit_sources["KBA"]["file"]
     if not os.path.isfile(file):
         urlretrieve(url, file)
 
@@ -109,7 +109,7 @@ def download_and_preprocess():
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 
     kba_data.to_csv(
-        DOWNLOAD_DIRECTORY / mit_sources["KBA"]["file_processed"], index=None
+        WORKING_DIR / mit_sources["KBA"]["file_processed"], index=None
     )
 
     #######################################
@@ -117,7 +117,7 @@ def download_and_preprocess():
     #######################################
 
     url = mit_sources["RS7"]["url"]
-    file = DOWNLOAD_DIRECTORY / mit_sources["RS7"]["file"]
+    file = WORKING_DIR / mit_sources["RS7"]["file"]
     if not os.path.isfile(file):
         urlretrieve(url, file)
 
@@ -132,7 +132,7 @@ def download_and_preprocess():
     rs7_data.rs7_id = rs7_data.rs7_id.astype("int")
 
     rs7_data.to_csv(
-        DOWNLOAD_DIRECTORY / mit_sources["RS7"]["file_processed"], index=None
+        WORKING_DIR / mit_sources["RS7"]["file_processed"], index=None
     )
 
 
@@ -204,7 +204,7 @@ def write_evs_trips_to_db():
 
     # Write trips to CSV and import to DB
     print("Writing EV trips to CSV file...")
-    trip_file = "trip_data.csv"
+    trip_file = WORKING_DIR / "trip_data.csv"
     trip_data.to_csv(trip_file)
 
     # Get DB config
@@ -217,7 +217,7 @@ def write_evs_trips_to_db():
         "-c",
         rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
         rf"({','.join(trip_data.reset_index().columns)})"
-        rf" FROM '{trip_file}' DELIMITER ',' CSV HEADER;",
+        rf" FROM '{str(trip_file)}' DELIMITER ',' CSV HEADER;",
     ]
 
     print("Importing EV trips from CSV file to DB...")

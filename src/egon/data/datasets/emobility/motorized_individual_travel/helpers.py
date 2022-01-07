@@ -6,7 +6,7 @@ TESTMODE_OFF = (
     egon.data.config.settings()["egon-data"]["--dataset-boundary"] ==
     "Everything"
 )
-DOWNLOAD_DIRECTORY = Path(".") / "motorized_individual_travel"
+WORKING_DIR = Path(".") / "emobility"
 COLUMNS_KBA = [
     'reg_district',
     'total',
@@ -60,7 +60,7 @@ TRIP_COLUMN_MAPPING = {
 def read_kba_data():
     """Read KBA data from CSV"""
     return pd.read_csv(
-        DOWNLOAD_DIRECTORY /
+        WORKING_DIR /
         egon.data.config.datasets()[
             "emobility_mit"]["original_data"][
             "sources"]["KBA"]["file_processed"]
@@ -70,7 +70,7 @@ def read_kba_data():
 def read_rs7_data():
     """Read RegioStaR7 data from CSV"""
     return pd.read_csv(
-        DOWNLOAD_DIRECTORY /
+        WORKING_DIR /
         egon.data.config.datasets()[
             "emobility_mit"]["original_data"][
             "sources"]["RS7"]["file_processed"]
