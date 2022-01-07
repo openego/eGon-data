@@ -297,6 +297,8 @@ Changed
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
 * Add DC lines from Germany to Sweden and Denmark
   `#611 <https://github.com/openego/eGon-data/issues/611>`_
+* Add gas bus in Finland
+  `#598 <https://github.com/openego/eGon-data/issues/598>`_
 
 Bug fixes
 ---------
