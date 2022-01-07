@@ -25,7 +25,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_gas_data),
         )
@@ -258,16 +258,16 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
 
     # Add bus in Finland
     gdf_abroad_buses = gdf_abroad_buses.append(
-            {
-                "scn_name": scn_name,
-                "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-                "x": 28.30912,
-                "y": 60.44315,
-                "country": "FI",
-                "carrier": main_gas_carrier,
-            },
-            ignore_index=True,
-        )
+        {
+            "scn_name": scn_name,
+            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+            "x": 28.30912,
+            "y": 60.44315,
+            "country": "FI",
+            "carrier": main_gas_carrier,
+        },
+        ignore_index=True,
+    )
 
     # if in test mode, add bus in center of Germany
     boundary = settings()["egon-data"]["--dataset-boundary"]
