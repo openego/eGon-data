@@ -943,6 +943,9 @@ electrical_neighbours:
     lines:
       schema: 'grid'
       table: 'egon_etrago_line'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
     transformers:
       schema: 'grid'
       table: 'egon_etrago_transformer'
