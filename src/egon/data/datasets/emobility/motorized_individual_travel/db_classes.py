@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Float, ForeignKey, Integer, SmallInteger, String
+from sqlalchemy import Column, ForeignKey, Integer, SmallInteger, String
+from sqlalchemy.dialects.postgresql import REAL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -98,6 +99,10 @@ class EgonEvTrip(Base):
         End timestep of driving event (15min interval)
     consumption:
         Energy demand during driving event in kWh
+
+    Notes
+    -----
+    pgSQL's REAL is sufficient for floats as simBEV rounds output to 4 digits.
     """
 
     __tablename__ = "egon_ev_trip"
@@ -109,17 +114,17 @@ class EgonEvTrip(Base):
     )
     simbev_event_id = Column(Integer)
     location = Column(String(21))
-    charging_capacity_nominal = Column(Float)
-    charging_capacity_grid = Column(Float)
-    charging_capacity_battery = Column(Float)
-    soc_start = Column(Float)
-    soc_end = Column(Float)
-    charging_demand = Column(Float)
+    charging_capacity_nominal = Column(REAL)
+    charging_capacity_grid = Column(REAL)
+    charging_capacity_battery = Column(REAL)
+    soc_start = Column(REAL)
+    soc_end = Column(REAL)
+    charging_demand = Column(REAL)
     park_start = Column(Integer)
     park_end = Column(Integer)
     drive_start = Column(Integer)
     drive_end = Column(Integer)
-    consumption = Column(Float)
+    consumption = Column(REAL)
 
     #ev = relationship("EgonEvPool", back_populates="trips")
 
