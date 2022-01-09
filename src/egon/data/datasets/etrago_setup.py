@@ -39,14 +39,14 @@ class EgonPfHvBus(Base):
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
-    v_nom = Column(Float(53))
+    v_nom = Column(Float(53), server_default=1.)
     type = Column(Text)
     carrier = Column(Text)
-    v_mag_pu_set_fixed = Column(Float(53))
-    v_mag_pu_min = Column(Float(53))
-    v_mag_pu_max = Column(Float(53))
-    x = Column(Float(53))
-    y = Column(Float(53))
+    v_mag_pu_set_fixed = Column(Float(53), server_default=1.)
+    v_mag_pu_min = Column(Float(53), server_default=0.)
+    v_mag_pu_max = Column(Float(53), server_default="inf")
+    x = Column(Float(53),server_default=0.)
+    y = Column(Float(53),server_default=0.)
     geom = Column(Geometry("POINT", 4326), index=True)
 
 
