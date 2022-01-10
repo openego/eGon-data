@@ -615,7 +615,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             """
         ).squeeze()
 
-        foreign_links.append(
+        foreign_links = foreign_links.append(
             pd.DataFrame(
                 index=[1],
                 data={
@@ -1146,7 +1146,7 @@ def tyndp_demand():
             data_2040 = data_2030
 
         # According to the NEP, data for 2030 and 2040 is linear interpolated
-        data_2035 = ((data_2030 + data_2040) / 2)[:8760] * 1e-3
+        data_2035 = ((data_2030 + data_2040) / 2)[:8760]
 
         entry = etrago.EgonPfHvLoad(
             scn_name="eGon2035",
