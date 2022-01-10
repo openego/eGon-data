@@ -615,7 +615,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             """
         ).squeeze()
 
-        foreign_links.append(
+        foreign_links = foreign_links.append(
             pd.DataFrame(
                 index=[1],
                 data={
