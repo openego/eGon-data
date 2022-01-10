@@ -166,10 +166,10 @@ def write_evs_trips_to_db():
         df["simbev_ev_id"] = "_".join(f.name.split("_")[0:3])
         return df
 
-    trip_dir_name = trip_dir / Path(
+    trip_dir_name = Path(
         egon.data.config.datasets()["emobility_mit"][
-            "original_data"]["sources"]["trips"]["file"]
-    ).split(".")[0]
+            "original_data"]["sources"]["trips"]["file"].split(".")[0]
+    )
 
     trip_dir_root = DATA_BUNDLE_DIR / Path("mit_trip_data", trip_dir_name)
 
