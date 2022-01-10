@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from pathlib import Path
 import egon.data.config
@@ -78,3 +79,29 @@ def read_rs7_data():
             "emobility_mit"]["original_data"][
             "sources"]["RS7"]["file_processed"]
     )
+
+
+def read_simbev_metadata_file(section):
+    """Read metadata of simBEV run
+
+    Parameters
+    ----------
+    section : str
+        Metadata section to be returned, one of
+        * "tech_data"
+        * "charge_prob_slow"
+        * "charge_prob_fast"
+
+    Returns
+    -------
+    pd.DataFrame
+        Config data
+    """
+    meta_file = DATA_BUNDLE_DIR / Path(
+        "mit_trip_data",
+        egon.data.config.datasets()["emobility_mit"][
+            "original_data"]["sources"]["trips"]["file_metadata"]
+    )
+    with open(meta_file) as f:
+        meta = json.loads(f.read())
+    return pd.DataFrame.from_dict(meta.get(section, dict()), orient='index')
