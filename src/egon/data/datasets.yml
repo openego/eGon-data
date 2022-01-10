@@ -978,3 +978,6 @@ emobility_mit:
         sheet: "FZ1.1"
         columns: "D, J:N"
         skiprows: 8
+      trips:
+        file: "RS7_eGon_min5k_2022-01-07_140426_simbev_run.tar.gz"
+        file_metadata: "metadata_simbev_run.json"

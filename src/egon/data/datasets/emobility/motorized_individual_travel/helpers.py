@@ -6,7 +6,10 @@ TESTMODE_OFF = (
     egon.data.config.settings()["egon-data"]["--dataset-boundary"] ==
     "Everything"
 )
-WORKING_DIR = Path(".") / "emobility"
+WORKING_DIR = Path(".", "emobility")
+DATA_BUNDLE_DIR = Path(
+    ".", "data_bundle_egon_data", "emobility",
+)
 COLUMNS_KBA = [
     'reg_district',
     'total',
