@@ -302,6 +302,10 @@ def mobility(scenario):
         }
 
     elif scenario == "eGon100RE":
+        # eGon100RE has 3 Scenario variations
+        #   * allocation will always be done for all scenarios
+        #   * model data will be written to tables `egon_etrago_*` only
+        #     for the variation as speciefied in `datasets.yml`
         parameters = {
             "motorized_individual_travel": {
                 "Reference 2050": {
