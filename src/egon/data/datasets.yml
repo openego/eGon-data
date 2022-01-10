@@ -211,6 +211,8 @@ substation_extraction:
     ehv_substation:
       schema: 'grid'
       table: 'egon_ehv_substation'
+    transfer_busses:
+      table: 'transfer_busses_complete'
 
 substation_voronoi:
   sources:
