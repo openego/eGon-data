@@ -45,6 +45,7 @@ from egon.data.datasets.hydrogen_etrago import (
     HydrogenStoreEtrago,
 )
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
+from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea
@@ -430,6 +431,10 @@ with airflow.DAG(
     industrial_gas_demand = IndustrialGasDemand(
         dependencies=[create_gas_polygons]
     )
+    # Aggregate gas loads, stores and generators
+    aggrgate_gas = GasAggregation(dependencies=[gas_production_insert_data,
+                                                insert_data_ch4_storages,
+                                                industrial_gas_demand])
 
     # CHP locations
     chp = Chp(
