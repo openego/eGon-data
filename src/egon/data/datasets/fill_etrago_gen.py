@@ -10,7 +10,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -22,7 +22,7 @@ def fill_etrago_generators():
     cfg = egon.data.config.datasets()["generators_etrago"]
 
     # Delete power plants from previous iterations of this script
-    delete_previuos_gen(cfg)    
+    delete_previuos_gen(cfg)
 
     # Load required tables
     (
@@ -33,9 +33,7 @@ def fill_etrago_generators():
         pp_time,
     ) = load_tables(con, cfg)
 
-    power_plants = adjust_power_plants_table(
-        power_plants=power_plants, renew_feedin=renew_feedin, cfg=cfg
-    )
+    renew_feedin = adjust_renew_feedin_table(renew_feedin=renew_feedin, cfg=cfg)
 
     etrago_pp = group_power_plants(
         power_plants=power_plants,
@@ -122,7 +120,7 @@ def fill_etrago_gen_time_table(
     ]
 
     etrago_pp_time = etrago_pp_time[
-        (etrago_pp_time["carrier"] == "pv")
+        (etrago_pp_time["carrier"] == "solar")
         | (etrago_pp_time["carrier"] == "wind_onshore")
         | (etrago_pp_time["carrier"] == "wind_offshore")
     ]
@@ -140,7 +138,7 @@ def fill_etrago_gen_time_table(
     etrago_pp_time = etrago_pp_time.drop(columns="generator_id")
     etrago_pp_time["p_max_pu"] = etrago_pp_time["p_max_pu"].apply(list)
     etrago_pp_time["temp_id"] = 1
-
+    
     db.execute_sql(
         f"""DELETE FROM 
                    {cfg['targets']['etrago_gen_time']['schema']}.
@@ -154,7 +152,7 @@ def fill_etrago_gen_time_table(
         con=con,
         if_exists="append",
     )
-    return etrago_pp
+    return etrago_pp_time
 
 
 def load_tables(con, cfg, scenario='eGon2035'):
@@ -219,15 +217,16 @@ def power_timeser(weather_data):
         return -1
 
 
-def adjust_power_plants_table(power_plants, renew_feedin, cfg):
-    # Define carrier 'solar' as 'pv'
-    carrier_pv_mask = power_plants["carrier"] == "solar"
-    power_plants.loc[carrier_pv_mask, "carrier"] = "pv"
+def adjust_renew_feedin_table(renew_feedin, cfg):
+    
+    # Define carrier 'pv' as 'solar' 
+    carrier_pv_mask = renew_feedin["carrier"] == "pv"
+    renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"
 
     # convert renewable feedin lists to arrays
     renew_feedin["feedin"] = renew_feedin["feedin"].apply(np.array)
 
-    return power_plants
+    return renew_feedin
 
 
 def delete_previuos_gen(cfg):
@@ -235,50 +234,38 @@ def delete_previuos_gen(cfg):
         f"""DELETE FROM 
                    {cfg['targets']['etrago_generators']['schema']}.
                    {cfg['targets']['etrago_generators']['table']}
-                   WHERE carrier <> 'CH4' AND carrier <> 'solar_rooftop'
-                   AND carrier <> 'solar_thermal_collector'
-                   AND carrier <> 'geo_thermal'
+                   WHERE carrier = 'solar' OR carrier = 'wind_onshore'
+                   OR carrier = 'wind_offshore' OR carrier = 'biomass'
                    """
     )
 
 
 def set_timeseries(power_plants, renew_feedin):
     def timeseries(pp):
-        try:
-            if pp.weather_cell_id != -1:
-                feedin_time = renew_feedin[
-                    (renew_feedin["w_id"] == pp.weather_cell_id)
-                    & (renew_feedin["carrier"] == pp.carrier)
-                ].feedin.iloc[0]
-                return feedin_time
-            else:
-                df = power_plants[
-                    (power_plants["bus_id"] == pp.bus_id)
-                    & (power_plants["carrier"] == pp.carrier)
-                ]
-                total_int_cap = df.el_capacity.sum()
-                df["feedin"] = 0
-                df["feedin"] = df.apply(
-                    lambda x: renew_feedin[
-                        (renew_feedin["w_id"] == x.weather_cell_id)
-                        & (renew_feedin["carrier"] == x.carrier)
-                    ].feedin.iloc[0],
-                    axis=1,
-                )
-                df["feedin"] = df.apply(
-                    lambda x: x.el_capacity / total_int_cap * x.feedin, axis=1
-                )
-                return df.feedin.sum()
-        #######################################################################
-        ####################### DELETE THIS EXCEPTION #########################
-        except:
+        if pp.weather_cell_id != -1:
+            feedin_time = renew_feedin[
+                (renew_feedin["w_id"] == pp.weather_cell_id)
+                & (renew_feedin["carrier"] == pp.carrier)
+            ].feedin.iloc[0]
+            return feedin_time
+        else:
             df = power_plants[
                 (power_plants["bus_id"] == pp.bus_id)
                 & (power_plants["carrier"] == pp.carrier)
             ]
-            return list(df.weather_cell_id)
+            total_int_cap = df.el_capacity.sum()
+            df["feedin"] = 0
+            df["feedin"] = df.apply(
+                lambda x: renew_feedin[
+                    (renew_feedin["w_id"] == x.weather_cell_id)
+                    & (renew_feedin["carrier"] == x.carrier)
+                ].feedin.iloc[0],
+                axis=1,
+            )
+            df["feedin"] = df.apply(
+                lambda x: x.el_capacity / total_int_cap * x.feedin, axis=1
+            )
+            return df.feedin.sum()
 
-    ####################### DELETE THIS EXCEPTION #############################
-    ###########################################################################
     return timeseries
    
