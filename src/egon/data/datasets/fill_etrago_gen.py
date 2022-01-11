@@ -6,6 +6,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 
+
 class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -75,7 +76,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
-    
+
     if np.isnan(etrago_gen_orig["generator_id"].max()):
         max_id = 0
     else:
@@ -254,4 +255,3 @@ def set_timeseries(power_plants, renew_feedin):
             return df.feedin.sum()
 
     return timeseries
-   

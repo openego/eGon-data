@@ -295,7 +295,10 @@ Changed
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
-
+* Add DC lines from Germany to Sweden and Denmark
+  `#611 <https://github.com/openego/eGon-data/issues/611>`_
+* Add gas bus in Finland
+  `#598 <https://github.com/openego/eGon-data/issues/598>`_
 
 Bug fixes
 ---------
@@ -378,5 +381,11 @@ Bug fixes
   `#585 <https://github.com/openego/eGon-data/issues/585>`_
 * Change source for H2 steel tank storage to Danish Energy Agency
   `#605 <https://github.com/openego/eGon-data/issues/605>`_
+* Fix deleting from eTraGo tables
+  `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Create and fill transfer_busses table in substation-dataset
+  `#610 <https://github.com/openego/eGon-data/issues/610>`_
+* H2 steel tanks are removed again from saltcavern storage
+  `#621 <https://github.com/openego/eGon-data/issues/621>`_
 * Change carrier name from 'pv' to 'solar' in eTraGo_generators
   `#617 <https://github.com/openego/eGon-data/issues/617>`_
