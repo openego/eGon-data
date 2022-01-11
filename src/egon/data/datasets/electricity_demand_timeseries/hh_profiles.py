@@ -113,12 +113,12 @@ This module docstring is rather a dataset documentation. Once, a decision
 is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
-from functools import partial
 from itertools import cycle, product
 from pathlib import Path
 import os
 import random
 
+from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
@@ -170,18 +170,31 @@ class EgonEtragoElectricityHouseholds(Base):
     q_set = Column(ARRAY(Float))
 
 
-setup = partial(
-    Dataset,
-    name="HH Demand",
-    version="0.0.5",
-    dependencies=[],
-    # Tasks are declared in pipeline as function is used multiple times with
-    # different args.
-    # To differentiate these tasks PythonOperator with specific id-names are
-    # used.
-    # PythonOperator needs to be declared in pipeline to be mapped to DAG
-    # tasks=[],
-)
+class HouseholdDemands(Dataset):
+    def __init__(self, dependencies):
+        mv_hh_electricity_load_2035 = PythonOperator(
+            task_id="MV-hh-electricity-load-2035",
+            python_callable=mv_grid_district_HH_electricity_load,
+            op_args=["eGon2035", 2035],
+            op_kwargs={"drop_table": True},
+        )
+
+        mv_hh_electricity_load_2050 = PythonOperator(
+            task_id="MV-hh-electricity-load-2050",
+            python_callable=mv_grid_district_HH_electricity_load,
+            op_args=["eGon100RE", 2050],
+        )
+
+        super().__init__(
+            name="Household Demands",
+            version="0.0.5",
+            dependencies=dependencies,
+            tasks=(
+                houseprofiles_in_census_cells,
+                mv_hh_electricity_load_2035,
+                mv_hh_electricity_load_2050,
+            ),
+        )
 
 
 def clean(x):

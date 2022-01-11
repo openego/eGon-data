@@ -1,6 +1,5 @@
 import os
 
-from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
 import importlib_resources as resources
@@ -227,7 +226,6 @@ with airflow.DAG(
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
-
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
 
@@ -290,20 +288,7 @@ with airflow.DAG(
         "electricity_demand.distribute-cts-demands"
     ]
 
-    mv_hh_electricity_load_2035 = PythonOperator(
-        task_id="MV-hh-electricity-load-2035",
-        python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon2035", 2035],
-        op_kwargs={"drop_table": True},
-    )
-
-    mv_hh_electricity_load_2050 = PythonOperator(
-        task_id="MV-hh-electricity-load-2050",
-        python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon100RE", 2050],
-    )
-
-    hh_demand_profiles_setup = hh_profiles.setup(
+    hh_demand_profiles_setup = hh_profiles.HouseholdDemands(
         dependencies=[
             vg250_clean_and_prepare,
             zensus_miscellaneous,
@@ -312,11 +297,6 @@ with airflow.DAG(
             demandregio,
             osm_buildings_streets_preprocessing,
         ],
-        tasks=(
-            hh_profiles.houseprofiles_in_census_cells,
-            mv_hh_electricity_load_2035,
-            mv_hh_electricity_load_2050,
-        ),
     )
     hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
