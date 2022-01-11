@@ -300,7 +300,9 @@ with airflow.DAG(
     )
     hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
-        "electricity_demand_timeseries.hh_profiles.houseprofiles-in-census-cells"
+        "electricity_demand_timeseries"
+        ".hh_profiles"
+        ".houseprofiles-in-census-cells"
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
