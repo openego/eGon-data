@@ -378,3 +378,5 @@ Bug fixes
   `#585 <https://github.com/openego/eGon-data/issues/585>`_
 * Change source for H2 steel tank storage to Danish Energy Agency
   `#605 <https://github.com/openego/eGon-data/issues/605>`_
+* H2 steel tanks are removed again from saltcavern storage
+  `#621 <https://github.com/openego/eGon-data/issues/621>`_
