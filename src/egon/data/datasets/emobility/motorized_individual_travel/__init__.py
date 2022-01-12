@@ -32,7 +32,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
 )
-import egon.data.config
 
 
 def create_tables():
