@@ -295,6 +295,10 @@ Changed
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
+* Fix RE potential areas outside of Germany by updating
+  the dataset. Import files from data bundle.
+  `#592 <https://github.com/openego/eGon-data/issues/592>`_
+  `#595 <https://github.com/openego/eGon-data/issues/595>`_
 
 
 Bug fixes
