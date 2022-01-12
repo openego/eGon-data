@@ -12,6 +12,7 @@ WORKING_DIR = Path(".", "emobility")
 DATA_BUNDLE_DIR = Path(
     ".", "data_bundle_egon_data", "emobility",
 )
+DATASET_CFG = egon.data.config.datasets()["emobility_mit"]
 COLUMNS_KBA = [
     'reg_district',
     'total',
@@ -98,8 +99,7 @@ def read_simbev_metadata_file(section):
     pd.DataFrame
         Config data
     """
-    trips_cfg = egon.data.config.datasets()["emobility_mit"][
-            "original_data"]["sources"]["trips"]
+    trips_cfg = DATASET_CFG["original_data"]["sources"]["trips"]
     meta_file = DATA_BUNDLE_DIR / Path(
         "mit_trip_data",
         trips_cfg["file"].split(".")[0],

@@ -27,6 +27,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     WORKING_DIR,
+    DATASET_CFG,
     DATA_BUNDLE_DIR,
     TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
@@ -72,9 +73,7 @@ def download_and_preprocess():
         RegioStaR7 data
     """
 
-    mit_sources = egon.data.config.datasets()["emobility_mit"][
-        "original_data"
-    ]["sources"]
+    mit_sources = DATASET_CFG["original_data"]["sources"]
 
     # Create the folder, if it does not exists
     if not os.path.exists(WORKING_DIR):
@@ -142,8 +141,7 @@ def extract_trip_file():
     """Extract trip file from data bundle"""
     trip_dir = DATA_BUNDLE_DIR / Path("mit_trip_data")
     trip_file = trip_dir / Path(
-        egon.data.config.datasets()["emobility_mit"][
-            "original_data"]["sources"]["trips"]["file"]
+        DATASET_CFG["original_data"]["sources"]["trips"]["file"]
     )
 
     tar = tarfile.open(trip_file)
@@ -167,8 +165,7 @@ def write_evs_trips_to_db():
         return df
 
     trip_dir_name = Path(
-        egon.data.config.datasets()["emobility_mit"][
-            "original_data"]["sources"]["trips"]["file"].split(".")[0]
+        DATASET_CFG["original_data"]["sources"]["trips"]["file"].split(".")[0]
     )
 
     trip_dir_root = DATA_BUNDLE_DIR / Path("mit_trip_data", trip_dir_name)
