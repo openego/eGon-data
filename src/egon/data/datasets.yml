@@ -982,4 +982,6 @@ emobility_mit:
         file: "RS7_eGon_min5k_2022-01-07_140426_simbev_run.tar.gz"
         file_metadata: "metadata_simbev_run.json"
   scenario:
-    variation_2050: "Reference 2050"
+    variation:
+      eGon2035: "NEP C 2035"
+      eGon100RE: "Reference 2050"
