@@ -2,16 +2,16 @@
 """
 The central module containing all code dealing with importing gas industrial demand
 """
+from shapely import wkt
 import numpy as np
+import pandas as pd
 import requests
 
-import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.gas_prod import assign_ch4_bus_id, assign_h2_bus_id
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from shapely import wkt
 
 
 class IndustrialGasDemand(Dataset):
@@ -272,8 +272,12 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
 
     Returns
     -------
-        industrial_gas_demand : Dataframe containing the industrial gas demand
-        in Germany
+        industrial_gas_demand : Dataframe
+            Dataframe containing the industrial gas demand in Germany
+        load_id : list
+            IDs of the loads that should be aggregated
+        load_id_grouped :list
+            List of lists containing the load ID that belong together
     """
     # Connect to local database
     engine = db.engine()
@@ -292,10 +296,12 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
     # Select next id value
     new_id = db.next_etrago_id("load")
 
-    industrial_gas_demand = pd.concat([
-        download_CH4_industrial_demand(scn_name=scn_name),
-        download_H2_industrial_demand(scn_name=scn_name)
-    ])
+    industrial_gas_demand = pd.concat(
+        [
+            download_CH4_industrial_demand(scn_name=scn_name),
+            download_H2_industrial_demand(scn_name=scn_name),
+        ]
+    )
     industrial_gas_demand["load_id"] = range(
         new_id, new_id + len(industrial_gas_demand)
     )
@@ -309,6 +315,43 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
     # Remove useless columns
     egon_etrago_load_gas = industrial_gas_demand.drop(columns=["p_set"])
 
+    # Aggregate load with same properties at the same bus
+    print(egon_etrago_load_gas)
+    gas_loads_duplicated_buses = (
+        egon_etrago_load_gas[
+            egon_etrago_load_gas.duplicated(
+                subset=["bus", "carrier"], keep=False
+            )
+        ]["bus"]
+        .drop_duplicates()
+        .tolist()
+    )
+    load_id = egon_etrago_load_gas[
+        egon_etrago_load_gas["bus"].isin(gas_loads_duplicated_buses)
+    ]["load_id"].tolist()
+    load_id_grouped = []
+    for i in gas_loads_duplicated_buses:
+        load_id_grouped.append(
+            egon_etrago_load_gas[egon_etrago_load_gas["bus"] == i][
+                "load_id"
+            ].tolist()
+        )
+    print(load_id)
+    print(load_id_grouped)
+
+    strategies = {
+        "scn_name": "first",
+        "load_id": "min",
+        "sign": "first",
+        "bus": "first",
+        "carrier": "first",
+    }
+
+    egon_etrago_load_gas = egon_etrago_load_gas.groupby(
+        ["bus", "carrier"]
+    ).agg(strategies)
+    print(egon_etrago_load_gas)
+
     # Insert data to db
     egon_etrago_load_gas.to_sql(
         "egon_etrago_load",
@@ -318,11 +361,22 @@ def import_industrial_gas_demand(scn_name="eGon2035"):
         if_exists="append",
     )
 
-    return industrial_gas_demand
+    return industrial_gas_demand, load_id, load_id_grouped
 
 
-def import_industrial_gas_demand_time_series(egon_etrago_load_gas):
+def import_industrial_gas_demand_time_series(
+    egon_etrago_load_gas, load_id, load_id_grouped, scn_name="eGon2035"
+):
     """Insert list of industrial gas demand time series (one per NUTS3) in database
+
+    Parameters
+    ----------
+    industrial_gas_demand : Dataframe
+            Dataframe containing the industrial gas demand in Germany
+        load_id : list
+            IDs of the loads that should be aggregated
+        load_id_grouped :list
+            List of lists containing the load ID that belong together
 
     Returns
     -------
@@ -339,6 +393,41 @@ def import_industrial_gas_demand_time_series(egon_etrago_load_gas):
     )
     egon_etrago_load_gas_timeseries["temp_id"] = 1
 
+    # Aggregate load with same properties at the same bus
+    df_aggregated = pd.DataFrame(
+        [], columns=["p_set", "load_id", "scn_name", "temp_id"]
+    )
+    for i in range(len(load_id_grouped)):
+        df_filtered = egon_etrago_load_gas_timeseries[
+            egon_etrago_load_gas_timeseries["load_id"].isin(load_id_grouped[i])
+        ]
+        #    print(df_filtered)
+        TS = []
+        load_id = []
+        for index, row in df_filtered.iterrows():
+            TS.append(row["p_set"])
+            load_id.append(row["load_id"])
+        df_aggregated.loc[i] = [
+            np.array(TS).sum(axis=0).tolist(),
+            np.array(load_id).min(),
+            scn_name,
+            1,
+        ]
+    print(df_aggregated)
+    # delete useless rows in egon_etrago_load_gas_timeseries
+    print(egon_etrago_load_gas_timeseries)
+    egon_etrago_load_gas_timeseries = egon_etrago_load_gas_timeseries.drop(
+        egon_etrago_load_gas_timeseries[
+            egon_etrago_load_gas_timeseries["load_id"].isin(load_id)
+        ].index
+    )
+    print(egon_etrago_load_gas_timeseries)
+    # add df_aggregated
+    egon_etrago_load_gas_timeseries = egon_etrago_load_gas_timeseries.append(
+        df_aggregated, ignore_index=True
+    )
+
+    print(egon_etrago_load_gas_timeseries)
     # Insert data to db
     egon_etrago_load_gas_timeseries.to_sql(
         "egon_etrago_load_timeseries",
@@ -357,6 +446,12 @@ def insert_industrial_gas_demand():
     None.
     """
 
-    egon_etrago_load_gas = import_industrial_gas_demand(scn_name="eGon2035")
+    (
+        egon_etrago_load_gas,
+        load_id,
+        load_id_grouped,
+    ) = import_industrial_gas_demand(scn_name="eGon2035")
 
-    import_industrial_gas_demand_time_series(egon_etrago_load_gas)
+    import_industrial_gas_demand_time_series(
+        egon_etrago_load_gas, load_id, load_id_grouped, scn_name="eGon2035"
+    )
