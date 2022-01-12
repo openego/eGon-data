@@ -3,9 +3,7 @@ potential areas for wind onshore and ground-mounted PV.
 """
 
 from functools import partial
-from urllib.request import urlretrieve
 from pathlib import Path
-import os
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, Integer
@@ -69,17 +67,27 @@ def create_tables():
 def insert_data():
     """Insert data into DB"""
 
+    data_bundle_dir = Path(
+        ".", "data_bundle_egon_data", "re_potential_areas",
+    )
+
+    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+    if dataset == "Everything":
+        map_section = "path_table_map"
+    elif dataset == "Schleswig-Holstein":
+        map_section = "path_table_map_testmode"
+    else:
+        raise ValueError(f"'{dataset}' is not a valid dataset boundary.")
+
     data_config = egon.data.config.datasets()
     pa_config = data_config["re_potential_areas"]
 
     file_table_map = {
-        Path(".") / "re_potential_areas" / Path(file).name: table
-        for file, table in pa_config["target"][
-            "path_table_map"
-        ].items()
+        data_bundle_dir / Path(file).name: table
+        for file, table in pa_config["target"][map_section].items()
     }
 
-    engine_local_db = db.engine()
+    engine = db.engine()
 
     for file, table in file_table_map.items():
         data = gpd.read_file(file).to_crs("EPSG:3035")
@@ -91,7 +99,7 @@ def insert_data():
         # create database table from geopandas dataframe
         data.to_postgis(
             table,
-            engine_local_db,
+            engine,
             schema=schema,
             index=False,
             if_exists="append",
