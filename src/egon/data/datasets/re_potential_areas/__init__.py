@@ -68,7 +68,9 @@ def insert_data():
     """Insert data into DB"""
 
     data_bundle_dir = Path(
-        ".", "data_bundle_egon_data", "re_potential_areas",
+        ".",
+        "data_bundle_egon_data",
+        "re_potential_areas",
     )
 
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
@@ -97,7 +99,7 @@ def insert_data():
         schema = pa_config["target"].get("schema", "supply")
 
         # create database table from geopandas dataframe
-        data[['id', 'geom']].to_postgis(
+        data[["id", "geom"]].to_postgis(
             table,
             engine,
             schema=schema,
