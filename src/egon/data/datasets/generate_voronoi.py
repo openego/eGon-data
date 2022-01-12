@@ -5,8 +5,6 @@ from geoalchemy2.types import Geometry
 from geovoronoi import voronoi_regions_from_coords
 import geopandas as gpd
 
-from egon.data import db
-
 
 def get_voronoi_geodataframe(buses, boundary):
     """
