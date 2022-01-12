@@ -44,8 +44,7 @@ def create_tables():
     """Create tables for RE potential areas"""
 
     data_config = egon.data.config.datasets()
-
-    schema = data_config["re_potential_areas"]["original_data"]["target"].get(
+    schema = data_config["re_potential_areas"]["target"].get(
         "schema", "supply"
     )
 
@@ -75,7 +74,7 @@ def insert_data():
 
     file_table_map = {
         Path(".") / "re_potential_areas" / Path(file).name: table
-        for file, table in pa_config["original_data"]["target"][
+        for file, table in pa_config["target"][
             "path_table_map"
         ].items()
     }
@@ -87,7 +86,7 @@ def insert_data():
         data.rename(columns={"geometry": "geom"}, inplace=True)
         data.set_geometry("geom", inplace=True)
 
-        schema = pa_config["original_data"]["target"].get("schema", "supply")
+        schema = pa_config["target"].get("schema", "supply")
 
         # create database table from geopandas dataframe
         data.to_postgis(
