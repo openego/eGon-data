@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The central module aggregatin ch4 store caverns (stores), ch4 generatiors and gas loads 
+The central module aggregating ch4 store caverns (stores) and ch4 generators 
 """
 import pandas as pd
 import requests
@@ -13,15 +13,14 @@ class GasAggregation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasAggregation",
-            version="0.0.0.dev",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(aggregate_gas),
         )
 
 
 def aggregate_gas(scn_name="eGon2035"):
-    """Aggregatin ch4 store caverns (stores), ch4 generatiors and gas loads
-    with same properties at the same bus.
+    """Aggregation of ch4 stores and ch4 generators with same properties at the same bus.
 
     Parameters
     ----------
@@ -46,7 +45,7 @@ def aggregate_gas(scn_name="eGon2035"):
                 "p_nom": "sum",
             },
         },
-        # Store /!\ on aggrège les stores de deux types différents (grid et cavernes) > valider que c'est ok
+        # Store
         {
             "columns": "scn_name, store_id, bus, e_nom, carrier",
             "table": "egon_etrago_store",
