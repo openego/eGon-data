@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import egon.data.config
 
@@ -97,10 +98,12 @@ def read_simbev_metadata_file(section):
     pd.DataFrame
         Config data
     """
+    trips_cfg = egon.data.config.datasets()["emobility_mit"][
+            "original_data"]["sources"]["trips"]
     meta_file = DATA_BUNDLE_DIR / Path(
         "mit_trip_data",
-        egon.data.config.datasets()["emobility_mit"][
-            "original_data"]["sources"]["trips"]["file_metadata"]
+        trips_cfg["file"].split(".")[0],
+        trips_cfg["file_metadata"]
     )
     with open(meta_file) as f:
         meta = json.loads(f.read())
