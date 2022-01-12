@@ -40,45 +40,6 @@ class EgonRePotentialAreaWind(Base):
     geom = Column(Geometry("MULTIPOLYGON", 3035))
 
 
-def download_datasets():
-    """Download geopackages from Zenodo."""
-
-    data_config = egon.data.config.datasets()
-    pa_config = data_config["re_potential_areas"]
-
-    def ve(s):
-        raise (ValueError(s))
-
-    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
-    url_section = (
-        "url"
-        if dataset == "Everything"
-        else "url_testmode"
-        if dataset == "Schleswig-Holstein"
-        else ve(f"'{dataset}' is not a valid dataset boundary.")
-    )
-
-    download_directory = Path(".") / "re_potential_areas"
-    # Create the folder, if it does not exists already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
-
-    url_target_file_map = zip(
-        pa_config["original_data"]["source"][url_section],
-        [
-            # os.path.join(os.path.dirname(__file__), file)
-            Path(".") / "re_potential_areas" / Path(file).name
-            for file in pa_config["original_data"]["target"][
-                "path_table_map"
-            ].keys()
-        ],
-    )
-
-    for url, file in url_target_file_map:
-        if not os.path.isfile(file):
-            urlretrieve(url, file)
-
-
 def create_tables():
     """Create tables for RE potential areas"""
 
