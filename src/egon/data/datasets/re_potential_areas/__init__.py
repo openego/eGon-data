@@ -97,7 +97,7 @@ def insert_data():
         schema = pa_config["target"].get("schema", "supply")
 
         # create database table from geopandas dataframe
-        data.to_postgis(
+        data[['id', 'geom']].to_postgis(
             table,
             engine,
             schema=schema,
