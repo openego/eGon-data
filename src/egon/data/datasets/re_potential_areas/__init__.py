@@ -111,7 +111,7 @@ def insert_data():
 re_potential_area_setup = partial(
     Dataset,
     name="RePotentialAreas",
-    version="0.0.0",
+    version="0.0.1",
     dependencies=[],
     tasks=(create_tables, insert_data),
 )
