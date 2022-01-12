@@ -105,5 +105,5 @@ re_potential_area_setup = partial(
     name="RePotentialAreas",
     version="0.0.0",
     dependencies=[],
-    tasks=(download_datasets, create_tables, insert_data),
+    tasks=(create_tables, insert_data),
 )
