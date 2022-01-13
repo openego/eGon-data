@@ -93,21 +93,17 @@ with airflow.DAG(
     tasks = pipeline.task_dict
 
     database_setup = database.Setup()
-    database_setup.insert_into(pipeline)
     setup = tasks["database.setup"]
 
     osm = OpenStreetMap(dependencies=[setup])
-    osm.insert_into(pipeline)
     osm_add_metadata = tasks["osm.add-metadata"]
     osm_download = tasks["osm.download"]
 
     data_bundle = DataBundle(dependencies=[setup])
-    data_bundle.insert_into(pipeline)
     download_data_bundle = tasks["data_bundle.download"]
 
     # VG250 (Verwaltungsgebiete 250) data import
     vg250 = Vg250(dependencies=[setup])
-    vg250.insert_into(pipeline)
     vg250_clean_and_prepare = tasks["vg250.cleaning-and-preperation"]
 
     # Scenario table
@@ -141,7 +137,6 @@ with airflow.DAG(
     osm_buildings_streets = OsmBuildingsStreets(
         dependencies=[osm, zensus_miscellaneous]
     )
-    osm_buildings_streets.insert_into(pipeline)
     osm_buildings_streets_preprocessing = tasks[
         "osm_buildings_streets.preprocessing"
     ]
@@ -174,7 +169,6 @@ with airflow.DAG(
 
     # Retrieve MaStR data
     mastr_data = mastr_data_setup(dependencies=[setup])
-    mastr_data.insert_into(pipeline)
 
     substation_extraction = SubstationExtraction(
         dependencies=[osm_add_metadata, vg250_clean_and_prepare]
@@ -189,7 +183,6 @@ with airflow.DAG(
             scenario_parameters,
         ]
     )
-    osmtgmod.insert_into(pipeline)
     osmtgmod_pypsa = tasks["osmtgmod.to-pypsa"]
     osmtgmod_substation = tasks["osmtgmod_substation"]
 
@@ -202,14 +195,12 @@ with airflow.DAG(
     mv_grid_districts = mv_grid_districts_setup(
         dependencies=[substation_voronoi]
     )
-    mv_grid_districts.insert_into(pipeline)
     define_mv_grid_districts = tasks[
         "mv_grid_districts.define-mv-grid-districts"
     ]
 
     # Import potential areas for wind onshore and ground-mounted PV
     re_potential_areas = re_potential_area_setup(dependencies=[setup])
-    re_potential_areas.insert_into(pipeline)
 
     # Future heat demand calculation based on Peta5_0_1 data
     heat_demand_Germany = HeatDemandImport(
@@ -219,7 +210,6 @@ with airflow.DAG(
     # Future national heat demands for foreign countries based on Hotmaps
     # download only, processing in PyPSA-Eur-Sec fork
     hd_abroad = HeatDemandEurope(dependencies=[setup])
-    hd_abroad.insert_into(pipeline)
 
 
     # Extract landuse areas from osm data set
@@ -310,7 +300,6 @@ with airflow.DAG(
             mv_hh_electricity_load_2050,
         ),
     )
-    hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
         "electricity_demand_timeseries.hh_profiles.houseprofiles-in-census-cells"
     ]
@@ -322,7 +311,6 @@ with airflow.DAG(
         dependencies=[householdprofiles_in_cencus_cells],
     )
 
-    hh_demand_buildings_setup.insert_into(pipeline)
 
 
     # Industry
