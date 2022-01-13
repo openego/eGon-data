@@ -398,13 +398,13 @@ def allocate_evs_numbers():
             scenario=scenario_name
         )["motorized_individual_travel"]
 
-        print(f"========== SCENARIO: {scenario_name} ==========")
+        print(f"SCENARIO: {scenario_name}")
 
         # Go through scenario variations
         for (scenario_variation_name,
              scenario_variation_parameters) in scenario_parameters.items():
 
-            print(f"===== SCENARIO VARIATION: {scenario_variation_name} =====")
+            print(f"  SCENARIO VARIATION: {scenario_variation_name}")
 
             # Get EV target
             ev_target = scenario_variation_parameters['ev_count']
@@ -412,6 +412,7 @@ def allocate_evs_numbers():
             #####################################
             # EV data per registration district #
             #####################################
+            print("Calculate EV numbers for registration districts...")
             ev_data = calc_evs_per_reg_district(
                 scenario_variation_parameters,
                 kba_data
@@ -441,6 +442,7 @@ def allocate_evs_numbers():
             #####################################
             #     EV data per municipality      #
             #####################################
+            print("Calculate EV numbers for municipalities...")
             ev_data_muns = calc_evs_per_municipality(
                 ev_data,
                 rs7_data
@@ -470,6 +472,7 @@ def allocate_evs_numbers():
             #####################################
             #     EV data per grid district     #
             #####################################
+            print("Calculate EV numbers for grid districts...")
             ev_data_mvgds = calc_evs_per_grid_district(
                 ev_data_muns
             )
@@ -515,6 +518,7 @@ def allocate_evs_to_grid_districts():
         ].sample(row["count"], replace=True).ev_id.to_list()
 
     # Load EVs per grid district
+    print("Loading EV counts for grid districts...")
     with db.session_scope() as session:
         query = session.query(EgonEvCountMvGridDistrict)
     ev_per_mvgd = pd.read_sql(
@@ -532,12 +536,14 @@ def allocate_evs_to_grid_districts():
     )
 
     # Load EV pool
+    print("Loading EV pool...")
     with db.session_scope() as session:
         query = session.query(EgonEvPool)
     ev_pool = pd.read_sql(
         query.statement, query.session.bind, index_col=None, )
 
     # Draw EVs randomly for each grid district from pool
+    print("Draw EVs from pool for grid districts...")
     np.random.seed(RANDOM_SEED)
     ev_per_mvgd["egon_ev_pool_ev_id"] = ev_per_mvgd.apply(get_random_evs,
                                                           axis=1)
@@ -547,6 +553,7 @@ def allocate_evs_to_grid_districts():
     ev_per_mvgd = ev_per_mvgd.explode("egon_ev_pool_ev_id")
 
     # Write trips to DB
+    print("Writing allocated data to DB...")
     ev_per_mvgd.to_sql(
         name=EgonEvMvGridDistrict.__table__.name,
         schema=EgonEvMvGridDistrict.__table__.schema,
