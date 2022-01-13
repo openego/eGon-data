@@ -2,15 +2,16 @@
 """
 The central module containing all code dealing with importing CH4 production data
 """
-# import os
-import ast
 from pathlib import Path
 from urllib.request import urlretrieve
 
-import numpy as np
+# import os
+import ast
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
@@ -242,19 +243,19 @@ def assign_bus_id(dataframe, scn_name, carrier):
         Power plants (including voltage level) and bus_id
     """
 
-    H2_voronoi = db.select_geodataframe(
+    voronoi = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_voronoi_h2;
+        SELECT * FROM grid.egon_voronoi_{carrier.lower()};
         """,
         epsg=4326,
     )
 
-    res = gpd.sjoin(dataframe, H2_voronoi)
+    res = gpd.sjoin(dataframe, voronoi)
     res["bus"] = res["bus_id"]
     res = res.drop(columns=["index_right", "id"])
 
     # Assert that all power plants have a bus_id
-    assert res.bus.notnull().all(), "Some points are not attached to a H2 bus."
+    assert res.bus.notnull().all(), f"Some points are not attached to a {carrier} bus."
 
     return res
 
