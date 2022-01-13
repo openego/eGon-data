@@ -112,7 +112,6 @@ with airflow.DAG(
 
     # Scenario table
     scenario_parameters = ScenarioParameters(dependencies=[setup])
-    scenario_input_import = tasks["scenario_parameters.insert-scenarios"]
 
     tyndp_data = Tyndp(dependencies=[setup])
 
@@ -176,7 +175,6 @@ with airflow.DAG(
     # Retrieve MaStR data
     mastr_data = mastr_data_setup(dependencies=[setup])
     mastr_data.insert_into(pipeline)
-    retrieve_mastr_data = tasks["mastr.download-mastr-data"]
 
     substation_extraction = SubstationExtraction(
         dependencies=[osm_add_metadata, vg250_clean_and_prepare]
@@ -222,7 +220,6 @@ with airflow.DAG(
     # download only, processing in PyPSA-Eur-Sec fork
     hd_abroad = HeatDemandEurope(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
-    heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
 
     # Extract landuse areas from osm data set
@@ -236,9 +233,7 @@ with airflow.DAG(
 
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
 
-    feedin_wind_onshore = tasks["renewable_feedin.wind"]
     feedin_pv = tasks["renewable_feedin.pv"]
-    feedin_solar_thermal = tasks["renewable_feedin.solar-thermal"]
 
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
@@ -328,9 +323,7 @@ with airflow.DAG(
     )
 
     hh_demand_buildings_setup.insert_into(pipeline)
-    map_houseprofiles_to_buildings = tasks[
-        "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
-    ]
+
 
     # Industry
 
@@ -441,7 +434,6 @@ with airflow.DAG(
     )
 
     chp_locations_nep = tasks["chp.insert-chp-egon2035"]
-    chp_heat_bus = tasks["chp.assign-heat-bus"]
 
     import_district_heating_areas >> chp_locations_nep
 
@@ -465,9 +457,6 @@ with airflow.DAG(
         dependencies=[create_gas_polygons, power_plants]
     )
 
-    power_plant_import = tasks["power_plants.insert-hydro-biomass"]
-    generate_wind_farms = tasks["power_plants.wind_farms.insert"]
-    generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
     solar_rooftop_etrago = tasks[
         "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
     ]
@@ -504,8 +493,7 @@ with airflow.DAG(
         ]
     )
 
-    heat_etrago_buses = tasks["heat_etrago.buses"]
-    heat_etrago_supply = tasks["heat_etrago.supply"]
+
 
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
