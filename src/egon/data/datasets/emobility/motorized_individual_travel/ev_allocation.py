@@ -1,3 +1,7 @@
+"""
+Calculate number of electric vehicles and allocate on different spatial levels
+"""
+
 import pandas as pd
 import numpy as np
 from itertools import permutations

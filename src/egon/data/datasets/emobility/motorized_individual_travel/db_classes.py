@@ -1,3 +1,7 @@
+"""
+DB tables / ORM classes for motorized individual travel
+"""
+
 from sqlalchemy import Column, ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.dialects.postgresql import REAL
 from sqlalchemy.ext.declarative import declarative_base
