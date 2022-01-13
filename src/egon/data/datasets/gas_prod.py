@@ -325,7 +325,7 @@ def import_gas_generators(scn_name='eGon2035'):
     )
 
     # Add missing columns
-    #    CH4_generators_list['p_set_fixed'] = CH4_generators_list['p_nom']
+    #    CH4_generators_list['p_set'] = CH4_generators_list['p_nom']
     c = {"scn_name": scn_name, "carrier": "CH4"}
     CH4_generators_list = CH4_generators_list.assign(**c)
 

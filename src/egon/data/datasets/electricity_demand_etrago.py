@@ -141,8 +141,8 @@ def export_to_db():
                 "bus",
                 "type",
                 "carrier",
-                "p_set_fixed",
-                "q_set_fixed",
+                "p_set",
+                "q_set",
                 "sign",
                 "p_set",
             ]
