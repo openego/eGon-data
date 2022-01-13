@@ -3,9 +3,8 @@ import os
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
-import importlib_resources as resources
 
-from egon.data import db
+
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
