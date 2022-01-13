@@ -93,7 +93,7 @@ def run_pypsa_eur_sec():
                 "git",
                 "clone",
                 "--branch",
-                "update-pes",
+                "batteries-and-update-pes",
                 "https://github.com/openego/pypsa-eur-sec.git",
                 pypsa_eur_sec_repos,
             ]
@@ -102,7 +102,7 @@ def run_pypsa_eur_sec():
     datafile = "pypsa-eur-sec-data-bundle.tar.gz"
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
-        urlretrieve(f"https://zenodo.org/record/5546517/files/{datafile}", datapath)
+        urlretrieve(f"https://zenodo.org/record/5824485/files/{datafile}", datapath)
         tar = tarfile.open(datapath)
         tar.extractall(pypsa_eur_sec_repos_data)
 
