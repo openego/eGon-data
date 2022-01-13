@@ -31,7 +31,9 @@ def fill_etrago_generators():
         pp_time,
     ) = load_tables(con, cfg)
 
-    renew_feedin = adjust_renew_feedin_table(renew_feedin=renew_feedin, cfg=cfg)
+    renew_feedin = adjust_renew_feedin_table(
+        renew_feedin=renew_feedin, cfg=cfg
+    )
 
     etrago_pp = group_power_plants(
         power_plants=power_plants,
@@ -136,7 +138,7 @@ def fill_etrago_gen_time_table(
     etrago_pp_time = etrago_pp_time.drop(columns="generator_id")
     etrago_pp_time["p_max_pu"] = etrago_pp_time["p_max_pu"].apply(list)
     etrago_pp_time["temp_id"] = 1
-    
+
     db.execute_sql(
         f"""DELETE FROM 
                    {cfg['targets']['etrago_gen_time']['schema']}.
@@ -153,7 +155,7 @@ def fill_etrago_gen_time_table(
     return etrago_pp_time
 
 
-def load_tables(con, cfg, scenario='eGon2035'):
+def load_tables(con, cfg, scenario="eGon2035"):
     sql = f"""
     SELECT * FROM
     {cfg['sources']['power_plants']['schema']}.
@@ -216,8 +218,8 @@ def power_timeser(weather_data):
 
 
 def adjust_renew_feedin_table(renew_feedin, cfg):
-    
-    # Define carrier 'pv' as 'solar' 
+
+    # Define carrier 'pv' as 'solar'
     carrier_pv_mask = renew_feedin["carrier"] == "pv"
     renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"
 
