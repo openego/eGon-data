@@ -60,6 +60,7 @@ def create_voronoi(scn_name="eGon2035"):
         # set scn_name
         gdf["scn_name"] = scn_name
 
+        gdf.rename_geometry("geom", inplace=True)
         # Insert data to db
         gdf.set_crs(epsg=4326).to_postgis(
             f"egon_voronoi_{carrier.lower()}",
@@ -67,5 +68,5 @@ def create_voronoi(scn_name="eGon2035"):
             schema="grid",
             index=False,
             if_exists="append",
-            dtype={"geometry": Geometry},
+            dtype={"geom": Geometry},
         )

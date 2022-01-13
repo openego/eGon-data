@@ -40,4 +40,9 @@ def get_voronoi_geodataframe(buses, boundary):
         gpd_input_dict["geometry"] += [region_polys[pt]]
         gpd_input_dict["bus_id"] += [buses.iloc[poly[0]]["bus_id"]]
 
-    return gpd.GeoDataFrame(gpd_input_dict)
+    gdf = gpd.GeoDataFrame(gpd_input_dict)
+
+    # the id column is a relict of older voronoi generation methods
+    gdf["id"] = gdf.index.values
+
+    return gdf

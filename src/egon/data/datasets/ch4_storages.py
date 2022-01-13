@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import geopandas
 
-from egon.data.datasets.gas_prod import assign_ch4_bus_id
+from egon.data.datasets.gas_prod import assign_bus_id
 from egon.data.datasets.gas_grid import ch4_nodes_number_G, define_gas_nodes_list
 from egon.data import db
 from egon.data.config import settings
@@ -90,7 +90,7 @@ def import_installed_ch4_storages(scn_name):
     
     # Match to associated gas bus
     Gas_storages_list =  Gas_storages_list.reset_index(drop=True)
-    Gas_storages_list = assign_ch4_bus_id(Gas_storages_list, scn_name)
+    Gas_storages_list = assign_bus_id(Gas_storages_list, scn_name, "CH4")
 
     # Add missing columns
     c = {'scn_name': scn_name, 'carrier': 'CH4'}
