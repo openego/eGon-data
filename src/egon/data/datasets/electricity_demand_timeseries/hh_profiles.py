@@ -137,87 +137,6 @@ engine = db.engine()
 # Get random seed from config
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 
-# Define mapping of census household family types to Eurostat household types
-# - Adults living in households type
-# - number of kids are  not included even if mentioned in household type name
-# **! The Eurostat data only counts adults/seniors, excluding kids <15**
-# Eurostat household types are used for demand-profile-generator
-# @iee-fraunhofer
-HH_TYPES = {
-    "SR": [
-        ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Seniors"),
-        ("Alleinerziehende Elternteile", "Insgesamt", "Seniors"),
-    ],
-    # Single Seniors Single Parents Seniors
-    "SO": [
-        ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Adults")
-    ],  # Single Adults
-    "SK": [("Alleinerziehende Elternteile", "Insgesamt", "Adults")],
-    # Single Parents Adult
-    "PR": [
-        ("Paare ohne Kind(er)", "2 Personen", "Seniors"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "2 Personen", "Seniors"),
-    ],
-    # Couples without Kids Senior & same sex couples & shared flat seniors
-    "PO": [
-        ("Paare ohne Kind(er)", "2 Personen", "Adults"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "2 Personen", "Adults"),
-    ],
-    # Couples without Kids adults & same sex couples & shared flat adults
-    "P1": [("Paare mit Kind(ern)", "3 Personen", "Adults")],
-    "P2": [("Paare mit Kind(ern)", "4 Personen", "Adults")],
-    "P3": [
-        ("Paare mit Kind(ern)", "5 Personen", "Adults"),
-        ("Paare mit Kind(ern)", "6 und mehr Personen", "Adults"),
-    ],
-    "OR": [
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Seniors"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Seniors"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "5 Personen", "Seniors"),
-        (
-            "Mehrpersonenhaushalte ohne Kernfamilie",
-            "6 und mehr Personen",
-            "Seniors",
-        ),
-        ("Paare mit Kind(ern)", "3 Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "3 Personen", "Seniors"),
-        ("Paare mit Kind(ern)", "4 Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "4 Personen", "Seniors"),
-        ("Paare mit Kind(ern)", "5 Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "5 Personen", "Seniors"),
-        ("Paare mit Kind(ern)", "6 und mehr Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "6 und mehr Personen", "Seniors"),
-    ],
-    # no info about share of kids
-    # OO, O1, O2 have the same amount, as no information about the share of
-    # kids within census data set. If needed the total amount can be estimated
-    # in the :func:`get_hh_dist` function using multi_adjust=True option.
-    # The Eurostat share is then applied.
-    "OO": [
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Adults"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Adults"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "5 Personen", "Adults"),
-        (
-            "Mehrpersonenhaushalte ohne Kernfamilie",
-            "6 und mehr Personen",
-            "Adults",
-        ),
-        ("Paare ohne Kind(er)", "3 Personen", "Adults"),
-        ("Paare ohne Kind(er)", "4 Personen", "Adults"),
-        ("Paare ohne Kind(er)", "5 Personen", "Adults"),
-        ("Paare ohne Kind(er)", "6 und mehr Personen", "Adults"),
-    ],
-    # no info about share of kids
-}
-
-MAPPING_ZENSUS_HH_SUBGROUPS = {
-    1: ["SR", "SO"],
-    2: ["PR", "PO"],
-    3: ["SK"],
-    4: ["P1", "P2", "P3"],
-    5: ["OR", "OO"],
-}
-
 
 class IeeHouseholdLoadProfiles(Base):
     __tablename__ = "iee_household_load_profiles"
@@ -963,10 +882,107 @@ def refine_census_data_at_cell_level(
     pd.DataFrame
         Number of hh types per census cell and scaling factors
     """
+    # Define mapping of census household family types to Eurostat household types
+    # - Adults living in households type
+    # - number of kids are  not included even if mentioned in household type name
+    # **! The Eurostat data only counts adults/seniors, excluding kids <15**
+    # Eurostat household types are used for demand-profile-generator
+    # @iee-fraunhofer
+    hh_types_eurostat = {
+        "SR": [
+            ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Seniors"),
+            ("Alleinerziehende Elternteile", "Insgesamt", "Seniors"),
+        ],
+        # Single Seniors Single Parents Seniors
+        "SO": [
+            ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Adults")
+        ],  # Single Adults
+        "SK": [("Alleinerziehende Elternteile", "Insgesamt", "Adults")],
+        # Single Parents Adult
+        "PR": [
+            ("Paare ohne Kind(er)", "2 Personen", "Seniors"),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "2 Personen",
+                "Seniors",
+            ),
+        ],
+        # Couples without Kids Senior & same sex couples & shared flat seniors
+        "PO": [
+            ("Paare ohne Kind(er)", "2 Personen", "Adults"),
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "2 Personen", "Adults"),
+        ],
+        # Couples without Kids adults & same sex couples & shared flat adults
+        "P1": [("Paare mit Kind(ern)", "3 Personen", "Adults")],
+        "P2": [("Paare mit Kind(ern)", "4 Personen", "Adults")],
+        "P3": [
+            ("Paare mit Kind(ern)", "5 Personen", "Adults"),
+            ("Paare mit Kind(ern)", "6 und mehr Personen", "Adults"),
+        ],
+        "OR": [
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "3 Personen",
+                "Seniors",
+            ),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "4 Personen",
+                "Seniors",
+            ),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "5 Personen",
+                "Seniors",
+            ),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "6 und mehr Personen",
+                "Seniors",
+            ),
+            ("Paare mit Kind(ern)", "3 Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "3 Personen", "Seniors"),
+            ("Paare mit Kind(ern)", "4 Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "4 Personen", "Seniors"),
+            ("Paare mit Kind(ern)", "5 Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "5 Personen", "Seniors"),
+            ("Paare mit Kind(ern)", "6 und mehr Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "6 und mehr Personen", "Seniors"),
+        ],
+        # no info about share of kids
+        # OO, O1, O2 have the same amount, as no information about the share of
+        # kids within census data set. If needed the total amount can be estimated
+        # in the :func:`get_hh_dist` function using multi_adjust=True option.
+        # The Eurostat share is then applied.
+        "OO": [
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Adults"),
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Adults"),
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "5 Personen", "Adults"),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "6 und mehr Personen",
+                "Adults",
+            ),
+            ("Paare ohne Kind(er)", "3 Personen", "Adults"),
+            ("Paare ohne Kind(er)", "4 Personen", "Adults"),
+            ("Paare ohne Kind(er)", "5 Personen", "Adults"),
+            ("Paare ohne Kind(er)", "6 und mehr Personen", "Adults"),
+        ],
+        # no info about share of kids
+    }
 
+    mapping_zensus_hh_subgroups = {
+        1: ["SR", "SO"],
+        2: ["PR", "PO"],
+        3: ["SK"],
+        4: ["P1", "P2", "P3"],
+        5: ["OR", "OO"],
+    }
     # :func:`get_hh_dist` without eurostat adjustment for O1-03 Groups in
     # absolute values
-    df_hh_types_nad_abs = get_hh_dist(df_census_households_nuts1, HH_TYPES)
+    df_hh_types_nad_abs = get_hh_dist(
+        df_census_households_nuts1, hh_types_eurostat
+    )
 
     # Get household size for each census cell grouped by
     # As this is only used to estimate size of households for OR, OO
@@ -1006,20 +1022,20 @@ def refine_census_data_at_cell_level(
 
     # Calculate fraction of fine household types within subgroup of
     # rough household types
-    for value in MAPPING_ZENSUS_HH_SUBGROUPS.values():
+    for value in mapping_zensus_hh_subgroups.values():
         df_dist_households.loc[value] = df_dist_households.loc[value].div(
             df_dist_households.loc[value].sum()
         )
 
     # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
-    # by refining hh-groups with MAPPING_ZENSUS_HH_SUBGROUPS
+    # by refining hh-groups with mapping_zensus_hh_subgroups
     df_census_households_grid_refined = pd.DataFrame()
     for (country, code), df_country_type in df_census_households_grid.groupby(
         ["gen", "characteristics_code"]
     ):
 
         # iterate over zenus_country subgroups
-        for typ in MAPPING_ZENSUS_HH_SUBGROUPS[code]:
+        for typ in mapping_zensus_hh_subgroups[code]:
             df_country_type["hh_type"] = typ
             df_country_type["factor"] = df_dist_households.loc[typ, country]
             df_country_type["hh_10types"] = (
