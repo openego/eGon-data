@@ -37,6 +37,22 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     TRIP_COLUMN_MAPPING,
 )
 
+# ========== Register np datatypes with SQLA ==========
+from psycopg2.extensions import register_adapter, AsIs
+
+
+def adapt_numpy_float64(numpy_float64):
+    return AsIs(numpy_float64)
+
+
+def adapt_numpy_int64(numpy_int64):
+    return AsIs(numpy_int64)
+
+
+register_adapter(np.float64, adapt_numpy_float64)
+register_adapter(np.int64, adapt_numpy_int64)
+# =====================================================
+
 
 def create_tables():
     """Create tables for electric vehicles
