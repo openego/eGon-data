@@ -62,9 +62,9 @@ the number of categories of cell-level household data.
     * calculate fraction of fine household types (10) within subgroup of rough
       household types (5) :var:`df_dist_households`
 * Spatial information about number of households per ha
-  :var:`df_households_typ` is mapped to NUTS1 and NUTS3 level.
-  Data is enriched with refined household subgroups via
-  :var:`df_dist_households` in :var:`df_zensus_cells`.
+  :var:`df_census_households_nuts3` is mapped to NUTS1 and NUTS3 level.
+  Data is refined with household subgroups via
+  :var:`df_dist_households` to :var:`df_census_households_grid_refined`.
 * Enriched 100 x 100 m household dataset is used to sample and aggregate
   household profiles. A table including individual profile id's for each cell
   and scaling factor to match Demand-Regio annual sum projections for 2035
@@ -432,7 +432,7 @@ def set_multiindex_to_profiles(hh_profiles):
     return hh_profiles
 
 
-def get_zensus_households_raw():
+def get_census_households_nuts1_raw():
     """Get zensus age x household type data from egon-data-bundle
 
     Dataset about household size with information about the categories:
@@ -441,7 +441,7 @@ def get_zensus_households_raw():
     * age class
     * household size
 
-    for Germany in spatial resolution of federal states.
+    for Germany in spatial resolution of federal states NUTS-1.
 
     Data manually selected and retrieved from:
     https://ergebnisse2011.zensus2022.de/datenbank/online
@@ -768,7 +768,177 @@ def process_nuts1_census_data(df_census_households_raw):
     return df_census_households
 
 
-def refine_census_data_at_cell_level(df_zensus):
+def fill_missing_hh_in_populated_cells(df_census_households_grid):
+    """
+
+    Parameters
+    ----------
+    df_census_households_grid: pd.DataFrame
+        cleaned zensus household type x age category data
+
+    Returns
+    -------
+    pd.DataFrame
+        zensus household data at 100x100m grid level"""
+
+    df_w_hh = df_census_households_grid.dropna().reset_index(drop=True)
+    df_wo_hh = df_census_households_grid.loc[
+        df_census_households_grid.isna().any(axis=1)
+    ].reset_index(drop=True)
+
+    # iterate over unique population values
+    for i in df_wo_hh["population"].sort_values().unique():
+
+        # create fallback if no cell with specific population available
+        if i in df_w_hh["population"].unique():
+            last_i = i
+        # use fallback of last possible household distribution
+        else:
+            #         print(i)
+            i = last_i
+
+        # get cells with specific population value from cells with household distribution
+        df_w_hh_population_i = df_w_hh.loc[df_w_hh["population"] == i]
+        # choose random cell within this group
+        rnd_cell_id_population_i = np.random.choice(
+            df_w_hh_population_i["cell_id"].unique()
+        )
+        # get household distribution of this cell
+        df_rand_hh_distribution = df_w_hh_population_i.loc[
+            df_w_hh_population_i["cell_id"] == rnd_cell_id_population_i
+        ]
+        # get cells with specific population value from cells without household distribution
+        df_wo_hh_population_i = df_wo_hh.loc[df_wo_hh["population"] == i]
+
+        # all cells will get the same random household distribution
+
+        # prepare size of dataframe by number of household types
+        df_repeated = pd.concat(
+            [df_wo_hh_population_i] * df_rand_hh_distribution.shape[0],
+            ignore_index=True,
+        )
+        df_repeated = df_repeated.sort_values("cell_id").reset_index(drop=True)
+
+        # insert random household distribution
+        columns = ["characteristics_code", "hh_5types"]
+        df_repeated.loc[:, columns] = pd.concat(
+            [df_rand_hh_distribution.loc[:, columns]]
+            * df_wo_hh_population_i.shape[0]
+        ).values
+        # append new cells
+        df_w_hh = df_w_hh.append(df_repeated, ignore_index=True)
+
+    return df_w_hh
+
+
+def get_census_households_grid():
+    """"""
+
+    # Retrieve information about households for each census cell
+    # Only use cell-data which quality (quantity_q<2) is acceptable
+    df_census_households_grid = db.select_dataframe(
+        sql="""
+                    SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
+                    FROM society.egon_destatis_zensus_household_per_ha
+                    WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
+    )
+    df_census_households_grid = df_census_households_grid.drop(
+        columns=["attribute", "characteristics_text"]
+    )
+
+    # Missing data is detected
+    df_missing_data = db.select_dataframe(
+        sql="""
+                    SELECT count(joined.quantity_gesamt) as amount, joined.quantity_gesamt as households
+                    FROM(
+                        SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
+                         (quantity_gesamt-(case when quantity_sum_fam isnull then 0 else quantity_sum_fam end))
+                         as insgesamt_minus_fam
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as joined
+                    WHERE quantity_sum_fam isnull
+                    Group by quantity_gesamt """
+    )
+    missing_cells = db.select_dataframe(
+        sql="""
+                    SELECT t12.grid_id, t12.quantity
+                    FROM (
+                    SELECT t2.grid_id, (case when quantity_sum_fam isnull then quantity_gesamt end) as quantity
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as t12
+                    WHERE quantity is not null"""
+    )
+
+    # Missing cells are substituted by average share of cells with same amount
+    # of households.
+    df_average_split = create_missing_zensus_data(
+        df_census_households_grid, df_missing_data, missing_cells
+    )
+
+    df_census_households_grid = df_census_households_grid.rename(
+        columns={"quantity": "hh_5types"}
+    )
+
+    df_census_households_grid = pd.concat(
+        [df_census_households_grid, df_average_split], ignore_index=True
+    )
+
+    # Census cells with nuts3 and nuts1 information
+    df_grid_id = db.select_dataframe(
+        sql="""
+                    SELECT pop.grid_id, pop.id as cell_id, pop.population, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
+                    FROM society.destatis_zensus_population_per_ha_inside_germany as pop
+                    LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
+                    ON (pop.id=vg250.zensus_population_id)
+                    LEFT JOIN boundaries.vg250_lan as lan
+                    ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
+                    WHERE lan.gf = 4 """
+    )
+    df_grid_id = df_grid_id.drop_duplicates()
+    df_grid_id = df_grid_id.reset_index(drop=True)
+
+    # Merge household type and size data with considered (populated) census
+    # cells how='right' is used as ids of unpopulated areas are removed
+    # by df_grid_id or ancestors. See here:
+    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
+    df_census_households_grid = pd.merge(
+        df_census_households_grid,
+        df_grid_id,
+        left_on="grid_id",
+        right_on="grid_id",
+        how="right",
+    )
+
+    # fill cells with missing household distribution data but population
+    # by distribution of random cell with same population value
+    df_census_households_grid = fill_missing_hh_in_populated_cells(
+        df_census_households_grid
+    )
+
+    return df_census_households_grid
+
+
+def refine_census_data_at_cell_level(
+    df_census_households_nuts1, df_census_households_grid
+):
     """The zensus data is processed to define the number and type of households
     per zensus cell. Two subsets of the zensus data are merged to fit the
     IEE profiles specifications. For this, the dataset 'HHTYP_FAM' is
@@ -779,8 +949,10 @@ def refine_census_data_at_cell_level(df_zensus):
 
     Parameters
     ----------
-    df_zensus: pd.DataFrame
+    df_census_households_nuts1: pd.DataFrame
         Aggregated zensus household data on NUTS-1 level
+    df_census_households_grid: pd.DataFrame
+        Aggregated zensus household data on 100x100m grid level
 
     Returns
     -------
@@ -790,7 +962,7 @@ def refine_census_data_at_cell_level(df_zensus):
 
     # :func:`get_hh_dist` without eurostat adjustment for O1-03 Groups in
     # absolute values
-    df_hh_types_nad_abs = get_hh_dist(df_zensus, HH_TYPES)
+    df_hh_types_nad_abs = get_hh_dist(df_census_households_nuts1, HH_TYPES)
 
     # Get household size for each census cell grouped by
     # As this is only used to estimate size of households for OR, OO
@@ -835,103 +1007,10 @@ def refine_census_data_at_cell_level(df_zensus):
             df_dist_households.loc[value].sum()
         )
 
-    # Retrieve information about households for each census cell
-    # Only use cell-data which quality (quantity_q<2) is acceptable
-    df_households_typ = db.select_dataframe(
-        sql="""
-                SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
-                FROM society.egon_destatis_zensus_household_per_ha
-                WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
-    )
-    df_households_typ = df_households_typ.drop(
-        columns=["attribute", "characteristics_text"]
-    )
-
-    # Missing data is detected
-    df_missing_data = db.select_dataframe(
-        sql="""
-                SELECT count(joined.quantity_gesamt) as amount, joined.quantity_gesamt as households
-                FROM(
-                    SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
-                     (quantity_gesamt-(case when quantity_sum_fam isnull then 0 else quantity_sum_fam end))
-                     as insgesamt_minus_fam
-                FROM (
-                    SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'HHTYP_FAM'
-                    GROUP BY grid_id) as t1
-                Full JOIN (
-                    SELECT grid_id, sum(quantity) as quantity_gesamt
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'INSGESAMT'
-                    GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
-                    ) as joined
-                WHERE quantity_sum_fam isnull
-                Group by quantity_gesamt """
-    )
-    missing_cells = db.select_dataframe(
-        sql="""
-                SELECT t12.grid_id, t12.quantity
-                FROM (
-                SELECT t2.grid_id, (case when quantity_sum_fam isnull then quantity_gesamt end) as quantity
-                FROM (
-                    SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'HHTYP_FAM'
-                    GROUP BY grid_id) as t1
-                Full JOIN (
-                    SELECT grid_id, sum(quantity) as quantity_gesamt
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'INSGESAMT'
-                    GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
-                    ) as t12
-                WHERE quantity is not null"""
-    )
-
-    # Missing cells are substituted by average share of cells with same amount
-    # of households.
-    df_average_split = create_missing_zensus_data(
-        df_households_typ, df_missing_data, missing_cells
-    )
-
-    df_households_typ = df_households_typ.rename(
-        columns={"quantity": "hh_5types"}
-    )
-
-    df_households_typ = pd.concat(
-        [df_households_typ, df_average_split], ignore_index=True
-    )
-
-    # Census cells with nuts3 and nuts1 information
-    df_grid_id = db.select_dataframe(
-        sql="""
-                SELECT pop.grid_id, pop.id as cell_id, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
-                FROM society.destatis_zensus_population_per_ha_inside_germany as pop
-                LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
-                ON (pop.id=vg250.zensus_population_id)
-                LEFT JOIN boundaries.vg250_lan as lan
-                ON (LEFT(vg250.vg250_nuts3, 3)=lan.nuts)
-                WHERE lan.gf = 4 """
-    )
-    df_grid_id = df_grid_id.drop_duplicates()
-    df_grid_id = df_grid_id.reset_index(drop=True)
-
-    # Merge household type and size data with considered (populated) census
-    # cells how='inner' is used as ids of unpopulated areas are removed
-    # df_grid_id or earliers tables. See here:
-    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
-    df_households_typ = pd.merge(
-        df_households_typ,
-        df_grid_id,
-        left_on="grid_id",
-        right_on="grid_id",
-        how="inner",
-    )
-
     # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
     # by refining hh-groups with MAPPING_ZENSUS_HH_SUBGROUPS
-    df_zensus_cells = pd.DataFrame()
-    for (country, code), df_country_type in df_households_typ.groupby(
+    df_census_households_grid_refined = pd.DataFrame()
+    for (country, code), df_country_type in df_census_households_grid.groupby(
         ["gen", "characteristics_code"]
     ):
 
@@ -943,15 +1022,19 @@ def refine_census_data_at_cell_level(df_zensus):
                 df_country_type["hh_5types"]
                 * df_dist_households.loc[typ, country]
             )
-            df_zensus_cells = df_zensus_cells.append(
-                df_country_type, ignore_index=True
+            df_census_households_grid_refined = (
+                df_census_households_grid_refined.append(
+                    df_country_type, ignore_index=True
+                )
             )
 
-    df_zensus_cells = df_zensus_cells.sort_values(
-        by=["grid_id", "characteristics_code"]
-    ).reset_index(drop=True)
+    df_census_households_grid_refined = (
+        df_census_households_grid_refined.sort_values(
+            by=["grid_id", "characteristics_code"]
+        ).reset_index(drop=True)
+    )
 
-    return df_zensus_cells
+    return df_census_households_grid_refined
 
 
 def get_cell_demand_profile_ids(df_cell, pool_size):
@@ -1230,23 +1313,26 @@ def houseprofiles_in_census_cells():
     # Process profiles for further use
     df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
-    # Download zensus household data with family type and age categories
-    df_census_households_raw = get_zensus_households_raw()
+    # Download zensus household NUTS-1 data with family type and age categories
+    df_census_households_nuts1_raw = get_census_households_nuts1_raw()
 
     # Restructure data to be compatible with categories from demand profile
     # generator. Reduce age intervals and aggregate data to NUTS-1 level.
     df_census_households_nuts1 = process_nuts1_census_data(
-        df_census_households_raw
+        df_census_households_nuts1_raw
     )
 
-    # Refine census cell data with additional nuts1 level attributes
-    df_census_households_cells = refine_census_data_at_cell_level(
-        df_census_households_nuts1
+    # Query census household grid data with family type
+    df_census_households_grid = get_census_households_grid()
+
+    # Refine census household grid data with additional NUTS-1 level attributes
+    df_census_households_grid_refined = refine_census_data_at_cell_level(
+        df_census_households_nuts1, df_census_households_grid
     )
 
     # Allocate profile ids to each cell by census data
     df_hh_profiles_in_census_cells = allocate_hh_demand_profiles_to_cells(
-        df_census_households_cells, df_iee_profiles
+        df_census_households_grid_refined, df_iee_profiles
     )
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
