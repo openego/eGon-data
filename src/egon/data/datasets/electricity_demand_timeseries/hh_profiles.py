@@ -692,17 +692,22 @@ def process_nuts1_census_data(df_census_households_raw):
 
 
 def fill_missing_hh_in_populated_cells(df_census_households_grid):
-    """
+    """There are cells without household data but a population. A randomly
+    chosen household distribution is taken from a subgroup of cells with same
+    population value and applied to all cells with missing household
+    distribution and the specific population value. In the case, in which there
+    is no subgroup with household data of the respective population value, the
+    fallback is the subgroup with the last last smaller population value.
 
     Parameters
     ----------
     df_census_households_grid: pd.DataFrame
-        cleaned zensus household type x age category data
+        census household data at 100x100m grid level
 
     Returns
     -------
     pd.DataFrame
-        zensus household data at 100x100m grid level"""
+        substituted census household data at 100x100m grid level"""
 
     df_w_hh = df_census_households_grid.dropna().reset_index(drop=True)
     df_wo_hh = df_census_households_grid.loc[
@@ -717,7 +722,6 @@ def fill_missing_hh_in_populated_cells(df_census_households_grid):
             last_i = i
         # use fallback of last possible household distribution
         else:
-            #         print(i)
             i = last_i
 
         # get cells with specific population value from cells with household distribution
@@ -755,7 +759,26 @@ def fill_missing_hh_in_populated_cells(df_census_households_grid):
 
 
 def get_census_households_grid():
-    """"""
+    """Query census household data at 100x100m grid level from database. As
+    there is a divergence in the census household data depending which attribute
+    is used. There also exist cells without household but with population data.
+    The missing data in these cases are substituted. First census household data
+    with attribute 'HHTYP_FAM' is missing for some cells with small amount
+    of households. This data is generated using the average share of household
+    types for cells with similar household number. For some cells the summed
+    amount of households per type deviates from the total number with attribute
+    'INSGESAMT'. As the profiles are scaled with demand-regio data at
+    nuts3-level the impact at a higher aggregation level is negligible. For sake
+    of simplicity, the data is not corrected. Secondly, cells without household
+    data but population value are covered. A randomly chosen household
+    distribution is taken from a group of cells with same population value and
+    applied to all cells with missing household distribution and the specific
+    population value.
+
+    Returns
+    -------
+    pd.DataFrame
+        zensus household data at 100x100m grid level"""
 
     # Retrieve information about households for each census cell
     # Only use cell-data which quality (quantity_q<2) is acceptable
@@ -864,11 +887,11 @@ def refine_census_data_at_cell_level(
 ):
     """The zensus data is processed to define the number and type of households
     per zensus cell. Two subsets of the zensus data are merged to fit the
-    IEE profiles specifications. For this, the dataset 'HHTYP_FAM' is
-    converted from people living in households to number of households of
-    specific size using the category 'HHGROESS_KLASS' wherever the amount
-    of people is not trivial (OR, OO). Kids are not counted. Missing data
-    in 'HHTYP_FAM' is substituted in :func:`create_missing_zensus_data`.
+    IEE profiles specifications. For this, the dataset of  people living in
+    households at NUTS-1 is converted to number of households of
+    specific size. The data of category 'HHGROESS_KLASS' in census households
+    at grid level is used to determine an average wherever the amount
+    of people is not trivial (OR, OO). Kids are not counted.
 
     Parameters
     ----------
