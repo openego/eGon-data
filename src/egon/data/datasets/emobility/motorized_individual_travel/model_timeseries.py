@@ -163,7 +163,6 @@ def generate_dsm_profile(
     pd.DataFrame
         DSM profile
     """
-    # TODO: USE YEAR FROM METADATA
     # Calc no of timesteps for year
     timestep_count = len(pd.date_range(
         start=f"{start_date} 00:00:00", end=f"{end_date} 23:00:00", freq='H'
