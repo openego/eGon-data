@@ -78,7 +78,7 @@ def download_and_preprocess():
 
     mit_sources = DATASET_CFG["original_data"]["sources"]
 
-    # Create the folder, if it does not exists
+    # Create the folder, if it does not exist
     if not os.path.exists(WORKING_DIR):
         os.mkdir(WORKING_DIR)
 
