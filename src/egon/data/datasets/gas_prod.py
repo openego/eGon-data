@@ -245,7 +245,8 @@ def assign_bus_id(dataframe, scn_name, carrier):
 
     voronoi = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_voronoi_{carrier.lower()};
+        SELECT id, bus_id, geom FROM grid.egon_voronoi_{carrier.lower()}
+        WHERE scn_name = '{scn_name}';
         """,
         epsg=4326,
     )
