@@ -985,3 +985,5 @@ emobility_mit:
     variation:
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
+  model_timeseries:
+    reduce_memory: True
