@@ -987,3 +987,4 @@ emobility_mit:
       eGon100RE: "Reference 2050"
   model_timeseries:
     reduce_memory: True
+    export_results_to_csv: True

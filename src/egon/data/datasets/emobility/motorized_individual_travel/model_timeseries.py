@@ -12,6 +12,9 @@ Call order
         * ...TODO
 """
 
+import os
+import json
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from collections import Counter
@@ -27,6 +30,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     DATASET_CFG,
+    WORKING_DIR,
     read_simbev_metadata_file,
     reduce_mem_usage
 )
@@ -365,12 +369,65 @@ def load_evs_trips(
     return trip_data
 
 
+def export_results_grid_district(
+    static_params_dict: dict,
+    load_time_series_df: pd.DataFrame,
+    dsm_profile_df: pd.DataFrame,
+    region: int,
+) -> None:
+    """Export all results as CSVs and add Metadata JSON.
+
+
+    """
+    load_time_series_df = load_time_series_df.assign(
+        ev_availability=(
+            load_time_series_df.flex_time_series
+            / static_params_dict["link_bev_charger.p_nom_MW"]
+        )
+    )
+
+    results_dir = WORKING_DIR / Path("results", str(region))
+    results_dir.mkdir(exist_ok=True, parents=True)
+
+    hourly_load_time_series_df = load_time_series_df.resample("1H").mean()
+
+    if len(hourly_load_time_series_df) >= len(dsm_profile_df):
+        hourly_load_time_series_df = hourly_load_time_series_df.iloc[
+            : len(dsm_profile_df)
+        ]
+    else:
+        dsm_profile_df = dsm_profile_df.iloc[: len(hourly_load_time_series_df)]
+
+    dsm_profile_df.index = hourly_load_time_series_df.index
+
+    hourly_load_time_series_df[["load_time_series"]].to_csv(
+        results_dir / "ev_load_time_series.csv"
+    )
+
+    hourly_load_time_series_df[["ev_availability"]].to_csv(
+        results_dir / "ev_availability.csv"
+    )
+
+    dsm_profile_df.to_csv(results_dir / "ev_dsm_profile.csv")
+
+    static_params_dict[
+        "load_land_transport_ev.p_set_MW"
+    ] = "ev_load_time_series.csv"
+    static_params_dict["link_bev_charger.p_max_pu"] = "ev_availability.csv"
+    static_params_dict["store_ev_battery.e_min_pu"] = "ev_dsm_profile.csv"
+
+    file = results_dir / "ev_static_params.json"
+
+    with open(file, "w") as f:
+        json.dump(static_params_dict, f, indent=4)
+
+
 def generate_model_data_grid_district(
     evs_grid_district: pd.DataFrame,
     scenario_variation_parameters: dict,
     bat_cap_dict: dict,
     run_config: pd.DataFrame
-) -> pd.DataFrame:
+) -> tuple:
     """Generates timeseries from simBEV trip data for MV grid district
 
     Parameters
@@ -438,12 +495,14 @@ def generate_model_data_grid_district(
         "min_soc": 0.75
     }
 
-    dsm_profile_df = generate_dsm_profile(
+    dsm_profile = generate_dsm_profile(
         start_date=run_config.start_date,
         end_date=run_config.end_date,
         restriction_time=model_parameters["restriction_time"],
         min_soc=model_parameters["min_soc"]
     )
+
+    return static_params, load_ts, dsm_profile
 
 
 def generate_model_data(scenario_name: str):
@@ -454,6 +513,12 @@ def generate_model_data(scenario_name: str):
     scenario_name : str
         Scenario name
     """
+
+    # Create dir for results, if it does not exist
+    result_dir = WORKING_DIR / Path("results")
+    if not os.path.exists(result_dir):
+        os.mkdir(result_dir)
+
     # Get scenario variation name
     scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
 
@@ -499,14 +564,19 @@ def generate_model_data(scenario_name: str):
     print("GENERATE TIMESERIES...")
     for bus_id in mvgd_bus_ids:
         print(f"Processing grid district {bus_id} ...")
-        generate_model_data_grid_district(
-            evs_grid_district=evs_grid_district[
-                evs_grid_district.bus_id == bus_id
-            ],
-            scenario_variation_parameters=scenario_variation_parameters,
-            bat_cap_dict=meta_tech_data.battery_capacity.to_dict(),
-            run_config=meta_run_config
-        )
+        static_params, load_ts, dsm_profile = \
+            generate_model_data_grid_district(
+                evs_grid_district=evs_grid_district[
+                    evs_grid_district.bus_id == bus_id
+                    ],
+                scenario_variation_parameters=scenario_variation_parameters,
+                bat_cap_dict=meta_tech_data.battery_capacity.to_dict(),
+                run_config=meta_run_config
+            )
+        if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
+            export_results_grid_district(
+                static_params, load_ts, dsm_profile, bus_id
+            )
 
 
 def generate_model_data_eGon2035():
