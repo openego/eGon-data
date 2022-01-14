@@ -24,6 +24,10 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
     allocate_evs_numbers,
     allocate_evs_to_grid_districts
 )
+from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
+    generate_model_data_eGon2035,
+    generate_model_data_eGon100RE
+)
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     WORKING_DIR,
@@ -257,6 +261,7 @@ class MotorizedIndividualTravel(Dataset):
                 create_tables,
                 {(download_and_preprocess, allocate_evs_numbers),
                  (extract_trip_file, write_evs_trips_to_db)},
-                allocate_evs_to_grid_districts
+                allocate_evs_to_grid_districts,
+                {generate_model_data_eGon2035, generate_model_data_eGon100RE}
             ),
         )
