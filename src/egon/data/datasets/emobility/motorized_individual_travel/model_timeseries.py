@@ -372,12 +372,27 @@ def export_results_grid_district(
     static_params_dict: dict,
     load_time_series_df: pd.DataFrame,
     dsm_profile_df: pd.DataFrame,
-    region: int,
+    bus_id: int,
     scenario_name: str,
 ) -> None:
-    """Export all results as CSVs and add Metadata JSON.
+    """Export all results for grid district as CSVs and add metadata JSON
 
+    Parameters
+    ----------
+    static_params_dict : dict
+        Static model params
+    load_time_series_df : pd.DataFrame
+        Load time series for grid district
+    dsm_profile_df : pd.DataFrame
+        DSM profile (min SoC for each timestep)
+    bus_id : int
+        ID of grid district
+    scenario_name : str
+        Scenario name
 
+    Returns
+    -------
+    None
     """
     load_time_series_df = load_time_series_df.assign(
         ev_availability=(
@@ -386,7 +401,7 @@ def export_results_grid_district(
         )
     )
 
-    results_dir = WORKING_DIR / Path("results", scenario_name, str(region))
+    results_dir = WORKING_DIR / Path("results", scenario_name, str(bus_id))
     results_dir.mkdir(exist_ok=True, parents=True)
 
     hourly_load_time_series_df = load_time_series_df.resample("1H").mean()
