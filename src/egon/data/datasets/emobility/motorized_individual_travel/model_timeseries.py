@@ -373,6 +373,7 @@ def export_results_grid_district(
     load_time_series_df: pd.DataFrame,
     dsm_profile_df: pd.DataFrame,
     region: int,
+    scenario_name: str,
 ) -> None:
     """Export all results as CSVs and add Metadata JSON.
 
@@ -385,7 +386,7 @@ def export_results_grid_district(
         )
     )
 
-    results_dir = WORKING_DIR / Path("results", str(region))
+    results_dir = WORKING_DIR / Path("results", scenario_name, str(region))
     results_dir.mkdir(exist_ok=True, parents=True)
 
     hourly_load_time_series_df = load_time_series_df.resample("1H").mean()
@@ -557,7 +558,7 @@ def generate_model_data(scenario_name: str):
             )
         if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
             export_results_grid_district(
-                static_params, load_ts, dsm_profile, bus_id
+                static_params, load_ts, dsm_profile, bus_id, scenario_name
             )
 
 
