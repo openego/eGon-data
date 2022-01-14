@@ -101,6 +101,10 @@ the number of categories of cell-level household data.
  attribute 'INSGESAMT'. As the profiles are scaled with demand-regio data at
  nuts3-level the impact at a higher aggregation level is negligible.
  For sake of simplicity, the data is not corrected.
+* There are cells without household data but a population. A randomly chosen
+ household distribution is taken from a subgroup of cells with same population value and
+ applied to all cells with missing household distribution and the specific
+ population value.
 
 Notes
 -----
