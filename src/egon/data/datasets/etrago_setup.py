@@ -155,8 +155,8 @@ class EgonPfHvLink(Base):
 
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
-    bus0 = Column(BigInteger)nf
-    bus1 = Column(BigInteger)nf
+    bus0 = Column(BigInteger)
+    bus1 = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
     efficiency_fixed = Column(Float(53))
