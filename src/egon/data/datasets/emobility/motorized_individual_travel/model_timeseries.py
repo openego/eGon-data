@@ -458,18 +458,7 @@ def generate_model_data_grid_district(
 
     # TODO: change this when SimBEV issue #33 is solved
     #  https://github.com/rl-institut/simbev/issues/33
-    # TODO: Change to scn params for next full run
-    # flex_dict = scenario_variation_parameters["flex_share"]
-    flex_dict = {
-        "0_work": 1,
-        "1_business": 0,
-        "2_school": 0,
-        "3_shopping": 0,
-        "4_private_ridesharing": 0,
-        "5_leisure": 0,
-        "6_home": 1,
-        "7_charging_hub": 0,
-    }
+    flex_dict = scenario_variation_parameters["flex_share"]
 
     # Preprocess trip data
     trip_data = data_preprocessing(
@@ -487,13 +476,7 @@ def generate_model_data_grid_district(
     static_params = generate_static_params(trip_data, load_ts)
 
     # generate DSM profile
-    # TODO: Change to scn params for next full run
-    # model_parameters = scenario_variation_parameters["model_parameters"]
-    model_parameters = {
-        "restriction_time": 7,
-        "min_soc": 0.75
-    }
-
+    model_parameters = scenario_variation_parameters["model_parameters"]
     dsm_profile = generate_dsm_profile(
         start_date=run_config.start_date,
         end_date=run_config.end_date,
