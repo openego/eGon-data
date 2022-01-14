@@ -560,7 +560,7 @@ def generate_model_data(scenario_name: str):
     meta_run_config = read_simbev_metadata_file("config").loc["basic"]
 
     # Generate timeseries for each MVGD
-    print("GENERATE TIMESERIES...")
+    print("GENERATE MODEL DATA...")
     for bus_id in mvgd_bus_ids:
         print(f"Processing grid district {bus_id} ...")
         static_params, load_ts, dsm_profile = \
