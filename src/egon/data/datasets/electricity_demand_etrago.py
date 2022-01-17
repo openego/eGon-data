@@ -144,7 +144,6 @@ def export_to_db():
                 "p_set",
                 "q_set",
                 "sign",
-                "p_set",
             ]
         )
         load_timeseries = pd.DataFrame(
