@@ -380,3 +380,5 @@ Bug fixes
   `#605 <https://github.com/openego/eGon-data/issues/605>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Fix positions of the foreign gas buses
+  `#618 <https://github.com/openego/eGon-data/issues/618>`_
