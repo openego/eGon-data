@@ -577,5 +577,6 @@ with airflow.DAG(
             mv_grid_districts,
             zensus_vg250,
             data_bundle,
+            setup_etrago,
         ]
     )
