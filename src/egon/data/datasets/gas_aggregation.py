@@ -43,6 +43,8 @@ def aggregate_gas(scn_name="eGon2035"):
                 "scn_name": "first",
                 "generator_id": "first",
                 "p_nom": "sum",
+                "bus": "first",
+                "carrier": "first"
             },
         },
         # Store
@@ -53,6 +55,8 @@ def aggregate_gas(scn_name="eGon2035"):
                 "scn_name": "first",
                 "store_id": "first",
                 "e_nom": "sum",
+                "bus": "first",
+                "carrier": "first"
             },
         },
     ]
