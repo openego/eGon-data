@@ -579,17 +579,16 @@ def allocate_evs_to_grid_districts():
                 "mobility",
                 scenario=scn
             )["motorized_individual_travel"]
-            for (scn_var_name,
-                 scn_var_parameters) in scenario_parameters.items():
-                # Get EV target
-                ev_target = scn_var_parameters['ev_count']
 
-                np.testing.assert_allclose(
-                    int(ev_actual),
-                    ev_target,
-                    rtol=0.0001,
-                    err_msg=f"Dataset on EV numbers allocated to MVGDs "
-                            f"seems to be flawed. "
-                            f"Scenario: [{scn}], "
-                            f"Scenario variation: [{scn_var_name}]."
-                )
+            # Get EV target
+            ev_target = scenario_parameters[scn_var]['ev_count']
+
+            np.testing.assert_allclose(
+                int(ev_actual),
+                ev_target,
+                rtol=0.0001,
+                err_msg=f"Dataset on EV numbers allocated to MVGDs "
+                        f"seems to be flawed. "
+                        f"Scenario: [{scn}], "
+                        f"Scenario variation: [{scn_var}]."
+            )
