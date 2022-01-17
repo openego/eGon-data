@@ -624,6 +624,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
                     "bus1": central_buses[
                         (central_buses.country == "DK")
                         & (central_buses.v_nom == 380)
+                        & (central_buses.x > 10)
                     ]
                     .squeeze()
                     .bus_id,
