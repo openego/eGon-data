@@ -872,9 +872,13 @@ def get_census_households_grid():
         right_on="grid_id",
         how="right",
     )
+    df_census_households_grid = df_census_households_grid.sort_values(
+        ["cell_id", "characteristics_code"]
+    )
 
     # fill cells with missing household distribution data but population
     # by distribution of random cell with same population value
+
     df_census_households_grid = fill_missing_hh_in_populated_cells(
         df_census_households_grid
     )
