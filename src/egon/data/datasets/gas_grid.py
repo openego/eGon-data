@@ -418,6 +418,7 @@ def insert_gas_pipeline_list(
     # Add missing columns
     gas_pipelines_list["scn_name"] = scn_name
     gas_pipelines_list["carrier"] = main_gas_carrier
+    gas_pipelines_list["p_nom_extandable"] = False
 
     diameter = []
     geom = []
