@@ -9,7 +9,7 @@ Call order
         * data_preprocessing()
         * generate_load_time_series()
         * generate_dsm_profile()
-        * export_results_grid_district() - if export_results_to_csv is True
+        * write_model_data_to_db()
 """
 
 import os
@@ -368,7 +368,7 @@ def load_evs_trips(
     return trip_data
 
 
-def export_results_grid_district(
+def write_model_data_to_db(#export_results_grid_district(
     static_params_dict: dict,
     load_time_series_df: pd.DataFrame,
     dsm_profile_df: pd.DataFrame,
@@ -401,40 +401,44 @@ def export_results_grid_district(
         )
     )
 
-    results_dir = WORKING_DIR / Path("results", scenario_name, str(bus_id))
-    results_dir.mkdir(exist_ok=True, parents=True)
-
+    # Resample to 1h
     hourly_load_time_series_df = load_time_series_df.resample("1H").mean()
 
+    # Align load and DSM timeseries
     if len(hourly_load_time_series_df) >= len(dsm_profile_df):
         hourly_load_time_series_df = hourly_load_time_series_df.iloc[
             : len(dsm_profile_df)
         ]
     else:
         dsm_profile_df = dsm_profile_df.iloc[: len(hourly_load_time_series_df)]
-
     dsm_profile_df.index = hourly_load_time_series_df.index
 
-    hourly_load_time_series_df[["load_time_series"]].to_csv(
-        results_dir / "ev_load_time_series.csv"
-    )
+    # Write to eTraGo tables
+    # PLACEHOLDER
 
-    hourly_load_time_series_df[["ev_availability"]].to_csv(
-        results_dir / "ev_availability.csv"
-    )
+    # Export to working dir if requested
+    if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
+        results_dir = WORKING_DIR / Path("results", scenario_name, str(bus_id))
+        results_dir.mkdir(exist_ok=True, parents=True)
 
-    dsm_profile_df.to_csv(results_dir / "ev_dsm_profile.csv")
+        hourly_load_time_series_df[["load_time_series"]].to_csv(
+            results_dir / "ev_load_time_series.csv"
+        )
+        hourly_load_time_series_df[["ev_availability"]].to_csv(
+            results_dir / "ev_availability.csv"
+        )
+        dsm_profile_df.to_csv(results_dir / "ev_dsm_profile.csv")
 
-    static_params_dict[
-        "load_land_transport_ev.p_set_MW"
-    ] = "ev_load_time_series.csv"
-    static_params_dict["link_bev_charger.p_max_pu"] = "ev_availability.csv"
-    static_params_dict["store_ev_battery.e_min_pu"] = "ev_dsm_profile.csv"
+        static_params_dict[
+            "load_land_transport_ev.p_set_MW"
+        ] = "ev_load_time_series.csv"
+        static_params_dict["link_bev_charger.p_max_pu"] = "ev_availability.csv"
+        static_params_dict["store_ev_battery.e_min_pu"] = "ev_dsm_profile.csv"
 
-    file = results_dir / "ev_static_params.json"
+        file = results_dir / "ev_static_params.json"
 
-    with open(file, "w") as f:
-        json.dump(static_params_dict, f, indent=4)
+        with open(file, "w") as f:
+            json.dump(static_params_dict, f, indent=4)
 
 
 def generate_model_data_grid_district(
@@ -571,10 +575,9 @@ def generate_model_data(scenario_name: str):
                 bat_cap_dict=meta_tech_data.battery_capacity.to_dict(),
                 run_config=meta_run_config
             )
-        if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
-            export_results_grid_district(
-                static_params, load_ts, dsm_profile, bus_id, scenario_name
-            )
+        write_model_data_to_db(
+            static_params, load_ts, dsm_profile, bus_id, scenario_name
+        )
 
 
 def generate_model_data_eGon2035():
