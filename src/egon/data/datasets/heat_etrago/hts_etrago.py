@@ -28,6 +28,7 @@ def hts_to_etrago():
                  ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
                  WHERE carrier = '{carrier}'
                  AND scenario='{scenario}'
+                 AND scn_name = '{scenario}'
                  """,
                 index_col="id",
             )
@@ -63,6 +64,7 @@ def hts_to_etrago():
                                  4326) = {targets['heat_buses']['schema']}.
                                          {targets['heat_buses']['table']}.geom
                  WHERE carrier = '{carrier}'
+                 AND scn_name = '{scenario}'
                  """
             )
             ##**scenario name still needs to be adjusted in bus_sub**
@@ -143,7 +145,7 @@ class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(hts_to_etrago),
         )

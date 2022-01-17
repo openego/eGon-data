@@ -550,7 +550,7 @@ heat_supply:
       schema: 'demand'
       table: 'egon_map_zensus_district_heating_areas'
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
   targets:
     district_heating_supply:
@@ -726,6 +726,9 @@ electrical_load_curves_industry:
 
 etrago_electricity:
   sources:
+    etrago_buses:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
     osm_curves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
@@ -756,7 +759,7 @@ chp_location:
     egon_mv_grid_district: 'grid.egon_mv_grid_district'
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
     osm_landuse:
       table: 'osm_landuse'
@@ -791,7 +794,7 @@ chp_etrago:
       schema: 'demand'
       table: 'egon_district_heating_areas'
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
   targets:
     link:
@@ -840,6 +843,9 @@ DSM_CTS_industry:
 
 generators_etrago:
   sources:
+    bus:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
