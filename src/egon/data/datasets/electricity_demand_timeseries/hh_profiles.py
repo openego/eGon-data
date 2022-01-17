@@ -715,17 +715,20 @@ def fill_missing_hh_in_populated_cells(df_census_households_grid):
     ].reset_index(drop=True)
 
     # iterate over unique population values
-    for i in df_wo_hh["population"].sort_values().unique():
+    for population in df_wo_hh["population"].sort_values().unique():
 
         # create fallback if no cell with specific population available
-        if i in df_w_hh["population"].unique():
-            last_i = i
+        if population in df_w_hh["population"].unique():
+            fallback_value = population
+            population_value = population
         # use fallback of last possible household distribution
         else:
-            i = last_i
+            population_value = fallback_value
 
         # get cells with specific population value from cells with household distribution
-        df_w_hh_population_i = df_w_hh.loc[df_w_hh["population"] == i]
+        df_w_hh_population_i = df_w_hh.loc[
+            df_w_hh["population"] == population_value
+        ]
         # choose random cell within this group
         rnd_cell_id_population_i = np.random.choice(
             df_w_hh_population_i["cell_id"].unique()
@@ -735,7 +738,9 @@ def fill_missing_hh_in_populated_cells(df_census_households_grid):
             df_w_hh_population_i["cell_id"] == rnd_cell_id_population_i
         ]
         # get cells with specific population value from cells without household distribution
-        df_wo_hh_population_i = df_wo_hh.loc[df_wo_hh["population"] == i]
+        df_wo_hh_population_i = df_wo_hh.loc[
+            df_wo_hh["population"] == population
+        ]
 
         # all cells will get the same random household distribution
 
