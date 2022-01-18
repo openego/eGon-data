@@ -22,6 +22,9 @@ def fill_etrago_generators():
     con = db.engine()
     cfg = egon.data.config.datasets()["generators_etrago"]
 
+    # Delete power plants from previous iterations of this script
+    delete_previuos_gen(cfg)
+
     # Load required tables
     (
         power_plants,
@@ -227,6 +230,23 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     renew_feedin["feedin"] = renew_feedin["feedin"].apply(np.array)
 
     return renew_feedin
+
+
+def delete_previuos_gen(cfg):
+    db.execute_sql(
+        f"""DELETE FROM 
+                   {cfg['targets']['etrago_generators']['schema']}.
+                   {cfg['targets']['etrago_generators']['table']}
+                   WHERE carrier <> 'CH4' AND carrier <> 'solar_rooftop'
+                   AND carrier <> 'solar_thermal_collector'
+                   AND carrier <> 'geo_thermal'
+                   AND bus IN (
+                       SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
+                       {cfg['sources']['bus']['table']}
+                       WHERE country = 'DE'
+                       AND carrier = 'AC')
+                   """
+    )
 
 
 def set_timeseries(power_plants, renew_feedin):
