@@ -575,6 +575,7 @@ with airflow.DAG(
         dependencies=[
             scenario_parameters,
             mv_grid_districts,
+            map_zensus_grid_districts,
             zensus_vg250,
             data_bundle,
             setup_etrago,
