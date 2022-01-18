@@ -774,16 +774,12 @@ def get_census_households_grid():
     amount of households per type deviates from the total number with attribute
     'INSGESAMT'. As the profiles are scaled with demand-regio data at
     nuts3-level the impact at a higher aggregation level is negligible. For sake
-    of simplicity, the data is not corrected. Secondly, cells without household
-    data but population value are covered. A randomly chosen household
-    distribution is taken from a group of cells with same population value and
-    applied to all cells with missing household distribution and the specific
-    population value.
+    of simplicity, the data is not corrected.
 
     Returns
     -------
     pd.DataFrame
-        zensus household data at 100x100m grid level"""
+        census household data at 100x100m grid level"""
 
     # Retrieve information about households for each census cell
     # Only use cell-data which quality (quantity_q<2) is acceptable
@@ -879,13 +875,6 @@ def get_census_households_grid():
     )
     df_census_households_grid = df_census_households_grid.sort_values(
         ["cell_id", "characteristics_code"]
-    )
-
-    # fill cells with missing household distribution data but population
-    # by distribution of random cell with same population value
-
-    df_census_households_grid = fill_missing_hh_in_populated_cells(
-        df_census_households_grid
     )
 
     return df_census_households_grid
@@ -1376,6 +1365,12 @@ def houseprofiles_in_census_cells():
 
     # Query census household grid data with family type
     df_census_households_grid = get_census_households_grid()
+
+    # fill cells with missing household distribution values but population
+    # by hh distribution value of random cell with same population value
+    df_census_households_grid = fill_missing_hh_in_populated_cells(
+        df_census_households_grid
+    )
 
     # Refine census household grid data with additional NUTS-1 level attributes
     df_census_households_grid_refined = refine_census_data_at_cell_level(
