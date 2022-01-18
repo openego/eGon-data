@@ -299,6 +299,8 @@ Changed
   the dataset. Import files from data bundle.
   `#592 <https://github.com/openego/eGon-data/issues/592>`_
   `#595 <https://github.com/openego/eGon-data/issues/595>`_
+* Add DC lines from Germany to Sweden and Denmark
+  `#611 <https://github.com/openego/eGon-data/issues/611>`_
 
 
 Bug fixes
