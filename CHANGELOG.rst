@@ -295,6 +295,8 @@ Changed
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
+* Create H2 pipeline infrastructure for eGon100RE
+  `#638 <https://github.com/openego/eGon-data/issues/638>`_
 
 
 Bug fixes
