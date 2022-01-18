@@ -27,7 +27,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(create_tables, temp_resolution),
         )
@@ -161,7 +161,7 @@ class EgonPfHvLink(Base):
     carrier = Column(Text)
     efficiency_fixed = Column(Float(53), server_default="1.")
     p_nom = Column(Numeric, server_default="0.")
-    p_nom_extendable = Column(Boolean, server_default="false")
+    p_nom_extendable = Column(Boolean, server_default="False")
     p_nom_min = Column(Float(53), server_default="0.")
     p_nom_max = Column(Float(53), server_default="inf")
     p_min_pu_fixed = Column(Float(53))
@@ -290,7 +290,7 @@ class EgonPfHvStore(Base):
     p_set_fixed = Column(Float(53), server_default="0.")
     q_set_fixed = Column(Float(53), server_default="0.")
     e_initial = Column(Float(53), server_default="0.")
-    e_cyclic = Column((Boolean), server_default=False)
+    e_cyclic = Column((Boolean), server_default="False")
     sign = Column(Float(53), server_default="1.")
     marginal_cost_fixed = Column(Float(53), server_default="0.")
     capital_cost = Column(Float(53), server_default="0.")
