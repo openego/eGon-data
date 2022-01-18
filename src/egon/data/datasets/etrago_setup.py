@@ -12,9 +12,11 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    text,
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -29,7 +31,7 @@ class EtragoSetup(Dataset):
             name="EtragoSetup",
             version="0.0.4",
             dependencies=dependencies,
-            tasks=(create_tables, temp_resolution),
+            tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
 
 
@@ -48,6 +50,7 @@ class EgonPfHvBus(Base):
     x = Column(Float(53), server_default="0.")
     y = Column(Float(53), server_default="0.")
     geom = Column(Geometry("POINT", 4326), index=True)
+    country = Column(Text, server_default=text("'DE'::text"))
 
 
 class EgonPfHvBusTimeseries(Base):
@@ -517,6 +520,116 @@ def temp_resolution():
         SELECT 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
         """
     )
+
+
+def insert_carriers():
+    """Insert list of carriers into eTraGo table
+
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing entries
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_etrago_carrier
+        """
+    )
+
+    # List carrier names from all components
+    df = pd.DataFrame(
+        data={
+            "name": [
+                "biomass",
+                "CH4",
+                "pv",
+                "wind_offshore",
+                "wind_onshore",
+                "central_heat_pump",
+                "central_resistive_heater",
+                "CH4_to_H2",
+                "dsm",
+                "H2_feedin",
+                "H2_to_CH4",
+                "H2_to_power",
+                "rural_heat_pump",
+                "industrial_biomass_CHP",
+                "industrial_gas_CHP",
+                "central_biomass_CHP_heat",
+                "central_biomass_CHP",
+                "central_gas_CHP",
+                "central_gas_CHP_heat",
+                "power_to_H2",
+                "rural_gas_boiler",
+                "central_gas_boiler",
+                "H2_overground",
+                "H2_underground",
+                "solar_thermal_collector",
+                "geo_thermal",
+                "AC",
+                "central_heat",
+                "H2",
+                "rural_heat",
+                "H2_grid",
+                "H2_saltcavern",
+                "biogas_feedin",
+                "natural_gas_feedin",
+                "pumped_hydro",
+                "battery",
+                "OCGT",
+            ],
+        }
+    )
+
+    # Insert data into database
+    df.to_sql(
+        "egon_etrago_carrier",
+        schema="grid",
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+
+def check_carriers():
+    """Check if any eTraGo table has carriers not included in the carrier table.
+
+    Raises
+    ------
+    ValueError if carriers that are not defined in the carriers table are
+    used in any eTraGo table.
+    """
+    carriers = db.select_dataframe(
+        f"""
+        SELECT name FROM grid.egon_etrago_carrier
+        """
+    )
+    unknown_carriers = {}
+    tables = ['bus', 'store', 'storage', 'link', 'line', 'generator', 'load']
+
+    for table in tables:
+    # Delete existing entries
+        data = db.select_dataframe(
+            f"""
+            SELECT carrier FROM grid.egon_etrago_{table}
+            """
+        )
+        unknown_carriers[table] = (
+            data[~data['carrier'].isin(carriers)]['carrier'].unique()
+        )
+
+    if len(unknown_carriers) > 0:
+        msg = (
+            "The eTraGo tables contain carriers, that are not included in the "
+            "carrier table:\n"
+        )
+        for table, carriers in unknown_carriers.items():
+            carriers = [str(c) for c in carriers]
+            if len(carriers) > 0:
+                msg += table + ": '" + "', '".join(carriers) + "'\n"
+
+        raise ValueError(msg)
 
 
 def link_geom_from_buses(df, scn_name):

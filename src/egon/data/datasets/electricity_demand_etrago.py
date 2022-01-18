@@ -59,9 +59,20 @@ def demands_per_bus(scenario):
         index_col="bus",
     )
 
+    # Select data on household electricity demands per bus
+
+    hh_curves = db.select_dataframe(
+        f"""SELECT bus_id, p_set FROM
+                {sources['household_curves']['schema']}.
+                {sources['household_curves']['table']}
+                WHERE scn_name = '{scenario}'""",
+        index_col="bus_id",
+    )
+
     # Create one df by appending all imported dataframes
 
-    demand_curves = cts_curves.append([ind_curves_osm, ind_curves_sites])
+    demand_curves = cts_curves.append(
+        [ind_curves_osm, ind_curves_sites, hh_curves])
 
     # Split array to single columns in the dataframe
     demand_curves_split = demand_curves
@@ -92,7 +103,7 @@ def export_to_db():
     None.
 
     """
-
+    sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
     targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
 
     for scenario in ["eGon2035", "eGon100RE"]:
@@ -104,6 +115,13 @@ def export_to_db():
             {targets['etrago_load']['schema']}.{targets['etrago_load']['table']}
             WHERE scn_name = '{scenario}'
             AND carrier = 'AC'
+            AND bus IN (
+                SELECT bus_id FROM 
+                {sources['etrago_buses']['schema']}.
+                {sources['etrago_buses']['table']}
+                WHERE country = 'DE'
+                AND carrier = 'AC'
+                AND scn_name = '{scenario}')
             """
         )
 
@@ -187,7 +205,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.3",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )

@@ -23,8 +23,13 @@ class CH4Storages(Dataset):
              tasks=(import_ch4_storages),
          )
 
-def import_installed_ch4_storages():
+def import_installed_ch4_storages(scn_name):
     """Define dataframe containing the ch4 storage units in Germany from the SciGRID_gas data
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
 
     Returns
     -------
@@ -85,10 +90,10 @@ def import_installed_ch4_storages():
     
     # Match to associated gas bus
     Gas_storages_list =  Gas_storages_list.reset_index(drop=True)
-    Gas_storages_list = assign_ch4_bus_id(Gas_storages_list)
-    
+    Gas_storages_list = assign_ch4_bus_id(Gas_storages_list, scn_name)
+
     # Add missing columns
-    c = {'scn_name':'eGon2035', 'carrier':'CH4'}
+    c = {'scn_name': scn_name, 'carrier': 'CH4'}
     Gas_storages_list = Gas_storages_list.assign(**c)
 
     # Remove useless columns
@@ -99,58 +104,67 @@ def import_installed_ch4_storages():
     return Gas_storages_list
 
 
-def import_ch4_grid_capacity():
-    """Define dataframe containing the modelling of the CH4 grid storage 
-    capacity. The whole storage capacity of the grid (130000 MWh, estimation of 
-    the Bundesnetzagentur) is split uniformly between all the german CH4 nodes 
+def import_ch4_grid_capacity(scn_name):
+    """Define dataframe containing the modelling of the CH4 grid storage
+    capacity. The whole storage capacity of the grid (130000 MWh, estimation of
+    the Bundesnetzagentur) is split uniformly between all the german CH4 nodes
     of the grid. The capacities of the pipes are not considerated.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
 
     Returns
     -------
     Gas_storages_list :
         Dataframe containing the gas stores in Germany modelling the gas grid storage capacity
-    
-    """ 
+
+    """
     Gas_grid_capacity = 130000 # Storage capacity of the CH4 grid - G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
     N_ch4_nodes_G = ch4_nodes_number_G(define_gas_nodes_list()) # Number of nodes in Germany
     Store_capacity = Gas_grid_capacity / N_ch4_nodes_G # Storage capacity associated to each CH4 node of the german grid
-    
-    sql_gas = """SELECT bus_id, scn_name, carrier, geom
+
+    sql_gas = f"""SELECT bus_id, scn_name, carrier, geom
                 FROM grid.egon_etrago_bus
-                WHERE carrier = 'CH4';"""
+                WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+                AND country = 'DE';"""
     Gas_storages_list = db.select_geodataframe(sql_gas, epsg=4326)
-    
-    # Add missing column    
+
+    # Add missing column
     Gas_storages_list['e_nom'] = Store_capacity
     Gas_storages_list['bus'] = Gas_storages_list['bus_id']
-    
+
     # Remove useless columns
     Gas_storages_list = Gas_storages_list.drop(columns=['bus_id', 'geom'])
 
-    return Gas_storages_list    
-    
-    
+    return Gas_storages_list
+
+
 def import_ch4_storages():
     """Insert list of gas storages units in database
-
-    Returns
-    -------
-     None.
-    """   
+    """
     # Connect to local database
     engine = db.engine()
 
+    # TODO move this to function call, how to do it is directly called in task list?
+    scn_name = "eGon2035"
+
     # Clean table
     db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_store WHERE "carrier" = 'CH4'
+        AND scn_name = '{scn_name}';
         """
-    DELETE FROM grid.egon_etrago_store WHERE "carrier" = 'CH4';
-    """
-    )    
-    
+    )
+
     # Select next id value
     new_id = db.next_etrago_id('store')
-    
-    gas_storages_list = pd.concat([import_installed_ch4_storages(), import_ch4_grid_capacity()])
+
+    gas_storages_list = pd.concat([
+        import_installed_ch4_storages(scn_name),
+        import_ch4_grid_capacity(scn_name)
+    ])
     gas_storages_list['store_id'] = range(new_id, new_id + len(gas_storages_list))
     
     gas_storages_list =  gas_storages_list.reset_index(drop=True)
