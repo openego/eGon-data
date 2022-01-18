@@ -382,5 +382,7 @@ Bug fixes
   `#585 <https://github.com/openego/eGon-data/issues/585>`_
 * Change source for H2 steel tank storage to Danish Energy Agency
   `#605 <https://github.com/openego/eGon-data/issues/605>`_
+* Assign "carrier" to transmission lines with no value in grid.egon_etrago_line
+  `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
