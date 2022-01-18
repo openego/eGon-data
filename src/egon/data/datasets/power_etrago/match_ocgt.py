@@ -27,6 +27,9 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
     # create bus connections
     gdf = map_buses(scn_name)
 
+    if gdf is None:
+        return
+
     # create topology column (linestring)
     gdf = link_geom_from_buses(gdf, scn_name)
     gdf["p_nom_extendable"] = False
@@ -49,7 +52,7 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
     )
 
     # read carrier information from scnario parameter data
-    scn_params = get_sector_parameters("electricity", scn_name)
+    scn_params = get_sector_parameters("gas", scn_name)
     gdf["efficiency_fixed"] = scn_params["efficiency"][carrier]
     gdf["marginal_cost"] = scn_params["marginal_cost"][carrier]
 
@@ -92,6 +95,9 @@ def map_buses(scn_name):
                 AND country = 'DE';"""
 
     gdf_AC = db.select_geodataframe(sql_AC, epsg=4326)
+    if gdf_AC.size == 0:
+        return
+
     gdf_gas = db.select_geodataframe(sql_gas, epsg=4326)
 
     # Associate each power plant AC bus to nearest CH4 bus

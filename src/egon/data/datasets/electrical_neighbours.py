@@ -470,7 +470,7 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
         DELETE FROM {targets['transformers']['schema']}.
         {targets['transformers']['table']}
         WHERE scn_name = '{scenario}'
-        AND trafo_id IN (
+        AND trafo_id NOT IN (
             SELECT branch_id
             FROM {sources['osmtgmod_branch']['schema']}.
             {sources['osmtgmod_branch']['table']}
