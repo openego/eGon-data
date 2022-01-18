@@ -691,7 +691,7 @@ def process_nuts1_census_data(df_census_households_raw):
     return df_census_households
 
 
-def fill_missing_hh_in_populated_cells(df_census_households_grid):
+def impute_missing_hh_in_populated_cells(df_census_households_grid):
     """There are cells without household data but a population. A randomly
     chosen household distribution is taken from a subgroup of cells with same
     population value and applied to all cells with missing household
@@ -1368,7 +1368,7 @@ def houseprofiles_in_census_cells():
 
     # fill cells with missing household distribution values but population
     # by hh distribution value of random cell with same population value
-    df_census_households_grid = fill_missing_hh_in_populated_cells(
+    df_census_households_grid = impute_missing_hh_in_populated_cells(
         df_census_households_grid
     )
 
