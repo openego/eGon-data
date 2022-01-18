@@ -33,6 +33,7 @@ def insert_buses(carrier, scenario):
         DELETE FROM {target['schema']}.{target['table']}
         WHERE scn_name = '{scenario}'
         AND carrier = '{carrier}'
+        AND country = 'DE'
         """
     )
 
@@ -99,6 +100,7 @@ def insert_store(scenario, carrier):
         {targets['heat_buses']['table']}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
+        AND country = 'DE'
         """
     )
     db.execute_sql(
@@ -107,6 +109,18 @@ def insert_store(scenario, carrier):
         {targets['heat_links']['table']}
         WHERE carrier LIKE '{carrier}_store%'
         AND scn_name = '{scenario}'
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
     db.execute_sql(
@@ -115,6 +129,12 @@ def insert_store(scenario, carrier):
         {targets['heat_stores']['table']}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
+        AND bus IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -125,6 +145,7 @@ def insert_store(scenario, carrier):
         {targets['heat_buses']['table']}
         WHERE carrier = '{carrier}'
         AND scn_name = '{scenario}'
+        AND country = 'DE'
         """,
         epsg=4326,
     )
@@ -246,6 +267,12 @@ def insert_central_direct_heat(scenario="eGon2035"):
         {targets['heat_generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
+        AND bus IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -456,6 +483,18 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         {targets['heat_links']['table']}
         WHERE carrier  = 'rural_gas_boiler'
         AND scn_name = '{scenario}'
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -551,7 +590,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )
