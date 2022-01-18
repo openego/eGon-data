@@ -11,7 +11,7 @@ import requests
 
 from egon.data import db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, scenario_parameters
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.gas_prod import assign_bus_id
 from egon.data.datasets.insert_etrago_buses import (
@@ -289,6 +289,8 @@ def download_H2_industrial_demand(df_corr, scn_name="eGon2035"):
 
     if num_new_connections > 0:
 
+        scn_params = get_sector_parameters("gas", scn_name)
+
         carrier = "H2_ind_load"
         target = {"schema": "grid", "table": "egon_etrago_bus"}
         bus_gdf = initialise_bus_insertion(carrier, target, scenario=scn_name)
@@ -324,7 +326,11 @@ def download_H2_industrial_demand(df_corr, scn_name="eGon2035"):
         cavern_links["bus0"] = new_connections["bus_id"]
         cavern_links["p_nom_extendable"] = True
         # ToDo: retrieve capital cost data from scenario params
-        cavern_links["capital_cost"] = 2000 * new_connections["distance"] / 1e3
+        cavern_links["capital_cost"] = (
+            scn_params["capital_cost"]["H2_pipeline"]
+            * new_connections["distance"]
+            / 1e3
+        )
 
         engine = db.engine()
         for table in [grid_links, cavern_links]:
