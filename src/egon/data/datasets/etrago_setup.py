@@ -59,7 +59,7 @@ def get_pypsa_field_descriptors(component):
 
 
 def get_meta(
-    schema, component, description='TODO', source_list=[], license_list=[], contributor_list=[]
+    schema, component, description="TODO", source_list=[], license_list=[], contributor_list=[]
 ):
 
     table = "egon_etrago_" + component.lower()
@@ -365,24 +365,28 @@ class EgonPfHvStorageTimeseries(Base):
 
 
 class EgonPfHvStore(Base):
-    so = sources()
+    source_dict = sources()
     source_list = [
-        so['bgr_inspee'], so['bgr_inspeeds'], so['bgr_inspeeds_data_bundle'],
-        so['bgr_inspeeds_data_bundle'], so['bgr_inspeeds_report']
+        source_dict['bgr_inspee'], source_dict['bgr_inspeeds'],
+        source_dict['bgr_inspeeds_data_bundle'],
+        source_dict['bgr_inspeeds_data_bundle'],
+        source_dict['bgr_inspeeds_report']
     ]
-    co = contributors()
+    contributors_dict = contributors()
     contributor_list = [
-        co['an'].update(
-            {"comment": "Add CH4 storage"}
-        ),
-        co['fw'].update(
-            {"comment": "Add H2 storage"}
-        ),
+        {key: value for key, value in contributors_dict[author]}
+        for author in ["an", "fw"]
     ]
-    li = contributors()
-    license_list = []
+
+    contributor_list[0]["comment"] = "Add H2 storage"
+    contributor_list[1]["comment"] = "Add CH4 storage"
+    license_list = [data["license"] for data in source_list]
     __tablename__ = "egon_etrago_store"
-    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Store")}
+    __table_args__ = {
+        "schema": "grid", "comment": get_meta(
+            "grid", "Store", source_list, license_list, contributor_list
+        )
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -471,12 +475,12 @@ class EgonPfHvTransformerTimeseries(Base):
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
-    
+
 
 class EgonPfHvBusmap(Base):
     __tablename__ = "egon_etrago_hv_busmap"
     __table_args__ = {"schema": "grid"}
-     
+
     scn_name = Column(Text, primary_key=True, nullable=False)
     bus0 = Column(Text, primary_key=True, nullable=False)
     bus1 = Column(Text, primary_key=True, nullable=False)
