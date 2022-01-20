@@ -2,7 +2,7 @@
 and feed this data into the corresponding etraGo tables.
 
 """
-
+from datetime import datetime
 
 import egon.data.config
 import pandas as pd
@@ -72,7 +72,8 @@ def demands_per_bus(scenario):
     # Create one df by appending all imported dataframes
 
     demand_curves = cts_curves.append(
-        [ind_curves_osm, ind_curves_sites, hh_curves])
+        [ind_curves_osm, ind_curves_sites, hh_curves]
+    )
 
     # Split array to single columns in the dataframe
     demand_curves_split = demand_curves
@@ -91,7 +92,63 @@ def demands_per_bus(scenario):
     curves["bus"] = demand_curves_bus.index
     curves["p_set"] = demand_curves_bus.values.tolist()
 
+    # Store national demand time series for pypsa-eur-sec
+    store_national_profiles(
+        ind_curves_sites,
+        ind_curves_osm,
+        cts_curves,
+        hh_curves,
+        scenario,
+    )
+
     return curves
+
+
+def store_national_profiles(
+    ind_curves_sites,
+    ind_curves_osm,
+    cts_curves,
+    hh_curves,
+    scenario,
+):
+    """
+    Store electrical load timeseries aggregated for national level as an
+    input for pypsa-eur-sec
+
+    Parameters
+    ----------
+    ind_curves_sites : pd.DataFrame
+        Industrial load timeseries for industrial sites per bus
+    ind_curves_osm : pd.DataFrame
+        Industrial load timeseries for industrial osm areas per bus
+    cts_curves : pd.DataFrame
+        CTS load curves per bus
+    hh_curves : pd.DataFrame
+        Household load curves per bus
+    scenario : str
+        Scenario name
+
+    Returns
+    -------
+    None.
+
+    """
+    national_demand = pd.DataFrame(
+        columns=["residential_and_service", "industry"],
+        index=pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H"),
+    )
+
+    national_demand["industry"] = (
+        pd.DataFrame(ind_curves_sites.p_set.tolist()).sum()
+        + pd.DataFrame(ind_curves_osm.p_set.tolist()).sum()
+    ).values
+
+    national_demand["residential_and_service"] = (
+        pd.DataFrame(cts_curves.p_set.tolist()).sum()
+        + pd.DataFrame(hh_curves.p_set.tolist()).sum()
+    ).values
+
+    national_demand.to_csv(f"electrical_demand_timeseries_DE_{scenario}.csv")
 
 
 def export_to_db():
