@@ -1,6 +1,7 @@
 """The central module containing all code dealing with heat sector in etrago
 """
 from egon.data.datasets import Dataset
+from egon.data.datasets.etrago_helpers import copy_and_modify_links
 from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import insert_h2_to_ch4_to_h2
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
@@ -43,6 +44,22 @@ class HydrogenPowerLinkEtrago(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(insert_power_to_h2_to_power),
+        )
+
+
+class HydrogenPowerLinkEtragoeGon100RE(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HydrogenPowerLinkEtragoeGon100RE",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                copy_and_modify_links(
+                    "eGon2035",
+                    "eGon100RE",
+                    {"carrier": ["H2_to_power", "power_to_H2"]},
+                )
+            ),
         )
 
 

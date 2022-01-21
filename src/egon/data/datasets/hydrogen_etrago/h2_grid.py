@@ -9,7 +9,7 @@ from egon.data.datasets.gas_prod import assign_bus_id
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_grid():
+def insert_h2_pipelines():
     """ Insert hydrogen grid to etrago table
 
     Parameters
@@ -20,13 +20,11 @@ def insert_grid():
     """
     H2_buses = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon2035' AND
+        SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon100RE' AND
         carrier IN ('H2_grid', 'H2_saltcavern') and country = 'DE'
         """,
         epsg=4326,
     )
-
-    H2_buses["scn_name"] = "eGon100RE"
 
     pipelines = db.select_geodataframe(
         f"""
@@ -80,21 +78,18 @@ def insert_grid():
     new_pipelines["carrier"] = "H2_gridextension"
     new_pipelines["scn_name"] = "eGon100RE"
     new_pipelines["p_nom_extendable"] = True
-    new_pipelines["distance"] = new_pipelines.to_crs(epsg=3035).geometry.length
+    new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
     scn_params = get_sector_parameters("gas", "eGon100RE")
     new_pipelines["capital_cost"] = (
         1
         # scn_params["capital_cost"]["H2_pipeline"]  (data not yet entered)
-        * new_pipelines["distance"]
+        * new_pipelines["length"]
         / 1e3
     )
-    new_pipelines.drop(columns=["distance"], inplace=True)
 
     new_id = db.next_etrago_id("link")
     new_pipelines["link_id"] = range(new_id, new_id + len(new_pipelines))
-
-    engine = db.engine()
 
     # Delete old entries
     db.execute_sql(
@@ -111,14 +106,7 @@ def insert_grid():
         """
     )
 
-    # Delete old entries
-    db.execute_sql(
-        f"""
-            DELETE FROM grid.egon_etrago_bus WHERE "carrier" IN
-            ('H2_grid', 'H2_saltcavern') AND scn_name = 'eGon100RE'
-            AND country = 'DE'
-        """
-    )
+    engine = db.engine()
 
     pipelines.to_crs(epsg=4326).to_postgis(
         "egon_etrago_link",
@@ -136,33 +124,3 @@ def insert_grid():
         if_exists="append",
         dtype={"topo": Geometry()},
     )
-    H2_buses.to_crs(epsg=4326).to_postgis(
-        "egon_etrago_bus",
-        engine,
-        schema="grid",
-        index=False,
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
-
-    ##### GRID RELATED
-    # 1. Select eGon2035 H2 buses (DE), CH4 pipelines
-    # 2. Rename scenario
-    # 3. Change pipeline carrier
-    # 4. Adjust pipeline Links capacities
-    # 5. Change pipeline bus0 and bus1 to respective H2 buses (h2_ch4 busmap)
-    # 6. Build new pipelines between H2 cavern and H2 grid (H2 cavern in H2 grid voronoi)
-    # -> p_nom_extendable = True
-    # 7. Update scn_name
-    # 8. Write stuff to db
-
-    ##### INTERCONNECTIONS H2-AC
-    # 1. Select eGon2035 AC-H2 related links (DE)
-    # 2. Update scn_name
-    # -> bus_id does not need change, since all AC and H2 buses should have the same ids
-    # 3. Write stuff to db
-
-    ##### INTERCONNECTIONS H2-CH4
-    # 1. Select CH4 loads
-    # 2. Allocate loads to H2 voronoi
-    # 3. Build new methanation links

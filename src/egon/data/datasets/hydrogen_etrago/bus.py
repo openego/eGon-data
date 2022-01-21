@@ -1,7 +1,10 @@
 """The central module containing all code dealing with heat sector in etrago
 """
+
+from geoalchemy2 import Geometry
+
 from egon.data import config, db
-from egon.data.datasets.insert_etrago_buses import (
+from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
 )
@@ -133,4 +136,42 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         schema="grid",
         index=False,
         if_exists="replace",
+    )
+def insert_H2_buses_eGon100RE():
+    """ Insert hydrogen grid to etrago table
+
+    Parameters
+    ----------
+    scn_name : str, optional
+        Name of the scenario The default is 'eGon2035'.
+
+    """
+    H2_buses = db.select_geodataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon2035' AND
+        carrier IN ('H2_grid', 'H2_saltcavern') and country = 'DE'
+        """,
+        epsg=4326,
+    )
+
+    H2_buses["scn_name"] = "eGon100RE"
+
+    # Delete old entries
+    db.execute_sql(
+        f"""
+            DELETE FROM grid.egon_etrago_bus WHERE "carrier" IN
+            ('H2_grid', 'H2_saltcavern') AND scn_name = 'eGon100RE'
+            AND country = 'DE'
+        """
+    )
+
+    engine = db.engine()
+
+    H2_buses.to_crs(epsg=4326).to_postgis(
+        "egon_etrago_bus",
+        engine,
+        schema="grid",
+        index=False,
+        if_exists="append",
+        dtype={"geom": Geometry()},
     )
