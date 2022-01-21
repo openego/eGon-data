@@ -1,8 +1,9 @@
 """Module for repeated bus insertion tasks
 """
-import geopandas as gpd
-from egon.data import db
 from geoalchemy2 import Geometry
+import geopandas as gpd
+
+from egon.data import db
 
 
 def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
@@ -81,3 +82,53 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
     )
 
     return bus_data
+
+
+def copy_and_modify_links(from_scn, to_scn, filter_dict):
+
+    where_clause = ""
+    for column, filters in filter_dict.items():
+        where_clause += (
+            column
+            + " IN "
+            + str(tuple(filters)).replace("',)", "')")
+            + " AND "
+        )
+
+    gdf = db.select_geodataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_link
+        WHERE {where_clause} scn_name = '{from_scn}' AND
+        bus0 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{from_scn}' AND country = 'DE'
+        ) AND bus1 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{from_scn}' AND country = 'DE'
+        );
+        """
+    )
+
+    gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_link
+        WHERE {where_clause} scn_name = '{to_scn}' AND
+        bus0 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{to_scn}' AND country = 'DE'
+        ) AND bus1 IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{to_scn}' AND country = 'DE'
+        );
+        """
+    )
+
+    gdf.to_postgis(
+        "egon_etrago_link",
+        schema="grid",
+        if_exists="append",
+        con=db.engine(),
+        dtype={"geom": Geometry(), "topo": Geometry()},
+    )
