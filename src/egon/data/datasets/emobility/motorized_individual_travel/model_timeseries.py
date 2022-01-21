@@ -394,6 +394,8 @@ def write_model_data_to_db(#export_results_grid_district(
     -------
     None
     """
+
+    print("  Writing model timeseries...")
     load_time_series_df = load_time_series_df.assign(
         ev_availability=(
             load_time_series_df.flex_time_series
@@ -467,11 +469,13 @@ def generate_model_data_grid_district(
     """
 
     # Load trip data
+    print("  Loading trips...")
     trip_data = load_evs_trips(
         evs_ids=evs_grid_district.ev_id.unique(),
         charging_events_only=True
     )
 
+    print("  Preprocessing data...")
     # Assign battery capacity to trip data
     trip_data["bat_cap"] = trip_data.type.apply(lambda _: bat_cap_dict[_])
     trip_data.drop(columns=["type"], inplace=True)
@@ -486,6 +490,7 @@ def generate_model_data_grid_district(
     )
 
     # Generate load timeseries
+    print("  Generating load timeseries...")
     load_ts = generate_load_time_series(
         ev_data_df=trip_data,
         start_date=run_config.start_date,
@@ -496,6 +501,7 @@ def generate_model_data_grid_district(
     static_params = generate_static_params(trip_data, load_ts)
 
     # generate DSM profile
+    print("  Generating DSM profile...")
     model_parameters = scenario_variation_parameters["model_parameters"]
     dsm_profile = generate_dsm_profile(
         start_date=run_config.start_date,
@@ -565,7 +571,7 @@ def generate_model_data(scenario_name: str):
     # Generate timeseries for each MVGD
     print("GENERATE MODEL DATA...")
     for bus_id in mvgd_bus_ids:
-        print(f"Processing grid district {bus_id} ...")
+        print(f"Processing grid district {bus_id}...")
         static_params, load_ts, dsm_profile = \
             generate_model_data_grid_district(
                 evs_grid_district=evs_grid_district[
