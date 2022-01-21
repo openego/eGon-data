@@ -106,7 +106,8 @@ def copy_and_modify_links(from_scn, to_scn, filter_dict):
             SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{from_scn}' AND country = 'DE'
         );
-        """
+        """,
+        epsg=4326
     )
 
     gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
@@ -131,4 +132,43 @@ def copy_and_modify_links(from_scn, to_scn, filter_dict):
         if_exists="append",
         con=db.engine(),
         dtype={"geom": Geometry(), "topo": Geometry()},
+    )
+
+
+def copy_and_modify_buses(from_scn, to_scn, filter_dict):
+
+    where_clause = ""
+    for column, filters in filter_dict.items():
+        where_clause += (
+            column
+            + " IN "
+            + str(tuple(filters)).replace("',)", "')")
+            + " AND "
+        )
+
+    gdf = db.select_geodataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE {where_clause} scn_name = '{from_scn}' AND
+        country = 'DE'
+        """,
+        epsg=4326
+    )
+
+    gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE {where_clause} scn_name = '{to_scn}' AND
+        country = 'DE'
+        """
+    )
+
+    gdf.to_postgis(
+        "egon_etrago_bus",
+        schema="grid",
+        if_exists="append",
+        con=db.engine(),
+        dtype={"geom": Geometry()},
     )
