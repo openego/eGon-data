@@ -265,7 +265,7 @@ def generate_load_time_series(
             ev_data_df.charging_capacity_nominal
             / ev_data_df.charging_capacity_grid
         ).mean(),
-        decimal=1,#4,
+        decimal=0, #4,
     )
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
