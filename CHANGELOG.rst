@@ -296,7 +296,12 @@ Changed
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
 * Fill missing household data for populated cells
-  `#431 <https://github.com/openego/eGon-data/issues/431>`_
+* Fix RE potential areas outside of Germany by updating
+  the dataset. Import files from data bundle.
+  `#592 <https://github.com/openego/eGon-data/issues/592>`_
+  `#595 <https://github.com/openego/eGon-data/issues/595>`_
+* Add DC lines from Germany to Sweden and Denmark
+  `#611 <https://github.com/openego/eGon-data/issues/611>`_
 
 
 Bug fixes
@@ -380,3 +385,9 @@ Bug fixes
   `#585 <https://github.com/openego/eGon-data/issues/585>`_
 * Change source for H2 steel tank storage to Danish Energy Agency
   `#605 <https://github.com/openego/eGon-data/issues/605>`_
+* Change carrier name from 'pv' to 'solar' in eTraGo_generators
+  `#617 <https://github.com/openego/eGon-data/issues/617>`_
+* Assign "carrier" to transmission lines with no value in grid.egon_etrago_line
+  `#625 <https://github.com/openego/eGon-data/issues/625>`_
+* Fix deleting from eTraGo tables
+  `#613 <https://github.com/openego/eGon-data/issues/613>`_

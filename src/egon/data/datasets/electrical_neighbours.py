@@ -10,6 +10,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.etrago_setup as etrago
 
 
@@ -17,7 +18,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -469,7 +470,7 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
         DELETE FROM {targets['transformers']['schema']}.
         {targets['transformers']['table']}
         WHERE scn_name = '{scenario}'
-        AND trafo_id IN (
+        AND trafo_id NOT IN (
             SELECT branch_id
             FROM {sources['osmtgmod_branch']['schema']}.
             {sources['osmtgmod_branch']['table']}
@@ -526,6 +527,138 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
     )
 
 
+def foreign_dc_lines(scenario, sources, targets, central_buses):
+    """Insert DC lines to foreign countries manually
+
+    Parameters
+    ----------
+    sources : dict
+        List of dataset sources
+    targets : dict
+        List of dataset targets
+    central_buses : geopandas.GeoDataFrame
+        Buses in the center of foreign countries
+
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing dc lines to foreign countries
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['links']['schema']}.
+        {targets['links']['table']}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'DC'
+        AND bus0 IN (
+            SELECT bus_id
+            FROM {sources['electricity_buses']['schema']}.
+            {sources['electricity_buses']['table']}
+              WHERE scn_name = '{scenario}'
+              AND carrier = 'AC'
+              AND country = 'DE')
+        AND bus1 IN (
+            SELECT bus_id
+            FROM {sources['electricity_buses']['schema']}.
+            {sources['electricity_buses']['table']}
+              WHERE scn_name = '{scenario}'
+              AND carrier = 'AC'
+              AND country != 'DE')
+        """
+    )
+    capital_cost = get_sector_parameters("electricity", "eGon2035")[
+        "capital_cost"
+    ]
+
+    # Add DC line from Lübeck to Sweden
+    converter_luebeck = db.select_dataframe(
+        f"""
+        SELECT bus_id FROM
+        {sources['electricity_buses']['schema']}.
+        {sources['electricity_buses']['table']}
+        WHERE x = 10.802358024202768
+        AND y = 53.897547401787
+        AND v_nom = 380
+        AND scn_name = '{scenario}'
+        AND carrier = 'AC'
+        """
+    ).squeeze()
+
+    foreign_links = pd.DataFrame(
+        index=[0],
+        data={
+            "link_id": db.next_etrago_id("link"),
+            "bus0": converter_luebeck,
+            "bus1": central_buses[
+                (central_buses.country == "SE") & (central_buses.v_nom == 380)
+            ]
+            .squeeze()
+            .bus_id,
+            "p_nom": 600,
+            "length": 262,
+        },
+    )
+
+    # When not in test-mode, add DC line from Bentwisch to Denmark
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        converter_bentwisch = db.select_dataframe(
+            f"""
+            SELECT bus_id FROM
+            {sources['electricity_buses']['schema']}.
+            {sources['electricity_buses']['table']}
+            WHERE x = 12.214770465804179
+            AND y = 54.100265527140884
+            AND v_nom = 380
+            AND scn_name = '{scenario}'
+            AND carrier = 'AC'
+            """
+        ).squeeze()
+
+        foreign_links = foreign_links.append(
+            pd.DataFrame(
+                index=[1],
+                data={
+                    "link_id": db.next_etrago_id("link") + 1,
+                    "bus0": converter_bentwisch,
+                    "bus1": central_buses[
+                        (central_buses.country == "DK")
+                        & (central_buses.v_nom == 380)
+                        & (central_buses.x > 10)
+                    ]
+                    .squeeze()
+                    .bus_id,
+                    "p_nom": 600,
+                    "length": 170,
+                },
+            )
+        )
+
+    # Set parameters for all DC lines
+    foreign_links["capital_cost"] = (
+        capital_cost["dc_cable"] * foreign_links.length
+        + 2 * capital_cost["dc_inverter"]
+    )
+    foreign_links["p_min_pu_fixed"] = -1
+    foreign_links["p_nom_extendable"] = True
+    foreign_links["p_nom_min"] = foreign_links["p_nom"]
+    foreign_links["scn_name"] = scenario
+    foreign_links["carrier"] = "DC"
+    foreign_links["efficiency_fixed"] = 1
+
+    # Add topology
+    foreign_links = etrago.link_geom_from_buses(foreign_links, scenario)
+
+    # Insert DC lines to the database
+    foreign_links.to_postgis(
+        targets["links"]["table"],
+        schema=targets["links"]["schema"],
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
+
+
 def grid():
     """Insert electrical grid compoenents for neighbouring countries
 
@@ -549,6 +682,8 @@ def grid():
         central_transformer(
             scenario, sources, targets, central_buses, foreign_lines
         )
+
+        foreign_dc_lines(scenario, sources, targets, central_buses)
 
 
 def map_carriers_tyndp():
@@ -711,6 +846,7 @@ def calc_capacities():
     df_2035 = pd.DataFrame(index=df_2030.index)
     df_2035["cap_2030"] = df_2030.Value
     df_2035["cap_2040"] = df_2040.Value
+    df_2035.fillna(0., inplace=True)
     df_2035["cap_2035"] = (
         df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
     )
@@ -1012,7 +1148,7 @@ def tyndp_demand():
             data_2040 = data_2030
 
         # According to the NEP, data for 2030 and 2040 is linear interpolated
-        data_2035 = ((data_2030 + data_2040) / 2)[:8760] * 1e-3
+        data_2035 = ((data_2030 + data_2040) / 2)[:8760]
 
         entry = etrago.EgonPfHvLoad(
             scn_name="eGon2035",
