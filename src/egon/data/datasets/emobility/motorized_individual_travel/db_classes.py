@@ -114,7 +114,7 @@ class EgonEvTrip(Base):
 
     event_id = Column(Integer, primary_key=True)
     egon_ev_pool_ev_id = Column(
-        Integer, ForeignKey(EgonEvPool.ev_id), nullable=False
+        Integer, ForeignKey(EgonEvPool.ev_id), nullable=False, index=True
     )
     simbev_event_id = Column(Integer)
     location = Column(String(21))
