@@ -14,7 +14,7 @@ class ChpEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ChpEtrago",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert),
         )
@@ -41,6 +41,16 @@ def insert():
         DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon2035'
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         WHERE scn_name = 'eGon2035'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         WHERE scn_name = 'eGon2035'
+         AND country = 'DE')
         """
     )
     db.execute_sql(

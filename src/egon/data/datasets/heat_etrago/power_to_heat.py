@@ -44,6 +44,18 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -122,6 +134,18 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier = 'central_heat_pump'
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -172,6 +196,18 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier = 'central_resistive_heater'
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
     # Select heat pumps in district heating
