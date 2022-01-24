@@ -415,10 +415,16 @@ with airflow.DAG(
         ]
     )
 
+    # Create gas voronoi
+    create_gas_polygons = GasAreas(
+        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
+    )
+
     insert_h2_grid = HydrogenGridEtrago(
         dependencies=[
             gas_grid_insert_data,
             insert_hydrogen_buses,
+            create_gas_polygons
         ]
     )
 
@@ -427,11 +433,6 @@ with airflow.DAG(
             insert_power_to_h2_installations,
             insert_h2_grid
         ]
-    )
-
-    # Create gas voronoi
-    create_gas_polygons = GasAreas(
-        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
     )
 
     # Gas prod import
