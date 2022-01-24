@@ -391,3 +391,5 @@ Bug fixes
   `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Create and fill transfer_busses table in substation-dataset
+  `#610 <https://github.com/openego/eGon-data/issues/610>`_
