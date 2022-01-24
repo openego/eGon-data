@@ -211,7 +211,9 @@ with airflow.DAG(
     ]
 
     # Import potential areas for wind onshore and ground-mounted PV
-    re_potential_areas = re_potential_area_setup(dependencies=[setup])
+    re_potential_areas = re_potential_area_setup(
+        dependencies=[setup, data_bundle]
+    )
     re_potential_areas.insert_into(pipeline)
 
     # Future heat demand calculation based on Peta5_0_1 data

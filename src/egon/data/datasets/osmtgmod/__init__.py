@@ -547,7 +547,7 @@ def to_pypsa():
             INSERT INTO grid.egon_etrago_line (scn_name, line_id, bus0,
                                               bus1, x, r, b, s_nom, s_nom_min, s_nom_extendable,
                                               cables, v_nom,
-                                              geom, topo)
+                                              geom, topo, carrier)
             SELECT
               {scenario_name},
               branch_id AS line_id,
@@ -562,7 +562,8 @@ def to_pypsa():
               cables,
               branch_voltage/1000 as v_nom,
               geom,
-              topo
+              topo,
+              'AC' as carrier
               FROM osmtgmod_results.branch_data
               WHERE result_id = 1 and (link_type = 'line' or
                                        link_type = 'cable');

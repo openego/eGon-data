@@ -58,8 +58,11 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
         f"""
         DELETE FROM {targets['generators']['schema']}.
         {targets['generators']['table']}
-        WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
+        WHERE carrier IN ('solar_rooftop')
         AND scn_name = '{scenario}'
+        AND bus IN (SELECT bus_id FROM
+                    {sources['egon_mv_grid_district']['schema']}.
+                    {sources['egon_mv_grid_district']['table']}            )
         """
     )
 
