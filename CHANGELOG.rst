@@ -302,6 +302,9 @@ Changed
   `#595 <https://github.com/openego/eGon-data/issues/595>`_
 * Add DC lines from Germany to Sweden and Denmark
   `#611 <https://github.com/openego/eGon-data/issues/611>`_
+* H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
+  H2_saltcavern buses if a proximity criterion is fulfilled
+  `#620 <https://github.com/openego/eGon-data/issues/620>`_
 
 
 Bug fixes
