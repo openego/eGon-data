@@ -254,7 +254,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses = gdf_abroad_buses.drop(
         columns=[
             "v_nom",
-            "v_mag_pu_set_fixed",
+            "v_mag_pu_set",
             "v_mag_pu_min",
             "v_mag_pu_max",
             "geom",
