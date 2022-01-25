@@ -418,7 +418,7 @@ def insert_gas_pipeline_list(
     # Add missing columns
     gas_pipelines_list["scn_name"] = scn_name
     gas_pipelines_list["carrier"] = main_gas_carrier
-    gas_pipelines_list["p_nom_extandable"] = False
+    gas_pipelines_list["p_nom_extendable"] = False
 
     diameter = []
     geom = []
@@ -637,12 +637,12 @@ def insert_gas_pipeline_list(
     INSERT INTO grid.egon_etrago_link (scn_name,
                                               link_id, carrier,
                                               bus0, bus1,
-                                              p_nom, length,
+                                              p_nom, p_nom_extendable, length,
                                               geom, topo)
     SELECT scn_name,
                 link_id, carrier,
                 bus0, bus1,
-                p_nom, length,
+                p_nom, p_nom_extendable, length,
                 geom, topo
 
     FROM grid.egon_etrago_gas_link;
