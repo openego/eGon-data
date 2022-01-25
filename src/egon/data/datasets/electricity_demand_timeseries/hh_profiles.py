@@ -498,64 +498,6 @@ def create_missing_zensus_data(
     return df_average_split
 
 
-def get_hh_dist(df_zensus, hh_types):
-    """
-    Group zensus data to fit Demand-Profile-Generator (DPG) format.
-
-    For more information look at the respective publication:
-    https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
-
-    Parameters
-    ----------
-    df_zensus: pd.DataFrame
-        Zensus households data
-    hh_types: dict
-        Mapping of zensus groups to DPG groups
-
-    Returns
-    ----------
-    df_hh_types: pd.DataFrame
-        distribution of people by household type and regional-resolution
-
-        .. warning::
-
-            Data still needs to be converted from amount of people to amount
-            of households
-    """
-    # Cat O1 and O2 are removed as their share with/without kids is not clearly
-    # derivable without any further information. OO will therefore represent
-    # all multihousehold groups but the seniors.
-    adjust = {
-        "SR": 1,
-        "SO": 1,
-        "SK": 1,
-        "PR": 1,
-        "PO": 1,
-        "P1": 1,
-        "P2": 1,
-        "P3": 1,
-        "OR": 1,
-        "OO": 1,
-        "O1": 0,
-        "O2": 0,
-    }
-
-    df_hh_types = pd.DataFrame(
-        (
-            {
-                hhtype: adjust[hhtype] * df_zensus.loc[countries, codes].sum()
-                for hhtype, codes in hh_types.items()
-            }
-            for countries in df_zensus.index
-        ),
-        index=df_zensus.index,
-    )
-    # drop zero columns
-    df_hh_types = df_hh_types.loc[:, (df_hh_types != 0).any(axis=0)]
-
-    return df_hh_types.T
-
-
 def inhabitants_to_households(
     df_people_by_householdtypes_abs, mapping_people_in_households
 ):
@@ -693,6 +635,8 @@ def process_nuts1_census_data(df_census_households_raw):
 
 def regroup_nuts1_census_data(df_census_households_nuts1):
     """Regroup census data and map according to demand-profile types.
+    For more information look at the respective publication:
+    https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
 
 
     Parameters
