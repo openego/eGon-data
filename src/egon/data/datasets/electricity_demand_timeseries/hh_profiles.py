@@ -1090,7 +1090,10 @@ def refine_census_data_at_cell_level(
             by=["grid_id", "characteristics_code"]
         ).reset_index(drop=True)
     )
-
+    df_census_households_grid_refined["hh_10types"] = (
+        df_census_households_grid_refined["hh_10types"].apply(
+            np.rint).astype(int)
+    )
     return df_census_households_grid_refined
 
 
@@ -1126,7 +1129,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
         else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
         for hh_type, sq in zip(
             df_cell["hh_type"],
-            np.rint(df_cell["hh_10types"].values).astype(int),
+            df_cell["hh_10types"],
         )
     ]
 
@@ -1190,6 +1193,8 @@ def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
 
     pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
 
+    # only use non zero entries
+    df_zensus_cells = df_zensus_cells.loc[df_zensus_cells["hh_10types"] != 0]
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
 
         # random sampling of household profiles for each cell
