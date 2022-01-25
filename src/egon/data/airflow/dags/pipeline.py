@@ -227,7 +227,6 @@ with airflow.DAG(
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
 
-
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
 
@@ -361,6 +360,20 @@ with airflow.DAG(
         ]
     )
 
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies=[
+            data_bundle,
+            demandregio,
+            heat_demand_Germany,
+            import_district_heating_areas,
+            import_district_heating_areas,
+            vg250,
+            map_zensus_grid_districts,
+            hh_demand_buildings_setup,
+        ]
+    )
+
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -369,6 +382,8 @@ with airflow.DAG(
             osmtgmod,
             setup_etrago,
             data_bundle,
+            electrical_load_etrago,
+            heat_time_series,
         ]
     )
 
@@ -533,20 +548,6 @@ with airflow.DAG(
             scenario_capacities,
             Vg250MvGridDistricts,
             power_plants,
-        ]
-    )
-
-    # Heat time Series
-    heat_time_series = HeatTimeSeries(
-        dependencies=[
-            data_bundle,
-            demandregio,
-            heat_demand_Germany,
-            import_district_heating_areas,
-            import_district_heating_areas,
-            vg250,
-            map_zensus_grid_districts,
-            hh_demand_buildings_setup,
         ]
     )
 
