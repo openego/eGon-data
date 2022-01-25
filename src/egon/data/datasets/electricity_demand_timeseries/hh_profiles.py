@@ -1030,7 +1030,10 @@ def refine_census_data_at_cell_level(
 ):
     """The zensus data is processed to define the number and type of households
     per zensus cell. Two subsets of the zensus data are merged to fit the
-    IEE profiles specifications.
+    IEE profiles specifications. To do this, the household types distribution
+    at nuts1 level is applied to the cells. Afterwards the number of households
+    are rounded to the nearest integer, which introduces some deviation to
+    the distribution at nuts1 level.
 
     Parameters
     ----------
@@ -1098,7 +1101,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     Takes a random sample of profile ids for given cell:
       * if pool size >= sample size: without replacement
       * if pool size < sample size: with replacement
-    The number of households are rounded to the nearest integer if float.
+
 
     Parameters
     ----------
@@ -1370,16 +1373,19 @@ def houseprofiles_in_census_cells():
     # Download zensus household NUTS-1 data with family type and age categories
     df_census_households_nuts1_raw = get_census_households_nuts1_raw()
 
-    # Restructure data to be compatible with categories from demand profile
-    # generator. Reduce age intervals and aggregate data to NUTS-1 level.
+    # Reduce age intervals and remove kids
     df_census_households_nuts1 = process_nuts1_census_data(
         df_census_households_nuts1_raw
     )
 
+    # Regroup data to be compatible with categories from demand profile
+    # generator.
     df_census_households_nuts1 = regroup_nuts1_census_data(
         df_census_households_nuts1
     )
 
+    # Convert data from people living in households to households
+    # Using a specified amount of inhabitants per household type
     df_census_households_nuts1 = inhabitants_to_households(
         df_census_households_nuts1
     )
