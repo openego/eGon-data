@@ -1406,7 +1406,7 @@ def houseprofiles_in_census_cells():
 
     # Refine census household grid data with additional NUTS-1 level attributes
     df_census_households_grid_refined = refine_census_data_at_cell_level(
-        df_census_households_nuts1, df_census_households_grid
+        df_census_households_grid, df_census_households_nuts1
     )
 
     # Allocate profile ids to each cell by census data
