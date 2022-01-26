@@ -7,7 +7,7 @@ from egon.data import db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
+def insert_h2_to_ch4_to_h2():
     """
     Define methanisation, feed in and SMR capacities and insert in etrago_link.
 
@@ -17,9 +17,14 @@ def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
     # Connect to local database
     engine = db.engine()
 
+    scn_name = "eGon2035"
     # Select CH4 and corresponding H2 buses
     # No geometry required in this case!
-    buses = db.select_dataframe(f"""SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = '{scn_name}'""")
+    buses = db.select_dataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = '{scn_name}'
+        """
+    )
 
     methanation = buses.copy().rename(
         columns={"bus_H2": "bus0", "bus_CH4": "bus1"}
@@ -32,12 +37,12 @@ def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
         f"""
             DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
             ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}'
-            AND bus0 IN (
+            AND bus0 NOT IN (
                SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = '{scn_name}' AND country = 'DE'
-            ) AND bus1 IN (
+               WHERE scn_name = '{scn_name}' AND country != 'DE'
+            ) AND bus1 NOT IN (
                SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = '{scn_name}' AND country = 'DE'
+               WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
         """
     )

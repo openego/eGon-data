@@ -116,12 +116,12 @@ def copy_and_modify_links(from_scn, to_scn, filter_dict):
         f"""
         DELETE FROM grid.egon_etrago_link
         WHERE {where_clause} scn_name = '{to_scn}' AND
-        bus0 IN (
+        bus0 NOT IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{to_scn}' AND country = 'DE'
-        ) AND bus1 IN (
+            WHERE scn_name = '{to_scn}' AND country != 'DE'
+        ) AND bus1 NOT IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{to_scn}' AND country = 'DE'
+            WHERE scn_name = '{to_scn}' AND country != 'DE'
         );
         """
     )

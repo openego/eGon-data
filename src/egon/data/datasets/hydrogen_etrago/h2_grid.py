@@ -87,11 +87,15 @@ def insert_h2_pipelines():
         f"""
             DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
             ('H2_retrofit', 'H2_gridextension') AND scn_name = 'eGon100RE'
+            AND bus0 NOT IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = 'eGon100RE' AND country != 'DE'
+            ) AND bus1 NOT IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = 'eGon100RE' AND country != 'DE'
+            );
         """
     )
-
-    new_id = db.next_etrago_id("link")
-    new_pipelines["link_id"] = range(new_id, new_id + len(new_pipelines))
 
     engine = db.engine()
 
@@ -103,6 +107,10 @@ def insert_h2_pipelines():
         if_exists="append",
         dtype={"topo": Geometry()},
     )
+
+    new_id = db.next_etrago_id("link")
+    new_pipelines["link_id"] = range(new_id, new_id + len(new_pipelines))
+
     new_pipelines.to_crs(epsg=4326).to_postgis(
         "egon_etrago_link",
         engine,
