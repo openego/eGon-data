@@ -305,6 +305,8 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* Create H2 pipeline infrastructure for eGon100RE
+  `#638 <https://github.com/openego/eGon-data/issues/638>`_
 
 
 Bug fixes

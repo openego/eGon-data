@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets.etrago_helpers import copy_and_modify_links
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -198,3 +199,10 @@ def map_buses(scn_name):
     )
 
     return gdf.rename(columns={"bus_id": "bus1", "geom": "geom_gas"})
+
+def insert_power_to_h2_to_power_eGon100RE():
+    copy_and_modify_links(
+        "eGon2035",
+        "eGon100RE",
+        {"carrier": ["H2_to_power", "power_to_H2"]},
+    )

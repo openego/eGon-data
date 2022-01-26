@@ -1,9 +1,13 @@
 """The central module containing all code dealing with heat sector in etrago
 """
+
+from geoalchemy2 import Geometry
+
 from egon.data import config, db
-from egon.data.datasets.insert_etrago_buses import (
+from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
+    copy_and_modify_buses
 )
 
 
@@ -22,11 +26,17 @@ def insert_hydrogen_buses(scenario="eGon2035"):
     target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"]
     # initalize dataframe for hydrogen buses
     carrier = "H2_saltcavern"
-    hydrogen_buses = initialise_bus_insertion(carrier, target, scenario=scenario)
-    insert_H2_buses_from_saltcavern(hydrogen_buses, carrier, sources, target, scenario)
+    hydrogen_buses = initialise_bus_insertion(
+        carrier, target, scenario=scenario
+    )
+    insert_H2_buses_from_saltcavern(
+        hydrogen_buses, carrier, sources, target, scenario
+    )
 
     carrier = "H2_grid"
-    hydrogen_buses = initialise_bus_insertion(carrier, target, scenario=scenario)
+    hydrogen_buses = initialise_bus_insertion(
+        carrier, target, scenario=scenario
+    )
     insert_H2_buses_from_CH4_grid(hydrogen_buses, carrier, target, scenario)
 
 
@@ -73,7 +83,9 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
     AC_bus_ids = locations.index.copy()
 
     # create H2 bus data
-    hydrogen_bus_ids = finalize_bus_insertion(locations, carrier, target, scenario=scn_name)
+    hydrogen_bus_ids = finalize_bus_insertion(
+        locations, carrier, target, scenario=scn_name
+    )
 
     gdf_H2_cavern = hydrogen_bus_ids[["bus_id"]].rename(
         columns={"bus_id": "bus_H2"}
@@ -120,7 +132,9 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
     # later use (CH4 grid to H2 links)
     CH4_bus_ids = gdf_H2[["bus_id", "scn_name"]].copy()
 
-    H2_bus_ids = finalize_bus_insertion(gdf_H2, carrier, target, scenario=scn_name)
+    H2_bus_ids = finalize_bus_insertion(
+        gdf_H2, carrier, target, scenario=scn_name
+    )
 
     gdf_H2_CH4 = H2_bus_ids[["bus_id"]].rename(columns={"bus_id": "bus_H2"})
     gdf_H2_CH4["bus_CH4"] = CH4_bus_ids["bus_id"]
@@ -133,4 +147,12 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         schema="grid",
         index=False,
         if_exists="replace",
+    )
+
+def insert_h2_buses_eGon100RE():
+
+    copy_and_modify_buses(
+        "eGon2035",
+        "eGon100RE",
+        {"carrier": ["H2_grid", "H2_saltcavern"]},
     )
