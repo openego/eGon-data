@@ -396,3 +396,5 @@ Bug fixes
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
 * Create and fill transfer_busses table in substation-dataset
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
+* H2 steel tanks are removed again from saltcavern storage
+  `#621 <https://github.com/openego/eGon-data/issues/621>`_
