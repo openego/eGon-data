@@ -314,7 +314,9 @@ with airflow.DAG(
 
     hh_demand_buildings_setup.insert_into(pipeline)
     map_houseprofiles_to_buildings = tasks[
-        "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
+        "electricity_demand_timeseries"
+        ".hh_buildings"
+        ".map-houseprofiles-to-buildings"
     ]
 
     # Industry
