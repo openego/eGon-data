@@ -551,6 +551,7 @@ def insert_carriers():
                 "CH4_to_H2",
                 "dsm",
                 "H2_feedin",
+                "H2_ind_load",
                 "H2_to_CH4",
                 "H2_to_power",
                 "rural_heat_pump",

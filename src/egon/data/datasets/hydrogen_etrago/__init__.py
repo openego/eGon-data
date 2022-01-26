@@ -30,7 +30,7 @@ class HydrogenStoreEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenStoreEtrago",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(insert_H2_overground_storage, insert_H2_saltcavern_storage),
         )
