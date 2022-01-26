@@ -29,7 +29,7 @@ def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
         f"""
         DELETE FROM {target['schema']}.{target['table']}
         WHERE scn_name = '{scenario}'
-        AND carrier = '{carrier}'
+        AND carrier = '{carrier}' AND country = 'DE'
         """
     )
 
