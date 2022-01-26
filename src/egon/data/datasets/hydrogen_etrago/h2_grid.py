@@ -10,14 +10,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_h2_pipelines():
-    """ Insert hydrogen grid to etrago table
-
-    Parameters
-    ----------
-    scn_name : str, optional
-        Name of the scenario The default is 'eGon2035'.
-
-    """
+    """ Insert hydrogen grid to etrago table based on CH4 grid."""
     H2_buses = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon100RE' AND
@@ -81,30 +74,24 @@ def insert_h2_pipelines():
     new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
     scn_params = get_sector_parameters("gas", "eGon100RE")
+    # ToDo: insert capital cost data
     new_pipelines["capital_cost"] = (
         1
-        # scn_params["capital_cost"]["H2_pipeline"]  (data not yet entered)
+        # scn_params["capital_cost"]["H2_pipeline"]
         * new_pipelines["length"]
         / 1e3
     )
-
-    new_id = db.next_etrago_id("link")
-    new_pipelines["link_id"] = range(new_id, new_id + len(new_pipelines))
 
     # Delete old entries
     db.execute_sql(
         f"""
             DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
             ('H2_retrofit', 'H2_gridextension') AND scn_name = 'eGon100RE'
-            AND bus0 IN (
-               SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = 'eGon100RE' AND country = 'DE'
-            ) AND bus1 IN (
-               SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = 'eGon100RE' AND country = 'DE'
-            );
         """
     )
+
+    new_id = db.next_etrago_id("link")
+    new_pipelines["link_id"] = range(new_id, new_id + len(new_pipelines))
 
     engine = db.engine()
 
