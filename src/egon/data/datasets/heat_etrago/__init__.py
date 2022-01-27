@@ -414,7 +414,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         f"""
         SELECT c.bus_id as bus0, b.bus_id as bus1,
         capacity, a.carrier, scenario as scn_name
-        FROM  {sources['district_heating_supply']['schema']}.
+        FROM {sources['district_heating_supply']['schema']}.
         {sources['district_heating_supply']['table']} a
         JOIN {targets['heat_buses']['schema']}.
         {targets['heat_buses']['table']} b
@@ -426,7 +426,9 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='central_heat'
-        """
+        AND c.carrier='CH4'
+        AND c.scn_name='{scenario}'
+        """ # c.scn_name = '{scenario}' -> No CH4 in eGon100RE
     )
 
     # Add LineString topology
@@ -514,7 +516,9 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='rural_heat'
-        """
+        AND c.carrier='CH4'
+        AND c.scn_name='{scenario}'
+        """ # c.scn_name = '{scenario}' -> No CH4 in eGon100RE
     )
 
     # Add LineString topology
