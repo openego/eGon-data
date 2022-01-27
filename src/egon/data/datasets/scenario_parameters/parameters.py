@@ -203,7 +203,6 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "pv": read_costs(costs, "solar", "VOM"),
-            "OCGT": read_costs(costs, "OCGT", "VOM"),
         }
 
     elif scenario == "eGon100RE":
@@ -254,12 +253,13 @@ def gas(scenario):
             #  what about H2 compressors?
             "H2_underground": read_costs(costs, "hydrogen storage underground", "investment"),
             "H2_overground": read_costs(costs, "hydrogen storage tank incl. compressor", "investment"),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "investment"),  # [EUR/MW/km]
         }
         parameters["marginal_cost"] = {
             "CH4": global_settings(scenario)["fuel_costs"]["gas"]
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["gas"],
-            # OCGT VOM in electricity sector
+            "OCGT": read_costs(costs, "OCGT", "VOM"),
         }
 
     elif scenario == "eGon100RE":

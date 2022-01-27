@@ -363,21 +363,6 @@ def osmtgmod(
         )
         conn.commit()
 
-        # using the base egon database for transfer bus creation.
-        cur.execute(
-            """
-        DROP TABLE if exists transfer_busses_complete;
-        CREATE TABLE transfer_busses_complete as
-        SELECT DISTINCT ON (osm_id) * FROM
-        (SELECT * FROM grid.egon_ehv_substation
-        UNION SELECT bus_id, lon, lat, point, polygon, voltage,
-        power_type, substation, osm_id, osm_www, frequency, subst_name,
-        ref, operator, dbahn, status
-        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;
-        """
-        )
-        conn.commit()
-
         with open(path_for_transfer_busses, "w") as this_file:
             cur.copy_expert(
                 """COPY transfer_busses_complete to
@@ -562,7 +547,7 @@ def to_pypsa():
             INSERT INTO grid.egon_etrago_line (scn_name, line_id, bus0,
                                               bus1, x, r, b, s_nom, s_nom_min, s_nom_extendable,
                                               cables, v_nom,
-                                              geom, topo)
+                                              geom, topo, carrier)
             SELECT
               {scenario_name},
               branch_id AS line_id,
@@ -577,7 +562,8 @@ def to_pypsa():
               cables,
               branch_voltage/1000 as v_nom,
               geom,
-              topo
+              topo,
+              'AC' as carrier
               FROM osmtgmod_results.branch_data
               WHERE result_id = 1 and (link_type = 'line' or
                                        link_type = 'cable');
@@ -718,7 +704,7 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
