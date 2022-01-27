@@ -1026,7 +1026,7 @@ def get_census_households_grid():
 
 
 def refine_census_data_at_cell_level(
-    df_census_households_grid, df_census_households_nuts1
+    df_census_households_grid, df_census_households_nuts1,
 ):
     """The zensus data is processed to define the number and type of households
     per zensus cell. Two subsets of the zensus data are merged to fit the
@@ -1057,8 +1057,9 @@ def refine_census_data_at_cell_level(
 
     # Calculate fraction of fine household types within subgroup of
     # rough household types
+    df_dist_households = df_census_households_nuts1.copy()
     for value in mapping_zensus_hh_subgroups.values():
-        df_census_households_nuts1.loc[value] = df_census_households_nuts1.loc[
+        df_dist_households.loc[value] = df_census_households_nuts1.loc[
             value
         ].div(df_census_households_nuts1.loc[value].sum())
 
