@@ -1084,14 +1084,13 @@ def proportionate_allocation(
 
 
 def refine_census_data_at_cell_level(
-    df_census_households_grid, df_census_households_nuts1,
+    df_census_households_grid,
+    df_census_households_nuts1,
 ):
-    """The zensus data is processed to define the number and type of households
-    per zensus cell. Two subsets of the zensus data are merged to fit the
-    IEE profiles specifications. To do this, the household types distribution
-    at nuts1 level is applied to the cells. Afterwards the number of households
-    are rounded to the nearest integer, which introduces some deviation to
-    the distribution at nuts1 level.
+    """The census data is processed to define the number and type of households
+    per zensus cell. Two subsets of the census data are merged to fit the
+    IEE profiles specifications. To do this, proportionate allocation is applied
+    at nuts1 level and within household type clusters.
 
     Parameters
     ----------
@@ -1103,7 +1102,7 @@ def refine_census_data_at_cell_level(
     Returns
     -------
     pd.DataFrame
-        Number of hh types per census cell and scaling factors
+        Number of hh types per census cell
     """
     mapping_zensus_hh_subgroups = {
         1: ["SR", "SO"],
@@ -1121,38 +1120,44 @@ def refine_census_data_at_cell_level(
             value
         ].div(df_census_households_nuts1.loc[value].sum())
 
-    # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
-    # by refining hh-groups with mapping_zensus_hh_subgroups
-    df_census_households_grid_refined = pd.DataFrame()
-    for (country, code), df_country_type in df_census_households_grid.groupby(
-        ["gen", "characteristics_code"]
-    ):
+    # Refine from hh_5types to hh_10types
+    df_distribution_nuts0 = pd.DataFrame()
+    # Loop over federal states
+    for gen, df_nuts1 in df_census_households_grid.groupby("gen"):
+        # take subgroup distribution from federal state
+        dist_households_nuts1 = df_dist_households[gen]
 
-        # iterate over zenus_country subgroups
-        for typ in mapping_zensus_hh_subgroups[code]:
-            df_country_type["hh_type"] = typ
-            df_country_type["factor"] = df_census_households_nuts1.loc[
-                typ, country
+        df_distribution_nuts1 = pd.DataFrame()
+        # loop over hh_5types as cluster
+        for (
+            hh_5type_cluster,
+            hh_10types_cluster,
+        ) in mapping_zensus_hh_subgroups.items():
+            # get census household of hh_5type and federal state
+            df_group = df_nuts1.loc[
+                df_nuts1["characteristics_code"] == hh_5type_cluster
             ]
-            df_country_type["hh_10types"] = (
-                df_country_type["hh_5types"]
-                * df_census_households_nuts1.loc[typ, country]
+
+            # apply proportionate allocation function within cluster
+            df_distribution_group = proportionate_allocation(
+                df_group, dist_households_nuts1, hh_10types_cluster
             )
-            df_census_households_grid_refined = (
-                df_census_households_grid_refined.append(
-                    df_country_type, ignore_index=True
-                )
+            df_distribution_group["characteristics_code"] = hh_5type_cluster
+            df_distribution_nuts1 = df_distribution_nuts1.append(
+                df_distribution_group
             )
 
-    df_census_households_grid_refined = (
-        df_census_households_grid_refined.sort_values(
-            by=["grid_id", "characteristics_code"]
-        ).reset_index(drop=True)
+        df_distribution_nuts0 = df_distribution_nuts0.append(
+            df_distribution_nuts1
+        )
+
+    df_census_households_grid_refined = df_census_households_grid.merge(
+        df_distribution_nuts0,
+        how="inner",
+        left_on=["cell_id", "characteristics_code"],
+        right_on=["cell_id", "characteristics_code"],
     )
-    df_census_households_grid_refined["hh_10types"] = (
-        df_census_households_grid_refined["hh_10types"].apply(
-            np.rint).astype(int)
-    )
+
     return df_census_households_grid_refined
 
 
