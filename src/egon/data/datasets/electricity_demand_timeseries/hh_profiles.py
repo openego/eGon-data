@@ -1025,6 +1025,64 @@ def get_census_households_grid():
     return df_census_households_grid
 
 
+def proportionate_allocation(
+    df_group, dist_households_nuts1, hh_10types_cluster
+):
+    """Household distribution at nuts1 are applied at census cell within group
+
+    To refine the hh_5types and keep the distribution at nuts1 level,
+    the household types are clustered and drawn with proportionate weighting.
+    The resulting pool is splitted into subgroups with sizes according to
+    the number of households of clusters in cells.
+
+    Parameters
+    ----------
+    df_group: pd.DataFrame
+        Census household data at grid level for specific hh_5type cluster in
+        a federal state
+    dist_households_nuts1: pd.Series
+        Household distribution of of hh_10types in a federal state
+    hh_10types_cluster: list of str
+        Cluster of household types to be refined to
+
+    Returns
+    -------
+    pd.DataFrame
+        Refined household data with hh_10types of cluster at nuts1 level
+    """
+
+    # get propability of households within hh_5types group
+    propability = dist_households_nuts1[hh_10types_cluster].values
+    # get total number of households within hh_5types group in federal state
+    size = df_group["hh_5types"].sum().astype(int)
+
+    # random sample within hh_5types group with propability for whole federal state
+    choices = np.random.choice(
+        a=hh_10types_cluster, size=size, replace=True, p=propability
+    )
+    # get section sizes to split the sample pool from federal state to grid cells
+    split_sections = df_group["hh_5types"].cumsum().astype(int)[:-1]
+    # split into grid cell groups
+    samples = np.split(choices, split_sections)
+    # count number of hh_10types for each cell
+    sample_count = [np.unique(x, return_counts=True) for x in samples]
+
+    df_distribution = pd.DataFrame(
+        sample_count, columns=["hh_type", "hh_10types"]
+    )
+    # add cell_ids
+    df_distribution["cell_id"] = df_group["cell_id"].unique()
+
+    # unnest
+    df_distribution = (
+        df_distribution.apply(pd.Series.explode)
+        .reset_index(drop=True)
+        .dropna()
+    )
+
+    return df_distribution
+
+
 def refine_census_data_at_cell_level(
     df_census_households_grid, df_census_households_nuts1,
 ):
