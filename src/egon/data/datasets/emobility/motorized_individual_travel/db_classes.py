@@ -40,6 +40,7 @@ class EgonEvPool(Base):
     __tablename__ = "egon_ev_pool"
     __table_args__ = {"schema": "demand"}
 
+    scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
     ev_id = Column(Integer, primary_key=True)
     rs7_id = Column(SmallInteger)
     type = Column(String(11))
@@ -112,6 +113,7 @@ class EgonEvTrip(Base):
     __tablename__ = "egon_ev_trip"
     __table_args__ = {"schema": "demand"}
 
+    scenario = Column(String, ForeignKey(EgonScenario.name), index=True)
     event_id = Column(Integer, primary_key=True)
     egon_ev_pool_ev_id = Column(
         Integer, ForeignKey(EgonEvPool.ev_id), nullable=False, index=True

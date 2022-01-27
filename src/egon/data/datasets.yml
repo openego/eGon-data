@@ -979,8 +979,12 @@ emobility_mit:
         columns: "D, J:N"
         skiprows: 8
       trips:
-        file: "RS7_eGon_min5k_2022-01-07_140426_simbev_run.tar.gz"
-        file_metadata: "metadata_simbev_run.json"
+        eGon2035:
+          file: "eGon2035_RS7_min2k_2022-01-27_012605_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+        eGon100RE:
+          file: "eGon100RE_RS7_min2k_2022-01-27_005033_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
   scenario:
     variation:
       eGon2035: "NEP C 2035"

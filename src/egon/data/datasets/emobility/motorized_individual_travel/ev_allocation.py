@@ -504,7 +504,8 @@ def allocate_evs_numbers():
 
 
 def allocate_evs_to_grid_districts():
-    """Allocate EVs to MV grid districts for all scenarios
+    """Allocate EVs to MV grid districts for all scenarios and scenario
+    variations.
 
     Each grid district in
     :class:`egon.data.datasets.mv_grid_districts.MvGridDistricts`
@@ -521,74 +522,86 @@ def allocate_evs_to_grid_districts():
             (ev_pool["type"] == row["type"])
         ].sample(row["count"], replace=True).ev_id.to_list()
 
-    # Load EVs per grid district
-    print("Loading EV counts for grid districts...")
-    with db.session_scope() as session:
-        query = session.query(EgonEvCountMvGridDistrict)
-    ev_per_mvgd = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
-    )
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        print(f"SCENARIO: {scenario_name}")
 
-    # Convert EV types' wide to long format
-    ev_per_mvgd = pd.melt(
-        ev_per_mvgd,
-        id_vars=["scenario", "scenario_variation", "bus_id",
-                 "rs7_id"],
-        value_vars=CONFIG_EV.keys(),
-        var_name="type",
-        value_name="count"
-    )
-
-    # Load EV pool
-    print("Loading EV pool...")
-    with db.session_scope() as session:
-        query = session.query(EgonEvPool)
-    ev_pool = pd.read_sql(
-        query.statement, query.session.bind, index_col=None, )
-
-    # Draw EVs randomly for each grid district from pool
-    print("Draw EVs from pool for grid districts...")
-    np.random.seed(RANDOM_SEED)
-    ev_per_mvgd["egon_ev_pool_ev_id"] = ev_per_mvgd.apply(get_random_evs,
-                                                          axis=1)
-    ev_per_mvgd.drop(columns=["rs7_id", "type", "count"], inplace=True)
-
-    # EV lists to rows
-    ev_per_mvgd = ev_per_mvgd.explode("egon_ev_pool_ev_id")
-
-    # Write trips to DB
-    print("Writing allocated data to DB...")
-    ev_per_mvgd.to_sql(
-        name=EgonEvMvGridDistrict.__table__.name,
-        schema=EgonEvMvGridDistrict.__table__.schema,
-        con=db.engine(),
-        if_exists="append",
-        index=False,
-        method="multi",
-        chunksize=10000
-    )
-
-    # Check EV result sums for all scenario variations if not in testmode
-    if TESTMODE_OFF:
-        ev_per_mvgd_counts_per_scn = ev_per_mvgd.drop(
-            columns=["bus_id"]
-        ).groupby(["scenario", "scenario_variation"]).count()
-
-        for (scn, scn_var), ev_actual in ev_per_mvgd_counts_per_scn.iterrows():
-            scenario_parameters = get_sector_parameters(
-                "mobility",
-                scenario=scn
-            )["motorized_individual_travel"]
-
-            # Get EV target
-            ev_target = scenario_parameters[scn_var]['ev_count']
-
-            np.testing.assert_allclose(
-                int(ev_actual),
-                ev_target,
-                rtol=0.0001,
-                err_msg=f"Dataset on EV numbers allocated to MVGDs "
-                        f"seems to be flawed. "
-                        f"Scenario: [{scn}], "
-                        f"Scenario variation: [{scn_var}]."
+        # Load EVs per grid district
+        print("Loading EV counts for grid districts...")
+        with db.session_scope() as session:
+            query = session.query(
+                EgonEvCountMvGridDistrict
+            ).filter(
+                EgonEvCountMvGridDistrict.scenario == scenario_name
             )
+        ev_per_mvgd = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+
+        # Convert EV types' wide to long format
+        ev_per_mvgd = pd.melt(
+            ev_per_mvgd,
+            id_vars=["scenario", "scenario_variation", "bus_id",
+                     "rs7_id"],
+            value_vars=CONFIG_EV.keys(),
+            var_name="type",
+            value_name="count"
+        )
+
+        # Load EV pool
+        print("  Loading EV pool...")
+        with db.session_scope() as session:
+            query = session.query(
+                EgonEvPool
+            ).filter(
+                EgonEvPool.scenario == scenario_name
+            )
+        ev_pool = pd.read_sql(
+            query.statement, query.session.bind, index_col=None, )
+
+        # Draw EVs randomly for each grid district from pool
+        print("  Draw EVs from pool for grid districts...")
+        np.random.seed(RANDOM_SEED)
+        ev_per_mvgd["egon_ev_pool_ev_id"] = ev_per_mvgd.apply(get_random_evs,
+                                                              axis=1)
+        ev_per_mvgd.drop(columns=["rs7_id", "type", "count"], inplace=True)
+
+        # EV lists to rows
+        ev_per_mvgd = ev_per_mvgd.explode("egon_ev_pool_ev_id")
+
+        # Write trips to DB
+        print("  Writing allocated data to DB...")
+        ev_per_mvgd.to_sql(
+            name=EgonEvMvGridDistrict.__table__.name,
+            schema=EgonEvMvGridDistrict.__table__.schema,
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+            method="multi",
+            chunksize=10000
+        )
+
+        # Check EV result sums for all scenario variations if not in testmode
+        if TESTMODE_OFF:
+            print("  Validating results...")
+            ev_per_mvgd_counts_per_scn = ev_per_mvgd.drop(
+                columns=["bus_id"]
+            ).groupby(["scenario", "scenario_variation"]).count()
+
+            for (scn, scn_var), ev_actual in ev_per_mvgd_counts_per_scn.iterrows():
+                scenario_parameters = get_sector_parameters(
+                    "mobility",
+                    scenario=scn
+                )["motorized_individual_travel"]
+
+                # Get EV target
+                ev_target = scenario_parameters[scn_var]['ev_count']
+
+                np.testing.assert_allclose(
+                    int(ev_actual),
+                    ev_target,
+                    rtol=0.0001,
+                    err_msg=f"Dataset on EV numbers allocated to MVGDs "
+                            f"seems to be flawed. "
+                            f"Scenario: [{scn}], "
+                            f"Scenario variation: [{scn_var}]."
+                )

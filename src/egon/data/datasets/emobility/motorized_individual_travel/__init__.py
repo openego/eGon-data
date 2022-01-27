@@ -159,17 +159,21 @@ def download_and_preprocess():
 def extract_trip_file():
     """Extract trip file from data bundle"""
     trip_dir = DATA_BUNDLE_DIR / Path("mit_trip_data")
-    trip_file = trip_dir / Path(
-        DATASET_CFG["original_data"]["sources"]["trips"]["file"]
-    )
 
-    tar = tarfile.open(trip_file)
-    if os.path.isfile(trip_file):
-        tar.extractall(trip_dir)
-    else:
-        raise FileNotFoundError(
-            f"Trip file {trip_file} not found in data bundle."
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        print(f"SCENARIO: {scenario_name}")
+        trip_file = trip_dir / Path(
+            DATASET_CFG["original_data"]["sources"][
+                "trips"][scenario_name]["file"]
         )
+
+        tar = tarfile.open(trip_file)
+        if os.path.isfile(trip_file):
+            tar.extractall(trip_dir)
+        else:
+            raise FileNotFoundError(
+                f"Trip file {trip_file} not found in data bundle."
+            )
 
 
 def write_evs_trips_to_db():
@@ -183,88 +187,93 @@ def write_evs_trips_to_db():
         df["simbev_ev_id"] = "_".join(f.name.split("_")[0:3])
         return df
 
-    trip_dir_name = Path(
-        DATASET_CFG["original_data"]["sources"]["trips"]["file"].split(".")[0]
-    )
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        print(f"SCENARIO: {scenario_name}")
+        trip_dir_name = Path(
+            DATASET_CFG["original_data"]["sources"]["trips"][
+                scenario_name]["file"].split(".")[0]
+        )
 
-    trip_dir_root = DATA_BUNDLE_DIR / Path("mit_trip_data", trip_dir_name)
+        trip_dir_root = DATA_BUNDLE_DIR / Path("mit_trip_data", trip_dir_name)
 
-    if TESTMODE_OFF:
-        trip_files = list(trip_dir_root.glob("*/*.csv"))
-    else:
-        # Load only 1000 EVs per region if in test mode
-        trip_files = [
-            list(rdir.glob("*.csv"))[:1000]
-            for rdir in [_ for _ in trip_dir_root.iterdir() if _.is_dir()]
+        if TESTMODE_OFF:
+            trip_files = list(trip_dir_root.glob("*/*.csv"))
+        else:
+            # Load only 1000 EVs per region if in test mode
+            trip_files = [
+                list(rdir.glob("*.csv"))[:1000]
+                for rdir in [_ for _ in trip_dir_root.iterdir() if _.is_dir()]
+            ]
+            # Flatten
+            trip_files = [i for sub in trip_files for i in sub]
+
+        # Read, concat and reorder cols
+        print(f"Importing {len(trip_files)} EV trip CSV files...")
+        trip_data = pd.concat(map(import_csv, trip_files))
+        trip_data.rename(columns=TRIP_COLUMN_MAPPING, inplace=True)
+        trip_data = trip_data.reset_index().rename(
+            columns={"index": "simbev_event_id"}
+        )
+        cols = (["rs7_id", "simbev_ev_id", "simbev_event_id"] +
+                list(TRIP_COLUMN_MAPPING.values()))
+        trip_data.index.name = "event_id"
+        trip_data = trip_data[cols]
+
+        # Extract EVs from trips
+        evs_unique = trip_data[["rs7_id", "simbev_ev_id"]].drop_duplicates()
+        evs_unique = evs_unique.reset_index().drop(columns=["event_id"])
+        evs_unique.index.name = "ev_id"
+
+        # Add EV id to trip DF
+        trip_data["egon_ev_pool_ev_id"] = pd.merge(
+            trip_data, evs_unique.reset_index(),
+            on=["rs7_id", "simbev_ev_id"])["ev_id"]
+
+        # Split simBEV id into type and id
+        evs_unique[["type", "simbev_ev_id"]] = evs_unique[
+            "simbev_ev_id"].str.rsplit("_", 1, expand=True)
+        evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
+        evs_unique["scenario"] = scenario_name
+
+        trip_data.drop(columns=["rs7_id", "simbev_ev_id"], inplace=True)
+        trip_data["scenario"] = scenario_name
+        trip_data.sort_index(inplace=True)
+
+        # Write EVs to DB
+        print("Writing EVs to DB pool...")
+        evs_unique.to_sql(
+            name=EgonEvPool.__table__.name,
+            schema=EgonEvPool.__table__.schema,
+            con=db.engine(),
+            if_exists="append",
+            index=True,
+        )
+
+        # Write trips to CSV and import to DB
+        print("Writing EV trips to CSV file...")
+        trip_file = WORKING_DIR / f"trip_data_{scenario_name}.csv"
+        trip_data.to_csv(trip_file)
+
+        # Get DB config
+        docker_db_config = db.credentials()
+        host = ["-h", f"{docker_db_config['HOST']}"]
+        port = ["-p", f"{docker_db_config['PORT']}"]
+        pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
+        user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
+        command = [
+            "-c",
+            rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
+            rf"({','.join(trip_data.reset_index().columns)})"
+            rf" FROM '{str(trip_file)}' DELIMITER ',' CSV HEADER;",
         ]
-        # Flatten
-        trip_files = [i for sub in trip_files for i in sub]
 
-    # Read, concat and reorder cols
-    print(f"Importing {len(trip_files)} EV trip CSV files...")
-    trip_data = pd.concat(map(import_csv, trip_files))
-    trip_data.rename(columns=TRIP_COLUMN_MAPPING, inplace=True)
-    trip_data = trip_data.reset_index().rename(
-        columns={"index": "simbev_event_id"}
-    )
-    cols = (["rs7_id", "simbev_ev_id", "simbev_event_id"] +
-            list(TRIP_COLUMN_MAPPING.values()))
-    trip_data.index.name = "event_id"
-    trip_data = trip_data[cols]
+        print("Importing EV trips from CSV file to DB...")
+        subprocess.run(
+            ["psql"] + host + port + pgdb + user + command,
+            env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
+        )
 
-    # Extract EVs from trips
-    evs_unique = trip_data[["rs7_id", "simbev_ev_id"]].drop_duplicates()
-    evs_unique = evs_unique.reset_index().drop(columns=["event_id"])
-    evs_unique.index.name = "ev_id"
-
-    # Add EV id to trip DF
-    trip_data["egon_ev_pool_ev_id"] = pd.merge(
-        trip_data, evs_unique.reset_index(),
-        on=["rs7_id", "simbev_ev_id"])["ev_id"]
-
-    # Split simBEV id into type and id
-    evs_unique[["type", "simbev_ev_id"]] = evs_unique[
-        "simbev_ev_id"].str.rsplit("_", 1, expand=True)
-    evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
-
-    trip_data.drop(columns=["rs7_id", "simbev_ev_id"], inplace=True)
-    trip_data.sort_index(inplace=True)
-
-    # Write EVs to DB
-    print("Writing EVs to DB pool...")
-    evs_unique.to_sql(
-        name=EgonEvPool.__table__.name,
-        schema=EgonEvPool.__table__.schema,
-        con=db.engine(),
-        if_exists="append",
-        index=True,
-    )
-
-    # Write trips to CSV and import to DB
-    print("Writing EV trips to CSV file...")
-    trip_file = WORKING_DIR / "trip_data.csv"
-    trip_data.to_csv(trip_file)
-
-    # Get DB config
-    docker_db_config = db.credentials()
-    host = ["-h", f"{docker_db_config['HOST']}"]
-    port = ["-p", f"{docker_db_config['PORT']}"]
-    pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
-    user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
-    command = [
-        "-c",
-        rf"\copy {EgonEvTrip.__table__.schema}.{EgonEvTrip.__table__.name}"
-        rf"({','.join(trip_data.reset_index().columns)})"
-        rf" FROM '{str(trip_file)}' DELIMITER ',' CSV HEADER;",
-    ]
-
-    print("Importing EV trips from CSV file to DB...")
-    subprocess.run(
-        ["psql"] + host + port + pgdb + user + command,
-        env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-    )
-
-    os.remove(trip_file)
+        os.remove(trip_file)
 
 
 class MotorizedIndividualTravel(Dataset):
