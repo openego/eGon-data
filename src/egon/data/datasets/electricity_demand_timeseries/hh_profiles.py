@@ -1208,15 +1208,14 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
-def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
+def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     """
-    Allocates household demand profiles to each census cell.
+    Assign household demand profiles to each census cell.
 
     A table including the demand profile ids for each cell is created by using
     :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled
     for each cell. The profiles are not replaced to the pool within a cell but
-    after. The number of households are rounded to the nearest integer if float.
-    This results in a small deviation for the course of the aggregated profiles.
+    after.
 
     Parameters
     ----------
@@ -1298,7 +1297,7 @@ def adjust_to_demand_regio_nuts3_annual(
     Parameters
     ----------
     df_hh_profiles_in_census_cells: pd.DataFrame
-        Result of :func:`allocate_hh_demand_profiles_to_cells`.
+        Result of :func:`assign_hh_demand_profiles_to_cells`.
     df_iee_profiles: pd.DataFrame
         Household load profile data
 
@@ -1312,7 +1311,7 @@ def adjust_to_demand_regio_nuts3_annual(
     Returns
     -------
     pd.DataFrame
-        Returns the same data as :func:`allocate_hh_demand_profiles_to_cells`,
+        Returns the same data as :func:`assign_hh_demand_profiles_to_cells`,
         but with filled columns `factor_2035` and `factor_2050`.
     """
     for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
@@ -1474,7 +1473,7 @@ def houseprofiles_in_census_cells():
     )
 
     # Allocate profile ids to each cell by census data
-    df_hh_profiles_in_census_cells = allocate_hh_demand_profiles_to_cells(
+    df_hh_profiles_in_census_cells = assign_hh_demand_profiles_to_cells(
         df_census_households_grid_refined, df_iee_profiles
     )
 
