@@ -568,6 +568,16 @@ def allocate_evs_to_grid_districts():
         # EV lists to rows
         ev_per_mvgd = ev_per_mvgd.explode("egon_ev_pool_ev_id")
 
+        # Check for empty entries
+        empty_ev_entries = ev_per_mvgd.egon_ev_pool_ev_id.isna().sum()
+        if empty_ev_entries > 0:
+            print("====================================================")
+            print(f"WARNING: Found {empty_ev_entries} empty entries "
+                  f"and will remove it:")
+            print(ev_per_mvgd[ev_per_mvgd.egon_ev_pool_ev_id.isna()])
+            ev_per_mvgd = ev_per_mvgd[~ev_per_mvgd.egon_ev_pool_ev_id.isna()]
+            print("====================================================")
+
         # Write trips to DB
         print("  Writing allocated data to DB...")
         ev_per_mvgd.to_sql(
