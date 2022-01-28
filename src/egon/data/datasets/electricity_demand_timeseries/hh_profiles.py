@@ -160,6 +160,21 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     factor_2050 = Column(Float)
 
 
+class EgonDestatisZensusHouseholdPerHaRefined(Base):
+    __tablename__ = "egon_destatis_zensus_household_per_ha_refined"
+    __table_args__ = {"schema": "society"}
+
+    id = Column(INTEGER, primary_key=True)
+    cell_id = Column(Integer, index=True)
+    grid_id = Column(String, index=True)
+    nuts3 = Column(String)
+    nuts1 = Column(String)
+    characteristics_code = Column(Integer)
+    hh_5types = Column(Integer)
+    hh_type = Column(CHAR(2))
+    hh_10types = Column(Integer)
+
+
 class EgonEtragoElectricityHouseholds(Base):
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
@@ -1158,6 +1173,16 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
+    df_census_households_grid_refined["characteristics_code"] = (
+        df_census_households_grid_refined["characteristics_code"].astype(int)
+    )
+    df_census_households_grid_refined["hh_5types"] = (
+        df_census_households_grid_refined["hh_5types"].astype(int)
+    )
+    df_census_households_grid_refined["hh_10types"] = (
+        df_census_households_grid_refined["hh_10types"].astype(int)
+    )
+
     return df_census_households_grid_refined
 
 
@@ -1408,6 +1433,22 @@ def get_load_timeseries(
     return full_load
 
 
+def write_refinded_households_to_db(df_census_households_grid_refined):
+    # Write allocation table into database
+    EgonDestatisZensusHouseholdPerHaRefined.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonDestatisZensusHouseholdPerHaRefined.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonDestatisZensusHouseholdPerHaRefined,
+            df_census_households_grid_refined.to_dict(orient="records"),
+        )
+
+
 def houseprofiles_in_census_cells():
     """
     Allocate household electricity demand profiles for each census cell.
@@ -1471,6 +1512,8 @@ def houseprofiles_in_census_cells():
     df_census_households_grid_refined = refine_census_data_at_cell_level(
         df_census_households_grid, df_census_households_nuts1
     )
+
+    write_refinded_households_to_db(df_census_households_grid_refined)
 
     # Allocate profile ids to each cell by census data
     df_hh_profiles_in_census_cells = assign_hh_demand_profiles_to_cells(
