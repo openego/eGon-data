@@ -2,7 +2,7 @@
 DB tables / ORM classes for motorized individual travel
 """
 
-from sqlalchemy import Column, ForeignKey, Integer, SmallInteger, String
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Integer, SmallInteger, String
 from sqlalchemy.dialects.postgresql import REAL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -116,9 +116,10 @@ class EgonEvTrip(Base):
         String, ForeignKey(EgonEvPool.scenario), primary_key=True
     )
     event_id = Column(Integer, primary_key=True)
-    egon_ev_pool_ev_id = Column(
-        Integer, ForeignKey(EgonEvPool.ev_id), nullable=False, index=True
-    )
+    #egon_ev_pool_ev_id = Column(
+    #    Integer, ForeignKey(EgonEvPool.ev_id), nullable=False, index=True
+    #)
+    egon_ev_pool_ev_id = Column(Integer, nullable=False, index=True)
     simbev_event_id = Column(Integer)
     location = Column(String(21))
     charging_capacity_nominal = Column(REAL)
@@ -132,6 +133,12 @@ class EgonEvTrip(Base):
     drive_start = Column(Integer)
     drive_end = Column(Integer)
     consumption = Column(REAL)
+
+    #__table_args__ = (
+    #    ForeignKeyConstraint([scenario, egon_ev_pool_ev_id],
+    #                         [EgonEvPool.scenario, EgonEvPool.ev_id]),
+    #    {"schema": "demand"},
+    #)
 
     #ev = relationship("EgonEvPool", back_populates="trips")
 
