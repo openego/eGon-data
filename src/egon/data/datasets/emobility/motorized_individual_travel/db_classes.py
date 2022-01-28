@@ -209,6 +209,7 @@ class EgonEvMvGridDistrict(Base):
     scenario = Column(String, ForeignKey(EgonScenario.name), index=True)
     scenario_variation = Column(String, index=True)
     bus_id = Column(Integer, ForeignKey(MvGridDistricts.bus_id), index=True)
-    egon_ev_pool_ev_id = Column(Integer, ForeignKey(EgonEvPool.ev_id))
+    #egon_ev_pool_ev_id = Column(Integer, ForeignKey(EgonEvPool.ev_id))
+    egon_ev_pool_ev_id = Column(Integer, nullable=False)
 
     #ev = relationship("EgonEvPool", back_populates="mvgds")
