@@ -111,6 +111,7 @@ class EgonEvTrip(Base):
     """
 
     __tablename__ = "egon_ev_trip"
+    __table_args__ = {"schema": "demand"}
 
     #scenario = Column(
     #    String, ForeignKey(EgonEvPool.scenario), primary_key=True
