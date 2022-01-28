@@ -565,8 +565,9 @@ def generate_model_data(scenario_name: str):
     )
 
     # Get run metadata
-    meta_tech_data = read_simbev_metadata_file("tech_data")
-    meta_run_config = read_simbev_metadata_file("config").loc["basic"]
+    meta_tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
+    meta_run_config = read_simbev_metadata_file(scenario_name,
+                                                "config").loc["basic"]
 
     # Generate timeseries for each MVGD
     print("GENERATE MODEL DATA...")

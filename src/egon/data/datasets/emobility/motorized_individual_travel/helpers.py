@@ -83,11 +83,13 @@ def read_rs7_data():
     )
 
 
-def read_simbev_metadata_file(section):
+def read_simbev_metadata_file(scenario_name, section):
     """Read metadata of simBEV run
 
     Parameters
     ----------
+    scenario_name : str
+        Scenario name
     section : str
         Metadata section to be returned, one of
         * "tech_data"
@@ -102,8 +104,8 @@ def read_simbev_metadata_file(section):
     trips_cfg = DATASET_CFG["original_data"]["sources"]["trips"]
     meta_file = DATA_BUNDLE_DIR / Path(
         "mit_trip_data",
-        trips_cfg["file"].split(".")[0],
-        trips_cfg["file_metadata"]
+        trips_cfg[scenario_name]["file"].split(".")[0],
+        trips_cfg[scenario_name]["file_metadata"]
     )
     with open(meta_file) as f:
         meta = json.loads(f.read())
