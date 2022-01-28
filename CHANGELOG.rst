@@ -305,6 +305,8 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* Change refinement method for households types
+  `##651 <https://github.com/openego/eGon-data/issues/#651>`_
 
 
 Bug fixes
