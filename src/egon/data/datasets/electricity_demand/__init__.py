@@ -30,7 +30,7 @@ class HouseholdElectricityDemand(Dataset):
             name="HouseholdElectricityDemand",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(create_tables, distribute_household_demands),
+            tasks=(create_tables, get_annual_household_el_demand_cells),
         )
 
 
