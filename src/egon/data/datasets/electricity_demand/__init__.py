@@ -2,16 +2,26 @@
  data from demandRegio
 
 """
-import egon.data.config
-from egon.data import db
-from egon.data.datasets.electricity_demand.temporal import insert_cts_load
-from egon.data.datasets import Dataset
-from sqlalchemy import Column, String, Float, Integer, ForeignKey
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets import Dataset
+from egon.data.datasets.electricity_demand.temporal import insert_cts_load
+from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
+    HouseholdElectricityProfilesOfBuildings,
+    get_iee_hh_demand_profiles_raw,
+)
+from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
+    HouseholdElectricityProfilesInCensusCells,
+)
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+import egon.data.config
 
 # will be later imported from another file ###
 Base = declarative_base()
+engine = db.engine()
 
 
 class HouseholdElectricityDemand(Dataset):
@@ -63,7 +73,7 @@ def create_tables():
 
 
 def distribute_household_demands():
-    """ Distribute electrical demands for households to zensus cells.
+    """Distribute electrical demands for households to zensus cells.
 
     The demands on nuts3-level from demandregio are linear distributed
     to the share of future population in each zensus cell.
@@ -155,8 +165,105 @@ def distribute_household_demands():
         )
 
 
+def get_annual_household_el_demand_cells():
+    """
+    Annual electricity demand per cell is determined
+
+    Timeseries for every cell are accumulated, the maximum value
+    determined and with the respective nuts3 factor scaled for 2035 and 2050
+    scenario.
+
+    Note
+    ----------
+    In test-mode 'SH' the iteration takes place by 'cell_id' to avoid
+    intensive RAM usage. For whole Germany 'nuts3' are taken and
+    RAM > 32GB is necessary.
+    """
+
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                HouseholdElectricityProfilesOfBuildings,
+                HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2050,
+            )
+            .filter(
+                HouseholdElectricityProfilesOfBuildings.cell_id
+                == HouseholdElectricityProfilesInCensusCells.cell_id
+            )
+            .order_by(HouseholdElectricityProfilesOfBuildings.id)
+        )
+
+        df_buildings_and_profiles = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col="id"
+        )
+
+        # Read demand profiles from egon-data-bundle
+        df_profiles = get_iee_hh_demand_profiles_raw()
+
+        def ve(s):
+            raise (ValueError(s))
+
+        dataset = egon.data.config.settings()["egon-data"][
+            "--dataset-boundary"
+        ]
+        iterate_over = (
+            "nuts3"
+            if dataset == "Everything"
+            else "cell_id"
+            if dataset == "Schleswig-Holstein"
+            else ve(f"'{dataset}' is not a valid dataset boundary.")
+        )
+
+        df_annual_demand = pd.DataFrame()
+
+        for nuts3, df in df_buildings_and_profiles.groupby(by=iterate_over):
+            df_annual_demand_nuts3 = df_profiles.loc[:, df.profile_id]
+
+            m_index = pd.MultiIndex.from_arrays(
+                [df.profile_id, df.building_id],
+                names=("profile_id", "cell_id"),
+            )
+            df_annual_demand_nuts3.columns = m_index
+            df_annual_demand_nuts3 = df_annual_demand_nuts3.sum(
+                level="cell_id", axis=1
+            ).sum()
+
+            df_annual_demand_nuts3 = pd.DataFrame(
+                [
+                    df_annual_demand_nuts3 * df["factor_2035"].unique(),
+                    df_annual_demand_nuts3 * df["factor_2050"].unique(),
+                ],
+                index=[
+                    "building_peak_load_in_w_2035",
+                    "building_peak_load_in_w_2050",
+                ],
+            ).T
+
+            df_annual_demand = pd.concat(
+                [df_annual_demand, df_annual_demand_nuts3], axis=0
+            )
+
+        df_annual_demand.reset_index(inplace=True)
+
+        EgonDemandRegioZensusElectricity.__table__.drop(
+            bind=engine, checkfirst=True
+        )
+        EgonDemandRegioZensusElectricity.__table__.create(
+            bind=engine, checkfirst=True
+        )
+
+        # Write peak loads into db
+        with db.session_scope() as session:
+            session.bulk_insert_mappings(
+                EgonDemandRegioZensusElectricity,
+                df_annual_demand.to_dict(orient="records"),
+            )
+
+
 def distribute_cts_demands():
-    """ Distribute electrical demands for cts to zensus cells.
+    """Distribute electrical demands for cts to zensus cells.
 
     The demands on nuts3-level from demandregio are linear distributed
     to the heat demand of cts in each zensus cell.
