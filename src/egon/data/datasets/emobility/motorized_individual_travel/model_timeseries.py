@@ -10,6 +10,21 @@ Call order
         * generate_load_time_series()
         * generate_dsm_profile()
         * write_model_data_to_db()
+
+Notes
+-----
+Share of EV with access to private charging infrastructure (`flex_share`) for
+use cases work and home are not supported by simBEV v0.1.2 and are applied here
+(after simulation). Applying those fixed shares post-simulation introduces
+small errors compared to application during simBEV's trip generation.
+
+Values (cf. `flex_share` in scenario parameters
+:func:`egon.data.datasets.scenario_parameters.parameters.mobility`) were
+linearly extrapolated based upon
+https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pdf
+(p.92):
+* eGon2035: home=0.8, work=1.0
+* eGon100RE: home=1.0, work=1.0
 """
 
 import os
