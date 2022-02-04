@@ -141,14 +141,14 @@ def fill_etrago_gen_time_table(
     etrago_pp_time = etrago_pp_time.drop(columns="generator_id")
     etrago_pp_time["p_max_pu"] = etrago_pp_time["p_max_pu"].apply(list)
     etrago_pp_time["temp_id"] = 1
-
+    '''
     db.execute_sql(
         f"""DELETE FROM 
                    {cfg['targets']['etrago_gen_time']['schema']}.
                    {cfg['targets']['etrago_gen_time']['table']}
                    """
     )
-
+    '''
     etrago_pp_time.to_sql(
         name=f"{cfg['targets']['etrago_gen_time']['table']}",
         schema=f"{cfg['targets']['etrago_gen_time']['schema']}",
