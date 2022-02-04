@@ -35,25 +35,30 @@ sum_installed_gen_cap_DE["Error"] = ((
     
  (sum_installed_gen_cap_DE["capacity_mw"] - sum_installed_gen_cap_DE["target_capacity"])/sum_installed_gen_cap_DE["target_capacity"])*100
 )
-
-
+a="1000"
+print(f"The target values for Biomass differ by {a} %")
 
 sum_installed_storage_cap_DE= db.select_dataframe(
     f"""
-SELECT scn_name, carrier, ROUND(SUM(p_nom::numeric), 2) as capacity_mw
-FROM grid.egon_etrago_storage
+SELECT scn_name, a.carrier, ROUND(SUM(p_nom::numeric), 2) as capacity_mw, ROUND(c.capacity::numeric, 2) as target_capacity
+FROM grid.egon_etrago_storage a
+JOIN supply.egon_scenario_capacities c 
+ON (c.carrier = a.carrier)
 WHERE bus IN (
 SELECT bus_id FROM grid.egon_etrago_bus
 WHERE scn_name = 'eGon2035'
 AND country = 'DE')
-GROUP BY (scn_name, carrier);
+AND c.scenario_name='eGon2035'
+GROUP BY (scn_name, a.carrier, c.capacity);
 
 """
 ,
     )
 
-sum_installed_storage_cap_DE["Error"] = (
+sum_installed_storage_cap_DE["Error"] = ((
     
- (sum_installed_storage_cap_DE["capacity_mw"])*100
+ (sum_installed_storage_cap_DE["capacity_mw"] - sum_installed_storage_cap_DE["target_capacity"])/sum_installed_gen_cap_DE["target_capacity"])*100
 )
+
+
 
