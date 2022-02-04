@@ -100,7 +100,7 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
 
         gdf["p_nom_max"] = p_nom_max[key]
         gdf["carrier"] = carrier[key]
-        gdf["efficiency_fixed"] = efficiency[key]
+        gdf["efficiency"] = efficiency[key]
 
         gdf["capital_cost"] = capital_cost[key]
 
@@ -140,10 +140,10 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
 
         INSERT INTO grid.egon_etrago_link (scn_name, link_id, bus0,
                                                   bus1, p_nom, p_nom_extendable, capital_cost,length,
-                                                  geom, topo, efficiency_fixed, carrier, p_nom_max)
+                                                  geom, topo, efficiency, carrier, p_nom_max)
         SELECT scn_name, link_id, bus0,
             bus1, p_nom, p_nom_extendable, capital_cost, length,
-            geom, topo, efficiency_fixed, carrier, p_nom_max
+            geom, topo, efficiency, carrier, p_nom_max
         FROM grid.egon_etrago_h2_link;
 
         DROP TABLE grid.egon_etrago_h2_link;
