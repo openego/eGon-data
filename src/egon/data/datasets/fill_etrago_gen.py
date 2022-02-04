@@ -11,7 +11,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -23,7 +23,7 @@ def fill_etrago_generators():
     cfg = egon.data.config.datasets()["generators_etrago"]
 
     # Delete power plants from previous iterations of this script
-    delete_previuos_gen(cfg)
+    delete_previuos_gen(cfg, con)
 
     # Load required tables
     (
@@ -141,14 +141,7 @@ def fill_etrago_gen_time_table(
     etrago_pp_time = etrago_pp_time.drop(columns="generator_id")
     etrago_pp_time["p_max_pu"] = etrago_pp_time["p_max_pu"].apply(list)
     etrago_pp_time["temp_id"] = 1
-    '''
-    db.execute_sql(
-        f"""DELETE FROM 
-                   {cfg['targets']['etrago_gen_time']['schema']}.
-                   {cfg['targets']['etrago_gen_time']['table']}
-                   """
-    )
-    '''
+
     etrago_pp_time.to_sql(
         name=f"{cfg['targets']['etrago_gen_time']['table']}",
         schema=f"{cfg['targets']['etrago_gen_time']['schema']}",
@@ -232,7 +225,8 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     return renew_feedin
 
 
-def delete_previuos_gen(cfg):
+def delete_previuos_gen(cfg, con):
+    '''
     db.execute_sql(
         f"""DELETE FROM 
                    {cfg['targets']['etrago_generators']['schema']}.
@@ -247,7 +241,15 @@ def delete_previuos_gen(cfg):
                        AND carrier = 'AC')
                    """
     )
+    
 
+    db.execute_sql(
+        f"""DELETE FROM 
+                   {cfg['targets']['etrago_gen_time']['schema']}.
+                   {cfg['targets']['etrago_gen_time']['table']}
+                   """
+    )
+    '''
 
 def set_timeseries(power_plants, renew_feedin):
     def timeseries(pp):

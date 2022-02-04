@@ -402,3 +402,5 @@ Bug fixes
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
+* Timeseries not deleted from grid.etrago_generator_timeseries
+  `#645 <https://github.com/openego/eGon-data/issues/645>`_
