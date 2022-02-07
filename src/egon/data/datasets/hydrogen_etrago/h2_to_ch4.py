@@ -52,7 +52,7 @@ def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
         # set parameters according to carrier name
         table["carrier"] = carrier
         table["capital_cost"] = scn_params["capital_cost"][carrier]
-        table["efficiency_fixed"] = scn_params["efficiency"][carrier]
+        table["efficiency"] = scn_params["efficiency"][carrier]
         if carrier == "H2_feedin":
             table["p_nom_extendable"] = False
             table["p_nom"] = 1e9
