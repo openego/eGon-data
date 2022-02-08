@@ -307,6 +307,8 @@ Changed
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
 * H2 feed in links are changed to non extendable
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
+* Remove the '_fixed' suffix
+  `#628 <https://github.com/openego/eGon-data/issues/628>`_
 
 
 Bug fixes
@@ -396,6 +398,8 @@ Bug fixes
   `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Fix positions of the foreign gas buses
+  `#618 <https://github.com/openego/eGon-data/issues/618>`_
 * Create and fill transfer_busses table in substation-dataset
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
