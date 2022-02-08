@@ -80,8 +80,8 @@ class EgonPfHvGenerator(Base):
     p_max_pu = Column(Float(53), server_default="1.")
     p_set = Column(Float(53))
     q_set = Column(Float(53))
-    sign = Column(Float(53),server_default="1.")
-    marginal_cost = Column(Float(53),server_default="0.")
+    sign = Column(Float(53), server_default="1.")
+    marginal_cost = Column(Float(53), server_default="0.")
     capital_cost = Column(Float(53), server_default="0.")
     efficiency = Column(Float(53), server_default="1.")
     committable = Column(Boolean, server_default="False")
@@ -122,13 +122,13 @@ class EgonPfHvLine(Base):
     type = Column(Text)
     carrier = Column(Text)
     x = Column(Numeric, server_default="0.")
-    r = Column(Numeric, server_default="0.") 
+    r = Column(Numeric, server_default="0.")
     g = Column(Numeric, server_default="0.")
     b = Column(Numeric, server_default="0.")
     s_nom = Column(Numeric, server_default="0.")
     s_nom_extendable = Column(Boolean, server_default="False")
     s_nom_min = Column(Float(53), server_default="0.")
-    s_nom_max = Column(Float(53), server_default="inf") 
+    s_nom_max = Column(Float(53), server_default="inf")
     s_max_pu = Column(Float(53), server_default="1.")
     capital_cost = Column(Float(53), server_default="0.")
     length = Column(Float(53), server_default="0.")
@@ -579,7 +579,7 @@ def insert_carriers():
                 "pumped_hydro",
                 "battery",
                 "OCGT",
-            ],
+            ]
         }
     )
 
@@ -607,18 +607,18 @@ def check_carriers():
         """
     )
     unknown_carriers = {}
-    tables = ['bus', 'store', 'storage', 'link', 'line', 'generator', 'load']
+    tables = ["bus", "store", "storage", "link", "line", "generator", "load"]
 
     for table in tables:
-    # Delete existing entries
+        # Delete existing entries
         data = db.select_dataframe(
             f"""
             SELECT carrier FROM grid.egon_etrago_{table}
             """
         )
-        unknown_carriers[table] = (
-            data[~data['carrier'].isin(carriers)]['carrier'].unique()
-        )
+        unknown_carriers[table] = data[~data["carrier"].isin(carriers)][
+            "carrier"
+        ].unique()
 
     if len(unknown_carriers) > 0:
         msg = (
