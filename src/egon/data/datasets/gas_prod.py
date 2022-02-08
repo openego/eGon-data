@@ -2,15 +2,16 @@
 """
 The central module containing all code dealing with importing CH4 production data
 """
-# import os
-import ast
 from pathlib import Path
 from urllib.request import urlretrieve
 
-import numpy as np
+# import os
+import ast
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
@@ -224,42 +225,7 @@ def load_biogas_generators():
     return biogas_generators_list
 
 
-def assign_ch4_bus_id(dataframe, scn_name):
-    """Assigns bus_ids (for CH4 buses) to points (contained in a dataframe) according to location
-
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame
-        DataFrame cointaining points
-    scn_name : str
-        Name of the scenario
-
-    Returns
-    -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and bus_id
-    """
-
-    CH4_voronoi = db.select_geodataframe(
-        f"""
-        SELECT * FROM grid.egon_voronoi_ch4;
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(dataframe, CH4_voronoi)
-    res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right", "id"])
-
-    # Assert that all power plants have a bus_id
-    assert (
-        res.bus.notnull().all()
-    ), "Some points are not attached to a CH4 bus."
-
-    return res
-
-
-def assign_h2_bus_id(dataframe, scn_name):
+def assign_bus_id(dataframe, scn_name, carrier):
     """Assigns bus_ids (for H2 buses) to points (contained in a dataframe) according to location
 
     Parameters
@@ -268,6 +234,8 @@ def assign_h2_bus_id(dataframe, scn_name):
         DataFrame cointaining points
     scn_name : str
         Name of the scenario
+    carrier : str
+        Name of the carrier
 
     Returns
     -------
@@ -275,19 +243,20 @@ def assign_h2_bus_id(dataframe, scn_name):
         Power plants (including voltage level) and bus_id
     """
 
-    H2_voronoi = db.select_geodataframe(
+    voronoi = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_voronoi_h2;
+        SELECT id, bus_id, geom FROM grid.egon_voronoi_{carrier.lower()}
+        WHERE scn_name = '{scn_name}';
         """,
         epsg=4326,
     )
 
-    res = gpd.sjoin(dataframe, H2_voronoi)
+    res = gpd.sjoin(dataframe, voronoi)
     res["bus"] = res["bus_id"]
     res = res.drop(columns=["index_right", "id"])
 
     # Assert that all power plants have a bus_id
-    assert res.bus.notnull().all(), "Some points are not attached to a H2 bus."
+    assert res.bus.notnull().all(), f"Some points are not attached to a {carrier} bus."
 
     return res
 
@@ -325,14 +294,14 @@ def import_gas_generators(scn_name='eGon2035'):
     )
 
     # Add missing columns
-    #    CH4_generators_list['p_set_fixed'] = CH4_generators_list['p_nom']
+    #    CH4_generators_list['p_set'] = CH4_generators_list['p_nom']
     c = {"scn_name": scn_name, "carrier": "CH4"}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     CH4_generators_list = CH4_generators_list.reset_index(drop=True)
 
     # Match to associated CH4 bus
-    CH4_generators_list = assign_ch4_bus_id(CH4_generators_list, scn_name)
+    CH4_generators_list = assign_bus_id(CH4_generators_list, scn_name, "CH4")
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])

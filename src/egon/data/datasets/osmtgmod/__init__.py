@@ -363,21 +363,6 @@ def osmtgmod(
         )
         conn.commit()
 
-        # using the base egon database for transfer bus creation.
-        cur.execute(
-            """
-        DROP TABLE if exists transfer_busses_complete;
-        CREATE TABLE transfer_busses_complete as
-        SELECT DISTINCT ON (osm_id) * FROM
-        (SELECT * FROM grid.egon_ehv_substation
-        UNION SELECT bus_id, lon, lat, point, polygon, voltage,
-        power_type, substation, osm_id, osm_www, frequency, subst_name,
-        ref, operator, dbahn, status
-        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;
-        """
-        )
-        conn.commit()
-
         with open(path_for_transfer_busses, "w") as this_file:
             cur.copy_expert(
                 """COPY transfer_busses_complete to

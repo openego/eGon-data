@@ -211,6 +211,8 @@ substation_extraction:
     ehv_substation:
       schema: 'grid'
       table: 'egon_ehv_substation'
+    transfer_busses:
+      table: 'transfer_busses_complete'
 
 substation_voronoi:
   sources:
@@ -936,6 +938,9 @@ electrical_neighbours:
     lines:
       schema: 'grid'
       table: 'egon_etrago_line'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
     transformers:
       schema: 'grid'
       table: 'egon_etrago_transformer'
