@@ -427,7 +427,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         AND a.carrier = 'gas_boiler'
         AND b.carrier='central_heat'
         AND c.carrier='CH4'
-        AND c.scn_name='{scenario}'
+        AND c.scn_name='eGon2035'
         """ # c.scn_name = '{scenario}' -> No CH4 in eGon100RE
     )
 
@@ -517,7 +517,7 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         AND a.carrier = 'gas_boiler'
         AND b.carrier='rural_heat'
         AND c.carrier='CH4'
-        AND c.scn_name='{scenario}'
+        AND c.scn_name='eGon2035'
         """ # c.scn_name = '{scenario}' -> No CH4 in eGon100RE
     )
 
