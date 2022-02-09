@@ -15,9 +15,10 @@ import geopandas
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -25,7 +26,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_gas_data),
         )
@@ -227,6 +228,9 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses : dataframe
         Dataframe containing the gas in the neighbouring countries and one in the center of Germany in test mode
     """
+    # Select sources and targets from dataset configuration
+    sources = config.datasets()["electrical_neighbours"]["sources"]
+
     main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
         "main_gas_carrier"
     ]
@@ -241,18 +245,22 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     )
 
     # Select the foreign buses
-    sql_abroad_buses = f"""SELECT bus_id, scn_name, x, y, carrier, country
-                            FROM grid.egon_etrago_bus
-                            WHERE country != 'DE'
-                            AND carrier = 'AC'
-                            AND scn_name = '{scn_name}';"""
-
-    gdf_abroad_buses = db.select_dataframe(sql_abroad_buses)
+    gdf_abroad_buses = central_buses_egon100(sources)
     gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
 
     # Select next id value
     new_id = db.next_etrago_id("bus")
 
+    gdf_abroad_buses = gdf_abroad_buses.drop(
+        columns=[
+            "v_nom",
+            "v_mag_pu_set",
+            "v_mag_pu_min",
+            "v_mag_pu_max",
+            "geom",
+        ]
+    )
+    gdf_abroad_buses["scn_name"] = "eGon2035"
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
@@ -410,6 +418,7 @@ def insert_gas_pipeline_list(
     # Add missing columns
     gas_pipelines_list["scn_name"] = scn_name
     gas_pipelines_list["carrier"] = main_gas_carrier
+    gas_pipelines_list["p_nom_extendable"] = False
 
     diameter = []
     geom = []
@@ -628,12 +637,12 @@ def insert_gas_pipeline_list(
     INSERT INTO grid.egon_etrago_link (scn_name,
                                               link_id, carrier,
                                               bus0, bus1,
-                                              p_nom, length,
+                                              p_nom, p_nom_extendable, length,
                                               geom, topo)
     SELECT scn_name,
                 link_id, carrier,
                 bus0, bus1,
-                p_nom, length,
+                p_nom, p_nom_extendable, length,
                 geom, topo
 
     FROM grid.egon_etrago_gas_link;

@@ -228,7 +228,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     )
 
     # Set efficiency
-    central_resistive_heater["efficiency_fixed"] = get_sector_parameters(
+    central_resistive_heater["efficiency"] = get_sector_parameters(
         "heat", "eGon2035"
     )["efficiency"]["central_resistive_heater"]
 
