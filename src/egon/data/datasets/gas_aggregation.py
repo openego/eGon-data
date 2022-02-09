@@ -2,9 +2,6 @@
 """
 The central module aggregating ch4 store caverns (stores) and ch4 generators 
 """
-import pandas as pd
-import requests
-
 from egon.data import config, db
 from egon.data.datasets import Dataset
 
