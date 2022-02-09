@@ -72,9 +72,7 @@ def aggregate_gas(scn_name="eGon2035"):
                     WHERE scn_name = '{scn_name}' 
                     AND carrier = 'CH4';"""
         )
-        print(df)
         df = df.groupby(["bus", "carrier"]).agg(comp["strategies"])
-        print(df)
 
         # Clean table
         db.execute_sql(
