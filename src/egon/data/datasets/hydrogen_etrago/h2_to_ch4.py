@@ -4,6 +4,7 @@ Module containing the definition of the CH4 grid to H2 links
 """
 
 from egon.data import db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
@@ -26,41 +27,37 @@ def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
     SMR = buses.copy().rename(columns={"bus_H2": "bus1", "bus_CH4": "bus0"})
     feed_in = methanation.copy()
 
-    # Cost basis specified correctly?
-    methanation["carrier"] = "H2_to_CH4"
-    methanation["capital_cost"] = 1e6  # 1000€ / kW
-    methanation["efficiency_fixed"] = 0.6
-    methanation["p_nom_extendable"] = True
-
-    # 10.1016/j.ijhydene.2017.05.219
-    # SALKUYEH_2017_Techno-economic analysis and life cycle assessment of hydrogen production from natural gas using curernt and emerging technologies
-    SMR["carrier"] = "CH4_to_H2"
-    # capital cost ($ 2016) per MW hydrogen: 0.383  Mio$ / MW
-    # 1.0537 $ 2016 (eoy) = 1 €
-    # 1 € (2016) = 1 € * 1.025 ** 14 = 1.41 € (2030) check interest rate value (p. 35 Abschlussbericht eGo)
-    # -> for 2035: ** 19
-    # -> for 2050: ** 34
-    SMR["capital_cost"] = 383540 / 1.0537 * 1.41  # pp. 18903-18904
-    # CO2 emissions?
-    SMR["efficiency_fixed"] = 0.66  # pp. 18903-18904
-    SMR["p_nom_extendable"] = True
-
-    # How to implement feed in restriction?
-    feed_in["carrier"] = "H2_feedin"
-    feed_in["capital_cost"] = 0
-    feed_in["efficiency_fixed"] = 1
-    feed_in["p_nom_extendable"] = True
-
     # Delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
-        ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}';
+            DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
+            ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}'
+            AND bus0 IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = '{scn_name}' AND country = 'DE'
+            ) AND bus1 IN (
+               SELECT bus_id FROM grid.egon_etrago_bus
+               WHERE scn_name = '{scn_name}' AND country = 'DE'
+            );
         """
     )
 
+    scn_params = get_sector_parameters("gas", scn_name)
+
     # Write new entries
-    for table in [methanation, SMR, feed_in]:
+    for table, carrier in zip(
+        [methanation, SMR, feed_in], ["H2_to_CH4", "CH4_to_H2", "H2_feedin"]
+    ):
+
+        # set parameters according to carrier name
+        table["carrier"] = carrier
+        table["capital_cost"] = scn_params["capital_cost"][carrier]
+        table["efficiency"] = scn_params["efficiency"][carrier]
+        if carrier == "H2_feedin":
+            table["p_nom_extendable"] = False
+            table["p_nom"] = 1e9
+        else:
+            table["p_nom_extendable"] = True
 
         new_id = db.next_etrago_id("link")
         table["link_id"] = range(new_id, new_id + len(table))

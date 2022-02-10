@@ -1,5 +1,6 @@
 """
-Household electricity demand time series for scenarios in 2035 and 2050
+Household electricity demand time series for scenarios in 2035 and 2050 at
+census cell level.
 
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
@@ -9,25 +10,26 @@ The cells are defined by the dataset Zensus 2011.
 The resulting data is stored in two separate tables
 
 * `demand.household_electricity_profiles_in_census_cells`:
-  Lists references and scaling parameters to time series data for each household in a cell by
-  identifiers. This table is fundamental for creating subsequent data like
-  demand profiles on MV grid level or for determining the peak load at load
-  area level. The table is created by :func:`houseprofiles_in_census_cells`.
+  Lists references and scaling parameters to time series data for each
+  household in a cell by identifiers. This table is fundamental for creating
+  subsequent data like demand profiles on MV grid level or for determining
+  the peak load at load area level.
+  The table is created by:func:`houseprofiles_in_census_cells`.
 * `demand.household_electricity_profiles_hvmv_substation`:
-  Household electricity demand profiles aggregated at MV grid district level in MWh.
-  Primarily used to create the eTraGo data model.
+  Household electricity demand profiles aggregated at MV grid district level
+  in MWh. Primarily used to create the eTraGo data model.
   The table is created with :func:`mv_grid_district_HH_electricity_load`.
 
 The following datasets are used for creating the data:
 
 * Electricity demand time series for household categories
   produced by demand profile generator (DPG) from Fraunhofer IEE
-  (see :func:`download_process_household_demand_profiles_raw`)
+  (see :func:`get_iee_hh_demand_profiles_raw`)
 * Spatial information about people living in households by Zensus 2011 at
   federal state level
     * Type of household (family status)
     * Age
-    * Size
+    * Number of people
 * Spatial information about number of households per ha, categorized by type
   of household (family status) with 5 categories (also from Zensus 2011)
 * Demand-Regio annual household demand at NUTS3 level
@@ -50,17 +52,24 @@ the number of categories of cell-level household data.
 
 **How are these datasets combined?**
 
-* Spatial information about people living in households by zensus (2011) at federal state NUTS1 level
- :var:`df_zensus` is aggregated to be compatible to IEE household profile specifications.
+* Spatial information about people living in households by zensus (2011) at
+  federal state NUTS1 level :var:`df_zensus` is aggregated to be compatible
+  to IEE household profile specifications.
     * exclude kids and reduce to adults and seniors
     * group as defined in :var:`HH_TYPES`
-    * convert data from people living in households to number of households by :var:`mapping_people_in_households`
-    * calculate fraction of fine household types (10) within subgroup of rough household types (5) :var:`df_dist_households`
-* Spatial information about number of households per ha :var:`df_households_typ` is mapped to NUTS1 and NUTS3 level.
-  Data is enriched with refined household subgroups via :var:`df_dist_households` in :var:`df_zensus_cells`.
-* Enriched 100 x 100 m household dataset is used to sample and aggregate household profiles. A table including
-  individual profile id's for each cell and scaling factor to match Demand-Regio annual sum projections for 2035 and 2050
-  at NUTS3 level is created in the database as `demand.household_electricity_profiles_in_census_cells`.
+    * convert data from people living in households to number of households
+      by :var:`mapping_people_in_households`
+    * calculate fraction of fine household types (10) within subgroup of rough
+      household types (5) :var:`df_dist_households`
+* Spatial information about number of households per ha
+  :var:`df_census_households_nuts3` is mapped to NUTS1 and NUTS3 level.
+  Data is refined with household subgroups via
+  :var:`df_dist_households` to :var:`df_census_households_grid_refined`.
+* Enriched 100 x 100 m household dataset is used to sample and aggregate
+  household profiles. A table including individual profile id's for each cell
+  and scaling factor to match Demand-Regio annual sum projections for 2035
+  and 2050 at NUTS3 level is created in the database as
+  `demand.household_electricity_profiles_in_census_cells`.
 
 **What are central assumptions during the data processing?**
 
@@ -68,9 +77,11 @@ the number of categories of cell-level household data.
   conversion from persons in household to number of
   households, number of inhabitants for multi-person households is estimated
   as weighted average in :var:`OO_factor`
-* The distribution to refine household types at cell level are the same for each federal state
-* Refining of household types lead to float number of profiles drew at cell level and need to be rounded to nearest int.
-* 100 x 100 m cells are matched to NUTS via centroid location
+* The distribution to refine household types at cell level are the same for
+  each federal state
+* Refining of household types lead to float number of profiles drew at cell
+  level and need to be rounded to nearest int by np.rint().
+* 100 x 100 m cells are matched to NUTS via cells centroid location
 * Cells with households in unpopulated areas are removed
 
 **Drawbacks and limitations of the data**
@@ -81,6 +92,8 @@ the number of categories of cell-level household data.
   NUTS-3 level, but it is not matching the demand regio time series profile
 * Due to secrecy, some census data are highly modified under certain attributes
  (quantity_q = 2). This cell data is not corrected, but excluded.
+* There is deviation in the Census data from table to table. The statistical
+ methods are not stringent. Hence, there are cases in which data contradicts.
 * Census data with attribute 'HHTYP_FAM' is missing for some cells with small
  amount of households. This data is generated using the average share of
  household types for cells with similar household number. For some cells the
@@ -88,6 +101,10 @@ the number of categories of cell-level household data.
  attribute 'INSGESAMT'. As the profiles are scaled with demand-regio data at
  nuts3-level the impact at a higher aggregation level is negligible.
  For sake of simplicity, the data is not corrected.
+* There are cells without household data but a population. A randomly chosen
+ household distribution is taken from a subgroup of cells with same population value and
+ applied to all cells with missing household distribution and the specific
+ population value.
 
 Notes
 -----
@@ -114,89 +131,11 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
 Base = declarative_base()
+engine = db.engine()
 
 
 # Get random seed from config
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
-
-# Define mapping of zensus household categories to eurostat categories
-# - Adults living in househould type
-# - number of kids not included even if in housholdtype name
-# **! The Eurostat data only gives the amount of adults/seniors, excluding the amount of kids <15**
-# eurostat is used for demand-profile-generator @fraunhofer
-HH_TYPES = {
-    "SR": [
-        ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Seniors"),
-        ("Alleinerziehende Elternteile", "Insgesamt", "Seniors"),
-    ],
-    # Single Seniors Single Parents Seniors
-    "SO": [
-        ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Adults")
-    ],  # Single Adults
-    "SK": [("Alleinerziehende Elternteile", "Insgesamt", "Adults")],
-    # Single Parents Adult
-    "PR": [
-        ("Paare ohne Kind(er)", "2 Personen", "Seniors"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "2 Personen", "Seniors"),
-    ],
-    # Couples without Kids Senior & same sex couples & shared flat seniors
-    "PO": [
-        ("Paare ohne Kind(er)", "2 Personen", "Adults"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "2 Personen", "Adults"),
-    ],
-    # Couples without Kids adults & same sex couples & shared flat adults
-    "P1": [("Paare mit Kind(ern)", "3 Personen", "Adults")],
-    "P2": [("Paare mit Kind(ern)", "4 Personen", "Adults")],
-    "P3": [
-        ("Paare mit Kind(ern)", "5 Personen", "Adults"),
-        ("Paare mit Kind(ern)", "6 und mehr Personen", "Adults"),
-    ],
-    "OR": [
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Seniors"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Seniors"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "5 Personen", "Seniors"),
-        (
-            "Mehrpersonenhaushalte ohne Kernfamilie",
-            "6 und mehr Personen",
-            "Seniors",
-        ),
-        ("Paare mit Kind(ern)", "3 Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "3 Personen", "Seniors"),
-        ("Paare mit Kind(ern)", "4 Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "4 Personen", "Seniors"),
-        ("Paare mit Kind(ern)", "5 Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "5 Personen", "Seniors"),
-        ("Paare mit Kind(ern)", "6 und mehr Personen", "Seniors"),
-        ("Paare ohne Kind(er)", "6 und mehr Personen", "Seniors"),
-    ],
-    # no info about share of kids
-    # OO, O1, O2 have the same amount, as no information about the share of kids within zensus data set.
-    # if needed the total amount can be corrected in the hh_tools.get_hh_dist function
-    # using multi_adjust=True option
-    "OO": [
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Adults"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Adults"),
-        ("Mehrpersonenhaushalte ohne Kernfamilie", "5 Personen", "Adults"),
-        (
-            "Mehrpersonenhaushalte ohne Kernfamilie",
-            "6 und mehr Personen",
-            "Adults",
-        ),
-        ("Paare ohne Kind(er)", "3 Personen", "Adults"),
-        ("Paare ohne Kind(er)", "4 Personen", "Adults"),
-        ("Paare ohne Kind(er)", "5 Personen", "Adults"),
-        ("Paare ohne Kind(er)", "6 und mehr Personen", "Adults"),
-    ],
-    # no info about share of kids
-}
-
-MAPPING_ZENSUS_HH_SUBGROUPS = {
-    1: ["SR", "SO"],
-    2: ["PR", "PO"],
-    3: ["SK"],
-    4: ["P1", "P2", "P3"],
-    5: ["OR", "OO"],
-}
 
 
 class IeeHouseholdLoadProfiles(Base):
@@ -205,7 +144,7 @@ class IeeHouseholdLoadProfiles(Base):
 
     id = Column(INTEGER, primary_key=True)
     type = Column(CHAR(7), index=True)
-    load_in_wh = Column(ARRAY(REAL))  # , dimensions=2))
+    load_in_wh = Column(ARRAY(REAL))
 
 
 class HouseholdElectricityProfilesInCensusCells(Base):
@@ -214,7 +153,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
 
     cell_id = Column(Integer, primary_key=True)
     grid_id = Column(String)
-    cell_profile_ids = Column(ARRAY(String, dimensions=2))
+    cell_profile_ids = Column(ARRAY(String, dimensions=1))
     nuts3 = Column(String)
     nuts1 = Column(String)
     factor_2035 = Column(Float)
@@ -225,20 +164,21 @@ class EgonEtragoElectricityHouseholds(Base):
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
 
-    version = Column(String, primary_key=True)
     bus_id = Column(Integer, primary_key=True)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
     q_set = Column(ARRAY(Float))
 
 
-hh_demand_setup = partial(
+setup = partial(
     Dataset,
     name="HH Demand",
-    version="0.0.2",
+    version="0.0.5",
     dependencies=[],
-    # Tasks are declared in pipeline as function is used multiple times with different args
-    # To differentiate these tasks PythonOperator with specific id-names are used
+    # Tasks are declared in pipeline as function is used multiple times with
+    # different args.
+    # To differentiate these tasks PythonOperator with specific id-names are
+    # used.
     # PythonOperator needs to be declared in pipeline to be mapped to DAG
     # tasks=[],
 )
@@ -287,9 +227,6 @@ def write_hh_profiles_to_db(hh_profiles):
     Returns
     -------
     """
-
-    engine = db.engine()
-
     hh_profiles = hh_profiles.rename_axis("type", axis=1)
     hh_profiles = hh_profiles.rename_axis("timestep", axis=0)
     hh_profiles = hh_profiles.stack().rename("load_in_wh")
@@ -316,8 +253,9 @@ def write_hh_profiles_to_db(hh_profiles):
     )
 
 
-def get_household_demand_profiles_raw():
-    """Gets and returns household electricity demand profiles from the egon-data-bundle.
+def get_iee_hh_demand_profiles_raw():
+    """Gets and returns household electricity demand profiles from the
+    egon-data-bundle.
 
     Household electricity demand profiles generated by Fraunhofer IEE.
     Methodology is described in
@@ -327,12 +265,22 @@ def get_household_demand_profiles_raw():
     It is used and further described in the following theses by:
 
     * Jonas Haack:
-      "Auswirkungen verschiedener Haushaltslastprofile auf PV-Batterie-Systeme" (confidential)
+      "Auswirkungen verschiedener Haushaltslastprofile auf PV-Batterie-Systeme"
+      (confidential)
     * Simon Ruben Drauz
-      "Synthesis of a heat and electrical load profile for single and multi-family houses used for subsequent
-      performance tests of a multi-component energy system",
+      "Synthesis of a heat and electrical load profile for single and
+      multi-family houses used for subsequent performance tests of a
+      multi-component energy system",
       http://dx.doi.org/10.13140/RG.2.2.13959.14248
 
+    Notes
+    -----
+    The household electricity demand profiles have been generated for a leap
+    year (8784 hours) starting on a Friday. The weather year is 2011 and the
+    heat timeseries 2011 are generated for 2011 too (cf. dataset
+    :mod:`egon.data.datasets.heat_demand_timeseries.HTS`), having 8760h and
+    starting on a Saturday. To align the profiles, the first day of the IEE
+    profiles are deleted, resulting in 8760h starting on Saturday.
 
     Returns
     -------
@@ -371,12 +319,18 @@ def get_household_demand_profiles_raw():
 
     df_hh_profiles = pd.read_hdf(hh_profiles_file)
 
+    # Use only last 8760 timesteps of profiles (for details see notes)
+    timesteps_target = 8760
+    if len(df_hh_profiles) > timesteps_target:
+        df_hh_profiles = df_hh_profiles[
+            len(df_hh_profiles) - timesteps_target :
+        ].reset_index(drop=True)
+
     return df_hh_profiles
 
 
-def process_household_demand_profiles(hh_profiles):
-    """Process household demand profiles in a more easy to use format.
-    The profile type is splitted into type and number and set as multiindex.
+def set_multiindex_to_profiles(hh_profiles):
+    """The profile id is split into type and number and set as multiindex.
 
     Parameters
     ----------
@@ -393,7 +347,7 @@ def process_household_demand_profiles(hh_profiles):
         [hh_profiles.columns.str[:2], hh_profiles.columns.str[3:]]
     )
 
-    # Cast profile ids into int
+    # Cast profile ids into tuple of type and int
     hh_profiles.columns = pd.MultiIndex.from_tuples(
         [(a, int(b)) for a, b in hh_profiles.columns]
     )
@@ -401,7 +355,7 @@ def process_household_demand_profiles(hh_profiles):
     return hh_profiles
 
 
-def get_zensus_households_raw():
+def get_census_households_nuts1_raw():
     """Get zensus age x household type data from egon-data-bundle
 
     Dataset about household size with information about the categories:
@@ -410,7 +364,7 @@ def get_zensus_households_raw():
     * age class
     * household size
 
-    for Germany in spatial resolution of federal states.
+    for Germany in spatial resolution of federal states NUTS-1.
 
     Data manually selected and retrieved from:
     https://ergebnisse2011.zensus2022.de/datenbank/online
@@ -418,8 +372,9 @@ def get_zensus_households_raw():
 
     * Search for: "1000A-3016"
     * or choose topic: "Bevölkerung kompakt"
-    * Choose table code: "1000A-3016" with title "Personen: Alter (11 Altersklassen) - Größe des
-    privaten Haushalts - Typ des privaten Haushalts (nach Familien/Lebensform)"
+    * Choose table code: "1000A-3016" with title "Personen: Alter
+      (11 Altersklassen) - Größe des privaten Haushalts - Typ des privaten
+      Haushalts (nach Familien/Lebensform)"
     - Change setting "GEOLK1" to "Bundesländer (16)"
 
     Data would be available in higher resolution
@@ -464,11 +419,12 @@ def create_missing_zensus_data(
     df_households_typ, df_missing_data, missing_cells
 ):
     """
-    There is missing data for specific attributes in the zensus dataset because of secrecy reasons.
-    Some cells with only small amount of households are missing with the attribute HHTYP_FAM.
-    However the total amount of households is known with attribute INSGESAMT.
-    The missing data is generated as average share of the household types for cell groups
-    with the same amount of households.
+    There is missing data for specific attributes in the zensus dataset because
+    of secrecy reasons. Some cells with only small amount of households are
+    missing with the attribute HHTYP_FAM. However the total amount of households
+    is known with attribute INSGESAMT. The missing data is generated as average
+    share of the household types for cell groups with the same amount of
+    households.
 
     Parameters
     ----------
@@ -542,9 +498,12 @@ def create_missing_zensus_data(
     return df_average_split
 
 
-def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
+def get_hh_dist(df_zensus, hh_types):
     """
     Group zensus data to fit Demand-Profile-Generator (DPG) format.
+
+    For more information look at the respective publication:
+    https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
 
     Parameters
     ----------
@@ -552,12 +511,6 @@ def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
         Zensus households data
     hh_types: dict
         Mapping of zensus groups to DPG groups
-    multi-adjust: bool
-        If True (default), splits DPG-group 'OO' into 3 subgroups and uses
-        distribution factor derived by table II in
-        https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
-    relative: bool
-        if True produces relative values
 
     Returns
     ----------
@@ -569,37 +522,23 @@ def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
             Data still needs to be converted from amount of people to amount
             of households
     """
-    # adjust multi with/without kids via eurostat share as not clearly derivable without infos about share of kids
-    if multi_adjust:
-        adjust = {
-            "SR": 1,
-            "SO": 1,
-            "SK": 1,
-            "PR": 1,
-            "PO": 1,
-            "P1": 1,
-            "P2": 1,
-            "P3": 1,
-            "OR": 1,
-            "OO": 0.703,
-            "O1": 0.216,
-            "O2": 0.081,
-        }
-    else:
-        adjust = {
-            "SR": 1,
-            "SO": 1,
-            "SK": 1,
-            "PR": 1,
-            "PO": 1,
-            "P1": 1,
-            "P2": 1,
-            "P3": 1,
-            "OR": 1,
-            "OO": 1,
-            "O1": 0,
-            "O2": 0,
-        }
+    # Cat O1 and O2 are removed as their share with/without kids is not clearly
+    # derivable without any further information. OO will therefore represent
+    # all multihousehold groups but the seniors.
+    adjust = {
+        "SR": 1,
+        "SO": 1,
+        "SK": 1,
+        "PR": 1,
+        "PO": 1,
+        "P1": 1,
+        "P2": 1,
+        "P3": 1,
+        "OR": 1,
+        "OO": 1,
+        "O1": 0,
+        "O2": 0,
+    }
 
     df_hh_types = pd.DataFrame(
         (
@@ -613,9 +552,7 @@ def get_hh_dist(df_zensus, hh_types, multi_adjust=True, relative=True):
     )
     # drop zero columns
     df_hh_types = df_hh_types.loc[:, (df_hh_types != 0).any(axis=0)]
-    if relative:
-        # normalize
-        df_hh_types = df_hh_types.div(df_hh_types.sum(axis=1), axis=0)
+
     return df_hh_types.T
 
 
@@ -643,6 +580,9 @@ def inhabitants_to_households(
     df_households_by_type: pd.DataFrame
         Distribution of households type
 
+         .. warning::
+         By ceiling to full integers of people a small deviation is introduced.
+
     """
     # compare categories and remove form mapping if to many
     diff = set(df_people_by_householdtypes_abs.index) ^ set(
@@ -666,11 +606,12 @@ def inhabitants_to_households(
     return df_households_by_type
 
 
-def process_nuts1_zensus_data(df_zensus):
+def process_nuts1_census_data(df_census_households_raw):
     """Make data compatible with household demand profile categories
 
-    Groups, removes and reorders categories which are not needed to fit data to household types of
-    IEE electricity demand time series generated by demand-profile-generator (DPG).
+    Groups, removes and reorders categories which are not needed to fit data to
+    household types of IEE electricity demand time series generated by
+    demand-profile-generator (DPG).
 
     * Kids (<15) are excluded as they are also excluded in DPG origin dataset
     * Adults (15<65)
@@ -678,7 +619,7 @@ def process_nuts1_zensus_data(df_zensus):
 
     Parameters
     ----------
-    df_zensus: pd.DataFrame
+    df_census_households_raw: pd.DataFrame
         cleaned zensus household type x age category data
 
     Returns
@@ -686,6 +627,12 @@ def process_nuts1_zensus_data(df_zensus):
     pd.DataFrame
         Aggregated zensus household data on NUTS-1 level
     """
+
+    # Clean data to int only
+    df_census_households = df_census_households_raw.applymap(clean).applymap(
+        int
+    )
+
     # Group data to fit Load Profile Generator categories
     # define kids/adults/seniors
     kids = ["Unter 3", "3 - 5", "6 - 14"]  # < 15
@@ -701,15 +648,21 @@ def process_nuts1_zensus_data(df_zensus):
 
     # sum groups of kids, adults and seniors and concat
     df_kids = (
-        df_zensus.loc[:, (slice(None), kids)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), kids)]
+        .groupby(level=0, axis=1)
+        .sum()
     )
     df_adults = (
-        df_zensus.loc[:, (slice(None), adults)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), adults)]
+        .groupby(level=0, axis=1)
+        .sum()
     )
     df_seniors = (
-        df_zensus.loc[:, (slice(None), seniors)].groupby(level=0, axis=1).sum()
+        df_census_households.loc[:, (slice(None), seniors)]
+        .groupby(level=0, axis=1)
+        .sum()
     )
-    df_zensus = pd.concat(
+    df_census_households = pd.concat(
         [df_kids, df_adults, df_seniors],
         axis=1,
         keys=["Kids", "Adults", "Seniors"],
@@ -718,53 +671,349 @@ def process_nuts1_zensus_data(df_zensus):
 
     # reduce column names to state only
     mapping_state = {
-        i: i.split()[1] for i in df_zensus.index.get_level_values(level=0)
+        i: i.split()[1]
+        for i in df_census_households.index.get_level_values(level=0)
     }
 
     # rename index
-    df_zensus = df_zensus.rename(index=mapping_state, level=0)
+    df_census_households = df_census_households.rename(
+        index=mapping_state, level=0
+    )
     # rename axis
-    df_zensus = df_zensus.rename_axis(["state", "type"])
+    df_census_households = df_census_households.rename_axis(["state", "type"])
     # unstack
-    df_zensus = df_zensus.unstack()
+    df_census_households = df_census_households.unstack()
     # reorder levels
-    df_zensus = df_zensus.reorder_levels(
+    df_census_households = df_census_households.reorder_levels(
         order=["type", "persons", "age"], axis=1
     )
 
-    return df_zensus
+    return df_census_households
 
 
-def enrich_zensus_data_at_cell_level(df_zensus):
-    """The zensus data is processed to define the number and type of households per zensus cell.
-    Two subsets of the zensus data are merged to fit the IEE profiles specifications.
-    For this, the dataset 'HHGROESS_KLASS' is converted from people living in households to number of households
-    of specific size. Missing data in 'HHTYP_FAM' is substituted in :func:`create_missing_zensus_data`.
+def impute_missing_hh_in_populated_cells(df_census_households_grid):
+    """There are cells without household data but a population. A randomly
+    chosen household distribution is taken from a subgroup of cells with same
+    population value and applied to all cells with missing household
+    distribution and the specific population value. In the case, in which there
+    is no subgroup with household data of the respective population value, the
+    fallback is the subgroup with the last last smaller population value.
 
     Parameters
     ----------
-    df_zensus: pd.DataFrame
+    df_census_households_grid: pd.DataFrame
+        census household data at 100x100m grid level
+
+    Returns
+    -------
+    pd.DataFrame
+        substituted census household data at 100x100m grid level"""
+
+    df_w_hh = df_census_households_grid.dropna().reset_index(drop=True)
+    df_wo_hh = df_census_households_grid.loc[
+        df_census_households_grid.isna().any(axis=1)
+    ].reset_index(drop=True)
+
+    # iterate over unique population values
+    for population in df_wo_hh["population"].sort_values().unique():
+
+        # create fallback if no cell with specific population available
+        if population in df_w_hh["population"].unique():
+            fallback_value = population
+            population_value = population
+        # use fallback of last possible household distribution
+        else:
+            population_value = fallback_value
+
+        # get cells with specific population value from cells with household distribution
+        df_w_hh_population_i = df_w_hh.loc[
+            df_w_hh["population"] == population_value
+        ]
+        # choose random cell within this group
+        rnd_cell_id_population_i = np.random.choice(
+            df_w_hh_population_i["cell_id"].unique()
+        )
+        # get household distribution of this cell
+        df_rand_hh_distribution = df_w_hh_population_i.loc[
+            df_w_hh_population_i["cell_id"] == rnd_cell_id_population_i
+        ]
+        # get cells with specific population value from cells without household distribution
+        df_wo_hh_population_i = df_wo_hh.loc[
+            df_wo_hh["population"] == population
+        ]
+
+        # all cells will get the same random household distribution
+
+        # prepare size of dataframe by number of household types
+        df_repeated = pd.concat(
+            [df_wo_hh_population_i] * df_rand_hh_distribution.shape[0],
+            ignore_index=True,
+        )
+        df_repeated = df_repeated.sort_values("cell_id").reset_index(drop=True)
+
+        # insert random household distribution
+        columns = ["characteristics_code", "hh_5types"]
+        df_repeated.loc[:, columns] = pd.concat(
+            [df_rand_hh_distribution.loc[:, columns]]
+            * df_wo_hh_population_i.shape[0]
+        ).values
+        # append new cells
+        df_w_hh = df_w_hh.append(df_repeated, ignore_index=True)
+
+    return df_w_hh
+
+
+def get_census_households_grid():
+    """Query census household data at 100x100m grid level from database. As
+    there is a divergence in the census household data depending which attribute
+    is used. There also exist cells without household but with population data.
+    The missing data in these cases are substituted. First census household data
+    with attribute 'HHTYP_FAM' is missing for some cells with small amount
+    of households. This data is generated using the average share of household
+    types for cells with similar household number. For some cells the summed
+    amount of households per type deviates from the total number with attribute
+    'INSGESAMT'. As the profiles are scaled with demand-regio data at
+    nuts3-level the impact at a higher aggregation level is negligible. For sake
+    of simplicity, the data is not corrected.
+
+    Returns
+    -------
+    pd.DataFrame
+        census household data at 100x100m grid level"""
+
+    # Retrieve information about households for each census cell
+    # Only use cell-data which quality (quantity_q<2) is acceptable
+    df_census_households_grid = db.select_dataframe(
+        sql="""
+                    SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
+                    FROM society.egon_destatis_zensus_household_per_ha
+                    WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
+    )
+    df_census_households_grid = df_census_households_grid.drop(
+        columns=["attribute", "characteristics_text"]
+    )
+
+    # Missing data is detected
+    df_missing_data = db.select_dataframe(
+        sql="""
+                    SELECT count(joined.quantity_gesamt) as amount, joined.quantity_gesamt as households
+                    FROM(
+                        SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
+                         (quantity_gesamt-(case when quantity_sum_fam isnull then 0 else quantity_sum_fam end))
+                         as insgesamt_minus_fam
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as joined
+                    WHERE quantity_sum_fam isnull
+                    Group by quantity_gesamt """
+    )
+    missing_cells = db.select_dataframe(
+        sql="""
+                    SELECT t12.grid_id, t12.quantity
+                    FROM (
+                    SELECT t2.grid_id, (case when quantity_sum_fam isnull then quantity_gesamt end) as quantity
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as t12
+                    WHERE quantity is not null"""
+    )
+
+    # Missing cells are substituted by average share of cells with same amount
+    # of households.
+    df_average_split = create_missing_zensus_data(
+        df_census_households_grid, df_missing_data, missing_cells
+    )
+
+    df_census_households_grid = df_census_households_grid.rename(
+        columns={"quantity": "hh_5types"}
+    )
+
+    df_census_households_grid = pd.concat(
+        [df_census_households_grid, df_average_split], ignore_index=True
+    )
+
+    # Census cells with nuts3 and nuts1 information
+    df_grid_id = db.select_dataframe(
+        sql="""
+                    SELECT pop.grid_id, pop.id as cell_id, pop.population, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
+                    FROM society.destatis_zensus_population_per_ha_inside_germany as pop
+                    LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
+                    ON (pop.id=vg250.zensus_population_id)
+                    LEFT JOIN boundaries.vg250_lan as lan
+                    ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
+                    WHERE lan.gf = 4 """
+    )
+    df_grid_id = df_grid_id.drop_duplicates()
+    df_grid_id = df_grid_id.reset_index(drop=True)
+
+    # Merge household type and size data with considered (populated) census
+    # cells how='right' is used as ids of unpopulated areas are removed
+    # by df_grid_id or ancestors. See here:
+    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
+    df_census_households_grid = pd.merge(
+        df_census_households_grid,
+        df_grid_id,
+        left_on="grid_id",
+        right_on="grid_id",
+        how="right",
+    )
+    df_census_households_grid = df_census_households_grid.sort_values(
+        ["cell_id", "characteristics_code"]
+    )
+
+    return df_census_households_grid
+
+
+def refine_census_data_at_cell_level(
+    df_census_households_nuts1, df_census_households_grid
+):
+    """The zensus data is processed to define the number and type of households
+    per zensus cell. Two subsets of the zensus data are merged to fit the
+    IEE profiles specifications. For this, the dataset of  people living in
+    households at NUTS-1 is converted to number of households of
+    specific size. The data of category 'HHGROESS_KLASS' in census households
+    at grid level is used to determine an average wherever the amount
+    of people is not trivial (OR, OO). Kids are not counted.
+
+    Parameters
+    ----------
+    df_census_households_nuts1: pd.DataFrame
         Aggregated zensus household data on NUTS-1 level
+    df_census_households_grid: pd.DataFrame
+        Aggregated zensus household data on 100x100m grid level
 
     Returns
     -------
     pd.DataFrame
         Number of hh types per census cell and scaling factors
     """
+    # Define mapping of census household family types to Eurostat household types
+    # - Adults living in households type
+    # - number of kids are  not included even if mentioned in household type name
+    # **! The Eurostat data only counts adults/seniors, excluding kids <15**
+    # Eurostat household types are used for demand-profile-generator
+    # @iee-fraunhofer
+    hh_types_eurostat = {
+        "SR": [
+            ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Seniors"),
+            ("Alleinerziehende Elternteile", "Insgesamt", "Seniors"),
+        ],
+        # Single Seniors Single Parents Seniors
+        "SO": [
+            ("Einpersonenhaushalte (Singlehaushalte)", "Insgesamt", "Adults")
+        ],  # Single Adults
+        "SK": [("Alleinerziehende Elternteile", "Insgesamt", "Adults")],
+        # Single Parents Adult
+        "PR": [
+            ("Paare ohne Kind(er)", "2 Personen", "Seniors"),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "2 Personen",
+                "Seniors",
+            ),
+        ],
+        # Couples without Kids Senior & same sex couples & shared flat seniors
+        "PO": [
+            ("Paare ohne Kind(er)", "2 Personen", "Adults"),
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "2 Personen", "Adults"),
+        ],
+        # Couples without Kids adults & same sex couples & shared flat adults
+        "P1": [("Paare mit Kind(ern)", "3 Personen", "Adults")],
+        "P2": [("Paare mit Kind(ern)", "4 Personen", "Adults")],
+        "P3": [
+            ("Paare mit Kind(ern)", "5 Personen", "Adults"),
+            ("Paare mit Kind(ern)", "6 und mehr Personen", "Adults"),
+        ],
+        "OR": [
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "3 Personen",
+                "Seniors",
+            ),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "4 Personen",
+                "Seniors",
+            ),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "5 Personen",
+                "Seniors",
+            ),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "6 und mehr Personen",
+                "Seniors",
+            ),
+            ("Paare mit Kind(ern)", "3 Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "3 Personen", "Seniors"),
+            ("Paare mit Kind(ern)", "4 Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "4 Personen", "Seniors"),
+            ("Paare mit Kind(ern)", "5 Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "5 Personen", "Seniors"),
+            ("Paare mit Kind(ern)", "6 und mehr Personen", "Seniors"),
+            ("Paare ohne Kind(er)", "6 und mehr Personen", "Seniors"),
+        ],
+        # no info about share of kids
+        # OO, O1, O2 have the same amount, as no information about the share of
+        # kids within census data set. If needed the total amount can be estimated
+        # in the :func:`get_hh_dist` function using multi_adjust=True option.
+        # The Eurostat share is then applied.
+        "OO": [
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Adults"),
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Adults"),
+            ("Mehrpersonenhaushalte ohne Kernfamilie", "5 Personen", "Adults"),
+            (
+                "Mehrpersonenhaushalte ohne Kernfamilie",
+                "6 und mehr Personen",
+                "Adults",
+            ),
+            ("Paare ohne Kind(er)", "3 Personen", "Adults"),
+            ("Paare ohne Kind(er)", "4 Personen", "Adults"),
+            ("Paare ohne Kind(er)", "5 Personen", "Adults"),
+            ("Paare ohne Kind(er)", "6 und mehr Personen", "Adults"),
+        ],
+        # no info about share of kids
+    }
 
-    # hh_tools.get_hh_dist without eurostat adjustment for O1-03 Groups in absolute values
+    mapping_zensus_hh_subgroups = {
+        1: ["SR", "SO"],
+        2: ["PR", "PO"],
+        3: ["SK"],
+        4: ["P1", "P2", "P3"],
+        5: ["OR", "OO"],
+    }
+    # :func:`get_hh_dist` without eurostat adjustment for O1-03 Groups in
+    # absolute values
     df_hh_types_nad_abs = get_hh_dist(
-        df_zensus, HH_TYPES, multi_adjust=False, relative=False
+        df_census_households_nuts1, hh_types_eurostat
     )
 
     # Get household size for each census cell grouped by
-    # As this is only used to estimate size of households for OR, OO, 1 P and 2 P households are dropped
+    # As this is only used to estimate size of households for OR, OO
+    # The hh types 1 P and 2 P households are dropped
     df_hh_size = db.select_dataframe(
         sql="""
-                        SELECT characteristics_text, SUM(quantity) as summe
-                        FROM society.egon_destatis_zensus_household_per_ha as egon_d
-                        WHERE attribute = 'HHGROESS_KLASS' AND quantity_q < 2
-                        GROUP BY characteristics_text """,
+                SELECT characteristics_text, SUM(quantity) as summe
+                FROM society.egon_destatis_zensus_household_per_ha as egon_d
+                WHERE attribute = 'HHGROESS_KLASS' AND quantity_q < 2
+                GROUP BY characteristics_text """,
         index_col="characteristics_text",
     )
     df_hh_size = df_hh_size.drop(index=["1 Person", "2 Personen"])
@@ -787,129 +1036,46 @@ def enrich_zensus_data_at_cell_level(df_zensus):
         "OR": OO_factor,
         "OO": OO_factor,
     }
-    # Determine number of persons for each household category and per federal state
+    # Determine number of persons living in each household type
     df_dist_households = inhabitants_to_households(
         df_hh_types_nad_abs, mapping_people_in_households
     )
 
-    # Calculate fraction of fine household types within subgroup of rough household types
-    for value in MAPPING_ZENSUS_HH_SUBGROUPS.values():
+    # Calculate fraction of fine household types within subgroup of
+    # rough household types
+    for value in mapping_zensus_hh_subgroups.values():
         df_dist_households.loc[value] = df_dist_households.loc[value].div(
             df_dist_households.loc[value].sum()
         )
 
-    # Retrieve information about households for each census cell
-    # Only use cell-data which quality (quantity_q<2) is acceptable
-    df_households_typ = db.select_dataframe(
-        sql="""
-                    SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
-    )
-    df_households_typ = df_households_typ.drop(
-        columns=["attribute", "characteristics_text"]
-    )
-    df_missing_data = db.select_dataframe(
-        sql="""
-                SELECT count(joined.quantity_gesamt) as amount, joined.quantity_gesamt as households
-                FROM(
-                    SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
-                     (quantity_gesamt-(case when quantity_sum_fam isnull then 0 else quantity_sum_fam end))
-                     as insgesamt_minus_fam
-                FROM (
-                    SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'HHTYP_FAM'
-                    GROUP BY grid_id) as t1
-                Full JOIN (
-                    SELECT grid_id, sum(quantity) as quantity_gesamt
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'INSGESAMT'
-                    GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
-                    ) as joined
-                WHERE quantity_sum_fam isnull
-                Group by quantity_gesamt """
-    )
-    missing_cells = db.select_dataframe(
-        sql="""
-                    SELECT t12.grid_id, t12.quantity
-                    FROM (
-                    SELECT t2.grid_id, (case when quantity_sum_fam isnull then quantity_gesamt end) as quantity
-                    FROM (
-                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM society.egon_destatis_zensus_household_per_ha
-                        WHERE attribute = 'HHTYP_FAM'
-                        GROUP BY grid_id) as t1
-                    Full JOIN (
-                        SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM society.egon_destatis_zensus_household_per_ha
-                        WHERE attribute = 'INSGESAMT'
-                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
-                        ) as t12
-                    WHERE quantity is not null"""
-    )
-
-    df_average_split = create_missing_zensus_data(
-        df_households_typ, df_missing_data, missing_cells
-    )
-
-    df_households_typ = df_households_typ.rename(
-        columns={"quantity": "hh_5types"}
-    )
-
-    df_households_typ = pd.concat(
-        [df_households_typ, df_average_split], ignore_index=True
-    )
-
-    # Census cells with nuts3 and nuts1 information
-    df_grid_id = db.select_dataframe(
-        sql="""
-                            SELECT pop.grid_id, pop.id as cell_id, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
-                            FROM society.destatis_zensus_population_per_ha_inside_germany as pop
-                            LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
-                            ON (pop.id=vg250.zensus_population_id)
-                            LEFT JOIN boundaries.vg250_lan as lan
-                            ON (LEFT(vg250.vg250_nuts3, 3)=lan.nuts)
-                            WHERE lan.gf = 4 """
-    )
-    df_grid_id = df_grid_id.drop_duplicates()
-    df_grid_id = df_grid_id.reset_index(drop=True)
-
-    # Merge household type and size data with considered (populated) census cells
-    # how='inner' is used as ids of unpopulated areas are removed df_grid_id or earliers tables. see here:
-    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
-    df_households_typ = pd.merge(
-        df_households_typ,
-        df_grid_id,
-        left_on="grid_id",
-        right_on="grid_id",
-        how="inner",
-    )
-
     # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
-    # by refining hh-groups with MAPPING_ZENSUS_HH_SUBGROUPS
-    df_zensus_cells = pd.DataFrame()
-    for (country, code), df_country_type in df_households_typ.groupby(
+    # by refining hh-groups with mapping_zensus_hh_subgroups
+    df_census_households_grid_refined = pd.DataFrame()
+    for (country, code), df_country_type in df_census_households_grid.groupby(
         ["gen", "characteristics_code"]
     ):
 
         # iterate over zenus_country subgroups
-        for typ in MAPPING_ZENSUS_HH_SUBGROUPS[code]:
+        for typ in mapping_zensus_hh_subgroups[code]:
             df_country_type["hh_type"] = typ
             df_country_type["factor"] = df_dist_households.loc[typ, country]
             df_country_type["hh_10types"] = (
                 df_country_type["hh_5types"]
                 * df_dist_households.loc[typ, country]
             )
-            df_zensus_cells = df_zensus_cells.append(
-                df_country_type, ignore_index=True
+            df_census_households_grid_refined = (
+                df_census_households_grid_refined.append(
+                    df_country_type, ignore_index=True
+                )
             )
 
-    df_zensus_cells = df_zensus_cells.sort_values(
-        by=["grid_id", "characteristics_code"]
-    ).reset_index(drop=True)
+    df_census_households_grid_refined = (
+        df_census_households_grid_refined.sort_values(
+            by=["grid_id", "characteristics_code"]
+        ).reset_index(drop=True)
+    )
 
-    return df_zensus_cells
+    return df_census_households_grid_refined
 
 
 def get_cell_demand_profile_ids(df_cell, pool_size):
@@ -935,8 +1101,8 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 
     """
     # maybe use instead
-    # np.random.default_rng().integers(low=0, high=pool_size[hh_type], size=sq) instead of random.sample
-    # use random.choices() if with replacement
+    # np.random.default_rng().integers(low=0, high=pool_size[hh_type], size=sq)
+    # instead of random.sample use random.choices() if with replacement
     # list of sample ids per hh_type in cell
     cell_profile_ids = [
         (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
@@ -959,21 +1125,22 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
-def get_cell_demand_metadata(df_zensus_cells, df_profiles):
+def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     """
-    Defines information about profiles for each zensus cell
+    Allocates household demand profiles to each census cell.
 
     A table including the demand profile ids for each cell is created by using
-    :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled for each cell. The profiles
-    are not replaced to the pool within a cell but after. The number of households are rounded to the nearest integer
-    if float. This results in a small deviation for the course of the aggregated profiles.
+    :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled
+    for each cell. The profiles are not replaced to the pool within a cell but
+    after. The number of households are rounded to the nearest integer if float.
+    This results in a small deviation for the course of the aggregated profiles.
 
     Parameters
     ----------
     df_zensus_cells: pd.DataFrame
         Household type parameters. Each row representing one household. Hence,
         multiple rows per zensus cell.
-    df_profiles: pd.DataFrame
+    df_iee_profiles: pd.DataFrame
         Household load profile data
 
         * Index: Times steps as serial integers
@@ -989,7 +1156,7 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
         cell.
     """
 
-    df_cell_demand_metadata = pd.DataFrame(
+    df_hh_profiles_in_census_cells = pd.DataFrame(
         index=df_zensus_cells.grid_id.unique(),
         columns=[
             "cell_profile_ids",
@@ -1000,10 +1167,12 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
             "factor_2050",
         ],
     )
-    # 'peak_loads_hh', 'peak_load_cell',
-    df_cell_demand_metadata = df_cell_demand_metadata.rename_axis("grid_id")
 
-    pool_size = df_profiles.groupby(level=0, axis=1).size()
+    df_hh_profiles_in_census_cells = (
+        df_hh_profiles_in_census_cells.rename_axis("grid_id")
+    )
+
+    pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
 
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
 
@@ -1014,25 +1183,25 @@ def get_cell_demand_metadata(df_zensus_cells, df_profiles):
         # the aggregated profiles.
         cell_profile_ids = get_cell_demand_profile_ids(df_cell, pool_size)
 
-        df_cell_demand_metadata.at[grid_id, "cell_id"] = df_cell.loc[
+        df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_cell_demand_metadata.at[
+        df_hh_profiles_in_census_cells.at[
             grid_id, "cell_profile_ids"
         ] = cell_profile_ids
-        df_cell_demand_metadata.at[grid_id, "nuts3"] = df_cell.loc[
+        df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
-        df_cell_demand_metadata.at[grid_id, "nuts1"] = df_cell.loc[
+        df_hh_profiles_in_census_cells.at[grid_id, "nuts1"] = df_cell.loc[
             :, "nuts1"
         ].unique()[0]
 
-    return df_cell_demand_metadata
+    return df_hh_profiles_in_census_cells
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def adjust_to_demand_regio_nuts3_annual(
-    df_cell_demand_metadata, df_profiles, df_demand_regio
+    df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
 ):
     """
     Computes the profile scaling factor for alignment to demand regio data
@@ -1043,9 +1212,9 @@ def adjust_to_demand_regio_nuts3_annual(
 
     Parameters
     ----------
-    df_cell_demand_metadata: pd.DataFrame
-        Result of :func:`get_cell_demand_metadata`.
-    df_profiles: pd.DataFrame
+    df_hh_profiles_in_census_cells: pd.DataFrame
+        Result of :func:`allocate_hh_demand_profiles_to_cells`.
+    df_iee_profiles: pd.DataFrame
         Household load profile data
 
         * Index: Times steps as serial integers
@@ -1058,39 +1227,45 @@ def adjust_to_demand_regio_nuts3_annual(
     Returns
     -------
     pd.DataFrame
-        Returns the same data as :func:`get_cell_demand_metadata`, but with
-        filled columns `factor_2035` and `factor_2050`.
+        Returns the same data as :func:`allocate_hh_demand_profiles_to_cells`,
+        but with filled columns `factor_2035` and `factor_2050`.
     """
-    for nuts3_id, df_nuts3 in df_cell_demand_metadata.groupby(by="nuts3"):
+    for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
+        by="nuts3"
+    ):
         nuts3_cell_ids = df_nuts3.index
         nuts3_profile_ids = df_nuts3.loc[:, "cell_profile_ids"].sum()
 
         # take all profiles of one nuts3, aggregate and sum
         # profiles in Wh
         nuts3_profiles_sum_annual = (
-            df_profiles.loc[:, nuts3_profile_ids].sum().sum()
+            df_iee_profiles.loc[:, nuts3_profile_ids].sum().sum()
         )
 
         # Scaling Factor
         # ##############
         # demand regio in MWh
         # profiles in Wh
-        df_cell_demand_metadata.loc[nuts3_cell_ids, "factor_2035"] = (
+        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2035"] = (
             df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
             * 1e3
             / (nuts3_profiles_sum_annual / 1e3)
         )
-        df_cell_demand_metadata.loc[nuts3_cell_ids, "factor_2050"] = (
+        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2050"] = (
             df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
             * 1e3
             / (nuts3_profiles_sum_annual / 1e3)
         )
 
-    return df_cell_demand_metadata
+    return df_hh_profiles_in_census_cells
 
 
 def get_load_timeseries(
-    df_profiles, df_cell_demand_metadata, cell_ids, year, peak_load_only=False
+    df_iee_profiles,
+    df_hh_profiles_in_census_cells,
+    cell_ids,
+    year,
+    peak_load_only=False,
 ):
     """
     Get peak load for one load area in MWh
@@ -1100,14 +1275,14 @@ def get_load_timeseries(
 
     Parameters
     ----------
-    df_profiles: pd.DataFrame
+    df_iee_profiles: pd.DataFrame
         Household load profile data in Wh
 
         * Index: Times steps as serial integers
         * Columns: pd.MultiIndex with (`HH_TYPE`, `id`)
 
         Used to calculate the peak load from.
-    df_cell_demand_metadata: pd.DataFrame
+    df_hh_profiles_in_census_cells: pd.DataFrame
         Return value of :func:`adjust_to_demand_regio_nuts3_annual`.
     cell_ids: list
         Zensus cell ids that define one group of zensus cells that belong to
@@ -1126,19 +1301,20 @@ def get_load_timeseries(
         Aggregated time series for given `cell_ids` or peak load of this time
         series in MWh.
     """
-    timesteps = len(df_profiles)
+    timesteps = len(df_iee_profiles)
     full_load = pd.Series(
         data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
     )
-    load_area_meta = df_cell_demand_metadata.loc[
+    load_area_meta = df_hh_profiles_in_census_cells.loc[
         cell_ids, ["cell_profile_ids", "nuts3", f"factor_{year}"]
     ]
-    # loop over nuts3 (part_load) and sum (full_load) as the scaling factor applies at nuts3 level
+    # loop over nuts3 (part_load) and sum (full_load) as the scaling factor
+    # applies at nuts3 level
     for (nuts3, factor), df in load_area_meta.groupby(
         by=["nuts3", f"factor_{year}"]
     ):
         part_load = (
-            df_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
+            df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
             * factor
             / 1e6
         )  # from Wh to MWh
@@ -1150,40 +1326,61 @@ def get_load_timeseries(
 
 def houseprofiles_in_census_cells():
     """
-    Identify household electricity profiles for each census cell
+    Allocate household electricity demand profiles for each census cell.
 
-    Creates a table that maps household electricity demand profiles to zensus
+    Creates a table that maps household electricity demand profiles to census
     cells. Each row represents one cell and contains a list of profile IDs.
 
     Use :func:`get_houseprofiles_in_census_cells` to retrieve the data from
     the database as pandas
 
     """
+
+    def gen_profile_names(n):
+        """Join from Format (str),(int) to (str)a000(int)"""
+        a = f"{n[0]}a{int(n[1]):04d}"
+        return a
+
     # Init random generators using global seed
     random.seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
     # Read demand profiles from egon-data-bundle
-    df_profiles = get_household_demand_profiles_raw()
+    df_iee_profiles = get_iee_hh_demand_profiles_raw()
 
     # Write raw profiles into db
-    write_hh_profiles_to_db(df_profiles)
+    write_hh_profiles_to_db(df_iee_profiles)
 
     # Process profiles for further use
-    df_profiles = process_household_demand_profiles(df_profiles)
+    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
-    # Download zensus household type x age category data
-    df_households_raw = get_zensus_households_raw()
+    # Download zensus household NUTS-1 data with family type and age categories
+    df_census_households_nuts1_raw = get_census_households_nuts1_raw()
 
-    # Clean data
-    df_households = df_households_raw.applymap(clean).applymap(int)
+    # Restructure data to be compatible with categories from demand profile
+    # generator. Reduce age intervals and aggregate data to NUTS-1 level.
+    df_census_households_nuts1 = process_nuts1_census_data(
+        df_census_households_nuts1_raw
+    )
 
-    # Make data compatible with household demand profile categories
-    # Use less age interval and aggregate data to NUTS-1 level
-    df_zensus_nuts1 = process_nuts1_zensus_data(df_households)
+    # Query census household grid data with family type
+    df_census_households_grid = get_census_households_grid()
 
-    # Enrich census cell data with nuts1 level attributes
-    df_zensus_cells = enrich_zensus_data_at_cell_level(df_zensus_nuts1)
+    # fill cells with missing household distribution values but population
+    # by hh distribution value of random cell with same population value
+    df_census_households_grid = impute_missing_hh_in_populated_cells(
+        df_census_households_grid
+    )
+
+    # Refine census household grid data with additional NUTS-1 level attributes
+    df_census_households_grid_refined = refine_census_data_at_cell_level(
+        df_census_households_nuts1, df_census_households_grid
+    )
+
+    # Allocate profile ids to each cell by census data
+    df_hh_profiles_in_census_cells = allocate_hh_demand_profiles_to_cells(
+        df_census_households_grid_refined, df_iee_profiles
+    )
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
@@ -1195,36 +1392,43 @@ def houseprofiles_in_census_cells():
         index_col=["year", "nuts3"],
     )
 
-    # Finally create table that stores profile ids for each cell
-    df_cell_demand_metadata = get_cell_demand_metadata(
-        df_zensus_cells, df_profiles
+    # Scale profiles to meet demand regio annual demand projections
+    df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
+        df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
     )
-    df_cell_demand_metadata = adjust_to_demand_regio_nuts3_annual(
-        df_cell_demand_metadata, df_profiles, df_demand_regio
-    )
-    df_cell_demand_metadata = df_cell_demand_metadata.reset_index(drop=False)
 
-    # Insert Zensus-cell-profile metadata-table into respective database table
-    engine = db.engine()
+    df_hh_profiles_in_census_cells = (
+        df_hh_profiles_in_census_cells.reset_index(drop=False)
+    )
+    df_hh_profiles_in_census_cells["cell_id"] = df_hh_profiles_in_census_cells[
+        "cell_id"
+    ].astype(int)
+
+    # Cast profile ids back to initial str format
+    df_hh_profiles_in_census_cells[
+        "cell_profile_ids"
+    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+        lambda x: list(map(gen_profile_names, x))
+    )
+
+    # Write allocation table into database
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
         bind=engine, checkfirst=True
     )
     HouseholdElectricityProfilesInCensusCells.__table__.create(
         bind=engine, checkfirst=True
     )
-    df_cell_demand_metadata["cell_id"] = df_cell_demand_metadata[
-        "cell_id"
-    ].astype(int)
+
     with db.session_scope() as session:
         session.bulk_insert_mappings(
             HouseholdElectricityProfilesInCensusCells,
-            df_cell_demand_metadata.to_dict(orient="records"),
+            df_hh_profiles_in_census_cells.to_dict(orient="records"),
         )
 
 
 def get_houseprofiles_in_census_cells():
     """
-    Retrieve household electricity demand profile mapping
+    Retrieve household electricity demand profile mapping from database
 
     See Also
     --------
@@ -1241,10 +1445,10 @@ def get_houseprofiles_in_census_cells():
         census_profile_mapping = pd.read_sql(
             q.statement, q.session.bind, index_col="cell_id"
         )
-
-    census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
-        "cell_profile_ids"
-    ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+    # Cast profiles ids to tuple of type and int
+    # census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
+    #     "cell_profile_ids"
+    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     return census_profile_mapping
 
@@ -1324,9 +1528,10 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     cell_demand_metadata = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
-    cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
-        "cell_profile_ids"
-    ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
+    # Cast profiles ids to tuple of type and int
+    # cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
+    #     "cell_profile_ids"
+    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
     return cell_demand_metadata
 
 
@@ -1336,8 +1541,9 @@ def get_hh_profiles_from_db(profile_ids):
 
     Parameters
     ----------
-    profile_ids: list of tuple (str, int)
-        tuple consists of (category, profile number)
+    profile_ids: list of str (str, int)
+        (type)a00..(profile number) with number having exactly 4 digits
+
 
     See Also
     --------
@@ -1348,15 +1554,6 @@ def get_hh_profiles_from_db(profile_ids):
     pd.DataFrame
          Selection of household demand profiles
     """
-
-    def gen_profile_names(n):
-        """Join from Format (str),(int) to (str)a000(int)"""
-        a = f"{n[0]}a{int(n[1]):04d}"
-        return a
-
-    # Format profile ids to query
-    profile_ids = list(map(gen_profile_names, profile_ids))
-
     # Query load profiles
     with db.session_scope() as session:
         cells_query = session.query(
@@ -1367,6 +1564,7 @@ def get_hh_profiles_from_db(profile_ids):
         cells_query.statement, cells_query.session.bind, index_col="type"
     )
 
+    # convert array to Dataframe
     df_profile_loads = pd.DataFrame.from_records(
         df_profile_loads["load_in_wh"], index=df_profile_loads.index
     ).T
@@ -1413,12 +1611,12 @@ def get_scaled_profiles_from_db(
     )
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
-    df_profiles = get_hh_profiles_from_db(profile_ids)
-    df_profiles = process_household_demand_profiles(df_profiles)
+    df_iee_profiles = get_hh_profiles_from_db(profile_ids)
+    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     scaled_profiles = get_load_timeseries(
-        df_profiles=df_profiles,
-        df_cell_demand_metadata=cell_demand_metadata,
+        df_iee_profiles=df_iee_profiles,
+        df_hh_profiles_in_census_cells=cell_demand_metadata,
         cell_ids=cell_demand_metadata.index.to_list(),
         year=year,
         peak_load_only=peak_load_only,
@@ -1427,7 +1625,7 @@ def get_scaled_profiles_from_db(
 
 
 def mv_grid_district_HH_electricity_load(
-    scenario_name, scenario_year, version, drop_table=False
+    scenario_name, scenario_year, drop_table=False
 ):
     """
     Aggregated household demand time series at HV/MV substation level
@@ -1442,8 +1640,6 @@ def mv_grid_district_HH_electricity_load(
         Scenario name identifier, i.e. "eGon2035"
     scenario_year: int
         Scenario year according to `scenario_name`
-    version: str
-        Version identifier
     drop_table: bool
         Toggle to True for dropping table at beginning of this function.
         Be careful, delete any data.
@@ -1454,7 +1650,12 @@ def mv_grid_district_HH_electricity_load(
         Multiindexed dataframe with `timestep` and `bus_id` as indexers.
         Demand is given in kWh.
     """
-    engine = db.engine()
+
+    def tuple_format(x):
+        """Convert Profile ids from string to tuple (type, id)
+        Convert from (str)a000(int) to (str), (int)
+        """
+        return x[:2], int(x[3:])
 
     with db.session_scope() as session:
         cells_query = session.query(
@@ -1469,22 +1670,24 @@ def mv_grid_district_HH_electricity_load(
     cells = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
+
+    # convert profile ids to tuple (type, id) format
     cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
-        lambda x: [(cat, int(profile_id)) for cat, profile_id in x]
+        lambda x: list(map(tuple_format, x))
     )
 
     # Read demand profiles from egon-data-bundle
-    df_profiles = get_household_demand_profiles_raw()
+    df_iee_profiles = get_iee_hh_demand_profiles_raw()
 
     # Process profiles for further use
-    df_profiles = process_household_demand_profiles(df_profiles)
+    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     # Create aggregated load profile for each MV grid district
     mvgd_profiles_dict = {}
     for grid_district, data in cells.groupby("bus_id"):
         mvgd_profile = get_load_timeseries(
-            df_profiles=df_profiles,
-            df_cell_demand_metadata=data,
+            df_iee_profiles=df_iee_profiles,
+            df_hh_profiles_in_census_cells=data,
             cell_ids=data.index,
             year=scenario_year,
             peak_load_only=False,
@@ -1497,7 +1700,6 @@ def mv_grid_district_HH_electricity_load(
     mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Add remaining columns
-    mvgd_profiles["version"] = version
     mvgd_profiles["scn_name"] = scenario_name
 
     if drop_table:

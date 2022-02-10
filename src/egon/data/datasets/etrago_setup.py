@@ -16,6 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -28,9 +29,9 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
-            tasks=(create_tables, temp_resolution),
+            tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
 
 
@@ -43,7 +44,7 @@ class EgonPfHvBus(Base):
     v_nom = Column(Float(53))
     type = Column(Text)
     carrier = Column(Text)
-    v_mag_pu_set_fixed = Column(Float(53))
+    v_mag_pu_set = Column(Float(53))
     v_mag_pu_min = Column(Float(53))
     v_mag_pu_max = Column(Float(53))
     x = Column(Float(53))
@@ -75,12 +76,12 @@ class EgonPfHvGenerator(Base):
     p_nom_extendable = Column(Boolean)
     p_nom_min = Column(Float(53))
     p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
-    p_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
+    p_min_pu = Column(Float(53))
+    p_max_pu = Column(Float(53))
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
     sign = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
+    marginal_cost = Column(Float(53))
     capital_cost = Column(Float(53))
     efficiency = Column(Float(53))
     committable = Column(Boolean)
@@ -128,7 +129,7 @@ class EgonPfHvLine(Base):
     s_nom_extendable = Column(Boolean)
     s_nom_min = Column(Float(53))
     s_nom_max = Column(Float(53))
-    s_max_pu_fixed = Column(Float(53))
+    s_max_pu = Column(Float(53))
     capital_cost = Column(Float(53))
     length = Column(Float(53))
     cables = Column(Integer)
@@ -161,16 +162,16 @@ class EgonPfHvLink(Base):
     bus1 = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    efficiency_fixed = Column(Float(53))
+    efficiency = Column(Float(53))
     p_nom = Column(Numeric)
     p_nom_extendable = Column(Boolean)
     p_nom_min = Column(Float(53))
     p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
-    p_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
+    p_min_pu = Column(Float(53))
+    p_max_pu = Column(Float(53))
+    p_set = Column(Float(53))
     capital_cost = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
+    marginal_cost = Column(Float(53))
     length = Column(Float(53))
     terrain_factor = Column(Float(53))
     geom = Column(Geometry("MULTILINESTRING", 4326))
@@ -200,8 +201,8 @@ class EgonPfHvLoad(Base):
     bus = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
     sign = Column(Float(53))
 
 
@@ -241,21 +242,21 @@ class EgonPfHvStorage(Base):
     p_nom_extendable = Column(Boolean)
     p_nom_min = Column(Float(53))
     p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
-    p_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
+    p_min_pu = Column(Float(53))
+    p_max_pu = Column(Float(53))
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
     sign = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
+    marginal_cost = Column(Float(53))
     capital_cost = Column(Float(53))
     state_of_charge_initial = Column(Float(53))
     cyclic_state_of_charge = Column(Boolean)
-    state_of_charge_set_fixed = Column(Float(53))
+    state_of_charge_set = Column(Float(53))
     max_hours = Column(Float(53))
     efficiency_store = Column(Float(53))
     efficiency_dispatch = Column(Float(53))
     standing_loss = Column(Float(53))
-    inflow_fixed = Column(Float(53))
+    inflow = Column(Float(53))
 
 
 class EgonPfHvStorageTimeseries(Base):
@@ -287,14 +288,14 @@ class EgonPfHvStore(Base):
     e_nom_extendable = Column(Boolean)
     e_nom_min = Column(Float(53))
     e_nom_max = Column(Float(53))
-    e_min_pu_fixed = Column(Float(53))
-    e_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
+    e_min_pu = Column(Float(53))
+    e_max_pu = Column(Float(53))
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
     e_initial = Column(Float(53))
     e_cyclic = Column(Boolean)
     sign = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
+    marginal_cost = Column(Float(53))
     capital_cost = Column(Float(53))
     standing_loss = Column(Float(53))
 
@@ -341,7 +342,7 @@ class EgonPfHvTransformer(Base):
     s_nom_extendable = Column(Boolean)
     s_nom_min = Column(Float(53))
     s_nom_max = Column(Float(53))
-    s_max_pu_fixed = Column(Float(53))
+    s_max_pu = Column(Float(53))
     tap_ratio = Column(Float(53))
     tap_side = Column(BigInteger)
     tap_position = Column(BigInteger)
@@ -362,12 +363,12 @@ class EgonPfHvTransformerTimeseries(Base):
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
     s_max_pu = Column(ARRAY(Float(precision=53)))
-    
+
 
 class EgonPfHvBusmap(Base):
     __tablename__ = "egon_etrago_hv_busmap"
     __table_args__ = {"schema": "grid"}
-     
+
     scn_name = Column(Text, primary_key=True, nullable=False)
     bus0 = Column(Text, primary_key=True, nullable=False)
     bus1 = Column(Text, primary_key=True, nullable=False)
@@ -504,7 +505,7 @@ def create_tables():
 
 
 def temp_resolution():
-    """ Insert temporal resolution for etrago
+    """Insert temporal resolution for etrago
 
     Returns
     -------
@@ -521,20 +522,131 @@ def temp_resolution():
     )
 
 
+def insert_carriers():
+    """Insert list of carriers into eTraGo table
+
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing entries
+    db.execute_sql(
+        """
+        DELETE FROM grid.egon_etrago_carrier
+        """
+    )
+
+    # List carrier names from all components
+    df = pd.DataFrame(
+        data={
+            "name": [
+                "biomass",
+                "CH4",
+                "pv",
+                "wind_offshore",
+                "wind_onshore",
+                "central_heat_pump",
+                "central_resistive_heater",
+                "CH4_to_H2",
+                "dsm",
+                "H2_feedin",
+                "H2_ind_load",
+                "H2_to_CH4",
+                "H2_to_power",
+                "rural_heat_pump",
+                "industrial_biomass_CHP",
+                "industrial_gas_CHP",
+                "central_biomass_CHP_heat",
+                "central_biomass_CHP",
+                "central_gas_CHP",
+                "central_gas_CHP_heat",
+                "power_to_H2",
+                "rural_gas_boiler",
+                "central_gas_boiler",
+                "H2_overground",
+                "H2_underground",
+                "solar_thermal_collector",
+                "geo_thermal",
+                "AC",
+                "central_heat",
+                "H2",
+                "rural_heat",
+                "H2_grid",
+                "H2_saltcavern",
+                "biogas_feedin",
+                "natural_gas_feedin",
+                "pumped_hydro",
+                "battery",
+                "OCGT",
+            ],
+        }
+    )
+
+    # Insert data into database
+    df.to_sql(
+        "egon_etrago_carrier",
+        schema="grid",
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+
+def check_carriers():
+    """Check if any eTraGo table has carriers not included in the carrier table.
+
+    Raises
+    ------
+    ValueError if carriers that are not defined in the carriers table are
+    used in any eTraGo table.
+    """
+    carriers = db.select_dataframe(
+        f"""
+        SELECT name FROM grid.egon_etrago_carrier
+        """
+    )
+    unknown_carriers = {}
+    tables = ['bus', 'store', 'storage', 'link', 'line', 'generator', 'load']
+
+    for table in tables:
+    # Delete existing entries
+        data = db.select_dataframe(
+            f"""
+            SELECT carrier FROM grid.egon_etrago_{table}
+            """
+        )
+        unknown_carriers[table] = (
+            data[~data['carrier'].isin(carriers)]['carrier'].unique()
+        )
+
+    if len(unknown_carriers) > 0:
+        msg = (
+            "The eTraGo tables contain carriers, that are not included in the "
+            "carrier table:\n"
+        )
+        for table, carriers in unknown_carriers.items():
+            carriers = [str(c) for c in carriers]
+            if len(carriers) > 0:
+                msg += table + ": '" + "', '".join(carriers) + "'\n"
+
+        raise ValueError(msg)
+
+
 def link_geom_from_buses(df, scn_name):
-    """ Add LineString geometry accoring to geometry of buses to links
+    """Add LineString geometry accoring to geometry of buses to links
 
     Parameters
     ----------
     df : pandas.DataFrame
-        List of eTraGo links with bus0 and bus 1 but without topology
+        List of eTraGo links with bus0 and bus1 but without topology
     scn_name : str
         Scenario name
 
     Returns
     -------
     gdf : geopandas.GeoDataFrame
-        List of eTraGo links with bus0 and bus 1 but with topology
+        List of eTraGo links with bus0 and bus1 but with topology
 
     """
 
