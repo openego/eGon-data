@@ -269,16 +269,12 @@ with airflow.DAG(
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[
-            insert_hydrogen_buses,
-        ]
+        dependencies=[insert_hydrogen_buses]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            insert_hydrogen_buses,
-        ]
+        dependencies=[insert_hydrogen_buses]
     )
 
     # Create gas voronoi
@@ -392,7 +388,7 @@ with airflow.DAG(
 
     # Household electricity demand buildings
     hh_demand_buildings_setup = hh_buildings.setup(
-        dependencies=[householdprofiles_in_cencus_cells],
+        dependencies=[householdprofiles_in_cencus_cells]
     )
 
     hh_demand_buildings_setup.insert_into(pipeline)
@@ -457,16 +453,12 @@ with airflow.DAG(
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[
-            insert_hydrogen_buses,
-        ]
+        dependencies=[insert_hydrogen_buses]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            insert_hydrogen_buses,
-        ]
+        dependencies=[insert_hydrogen_buses]
     )
 
     # Create gas voronoi
@@ -617,9 +609,5 @@ with airflow.DAG(
     # Storages to eTrago
 
     storage_etrago = StorageEtrago(
-        dependencies=[
-            pumped_hydro,
-            setup_etrago,
-            scenario_parameters,
-        ]
+        dependencies=[pumped_hydro, setup_etrago, scenario_parameters]
     )
