@@ -11,7 +11,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -22,9 +22,6 @@ def fill_etrago_generators():
     con = db.engine()
     cfg = egon.data.config.datasets()["generators_etrago"]
 
-    # Delete power plants from previous iterations of this script
-    delete_previuos_gen(cfg, con)
-
     # Load required tables
     (
         power_plants,
@@ -33,6 +30,9 @@ def fill_etrago_generators():
         etrago_gen_orig,
         pp_time,
     ) = load_tables(con, cfg)
+    
+    # Delete power plants from previous iterations of this script
+    delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants)
 
     renew_feedin = adjust_renew_feedin_table(
         renew_feedin=renew_feedin, cfg=cfg
@@ -225,31 +225,36 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     return renew_feedin
 
 
-def delete_previuos_gen(cfg, con):
-    '''
-    db.execute_sql(
-        f"""DELETE FROM 
-                   {cfg['targets']['etrago_generators']['schema']}.
-                   {cfg['targets']['etrago_generators']['table']}
-                   WHERE carrier <> 'CH4' AND carrier <> 'solar_rooftop'
-                   AND carrier <> 'solar_thermal_collector'
-                   AND carrier <> 'geo_thermal'
-                   AND bus IN (
-                       SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
-                       {cfg['sources']['bus']['table']}
-                       WHERE country = 'DE'
-                       AND carrier = 'AC')
-                   """
-    )
+def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants ):
+    gen_to_delete = []
     
+    for i, gen in etrago_gen_orig.iterrows():
+        if ((power_plants['bus_id'] == gen['bus']) &
+        (power_plants['carrier'] == gen['carrier'])).any():
+            gen_to_delete.append(str(gen['generator_id']))
+        
+    if gen_to_delete:
+        db.execute_sql(
+            f"""DELETE FROM 
+                    {cfg['targets']['etrago_generators']['schema']}.
+                    {cfg['targets']['etrago_generators']['table']}
+                    WHERE generator_id IN {*gen_to_delete,}
+                    AND bus IN (
+                        SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
+                        {cfg['sources']['bus']['table']}
+                        WHERE country = 'DE'
+                        AND carrier = 'AC')
+                    """
+        )
+        
+        db.execute_sql(
+            f"""DELETE FROM 
+                    {cfg['targets']['etrago_gen_time']['schema']}.
+                    {cfg['targets']['etrago_gen_time']['table']}
+                    WHERE generator_id IN {*gen_to_delete,}
+                    """
+        )
 
-    db.execute_sql(
-        f"""DELETE FROM 
-                   {cfg['targets']['etrago_gen_time']['schema']}.
-                   {cfg['targets']['etrago_gen_time']['table']}
-                   """
-    )
-    '''
 
 def set_timeseries(power_plants, renew_feedin):
     def timeseries(pp):
