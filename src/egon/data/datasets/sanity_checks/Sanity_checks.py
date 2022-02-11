@@ -31,12 +31,34 @@ GROUP BY (scn_name, a.carrier, c.capacity);
     )
 sum_installed_gen_cap_DE.head()
 
+sum_installed_gen_biomass_cap_DE= db.select_dataframe(
+    f"""
+SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as capacity_mw_biogass
+FROM grid.egon_etrago_generator
+WHERE bus IN (
+SELECT bus_id FROM grid.egon_etrago_bus
+WHERE scn_name = 'eGon2035'
+AND country = 'DE')
+AND carrier IN ('central_biomass_CHP_heat', 'biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
+GROUP BY (scn_name);
+"""
+,
+    )
+
+
+
 sum_installed_gen_cap_DE["Error"] = ((
     
  (sum_installed_gen_cap_DE["capacity_mw"] - sum_installed_gen_cap_DE["target_capacity"])/sum_installed_gen_cap_DE["target_capacity"])*100
 )
 
-a1 = sum_installed_gen_cap_DE['Error'].values[0]
+sum_installed_gen_biomass_cap_DE["Error"] = ((
+    
+ (sum_installed_gen_biomass_cap_DE["capacity_mw_biogass"] - sum_installed_gen_cap_DE["target_capacity"])/sum_installed_gen_cap_DE["target_capacity"])*100
+)
+
+
+a1 = sum_installed_gen_biomass_cap_DE['Error'].values[0]
 a=round(a1,2)
 
 b1 = sum_installed_gen_cap_DE['Error'].values[1]
