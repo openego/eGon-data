@@ -102,71 +102,64 @@ def get_annual_household_el_demand_cells():
             .order_by(HouseholdElectricityProfilesOfBuildings.id)
         )
 
-        df_buildings_and_profiles = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col="id"
+    df_buildings_and_profiles = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col="id"
+    )
+
+    # Read demand profiles from egon-data-bundle
+    df_profiles = get_iee_hh_demand_profiles_raw()
+
+    def ve(s):
+        raise (ValueError(s))
+
+    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+    iterate_over = (
+        "nuts3"
+        if dataset == "Everything"
+        else "cell_id"
+        if dataset == "Schleswig-Holstein"
+        else ve(f"'{dataset}' is not a valid dataset boundary.")
+    )
+
+    df_annual_demand = pd.DataFrame(
+        columns=["eGon2035", "eGon100RE", "zensus_population_id"]
+    )
+
+    for _, df in df_buildings_and_profiles.groupby(by=iterate_over):
+        df_annual_demand_iter = pd.DataFrame(
+            columns=["eGon2035", "eGon100RE", "zensus_population_id"]
         )
-
-        # Read demand profiles from egon-data-bundle
-        df_profiles = get_iee_hh_demand_profiles_raw()
-
-        def ve(s):
-            raise (ValueError(s))
-
-        dataset = egon.data.config.settings()["egon-data"][
-            "--dataset-boundary"
-        ]
-        iterate_over = (
-            "nuts3"
-            if dataset == "Everything"
-            else "cell_id"
-            if dataset == "Schleswig-Holstein"
-            else ve(f"'{dataset}' is not a valid dataset boundary.")
+        df_annual_demand_iter["eGon2035"] = (
+            df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+            * df["factor_2035"].values
         )
-
-        df_annual_demand = pd.DataFrame()
-
-        for nuts3, df in df_buildings_and_profiles.groupby(by=iterate_over):
-            df_annual_demand_nuts3 = df_profiles.loc[:, df.profile_id]
-
-            m_index = pd.MultiIndex.from_arrays(
-                [df.profile_id, df.building_id],
-                names=("profile_id", "cell_id"),
-            )
-            df_annual_demand_nuts3.columns = m_index
-            df_annual_demand_nuts3 = df_annual_demand_nuts3.sum(
-                level="cell_id", axis=1
-            ).sum()
-
-            df_annual_demand_nuts3 = pd.DataFrame(
-                [
-                    df_annual_demand_nuts3 * df["factor_2035"].unique(),
-                    df_annual_demand_nuts3 * df["factor_2050"].unique(),
-                ],
-                index=[
-                    "building_peak_load_in_w_2035",
-                    "building_peak_load_in_w_2050",
-                ],
-            ).T
-
-            df_annual_demand = pd.concat(
-                [df_annual_demand, df_annual_demand_nuts3], axis=0
-            )
-
-        df_annual_demand.reset_index(inplace=True)
-
-        EgonDemandRegioZensusElectricity.__table__.drop(
-            bind=engine, checkfirst=True
+        df_annual_demand_iter["eGon100RE"] = (
+            df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+            * df["factor_2050"].values
         )
-        EgonDemandRegioZensusElectricity.__table__.create(
-            bind=engine, checkfirst=True
-        )
+        df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
+        df_annual_demand = df_annual_demand.append(df_annual_demand_iter)
 
-        # Write peak loads into db
-        with db.session_scope() as session:
-            session.bulk_insert_mappings(
-                EgonDemandRegioZensusElectricity,
-                df_annual_demand.to_dict(orient="records"),
-            )
+    df_annual_demand = (
+        df_annual_demand.groupby("zensus_population_id").sum().reset_index()
+    )
+    df_annual_demand["sector"] = "residential"
+    df_annual_demand = df_annual_demand.melt(
+        id_vars=["zensus_population_id", "sector"],
+        var_name="scenario",
+        value_name="demand",
+    )
+    # convert from Wh to MWh
+    df_annual_demand["demand"] = df_annual_demand["demand"] / 1e6
+
+    # Insert data to target table
+    df_annual_demand.to_sql(
+        name=EgonDemandRegioZensusElectricity.__table__.name,
+        schema=EgonDemandRegioZensusElectricity.__table__.schema,
+        con=db.engine(),
+        index=False,
+        if_exists="append",
+    )
 
 
 def distribute_cts_demands():
