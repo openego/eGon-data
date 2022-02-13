@@ -305,6 +305,10 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* H2 feed in links are changed to non extendable
+  `#653 <https://github.com/openego/eGon-data/issues/653>`_
+* Remove the '_fixed' suffix
+  `#628 <https://github.com/openego/eGon-data/issues/628>`_
 * Fill table demand.egon_demandregio_zensus_electricity after profile allocation
   `#620 <https://github.com/openego/eGon-data/issues/586>`_
 
@@ -396,6 +400,8 @@ Bug fixes
   `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Fix positions of the foreign gas buses
+  `#618 <https://github.com/openego/eGon-data/issues/618>`_
 * Create and fill transfer_busses table in substation-dataset
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
