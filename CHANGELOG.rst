@@ -295,6 +295,8 @@ Changed
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
+*  Aggregate generators and stores for CH4
+  `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
 * Fix RE potential areas outside of Germany by updating
   the dataset. Import files from data bundle.
