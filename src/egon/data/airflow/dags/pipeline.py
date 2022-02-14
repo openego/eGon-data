@@ -437,7 +437,6 @@ with airflow.DAG(
         dependencies=[
             gas_production_insert_data,
             insert_data_ch4_storages,
-            industrial_gas_demand,
         ]
     )
 
