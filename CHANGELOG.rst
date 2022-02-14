@@ -298,6 +298,7 @@ Changed
 *  Aggregate generators and stores for CH4
   `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
+  `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
   the dataset. Import files from data bundle.
   `#592 <https://github.com/openego/eGon-data/issues/592>`_
