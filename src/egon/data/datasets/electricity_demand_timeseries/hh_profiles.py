@@ -513,56 +513,6 @@ def create_missing_zensus_data(
     return df_average_split
 
 
-def inhabitants_to_households(
-    df_people_by_householdtypes_abs, mapping_people_in_households
-):
-    """
-    Convert number of inhabitant to number of household types
-
-    Takes the distribution of peoples living in types of households to
-    calculate a distribution of household types by using a people-in-household
-    mapping.
-
-    Results are rounded to int (ceiled) to full households.
-
-    Parameters
-    ----------
-    df_people_by_householdtypes_abs: pd.DataFrame
-        Distribution of people living in households
-    mapping_people_in_households: dict
-        Mapping of people living in certain types of households
-
-    Returns
-    ----------
-    df_households_by_type: pd.DataFrame
-        Distribution of households type
-
-         .. warning::
-         By ceiling to full integers of people a small deviation is introduced.
-
-    """
-    # compare categories and remove form mapping if to many
-    diff = set(df_people_by_householdtypes_abs.index) ^ set(
-        mapping_people_in_households.keys()
-    )
-
-    if bool(diff):
-        for key in diff:
-            mapping_people_in_households = dict(mapping_people_in_households)
-            del mapping_people_in_households[key]
-        print(f"Removed {diff} from mapping!")
-
-    # divide amount of people by people in household types
-    df_households_by_type = df_people_by_householdtypes_abs.div(
-        mapping_people_in_households, axis=0
-    )
-    # Number of people gets adjusted to integer values by ceiling
-    # This introduces a small deviation
-    df_households_by_type = df_households_by_type.apply(np.ceil)
-
-    return df_households_by_type
-
-
 def process_nuts1_census_data(df_census_households_raw):
     """Make data compatible with household demand profile categories
 
@@ -1173,15 +1123,15 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
-    df_census_households_grid_refined["characteristics_code"] = (
-        df_census_households_grid_refined["characteristics_code"].astype(int)
-    )
-    df_census_households_grid_refined["hh_5types"] = (
-        df_census_households_grid_refined["hh_5types"].astype(int)
-    )
-    df_census_households_grid_refined["hh_10types"] = (
-        df_census_households_grid_refined["hh_10types"].astype(int)
-    )
+    df_census_households_grid_refined[
+        "characteristics_code"
+    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
+    df_census_households_grid_refined[
+        "hh_5types"
+    ] = df_census_households_grid_refined["hh_5types"].astype(int)
+    df_census_households_grid_refined[
+        "hh_10types"
+    ] = df_census_households_grid_refined["hh_10types"].astype(int)
 
     return df_census_households_grid_refined
 
