@@ -248,53 +248,6 @@ with airflow.DAG(
         dependencies=[vg250, scenario_parameters, zensus_vg250]
     )
 
-    # Gas grid import
-    gas_grid_insert_data = GasNodesandPipes(
-        dependencies=[etrago_input_data, download_data_bundle, osmtgmod_pypsa]
-    )
-
-    # Insert hydrogen buses
-    insert_hydrogen_buses = HydrogenBusEtrago(
-        dependencies=[
-            saltcavern_storage,
-            gas_grid_insert_data,
-            substation_voronoi,
-        ]
-    )
-
-    # H2 steel tanks and saltcavern storage
-    insert_H2_storage = HydrogenStoreEtrago(
-        dependencies=[insert_hydrogen_buses]
-    )
-
-    # Power-to-gas-to-power chain installations
-    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[insert_hydrogen_buses]
-    )
-
-    # Link between methane grid and respective hydrogen buses
-    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[insert_hydrogen_buses]
-    )
-
-    # Create gas voronoi
-    create_gas_polygons = GasAreas(
-        dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
-    )
-
-    # Gas prod import
-    gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons]
-    )
-
-    # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
-
-    # Insert industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand(
-        dependencies=[create_gas_polygons]
-    )
-
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
 
@@ -418,7 +371,7 @@ with airflow.DAG(
         dependencies=[
             demand_curves_industry,
             cts_electricity_demand_annual,
-            hh_demand,
+            hh_demand_buildings_setup,
         ]
     )
 
