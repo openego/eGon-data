@@ -311,7 +311,7 @@ Changed
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
   `#628 <https://github.com/openego/eGon-data/issues/628>`_
-* Remove gas bus and pipes in Finland
+* Remove gas pipe Germany - Finland
   `#598 <https://github.com/openego/eGon-data/issues/598>`_ 
 
 
