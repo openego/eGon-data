@@ -161,8 +161,6 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
-* Include Pypsa default values in table creation
-  `#544 <https://github.com/openego/eGon-data/issues/544>`_
 * Include PHS in eTraGo tables
   `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
@@ -291,38 +289,30 @@ Changed
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Add information on plz, city and federal state to data on mastr without chp
   `#425 <https://github.com/openego/eGon-data/issues/425>`_
-* Assign residential heat demands to osm buildings
+* Assign residentail heat demands to osm buildings
   `#557 <https://github.com/openego/eGon-data/issues/557>`_
 * Add foreign gas buses and adjust cross bording pipelines
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
-* Add DC lines from Germany to Sweden and Denmark
-  `#611 <https://github.com/openego/eGon-data/issues/611>`_
-* Add gas bus in Finland
-  `#598 <https://github.com/openego/eGon-data/issues/598>`_
+*  Aggregate generators and stores for CH4
+  `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
 * Fix RE potential areas outside of Germany by updating
   the dataset. Import files from data bundle.
   `#592 <https://github.com/openego/eGon-data/issues/592>`_
   `#595 <https://github.com/openego/eGon-data/issues/595>`_
-*  Aggregate generators and stores for CH4
-  `#629 <https://github.com/openego/eGon-data/issues/629>`_
+* Add DC lines from Germany to Sweden and Denmark
+  `#611 <https://github.com/openego/eGon-data/issues/611>`_
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
-* Fill missing household data for populated cells
-  `#431 <https://github.com/openego/eGon-data/issues/431>`_
-* Remove the '_fixed' suffix
-  `#628 <https://github.com/openego/eGon-data/issues/628>`_
-* Create H2 pipeline infrastructure for eGon100RE
-  `#638 <https://github.com/openego/eGon-data/issues/638>`_
-* Change refinement method for households types
-  `#651 <https://github.com/openego/eGon-data/issues/#651>`_
 * H2 feed in links are changed to non extendable
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
-* Fill table demand.egon_demandregio_zensus_electricity after profile allocation
-  `#620 <https://github.com/openego/eGon-data/issues/586>`_
+* Remove the '_fixed' suffix
+  `#628 <https://github.com/openego/eGon-data/issues/628>`_
+* Remove gas bus and pipes in Finland
+  `#598 <https://github.com/openego/eGon-data/issues/598>`_ 
 
 
 Bug fixes
@@ -418,6 +408,3 @@ Bug fixes
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
-
-* Timeseries not deleted from grid.etrago_generator_timeseries
-  `#645 <https://github.com/openego/eGon-data/issues/645>`_
