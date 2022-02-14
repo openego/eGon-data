@@ -727,7 +727,8 @@ def inhabitants_to_households(df_hh_people_distribution_abs):
 
     Takes the distribution of peoples living in types of households to
     calculate a distribution of household types by using a people-in-household
-    mapping. Results are rounded to int (ceiled) to full households.
+    mapping. Results are not rounded to int as it will be used to calculate
+    a relative distribution anyways.
     The data of category 'HHGROESS_KLASS' in census households
     at grid level is used to determine an average wherever the amount
     of people is not trivial (OR, OO). Kids are not counted.
@@ -742,8 +743,6 @@ def inhabitants_to_households(df_hh_people_distribution_abs):
     df_dist_households: pd.DataFrame
         Distribution of households type
 
-         .. warning::
-         By ceiling to full integers of people a small deviation is introduced.
     """
 
     # Get household size for each census cell grouped by
@@ -793,10 +792,6 @@ def inhabitants_to_households(df_hh_people_distribution_abs):
     df_dist_households = df_hh_people_distribution_abs.div(
         mapping_people_in_households, axis=0
     )
-
-    # Number of people gets adjusted to integer values by ceiling
-    # This introduces a small deviation
-    df_dist_households = df_dist_households.apply(np.ceil)
 
     return df_dist_households
 
