@@ -30,7 +30,7 @@ def fill_etrago_generators():
         etrago_gen_orig,
         pp_time,
     ) = load_tables(con, cfg)
-    
+
     # Delete power plants from previous iterations of this script
     delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants)
 
@@ -225,14 +225,16 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     return renew_feedin
 
 
-def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants ):
+def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
     gen_to_delete = []
-    
+
     for i, gen in etrago_gen_orig.iterrows():
-        if ((power_plants['bus_id'] == gen['bus']) &
-        (power_plants['carrier'] == gen['carrier'])).any():
-            gen_to_delete.append(str(gen['generator_id']))
-        
+        if (
+            (power_plants["bus_id"] == gen["bus"])
+            & (power_plants["carrier"] == gen["carrier"])
+        ).any():
+            gen_to_delete.append(str(gen["generator_id"]))
+
     if gen_to_delete:
         db.execute_sql(
             f"""DELETE FROM 
@@ -246,7 +248,7 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants ):
                         AND carrier = 'AC')
                     """
         )
-        
+
         db.execute_sql(
             f"""DELETE FROM 
                     {cfg['targets']['etrago_gen_time']['schema']}.
