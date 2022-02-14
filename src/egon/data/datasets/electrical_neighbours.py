@@ -18,7 +18,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -639,12 +639,12 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
         capital_cost["dc_cable"] * foreign_links.length
         + 2 * capital_cost["dc_inverter"]
     )
-    foreign_links["p_min_pu_fixed"] = -1
+    foreign_links["p_min_pu"] = -1
     foreign_links["p_nom_extendable"] = True
     foreign_links["p_nom_min"] = foreign_links["p_nom"]
     foreign_links["scn_name"] = scenario
     foreign_links["carrier"] = "DC"
-    foreign_links["efficiency_fixed"] = 1
+    foreign_links["efficiency"] = 1
 
     # Add topology
     foreign_links = etrago.link_geom_from_buses(foreign_links, scenario)
