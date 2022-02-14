@@ -618,10 +618,6 @@ def neighbor_reduction():
     #               "AND country <> 'DE'")
 
     neighbors["scn_name"] = "eGon100RE"
-
-    neighbors = neighbors.rename(
-        columns={"v_mag_pu_set": "v_mag_pu_set_fixed"}
-    )
     neighbors.index = neighbors["new_index"]
 
     for i in ["new_index", "control", "generator", "location", "sub_network"]:
@@ -649,10 +645,6 @@ def neighbor_reduction():
     # prepare and write neighboring crossborder lines to etrago tables
     def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE"):
         neighbor_lines["scn_name"] = scn
-
-        neighbor_lines = neighbor_lines.rename(
-            columns={"s_max_pu": "s_max_pu_fixed"}
-        )
         neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(
             int
         )
@@ -700,16 +692,6 @@ def neighbor_reduction():
     # prepare and write neighboring crossborder links to etrago tables
     def links_to_etrago(neighbor_links, scn="eGon100RE"):
         neighbor_links["scn_name"] = scn
-
-        neighbor_links = neighbor_links.rename(
-            columns={
-                "efficiency": "efficiency_fixed",
-                "p_min_pu": "p_min_pu_fixed",
-                "p_max_pu": "p_max_pu_fixed",
-                "p_set": "p_set_fixed",
-                "marginal_cost": "marginal_cost_fixed",
-            }
-        )
 
         for i in [
             "name",
@@ -759,13 +741,6 @@ def neighbor_reduction():
     neighbor_gens["scn_name"] = "eGon100RE"
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
     neighbor_gens["p_nom_extendable"] = False
-    neighbor_gens = neighbor_gens.rename(
-        columns={
-            "marginal_cost": "marginal_cost_fixed",
-            "p_min_pu": "p_min_pu_fixed",
-            "p_max_pu": "p_max_pu_fixed",
-        }
-    )
 
     for i in ["name", "weight", "lifetime", "p_set", "q_set", "p_nom_opt"]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
@@ -796,13 +771,6 @@ def neighbor_reduction():
 
     # prepare neighboring stores for etrago tables
     neighbor_stores["scn_name"] = "eGon100RE"
-    neighbor_stores = neighbor_stores.rename(
-        columns={
-            "marginal_cost": "marginal_cost_fixed",
-            "e_min_pu": "e_min_pu_fixed",
-            "e_max_pu": "e_max_pu_fixed",
-        }
-    )
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
@@ -818,17 +786,6 @@ def neighbor_reduction():
 
     # prepare neighboring storage_units for etrago tables
     neighbor_storage["scn_name"] = "eGon100RE"
-    neighbor_storage = neighbor_storage.rename(
-        columns={
-            "marginal_cost": "marginal_cost_fixed",
-            "p_min_pu": "p_min_pu_fixed",
-            "p_max_pu": "p_max_pu_fixed",
-            "state_of_charge_set": "state_of_charge_set_fixed",
-            "inflow": "inflow_fixed",
-            "p_set": "p_set_fixed",
-            "q_set": "q_set_fixed",
-        }
-    )
 
     for i in ["name", "p_nom_opt"]:
         neighbor_storage = neighbor_storage.drop(i, axis=1)

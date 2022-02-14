@@ -29,6 +29,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
@@ -211,7 +212,9 @@ with airflow.DAG(
     ]
 
     # Import potential areas for wind onshore and ground-mounted PV
-    re_potential_areas = re_potential_area_setup(dependencies=[setup])
+    re_potential_areas = re_potential_area_setup(
+        dependencies=[setup, data_bundle]
+    )
     re_potential_areas.insert_into(pipeline)
 
     # Future heat demand calculation based on Peta5_0_1 data
@@ -224,7 +227,6 @@ with airflow.DAG(
     hd_abroad = HeatDemandEurope(dependencies=[setup])
     hd_abroad.insert_into(pipeline)
     heat_demands_abroad_download = tasks["heat_demand_europe.download"]
-
 
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
@@ -429,6 +431,13 @@ with airflow.DAG(
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
         dependencies=[create_gas_polygons]
+    )
+    # Aggregate gas loads, stores and generators
+    aggrgate_gas = GasAggregation(
+        dependencies=[
+            gas_production_insert_data,
+            insert_data_ch4_storages,
+        ]
     )
 
     # CHP locations
