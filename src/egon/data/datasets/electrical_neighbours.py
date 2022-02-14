@@ -891,6 +891,7 @@ def insert_generators(capacities):
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
+        AND carrier != 'CH4'
         """
     )
 
