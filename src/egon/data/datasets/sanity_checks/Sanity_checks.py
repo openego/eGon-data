@@ -112,7 +112,7 @@ print(f"The target values for Pumped Hydro differ by {g}  %")
 
 
 
-sum_loads_DE= db.select_dataframe(
+sum_loads_DE_grid= db.select_dataframe(
     f"""
 SELECT a.scn_name, a.carrier,  ROUND((SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric, 2) as load_twh
 FROM grid.egon_etrago_load a
@@ -131,5 +131,72 @@ GROUP BY (a.scn_name, a.carrier);
 ,
     )
 
+sum_loads_DE_AC_grid = sum_loads_DE_grid['load_twh'].values[1]
+sum_loads_DE_heat_grid = sum_loads_DE_grid['load_twh'].values[2]+sum_loads_DE_grid['load_twh'].values[4]
 
 
+sum_loads_DE_demand_regio_cts_ind= db.select_dataframe(
+    f"""
+SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_regio_cts_ind
+FROM demand.egon_demandregio_cts_ind
+WHERE scenario= 'eGon2035'
+AND year IN ('2035')
+GROUP BY (scenario);
+
+
+"""
+,
+    )
+demand_regio_cts_ind = sum_loads_DE_demand_regio_cts_ind['demand_mw_regio_cts_ind'].values[0]
+
+
+sum_loads_DE_demand_regio_hh= db.select_dataframe(
+    f"""
+SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_regio_hh
+FROM demand.egon_demandregio_hh
+WHERE scenario= 'eGon2035'
+AND year IN ('2035')
+GROUP BY (scenario);
+
+
+"""
+,
+    )
+
+demand_regio_hh= sum_loads_DE_demand_regio_hh['demand_mw_regio_hh'].values[0]
+
+
+sum_loads_DE_AC_demand=demand_regio_cts_ind+demand_regio_hh
+
+
+sum_loads_DE_demand_peta_heat = db.select_dataframe(
+    f"""
+SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_peta_heat
+FROM demand.egon_peta_heat
+WHERE scenario= 'eGon2035'
+GROUP BY (scenario);
+
+
+"""
+,
+    )
+
+sum_peta_heat_DE_demand = sum_loads_DE_demand_peta_heat['demand_mw_peta_heat'].values[0]
+
+
+Error_AC=(round(
+    
+ (sum_loads_DE_AC_grid  - sum_loads_DE_AC_demand)/sum_loads_DE_AC_demand,2)*100
+)
+
+print(f"The target values for Sum loads AC DE differ by {Error_AC}  %")
+
+demand_peta_heat = sum_loads_DE_demand_peta_heat['demand_mw_peta_heat'].values[0]
+
+
+Error_heat=(round(
+    
+ (sum_loads_DE_heat_grid - sum_peta_heat_DE_demand)/sum_peta_heat_DE_demand,2)*100
+)
+
+print(f"The target values for Sum loads heat DE differ by {Error_heat}  %")
