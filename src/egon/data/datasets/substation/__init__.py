@@ -74,7 +74,7 @@ class SubstationExtraction(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="substation_extraction",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -97,6 +97,7 @@ class SubstationExtraction(Dataset):
                         autocommit=True,
                     ),
                 },
+                transfer_busses,
             ),
         )
 
@@ -233,3 +234,24 @@ def create_sql_functions():
         COST 100;
         """
     )
+
+
+def transfer_busses():
+
+    targets = egon.data.config.datasets()["substation_extraction"][
+        "targets"
+    ]
+
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS {targets['transfer_busses']['table']};
+        CREATE TABLE {targets['transfer_busses']['table']} AS
+        SELECT DISTINCT ON (osm_id) * FROM
+        (SELECT * FROM {targets['ehv_substation']['schema']}.
+         {targets['ehv_substation']['table']}
+        UNION SELECT bus_id, lon, lat, point, polygon, voltage,
+        power_type, substation, osm_id, osm_www, frequency, subst_name,
+        ref, operator, dbahn, status
+        FROM {targets['hvmv_substation']['schema']}.
+         {targets['hvmv_substation']['table']} ORDER BY osm_id) as foo;
+        """)

@@ -88,6 +88,7 @@ setup(
         "click",
         "geopandas>=0.10.0",
         "geopy",
+        "geovoronoi==0.3.0",
         "importlib-resources",
         "loguru",
         "matplotlib",

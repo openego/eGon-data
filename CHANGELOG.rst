@@ -295,12 +295,23 @@ Changed
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
+*  Aggregate generators and stores for CH4
+  `#629 <https://github.com/openego/eGon-data/issues/629>`_
+* Fill missing household data for populated cells
+  `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
   the dataset. Import files from data bundle.
   `#592 <https://github.com/openego/eGon-data/issues/592>`_
   `#595 <https://github.com/openego/eGon-data/issues/595>`_
 * Add DC lines from Germany to Sweden and Denmark
   `#611 <https://github.com/openego/eGon-data/issues/611>`_
+* H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
+  H2_saltcavern buses if a proximity criterion is fulfilled
+  `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* H2 feed in links are changed to non extendable
+  `#653 <https://github.com/openego/eGon-data/issues/653>`_
+* Remove the '_fixed' suffix
+  `#628 <https://github.com/openego/eGon-data/issues/628>`_
 
 
 Bug fixes
@@ -390,3 +401,9 @@ Bug fixes
   `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Fix positions of the foreign gas buses
+  `#618 <https://github.com/openego/eGon-data/issues/618>`_
+* Create and fill transfer_busses table in substation-dataset
+  `#610 <https://github.com/openego/eGon-data/issues/610>`_
+* H2 steel tanks are removed again from saltcavern storage
+  `#621 <https://github.com/openego/eGon-data/issues/621>`_
