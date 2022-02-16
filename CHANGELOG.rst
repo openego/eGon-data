@@ -327,3 +327,5 @@ Bug fixes
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
+* Aggregate DSM components per substation
+  '#661 <https://github.com/openego/eGon-data/issues/661>'_
