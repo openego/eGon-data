@@ -289,7 +289,7 @@ Changed
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Add information on plz, city and federal state to data on mastr without chp
   `#425 <https://github.com/openego/eGon-data/issues/425>`_
-* Assign residentail heat demands to osm buildings
+* Assign residential heat demands to osm buildings
   `#557 <https://github.com/openego/eGon-data/issues/557>`_
 * Add foreign gas buses and adjust cross bording pipelines
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
@@ -308,6 +308,8 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* Change refinement method for households types
+  `##651 <https://github.com/openego/eGon-data/issues/#651>`_
 * H2 feed in links are changed to non extendable
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
