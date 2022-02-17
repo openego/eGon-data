@@ -314,6 +314,8 @@ Changed
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
   `#628 <https://github.com/openego/eGon-data/issues/628>`_
+* Fill table demand.egon_demandregio_zensus_electricity after profile allocation
+  `#620 <https://github.com/openego/eGon-data/issues/586>`_
 * Change method of building assignment
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
 

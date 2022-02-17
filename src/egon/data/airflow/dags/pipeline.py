@@ -149,20 +149,6 @@ with airflow.DAG(
         "osm_buildings_streets.preprocessing"
     ]
 
-    # Distribute household electrical demands to zensus cells
-    household_electricity_demand_annual = HouseholdElectricityDemand(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            zensus_miscellaneous,
-            society_prognosis,
-        ]
-    )
-
-    elec_household_demands_zensus = tasks[
-        "electricity_demand.distribute-household-demands"
-    ]
-
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
 
     # NEP data import
@@ -274,22 +260,7 @@ with airflow.DAG(
         dependencies=[vg250, mv_grid_districts]
     )
 
-    # Distribute electrical CTS demands to zensus grid
-    cts_electricity_demand_annual = CtsElectricityDemand(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            zensus_mv_grid_districts,
-            heat_demand_Germany,
-            etrago_input_data,
-            household_electricity_demand_annual,
-        ]
-    )
-
-    elec_cts_demands_zensus = tasks[
-        "electricity_demand.distribute-cts-demands"
-    ]
-
+    #
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
@@ -335,6 +306,30 @@ with airflow.DAG(
         "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
     ]
 
+    # Get household electrical demands for cencus cells
+    household_electricity_demand_annual = HouseholdElectricityDemand(
+        dependencies=[map_houseprofiles_to_buildings]
+    )
+
+    elec_annual_household_demands_cells = tasks[
+        "electricity_demand.get-annual-household-el-demand-cells"
+    ]
+
+    # Distribute electrical CTS demands to zensus grid
+    cts_electricity_demand_annual = CtsElectricityDemand(
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            zensus_mv_grid_districts,
+            heat_demand_Germany,
+            etrago_input_data,
+            household_electricity_demand_annual,
+        ]
+    )
+
+    elec_cts_demands_zensus = tasks[
+        "electricity_demand.distribute-cts-demands"
+    ]
     # Industry
 
     industrial_sites = MergeIndustrialSites(
@@ -484,7 +479,7 @@ with airflow.DAG(
 
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
-    elec_household_demands_zensus >> solar_rooftop_etrago
+    elec_annual_household_demands_cells >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
