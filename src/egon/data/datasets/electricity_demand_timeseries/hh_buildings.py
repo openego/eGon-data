@@ -13,7 +13,6 @@ The resulting data is stored in separate tables
 * `demand.egon_household_electricity_profile_of_buildings`:
     Mapping of demand timeseries and buildings including cell_id, building
     area and peak load
-* 'demand.egon
 
 Both tables are created within :func:`map_houseprofiles_to_buildings`.
 
@@ -77,6 +76,27 @@ integer. Ceiling is applied to avoid rounding to amount of 0 buildings.
 
 * As this datasets is a cascade after profile assignement at census cells
 also check drawbacks and limitations in hh_profiles.py.
+
+Example Query
+-----
+
+* Get a list with number of houses, households and household types per census cell
+
+    SELECT t1.cell_id, building_count, hh_count, hh_types
+        FROM(
+            SELECT cell_id, Count(distinct(building_id)) as building_count,
+            count(profile_id) as hh_count
+                FROM demand.egon_household_electricity_profile_of_buildings
+            Group By cell_id
+        ) as t1
+    FULL OUTER JOIN(
+        SELECT cell_id, array_agg(array[cast(hh_5types as char),
+         hh_type]) as hh_types
+        FROM society.egon_destatis_zensus_household_per_ha_refined
+        GROUP BY cell_id
+        ) as t2
+    ON t1.cell_id = t2.cell_id
+
 
 Notes
 -----
