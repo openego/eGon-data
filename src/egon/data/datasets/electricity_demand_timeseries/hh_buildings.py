@@ -90,7 +90,7 @@ Example Query
             Group By cell_id
         ) as t1
     FULL OUTER JOIN(
-        SELECT cell_id, array_agg(array[cast(hh_5types as char),
+        SELECT cell_id, array_agg(array[cast(hh_10types as char),
          hh_type]) as hh_types
         FROM society.egon_destatis_zensus_household_per_ha_refined
         GROUP BY cell_id
