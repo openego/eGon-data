@@ -52,11 +52,11 @@ areas not considered in census 2011.
 The assignment of household demand timeseries to buildings takes place at cell
 level. Within each cell a pool of profiles exists, produced by the 'HH Demand"
 module. These profiles are randomly assigned to a filtered list of OSM buildings
-within this cell. The assignment takes place with replacement of every building
-after drew. Therefore multiple profiles can be assigned to one building, making
-it a multi-household building. Hence, every profile is assigned to a building
-but not every building needs to have a profile assigned as not all are
-residential.
+within this cell. Every profile is assigned to a building and every building
+get a profile assigned if there is enough households by the census data. If
+there are more profiles then buildings, all additional profiles are randomly
+assigned. Therefore multiple profiles can be assigned to one building, making
+it a multi-household building.
 
 
 **What are central assumptions during the data processing?**
@@ -106,6 +106,7 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 from functools import partial
+import random
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
@@ -418,7 +419,8 @@ def generate_mapping_table(
     All hh demand profiles are randomly assigned to buildings within the same
     cencus cell.
 
-    * profiles > buildings: buildings have multiple profiles
+    * profiles > buildings: buildings can have multiple profiles but every
+        building gets at least one profile
     * profiles < buildings: not every building gets a profile
 
 
@@ -435,6 +437,18 @@ def generate_mapping_table(
         Table with mapping of profile ids to buildings with OSM ids
 
     """
+
+    def create_pool(buildings, profiles):
+
+        if profiles > buildings:
+            surplus = profiles - buildings
+            surplus = rng.integers(0, buildings, surplus)
+            pool = list(range(buildings)) + list(surplus)
+        else:
+            pool = list(range(buildings))
+        result = random.sample(population=pool, k=profiles)
+
+        return result
 
     # group oms_ids by census cells and aggregate to list
     osm_ids_per_cell = (
@@ -477,10 +491,12 @@ def generate_mapping_table(
     )
 
     # map profiles randomly per cell
+    # if profiles > buildings, every building will get at least one profile
     rng = np.random.default_rng(RANDOM_SEED)
+    random.seed(RANDOM_SEED)
     mapping_profiles_to_buildings = pd.Series(
         [
-            rng.integers(0, buildings, profiles)
+            create_pool(buildings, profiles)
             for buildings, profiles in zip(
                 number_profiles_and_buildings_reduced["building_ids"].values,
                 number_profiles_and_buildings_reduced[
@@ -490,6 +506,7 @@ def generate_mapping_table(
         ],
         index=number_profiles_and_buildings_reduced.index,
     )
+
     # unnest building assignement per cell
     mapping_profiles_to_buildings = (
         mapping_profiles_to_buildings.rename("building")
@@ -805,7 +822,7 @@ def map_houseprofiles_to_buildings():
 setup = partial(
     Dataset,
     name="Demand_Building_Assignment",
-    version="0.0.0",
+    version="0.0.1",
     dependencies=[],
     tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )

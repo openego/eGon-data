@@ -314,6 +314,8 @@ Changed
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
   `#628 <https://github.com/openego/eGon-data/issues/628>`_
+* Change method of building assignment
+  `#663 <https://github.com/openego/eGon-data/issues/663>`_
 
 
 Bug fixes
