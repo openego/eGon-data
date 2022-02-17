@@ -53,11 +53,11 @@ areas not considered in census 2011.
 The assignment of household demand timeseries to buildings takes place at cell
 level. Within each cell a pool of profiles exists, produced by the 'HH Demand"
 module. These profiles are randomly assigned to a filtered list of OSM buildings
-within this cell. The assignment takes place with replacement of every building
-after drew. Therefore multiple profiles can be assigned to one building, making
-it a multi-household building. Hence, every profile is assigned to a building
-but not every building needs to have a profile assigned as not all are
-residential.
+within this cell. Every profile is assigned to a building and every building
+get a profile assigned if there is enough households by the census data. If
+there are more profiles then buildings, all additional profiles are randomly
+assigned. Therefore multiple profiles can be assigned to one building, making
+it a multi-household building.
 
 
 **What are central assumptions during the data processing?**
