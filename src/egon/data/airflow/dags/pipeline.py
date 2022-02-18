@@ -44,7 +44,6 @@ from egon.data.datasets.hydrogen_etrago import (
     HydrogenGridEtrago,
     HydrogenMethaneLinkEtrago,
     HydrogenPowerLinkEtrago,
-    HydrogenPowerLinkEtragoeGon100RE,
     HydrogenStoreEtrago,
 )
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
@@ -425,6 +424,7 @@ with airflow.DAG(
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
         dependencies=[
             insert_hydrogen_buses,
+            insert_power_to_h2_installations,
         ]
     )
 
@@ -433,13 +433,6 @@ with airflow.DAG(
             create_gas_polygons_egon2035,
             gas_grid_insert_data,
             insert_hydrogen_buses,
-        ]
-    )
-
-    insert_power_to_h2_installations_100RE = HydrogenPowerLinkEtragoeGon100RE(
-        dependencies=[
-            insert_power_to_h2_installations,
-            insert_h2_grid
         ]
     )
 
