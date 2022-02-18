@@ -400,12 +400,27 @@ def insert_industrial_gas_demand_egon100RE():
     scn_name = "eGon100RE"
     delete_old_entries(scn_name)
 
-    # concatenate with H2 loads
+    # concatenate loads
+    industrial_gas_demand_CH4 = read_industrial_CH4_demand(scn_name=scn_name)
+    industrial_gas_demand_H2 = read_industrial_H2_demand(scn_name=scn_name)
+
+    # adjust H2 and CH4 total demands (values from PES)
+    # CH4 demand = 0 in 100RE, therefore scale H2 ts
+
+    # see https://github.com/openego/eGon-data/issues/626
+    # On test mode data are stupidly incorrect, since PES data is for whole Germany
+    CH4_total_PES = 105490000
+    H2_total_PES = 42090000
+    H2_total = industrial_gas_demand_H2["p_set"].apply(sum).astype(float).sum()
+    industrial_gas_demand_CH4["p_set"] = industrial_gas_demand_H2["p_set"].apply(
+        lambda x: [val / H2_total * CH4_total_PES for val in x]
+    )
+    industrial_gas_demand_H2["p_set"] = industrial_gas_demand_H2["p_set"].apply(
+        lambda x: [val / H2_total * H2_total_PES for val in x]
+    )
+
     industrial_gas_demand = pd.concat(
-        [
-            read_industrial_CH4_demand(scn_name=scn_name),
-            read_industrial_H2_demand(scn_name=scn_name),
-        ]
+        [industrial_gas_demand_CH4, industrial_gas_demand_H2,]
     )
 
     industrial_gas_demand = insert_new_entries(industrial_gas_demand, scn_name)
