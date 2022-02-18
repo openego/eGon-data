@@ -40,15 +40,21 @@ def insert_h2_pipelines():
         index_col="bus_CH4",
     )
 
+    scn_params = get_sector_parameters("gas", "eGon100RE")
+
     pipelines["carrier"] = "H2_retrofit"
     pipelines["p_nom"] *= 0.6  # capacity retrofitting factor
     # map pipeline buses
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
     pipelines["bus1"] = CH4_H2_busmap.loc[pipelines["bus1"], "bus_H2"].values
     pipelines["scn_name"] = "eGon100RE"
+    pipelines["capital_cost"] = (
+        scn_params["capital_cost"]["H2_pipeline_retrofit"]
+        * pipelines["length"]
+        / 1e3
+    )
 
     # create new pipelines between grid and saltcaverns
-
     new_pipelines = gpd.GeoDataFrame()
     new_pipelines["bus0"] = H2_buses.loc[
         H2_buses["carrier"] == "H2_saltcavern", "bus_id"
@@ -73,11 +79,9 @@ def insert_h2_pipelines():
     new_pipelines["p_nom_extendable"] = True
     new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
-    scn_params = get_sector_parameters("gas", "eGon100RE")
     # ToDo: insert capital cost data
     new_pipelines["capital_cost"] = (
-        1
-        # scn_params["capital_cost"]["H2_pipeline"]
+        scn_params["capital_cost"]["H2_pipeline"]
         * new_pipelines["length"]
         / 1e3
     )
@@ -98,6 +102,9 @@ def insert_h2_pipelines():
     )
 
     engine = db.engine()
+
+    new_id = db.next_etrago_id("link")
+    pipelines["link_id"] = range(new_id, new_id + len(pipelines))
 
     pipelines.to_crs(epsg=4326).to_postgis(
         "egon_etrago_link",

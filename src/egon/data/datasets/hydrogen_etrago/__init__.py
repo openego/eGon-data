@@ -1,16 +1,24 @@
 """The central module containing all code dealing with heat sector in etrago
 """
 from egon.data.datasets import Dataset
-from egon.data.datasets.hydrogen_etrago.bus import insert_h2_buses_eGon100RE, insert_hydrogen_buses
+from egon.data.datasets.hydrogen_etrago.bus import (
+    insert_hydrogen_buses,
+    insert_hydrogen_buses_eGon100RE
+)
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
-from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import insert_h2_to_ch4_to_h2
+from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import (
+    insert_h2_to_ch4_to_h2,
+    insert_h2_to_ch4_eGon100RE
+)
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
-    insert_power_to_h2_to_power, insert_power_to_h2_to_power_eGon100RE
+    insert_power_to_h2_to_power,
+    insert_power_to_h2_to_power_eGon100RE
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
     insert_H2_overground_storage,
     insert_H2_saltcavern_storage,
+    insert_H2_storage_eGon100RE
 )
 
 
@@ -23,6 +31,7 @@ class HydrogenBusEtrago(Dataset):
             tasks=(
                 calculate_and_map_saltcavern_storage_potential,
                 insert_hydrogen_buses,
+                insert_hydrogen_buses_eGon100RE
             ),
         )
 
@@ -33,7 +42,11 @@ class HydrogenStoreEtrago(Dataset):
             name="HydrogenStoreEtrago",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(insert_H2_overground_storage, insert_H2_saltcavern_storage),
+            tasks=(
+                insert_H2_overground_storage,
+                insert_H2_saltcavern_storage,
+                insert_H2_storage_eGon100RE
+            ),
         )
 
 
@@ -43,17 +56,8 @@ class HydrogenPowerLinkEtrago(Dataset):
             name="HydrogenPowerLinkEtrago",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(insert_power_to_h2_to_power),
-        )
-
-
-class HydrogenPowerLinkEtragoeGon100RE(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="HydrogenPowerLinkEtragoeGon100RE",
-            version="0.0.0",
-            dependencies=dependencies,
             tasks=(
+                insert_power_to_h2_to_power,
                 insert_power_to_h2_to_power_eGon100RE
             ),
         )
@@ -65,7 +69,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
             name="HydrogenMethaneLinkEtrago",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(insert_h2_to_ch4_to_h2),
+            tasks=(insert_h2_to_ch4_to_h2, insert_h2_to_ch4_eGon100RE),
         )
 
 
@@ -76,7 +80,6 @@ class HydrogenGridEtrago(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
-                insert_h2_buses_eGon100RE,
                 insert_h2_pipelines,
             ),
         )

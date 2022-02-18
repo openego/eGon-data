@@ -73,7 +73,24 @@ def global_settings(scenario):
         }
 
     elif scenario == "eGon100RE":
-        parameters = {"weather_year": 2011, "population_year": 2050}
+        parameters = {"weather_year": 2011, "population_year": 2050,
+            "fuel_costs": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
+                "oil": 73.8,  # [EUR/MWh]
+                "gas": 25.6,  # [EUR/MWh]
+                "coal": 20.2,  # [EUR/MWh]
+                "lignite": 4.0,  # [EUR/MWh]
+                "nuclear": 1.7,  # [EUR/MWh]
+            },
+            "co2_costs": 76.5,  # [EUR/t_CO2]
+            "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.288,  # [t_CO2/MW_th]
+                "coal": 0.335,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+            }}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -263,7 +280,37 @@ def gas(scenario):
         }
 
     elif scenario == "eGon100RE":
+
+        costs = read_csv(2050)
+
         parameters = {"main_gas_carrier": "H2"}
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
+            "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"), # CC?
+            "H2_feedin": 1,
+            "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
+            "OCGT": read_costs(costs, "OCGT", "efficiency"),
+        }
+        # Insert costs
+        parameters["capital_cost"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "investment"),
+            "H2_to_power": read_costs(costs, "fuel cell", "investment"),
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"), # CC?
+            "H2_feedin": 0,
+            "H2_to_CH4": read_costs(costs, "methanation", "investment"),
+            "H2_underground": read_costs(costs, "hydrogen storage underground", "investment"),
+            "H2_overground": read_costs(costs, "hydrogen storage tank incl. compressor", "investment"),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "investment"),  # [EUR/MW/km]
+            "H2_pipeline_retrofit": read_costs(costs, "H2 (g) pipeline repurposed", "investment"),  # [EUR/MW/km]
+        }
+        parameters["marginal_cost"] = {
+            "CH4": global_settings(scenario)["fuel_costs"]["gas"]
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["gas"],
+            "OCGT": read_costs(costs, "OCGT", "VOM"),
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")

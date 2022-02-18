@@ -149,7 +149,7 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         if_exists="replace",
     )
 
-def insert_h2_buses_eGon100RE():
+def insert_hydrogen_buses_eGon100RE():
 
     copy_and_modify_buses(
         "eGon2035",

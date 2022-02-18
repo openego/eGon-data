@@ -40,7 +40,7 @@ def voronoi_egon100RE():
     """
     Creates voronoi polygons for all gas carriers in eGon100RE scenario
     """
-    for carrier in ["H2_grid", "H2_saltcavern"]:
+    for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
 
 
