@@ -4,6 +4,7 @@ from geoalchemy2 import Geometry
 import geopandas as gpd
 
 from egon.data import db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
@@ -84,21 +85,16 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
     return bus_data
 
 
-def copy_and_modify_links(from_scn, to_scn, filter_dict):
+def copy_and_modify_links(from_scn, to_scn, carriers, sector):
+    """
 
-    where_clause = ""
-    for column, filters in filter_dict.items():
-        where_clause += (
-            column
-            + " IN "
-            + str(tuple(filters)).replace("',)", "')")
-            + " AND "
-        )
+    """
+    where_clause = "carrier IN " + str(tuple(carriers)).replace("',)", "')")
 
     gdf = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_link
-        WHERE {where_clause} scn_name = '{from_scn}' AND
+        WHERE {where_clause} AND scn_name = '{from_scn}' AND
         bus0 IN (
             SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{from_scn}' AND country = 'DE'
@@ -107,15 +103,26 @@ def copy_and_modify_links(from_scn, to_scn, filter_dict):
             WHERE scn_name = '{from_scn}' AND country = 'DE'
         );
         """,
-        epsg=4326
+        epsg=4326,
+        geom_col="topo"
     )
 
-    gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
+    gdf["scn_name"] = to_scn
+    scn_params = get_sector_parameters(sector, to_scn)
+
+    for carrier in carriers:
+        for param in ["capital_cost", "marginal_cost", "efficiency"]:
+            try:
+                gdf.loc[gdf["carrier"] == carrier, param] = (
+                    scn_params[param][carrier]
+                )
+            except KeyError:
+                pass
 
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_link
-        WHERE {where_clause} scn_name = '{to_scn}' AND
+        WHERE {where_clause} AND scn_name = '{to_scn}' AND
         bus0 NOT IN (
             SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{to_scn}' AND country != 'DE'
@@ -131,12 +138,64 @@ def copy_and_modify_links(from_scn, to_scn, filter_dict):
         schema="grid",
         if_exists="append",
         con=db.engine(),
+        index=False,
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
 
-def copy_and_modify_buses(from_scn, to_scn, filter_dict):
+def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
+    """
 
+    """
+    where_clause = "carrier IN " + str(tuple(carriers)).replace("',)", "')")
+
+    df = db.select_dataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_store
+        WHERE {where_clause} AND scn_name = '{from_scn}' AND
+        bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{from_scn}' AND country = 'DE'
+        );
+        """
+    )
+
+    df["scn_name"] = to_scn
+    scn_params = get_sector_parameters(sector, to_scn)
+
+    for carrier in carriers:
+        for param in ["capital_cost", "marginal_cost"]:
+            try:
+                df.loc[df["carrier"] == carrier, param] = (
+                    scn_params[param][carrier]
+                )
+            except KeyError:
+                pass
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_store
+        WHERE {where_clause} AND scn_name = '{to_scn}' AND
+        bus NOT IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{to_scn}' AND country != 'DE'
+        );
+        """
+    )
+
+    df.to_sql(
+        "egon_etrago_store",
+        schema="grid",
+        if_exists="append",
+        index=False,
+        con=db.engine(),
+    )
+
+
+def copy_and_modify_buses(from_scn, to_scn, filter_dict):
+    """
+
+    """
     where_clause = ""
     for column, filters in filter_dict.items():
         where_clause += (
@@ -170,5 +229,6 @@ def copy_and_modify_buses(from_scn, to_scn, filter_dict):
         schema="grid",
         if_exists="append",
         con=db.engine(),
+        index=False,
         dtype={"geom": Geometry()},
     )
