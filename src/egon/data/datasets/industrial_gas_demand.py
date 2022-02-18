@@ -400,26 +400,10 @@ def insert_industrial_gas_demand_egon100RE():
     scn_name = "eGon100RE"
     delete_old_entries(scn_name)
 
-    # create CH4 bus for every load
-    CH4_loads_list = read_industrial_demand(scn_name, "CH4")
-
-    target = {"table": "egon_etrago_bus", "schema": "grid"}
-    CH4_buses = initialise_bus_insertion("CH4", target, scenario=scn_name)
-    CH4_buses["geom"] = CH4_loads_list["geom"]
-    CH4_buses.reset_index(drop=True, inplace=True)
-    CH4_buses = finalize_bus_insertion(CH4_buses, "CH4", target, scn_name)
-
-    CH4_loads_list["bus"] = CH4_buses["bus_id"].values
-    CH4_loads_list["carrier"] = "CH4"
-    # Remove useless columns
-    CH4_loads_list = CH4_loads_list.drop(
-        columns=["geom", "NUTS0", "NUTS1"], errors="ignore"
-    )
-
     # concatenate with H2 loads
     industrial_gas_demand = pd.concat(
         [
-            CH4_loads_list,
+            read_industrial_CH4_demand(scn_name=scn_name),
             read_industrial_H2_demand(scn_name=scn_name),
         ]
     )

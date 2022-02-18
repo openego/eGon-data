@@ -1,5 +1,6 @@
 """The central module containing all code dealing with heat sector in etrago
 """
+from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from geoalchemy2 import Geometry
 import geopandas as gpd
 import pandas as pd
@@ -342,4 +343,9 @@ def calculate_and_map_saltcavern_storage_potential():
         index=True,
         if_exists="replace",
         dtype={"geometry": Geometry()},
+    )
+
+def insert_H2_storage_eGon100RE():
+    copy_and_modify_stores(
+        "eGon2035", "eGon100RE", ["H2_underground", "H2_overground"], "gas"
     )
