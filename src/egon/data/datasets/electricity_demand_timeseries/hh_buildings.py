@@ -382,22 +382,22 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     missing_buildings_geom["geom"] = buffer
 
     # get
-    buildings_filtered = Table(
+    buildings = Table(
         "osm_buildings", Base.metadata, schema="openstreetmap"
     )
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(buildings_filtered, None)
+    inspect(engine).reflecttable(buildings, None)
 
-    # get max number of building ids
+    # get max number of building ids from non-filtered building table
     with db.session_scope() as session:
-        buildings_filtered = session.execute(
-            func.max(buildings_filtered.c.id)
+        buildings = session.execute(
+            func.max(buildings.c.id)
         ).scalar()
 
     # apply ids following the sequence of openstreetmap.osm_buildings id
     missing_buildings_geom["id"] = range(
-        buildings_filtered + 1,
-        buildings_filtered + len(missing_buildings_geom) + 1,
+        buildings + 1,
+        buildings + len(missing_buildings_geom) + 1,
     )
 
     missing_buildings_geom = missing_buildings_geom.drop(
@@ -581,20 +581,20 @@ def reduce_synthetic_buildings(
     Id's are adapted to continuous number sequence following
     openstreetmap.osm_buildings"""
 
-    buildings_filtered = Table(
+    buildings = Table(
         "osm_buildings", Base.metadata, schema="openstreetmap"
     )
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(buildings_filtered, None)
+    inspect(engine).reflecttable(buildings, None)
 
     # total number of buildings
     with db.session_scope() as session:
-        buildings_filtered = session.execute(
-            func.max(buildings_filtered.c.id)
+        buildings = session.execute(
+            func.max(buildings.c.id)
         ).scalar()
 
     synth_ids_used = mapping_profiles_to_buildings.loc[
-        mapping_profiles_to_buildings["building_id"] > buildings_filtered,
+        mapping_profiles_to_buildings["building_id"] > buildings,
         "building_id",
     ].unique()
 
@@ -606,8 +606,8 @@ def reduce_synthetic_buildings(
     #         zip(
     #             synth_ids_used,
     #             range(
-    #                 buildings_filtered,
-    #                 buildings_filtered
+    #                 buildings,
+    #                 buildings
     #                 + len(synth_ids_used) + 1
     #             )
     #         )
