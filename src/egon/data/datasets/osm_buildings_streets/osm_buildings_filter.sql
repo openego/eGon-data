@@ -166,7 +166,7 @@ CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_point);
 DROP TABLE if exists openstreetmap.osm_buildings_residential;
 CREATE TABLE openstreetmap.osm_buildings_residential as
     select *
-    from openstreetmap.osm_buildings_residential bld
+    from openstreetmap.osm_buildings bld
     where
         bld.building like 'yes'
         or bld.building like 'apartments'
