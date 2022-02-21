@@ -17,6 +17,7 @@ voltage grids.
   Resulting tables:
   * All buildings: `openstreetmap.osm_buildings`
   * Filtered buildings: `openstreetmap.osm_buildings_filtered`
+  * Residential buildings: `openstreetmap.osm_buildings_residential`
 * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
   see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
   Resulting table: `openstreetmap.osm_amenities_shops_filtered`
