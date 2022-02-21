@@ -318,7 +318,8 @@ Changed
   `#620 <https://github.com/openego/eGon-data/issues/586>`_
 * Change method of building assignment
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
-
+* Create new OSM residential building table
+  `#587 <https://github.com/openego/eGon-data/issues/587>`_
 
 Bug fixes
 ---------
