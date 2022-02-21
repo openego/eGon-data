@@ -160,3 +160,24 @@ ALTER TABLE openstreetmap.osm_buildings_filtered
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom);
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_point);
 
+--------------------------------------------------------------------------
+-- extract residential buildings only, calculate area, create centroids --
+--------------------------------------------------------------------------
+DROP TABLE if exists openstreetmap.osm_buildings_residential;
+CREATE TABLE openstreetmap.osm_buildings_residential as
+    select *
+    from openstreetmap.osm_buildings_residential bld
+    where
+        bld.building like 'yes'
+        or bld.building like 'apartments'
+        or bld.building like 'detached'
+        or bld.building like 'farm'
+        or bld.building like 'house'
+        or bld.building like 'residential'
+        or bld.building like 'semidetached_house';
+
+ALTER TABLE openstreetmap.osm_buildings_residential
+    ADD CONSTRAINT osm_buildings_residential_id_pkey PRIMARY KEY (id);
+
+CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom);
+CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom_point);
