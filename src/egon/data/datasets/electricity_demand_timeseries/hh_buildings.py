@@ -29,8 +29,8 @@ Both tables are created within :func:`map_houseprofiles_to_buildings`.
 * `society.egon_destatis_zensus_apartment_building_population_per_ha`:
     Lists number of apartments, buildings and population for each census cell.
 
-* `boundaries.egon_map_zensus_buildings_filtered`:
-    List of OSM tagged buildings which are considered in the LV-Grid calculation.
+* `boundaries.egon_map_zensus_buildings_residential`:
+    List of OSM tagged buildings which are considered to be residential.
 
 
 **What is the goal?**
@@ -165,7 +165,7 @@ class BuildingPeakLoads(Base):
 
 def match_osm_and_zensus_data(
     egon_hh_profile_in_zensus_cell,
-    egon_map_zensus_buildings_filtered,
+    egon_map_zensus_buildings_residential,
 ):
     """
     Compares OSM buildings and census hh demand profiles.
@@ -182,7 +182,7 @@ def match_osm_and_zensus_data(
     egon_hh_profile_in_zensus_cell: pd.DataFrame
         Table mapping hh demand profiles to census cells
 
-    egon_map_zensus_buildings_filtered: pd.DataFrame
+    egon_map_zensus_buildings_residential: pd.DataFrame
         Table with buildings osm-id and cell_id
 
     Returns
@@ -204,9 +204,8 @@ def match_osm_and_zensus_data(
     )
 
     # count buildings/ids for each cell
-    buildings_per_cell = egon_map_zensus_buildings_filtered.groupby("cell_id")[
-        "id"
-    ].count()
+    buildings_per_cell = egon_map_zensus_buildings_residential.groupby(
+        "cell_id")["id"].count()
     buildings_per_cell = buildings_per_cell.rename("building_ids")
 
     # add buildings left join to have all the cells with assigned profiles
@@ -410,7 +409,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
 
 def generate_mapping_table(
-    egon_map_zensus_buildings_filtered_synth,
+    egon_map_zensus_buildings_residential_synth,
     egon_hh_profile_in_zensus_cell,
 ):
     """
@@ -426,7 +425,7 @@ def generate_mapping_table(
 
     Parameters
     ----------
-    egon_map_zensus_buildings_filtered_synth: pd.DataFrame
+    egon_map_zensus_buildings_residential_synth: pd.DataFrame
         Table with OSM and synthetic buildings ids per census cell
     egon_hh_profile_in_zensus_cell: pd.DataFrame
         Table mapping hh demand profiles to census cells
@@ -452,7 +451,7 @@ def generate_mapping_table(
 
     # group oms_ids by census cells and aggregate to list
     osm_ids_per_cell = (
-        egon_map_zensus_buildings_filtered_synth[["id", "cell_id"]]
+        egon_map_zensus_buildings_residential_synth[["id", "cell_id"]]
         .groupby("cell_id")
         .agg(list)
     )
@@ -733,17 +732,17 @@ def map_houseprofiles_to_buildings():
     -----
     """
     #
-    egon_map_zensus_buildings_filtered = Table(
-        "egon_map_zensus_buildings_filtered",
+    egon_map_zensus_buildings_residential = Table(
+        "egon_map_zensus_buildings_residential",
         Base.metadata,
         schema="boundaries",
     )
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(egon_map_zensus_buildings_filtered, None)
+    inspect(engine).reflecttable(egon_map_zensus_buildings_residential, None)
 
     with db.session_scope() as session:
-        cells_query = session.query(egon_map_zensus_buildings_filtered)
-    egon_map_zensus_buildings_filtered = pd.read_sql(
+        cells_query = session.query(egon_map_zensus_buildings_residential)
+    egon_map_zensus_buildings_residential = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
     )
 
@@ -756,7 +755,7 @@ def map_houseprofiles_to_buildings():
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(
         egon_hh_profile_in_zensus_cell,
-        egon_map_zensus_buildings_filtered,
+        egon_map_zensus_buildings_residential,
     )
 
     # randomly generate synthetic buildings in cell without any
@@ -765,9 +764,9 @@ def map_houseprofiles_to_buildings():
     )
 
     # add synthetic buildings to df
-    egon_map_zensus_buildings_filtered_synth = pd.concat(
+    egon_map_zensus_buildings_residential_synth = pd.concat(
         [
-            egon_map_zensus_buildings_filtered,
+            egon_map_zensus_buildings_residential,
             synthetic_buildings[["id", "grid_id", "cell_id"]],
         ],
         ignore_index=True,
@@ -775,7 +774,7 @@ def map_houseprofiles_to_buildings():
 
     # assign profiles to buildings
     mapping_profiles_to_buildings = generate_mapping_table(
-        egon_map_zensus_buildings_filtered_synth,
+        egon_map_zensus_buildings_residential_synth,
         egon_hh_profile_in_zensus_cell,
     )
 
