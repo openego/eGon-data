@@ -73,6 +73,7 @@ def execute_sql_script(script):
 
 
 def preprocessing():
+    print("Preprocessing buildings and shops, creating census mapping...")
     sql_scripts = [
         "osm_amenities_shops_preprocessing.sql",
         "osm_buildings_filter.sql",
@@ -84,22 +85,27 @@ def preprocessing():
 
 
 def extract_buildings_w_amenities():
+    print("Extracting buildings with amenities...")
     execute_sql_script("osm_results_buildings_w_amenities.sql")
 
 
 def extract_buildings_wo_amenities():
+    print("Extracting buildings without amenities...")
     execute_sql_script("osm_results_buildings_wo_amenities.sql")
 
 
 def extract_amenities():
+    print("Extracting amenities...")
     execute_sql_script("osm_results_amenities.sql")
 
 
 def extract_ways():
+    print("Extracting ways...")
     execute_sql_script("osm_ways_preprocessing.sql")
 
 
 def drop_temp_tables():
+    print("Dropping temp tables...")
     execute_sql_script("drop_temp_tables.sql")
 
 
@@ -111,7 +117,7 @@ class OsmBuildingsStreets(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OsmBuildingsStreets",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 preprocessing,
