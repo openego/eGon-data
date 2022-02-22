@@ -1588,6 +1588,9 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     if attribute not in attribute_options:
         raise ValueError(f"attribute has to be one of: {attribute_options}")
 
+    if not isinstance(list_of_identifiers, list):
+        raise KeyError("'list_of_identifiers' is not a list!")
+
     # Query profile ids and scaling factors for specific attributes
     with db.session_scope() as session:
         if attribute == "nuts3":
@@ -1704,7 +1707,7 @@ def get_scaled_profiles_from_db(
 
     Notes
     -----
-    aggregate option can use a lot of RAM if many profiles are selected
+    Aggregate == False option can use a lot of RAM if many profiles are selected
 
 
     Returns
