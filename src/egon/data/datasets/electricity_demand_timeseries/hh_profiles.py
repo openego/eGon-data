@@ -1696,11 +1696,15 @@ def get_scaled_profiles_from_db(
          * 2050
 
     aggregate: bool
-        If True, all profiles are summed
+        If True, all profiles are summed. This uses a lot of RAM if a high
+        attribute level is chosen
 
     peak_load_only: bool
         If True, only peak load value is returned
 
+    Notes
+    -----
+    aggregate option can use a lot of RAM if many profiles are selected
 
     See Also
     --------
