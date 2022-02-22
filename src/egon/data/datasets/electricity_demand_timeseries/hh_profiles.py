@@ -1554,10 +1554,6 @@ def get_houseprofiles_in_census_cells():
         census_profile_mapping = pd.read_sql(
             q.statement, q.session.bind, index_col="cell_id"
         )
-    # Cast profiles ids to tuple of type and int
-    # census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     return census_profile_mapping
 
@@ -1637,10 +1633,6 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     cell_demand_metadata = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
-    # Cast profiles ids to tuple of type and int
-    # cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
     return cell_demand_metadata
 
 
