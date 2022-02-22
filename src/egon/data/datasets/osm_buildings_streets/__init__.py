@@ -75,7 +75,7 @@ def execute_sql_script(script):
 
 
 def preprocessing():
-    print("Preprocessing buildings and shops, creating census mapping...")
+    print("Preprocessing buildings and shops...")
     sql_scripts = [
         "osm_amenities_shops_preprocessing.sql",
         "osm_buildings_filter.sql",
