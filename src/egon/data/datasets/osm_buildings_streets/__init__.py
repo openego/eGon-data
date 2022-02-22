@@ -77,7 +77,8 @@ def preprocessing():
     sql_scripts = [
         "osm_amenities_shops_preprocessing.sql",
         "osm_buildings_filter.sql",
-        "osm_buildings_zensus_mapping.sql",
+        "osm_buildings_filtered_zensus_mapping.sql",
+        "osm_buildings_residential_zensus_mapping.sql",
         "osm_buildings_temp_tables.sql",
     ]
     for script in sql_scripts:
