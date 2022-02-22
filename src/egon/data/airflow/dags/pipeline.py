@@ -149,7 +149,7 @@ with airflow.DAG(
         "osm_buildings_streets.preprocessing"
     ]
     osm_buildings_streets_residential_census_mapping = tasks[
-        "osm_buildings_streets.create_buildings_residential_zensus_mapping"
+        "osm_buildings_streets.create-buildings-residential-zensus-mapping"
     ]
 
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
