@@ -314,6 +314,8 @@ Changed
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
   `#628 <https://github.com/openego/eGon-data/issues/628>`_
+* Move python-operators out of pipeline
+  `#644 <https://github.com/openego/eGon-data/issues/644>`_
 
 
 Bug fixes
