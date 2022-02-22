@@ -289,13 +289,16 @@ Changed
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Add information on plz, city and federal state to data on mastr without chp
   `#425 <https://github.com/openego/eGon-data/issues/425>`_
-* Assign residentail heat demands to osm buildings
+* Assign residential heat demands to osm buildings
   `#557 <https://github.com/openego/eGon-data/issues/557>`_
 * Add foreign gas buses and adjust cross bording pipelines
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
+*  Aggregate generators and stores for CH4
+  `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
+  `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
   the dataset. Import files from data bundle.
   `#592 <https://github.com/openego/eGon-data/issues/592>`_
@@ -305,6 +308,12 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* Change refinement method for households types
+  `##651 <https://github.com/openego/eGon-data/issues/#651>`_
+* H2 feed in links are changed to non extendable
+  `#653 <https://github.com/openego/eGon-data/issues/653>`_
+* Remove the '_fixed' suffix
+  `#628 <https://github.com/openego/eGon-data/issues/628>`_
 
 
 Bug fixes
@@ -394,5 +403,9 @@ Bug fixes
   `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Fix positions of the foreign gas buses
+  `#618 <https://github.com/openego/eGon-data/issues/618>`_
 * Create and fill transfer_busses table in substation-dataset
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
+* H2 steel tanks are removed again from saltcavern storage
+  `#621 <https://github.com/openego/eGon-data/issues/621>`_
