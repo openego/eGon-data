@@ -1695,7 +1695,7 @@ def get_scaled_profiles_from_db(
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
     df_iee_profiles = get_hh_profiles_from_db(profile_ids)
-    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
+    # df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     scaled_profiles = get_load_timeseries(
         df_iee_profiles=df_iee_profiles,
