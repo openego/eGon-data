@@ -102,9 +102,17 @@ the number of categories of cell-level household data.
  nuts3-level the impact at a higher aggregation level is negligible.
  For sake of simplicity, the data is not corrected.
 * There are cells without household data but a population. A randomly chosen
- household distribution is taken from a subgroup of cells with same population value and
- applied to all cells with missing household distribution and the specific
- population value.
+ household distribution is taken from a subgroup of cells with same population
+ value and applied to all cells with missing household distribution and the
+ specific population value.
+
+Helper functions
+----
+* To access the DB, select specific profiles at various aggregation levels
+use:func:`get_hh_profiles_from_db'
+* To access the DB, select specific profiles at various aggregation levels
+and scale profiles use :func:`get_scaled_profiles_from_db`
+
 
 Notes
 -----
@@ -1706,9 +1714,6 @@ def get_scaled_profiles_from_db(
     -----
     aggregate option can use a lot of RAM if many profiles are selected
 
-    See Also
-    --------
-    :func:`houseprofiles_in_census_cells`
 
     Returns
     -------
