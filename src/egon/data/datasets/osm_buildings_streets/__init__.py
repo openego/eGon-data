@@ -23,7 +23,9 @@ voltage grids.
   Resulting table: `openstreetmap.osm_amenities_shops_filtered`
 * Create a mapping table for building's osm IDs to the Zensus cells the
   building's centroid is located in.
-  Resulting table: `boundaries.egon_map_zensus_buildings_filtered`
+  Resulting tables:
+  * `boundaries.egon_map_zensus_buildings_filtered` (filtered)
+  * `boundaries.egon_map_zensus_buildings_residential` (residential only)
 * Enrich each building by number of apartments from Zensus table
   `society.egon_destatis_zensus_apartment_building_population_per_ha`
   by splitting up the cell's sum equally to the buildings. In some cases, a
