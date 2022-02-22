@@ -202,7 +202,7 @@ class HouseholdDemands(Dataset):
 
         super().__init__(
             name="Household Demands",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 houseprofiles_in_census_cells,
