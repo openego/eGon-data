@@ -29,6 +29,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
@@ -146,20 +147,6 @@ with airflow.DAG(
     osm_buildings_streets.insert_into(pipeline)
     osm_buildings_streets_preprocessing = tasks[
         "osm_buildings_streets.preprocessing"
-    ]
-
-    # Distribute household electrical demands to zensus cells
-    household_electricity_demand_annual = HouseholdElectricityDemand(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            zensus_miscellaneous,
-            society_prognosis,
-        ]
-    )
-
-    elec_household_demands_zensus = tasks[
-        "electricity_demand.distribute-household-demands"
     ]
 
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
@@ -288,22 +275,6 @@ with airflow.DAG(
         dependencies=[vg250, mv_grid_districts]
     )
 
-    # Distribute electrical CTS demands to zensus grid
-    cts_electricity_demand_annual = CtsElectricityDemand(
-        dependencies=[
-            demandregio,
-            zensus_vg250,
-            zensus_mv_grid_districts,
-            heat_demand_Germany,
-            etrago_input_data,
-            household_electricity_demand_annual,
-        ]
-    )
-
-    elec_cts_demands_zensus = tasks[
-        "electricity_demand.distribute-cts-demands"
-    ]
-
     mv_hh_electricity_load_2035 = PythonOperator(
         task_id="MV-hh-electricity-load-2035",
         python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
@@ -341,7 +312,7 @@ with airflow.DAG(
 
     # Household electricity demand buildings
     hh_demand_buildings_setup = hh_buildings.setup(
-        dependencies=[householdprofiles_in_cencus_cells]
+        dependencies=[householdprofiles_in_cencus_cells],
     )
 
     hh_demand_buildings_setup.insert_into(pipeline)
@@ -349,6 +320,30 @@ with airflow.DAG(
         "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
     ]
 
+    # Get household electrical demands for cencus cells
+    household_electricity_demand_annual = HouseholdElectricityDemand(
+        dependencies=[map_houseprofiles_to_buildings]
+    )
+
+    elec_annual_household_demands_cells = tasks[
+        "electricity_demand.get-annual-household-el-demand-cells"
+    ]
+
+    # Distribute electrical CTS demands to zensus grid
+    cts_electricity_demand_annual = CtsElectricityDemand(
+        dependencies=[
+            demandregio,
+            zensus_vg250,
+            zensus_mv_grid_districts,
+            heat_demand_Germany,
+            etrago_input_data,
+            household_electricity_demand_annual,
+        ]
+    )
+
+    elec_cts_demands_zensus = tasks[
+        "electricity_demand.distribute-cts-demands"
+    ]
     # Industry
 
     industrial_sites = MergeIndustrialSites(
@@ -406,12 +401,16 @@ with airflow.DAG(
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[insert_hydrogen_buses]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[insert_hydrogen_buses]
+        dependencies=[
+            insert_hydrogen_buses,
+        ]
     )
 
     # Create gas voronoi
@@ -430,6 +429,13 @@ with airflow.DAG(
     # Insert industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
         dependencies=[create_gas_polygons]
+    )
+    # Aggregate gas loads, stores and generators
+    aggrgate_gas = GasAggregation(
+        dependencies=[
+            gas_production_insert_data,
+            insert_data_ch4_storages,
+        ]
     )
 
     # CHP locations
@@ -476,7 +482,7 @@ with airflow.DAG(
 
     feedin_pv >> solar_rooftop_etrago
     elec_cts_demands_zensus >> solar_rooftop_etrago
-    elec_household_demands_zensus >> solar_rooftop_etrago
+    elec_annual_household_demands_cells >> solar_rooftop_etrago
     etrago_input_data >> solar_rooftop_etrago
     map_zensus_grid_districts >> solar_rooftop_etrago
 
@@ -562,5 +568,9 @@ with airflow.DAG(
     # Storages to eTrago
 
     storage_etrago = StorageEtrago(
-        dependencies=[pumped_hydro, setup_etrago, scenario_parameters]
+        dependencies=[
+            pumped_hydro,
+            setup_etrago,
+            scenario_parameters,
+        ]
     )
