@@ -165,13 +165,15 @@ def extension_to_areas(
         if district_heating:
             selected_areas = areas.loc[
                 areas.demand > existing_chp.th_capacity.min() * flh, :
-            ].to_crs(4326)
+            ]
         else:
             selected_areas = areas.loc[
                 areas.demand > existing_chp.el_capacity.min() * flh, :
-            ].to_crs(4326)
+            ]
 
         if len(selected_areas) > 0:
+
+            selected_areas = selected_areas.to_crs(4326)
             # Assign gas bus_id
             selected_areas["gas_bus_id"] = assign_gas_bus_id(
                 selected_areas.copy()
@@ -208,18 +210,18 @@ def extension_to_areas(
 
             # Select random new build CHP from list of existing CHP
             # which is smaller than the remaining capacity to distribute
-            
+
             if len(possible_chp) > 0:
                 id_chp = np.random.choice(range(len(possible_chp)))
                 selected_chp = possible_chp.iloc[id_chp]
-    
+
                 # Assign bus_id
                 selected_areas["voltage_level"] = selected_chp["voltage_level"]
-    
+
                 selected_areas.loc[:, "bus_id"] = assign_bus_id(
                     selected_areas, config.datasets()["chp_location"]
                 ).bus_id
-    
+
                 entry = EgonChp(
                     sources={
                         "chp": "MaStR",
@@ -241,14 +243,16 @@ def extension_to_areas(
                             """,
                 )
                 if district_heating:
-                    entry.district_heating_area_id = int(selected_areas.area_id)
-    
+                    entry.district_heating_area_id = int(
+                        selected_areas.area_id
+                    )
+
                 session.add(entry)
                 session.commit()
-    
+
                 # Reduce additional capacity by newly build CHP
                 additional_capacity -= selected_chp.el_capacity
-    
+
                 # Reduce the demand of the selected area by the estimated
                 # enrgy output of the CHP
                 if district_heating:
@@ -367,6 +371,7 @@ def extension_district_heating(
         dh_areas = gpd.GeoDataFrame(
             columns=["demand", "area_id", "geom"]
         ).set_geometry("geom")
+        dh_areas = dh_areas.set_crs(4326)
 
     if not areas_without_chp_only:
         # Append district heating areas with CHP
@@ -395,10 +400,11 @@ def extension_district_heating(
                 GROUP BY (
                     b.residential_and_service_demand,
                     b.area_id, geom_polygon)
-                """
+                """,
+                epsg=4326,
             ),
             ignore_index=True,
-        )
+        ).set_crs(4326)
 
     not_distributed_capacity = extension_to_areas(
         dh_areas,
