@@ -417,4 +417,3 @@ Bug fixes
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
 * Fix function to get scaled hh profiles
   `#674 <https://github.com/openego/eGon-data/issues/674>`_
->>>>>>> dev
