@@ -161,6 +161,8 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include Pypsa default values in table creation
+  `#544 <https://github.com/openego/eGon-data/issues/544>`_
 * Include PHS in eTraGo tables
   `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
@@ -414,3 +416,7 @@ Bug fixes
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
+* Fix function to get scaled hh profiles
+  `#674 <https://github.com/openego/eGon-data/issues/674>`_
+* Change order of pypsa-eur-sec and scenario-capacities
+  `#589 <https://github.com/openego/eGon-data/issues/589>`_
