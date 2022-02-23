@@ -3,29 +3,6 @@
  * Adapted by: nesnoj (jonathan.amme@rl-institut.de)
 */
 
--------------------------------------------------------------
--- extract all buildings, calculate area, create centroids --
--------------------------------------------------------------
-DROP TABLE IF EXISTS openstreetmap.osm_buildings;
-CREATE TABLE openstreetmap.osm_buildings AS
-    SELECT
-        poly.osm_id,
-        poly.amenity,
-        poly.building,
-        poly.name,
-        ST_TRANSFORM(poly.geom, 3035) AS geom,
-        ST_AREA(ST_TRANSFORM(poly.geom, 3035)) AS area,
-        ST_TRANSFORM(ST_CENTROID(poly.geom), 3035) AS geom_point,
-        poly.tags
-    FROM openstreetmap.osm_polygon poly
-    WHERE poly.building IS NOT NULL;
-
--- add PK as some osm ids are not unique
-ALTER TABLE openstreetmap.osm_buildings ADD COLUMN id SERIAL PRIMARY KEY;
-
-CREATE INDEX ON openstreetmap.osm_buildings USING gist (geom);
-CREATE INDEX ON openstreetmap.osm_buildings USING gist (geom_point);
-
 -----------------------------------------------------------------------
 -- extract specific buildings only, calculate area, create centroids --
 -----------------------------------------------------------------------
@@ -159,25 +136,3 @@ ALTER TABLE openstreetmap.osm_buildings_filtered
 
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom);
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_point);
-
---------------------------------------------------------------------------
--- extract residential buildings only, calculate area, create centroids --
---------------------------------------------------------------------------
-DROP TABLE if exists openstreetmap.osm_buildings_residential;
-CREATE TABLE openstreetmap.osm_buildings_residential as
-    select *
-    from openstreetmap.osm_buildings bld
-    where
-        bld.building like 'yes'
-        or bld.building like 'apartments'
-        or bld.building like 'detached'
-        or bld.building like 'farm'
-        or bld.building like 'house'
-        or bld.building like 'residential'
-        or bld.building like 'semidetached_house';
-
-ALTER TABLE openstreetmap.osm_buildings_residential
-    ADD CONSTRAINT osm_buildings_residential_id_pkey PRIMARY KEY (id);
-
-CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom);
-CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom_point);

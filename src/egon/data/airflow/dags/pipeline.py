@@ -145,11 +145,8 @@ with airflow.DAG(
         dependencies=[osm, zensus_miscellaneous]
     )
     osm_buildings_streets.insert_into(pipeline)
-    osm_buildings_streets_preprocessing = tasks[
-        "osm_buildings_streets.preprocessing"
-    ]
-    osm_buildings_streets_residential_census_mapping = tasks[
-        "osm_buildings_streets.create-buildings-residential-zensus-mapping"
+    osm_buildings_streets_extract_amenities = tasks[
+        "osm_buildings_streets.extract-amenities"
     ]
 
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
@@ -284,8 +281,7 @@ with airflow.DAG(
             map_zensus_grid_districts,
             zensus_vg250,
             demandregio,
-            osm_buildings_streets_preprocessing,
-            osm_buildings_streets_residential_census_mapping,
+            osm_buildings_streets_extract_amenities,
         ],
         tasks=(
             hh_profiles.houseprofiles_in_census_cells,
