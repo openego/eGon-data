@@ -417,3 +417,5 @@ Bug fixes
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
 * Fix function to get scaled hh profiles
   `#674 <https://github.com/openego/eGon-data/issues/674>`_
+* Change order of pypsa-eur-sec and scenario-capacities
+  `#589 <https://github.com/openego/eGon-data/issues/589>`_
