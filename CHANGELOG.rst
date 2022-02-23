@@ -318,7 +318,8 @@ Changed
   `#620 <https://github.com/openego/eGon-data/issues/586>`_
 * Change method of building assignment
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
-
+* Add annualized investment costs to eTraGo tables
+  `#672 <https://github.com/openego/eGon-data/issues/672>`_
 
 Bug fixes
 ---------
