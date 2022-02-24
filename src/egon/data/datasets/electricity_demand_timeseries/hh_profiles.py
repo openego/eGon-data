@@ -106,6 +106,14 @@ the number of categories of cell-level household data.
  value and applied to all cells with missing household distribution and the
  specific population value.
 
+Helper functions
+----
+* To access the DB, select specific profiles at various aggregation levels
+use:func:`get_hh_profiles_from_db'
+* To access the DB, select specific profiles at various aggregation levels
+and scale profiles use :func:`get_scaled_profiles_from_db`
+
+
 Notes
 -----
 
@@ -1342,6 +1350,7 @@ def get_load_timeseries(
     df_hh_profiles_in_census_cells,
     cell_ids,
     year,
+    aggregate=True,
     peak_load_only=False,
 ):
     """
@@ -1367,6 +1376,8 @@ def get_load_timeseries(
     year: int
         Scenario year. Is used to consider the scaling factor for aligning
         annual demand to NUTS-3 data.
+    aggregate: bool
+        If true, all profiles are aggregated
     peak_load_only: bool
         If true, only the peak load value is returned (the type of the return
         value is `float`). Defaults to False which returns the entire time
@@ -1379,9 +1390,12 @@ def get_load_timeseries(
         series in MWh.
     """
     timesteps = len(df_iee_profiles)
-    full_load = pd.Series(
-        data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
-    )
+    if aggregate:
+        full_load = pd.Series(
+            data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
+        )
+    else:
+        full_load = pd.DataFrame(index=range(timesteps))
     load_area_meta = df_hh_profiles_in_census_cells.loc[
         cell_ids, ["cell_profile_ids", "nuts3", f"factor_{year}"]
     ]
@@ -1390,12 +1404,24 @@ def get_load_timeseries(
     for (nuts3, factor), df in load_area_meta.groupby(
         by=["nuts3", f"factor_{year}"]
     ):
-        part_load = (
-            df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
-            * factor
-            / 1e6
-        )  # from Wh to MWh
-        full_load = full_load.add(part_load)
+        if aggregate:
+            part_load = (
+                df_iee_profiles.loc[:,
+                df["cell_profile_ids"].sum()].sum(axis=1)
+                * factor
+                / 1e6
+            )  # from Wh to MWh
+            full_load = full_load.add(part_load)
+        elif not aggregate:
+            part_load = (
+                df_iee_profiles.loc[:, df["cell_profile_ids"].sum()]
+                * factor
+                / 1e6
+            )  # from Wh to MWh
+            full_load = pd.concat(
+                [full_load, part_load], axis=1).dropna(axis=1)
+        else:
+            raise KeyError("Parameter 'aggregate' needs to be bool value!")
     if peak_load_only:
         full_load = full_load.max()
     return full_load
@@ -1551,10 +1577,6 @@ def get_houseprofiles_in_census_cells():
         census_profile_mapping = pd.read_sql(
             q.statement, q.session.bind, index_col="cell_id"
         )
-    # Cast profiles ids to tuple of type and int
-    # census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     return census_profile_mapping
 
@@ -1588,6 +1610,9 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     attribute_options = ["nuts3", "nuts1", "cell_id"]
     if attribute not in attribute_options:
         raise ValueError(f"attribute has to be one of: {attribute_options}")
+
+    if not isinstance(list_of_identifiers, list):
+        raise KeyError("'list_of_identifiers' is not a list!")
 
     # Query profile ids and scaling factors for specific attributes
     with db.session_scope() as session:
@@ -1634,10 +1659,6 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     cell_demand_metadata = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
-    # Cast profiles ids to tuple of type and int
-    # cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
     return cell_demand_metadata
 
 
@@ -1679,7 +1700,7 @@ def get_hh_profiles_from_db(profile_ids):
 
 
 def get_scaled_profiles_from_db(
-    attribute, list_of_identifiers, year, peak_load_only=False
+    attribute, list_of_identifiers, year, aggregate=True, peak_load_only=False
 ):
     """Retrieve selection of scaled household electricity demand profiles
 
@@ -1696,15 +1717,21 @@ def get_scaled_profiles_from_db(
         nuts3/nuts1 need to be str
         cell_id need to be int
 
-     year: int
+    year: int
          * 2035
          * 2050
 
-    peak_load_only: bool
+    aggregate: bool
+        If True, all profiles are summed. This uses a lot of RAM if a high
+        attribute level is chosen
 
-    See Also
-    --------
-    :func:`houseprofiles_in_census_cells`
+    peak_load_only: bool
+        If True, only peak load value is returned
+
+    Notes
+    -----
+    Aggregate == False option can use a lot of RAM if many profiles are selected
+
 
     Returns
     -------
@@ -1718,13 +1745,13 @@ def get_scaled_profiles_from_db(
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
     df_iee_profiles = get_hh_profiles_from_db(profile_ids)
-    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     scaled_profiles = get_load_timeseries(
         df_iee_profiles=df_iee_profiles,
         df_hh_profiles_in_census_cells=cell_demand_metadata,
         cell_ids=cell_demand_metadata.index.to_list(),
         year=year,
+        aggregate=aggregate,
         peak_load_only=peak_load_only,
     )
     return scaled_profiles

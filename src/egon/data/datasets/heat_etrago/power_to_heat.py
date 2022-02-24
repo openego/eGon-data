@@ -234,12 +234,22 @@ def insert_central_power_to_heat(scenario="eGon2035"):
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
-    insert_power_to_heat_per_level(
-        central_resistive_heater[central_resistive_heater.voltage_level > 3],
-        multiple_per_mv_grid=False,
-        carrier="central_resistive_heater",
-        scenario="eGon2035",
-    )
+    if (
+        len(
+            central_resistive_heater[
+                central_resistive_heater.voltage_level > 3
+            ]
+        )
+        > 0
+    ):
+        insert_power_to_heat_per_level(
+            central_resistive_heater[
+                central_resistive_heater.voltage_level > 3
+            ],
+            multiple_per_mv_grid=False,
+            carrier="central_resistive_heater",
+            scenario="eGon2035",
+        )
     # Insert heat pumps in hv grid
     # (as many hvmv substations as intersect with district heating grid)
     insert_power_to_heat_per_level(
