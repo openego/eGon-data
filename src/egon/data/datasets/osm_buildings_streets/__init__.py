@@ -146,13 +146,10 @@ class OsmBuildingsStreets(Dataset):
             dependencies=dependencies,
             tasks=(
                 preprocessing,
-                {
-                    filter_buildings,
-                    filter_buildings_residential
-                },
+                {filter_buildings, filter_buildings_residential},
                 {
                     create_buildings_filtered_zensus_mapping,
-                    create_buildings_residential_zensus_mapping
+                    create_buildings_residential_zensus_mapping,
                 },
                 create_buildings_temp_tables,
                 {
