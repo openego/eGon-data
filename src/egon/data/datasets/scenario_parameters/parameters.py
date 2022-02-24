@@ -32,21 +32,7 @@ def read_costs(df, technology, parameter, value_only=True):
         return result
 
 
-def annualize_capital_costs(
-    df, overnight_costs, technology=None, p=0.05, lifetime=None
-):
-
-    if (lifetime == None) and (technology != None):
-        lifetime = (
-            df.loc[
-                (df.technology == technology) & (df.parameter == "lifetime")
-            ]
-            .squeeze()
-            .value
-        )
-
-    if (lifetime == None) and (technology == None):
-        print("Set either lifetime or technology!")
+def annualize_capital_costs(overnight_costs, lifetime, p=0.05):
 
     # Calculate present value of an annuity (PVA)
     PVA = (1 / p) - (1 / (p * (1 + p) ** lifetime))
@@ -316,7 +302,6 @@ def gas(scenario):
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
-            "H2_feedin": 0,
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             #  what about H2 compressors?
             "H2_underground": read_costs(
