@@ -371,7 +371,7 @@ def extension_district_heating(
         dh_areas = gpd.GeoDataFrame(
             columns=["demand", "area_id", "geom"]
         ).set_geometry("geom")
-        dh_areas = dh_areas.set_crs(4326)
+        dh_areas = dh_areas.set_crs(3035)
 
     if not areas_without_chp_only:
         # Append district heating areas with CHP
@@ -401,10 +401,10 @@ def extension_district_heating(
                     b.residential_and_service_demand,
                     b.area_id, geom_polygon)
                 """,
-                epsg=4326,
+                epsg=3035,
             ),
             ignore_index=True,
-        ).set_crs(4326)
+        ).to_crs(3035)
 
     not_distributed_capacity = extension_to_areas(
         dh_areas,
