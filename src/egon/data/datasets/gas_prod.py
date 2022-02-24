@@ -239,8 +239,8 @@ def assign_bus_id(dataframe, scn_name, carrier):
 
     Returns
     -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and bus_id
+    res : pandas.DataFrame
+        Dataframe including bus_id
     """
 
     voronoi = db.select_geodataframe(
