@@ -226,21 +226,14 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
 
 
 def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
-    gen_to_delete = []
+    carrier_delete = list(power_plants.carrier.unique())
 
-    for i, gen in etrago_gen_orig.iterrows():
-        if (
-            (power_plants["bus_id"] == gen["bus"])
-            & (power_plants["carrier"] == gen["carrier"])
-        ).any():
-            gen_to_delete.append(str(gen["generator_id"]))
-
-    if gen_to_delete:
+    if carrier_delete:
         db.execute_sql(
             f"""DELETE FROM 
                     {cfg['targets']['etrago_generators']['schema']}.
                     {cfg['targets']['etrago_generators']['table']}
-                    WHERE generator_id IN {*gen_to_delete,}
+                    WHERE carrier IN {*carrier_delete,}
                     AND bus IN (
                         SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
                         {cfg['sources']['bus']['table']}
@@ -253,7 +246,10 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
             f"""DELETE FROM 
                     {cfg['targets']['etrago_gen_time']['schema']}.
                     {cfg['targets']['etrago_gen_time']['table']}
-                    WHERE generator_id IN {*gen_to_delete,}
+                    WHERE generator_id NOT IN (
+                        SELECT generator_id FROM
+                        {cfg['targets']['etrago_generators']['schema']}.
+                        {cfg['targets']['etrago_generators']['table']})
                     """
         )
 
