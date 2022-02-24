@@ -322,6 +322,9 @@ Changed
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
 * Create new OSM residential building table
   `#587 <https://github.com/openego/eGon-data/issues/587>`_
+* Move python-operators out of pipeline
+  `#644 <https://github.com/openego/eGon-data/issues/644>`_
+
 
 Bug fixes
 ---------
