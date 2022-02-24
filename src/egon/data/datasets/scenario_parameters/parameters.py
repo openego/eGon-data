@@ -209,72 +209,51 @@ def electricity(scenario):
             ),
         }
 
+        parameters["lifetime"] = {
+            "ac_ehv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_ehv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "ac_hv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_hv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "dc_overhead_line": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_cable": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_inverter": read_costs(costs, "HVDC inverter pair", "lifetime"),
+            "transformer_380_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_380_220": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_220_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "battery inverter": read_costs(
+                costs, "battery inverter", "lifetime"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "lifetime"
+            ),
+        }
         # Insert annualized capital costs
         # lines in EUR/km/MW/a
         # transfermer, inverter, battery in EUR/MW/a
-        parameters["capital_cost"] = {
-            "ac_ehv_overhead_line": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["ac_ehv_overhead_line"],
-                technology="HVAC overhead",
-            ),
-            "ac_ehv_cable": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["ac_ehv_cable"],
-                technology="HVAC overhead",
-            ),
-            "ac_hv_overhead_line": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["ac_hv_overhead_line"],
-                technology="HVAC overhead",
-            ),
-            "ac_hv_cable": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["ac_hv_cable"],
-                technology="HVAC overhead",
-            ),
-            "dc_overhead_line": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["dc_overhead_line"],
-                technology="HVDC overhead",
-            ),
-            "dc_cable": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["dc_cable"],
-                technology="HVDC overhead",
-            ),
-            "dc_inverter": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["dc_inverter"],
-                technology="HVDC inverter pair",
-            ),
-            "transformer_380_110": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["transformer_380_110"],
-                lifetime=40,
-            ),
-            "transformer_380_220": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["transformer_380_220"],
-                lifetime=40,
-            ),
-            "transformer_220_110": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["transformer_220_110"],
-                lifetime=40,
-            ),
-            "battery": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["battery inverter"],
-                "battery inverter",
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
             )
+
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
             + parameters["efficiency"]["battery"]["max_hours"]
-            * annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["battery storage"],
-                "battery storage",
-            ),
-        }
+            * parameters["capital_cost"]["battery storage"]
+        )
+
         # Insert marginal_costs in EUR/MWh
         # marginal cost can include fuel, C02 and operation and maintenance costs
         parameters["marginal_cost"] = {
@@ -351,44 +330,30 @@ def gas(scenario):
             ),  # [EUR/MW/km]
         }
 
-        # Insert annualized capital costs
-        parameters["capital_cost"] = {
-            "power_to_H2": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["power_to_H2"],
-                technology="electrolysis",
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            #  what about H2 compressors?
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "lifetime"
             ),
-            "H2_to_power": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["H2_to_power"],
-                technology="fuel cell",
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
-            "CH4_to_H2": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["CH4_to_H2"],
-                technology="SMR",
-            ),
-            "H2_to_CH4": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["H2_to_CH4"],
-                technology="methanation",
-            ),
-            "H2_underground": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["H2_underground"],
-                technology="hydrogen storage underground",
-            ),
-            "H2_overground": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["H2_overground"],
-                "hydrogen storage tank incl. compressor",
-            ),
-            "H2_pipeline": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["H2_pipeline"],
-                technology="H2 (g) pipeline",
-            ),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
         }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+            )
 
         parameters["marginal_cost"] = {
             "CH4": global_settings(scenario)["fuel_costs"]["gas"]
@@ -490,19 +455,24 @@ def heat(scenario):
             ),
         }
 
-        # Insert annualized capital costs, in EUR/MWh/a
-        parameters["capital_cost"] = {
-            "central_water_tank": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["central_water_tank"],
-                technology="central water tank storage",
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "lifetime"
             ),
-            "rural_water_tank": annualize_capital_costs(
-                costs,
-                parameters["overnight_cost"]["rural_water_tank"],
-                technology="decentral water tank storage",
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "lifetime"
             ),
         }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+            )
 
         # Insert marginal_costs in EUR/MWh
         # marginal cost can include fuel, C02 and operation and maintenance costs
