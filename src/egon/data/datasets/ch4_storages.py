@@ -59,17 +59,20 @@ def import_installed_ch4_storages(scn_name):
     ]
 
     # Define new columns
-    e_nom = []
+    max_workingGas_M_m3 = []
     NUTS1 = []
     end_year = []
     for index, row in Gas_storages_list.iterrows():
         param = ast.literal_eval(row["param"])
         NUTS1.append(param["nuts_id_1"])
         end_year.append(param["end_year"])
-        e_nom.append(param["max_power_MW"])
+        max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    Gas_storages_list = Gas_storages_list.assign(e_nom=e_nom)
     Gas_storages_list = Gas_storages_list.assign(NUTS1=NUTS1)
+
+    # Calculate e_nom
+    conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
+    Gas_storages_list["e_nom"] = [conv_factor * i for i in max_workingGas_M_m3]
 
     end_year = [float("inf") if x == None else x for x in end_year]
     Gas_storages_list = Gas_storages_list.assign(end_year=end_year)
@@ -139,6 +142,7 @@ def import_installed_ch4_storages(scn_name):
             "bus_id",
         ]
     )
+
     return Gas_storages_list
 
 
@@ -184,8 +188,7 @@ def import_ch4_grid_capacity(scn_name):
 
 
 def import_ch4_storages():
-    """Insert list of gas storages units in database
-    """
+    """Insert list of gas storages units in database"""
     # Connect to local database
     engine = db.engine()
 
