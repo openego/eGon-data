@@ -263,7 +263,19 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses["scn_name"] = "eGon2035"
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
-
+    
+    # Add central bus in Russia
+    gdf_abroad_buses = gdf_abroad_buses.append(
+            {
+                "scn_name": scn_name,
+                "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                "x": 41,
+                "y": 55,
+                "country": "RU",
+                "carrier": main_gas_carrier,
+            },
+            ignore_index=True,
+        )
     # if in test mode, add bus in center of Germany
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
@@ -464,7 +476,7 @@ def insert_gas_pipeline_list(
     ] = "NO"
     gas_pipelines_list.loc[
         gas_pipelines_list["country_1"] == "FI", "country_1"
-    ] = "SE"
+    ] = "RU"
 
     # Adjust columns
     bus0 = []
