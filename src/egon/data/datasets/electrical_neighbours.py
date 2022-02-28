@@ -11,6 +11,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 import egon.data.datasets.etrago_setup as etrago
 
 
@@ -18,7 +19,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -971,6 +972,15 @@ def insert_storage(capacities):
         """
     )
 
+    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    parameters_pumped_hydro = scenario_parameters.electricity('eGon2035')["efficiency"][
+            "pumped_hydro"
+        ]
+
+    parameters_battery = scenario_parameters.electricity('eGon2035')["efficiency"][
+            "battery"
+        ]
+
     # Select storage capacities from TYNDP-data
     store = capacities[capacities.carrier.isin(["battery", "pumped_hydro"])]
 
@@ -987,6 +997,17 @@ def insert_storage(capacities):
         get_foreign_bus_id().loc[store.loc[:, "Node/Line"]].values
     )
 
+    # Add columns for additional parameters to df
+    store["dispatch"], store["store"], store["standing_loss"], store["max_hours"] = None, None, None, None
+
+    # Insert carrier specific parameters
+
+    parameters = ["dispatch", "store", "standing_loss", "max_hours"]
+
+    for x in parameters:
+        store.loc[store['carrier']=='battery', x]=parameters_battery[x]
+        store.loc[store['carrier']=='pumped_hydro', x]=parameters_pumped_hydro[x]
+
     # insert data
     session = sessionmaker(bind=db.engine())()
     for i, row in store.iterrows():
@@ -994,7 +1015,10 @@ def insert_storage(capacities):
             scn_name="eGon2035",
             storage_id=int(db.next_etrago_id("storage")),
             bus=row.bus,
-            max_hours=6,
+            max_hours=row.max_hours,
+            efficiency_store=row.store,
+            efficiency_dispatch=row.dispatch,
+            standing_loss=row.standing_loss,
             carrier=row.carrier,
             p_nom=row.cap_2035,
         )
