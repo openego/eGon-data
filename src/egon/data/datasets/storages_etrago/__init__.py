@@ -154,3 +154,4 @@ def extendable_batteries_per_scenario(scenario):
 def extendable_batteries():
 
     extendable_batteries_per_scenario("eGon2035")
+    extendable_batteries_per_scenario("eGon100RE")
