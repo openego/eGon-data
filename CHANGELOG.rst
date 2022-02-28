@@ -419,6 +419,8 @@ Bug fixes
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
+* Timeseries not deleted from grid.etrago_generator_timeseries
+  `#645 <https://github.com/openego/eGon-data/issues/645>`_
 * Fix function to get scaled hh profiles
   `#674 <https://github.com/openego/eGon-data/issues/674>`_
 * Change order of pypsa-eur-sec and scenario-capacities
