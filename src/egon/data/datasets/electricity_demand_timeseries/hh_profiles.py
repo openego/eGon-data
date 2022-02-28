@@ -102,9 +102,17 @@ the number of categories of cell-level household data.
  nuts3-level the impact at a higher aggregation level is negligible.
  For sake of simplicity, the data is not corrected.
 * There are cells without household data but a population. A randomly chosen
- household distribution is taken from a subgroup of cells with same population value and
- applied to all cells with missing household distribution and the specific
- population value.
+ household distribution is taken from a subgroup of cells with same population
+ value and applied to all cells with missing household distribution and the
+ specific population value.
+
+Helper functions
+----
+* To access the DB, select specific profiles at various aggregation levels
+use:func:`get_hh_profiles_from_db'
+* To access the DB, select specific profiles at various aggregation levels
+and scale profiles use :func:`get_scaled_profiles_from_db`
+
 
 Notes
 -----
@@ -113,12 +121,12 @@ This module docstring is rather a dataset documentation. Once, a decision
 is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
-from functools import partial
 from itertools import cycle, product
 from pathlib import Path
 import os
 import random
 
+from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
@@ -160,6 +168,21 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     factor_2050 = Column(Float)
 
 
+class EgonDestatisZensusHouseholdPerHaRefined(Base):
+    __tablename__ = "egon_destatis_zensus_household_per_ha_refined"
+    __table_args__ = {"schema": "society"}
+
+    id = Column(INTEGER, primary_key=True)
+    cell_id = Column(Integer, index=True)
+    grid_id = Column(String, index=True)
+    nuts3 = Column(String)
+    nuts1 = Column(String)
+    characteristics_code = Column(Integer)
+    hh_5types = Column(Integer)
+    hh_type = Column(CHAR(2))
+    hh_10types = Column(Integer)
+
+
 class EgonEtragoElectricityHouseholds(Base):
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
@@ -170,18 +193,31 @@ class EgonEtragoElectricityHouseholds(Base):
     q_set = Column(ARRAY(Float))
 
 
-setup = partial(
-    Dataset,
-    name="HH Demand",
-    version="0.0.5",
-    dependencies=[],
-    # Tasks are declared in pipeline as function is used multiple times with
-    # different args.
-    # To differentiate these tasks PythonOperator with specific id-names are
-    # used.
-    # PythonOperator needs to be declared in pipeline to be mapped to DAG
-    # tasks=[],
-)
+class HouseholdDemands(Dataset):
+    def __init__(self, dependencies):
+        mv_hh_electricity_load_2035 = PythonOperator(
+            task_id="MV-hh-electricity-load-2035",
+            python_callable=mv_grid_district_HH_electricity_load,
+            op_args=["eGon2035", 2035],
+            op_kwargs={"drop_table": True},
+        )
+
+        mv_hh_electricity_load_2050 = PythonOperator(
+            task_id="MV-hh-electricity-load-2050",
+            python_callable=mv_grid_district_HH_electricity_load,
+            op_args=["eGon100RE", 2050],
+        )
+
+        super().__init__(
+            name="Household Demands",
+            version="0.0.7",
+            dependencies=dependencies,
+            tasks=(
+                houseprofiles_in_census_cells,
+                mv_hh_electricity_load_2035,
+                mv_hh_electricity_load_2050,
+            ),
+        )
 
 
 def clean(x):
@@ -421,7 +457,7 @@ def create_missing_zensus_data(
     """
     There is missing data for specific attributes in the zensus dataset because
     of secrecy reasons. Some cells with only small amount of households are
-    missing with the attribute HHTYP_FAM. However the total amount of households
+    missing with attribute HHTYP_FAM. However the total amount of households
     is known with attribute INSGESAMT. The missing data is generated as average
     share of the household types for cell groups with the same amount of
     households.
@@ -433,7 +469,7 @@ def create_missing_zensus_data(
     df_missing_data: pd.DataFrame
         number of missing cells of group of amount of households
     missing_cells: dict
-        dictionary with lists of grids of the missing cells grouped by amount of
+        dictionary with list of grids of the missing cells grouped by amount of
         households in cell
 
     Returns
@@ -498,118 +534,10 @@ def create_missing_zensus_data(
     return df_average_split
 
 
-def get_hh_dist(df_zensus, hh_types):
-    """
-    Group zensus data to fit Demand-Profile-Generator (DPG) format.
-
-    For more information look at the respective publication:
-    https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
-
-    Parameters
-    ----------
-    df_zensus: pd.DataFrame
-        Zensus households data
-    hh_types: dict
-        Mapping of zensus groups to DPG groups
-
-    Returns
-    ----------
-    df_hh_types: pd.DataFrame
-        distribution of people by household type and regional-resolution
-
-        .. warning::
-
-            Data still needs to be converted from amount of people to amount
-            of households
-    """
-    # Cat O1 and O2 are removed as their share with/without kids is not clearly
-    # derivable without any further information. OO will therefore represent
-    # all multihousehold groups but the seniors.
-    adjust = {
-        "SR": 1,
-        "SO": 1,
-        "SK": 1,
-        "PR": 1,
-        "PO": 1,
-        "P1": 1,
-        "P2": 1,
-        "P3": 1,
-        "OR": 1,
-        "OO": 1,
-        "O1": 0,
-        "O2": 0,
-    }
-
-    df_hh_types = pd.DataFrame(
-        (
-            {
-                hhtype: adjust[hhtype] * df_zensus.loc[countries, codes].sum()
-                for hhtype, codes in hh_types.items()
-            }
-            for countries in df_zensus.index
-        ),
-        index=df_zensus.index,
-    )
-    # drop zero columns
-    df_hh_types = df_hh_types.loc[:, (df_hh_types != 0).any(axis=0)]
-
-    return df_hh_types.T
-
-
-def inhabitants_to_households(
-    df_people_by_householdtypes_abs, mapping_people_in_households
-):
-    """
-    Convert number of inhabitant to number of household types
-
-    Takes the distribution of peoples living in types of households to
-    calculate a distribution of household types by using a people-in-household
-    mapping.
-
-    Results are rounded to int (ceiled) to full households.
-
-    Parameters
-    ----------
-    df_people_by_householdtypes_abs: pd.DataFrame
-        Distribution of people living in households
-    mapping_people_in_households: dict
-        Mapping of people living in certain types of households
-
-    Returns
-    ----------
-    df_households_by_type: pd.DataFrame
-        Distribution of households type
-
-         .. warning::
-         By ceiling to full integers of people a small deviation is introduced.
-
-    """
-    # compare categories and remove form mapping if to many
-    diff = set(df_people_by_householdtypes_abs.index) ^ set(
-        mapping_people_in_households.keys()
-    )
-
-    if bool(diff):
-        for key in diff:
-            mapping_people_in_households = dict(mapping_people_in_households)
-            del mapping_people_in_households[key]
-        print(f"Removed {diff} from mapping!")
-
-    # divide amount of people by people in household types
-    df_households_by_type = df_people_by_householdtypes_abs.div(
-        mapping_people_in_households, axis=0
-    )
-    # Number of people gets adjusted to integer values by ceiling
-    # This introduces a small deviation
-    df_households_by_type = df_households_by_type.apply(np.ceil)
-
-    return df_households_by_type
-
-
 def process_nuts1_census_data(df_census_households_raw):
     """Make data compatible with household demand profile categories
 
-    Groups, removes and reorders categories which are not needed to fit data to
+    Removes and reorders categories which are not needed to fit data to
     household types of IEE electricity demand time series generated by
     demand-profile-generator (DPG).
 
@@ -691,221 +619,26 @@ def process_nuts1_census_data(df_census_households_raw):
     return df_census_households
 
 
-def impute_missing_hh_in_populated_cells(df_census_households_grid):
-    """There are cells without household data but a population. A randomly
-    chosen household distribution is taken from a subgroup of cells with same
-    population value and applied to all cells with missing household
-    distribution and the specific population value. In the case, in which there
-    is no subgroup with household data of the respective population value, the
-    fallback is the subgroup with the last last smaller population value.
+def regroup_nuts1_census_data(df_census_households_nuts1):
+    """Regroup census data and map according to demand-profile types.
+    For more information look at the respective publication:
+    https://www.researchgate.net/publication/273775902_Erzeugung_zeitlich_hochaufgeloster_Stromlastprofile_fur_verschiedene_Haushaltstypen
 
-    Parameters
-    ----------
-    df_census_households_grid: pd.DataFrame
-        census household data at 100x100m grid level
-
-    Returns
-    -------
-    pd.DataFrame
-        substituted census household data at 100x100m grid level"""
-
-    df_w_hh = df_census_households_grid.dropna().reset_index(drop=True)
-    df_wo_hh = df_census_households_grid.loc[
-        df_census_households_grid.isna().any(axis=1)
-    ].reset_index(drop=True)
-
-    # iterate over unique population values
-    for population in df_wo_hh["population"].sort_values().unique():
-
-        # create fallback if no cell with specific population available
-        if population in df_w_hh["population"].unique():
-            fallback_value = population
-            population_value = population
-        # use fallback of last possible household distribution
-        else:
-            population_value = fallback_value
-
-        # get cells with specific population value from cells with household distribution
-        df_w_hh_population_i = df_w_hh.loc[
-            df_w_hh["population"] == population_value
-        ]
-        # choose random cell within this group
-        rnd_cell_id_population_i = np.random.choice(
-            df_w_hh_population_i["cell_id"].unique()
-        )
-        # get household distribution of this cell
-        df_rand_hh_distribution = df_w_hh_population_i.loc[
-            df_w_hh_population_i["cell_id"] == rnd_cell_id_population_i
-        ]
-        # get cells with specific population value from cells without household distribution
-        df_wo_hh_population_i = df_wo_hh.loc[
-            df_wo_hh["population"] == population
-        ]
-
-        # all cells will get the same random household distribution
-
-        # prepare size of dataframe by number of household types
-        df_repeated = pd.concat(
-            [df_wo_hh_population_i] * df_rand_hh_distribution.shape[0],
-            ignore_index=True,
-        )
-        df_repeated = df_repeated.sort_values("cell_id").reset_index(drop=True)
-
-        # insert random household distribution
-        columns = ["characteristics_code", "hh_5types"]
-        df_repeated.loc[:, columns] = pd.concat(
-            [df_rand_hh_distribution.loc[:, columns]]
-            * df_wo_hh_population_i.shape[0]
-        ).values
-        # append new cells
-        df_w_hh = df_w_hh.append(df_repeated, ignore_index=True)
-
-    return df_w_hh
-
-
-def get_census_households_grid():
-    """Query census household data at 100x100m grid level from database. As
-    there is a divergence in the census household data depending which attribute
-    is used. There also exist cells without household but with population data.
-    The missing data in these cases are substituted. First census household data
-    with attribute 'HHTYP_FAM' is missing for some cells with small amount
-    of households. This data is generated using the average share of household
-    types for cells with similar household number. For some cells the summed
-    amount of households per type deviates from the total number with attribute
-    'INSGESAMT'. As the profiles are scaled with demand-regio data at
-    nuts3-level the impact at a higher aggregation level is negligible. For sake
-    of simplicity, the data is not corrected.
-
-    Returns
-    -------
-    pd.DataFrame
-        census household data at 100x100m grid level"""
-
-    # Retrieve information about households for each census cell
-    # Only use cell-data which quality (quantity_q<2) is acceptable
-    df_census_households_grid = db.select_dataframe(
-        sql="""
-                    SELECT grid_id, attribute, characteristics_code, characteristics_text, quantity
-                    FROM society.egon_destatis_zensus_household_per_ha
-                    WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
-    )
-    df_census_households_grid = df_census_households_grid.drop(
-        columns=["attribute", "characteristics_text"]
-    )
-
-    # Missing data is detected
-    df_missing_data = db.select_dataframe(
-        sql="""
-                    SELECT count(joined.quantity_gesamt) as amount, joined.quantity_gesamt as households
-                    FROM(
-                        SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
-                         (quantity_gesamt-(case when quantity_sum_fam isnull then 0 else quantity_sum_fam end))
-                         as insgesamt_minus_fam
-                    FROM (
-                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM society.egon_destatis_zensus_household_per_ha
-                        WHERE attribute = 'HHTYP_FAM'
-                        GROUP BY grid_id) as t1
-                    Full JOIN (
-                        SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM society.egon_destatis_zensus_household_per_ha
-                        WHERE attribute = 'INSGESAMT'
-                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
-                        ) as joined
-                    WHERE quantity_sum_fam isnull
-                    Group by quantity_gesamt """
-    )
-    missing_cells = db.select_dataframe(
-        sql="""
-                    SELECT t12.grid_id, t12.quantity
-                    FROM (
-                    SELECT t2.grid_id, (case when quantity_sum_fam isnull then quantity_gesamt end) as quantity
-                    FROM (
-                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM society.egon_destatis_zensus_household_per_ha
-                        WHERE attribute = 'HHTYP_FAM'
-                        GROUP BY grid_id) as t1
-                    Full JOIN (
-                        SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM society.egon_destatis_zensus_household_per_ha
-                        WHERE attribute = 'INSGESAMT'
-                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
-                        ) as t12
-                    WHERE quantity is not null"""
-    )
-
-    # Missing cells are substituted by average share of cells with same amount
-    # of households.
-    df_average_split = create_missing_zensus_data(
-        df_census_households_grid, df_missing_data, missing_cells
-    )
-
-    df_census_households_grid = df_census_households_grid.rename(
-        columns={"quantity": "hh_5types"}
-    )
-
-    df_census_households_grid = pd.concat(
-        [df_census_households_grid, df_average_split], ignore_index=True
-    )
-
-    # Census cells with nuts3 and nuts1 information
-    df_grid_id = db.select_dataframe(
-        sql="""
-                    SELECT pop.grid_id, pop.id as cell_id, pop.population, vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
-                    FROM society.destatis_zensus_population_per_ha_inside_germany as pop
-                    LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
-                    ON (pop.id=vg250.zensus_population_id)
-                    LEFT JOIN boundaries.vg250_lan as lan
-                    ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
-                    WHERE lan.gf = 4 """
-    )
-    df_grid_id = df_grid_id.drop_duplicates()
-    df_grid_id = df_grid_id.reset_index(drop=True)
-
-    # Merge household type and size data with considered (populated) census
-    # cells how='right' is used as ids of unpopulated areas are removed
-    # by df_grid_id or ancestors. See here:
-    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
-    df_census_households_grid = pd.merge(
-        df_census_households_grid,
-        df_grid_id,
-        left_on="grid_id",
-        right_on="grid_id",
-        how="right",
-    )
-    df_census_households_grid = df_census_households_grid.sort_values(
-        ["cell_id", "characteristics_code"]
-    )
-
-    return df_census_households_grid
-
-
-def refine_census_data_at_cell_level(
-    df_census_households_nuts1, df_census_households_grid
-):
-    """The zensus data is processed to define the number and type of households
-    per zensus cell. Two subsets of the zensus data are merged to fit the
-    IEE profiles specifications. For this, the dataset of  people living in
-    households at NUTS-1 is converted to number of households of
-    specific size. The data of category 'HHGROESS_KLASS' in census households
-    at grid level is used to determine an average wherever the amount
-    of people is not trivial (OR, OO). Kids are not counted.
 
     Parameters
     ----------
     df_census_households_nuts1: pd.DataFrame
-        Aggregated zensus household data on NUTS-1 level
-    df_census_households_grid: pd.DataFrame
-        Aggregated zensus household data on 100x100m grid level
+        census household data on NUTS-1 level in absolute values
 
     Returns
-    -------
-    pd.DataFrame
-        Number of hh types per census cell and scaling factors
+    ----------
+    df_dist_households: pd.DataFrame
+        Distribution of households type
     """
-    # Define mapping of census household family types to Eurostat household types
+
+    # Mapping of census household family types to Eurostat household types
     # - Adults living in households type
-    # - number of kids are  not included even if mentioned in household type name
+    # - kids are  not included even if mentioned in household type name
     # **! The Eurostat data only counts adults/seniors, excluding kids <15**
     # Eurostat household types are used for demand-profile-generator
     # @iee-fraunhofer
@@ -972,9 +705,7 @@ def refine_census_data_at_cell_level(
         ],
         # no info about share of kids
         # OO, O1, O2 have the same amount, as no information about the share of
-        # kids within census data set. If needed the total amount can be estimated
-        # in the :func:`get_hh_dist` function using multi_adjust=True option.
-        # The Eurostat share is then applied.
+        # kids within census data set.
         "OO": [
             ("Mehrpersonenhaushalte ohne Kernfamilie", "3 Personen", "Adults"),
             ("Mehrpersonenhaushalte ohne Kernfamilie", "4 Personen", "Adults"),
@@ -992,18 +723,48 @@ def refine_census_data_at_cell_level(
         # no info about share of kids
     }
 
-    mapping_zensus_hh_subgroups = {
-        1: ["SR", "SO"],
-        2: ["PR", "PO"],
-        3: ["SK"],
-        4: ["P1", "P2", "P3"],
-        5: ["OR", "OO"],
-    }
-    # :func:`get_hh_dist` without eurostat adjustment for O1-03 Groups in
     # absolute values
-    df_hh_types_nad_abs = get_hh_dist(
-        df_census_households_nuts1, hh_types_eurostat
+    df_hh_distribution_abs = pd.DataFrame(
+        (
+            {
+                hhtype: df_census_households_nuts1.loc[countries, codes].sum()
+                for hhtype, codes in hh_types_eurostat.items()
+            }
+            for countries in df_census_households_nuts1.index
+        ),
+        index=df_census_households_nuts1.index,
     )
+    # drop zero columns
+    df_hh_distribution_abs = df_hh_distribution_abs.loc[
+        :, (df_hh_distribution_abs != 0).any(axis=0)
+    ].T
+
+    return df_hh_distribution_abs
+
+
+def inhabitants_to_households(df_hh_people_distribution_abs):
+    """
+    Convert number of inhabitant to number of household types
+
+    Takes the distribution of peoples living in types of households to
+    calculate a distribution of household types by using a people-in-household
+    mapping. Results are not rounded to int as it will be used to calculate
+    a relative distribution anyways.
+    The data of category 'HHGROESS_KLASS' in census households
+    at grid level is used to determine an average wherever the amount
+    of people is not trivial (OR, OO). Kids are not counted.
+
+    Parameters
+    ----------
+    df_hh_people_distribution_abs: pd.DataFrame
+        Grouped census household data on NUTS-1 level in absolute values
+
+    Returns
+    ----------
+    df_dist_households: pd.DataFrame
+        Distribution of households type
+
+    """
 
     # Get household size for each census cell grouped by
     # As this is only used to estimate size of households for OR, OO
@@ -1036,44 +797,367 @@ def refine_census_data_at_cell_level(
         "OR": OO_factor,
         "OO": OO_factor,
     }
-    # Determine number of persons living in each household type
-    df_dist_households = inhabitants_to_households(
-        df_hh_types_nad_abs, mapping_people_in_households
+
+    # compare categories and remove form mapping if to many
+    diff = set(df_hh_people_distribution_abs.index) ^ set(
+        mapping_people_in_households.keys()
     )
+
+    if bool(diff):
+        for key in diff:
+            mapping_people_in_households = dict(mapping_people_in_households)
+            del mapping_people_in_households[key]
+        print(f"Removed {diff} from mapping!")
+
+    # divide amount of people by people in household types
+    df_dist_households = df_hh_people_distribution_abs.div(
+        mapping_people_in_households, axis=0
+    )
+
+    return df_dist_households
+
+
+def impute_missing_hh_in_populated_cells(df_census_households_grid):
+    """There are cells without household data but a population. A randomly
+    chosen household distribution is taken from a subgroup of cells with same
+    population value and applied to all cells with missing household
+    distribution and the specific population value. In the case, in which there
+    is no subgroup with household data of the respective population value, the
+    fallback is the subgroup with the last last smaller population value.
+
+    Parameters
+    ----------
+    df_census_households_grid: pd.DataFrame
+        census household data at 100x100m grid level
+
+    Returns
+    -------
+    pd.DataFrame
+        substituted census household data at 100x100m grid level"""
+
+    df_w_hh = df_census_households_grid.dropna().reset_index(drop=True)
+    df_wo_hh = df_census_households_grid.loc[
+        df_census_households_grid.isna().any(axis=1)
+    ].reset_index(drop=True)
+
+    # iterate over unique population values
+    for population in df_wo_hh["population"].sort_values().unique():
+
+        # create fallback if no cell with specific population available
+        if population in df_w_hh["population"].unique():
+            fallback_value = population
+            population_value = population
+        # use fallback of last possible household distribution
+        else:
+            population_value = fallback_value
+
+        # get cells with specific population value from cells with
+        # household distribution
+        df_w_hh_population_i = df_w_hh.loc[
+            df_w_hh["population"] == population_value
+        ]
+        # choose random cell within this group
+        rnd_cell_id_population_i = np.random.choice(
+            df_w_hh_population_i["cell_id"].unique()
+        )
+        # get household distribution of this cell
+        df_rand_hh_distribution = df_w_hh_population_i.loc[
+            df_w_hh_population_i["cell_id"] == rnd_cell_id_population_i
+        ]
+        # get cells with specific population value from cells without
+        # household distribution
+        df_wo_hh_population_i = df_wo_hh.loc[
+            df_wo_hh["population"] == population
+        ]
+
+        # all cells will get the same random household distribution
+
+        # prepare size of dataframe by number of household types
+        df_repeated = pd.concat(
+            [df_wo_hh_population_i] * df_rand_hh_distribution.shape[0],
+            ignore_index=True,
+        )
+        df_repeated = df_repeated.sort_values("cell_id").reset_index(drop=True)
+
+        # insert random household distribution
+        columns = ["characteristics_code", "hh_5types"]
+        df_repeated.loc[:, columns] = pd.concat(
+            [df_rand_hh_distribution.loc[:, columns]]
+            * df_wo_hh_population_i.shape[0]
+        ).values
+        # append new cells
+        df_w_hh = df_w_hh.append(df_repeated, ignore_index=True)
+
+    return df_w_hh
+
+
+def get_census_households_grid():
+    """Query census household data at 100x100m grid level from database. As
+    there is a divergence in the census household data depending which
+    attribute is used. There also exist cells without household but with
+    population data. The missing data in these cases are substituted. First
+    census household data with attribute 'HHTYP_FAM' is missing for some
+    cells with small amount of households. This data is generated using the
+    average share of household types for cells with similar household number.
+    For some cells the summed amount of households per type deviates from the
+    total number with attribute 'INSGESAMT'. As the profiles are scaled with
+    demand-regio data at nuts3-level the impact at a higher aggregation level
+    is negligible. For sake of simplicity, the data is not corrected.
+
+    Returns
+    -------
+    pd.DataFrame
+        census household data at 100x100m grid level"""
+
+    # Retrieve information about households for each census cell
+    # Only use cell-data which quality (quantity_q<2) is acceptable
+    df_census_households_grid = db.select_dataframe(
+        sql="""
+                SELECT grid_id, attribute, characteristics_code,
+                 characteristics_text, quantity
+                FROM society.egon_destatis_zensus_household_per_ha
+                WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
+    )
+    df_census_households_grid = df_census_households_grid.drop(
+        columns=["attribute", "characteristics_text"]
+    )
+
+    # Missing data is detected
+    df_missing_data = db.select_dataframe(
+        sql="""
+                    SELECT count(joined.quantity_gesamt) as amount,
+                     joined.quantity_gesamt as households
+                    FROM(
+                        SELECT t2.grid_id, quantity_gesamt, quantity_sum_fam,
+                         (quantity_gesamt-(case when quantity_sum_fam isnull
+                         then 0 else quantity_sum_fam end))
+                         as insgesamt_minus_fam
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as joined
+                    WHERE quantity_sum_fam isnull
+                    Group by quantity_gesamt """
+    )
+    missing_cells = db.select_dataframe(
+        sql="""
+                    SELECT t12.grid_id, t12.quantity
+                    FROM (
+                    SELECT t2.grid_id, (case when quantity_sum_fam isnull
+                    then quantity_gesamt end) as quantity
+                    FROM (
+                        SELECT  grid_id, SUM(quantity) as quantity_sum_fam
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'HHTYP_FAM'
+                        GROUP BY grid_id) as t1
+                    Full JOIN (
+                        SELECT grid_id, sum(quantity) as quantity_gesamt
+                        FROM society.egon_destatis_zensus_household_per_ha
+                        WHERE attribute = 'INSGESAMT'
+                        GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
+                        ) as t12
+                    WHERE quantity is not null"""
+    )
+
+    # Missing cells are substituted by average share of cells with same amount
+    # of households.
+    df_average_split = create_missing_zensus_data(
+        df_census_households_grid, df_missing_data, missing_cells
+    )
+
+    df_census_households_grid = df_census_households_grid.rename(
+        columns={"quantity": "hh_5types"}
+    )
+
+    df_census_households_grid = pd.concat(
+        [df_census_households_grid, df_average_split], ignore_index=True
+    )
+
+    # Census cells with nuts3 and nuts1 information
+    df_grid_id = db.select_dataframe(
+        sql="""
+                SELECT pop.grid_id, pop.id as cell_id, pop.population,
+                 vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
+                FROM
+                society.destatis_zensus_population_per_ha_inside_germany as pop
+                LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
+                ON (pop.id=vg250.zensus_population_id)
+                LEFT JOIN boundaries.vg250_lan as lan
+                ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
+                WHERE lan.gf = 4 """
+    )
+    df_grid_id = df_grid_id.drop_duplicates()
+    df_grid_id = df_grid_id.reset_index(drop=True)
+
+    # Merge household type and size data with considered (populated) census
+    # cells how='right' is used as ids of unpopulated areas are removed
+    # by df_grid_id or ancestors. See here:
+    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
+    df_census_households_grid = pd.merge(
+        df_census_households_grid,
+        df_grid_id,
+        left_on="grid_id",
+        right_on="grid_id",
+        how="right",
+    )
+    df_census_households_grid = df_census_households_grid.sort_values(
+        ["cell_id", "characteristics_code"]
+    )
+
+    return df_census_households_grid
+
+
+def proportionate_allocation(
+    df_group, dist_households_nuts1, hh_10types_cluster
+):
+    """Household distribution at nuts1 are applied at census cell within group
+
+    To refine the hh_5types and keep the distribution at nuts1 level,
+    the household types are clustered and drawn with proportionate weighting.
+    The resulting pool is splitted into subgroups with sizes according to
+    the number of households of clusters in cells.
+
+    Parameters
+    ----------
+    df_group: pd.DataFrame
+        Census household data at grid level for specific hh_5type cluster in
+        a federal state
+    dist_households_nuts1: pd.Series
+        Household distribution of of hh_10types in a federal state
+    hh_10types_cluster: list of str
+        Cluster of household types to be refined to
+
+    Returns
+    -------
+    pd.DataFrame
+        Refined household data with hh_10types of cluster at nuts1 level
+    """
+
+    # get probability of households within hh_5types group
+    probability = dist_households_nuts1[hh_10types_cluster].values
+    # get total number of households within hh_5types group in federal state
+    size = df_group["hh_5types"].sum().astype(int)
+
+    # random sample within hh_5types group with probability for whole federal
+    # state
+    choices = np.random.choice(
+        a=hh_10types_cluster, size=size, replace=True, p=probability
+    )
+    # get section sizes to split the sample pool from federal state to grid
+    # cells
+    split_sections = df_group["hh_5types"].cumsum().astype(int)[:-1]
+    # split into grid cell groups
+    samples = np.split(choices, split_sections)
+    # count number of hh_10types for each cell
+    sample_count = [np.unique(x, return_counts=True) for x in samples]
+
+    df_distribution = pd.DataFrame(
+        sample_count, columns=["hh_type", "hh_10types"]
+    )
+    # add cell_ids
+    df_distribution["cell_id"] = df_group["cell_id"].unique()
+
+    # unnest
+    df_distribution = (
+        df_distribution.apply(pd.Series.explode)
+        .reset_index(drop=True)
+        .dropna()
+    )
+
+    return df_distribution
+
+
+def refine_census_data_at_cell_level(
+    df_census_households_grid,
+    df_census_households_nuts1,
+):
+    """The census data is processed to define the number and type of households
+    per zensus cell. Two subsets of the census data are merged to fit the
+    IEE profiles specifications. To do this, proportionate allocation is
+    applied at nuts1 level and within household type clusters.
+
+    Parameters
+    ----------
+    df_census_households_grid: pd.DataFrame
+        Aggregated zensus household data on 100x100m grid level
+    df_census_households_nuts1: pd.DataFrame
+        Aggregated zensus household data on NUTS-1 level
+
+    Returns
+    -------
+    pd.DataFrame
+        Number of hh types per census cell
+    """
+    mapping_zensus_hh_subgroups = {
+        1: ["SR", "SO"],
+        2: ["PR", "PO"],
+        3: ["SK"],
+        4: ["P1", "P2", "P3"],
+        5: ["OR", "OO"],
+    }
 
     # Calculate fraction of fine household types within subgroup of
     # rough household types
+    df_dist_households = df_census_households_nuts1.copy()
     for value in mapping_zensus_hh_subgroups.values():
-        df_dist_households.loc[value] = df_dist_households.loc[value].div(
-            df_dist_households.loc[value].sum()
+        df_dist_households.loc[value] = df_census_households_nuts1.loc[
+            value
+        ].div(df_census_households_nuts1.loc[value].sum())
+
+    # Refine from hh_5types to hh_10types
+    df_distribution_nuts0 = pd.DataFrame()
+    # Loop over federal states
+    for gen, df_nuts1 in df_census_households_grid.groupby("gen"):
+        # take subgroup distribution from federal state
+        dist_households_nuts1 = df_dist_households[gen]
+
+        df_distribution_nuts1 = pd.DataFrame()
+        # loop over hh_5types as cluster
+        for (
+            hh_5type_cluster,
+            hh_10types_cluster,
+        ) in mapping_zensus_hh_subgroups.items():
+            # get census household of hh_5type and federal state
+            df_group = df_nuts1.loc[
+                df_nuts1["characteristics_code"] == hh_5type_cluster
+            ]
+
+            # apply proportionate allocation function within cluster
+            df_distribution_group = proportionate_allocation(
+                df_group, dist_households_nuts1, hh_10types_cluster
+            )
+            df_distribution_group["characteristics_code"] = hh_5type_cluster
+            df_distribution_nuts1 = df_distribution_nuts1.append(
+                df_distribution_group
+            )
+
+        df_distribution_nuts0 = df_distribution_nuts0.append(
+            df_distribution_nuts1
         )
 
-    # Merge Zensus nuts1 level household data with zensus cell level 100 x 100 m
-    # by refining hh-groups with mapping_zensus_hh_subgroups
-    df_census_households_grid_refined = pd.DataFrame()
-    for (country, code), df_country_type in df_census_households_grid.groupby(
-        ["gen", "characteristics_code"]
-    ):
-
-        # iterate over zenus_country subgroups
-        for typ in mapping_zensus_hh_subgroups[code]:
-            df_country_type["hh_type"] = typ
-            df_country_type["factor"] = df_dist_households.loc[typ, country]
-            df_country_type["hh_10types"] = (
-                df_country_type["hh_5types"]
-                * df_dist_households.loc[typ, country]
-            )
-            df_census_households_grid_refined = (
-                df_census_households_grid_refined.append(
-                    df_country_type, ignore_index=True
-                )
-            )
-
-    df_census_households_grid_refined = (
-        df_census_households_grid_refined.sort_values(
-            by=["grid_id", "characteristics_code"]
-        ).reset_index(drop=True)
+    df_census_households_grid_refined = df_census_households_grid.merge(
+        df_distribution_nuts0,
+        how="inner",
+        left_on=["cell_id", "characteristics_code"],
+        right_on=["cell_id", "characteristics_code"],
     )
+
+    df_census_households_grid_refined[
+        "characteristics_code"
+    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
+    df_census_households_grid_refined[
+        "hh_5types"
+    ] = df_census_households_grid_refined["hh_5types"].astype(int)
+    df_census_households_grid_refined[
+        "hh_10types"
+    ] = df_census_households_grid_refined["hh_10types"].astype(int)
 
     return df_census_households_grid_refined
 
@@ -1085,7 +1169,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     Takes a random sample of profile ids for given cell:
       * if pool size >= sample size: without replacement
       * if pool size < sample size: with replacement
-    The number of households are rounded to the nearest integer if float.
+
 
     Parameters
     ----------
@@ -1110,7 +1194,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
         else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
         for hh_type, sq in zip(
             df_cell["hh_type"],
-            np.rint(df_cell["hh_10types"].values).astype(int),
+            df_cell["hh_10types"],
         )
     ]
 
@@ -1125,15 +1209,14 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
-def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
+def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     """
-    Allocates household demand profiles to each census cell.
+    Assign household demand profiles to each census cell.
 
     A table including the demand profile ids for each cell is created by using
-    :func:`get_cell_demand_profile_ids`. Household profiles are randomly sampled
-    for each cell. The profiles are not replaced to the pool within a cell but
-    after. The number of households are rounded to the nearest integer if float.
-    This results in a small deviation for the course of the aggregated profiles.
+    :func:`get_cell_demand_profile_ids`. Household profiles are randomly
+    sampled for each cell. The profiles are not replaced to the pool within
+    a cell but after.
 
     Parameters
     ----------
@@ -1174,6 +1257,8 @@ def allocate_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
 
     pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
 
+    # only use non zero entries
+    df_zensus_cells = df_zensus_cells.loc[df_zensus_cells["hh_10types"] != 0]
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
 
         # random sampling of household profiles for each cell
@@ -1213,7 +1298,7 @@ def adjust_to_demand_regio_nuts3_annual(
     Parameters
     ----------
     df_hh_profiles_in_census_cells: pd.DataFrame
-        Result of :func:`allocate_hh_demand_profiles_to_cells`.
+        Result of :func:`assign_hh_demand_profiles_to_cells`.
     df_iee_profiles: pd.DataFrame
         Household load profile data
 
@@ -1227,7 +1312,7 @@ def adjust_to_demand_regio_nuts3_annual(
     Returns
     -------
     pd.DataFrame
-        Returns the same data as :func:`allocate_hh_demand_profiles_to_cells`,
+        Returns the same data as :func:`assign_hh_demand_profiles_to_cells`,
         but with filled columns `factor_2035` and `factor_2050`.
     """
     for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
@@ -1265,6 +1350,7 @@ def get_load_timeseries(
     df_hh_profiles_in_census_cells,
     cell_ids,
     year,
+    aggregate=True,
     peak_load_only=False,
 ):
     """
@@ -1290,6 +1376,8 @@ def get_load_timeseries(
     year: int
         Scenario year. Is used to consider the scaling factor for aligning
         annual demand to NUTS-3 data.
+    aggregate: bool
+        If true, all profiles are aggregated
     peak_load_only: bool
         If true, only the peak load value is returned (the type of the return
         value is `float`). Defaults to False which returns the entire time
@@ -1302,9 +1390,12 @@ def get_load_timeseries(
         series in MWh.
     """
     timesteps = len(df_iee_profiles)
-    full_load = pd.Series(
-        data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
-    )
+    if aggregate:
+        full_load = pd.Series(
+            data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
+        )
+    else:
+        full_load = pd.DataFrame(index=range(timesteps))
     load_area_meta = df_hh_profiles_in_census_cells.loc[
         cell_ids, ["cell_profile_ids", "nuts3", f"factor_{year}"]
     ]
@@ -1313,15 +1404,43 @@ def get_load_timeseries(
     for (nuts3, factor), df in load_area_meta.groupby(
         by=["nuts3", f"factor_{year}"]
     ):
-        part_load = (
-            df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(axis=1)
-            * factor
-            / 1e6
-        )  # from Wh to MWh
-        full_load = full_load.add(part_load)
+        if aggregate:
+            part_load = (
+                df_iee_profiles.loc[:,
+                df["cell_profile_ids"].sum()].sum(axis=1)
+                * factor
+                / 1e6
+            )  # from Wh to MWh
+            full_load = full_load.add(part_load)
+        elif not aggregate:
+            part_load = (
+                df_iee_profiles.loc[:, df["cell_profile_ids"].sum()]
+                * factor
+                / 1e6
+            )  # from Wh to MWh
+            full_load = pd.concat(
+                [full_load, part_load], axis=1).dropna(axis=1)
+        else:
+            raise KeyError("Parameter 'aggregate' needs to be bool value!")
     if peak_load_only:
         full_load = full_load.max()
     return full_load
+
+
+def write_refinded_households_to_db(df_census_households_grid_refined):
+    # Write allocation table into database
+    EgonDestatisZensusHouseholdPerHaRefined.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonDestatisZensusHouseholdPerHaRefined.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonDestatisZensusHouseholdPerHaRefined,
+            df_census_households_grid_refined.to_dict(orient="records"),
+        )
 
 
 def houseprofiles_in_census_cells():
@@ -1357,10 +1476,21 @@ def houseprofiles_in_census_cells():
     # Download zensus household NUTS-1 data with family type and age categories
     df_census_households_nuts1_raw = get_census_households_nuts1_raw()
 
-    # Restructure data to be compatible with categories from demand profile
-    # generator. Reduce age intervals and aggregate data to NUTS-1 level.
+    # Reduce age intervals and remove kids
     df_census_households_nuts1 = process_nuts1_census_data(
         df_census_households_nuts1_raw
+    )
+
+    # Regroup data to be compatible with categories from demand profile
+    # generator.
+    df_census_households_nuts1 = regroup_nuts1_census_data(
+        df_census_households_nuts1
+    )
+
+    # Convert data from people living in households to households
+    # Using a specified amount of inhabitants per household type
+    df_census_households_nuts1 = inhabitants_to_households(
+        df_census_households_nuts1
     )
 
     # Query census household grid data with family type
@@ -1374,21 +1504,23 @@ def houseprofiles_in_census_cells():
 
     # Refine census household grid data with additional NUTS-1 level attributes
     df_census_households_grid_refined = refine_census_data_at_cell_level(
-        df_census_households_nuts1, df_census_households_grid
+        df_census_households_grid, df_census_households_nuts1
     )
 
+    write_refinded_households_to_db(df_census_households_grid_refined)
+
     # Allocate profile ids to each cell by census data
-    df_hh_profiles_in_census_cells = allocate_hh_demand_profiles_to_cells(
+    df_hh_profiles_in_census_cells = assign_hh_demand_profiles_to_cells(
         df_census_households_grid_refined, df_iee_profiles
     )
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
         sql="""
-                                SELECT year, nuts3, SUM (demand) as demand_mWha
-                                FROM demand.egon_demandregio_hh as egon_d
-                                GROUP BY nuts3, year
-                                ORDER BY year""",
+                SELECT year, nuts3, SUM (demand) as demand_mWha
+                FROM demand.egon_demandregio_hh as egon_d
+                GROUP BY nuts3, year
+                ORDER BY year""",
         index_col=["year", "nuts3"],
     )
 
@@ -1445,10 +1577,6 @@ def get_houseprofiles_in_census_cells():
         census_profile_mapping = pd.read_sql(
             q.statement, q.session.bind, index_col="cell_id"
         )
-    # Cast profiles ids to tuple of type and int
-    # census_profile_mapping["cell_profile_ids"] = census_profile_mapping[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
 
     return census_profile_mapping
 
@@ -1482,6 +1610,9 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     attribute_options = ["nuts3", "nuts1", "cell_id"]
     if attribute not in attribute_options:
         raise ValueError(f"attribute has to be one of: {attribute_options}")
+
+    if not isinstance(list_of_identifiers, list):
+        raise KeyError("'list_of_identifiers' is not a list!")
 
     # Query profile ids and scaling factors for specific attributes
     with db.session_scope() as session:
@@ -1528,10 +1659,6 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     cell_demand_metadata = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
-    # Cast profiles ids to tuple of type and int
-    # cell_demand_metadata["cell_profile_ids"] = cell_demand_metadata[
-    #     "cell_profile_ids"
-    # ].apply(lambda x: [(cat, int(profile_id)) for cat, profile_id in x])
     return cell_demand_metadata
 
 
@@ -1573,7 +1700,7 @@ def get_hh_profiles_from_db(profile_ids):
 
 
 def get_scaled_profiles_from_db(
-    attribute, list_of_identifiers, year, peak_load_only=False
+    attribute, list_of_identifiers, year, aggregate=True, peak_load_only=False
 ):
     """Retrieve selection of scaled household electricity demand profiles
 
@@ -1590,15 +1717,21 @@ def get_scaled_profiles_from_db(
         nuts3/nuts1 need to be str
         cell_id need to be int
 
-     year: int
+    year: int
          * 2035
          * 2050
 
-    peak_load_only: bool
+    aggregate: bool
+        If True, all profiles are summed. This uses a lot of RAM if a high
+        attribute level is chosen
 
-    See Also
-    --------
-    :func:`houseprofiles_in_census_cells`
+    peak_load_only: bool
+        If True, only peak load value is returned
+
+    Notes
+    -----
+    Aggregate == False option can use a lot of RAM if many profiles are selected
+
 
     Returns
     -------
@@ -1612,13 +1745,13 @@ def get_scaled_profiles_from_db(
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
     df_iee_profiles = get_hh_profiles_from_db(profile_ids)
-    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     scaled_profiles = get_load_timeseries(
         df_iee_profiles=df_iee_profiles,
         df_hh_profiles_in_census_cells=cell_demand_metadata,
         cell_ids=cell_demand_metadata.index.to_list(),
         year=year,
+        aggregate=aggregate,
         peak_load_only=peak_load_only,
     )
     return scaled_profiles
