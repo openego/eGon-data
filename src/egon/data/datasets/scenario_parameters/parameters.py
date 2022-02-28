@@ -206,7 +206,27 @@ def electricity(scenario):
         }
 
     elif scenario == "eGon100RE":
-        parameters = {"grid_topology": "Status Quo"}
+        costs = read_csv(2050)
+        parameters = {
+            "grid_topology": "Status Quo",
+        }
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "battery": {
+                "store": read_costs(costs, "battery inverter", "efficiency")
+                ** 0.5,
+                "dispatch": read_costs(costs, "battery inverter", "efficiency")
+                ** 0.5,
+                "standing_loss": 0,
+                "max_hours": 6,
+            },
+            "pumped_hydro": {
+                "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "standing_loss": 0,
+                "max_hours": 6,
+            },
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
