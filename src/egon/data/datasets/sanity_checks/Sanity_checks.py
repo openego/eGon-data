@@ -225,7 +225,7 @@ Error_heat = (
 print(f"The target values for Sum loads Heat DE differ by {Error_heat}  %")
 
 
-sum_urban_central_heat_pump_suppy = db.select_dataframe(
+sum_urban_central_heat_pump_supply = db.select_dataframe(
     f"""
 SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_heat_pump_MW 
 FROM supply.egon_scenario_capacities
@@ -250,9 +250,166 @@ GROUP BY (carrier);
 
 Error_central_heat_pump = (
     round(
-        (sum_central_heat_pump_grid - sum_urban_central_heat_pump_suppy)
-        / sum_urban_central_heat_pump_suppy ,
+        (sum_central_heat_pump_grid["central_heat_pump_mw"].values[
+            0] - sum_urban_central_heat_pump_supply["urban_central_heat_pump_mw"].values[
+                0])
+        / sum_urban_central_heat_pump_supply["urban_central_heat_pump_mw"].values[
+            0] ,
         2,
     )
     * 100
 )
+print(f"The target values for Sum loads Central Heat Pump DE differ by {Error_central_heat_pump}  %")
+
+
+sum_urban_central_resistive_heater_supply = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_resistive_heater_MW 
+FROM supply.egon_scenario_capacities
+WHERE carrier= 'urban_central_resistive_heater'
+AND scenario_name IN ('eGon2035')
+GROUP BY (carrier);
+
+
+"""
+)
+
+sum_central_resistive_heater_grid = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as Central_resistive_heater_MW 
+FROM grid.egon_etrago_link
+WHERE carrier= 'central_resistive_heater'
+AND scn_name IN ('eGon2035')
+GROUP BY (carrier);
+
+"""
+)
+
+Error_central_resistive_heater = (
+    round(
+        (sum_central_resistive_heater_grid["central_resistive_heater_mw"].values[
+            0] - sum_urban_central_resistive_heater_supply["urban_central_resistive_heater_mw"].values[
+                0])
+        / sum_urban_central_resistive_heater_supply["urban_central_resistive_heater_mw"].values[
+            0],
+        2,
+    )
+    * 100
+)
+print(f"The target values for Sum loads Central Resistive Heater DE differ by {Error_central_resistive_heater}  %")
+
+
+
+sum_urban_central_solar_thermal_collector_supply = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_solar_thermal_collector_MW 
+FROM supply.egon_scenario_capacities
+WHERE carrier= 'urban_central_solar_thermal_collector'
+AND scenario_name IN ('eGon2035')
+GROUP BY (carrier);
+
+
+
+"""
+)
+
+sum_solar_thermal_collector_grid = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as solar_thermal_collector_MW 
+FROM grid.egon_etrago_generator
+WHERE carrier= 'solar_thermal_collector'
+AND scn_name IN ('eGon2035')
+GROUP BY (carrier);
+
+
+"""
+)
+
+Error_urban_central_solar_thermal_collector = (
+    round(
+        (sum_solar_thermal_collector_grid["solar_thermal_collector_mw"].values[
+            0] - sum_urban_central_solar_thermal_collector_supply["urban_central_solar_thermal_collector_mw"].values[
+                0])
+        / sum_urban_central_solar_thermal_collector_supply["urban_central_solar_thermal_collector_mw"].values[
+            0],
+        2,
+    )
+    * 100
+)
+print(f"The target values for Sum loads Central Solar Thermal Collector DE differ by {Error_urban_central_solar_thermal_collector}  %")
+
+
+sum_urban_central_geo_thermal_supply = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_geo_thermal_MW 
+FROM supply.egon_scenario_capacities
+WHERE carrier= 'urban_central_geo_thermal'
+AND scenario_name IN ('eGon2035')
+GROUP BY (carrier);
+
+
+
+"""
+)
+
+sum_geo_thermal_grid = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as geo_thermal_MW 
+FROM grid.egon_etrago_generator
+WHERE carrier= 'geo_thermal'
+AND scn_name IN ('eGon2035')
+GROUP BY (carrier);
+
+"""
+)
+
+Error_geo_thermal = (
+    round(
+        (sum_geo_thermal_grid["geo_thermal_mw"].values[
+            0] - sum_urban_central_geo_thermal_supply["urban_central_geo_thermal_mw"].values[
+                0])
+        / sum_urban_central_geo_thermal_supply["urban_central_geo_thermal_mw"].values[
+            0],
+        2,
+    )
+    * 100
+)
+print(f"The target values for Sum loads Central Geo Thermal DE differ by {Error_geo_thermal}  %")
+
+
+sum_residential_rural_heat_pump_supply = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Residential_rural_heat_pump_MW 
+FROM supply.egon_scenario_capacities
+WHERE carrier= 'residential_rural_heat_pump'
+AND scenario_name IN ('eGon2035')
+GROUP BY (carrier);
+
+
+
+"""
+)
+
+sum_rural_heat_pump_grid = db.select_dataframe(
+    f"""
+SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as rural_heat_pump_MW 
+FROM grid.egon_etrago_link
+WHERE carrier= 'rural_heat_pump'
+AND scn_name IN ('eGon2035')
+GROUP BY (carrier);
+
+"""
+)
+
+Error_residential_rural_heat_pump = (
+    round(
+        (sum_rural_heat_pump_grid["rural_heat_pump_mw"].values[
+            0] - sum_residential_rural_heat_pump_supply["residential_rural_heat_pump_mw"].values[
+                0])
+        / sum_residential_rural_heat_pump_supply["residential_rural_heat_pump_mw"].values[
+            0],
+        2,
+    )
+    * 100
+)
+print(f"The target values for Sum loads Residential Rural Heat Pump DE differ by {Error_residential_rural_heat_pump}  %")
