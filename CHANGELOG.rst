@@ -320,6 +320,10 @@ Changed
   `#620 <https://github.com/openego/eGon-data/issues/586>`_
 * Change method of building assignment
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
+* Create new OSM residential building table
+  `#587 <https://github.com/openego/eGon-data/issues/587>`_
+* Move python-operators out of pipeline
+  `#644 <https://github.com/openego/eGon-data/issues/644>`_
 * Add annualized investment costs to eTraGo tables
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 
@@ -416,7 +420,11 @@ Bug fixes
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
+* Timeseries not deleted from grid.etrago_generator_timeseries
+  `#645 <https://github.com/openego/eGon-data/issues/645>`_
 * Fix function to get scaled hh profiles
   `#674 <https://github.com/openego/eGon-data/issues/674>`_
 * Change order of pypsa-eur-sec and scenario-capacities
   `#589 <https://github.com/openego/eGon-data/issues/589>`_
+* Distribute rural heat supply to residetntial and service demands
+  `#679 <https://github.com/openego/eGon-data/issues/679>`_
