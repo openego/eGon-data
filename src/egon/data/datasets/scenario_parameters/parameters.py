@@ -12,9 +12,7 @@ def read_csv(year):
         "data_dir"
     ]
 
-    return pd.read_csv(
-        f"{source}costs_{year}.csv"
-    )
+    return pd.read_csv(f"{source}costs_{year}.csv")
 
 
 def read_costs(df, technology, parameter, value_only=True):
@@ -100,9 +98,7 @@ def electricity(scenario):
 
         costs = read_csv(2035)
 
-        parameters = {
-            "grid_topology": "Status Quo",
-        }
+        parameters = {"grid_topology": "Status Quo"}
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "oil": read_costs(costs, "oil", "efficiency"),
@@ -207,9 +203,7 @@ def electricity(scenario):
 
     elif scenario == "eGon100RE":
         costs = read_csv(2050)
-        parameters = {
-            "grid_topology": "Status Quo",
-        }
+        parameters = {"grid_topology": "Status Quo"}
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "battery": {
@@ -258,7 +252,7 @@ def gas(scenario):
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
-            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"), # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
@@ -267,13 +261,19 @@ def gas(scenario):
         parameters["capital_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
-            "CH4_to_H2": read_costs(costs, "SMR", "investment"), # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
             "H2_feedin": 0,
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             #  what about H2 compressors?
-            "H2_underground": read_costs(costs, "hydrogen storage underground", "investment"),
-            "H2_overground": read_costs(costs, "hydrogen storage tank incl. compressor", "investment"),
-            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "investment"),  # [EUR/MW/km]
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "investment"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "investment"
+            ),
+            "H2_pipeline": read_costs(
+                costs, "H2 (g) pipeline", "investment"
+            ),  # [EUR/MW/km]
         }
         parameters["marginal_cost"] = {
             "CH4": global_settings(scenario)["fuel_costs"]["gas"]

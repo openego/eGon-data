@@ -31,7 +31,7 @@ def insert_PHES():
 
     engine = db.engine()
 
-    scenario = ['eGon2035', 'eGon100RE']
+    scenario = ["eGon2035", "eGon100RE"]
     for scn in scenario:
         # Delete outdated data on pumped hydro units (PHES) inside Germany from database
         db.execute_sql(
@@ -108,7 +108,7 @@ def extendable_batteries_per_scenario(scenario):
                        FROM {sources['bus']['schema']}.{sources['bus']['table']}
                        WHERE scn_name = '{scenario}'
                        AND country = 'DE')
-        """,
+        """
     )
 
     # Update index

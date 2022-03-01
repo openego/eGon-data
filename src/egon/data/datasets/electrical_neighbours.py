@@ -3,16 +3,16 @@
 
 import zipfile
 
-from shapely.geometry import LineString
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import LineString
+from sqlalchemy.orm import sessionmaker
 
+import egon.data.datasets.etrago_setup as etrago
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-import egon.data.datasets.etrago_setup as etrago
 
 
 class ElectricalNeighbours(Dataset):
@@ -847,7 +847,7 @@ def calc_capacities():
     df_2035 = pd.DataFrame(index=df_2030.index)
     df_2035["cap_2030"] = df_2030.Value
     df_2035["cap_2040"] = df_2040.Value
-    df_2035.fillna(0., inplace=True)
+    df_2035.fillna(0.0, inplace=True)
     df_2035["cap_2035"] = (
         df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
     )
@@ -973,13 +973,13 @@ def insert_storage(capacities):
     )
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
-    parameters_pumped_hydro = scenario_parameters.electricity('eGon2035')["efficiency"][
-            "pumped_hydro"
-        ]
+    parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
+        "efficiency"
+    ]["pumped_hydro"]
 
-    parameters_battery = scenario_parameters.electricity('eGon2035')["efficiency"][
-            "battery"
-        ]
+    parameters_battery = scenario_parameters.electricity("eGon2035")[
+        "efficiency"
+    ]["battery"]
 
     # Select storage capacities from TYNDP-data
     store = capacities[capacities.carrier.isin(["battery", "pumped_hydro"])]
@@ -998,15 +998,19 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store["max_hours"] = None, None, None, None
+    store["dispatch"], store["store"], store["standing_loss"], store[
+        "max_hours"
+    ] = (None, None, None, None)
 
     # Insert carrier specific parameters
 
     parameters = ["dispatch", "store", "standing_loss", "max_hours"]
 
     for x in parameters:
-        store.loc[store['carrier']=='battery', x]=parameters_battery[x]
-        store.loc[store['carrier']=='pumped_hydro', x]=parameters_pumped_hydro[x]
+        store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
+        store.loc[
+            store["carrier"] == "pumped_hydro", x
+        ] = parameters_pumped_hydro[x]
 
     # insert data
     session = sessionmaker(bind=db.engine())()
