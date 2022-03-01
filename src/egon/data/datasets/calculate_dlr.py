@@ -24,7 +24,7 @@ class Calculate_dlr(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="dlr",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(dlr,),
         )
@@ -60,11 +60,11 @@ def dlr():
     con = db.engine()
 
     sql = f"""
-    SELECT scn_name, line_id, geom, s_nom FROM
+    SELECT scn_name, line_id, topo, s_nom FROM
     {cfg['sources']['trans_lines']['schema']}.
     {cfg['sources']['trans_lines']['table']}
     """
-    df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
+    df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326", geom_col="topo")
 
     trans_lines_R = {}
     for i in regions.Region:
@@ -74,7 +74,7 @@ def dlr():
     trans_lines["in_regions"] = [[] for i in range(len(df))]
 
     trans_lines[["line_id", "geometry", "scn_name"]] = df[
-        ["line_id", "geom", "scn_name"]
+        ["line_id", "topo", "scn_name"]
     ]
 
     # Assign to each transmission line the region to which it belongs
@@ -153,7 +153,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
         path to the shape file with the shape of the regions to analyze
 
     """
-
+    
     # load, index and sort shapefile with the 9 regions defined by NEP 2020
     regions = gpd.read_file(regions_shape_path)
     regions = regions.set_index(["Region"])
@@ -269,7 +269,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
             )
 
     # The next loop use the min wind speed and max temperature calculated previously to
-    # define the hourly DLR in for each region based on the table given by NEP 2020 pag 31
+    # define the hourly DLR for each region based on the table given by NEP 2020 pag 31
     for i in range(0, len(regions)):
         for j in range(0, len(time)):
             if dlr.iloc[j, 1 + i * 3] <= 5:
