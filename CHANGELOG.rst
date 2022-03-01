@@ -318,6 +318,8 @@ Changed
   `#620 <https://github.com/openego/eGon-data/issues/586>`_
 * Change method of building assignment
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
+* Include electricity storages for eGon100RE scenario
+  `#581 <https://github.com/openego/eGon-data/issues/581>`_
 
 
 Bug fixes
