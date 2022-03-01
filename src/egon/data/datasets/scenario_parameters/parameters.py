@@ -32,7 +32,24 @@ def read_costs(df, technology, parameter, value_only=True):
         return result
 
 
-def annualize_capital_costs(overnight_costs, lifetime, p=0.05):
+def annualize_capital_costs(overnight_costs, lifetime, p):
+    """
+
+    Parameters
+    ----------
+    overnight_costs : float
+        Overnight investment costs in EUR/MW or EUR/MW/km
+    lifetime : int
+        Number of years in which payments will be made
+    p : float
+        Interest rate in p.u.
+
+    Returns
+    -------
+    float
+        Annualized capital costs in EUR/MW/a or EUR/MW/km/a
+
+    """
 
     # Calculate present value of an annuity (PVA)
     PVA = (1 / p) - (1 / (p * (1 + p) ** lifetime))
@@ -76,10 +93,15 @@ def global_settings(scenario):
                 "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
             },
+            "interest_rate": 0.05,  # [p.u.]
         }
 
     elif scenario == "eGon100RE":
-        parameters = {"weather_year": 2011, "population_year": 2050}
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2050,
+            "interest_rate": 0.05,  # [p.u.]
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -232,6 +254,7 @@ def electricity(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
             )
 
         parameters["capital_cost"]["battery"] = (
@@ -338,6 +361,7 @@ def gas(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
             )
 
         parameters["marginal_cost"] = {
@@ -457,6 +481,7 @@ def heat(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
             )
 
         # Insert marginal_costs in EUR/MWh
