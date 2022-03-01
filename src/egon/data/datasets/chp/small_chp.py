@@ -404,7 +404,7 @@ def extension_district_heating(
                 epsg=3035,
             ),
             ignore_index=True,
-        ).to_crs(3035)
+        ).set_crs(3035, allow_override=True)
 
     not_distributed_capacity = extension_to_areas(
         dh_areas,

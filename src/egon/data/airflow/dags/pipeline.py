@@ -445,6 +445,7 @@ with airflow.DAG(
             mastr_data,
             industrial_sites,
             create_gas_polygons,
+            scenario_capacities,
         ]
     )
 
