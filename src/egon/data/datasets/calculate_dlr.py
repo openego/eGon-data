@@ -76,18 +76,20 @@ def dlr():
     trans_lines[["line_id", "geometry", "scn_name"]] = df[
         ["line_id", "topo", "scn_name"]
     ]
-
+    trans_lines = gpd.GeoDataFrame(trans_lines)
     # Assign to each transmission line the region to which it belongs
     for i in trans_lines_R:
         for j in trans_lines_R[i].index:
             trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
-
+    trans_lines['crossborder'] = ~trans_lines.within(regions.unary_union)
+    
     DLR = []
+
     # Assign to each transmision line the final values of DLR based on location
     # and type of line (overhead or underground)
     for i in trans_lines.index:
-        # lines completely out of the Germany border have DLR = 1
-        if len(trans_lines.loc[i][1]) == 0:
+        # The concept of DLR does not apply to crossborder lines
+        if trans_lines.loc[i, 'crossborder'] == True:
             DLR.append([1] * 8760)
             continue
         # Underground lines have DLR = 1
@@ -115,7 +117,8 @@ def dlr():
     trans_lines["s_max_pu"] = DLR
 
     # delete unnecessary columns
-    trans_lines.drop(columns=["in_regions", "s_nom", "geometry"], inplace=True)
+    trans_lines.drop(columns=["in_regions", "s_nom", "geometry", "crossborder"],
+                     inplace=True)
 
     # Modify column "s_max_pu" to fit the requirement of the table
     trans_lines["s_max_pu"] = trans_lines.apply(

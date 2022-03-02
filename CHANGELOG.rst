@@ -427,3 +427,5 @@ Bug fixes
   `#589 <https://github.com/openego/eGon-data/issues/589>`_
 * Distribute rural heat supply to residetntial and service demands
   `#679 <https://github.com/openego/eGon-data/issues/679>`_
+* Assign DLR capacities to every transmission line
+  `#683 <https://github.com/openego/eGon-data/issues/683>`_
