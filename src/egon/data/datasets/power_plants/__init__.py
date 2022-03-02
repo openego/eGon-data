@@ -24,7 +24,7 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
-from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
+from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_to_mv_grid_district
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
@@ -53,7 +53,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -62,7 +62,7 @@ class PowerPlants(Dataset):
                 {
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
-                    pv_rooftop_per_mv_grid,
+                    pv_rooftop_to_mv_grid_district,
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,

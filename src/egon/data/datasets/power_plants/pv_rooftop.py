@@ -215,3 +215,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
         if_exists="append",
         con=db.engine(),
     )
+
+def pv_rooftop_to_mv_grid_district():
+    pv_rooftop_per_mv_grid("eGon2035", "federal_state")
+    pv_rooftop_per_mv_grid("eGon100RE", "Germany")
