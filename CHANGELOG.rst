@@ -324,7 +324,8 @@ Changed
   `#587 <https://github.com/openego/eGon-data/issues/587>`_
 * Move python-operators out of pipeline
   `#644 <https://github.com/openego/eGon-data/issues/644>`_
-
+* Add annualized investment costs to eTraGo tables
+  `#672 <https://github.com/openego/eGon-data/issues/672>`_
 
 Bug fixes
 ---------

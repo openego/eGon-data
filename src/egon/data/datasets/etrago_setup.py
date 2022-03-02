@@ -29,7 +29,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
@@ -82,6 +82,8 @@ class EgonPfHvGenerator(Base):
     q_set = Column(Float(53))
     sign = Column(Float(53), server_default="1.")
     marginal_cost = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
     capital_cost = Column(Float(53), server_default="0.")
     efficiency = Column(Float(53), server_default="1.")
     committable = Column(Boolean, server_default="False")
@@ -130,6 +132,8 @@ class EgonPfHvLine(Base):
     s_nom_min = Column(Float(53), server_default="0.")
     s_nom_max = Column(Float(53), server_default="inf")
     s_max_pu = Column(Float(53), server_default="1.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
     capital_cost = Column(Float(53), server_default="0.")
     length = Column(Float(53), server_default="0.")
     cables = Column(Integer)
@@ -163,6 +167,8 @@ class EgonPfHvLink(Base):
     type = Column(Text)
     carrier = Column(Text)
     efficiency = Column(Float(53), server_default="1.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
     p_nom = Column(Numeric, server_default="0.")
     p_nom_extendable = Column(Boolean, server_default="False")
     p_nom_min = Column(Float(53), server_default="0.")
@@ -247,16 +253,18 @@ class EgonPfHvStorage(Base):
     p_set = Column(Float(53))
     q_set = Column(Float(53))
     sign = Column(Float(53), server_default="1")
-    marginal_cost = Column(Float(53))
-    capital_cost = Column(Float(53))
-    state_of_charge_initial = Column(Float(53))
-    cyclic_state_of_charge = Column(Boolean)
+    marginal_cost = Column(Float(53), server_default="0.")
+    capital_cost = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
+    state_of_charge_initial = Column(Float(53), server_default="0")
+    cyclic_state_of_charge = Column(Boolean, server_default="False")
     state_of_charge_set = Column(Float(53))
-    max_hours = Column(Float(53))
-    efficiency_store = Column(Float(53))
-    efficiency_dispatch = Column(Float(53))
-    standing_loss = Column(Float(53))
-    inflow = Column(Float(53))
+    max_hours = Column(Float(53), server_default="1")
+    efficiency_store = Column(Float(53), server_default="1.")
+    efficiency_dispatch = Column(Float(53), server_default="1.")
+    standing_loss = Column(Float(53), server_default="0.")
+    inflow = Column(Float(53), server_default="0.")
 
 
 class EgonPfHvStorageTimeseries(Base):
@@ -292,12 +300,14 @@ class EgonPfHvStore(Base):
     e_max_pu = Column(Float(53), server_default="1.")
     p_set = Column(Float(53))
     q_set = Column(Float(53))
-    e_initial = Column(Float(53))
-    e_cyclic = Column(Boolean)
-    sign = Column(Float(53))
-    marginal_cost = Column(Float(53))
-    capital_cost = Column(Float(53))
-    standing_loss = Column(Float(53))
+    e_initial = Column(Float(53), server_default="0.")
+    e_cyclic = Column(Boolean, server_default="False")
+    sign = Column(Float(53), server_default="1")
+    marginal_cost = Column(Float(53), server_default="0.")
+    capital_cost = Column(Float(53), server_default="0.")
+    standing_loss = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
 
 
 class EgonPfHvStoreTimeseries(Base):
@@ -347,6 +357,8 @@ class EgonPfHvTransformer(Base):
     tap_side = Column((BigInteger), server_default="0")
     tap_position = Column((BigInteger), server_default="0")
     phase_shift = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
     v_ang_min = Column(Float(53), server_default="-inf")
     v_ang_max = Column(Float(53), server_default="inf")
     capital_cost = Column(Float(53), server_default="0.")
