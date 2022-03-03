@@ -369,6 +369,7 @@ def gas(scenario):
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["gas"],
             "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
         }
 
     elif scenario == "eGon100RE":

@@ -15,6 +15,7 @@ import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Production(Dataset):
@@ -27,15 +28,22 @@ class CH4Production(Dataset):
         )
 
 
-def load_NG_generators():
+def load_NG_generators(scn_name):
     """Define the natural CH4 production units in Germany
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     Returns
     -------
     CH4_generators_list :
         Dataframe containing the natural gas production units in Germany
 
     """
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     target_file = (
         Path(".")
         / "datasets"
@@ -115,6 +123,9 @@ def load_NG_generators():
         (i / (sum(share)) * Total_NG_capacity_2035) for i in share
     ]
 
+    # Add missing columns
+    NG_generators_list["marginal_cost"] = scn_params["marginal_cost"]["CH4"]
+
     # Remove useless columns
     NG_generators_list = NG_generators_list.drop(
         columns=["x", "y", "param", "country_code", "NUTS1"]
@@ -123,15 +134,22 @@ def load_NG_generators():
     return NG_generators_list
 
 
-def load_biogas_generators():
+def load_biogas_generators(scn_name):
     """Define the biogas production units in Germany
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     Returns
     -------
     CH4_generators_list :
         Dataframe containing the biogas production units in Germany
 
     """
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
     url = (
@@ -218,6 +236,10 @@ def load_biogas_generators():
         / biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
         * Total_biogas_capacity_2035
     )
+
+    # Add missing columns
+    biogas_generators_list["marginal_cost"] = scn_params["marginal_cost"]["biogas"]
+
     # Remove useless columns
     biogas_generators_list = biogas_generators_list.drop(
         columns=["x", "y", "Koordinaten", "Einspeisung Biomethan [(N*m^3)/h)]"]
