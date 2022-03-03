@@ -12,7 +12,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -294,12 +294,17 @@ def import_gas_generators(scn_name='eGon2035'):
     # Connect to local database
     engine = db.engine()
 
+    # Select target from dataset configuration
+    source = config.datasets()["gas_prod"]["source"]
+    target = config.datasets()["gas_prod"]["target"]
+
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4' AND
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
+        WHERE "carrier" = 'CH4' AND
         scn_name = '{scn_name}' AND bus IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
+            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
             WHERE scn_name = '{scn_name}' AND country = 'DE'
         );
         """
@@ -330,9 +335,9 @@ def import_gas_generators(scn_name='eGon2035'):
 
     # Insert data to db
     CH4_generators_list.to_sql(
-        "egon_etrago_generator",
+        target['stores']['table'],
         engine,
-        schema="grid",
+        schema=target['stores']['schema'],
         index=False,
         if_exists="append",
     )
