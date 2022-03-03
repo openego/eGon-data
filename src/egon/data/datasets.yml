@@ -888,6 +888,16 @@ gas_aggregation:
       schema: 'grid'
       table: 'egon_etrago_store'
 
+gas_stores:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
 weather_BusID:
   sources:
     power_plants:

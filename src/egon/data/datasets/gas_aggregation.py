@@ -66,7 +66,7 @@ def aggregate_gas(scn_name="eGon2035"):
     for comp in components:
         df = db.select_dataframe(
             f"""SELECT {comp["columns"]}
-                    FROM {sources[comp["name"]]['schema']}.{targets[comp["name"]]['table']}
+                    FROM {sources[comp["name"]]['schema']}.{sources[comp["name"]]['table']}
                     WHERE scn_name = '{scn_name}' 
                     AND carrier = 'CH4';"""
         )
@@ -74,7 +74,7 @@ def aggregate_gas(scn_name="eGon2035"):
 
         # Clean table
         db.execute_sql(
-            f"""DELETE FROM {sources[comp["name"]]['schema']}.{targets[comp["name"]]['table']} 
+            f"""DELETE FROM {targets[comp["name"]]['schema']}.{targets[comp["name"]]['table']} 
                         WHERE carrier = 'CH4'
                         AND scn_name = '{scn_name}';"""
         )
@@ -83,7 +83,7 @@ def aggregate_gas(scn_name="eGon2035"):
         df.to_sql(
             targets[comp["name"]]["table"],
             engine,
-            schema=sources[comp["name"]]["schema"],
+            schema=targets[comp["name"]]["schema"],
             index=False,
             if_exists="append",
         )

@@ -426,5 +426,7 @@ Bug fixes
   `#674 <https://github.com/openego/eGon-data/issues/674>`_
 * Change order of pypsa-eur-sec and scenario-capacities
   `#589 <https://github.com/openego/eGon-data/issues/589>`_
+* Fix gas storages capacities
+  `#676 <https://github.com/openego/eGon-data/issues/676>`_
 * Distribute rural heat supply to residetntial and service demands
   `#679 <https://github.com/openego/eGon-data/issues/679>`_
