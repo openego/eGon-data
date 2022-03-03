@@ -51,14 +51,14 @@ def insert_h2_to_ch4_to_h2(scn_name='eGon2035'):
 
         # set parameters according to carrier name
         table["carrier"] = carrier
-        table["capital_cost"] = scn_params["capital_cost"][carrier]
         table["efficiency"] = scn_params["efficiency"][carrier]
         if carrier == "H2_feedin":
             table["p_nom_extendable"] = False
             table["p_nom"] = 1e9
         else:
             table["p_nom_extendable"] = True
-
+            table["capital_cost"] = scn_params["capital_cost"][carrier]
+            table["lifetime"] = scn_params["lifetime"][carrier]
         new_id = db.next_etrago_id("link")
         table["link_id"] = range(new_id, new_id + len(table))
 

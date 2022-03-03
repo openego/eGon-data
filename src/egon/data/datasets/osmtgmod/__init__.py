@@ -524,7 +524,9 @@ def to_pypsa():
         capital_cost = get_sector_parameters("electricity", "eGon2035")[
             "capital_cost"
         ]
-
+        lifetime = get_sector_parameters("electricity", "eGon2035")[
+            "lifetime"
+        ]
         db.execute_sql(
             f"""
             -- BUS DATA
@@ -678,6 +680,62 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220));
             
+            -- set lifetime for eHV-lines 
+            UPDATE grid.egon_etrago_line
+            SET lifetime = {lifetime['ac_ehv_overhead_line']} 
+            WHERE v_nom > 110;
+
+            -- set capital costs for HV-lines 
+            UPDATE grid.egon_etrago_line
+            SET lifetime = {lifetime['ac_hv_overhead_line']}
+            WHERE v_nom = 110;
+            
+            -- set capital costs for transformers 
+            UPDATE grid.egon_etrago_transformer a
+            SET lifetime = {lifetime['transformer_380_220']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380));
+
+            UPDATE grid.egon_etrago_transformer a
+            SET lifetime = {lifetime['transformer_380_110']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380));
+
+            UPDATE grid.egon_etrago_transformer a
+            SET lifetime = {lifetime['transformer_220_110']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220));
+            
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
@@ -704,7 +762,7 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,

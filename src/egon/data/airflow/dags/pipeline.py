@@ -1,11 +1,8 @@
 import os
 
-from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import airflow
-import importlib_resources as resources
 
-from egon.data import db
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
@@ -145,8 +142,8 @@ with airflow.DAG(
         dependencies=[osm, zensus_miscellaneous]
     )
     osm_buildings_streets.insert_into(pipeline)
-    osm_buildings_streets_preprocessing = tasks[
-        "osm_buildings_streets.preprocessing"
+    osm_buildings_streets_residential_zensus_mapping = tasks[
+        "osm_buildings_streets.create-buildings-residential-zensus-mapping"
     ]
 
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
@@ -275,37 +272,21 @@ with airflow.DAG(
         dependencies=[vg250, mv_grid_districts]
     )
 
-    mv_hh_electricity_load_2035 = PythonOperator(
-        task_id="MV-hh-electricity-load-2035",
-        python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon2035", 2035],
-        op_kwargs={"drop_table": True},
-    )
-
-    mv_hh_electricity_load_2050 = PythonOperator(
-        task_id="MV-hh-electricity-load-2050",
-        python_callable=hh_profiles.mv_grid_district_HH_electricity_load,
-        op_args=["eGon100RE", 2050],
-    )
-
-    hh_demand_profiles_setup = hh_profiles.setup(
+    hh_demand_profiles_setup = hh_profiles.HouseholdDemands(
         dependencies=[
             vg250_clean_and_prepare,
             zensus_miscellaneous,
             map_zensus_grid_districts,
             zensus_vg250,
             demandregio,
-            osm_buildings_streets_preprocessing,
+            osm_buildings_streets_residential_zensus_mapping,
         ],
-        tasks=(
-            hh_profiles.houseprofiles_in_census_cells,
-            mv_hh_electricity_load_2035,
-            mv_hh_electricity_load_2050,
-        ),
     )
     hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
-        "electricity_demand_timeseries.hh_profiles.houseprofiles-in-census-cells"
+        "electricity_demand_timeseries"
+        ".hh_profiles"
+        ".houseprofiles-in-census-cells"
     ]
     mv_hh_electricity_load_2035 = tasks["MV-hh-electricity-load-2035"]
     mv_hh_electricity_load_2050 = tasks["MV-hh-electricity-load-2050"]
@@ -317,7 +298,9 @@ with airflow.DAG(
 
     hh_demand_buildings_setup.insert_into(pipeline)
     map_houseprofiles_to_buildings = tasks[
-        "electricity_demand_timeseries.hh_buildings.map-houseprofiles-to-buildings"
+        "electricity_demand_timeseries"
+        ".hh_buildings"
+        ".map-houseprofiles-to-buildings"
     ]
 
     # Get household electrical demands for cencus cells
@@ -445,6 +428,7 @@ with airflow.DAG(
             mastr_data,
             industrial_sites,
             create_gas_polygons,
+            scenario_capacities,
         ]
     )
 
