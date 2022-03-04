@@ -372,6 +372,12 @@ def gas(scenario):
             "biogas": global_settings(scenario)["fuel_costs"]["gas"],
         }
 
+        # Insert max gas production (generator) over the year
+        parameters["max_gas_generation_overtheyear"] = {
+            "CH4": 36000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
+            "biogas": 10000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
+        }
+
     elif scenario == "eGon100RE":
         parameters = {"main_gas_carrier": "H2"}
 
