@@ -294,7 +294,7 @@ def import_gas_generators(scn_name='eGon2035'):
     # Connect to local database
     engine = db.engine()
 
-    # Select target from dataset configuration
+    # Select source and target from dataset configuration
     source = config.datasets()["gas_prod"]["source"]
     target = config.datasets()["gas_prod"]["target"]
 

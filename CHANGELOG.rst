@@ -326,6 +326,8 @@ Changed
   `#644 <https://github.com/openego/eGon-data/issues/644>`_
 * Add annualized investment costs to eTraGo tables
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
+* Improve modelling of NG and biomethane production
+  `#678 <https://github.com/openego/eGon-data/issues/678>`_
 
 Bug fixes
 ---------
