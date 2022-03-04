@@ -39,7 +39,7 @@ def aggregate_gas(scn_name="eGon2035"):
     components = [
         # Generator
         {
-            "columns": "scn_name, generator_id, bus, p_nom, carrier",
+            "columns": "scn_name, generator_id, bus, p_nom, carrier, marginal_cost",
             "name": "generators",
             "strategies": {
                 "scn_name": "first",
@@ -47,11 +47,12 @@ def aggregate_gas(scn_name="eGon2035"):
                 "p_nom": "sum",
                 "bus": "first",
                 "carrier": "first",
+                "marginal_cost": "first",
             },
         },
         # Store
         {
-            "columns": "scn_name, store_id, bus, e_nom, carrier",
+            "columns": "scn_name, store_id, bus, e_nom, carrier, marginal_cost",
             "name": "stores",
             "strategies": {
                 "scn_name": "first",
@@ -70,7 +71,9 @@ def aggregate_gas(scn_name="eGon2035"):
                     WHERE scn_name = '{scn_name}' 
                     AND carrier = 'CH4';"""
         )
-        df = df.groupby(["bus", "carrier"]).agg(comp["strategies"])
+        df = df.groupby(["bus", "carrier", "marginal_cost"]).agg(
+            comp["strategies"]
+        )
 
         # Clean table
         db.execute_sql(
