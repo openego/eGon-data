@@ -104,7 +104,7 @@ setup(
         "rioxarray",
         "rtree",
         "snakemake",
-        "sqlalchemy<1.4",
+        "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
         "xarray",
         "xlrd",
     ],
