@@ -96,7 +96,7 @@ setup(
         "oedialect==0.0.8",
         "omi",
         "openpyxl",
-        "pandas>1.2.0",
+        "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
         "psycopg2",
         "pyaml",
         "pypsa==0.17.1",
