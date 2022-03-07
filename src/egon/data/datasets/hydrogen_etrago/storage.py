@@ -348,6 +348,7 @@ def calculate_and_map_saltcavern_storage_potential():
     )
 
 def insert_H2_storage_eGon100RE():
+    """Copy H2 storage from the eGon2035 to the eGon100RE scenario."""
     copy_and_modify_stores(
         "eGon2035", "eGon100RE", ["H2_underground", "H2_overground"], "gas"
     )

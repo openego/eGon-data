@@ -297,7 +297,14 @@ def read_industrial_H2_demand(scn_name="eGon2035"):
     return industrial_loads_list
 
 def delete_old_entries(scn_name):
+    """
+    Delete loads and load timeseries.
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
+    """
     # Clean tables
     db.execute_sql(
         f"""
@@ -329,6 +336,16 @@ def delete_old_entries(scn_name):
 
 
 def insert_new_entries(industrial_gas_demand, scn_name):
+    """
+    Insert loads.
+
+    Parameters
+    ----------
+    industrial_gas_demand : pandas.DataFrame
+        Load data to insert.
+    scn_name : str
+        Name of the scenario.
+    """
 
     new_id = db.next_etrago_id("load")
     industrial_gas_demand["load_id"] = range(
@@ -428,11 +445,8 @@ def insert_industrial_gas_demand_egon100RE():
 
 
 def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
-    """Insert list of industrial gas demand time series (one per NUTS3) in database
-
-    Returns
-    -------
-    None.
+    """
+    Insert list of industrial gas demand time series (one per NUTS3)
     """
     egon_etrago_load_gas_timeseries = egon_etrago_load_gas
 
@@ -456,12 +470,7 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
 
 def download_industrial_gas_demand():
-    """Overall function for inserting the industrial gas demand
-
-    Returns
-    -------
-    None.
-    """
+    """Download the industrial gas demand data from opendata.ffe database."""
     correspondance_url = (
         "http://opendata.ffe.de:3000/region?id_region_type=eq.38"
     )

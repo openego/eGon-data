@@ -29,7 +29,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_gas_data, insert_gas_data_eGon100RE),
         )

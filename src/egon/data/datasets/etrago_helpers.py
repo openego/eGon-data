@@ -87,7 +87,18 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
 
 def copy_and_modify_links(from_scn, to_scn, carriers, sector):
     """
+    Copy links from one scenario to a different one.
 
+    Parameters
+    ----------
+    from_scn : str
+        Source scenario.
+    to_scn : str
+        Target scenario.
+    carriers : list
+        List of store carriers to copy.
+    sector : str
+        Name of sector (e.g. :code:`'gas'`) to get cost information from.
     """
     where_clause = "carrier IN " + str(tuple(carriers)).replace("',)", "')")
 
@@ -145,7 +156,18 @@ def copy_and_modify_links(from_scn, to_scn, carriers, sector):
 
 def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
     """
+    Copy stores from one scenario to a different one.
 
+    Parameters
+    ----------
+    from_scn : str
+        Source scenario.
+    to_scn : str
+        Target scenario.
+    carriers : list
+        List of store carriers to copy.
+    sector : str
+        Name of sector (e.g. :code:`'gas'`) to get cost information from.
     """
     where_clause = "carrier IN " + str(tuple(carriers)).replace("',)", "')")
 
@@ -194,7 +216,16 @@ def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
 
 def copy_and_modify_buses(from_scn, to_scn, filter_dict):
     """
+    Copy buses from one scenario to a different scenario
 
+    Parameters
+    ----------
+    from_scn : str
+        Source scenario.
+    to_scn : str
+        Target scenario.
+    filter_dict : dict
+        Filter buses according the information provided in this dict.
     """
     where_clause = ""
     for column, filters in filter_dict.items():

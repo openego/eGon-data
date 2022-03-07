@@ -8,7 +8,6 @@ from geoalchemy2.types import Geometry
 from egon.data import db
 from egon.data.datasets.etrago_helpers import copy_and_modify_links
 from egon.data.datasets.etrago_setup import link_geom_from_buses
-from egon.data.datasets.gas_prod import assign_bus_id
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -85,9 +84,7 @@ def insert_h2_to_ch4_to_h2():
 
 
 def insert_h2_to_ch4_eGon100RE():
-    """
-    Copy data from eGon2035 scenario.
-    """
+    """Copy H2/CH4 links from the eGon2035 to the eGon100RE scenario."""
     copy_and_modify_links(
         "eGon2035", "eGon100RE", ["H2_to_CH4", "CH4_to_H2"], "gas"
     )

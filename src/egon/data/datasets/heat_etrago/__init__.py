@@ -109,14 +109,14 @@ def insert_store(scenario, carrier):
         {targets['heat_links']['table']}
         WHERE carrier LIKE '{carrier}_store%'
         AND scn_name = '{scenario}'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -430,8 +430,8 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         AND a.carrier = 'gas_boiler'
         AND b.carrier='central_heat'
         AND c.carrier='CH4'
-        AND c.scn_name='eGon2035'
-        """ # c.scn_name = '{scenario}' -> No CH4 in eGon100RE
+        AND c.scn_name = '{scenario}'
+        """
     )
 
     # Add LineString topology
@@ -520,8 +520,8 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         AND a.carrier = 'gas_boiler'
         AND b.carrier='rural_heat'
         AND c.carrier='CH4'
-        AND c.scn_name='eGon2035'
-        """ # c.scn_name = '{scenario}' -> No CH4 in eGon100RE
+        AND c.scn_name = '{scenario}'
+        """
     )
 
     # Add LineString topology

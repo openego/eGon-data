@@ -30,7 +30,7 @@ class GasAreaseGon100RE(Dataset):
 
 def voronoi_egon2035():
     """
-    Creates voronoi polygons for all gas carriers in eGon2035 scenario
+    Create voronoi polygons for all gas carriers in eGon2035 scenario
     """
     for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon2035", carrier)
@@ -38,7 +38,7 @@ def voronoi_egon2035():
 
 def voronoi_egon100RE():
     """
-    Creates voronoi polygons for all gas carriers in eGon100RE scenario
+    Create voronoi polygons for all gas carriers in eGon100RE scenario
     """
     for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
@@ -46,11 +46,14 @@ def voronoi_egon100RE():
 
 def create_voronoi(scn_name, carrier):
     """
-    Creates voronoi polygons for all gas carriers
+    Create voronoi polygons for specified carrier in specified scenario.
 
-    Returns
-    -------
-    None.
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+    carrier : str
+        Name of the carrier
     """
     boundary = db.select_geodataframe(
         f"""
