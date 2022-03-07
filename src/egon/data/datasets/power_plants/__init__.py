@@ -24,8 +24,8 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
+from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 import egon.data.config
-import egon.data.datasets.power_plants.pv_rooftop as pv_rooftop
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
@@ -53,7 +53,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.7.dev",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -62,7 +62,7 @@ class PowerPlants(Dataset):
                 {
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
-                    pv_rooftop.insert,
+                    pv_rooftop_per_mv_grid,
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,
@@ -589,7 +589,7 @@ def insert_hydro_biomass():
         """
     )
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2035"]:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
 
