@@ -37,6 +37,7 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
     storages["capital_cost"] = scn_params["capital_cost"][carrier]
+    storages["lifetime"] = scn_params["lifetime"][carrier]
 
     # Remove useless columns
     storages.drop(columns=["geom"], inplace=True)
@@ -125,6 +126,7 @@ def insert_H2_saltcavern_storage(scn_name='eGon2035'):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
     storages["capital_cost"] = scn_params["capital_cost"][carrier]
+    storages["lifetime"] = scn_params["lifetime"][carrier]
 
     # Clean table
     db.execute_sql(

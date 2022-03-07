@@ -161,6 +161,8 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include Pypsa default values in table creation
+  `#544 <https://github.com/openego/eGon-data/issues/544>`_
 * Include PHS in eTraGo tables
   `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
@@ -316,7 +318,18 @@ Changed
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
   `#628 <https://github.com/openego/eGon-data/issues/628>`_
-
+* Fill table demand.egon_demandregio_zensus_electricity after profile allocation
+  `#620 <https://github.com/openego/eGon-data/issues/586>`_
+* Change method of building assignment
+  `#663 <https://github.com/openego/eGon-data/issues/663>`_
+* Create new OSM residential building table
+  `#587 <https://github.com/openego/eGon-data/issues/587>`_
+* Move python-operators out of pipeline
+  `#644 <https://github.com/openego/eGon-data/issues/644>`_
+* Add annualized investment costs to eTraGo tables
+  `#672 <https://github.com/openego/eGon-data/issues/672>`_
+* Improve modelling of NG and biomethane production
+  `#678 <https://github.com/openego/eGon-data/issues/678>`_
 
 Bug fixes
 ---------
@@ -411,3 +424,13 @@ Bug fixes
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
+* Timeseries not deleted from grid.etrago_generator_timeseries
+  `#645 <https://github.com/openego/eGon-data/issues/645>`_
+* Fix function to get scaled hh profiles
+  `#674 <https://github.com/openego/eGon-data/issues/674>`_
+* Change order of pypsa-eur-sec and scenario-capacities
+  `#589 <https://github.com/openego/eGon-data/issues/589>`_
+* Fix gas storages capacities
+  `#676 <https://github.com/openego/eGon-data/issues/676>`_
+* Distribute rural heat supply to residetntial and service demands
+  `#679 <https://github.com/openego/eGon-data/issues/679>`_

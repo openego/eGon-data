@@ -12,9 +12,7 @@ def read_csv(year):
         "data_dir"
     ]
 
-    return pd.read_csv(
-        f"{source}costs_{year}.csv"
-    )
+    return pd.read_csv(f"{source}costs_{year}.csv")
 
 
 def read_costs(df, technology, parameter, value_only=True):
@@ -32,6 +30,31 @@ def read_costs(df, technology, parameter, value_only=True):
         return result.value
     else:
         return result
+
+
+def annualize_capital_costs(overnight_costs, lifetime, p):
+    """
+
+    Parameters
+    ----------
+    overnight_costs : float
+        Overnight investment costs in EUR/MW or EUR/MW/km
+    lifetime : int
+        Number of years in which payments will be made
+    p : float
+        Interest rate in p.u.
+
+    Returns
+    -------
+    float
+        Annualized capital costs in EUR/MW/a or EUR/MW/km/a
+
+    """
+
+    # Calculate present value of an annuity (PVA)
+    PVA = (1 / p) - (1 / (p * (1 + p) ** lifetime))
+
+    return overnight_costs / PVA
 
 
 def global_settings(scenario):
@@ -70,6 +93,7 @@ def global_settings(scenario):
                 "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
             },
+            "interest_rate": 0.05,  # [p.u.]
         }
 
     elif scenario == "eGon100RE":
@@ -172,10 +196,10 @@ def electricity(scenario):
             },
         }
 
-        # Insert capital costs
+        # Insert overnight investment costs
         # Source for eHV grid costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
         # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
-        parameters["capital_cost"] = {
+        parameters["overnight_cost"] = {
             "ac_ehv_overhead_line": 2.5e6
             / parameters["electrical_parameters"]["ac_line_380kV"][
                 "s_nom"
@@ -198,10 +222,59 @@ def electricity(scenario):
             "transformer_380_110": 17.33e3,  # [EUR/MVA]
             "transformer_380_220": 13.33e3,  # [EUR/MVA]
             "transformer_220_110": 17.5e3,  # [EUR/MVA]
-            "battery": read_costs(costs, "battery inverter", "investment")
-            + parameters["efficiency"]["battery"]["max_hours"]
-            * read_costs(costs, "battery storage", "investment"),  # [EUR/MW]
+            "battery inverter": read_costs(
+                costs, "battery inverter", "investment"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "investment"
+            ),
         }
+
+        parameters["lifetime"] = {
+            "ac_ehv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_ehv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "ac_hv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_hv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "dc_overhead_line": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_cable": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_inverter": read_costs(costs, "HVDC inverter pair", "lifetime"),
+            "transformer_380_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_380_220": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_220_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "battery inverter": read_costs(
+                costs, "battery inverter", "lifetime"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "lifetime"
+            ),
+        }
+        # Insert annualized capital costs
+        # lines in EUR/km/MW/a
+        # transfermer, inverter, battery in EUR/MW/a
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
+            + parameters["efficiency"]["battery"]["max_hours"]
+            * parameters["capital_cost"]["battery storage"]
+        )
 
         # Insert marginal_costs in EUR/MWh
         # marginal cost can include fuel, C02 and operation and maintenance costs
@@ -255,28 +328,67 @@ def gas(scenario):
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
-            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"), # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
-        # Insert costs
-        parameters["capital_cost"] = {
+        # Insert overnight investment costs
+        parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
-            "CH4_to_H2": read_costs(costs, "SMR", "investment"), # CC?
-            "H2_feedin": 0,
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             #  what about H2 compressors?
-            "H2_underground": read_costs(costs, "hydrogen storage underground", "investment"),
-            "H2_overground": read_costs(costs, "hydrogen storage tank incl. compressor", "investment"),
-            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "investment"),  # [EUR/MW/km]
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "investment"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "investment"
+            ),
+            "H2_pipeline": read_costs(
+                costs, "H2 (g) pipeline", "investment"
+            ),  # [EUR/MW/km]
         }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            #  what about H2 compressors?
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "lifetime"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "lifetime"
+            ),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
         parameters["marginal_cost"] = {
             "CH4": global_settings(scenario)["fuel_costs"]["gas"]
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["gas"],
             "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+        }
+
+        # Insert max gas production (generator) over the year
+        parameters["max_gas_generation_overtheyear"] = {
+            "CH4": 36000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
+            "biogas": 10000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
         }
 
     elif scenario == "eGon100RE":
@@ -336,6 +448,15 @@ def mobility(scenario):
     if scenario == "eGon2035":
         parameters = {}
 
+        # Investment costs can be annualzied based on overnight investment
+        # costs and life time using the following function:
+        # for comp in parameters["overnight_cost"].keys():
+        #     parameters["capital_cost"][comp] = annualize_capital_costs(
+        #         parameters["overnight_cost"][comp],
+        #         parameters["lifetime"][comp],
+        #         global_settings(scenario)["interest_rate"],
+        #     )
+
     elif scenario == "eGon100RE":
         parameters = {}
 
@@ -392,8 +513,8 @@ def heat(scenario):
             ),
         }
 
-        # Insert capital costs, in EUR/MWh
-        parameters["capital_cost"] = {
+        # Insert overnight investment costs, in EUR/MWh
+        parameters["overnight_cost"] = {
             "central_water_tank": read_costs(
                 costs, "central water tank storage", "investment"
             ),
@@ -401,6 +522,26 @@ def heat(scenario):
                 costs, "decentral water tank storage", "investment"
             ),
         }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "lifetime"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "lifetime"
+            ),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
 
         # Insert marginal_costs in EUR/MWh
         # marginal cost can include fuel, C02 and operation and maintenance costs

@@ -40,7 +40,7 @@ class HydrogenStoreEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenStoreEtrago",
-            version="0.0.1.dev",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 insert_H2_overground_storage,
@@ -54,7 +54,7 @@ class HydrogenPowerLinkEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenPowerLinkEtrago",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 insert_power_to_h2_to_power,
@@ -67,7 +67,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenMethaneLinkEtrago",
-            version="0.0.1",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_h2_to_ch4_to_h2, insert_h2_to_ch4_eGon100RE),
         )

@@ -166,7 +166,6 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         {sources['mv_grids']['table']} d
         ON d.bus_id = c.bus_id
         WHERE scenario = '{scenario}'
-        AND sector = 'residential'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
             FROM {sources['map_dh']['schema']}.{sources['map_dh']['table']}

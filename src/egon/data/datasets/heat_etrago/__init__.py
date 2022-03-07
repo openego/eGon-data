@@ -223,6 +223,9 @@ def insert_store(scenario, carrier):
             "capital_cost": get_sector_parameters("heat", "eGon2035")[
                 "capital_cost"
             ][f"{carrier.split('_')[0]}_water_tank"],
+            "lifetime": get_sector_parameters("heat", "eGon2035")[
+                "lifetime"
+            ][f"{carrier.split('_')[0]}_water_tank"],
             "e_nom_extendable": True,
             "store_id": range(
                 db.next_etrago_id("store"),
