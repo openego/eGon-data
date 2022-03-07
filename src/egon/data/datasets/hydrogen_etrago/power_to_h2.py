@@ -206,6 +206,7 @@ def map_buses(scn_name):
 
     return gdf.rename(columns={"bus_id": "bus1", "geom": "geom_gas"})
 
+
 def insert_power_to_h2_to_power_eGon100RE():
     """Copy H2/power links from the eGon2035 to the eGon100RE scenario."""
     copy_and_modify_links(

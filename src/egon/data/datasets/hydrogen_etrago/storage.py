@@ -1,15 +1,15 @@
 """The central module containing all code dealing with heat sector in etrago
 """
-from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from geoalchemy2 import Geometry
 import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_H2_overground_storage(scn_name='eGon2035'):
+def insert_H2_overground_storage(scn_name="eGon2035"):
     """Insert H2 steel tank storage for every H2 bus."""
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -68,7 +68,7 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     )
 
 
-def insert_H2_saltcavern_storage(scn_name='eGon2035'):
+def insert_H2_saltcavern_storage(scn_name="eGon2035"):
     """Insert H2 saltcavern storage for every H2_saltcavern bus in the table."""
 
     # Datatables sources and targets
@@ -346,6 +346,7 @@ def calculate_and_map_saltcavern_storage_potential():
         if_exists="replace",
         dtype={"geometry": Geometry()},
     )
+
 
 def insert_H2_storage_eGon100RE():
     """Copy H2 storage from the eGon2035 to the eGon100RE scenario."""

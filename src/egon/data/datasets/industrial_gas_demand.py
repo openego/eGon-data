@@ -296,6 +296,7 @@ def read_industrial_H2_demand(scn_name="eGon2035"):
 
     return industrial_loads_list
 
+
 def delete_old_entries(scn_name):
     """
     Delete loads and load timeseries.
@@ -429,12 +430,12 @@ def insert_industrial_gas_demand_egon100RE():
     CH4_total_PES = 105490000
     H2_total_PES = 42090000
     H2_total = industrial_gas_demand_H2["p_set"].apply(sum).astype(float).sum()
-    industrial_gas_demand_CH4["p_set"] = industrial_gas_demand_H2["p_set"].apply(
-        lambda x: [val / H2_total * CH4_total_PES for val in x]
-    )
-    industrial_gas_demand_H2["p_set"] = industrial_gas_demand_H2["p_set"].apply(
-        lambda x: [val / H2_total * H2_total_PES for val in x]
-    )
+    industrial_gas_demand_CH4["p_set"] = industrial_gas_demand_H2[
+        "p_set"
+    ].apply(lambda x: [val / H2_total * CH4_total_PES for val in x])
+    industrial_gas_demand_H2["p_set"] = industrial_gas_demand_H2[
+        "p_set"
+    ].apply(lambda x: [val / H2_total * H2_total_PES for val in x])
 
     industrial_gas_demand = pd.concat(
         [industrial_gas_demand_CH4, industrial_gas_demand_H2,]
@@ -483,7 +484,9 @@ def download_industrial_gas_demand():
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
     for scn_name in ["eGon2035", "eGon100RE"]:
-        year = str(get_sector_parameters("global", scn_name)["population_year"])
+        year = str(
+            get_sector_parameters("global", scn_name)["population_year"]
+        )
 
         for carrier, internal_id in carriers.items():
             # Download the data

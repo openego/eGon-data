@@ -129,8 +129,8 @@ def insert_store(scenario, carrier):
         {targets['heat_stores']['table']}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
-        AND bus IN 
-        (SELECT bus_id 
+        AND bus IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'

@@ -115,7 +115,7 @@ def copy_and_modify_links(from_scn, to_scn, carriers, sector):
         );
         """,
         epsg=4326,
-        geom_col="topo"
+        geom_col="topo",
     )
 
     gdf["scn_name"] = to_scn
@@ -124,9 +124,9 @@ def copy_and_modify_links(from_scn, to_scn, carriers, sector):
     for carrier in carriers:
         for param in ["capital_cost", "marginal_cost", "efficiency"]:
             try:
-                gdf.loc[gdf["carrier"] == carrier, param] = (
-                    scn_params[param][carrier]
-                )
+                gdf.loc[gdf["carrier"] == carrier, param] = scn_params[param][
+                    carrier
+                ]
             except KeyError:
                 pass
 
@@ -188,9 +188,9 @@ def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
     for carrier in carriers:
         for param in ["capital_cost", "marginal_cost"]:
             try:
-                df.loc[df["carrier"] == carrier, param] = (
-                    scn_params[param][carrier]
-                )
+                df.loc[df["carrier"] == carrier, param] = scn_params[param][
+                    carrier
+                ]
             except KeyError:
                 pass
 
@@ -242,7 +242,7 @@ def copy_and_modify_buses(from_scn, to_scn, filter_dict):
         WHERE {where_clause} scn_name = '{from_scn}' AND
         country = 'DE'
         """,
-        epsg=4326
+        epsg=4326,
     )
 
     gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
