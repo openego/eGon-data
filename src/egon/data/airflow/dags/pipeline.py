@@ -460,7 +460,7 @@ with airflow.DAG(
     generate_wind_farms = tasks["power_plants.wind_farms.insert"]
     generate_pv_ground_mounted = tasks["power_plants.pv_ground_mounted.insert"]
     solar_rooftop_etrago = tasks[
-        "power_plants.pv_rooftop.pv-rooftop-per-mv-grid"
+        "power_plants.pv_rooftop.insert"
     ]
 
     feedin_pv >> solar_rooftop_etrago
