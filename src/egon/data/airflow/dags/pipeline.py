@@ -408,15 +408,24 @@ with airflow.DAG(
         dependencies=[insert_hydrogen_buses, vg250_clean_and_prepare]
     )
 
+    insert_h2_grid = HydrogenGridEtrago(
+        dependencies=[
+            create_gas_polygons_egon2035,
+            gas_grid_insert_data,
+            insert_hydrogen_buses,
+        ]
+    )
+
     # H2 steel tanks and saltcavern storage
     insert_H2_storage = HydrogenStoreEtrago(
-        dependencies=[insert_hydrogen_buses]
+        dependencies=[insert_hydrogen_buses, insert_h2_grid]
     )
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
         dependencies=[
             insert_hydrogen_buses,
+            insert_h2_grid
         ]
     )
 
@@ -424,15 +433,7 @@ with airflow.DAG(
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
         dependencies=[
             insert_hydrogen_buses,
-            insert_power_to_h2_installations,
-        ]
-    )
-
-    insert_h2_grid = HydrogenGridEtrago(
-        dependencies=[
-            create_gas_polygons_egon2035,
-            gas_grid_insert_data,
-            insert_hydrogen_buses,
+            insert_h2_grid
         ]
     )
 

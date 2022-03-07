@@ -44,10 +44,10 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}' AND bus IN (
+        DELETE FROM grid.egon_etrago_store WHERE carrier = '{carrier}' AND
+        scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )
@@ -129,10 +129,10 @@ def insert_H2_saltcavern_storage(scn_name='eGon2035'):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}' AND bus IN (
+        DELETE FROM grid.egon_etrago_store WHERE carrier = '{carrier}' AND
+        scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )

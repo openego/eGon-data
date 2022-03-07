@@ -276,9 +276,9 @@ def import_gas_generators(scn_name='eGon2035'):
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4' AND
-        scn_name = '{scn_name}' AND bus IN (
+        scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )

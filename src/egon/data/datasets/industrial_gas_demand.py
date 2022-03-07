@@ -305,9 +305,9 @@ def delete_old_entries(scn_name):
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
             WHERE "carrier" IN ('CH4', 'H2') AND
-            scn_name = '{scn_name}' AND bus IN (
+            scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = '{scn_name}' AND country = 'DE'
+                WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
         """
@@ -319,9 +319,9 @@ def delete_old_entries(scn_name):
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
             WHERE "carrier" IN ('CH4', 'H2') AND
-            scn_name = '{scn_name}' AND bus IN (
+            scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = '{scn_name}' AND country = 'DE'
+                WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
         """
