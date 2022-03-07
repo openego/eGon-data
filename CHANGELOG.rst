@@ -432,3 +432,5 @@ Bug fixes
   `#676 <https://github.com/openego/eGon-data/issues/676>`_
 * Distribute rural heat supply to residetntial and service demands
   `#679 <https://github.com/openego/eGon-data/issues/679>`_
+* Fix time series creation for pv rooftop
+  `#688 <https://github.com/openego/eGon-data/issues/688>`_
