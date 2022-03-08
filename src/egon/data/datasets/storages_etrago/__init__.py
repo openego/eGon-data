@@ -17,7 +17,7 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
@@ -120,6 +120,10 @@ def extendable_batteries_per_scenario(scenario):
     extendable_batteries["capital_cost"] = get_sector_parameters(
         "electricity", scenario
     )["capital_cost"]["battery"]
+
+    extendable_batteries["lifetime"] = get_sector_parameters(
+        "electricity", scenario
+    )["lifetime"]["battery storage"]
 
     extendable_batteries["max_hours"] = get_sector_parameters(
         "electricity", scenario
