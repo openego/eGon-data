@@ -974,3 +974,6 @@ gas_neighbours:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'

@@ -10,8 +10,8 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import get_map_buses
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.etrago_setup as etrago
 
 
@@ -21,8 +21,11 @@ class GasNeighbours(Dataset):
             name="GasNeighbours",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=({tyndp_gas_generation}), #grid, tyndp_gas_demand
+            tasks=(
+                {tyndp_gas_generation, tyndp_gas_demand}
+            ),  # grid
         )
+
 
 def get_foreign_bus_id():
     """Calculate the etrago bus id from gas nodes of TYNDP based on the geometry
@@ -71,6 +74,7 @@ def get_foreign_bus_id():
 
     return buses.set_index("node_id").bus_id
 
+
 def calc_capacities():
     """Calculates gas production capacities from TYNDP data
 
@@ -103,87 +107,119 @@ def calc_capacities():
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
     )
+
+    df = (
+        df.query(
+            'Scenario == "Distributed Energy" & '
+            # 'Year == 2030 & '
+            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Category == "Production"'
+        )
+        .drop(
+            columns=[
+                "Generator_ID",
+                "Climate Year",
+                "Simulation_ID",
+                "Node 1",
+                "Path",
+                "Direct/Indirect",
+                "Sector",
+                "Note",
+                "Category",
+                "Case",
+                "Scenario",
+            ]
+        )
+        .set_index("Node/Line")
+    )
+
+    df_conv_2030 = (
+        df[(df["Parameter"] == "Conventional") & (df["Year"] == 2030)]
+        .rename(columns={"Value": "Value_conv_2030"})
+        .drop(columns=["Parameter", "Year"])
+    )
+    df_bioch4_2030 = (
+        df[(df["Parameter"] == "Biomethane") & (df["Year"] == 2030)]
+        .rename(columns={"Value": "Value_bio_2030"})
+        .drop(columns=["Parameter", "Year"])
+    )
+
+    df_conv_2030 = df_conv_2030[
+        ~df_conv_2030.index.duplicated(keep="first")
+    ]  # DE00 is duplicated
+    df_2030 = pd.concat([df_conv_2030, df_bioch4_2030], axis=1).fillna(0)
+    df_2030 = df_2030[
+        ~((df_2030["Value_conv_2030"] == 0) & (df_2030["Value_bio_2030"] == 0))
+    ]
+    df_2030["CH4_2030"] = (
+        df_2030["Value_conv_2030"] + df_2030["Value_bio_2030"]
+    )
+    df_2030["ratioConv_2030"] = (
+        df_2030["Value_conv_2030"] / df_2030["CH4_2030"]
+    )
+
+    df_conv_2040 = (
+        df[(df["Parameter"] == "Conventional") & (df["Year"] == 2040)]
+        .rename(columns={"Value": "Value_conv_2040"})
+        .drop(columns=["Parameter", "Year"])
+    )
+    df_bioch4_2040 = (
+        df[(df["Parameter"] == "Biomethane") & (df["Year"] == 2040)]
+        .rename(columns={"Value": "Value_bio_2040"})
+        .drop(columns=["Parameter", "Year"])
+    )
+
+    df_2040 = pd.concat([df_conv_2040, df_bioch4_2040], axis=1).fillna(0)
+    df_2040 = df_2040[
+        ~((df_2040["Value_conv_2040"] == 0) & (df_2040["Value_bio_2040"] == 0))
+    ]
+    df_2040["CH4_2040"] = (
+        df_2040["Value_conv_2040"] + df_2040["Value_bio_2040"]
+    )
+    df_2040["ratioConv_2040"] = (
+        df_2040["Value_conv_2040"] / df_2040["CH4_2040"]
+    )
+
+    df_2035 = pd.concat([df_2040, df_2030], axis=1).drop(
+        columns=[
+            "Value_conv_2040",
+            "Value_conv_2030",
+            "Value_bio_2040",
+            "Value_bio_2030",
+        ]
+    )
+    df_2035["cap_2035"] = (df_2035["CH4_2030"] + df_2035["CH4_2040"]) / 2
+    df_2035["ratioConv_2035"] = (
+        df_2035["ratioConv_2030"] + df_2035["ratioConv_2040"]
+    ) / 2
+    df_2035.drop(
+        columns=["ratioConv_2030", "ratioConv_2040", "CH4_2040", "CH4_2030"]
+    )
+
+    df_2035["carrier"] = "CH4"
+    grouped_capacities = df_2035.drop(
+        columns=["ratioConv_2030", "ratioConv_2040", "CH4_2040", "CH4_2030"]
+    ).reset_index()
     
-    df_2030 = ( 
-        df.query(
-            'Scenario == "Distributed Energy" & '
-            'Year == 2030 & '
-            'Case == "Average" &' # Case: 2 Week/Average/DF/Peak
-            'Category == "Production"'
-        )
-        .drop(
-        columns=[
-            "Generator_ID",
-            "Climate Year",
-            "Simulation_ID",
-            "Node 1",
-            "Path",
-            "Direct/Indirect",
-            "Sector",
-            "Note",            
-        ]
-    ).set_index("Node/Line")
-    )
-
-    df_2040 = ( # Case: 2 Week/Average/DF/Peak
-        df.query(
-            'Scenario == "Distributed Energy" & '
-            'Year == 2040 & '
-            'Case == "Average" &' # Case: 2 Week/Average/DF/Peak
-            'Category == "Production"'
-        )
-        .drop(
-        columns=[
-            "Generator_ID",
-            "Climate Year",
-            "Simulation_ID",
-            "Node 1",
-            "Path",
-            "Direct/Indirect",
-            "Sector",
-            "Note",
-        ]
-    ).set_index("Node/Line")
-    )
-
-    print(df_2030)
-    print(df_2040)
-
-    # interpolate linear between 2030 and 2040 for 2035 accordning to
-    # scenario report of TSO's and the approval by BNetzA
-    df_2035 = pd.DataFrame(index=df_2030.index)
-    print(df_2035)
-    df_2035["cap_2030"] = df_2030.Value
-    print(df_2035)
-    df_2035["cap_2040"] = df_2040.Value
-    print(df_2035)
-    df_2035.fillna(0., inplace=True)
-    df_2035["cap_2035"] = (
-        df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
-    )
-    df_2035 = df_2035.reset_index()
-    df_2035["carrier"] = 'CH4' #df_2035.Generator_ID.map(map_carriers_tyndp())
-
-    grouped_capacities = df_2035
-    # # group capacities by new carriers
-    # grouped_capacities = (
-    #     df_2035.groupby(["carrier", "Node/Line"]).cap_2035.sum().reset_index()
-    # )
-
+    # Conversion GWh/d to MWh/h
+    conversion_factor = 1000/24
+    grouped_capacities["cap_2035"] = grouped_capacities["cap_2035"]*conversion_factor
+    
+    print(grouped_capacities)
     # Calculation of ratio Biomethane/Conventional to estimate CO2 content/cost
-
+    
     # choose capacities for considered countries
     return grouped_capacities[
         grouped_capacities["Node/Line"].str[:2].isin(countries)
     ]
 
 
-def insert_generators(capacities):
+def insert_generators(gen):
     """Insert gas generators for foreign countries based on TYNDP-data
 
     Parameters
     ----------
-    capacities : pandas.DataFrame
+    gen : pandas.DataFrame
         Gas production capacities per foreign node and energy carrier
 
     Returns
@@ -193,6 +229,7 @@ def insert_generators(capacities):
     """
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
+    print(map_buses)
 
     # Delete existing data
     db.execute_sql(
@@ -208,25 +245,6 @@ def insert_generators(capacities):
         AND carrier = 'CH4'
         """
     )
-    gen = capacities
-    # # Select generators from TYNDP capacities
-    # gen = capacities[
-    #     capacities.carrier.isin(
-    #         [
-    #             "other_non_renewable",
-    #             "wind_offshore",
-    #             "wind_onshore",
-    #             "solar",
-    #             "other_renewable",
-    #             "reservoir",
-    #             "run_of_river",
-    #             "lignite",
-    #             "coal",
-    #             "oil",
-    #             "nuclear",
-    #         ]
-    #     )
-    # ]
 
     # Set bus_id
     gen.loc[
@@ -240,6 +258,7 @@ def insert_generators(capacities):
     gen.loc[:, "bus"] = (
         get_foreign_bus_id().loc[gen.loc[:, "Node/Line"]].values
     )
+    print(gen)
 
     # insert data
     session = sessionmaker(bind=db.engine())()
@@ -256,20 +275,6 @@ def insert_generators(capacities):
         session.commit()
 
 
-def tyndp_gas_generation():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
-
-    Returns
-    -------
-    None.
-    """
-    capacities = calc_capacities()
-    print(capacities)
-    # insert_generators(capacities)
-
-    # insert_storage(capacities)
-
 # def grid():
 #     """Insert gas grid compoenents for neighbouring countries
 
@@ -279,11 +284,114 @@ def tyndp_gas_generation():
 
 #     """
 
-# def tyndp_gas_demand():
-#     """Insert data from TYNDP 2020 accordning to NEP 2021
-#     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
 
-#     Returns
-#     -------
-#     None.
-#     """
+def calc_global_demand():
+    """Calculates global gas demands from TYNDP data
+
+    Returns
+    -------
+    pandas.DataFrame
+        Global gas demand per foreign node and energy carrier
+
+    """
+
+    sources = config.datasets()["gas_neighbours"]["sources"]
+
+    countries = [
+        "AT",
+        "BE",
+        "CH",
+        "CZ",
+        "DK",
+        "FR",
+        "NL",
+        "NO",
+        "SE",
+        "PL",
+        "UK",
+    ]
+
+    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    df = pd.read_excel(
+        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
+        sheet_name="Gas Data",
+    )
+
+    df = (
+        df.query(
+            'Scenario == "Distributed Energy" & '
+            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Category == "Demand"'
+        )
+        .drop(
+            columns=[
+                "Generator_ID",
+                "Climate Year",
+                "Simulation_ID",
+                "Node 1",
+                "Path",
+                "Direct/Indirect",
+                "Sector",
+                "Note",
+                "Category",
+                "Case",
+                "Scenario",
+            ]
+        )
+        .set_index("Node/Line")
+    )
+
+    df_2030 = (
+        df[(df["Parameter"] == "Final demand") & (df["Year"] == 2030)]
+        .rename(columns={"Value": "Value_2030"})
+        .drop(columns=["Parameter", "Year"])
+    )
+
+    df_2040 = (
+        df[(df["Parameter"] == "Final demand") & (df["Year"] == 2040)]
+        .rename(columns={"Value": "Value_2040"})
+        .drop(columns=["Parameter", "Year"])
+    )
+
+    df_2035 = pd.concat([df_2040, df_2030], axis=1)
+    df_2035["GlobD_2035"] = (df_2035["Value_2030"] + df_2035["Value_2040"]) / 2
+    df_2035["carrier"] = "CH4"
+    grouped_demands = df_2035.drop(
+        columns=["Value_2030", "Value_2040"]
+    ).reset_index()
+    # unit: GWh/d
+
+    # choose demands for considered countries
+    return grouped_demands[
+        grouped_demands["Node/Line"].str[:2].isin(countries)
+    ]
+
+
+def tyndp_gas_generation():
+    """Insert data from TYNDP 2020 accordning to NEP 2021
+    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+
+    Returns
+    -------
+    None.
+    """
+    capacities = calc_capacities()
+    # insert_generators(capacities)
+
+    # insert_storage(capacities)
+
+
+def tyndp_gas_demand():
+    """Insert data from TYNDP 2020 accordning to NEP 2021
+    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+
+    Returns
+    -------
+    None.
+    """
+
+    global_demand = calc_global_demand()
+    print(global_demand)
+    # gas_demandTS = import_gas_demandTS()
+
+    # insert_demand(global_demand)
