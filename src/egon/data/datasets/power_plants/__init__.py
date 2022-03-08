@@ -116,8 +116,8 @@ def scale_prox2now(df, target, level="federal_state"):
         )
     else:
         df.loc[:, "Nettonennleistung"] = df.Nettonennleistung.apply(
-            lambda x: x / x.sum()
-        ).mul(target.values)
+            lambda x: x / df.Nettonennleistung.sum()
+        ).mul(target.values.sum())
 
     df = df[df.Nettonennleistung > 0]
 
@@ -142,8 +142,8 @@ def select_target(carrier, scenario):
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
-    return (
-        pd.read_sql(
+    if scenario =='eGon2035':
+        target = pd.read_sql(
             f"""SELECT DISTINCT ON (b.gen)
                          REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
                          a.capacity
@@ -155,11 +155,19 @@ def select_target(carrier, scenario):
                          AND b.gen NOT IN ('Baden-Württemberg (Bodensee)',
                                            'Bayern (Bodensee)')""",
             con=db.engine(),
-        )
-        .set_index("state")
-        .capacity
-    )
+        ).set_index("state").capacity
 
+    else:
+        target = pd.read_sql(
+            f"""SELECT capacity, nuts as state
+                         FROM {cfg['sources']['capacities']} a
+                         WHERE nuts = 'DE'
+                         AND scenario_name = '{scenario}'
+                         AND carrier = '{carrier}'""",
+            con=db.engine(),
+        ).set_index("state").capacity
+
+    return target
 
 def filter_mastr_geometry(mastr, federal_state=None):
     """Filter data from MaStR by geometry
@@ -323,6 +331,7 @@ def insert_hydro_plants(scenario):
         # import target values
         target = select_target(carrier, scenario)
 
+
         # import data for MaStR
         mastr = pd.read_csv(cfg["sources"]["mastr_hydro"]).query(
             "EinheitBetriebsstatus=='InBetrieb'"
@@ -343,6 +352,10 @@ def insert_hydro_plants(scenario):
             )
         ]
 
+        # Choose only entries with valid geometries inside DE/test mode
+        mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
+        # TODO: Deal with power plants without geometry
+
         # Scaling will be done per federal state in case of eGon2035 scenario.
         if scenario == "eGon2035":
             level = "federal_state"
@@ -350,23 +363,27 @@ def insert_hydro_plants(scenario):
             level = "country"
 
         # Scale capacities to meet target values
-        mastr = scale_prox2now(mastr, target, level=level)
+        mastr_loc = scale_prox2now(mastr_loc, target, level=level)
 
-        # Choose only entries with valid geometries inside DE/test mode
-        mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-        # TODO: Deal with power plants without geometry
 
         # Assign bus_id and voltage level
         if len(mastr_loc) > 0:
             mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
             mastr_loc = assign_bus_id(mastr_loc, cfg)
 
+        # Define the source depending on the scenario
+
+        if scenario == 'eGon2035':
+            source = 'NEP 2021'
+        else:
+            source = 'pypsa-eur-sec results'
+
         # Insert entries with location
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
                 sources={
-                    "el_capacity": "MaStR scaled with NEP 2021",
+                    "el_capacity": f"MaStR scaled with {source}",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
@@ -590,8 +607,9 @@ def insert_hydro_biomass():
     )
 
     for scenario in ["eGon2035", "eGon100RE"]:
-        insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
+
+    insert_biomass_plants("eGon100RE")
 
 
 def allocate_conventional_non_chp_power_plants():
