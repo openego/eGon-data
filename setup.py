@@ -91,6 +91,7 @@ setup(
         "geovoronoi==0.3.0",
         "importlib-resources",
         "loguru",
+        "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
         "matplotlib",
         "netcdf4",
         "oedialect==0.0.8",
@@ -105,6 +106,7 @@ setup(
         "rtree",
         "snakemake",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
+        "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
         "xarray",
         "xlrd",
     ],
