@@ -99,7 +99,7 @@ setup(
         "pyaml",
         "rasterio",
         "rtree",
-        "snakemake",
+        "snakemake<7", # see commit message
         "sqlalchemy<1.4",
         "pypsa==0.17.1",
         "xarray",
