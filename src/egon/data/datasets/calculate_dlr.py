@@ -64,7 +64,9 @@ def dlr():
     {cfg['sources']['trans_lines']['schema']}.
     {cfg['sources']['trans_lines']['table']}
     """
-    df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326", geom_col="topo")
+    df = gpd.GeoDataFrame.from_postgis(
+        sql, con, crs="EPSG:4326", geom_col="topo"
+    )
 
     trans_lines_R = {}
     for i in regions.Region:
@@ -81,15 +83,15 @@ def dlr():
     for i in trans_lines_R:
         for j in trans_lines_R[i].index:
             trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
-    trans_lines['crossborder'] = ~trans_lines.within(regions.unary_union)
-    
+    trans_lines["crossborder"] = ~trans_lines.within(regions.unary_union)
+
     DLR = []
 
     # Assign to each transmision line the final values of DLR based on location
     # and type of line (overhead or underground)
     for i in trans_lines.index:
         # The concept of DLR does not apply to crossborder lines
-        if trans_lines.loc[i, 'crossborder'] == True:
+        if trans_lines.loc[i, "crossborder"] == True:
             DLR.append([1] * 8760)
             continue
         # Underground lines have DLR = 1
@@ -117,8 +119,10 @@ def dlr():
     trans_lines["s_max_pu"] = DLR
 
     # delete unnecessary columns
-    trans_lines.drop(columns=["in_regions", "s_nom", "geometry", "crossborder"],
-                     inplace=True)
+    trans_lines.drop(
+        columns=["in_regions", "s_nom", "geometry", "crossborder"],
+        inplace=True,
+    )
 
     # Modify column "s_max_pu" to fit the requirement of the table
     trans_lines["s_max_pu"] = trans_lines.apply(
@@ -156,7 +160,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
         path to the shape file with the shape of the regions to analyze
 
     """
-    
+
     # load, index and sort shapefile with the 9 regions defined by NEP 2020
     regions = gpd.read_file(regions_shape_path)
     regions = regions.set_index(["Region"])
