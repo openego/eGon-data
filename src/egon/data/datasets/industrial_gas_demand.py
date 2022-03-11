@@ -3,10 +3,10 @@
 The central module containing all code dealing with importing gas industrial demand
 """
 from pathlib import Path
+import os
 
 from geoalchemy2.types import Geometry
 from shapely import wkt
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import requests
@@ -485,6 +485,7 @@ def download_industrial_gas_demand():
     # Read and save data
     result_corr = requests.get(correspondance_url)
     target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+    os.makedirs(os.path.dirname(target_file), exist_ok=True)
     pd.read_json(result_corr.content).to_json(target_file)
 
     carriers = {"H2": "2,162", "CH4": "2,11"}
