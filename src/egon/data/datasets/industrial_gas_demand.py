@@ -2,6 +2,8 @@
 """
 The central module containing all code dealing with importing gas industrial demand
 """
+from pathlib import Path
+
 from geoalchemy2.types import Geometry
 from shapely import wkt
 import geopandas as gpd
@@ -67,13 +69,17 @@ def read_industrial_demand(scn_name, carrier):
         Dataframe containing the industrial demand
 
     """
-    df_corr = pd.read_json("region_corr_ind_demand.json")
+    target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+    df_corr = pd.read_json(target_file)
     df_corr = df_corr[["id_region", "name_short"]].copy()
     df_corr = df_corr.set_index("id_region")
 
-    industrial_loads_list = pd.read_json(
-        f"{carrier}_ind_demand_{scn_name}.json"
+    target_file = (
+        Path(".")
+        / "datasets/gas_data/demand"
+        / (carrier + "_" + scn_name + ".json")
     )
+    industrial_loads_list = pd.read_json(target_file)
     industrial_loads_list = industrial_loads_list[
         ["id_region", "values"]
     ].copy()
@@ -478,7 +484,8 @@ def download_industrial_gas_demand():
 
     # Read and save data
     result_corr = requests.get(correspondance_url)
-    pd.read_json(result_corr.content).to_json("region_corr_ind_demand.json")
+    target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+    pd.read_json(result_corr.content).to_json(target_file)
 
     carriers = {"H2": "2,162", "CH4": "2,11"}
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
@@ -495,6 +502,9 @@ def download_industrial_gas_demand():
 
             # Read and save data
             result = requests.get(request)
-            pd.read_json(result.content).to_json(
-                carrier + "_ind_demand_" + scn_name + ".json"
+            target_file = (
+                Path(".")
+                / "datasets/gas_data/demand"
+                / (carrier + "_" + scn_name + ".json")
             )
+            pd.read_json(result.content).to_json(target_file)
