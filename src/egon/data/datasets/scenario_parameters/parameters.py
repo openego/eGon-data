@@ -221,6 +221,12 @@ def electricity(scenario):
                 "max_hours": 6,
             },
         }
+        # Insert capital costs
+        parameters["capital_cost"] = {
+            "battery": read_costs(costs, "battery inverter", "investment")
+            + parameters["efficiency"]["battery"]["max_hours"]
+            * read_costs(costs, "battery storage", "investment"),  # [EUR/MW]
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
