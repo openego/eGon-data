@@ -311,12 +311,12 @@ def get_iee_hh_demand_profiles_raw():
 
     Notes
     -----
-    The household electricity demand profiles have been generated for a leap
-    year (8784 hours) starting on a Friday. The weather year is 2011 and the
-    heat timeseries 2011 are generated for 2011 too (cf. dataset
-    :mod:`egon.data.datasets.heat_demand_timeseries.HTS`), having 8760h and
-    starting on a Saturday. To align the profiles, the first day of the IEE
-    profiles are deleted, resulting in 8760h starting on Saturday.
+    The household electricity demand profiles have been generated for 2016
+    which is a leap year (8784 hours) starting on a Friday. The weather year
+    is 2011 and the heat timeseries 2011 are generated for 2011 too (cf.
+    dataset :mod:`egon.data.datasets.heat_demand_timeseries.HTS`), having
+    8760h and starting on a Saturday. To align the profiles, the first day of
+    the IEE profiles are deleted, resulting in 8760h starting on Saturday.
 
     Returns
     -------

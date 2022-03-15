@@ -44,10 +44,11 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
                 coalesce(bf.apartment_count, 0) as apartment_count,
                 coalesce(bf.n_apartments_in_n_buildings, 0) as n_apartments_in_n_buildings
             from openstreetmap.osm_buildings_with_res_tmp2 bf
-            where bf.osm_id not in (
-                select aib.osm_id_building
-                from openstreetmap.osm_amenities_in_buildings_tmp aib
-            )
+            -- NOT IN replaced by JOIN DUE TO performance problems
+            -- cf. https://github.com/openego/eGon-data/issues/693
+            LEFT JOIN openstreetmap.osm_amenities_in_buildings_tmp aib
+            ON bf.osm_id = aib.osm_id_building
+            WHERE aib.osm_id_building IS NULL
         ) bwa
         group by
             bwa.osm_id,
