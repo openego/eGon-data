@@ -225,7 +225,7 @@ def electricity(scenario):
         parameters["capital_cost"] = {
             "battery": read_costs(costs, "battery inverter", "investment")
             + parameters["efficiency"]["battery"]["max_hours"]
-            * read_costs(costs, "battery storage", "investment"),  # [EUR/MW]
+            * read_costs(costs, "battery storage", "investment")  # [EUR/MW]
         }
 
     else:
