@@ -6,21 +6,33 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.config import settings
 import egon.data.config
+from egon.data.datasets.power_plants import (
+    select_target
+)
 
 
-def insert():
+def insert_egon2035(export = True):
     """
     Include the offshore wind parks in egon-data.
     locations and installed capacities based on: NEP2035_V2021_scnC2035
 
     Parameters
     ----------
-    *No parameters required
+    export : Boolean
+        Default True, if True data will be exported to data base, else returns
+        dataframe
+
+    Returns
+    -------
+    offshore : pandas.DataFrame
+        List of offshore wind farms including their capacities and grid
+        connection point
     """
     # Read file with all required input/output tables' names
     cfg = egon.data.config.datasets()["power_plants"]
-    
+
     # load NEP2035_V2021_scnC2035 file
     offshore_path = (
         Path(".")
@@ -98,14 +110,14 @@ def insert():
         SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
         as osm_id FROM {cfg["sources"]["buses_data"]}
         """
-        
+
     busses = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="point"
     )
-    
+
     # Drop NANs in column osm_id
     busses.dropna(subset= ['osm_id'], inplace= True)
-    
+
     # Create columns for bus_id and geometry in the offshore df
     offshore["bus_id"] = np.nan
     offshore["geom"] = Point(0, 0)
@@ -127,8 +139,8 @@ def insert():
             offshore.at[index, "geom"] = busses.at[bus_ind, "point"]
         else:
             print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
-            
-    
+
+
     offshore["weather_cell_id"] = offshore['Netzverknuepfungspunkt'].map(w_id)
     offshore['weather_cell_id'] = offshore['weather_cell_id'].apply(int)
     # Drop offshore wind farms without found connexion point
@@ -148,7 +160,7 @@ def insert():
     offshore["carrier"] = "wind_offshore"
     offshore["el_capacity"] = offshore["C 2035"]
     offshore["scenario"] = "eGon2035"
-    
+
     # Delete unnecessary columns
     offshore.drop(
         [
@@ -168,9 +180,9 @@ def insert():
     # Delete, in case of existing, previous wind offshore parks
 
     db.execute_sql(
-        f""" 
-    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']} 
-    WHERE carrier IN ('wind_offshore') 
+        f"""
+    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    WHERE carrier IN ('wind_offshore')
     """
     )
 
@@ -196,6 +208,76 @@ def insert():
         start=ini_id, stop=ini_id + len(offshore), name="id"
     )
 
+    if export == True:
+        # Insert into database
+        offshore.reset_index().to_postgis(
+            cfg["target"]["table"],
+            schema=cfg["target"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+    else:
+        return offshore
+
+
+def insert_egon100RE():
+    """
+    Include the offshore wind parks in egon-data.
+    Locations based on results for eGon2035 scenario and installed capacities
+    retrieved from PyPSA-Eur-Sec results
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    """
+
+    # Get distribution of offshore wind farms for eGon2035 as the basis for
+    # eGon100RE scenario
+    offshore_2035 = insert_egon2035(export=False)
+
+    carrier = "wind_offshore"
+    scenario = "eGon100RE"
+    cfg = egon.data.config.datasets()["power_plants"]
+
+    # Connect to the data base
+    con = db.engine()
+
+
+    # import target values
+    target = select_target(carrier, scenario)
+
+    # Scale capacities prox2eGon2035
+    offshore = offshore_2035.copy()
+    offshore.loc[:, "el_capacity"] = offshore.el_capacity.apply(
+        lambda x: x / offshore.el_capacity.sum()
+    ).mul(target.values.sum())
+
+    # Look for the maximum id in the table egon_power_plants
+    sql = (
+        "SELECT MAX(id) FROM "
+        + cfg["target"]["schema"]
+        + "."
+        + cfg["target"]["table"]
+    )
+    max_id = pd.read_sql(sql, con)
+    max_id = max_id["max"].iat[0]
+    if max_id == None:
+        ini_id = 1
+    else:
+        ini_id = int(max_id + 1)
+
+    # write_table in egon-data database:
+    # Reset index
+    offshore.index = pd.RangeIndex(
+        start=ini_id, stop=ini_id + len(offshore), name="id"
+    )
+
     # Insert into database
     offshore.reset_index().to_postgis(
         cfg["target"]["table"],
@@ -203,6 +285,3 @@ def insert():
         con=db.engine(),
         if_exists="append",
     )
-
-    return 0
-    

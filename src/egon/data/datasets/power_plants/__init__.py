@@ -1,6 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from geoalchemy2 import Geometry
+from geopy.geocoders import Nominatim
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -18,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
@@ -30,6 +32,8 @@ import egon.data.datasets.power_plants.assign_weather_data as assign_weather_dat
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
+
+
 
 Base = declarative_base()
 
@@ -141,6 +145,8 @@ def select_target(carrier, scenario):
 
     """
     cfg = egon.data.config.datasets()["power_plants"]
+    boundary = settings()["egon-data"]["--dataset-boundary"]
+
 
     if scenario =='eGon2035':
         target = pd.read_sql(
@@ -158,14 +164,24 @@ def select_target(carrier, scenario):
         ).set_index("state").capacity
 
     else:
-        target = pd.read_sql(
-            f"""SELECT capacity, nuts as state
-                         FROM {cfg['sources']['capacities']} a
-                         WHERE nuts = 'DE'
-                         AND scenario_name = '{scenario}'
-                         AND carrier = '{carrier}'""",
-            con=db.engine(),
-        ).set_index("state").capacity
+        if boundary == 'Everything':
+            target = pd.read_sql(
+                f"""SELECT capacity, nuts as state
+                             FROM {cfg['sources']['capacities']} a
+                             WHERE nuts = 'DE'
+                             AND scenario_name = '{scenario}'
+                             AND carrier = '{carrier}'""",
+                con=db.engine(),
+            ).set_index("state").capacity
+        else:
+            target = pd.read_sql(
+                f"""SELECT capacity, nuts as state
+                             FROM {cfg['sources']['capacities']} a
+                             WHERE nuts = 'DE'
+                             AND scenario_name = '{scenario}'
+                             AND carrier = '{carrier}'""",
+                con=db.engine(),
+            ).set_index("state").capacity/16
 
     return target
 
@@ -224,6 +240,50 @@ def filter_mastr_geometry(mastr, federal_state=None):
     )
 
     return mastr_loc
+
+def get_location(unmatched):
+    """ Gets a geolocation for units which do not have information on the
+    exact geolocation but a city information.
+
+    Parameters
+    ----------
+    unmatched : pandas.DataFrame
+        df without exact geolocation but containing
+        a city information
+
+    Returns
+    -------
+    unmatched: pandas.DataFrame
+        Units for which no geolocation could be identified
+
+    located : pandas.DataFrame
+        Units with a geolocation based on their city information
+
+    """
+
+    geolocator = Nominatim(user_agent="egon_data")
+
+    # Create array of cities
+    cities = unmatched.city.values
+
+    # identify longitude and latitude for all cities in the array
+    for city in cities:
+        lon = geolocator.geocode(city).longitude
+        lat = geolocator.geocode(city).latitude
+
+        # write information on lon and lat to df
+        unmatched.loc[unmatched.city == city, "lon"] = lon
+        unmatched.loc[unmatched.city == city, "lat"] = lat
+
+    # Get a point geometry from lon and lat information
+    unmatched["geometry"] = gpd.points_from_xy(unmatched.lon, unmatched.lat)
+    unmatched.crs = "EPSG:4326"
+
+    # Copy units with lon and lat to a new dataframe
+    located = unmatched.copy()
+    located.dropna(subset=["geometry"], inplace=True)
+
+    return located
 
 
 def insert_biomass_plants(scenario):
@@ -352,9 +412,19 @@ def insert_hydro_plants(scenario):
             )
         ]
 
+        # Extract entries without exact geolocation
+        mastr_getgeom = mastr[
+            mastr.Laengengrad.isnull() | mastr.Breitengrad.isnull()
+        ].rename(columns={"Gemeinde": "city"})
+
+        # Get geolocation based on city information
+        mastr_getgeom = get_location(mastr_getgeom)
+
+
         # Choose only entries with valid geometries inside DE/test mode
         mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-        # TODO: Deal with power plants without geometry
+
+        mastr = mastr_loc.append(mastr_getgeom)
 
         # Scaling will be done per federal state in case of eGon2035 scenario.
         if scenario == "eGon2035":
@@ -363,13 +433,13 @@ def insert_hydro_plants(scenario):
             level = "country"
 
         # Scale capacities to meet target values
-        mastr_loc = scale_prox2now(mastr_loc, target, level=level)
+        mastr_scaled = scale_prox2now(mastr, target, level=level)
 
 
         # Assign bus_id and voltage level
-        if len(mastr_loc) > 0:
-            mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
-            mastr_loc = assign_bus_id(mastr_loc, cfg)
+        if len(mastr_scaled) > 0:
+            mastr_scaled["voltage_level"] = assign_voltage_level(mastr_scaled, cfg)
+            mastr_scaled = assign_bus_id(mastr_scaled, cfg)
 
         # Define the source depending on the scenario
 
@@ -380,7 +450,7 @@ def insert_hydro_plants(scenario):
 
         # Insert entries with location
         session = sessionmaker(bind=db.engine())()
-        for i, row in mastr_loc.iterrows():
+        for i, row in mastr_scaled.iterrows():
             entry = EgonPowerPlants(
                 sources={
                     "el_capacity": f"MaStR scaled with {source}",
@@ -609,7 +679,8 @@ def insert_hydro_biomass():
     for scenario in ["eGon2035", "eGon100RE"]:
         insert_hydro_plants(scenario)
 
-    insert_biomass_plants("eGon100RE")
+    # Insert biomass plants for eGon2035 only. Biomass is not included in p-e-s
+    insert_biomass_plants("eGon2035")
 
 
 def allocate_conventional_non_chp_power_plants():
