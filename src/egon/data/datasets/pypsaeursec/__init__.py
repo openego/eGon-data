@@ -523,10 +523,10 @@ def neighbor_reduction():
             .rename_geometry("topo")
             .set_crs(4326)
         )
-        
+
         neighbor_lines["lifetime"] = get_sector_parameters("electricity", scn)[
             "lifetime"
-        ]        
+        ]["ac_ehv_overhead_line"]
 
         neighbor_lines.to_postgis(
             "egon_etrago_line",
@@ -771,7 +771,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks,
         )
