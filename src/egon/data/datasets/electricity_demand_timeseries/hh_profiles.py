@@ -1083,13 +1083,15 @@ def refine_census_data_at_cell_level(
     IEE profiles specifications. To do this, proportionate allocation is
     applied at nuts1 level and within household type clusters.
 
-    | characteristics_code 	| characteristics_text 	| mapping 	|
-    |---	|---	|---	|
-    | 1 	| Einpersonenhaushalte (Singlehaushalte) 	| SR, SO 	|
-    | 2 	| Paare ohne Kind(er) 	| PR, PO 	|
-    | 3 	| Paare mit Kind(ern) 	| P1, P2, P3 	|
-    | 4 	| Alleinerziehende Elternteile 	| SK 	|
-    | 5 	| Mehrpersonenhaushalte ohne Kernfamilie 	| OR, OO 	|
+    .. csv-table:: Mapping table
+    :header: "characteristics_code", "characteristics_text", "mapping"
+
+    "1", "Einpersonenhaushalte (Singlehaushalte)", "SR; SO"
+    "2", "Paare ohne Kind(er)", "PR; PO"
+    "3", "Paare mit Kind(ern)", "P1; P2; P3"
+    "4", "Alleinerziehende Elternteile", "SK"
+    "5", "Mehrpersonenhaushalte ohne Kernfamilie", "OR; OO"
+
 
     Parameters
     ----------
