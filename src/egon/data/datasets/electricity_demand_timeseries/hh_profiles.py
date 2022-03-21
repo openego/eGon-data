@@ -1083,6 +1083,14 @@ def refine_census_data_at_cell_level(
     IEE profiles specifications. To do this, proportionate allocation is
     applied at nuts1 level and within household type clusters.
 
+    | characteristics_code 	| characteristics_text 	| mapping 	|
+    |---	|---	|---	|
+    | 1 	| Einpersonenhaushalte (Singlehaushalte) 	| SR, SO 	|
+    | 2 	| Paare ohne Kind(er) 	| PR, PO 	|
+    | 3 	| Paare mit Kind(ern) 	| P1, P2, P3 	|
+    | 4 	| Alleinerziehende Elternteile 	| SK 	|
+    | 5 	| Mehrpersonenhaushalte ohne Kernfamilie 	| OR, OO 	|
+
     Parameters
     ----------
     df_census_households_grid: pd.DataFrame
@@ -1406,8 +1414,9 @@ def get_load_timeseries(
     ):
         if aggregate:
             part_load = (
-                df_iee_profiles.loc[:,
-                df["cell_profile_ids"].sum()].sum(axis=1)
+                df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(
+                    axis=1
+                )
                 * factor
                 / 1e6
             )  # from Wh to MWh
@@ -1418,8 +1427,9 @@ def get_load_timeseries(
                 * factor
                 / 1e6
             )  # from Wh to MWh
-            full_load = pd.concat(
-                [full_load, part_load], axis=1).dropna(axis=1)
+            full_load = pd.concat([full_load, part_load], axis=1).dropna(
+                axis=1
+            )
         else:
             raise KeyError("Parameter 'aggregate' needs to be bool value!")
     if peak_load_only:
