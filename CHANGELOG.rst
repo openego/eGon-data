@@ -328,6 +328,8 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
+* Add automatic filtering of gas data
+  `#590 <https://github.com/openego/eGon-data/issues/590>`_
 
 Bug fixes
 ---------
