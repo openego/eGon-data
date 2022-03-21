@@ -1098,8 +1098,8 @@ def refine_census_data_at_cell_level(
     mapping_zensus_hh_subgroups = {
         1: ["SR", "SO"],
         2: ["PR", "PO"],
-        3: ["SK"],
-        4: ["P1", "P2", "P3"],
+        3: ["P1", "P2", "P3"],
+        4: ["SK"],
         5: ["OR", "OO"],
     }
 
