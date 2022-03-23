@@ -189,7 +189,8 @@ Added
   `#566 <https://github.com/openego/eGon-data/issues/566>`_
 * Add efficiency, capital_cost and marginal_cost to gas related data in
   etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
-
+* Add wind onshore farms for the eGon100RE scenario
+  `#690 <https://github.com/openego/eGon-data/issues/690>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
