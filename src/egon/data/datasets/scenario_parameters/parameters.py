@@ -340,17 +340,12 @@ def electricity(scenario):
         }
 
         # Insert overnight investment costs
-        # Source for eHV grid costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
+        # Source for transformer costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
         # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
         parameters["overnight_cost"] = {
-            "ac_ehv_overhead_line": 2.5e6
-            / parameters["electrical_parameters"]["ac_line_380kV"][
-                "s_nom"
-            ],  # [EUR/km/MW]
-            "ac_ehv_cable": 11.5e6
-            / parameters["electrical_parameters"]["ac_cable_380kV"][
-                "s_nom"
-            ],  # [EUR/km/MW]
+            "ac_ehv_overhead_line": read_costs(
+                costs, "HVAC overhead", "investment"
+            ),  # [EUR/km/MW]
             "ac_hv_overhead_line": 0.06e6
             / parameters["electrical_parameters"]["ac_line_110kV"][
                 "s_nom"
@@ -359,9 +354,13 @@ def electricity(scenario):
             / parameters["electrical_parameters"]["ac_cable_110kV"][
                 "s_nom"
             ],  # [EUR/km/MW]
-            "dc_overhead_line": 0.5e3,  # [EUR/km/MW]
-            "dc_cable": 3.25e3,  # [EUR/km/MW]
-            "dc_inverter": 0.3e6,  # [EUR/MW]
+            "dc_overhead_line": read_costs(
+                costs, "HVDC overhead", "investment"
+            ),
+            "dc_cable": read_costs(costs, "HVDC overhead", "investment"),
+            "dc_inverter": read_costs(
+                costs, "HVDC inverter pair", "investment"
+            ),
             "transformer_380_110": 17.33e3,  # [EUR/MVA]
             "transformer_380_220": 13.33e3,  # [EUR/MVA]
             "transformer_220_110": 17.5e3,  # [EUR/MVA]
