@@ -26,6 +26,7 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
+from egon.data.datasets.power_plants.wind_offshore import select_target
 import egon.data.config
 import egon.data.datasets.power_plants.pv_rooftop as pv_rooftop
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
@@ -57,7 +58,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.7.dev",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -128,62 +129,7 @@ def scale_prox2now(df, target, level="federal_state"):
     return df
 
 
-def select_target(carrier, scenario):
-    """Select installed capacity per scenario and carrier
 
-    Parameters
-    ----------
-    carrier : str
-        Name of energy carrier
-    scenario : str
-        Name of scenario
-
-    Returns
-    -------
-    pandas.Series
-        Target values for carrier and scenario
-
-    """
-    cfg = egon.data.config.datasets()["power_plants"]
-    boundary = settings()["egon-data"]["--dataset-boundary"]
-
-
-    if scenario =='eGon2035':
-        target = pd.read_sql(
-            f"""SELECT DISTINCT ON (b.gen)
-                         REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
-                         a.capacity
-                         FROM {cfg['sources']['capacities']} a,
-                         {cfg['sources']['geom_federal_states']} b
-                         WHERE a.nuts = b.nuts
-                         AND scenario_name = '{scenario}'
-                         AND carrier = '{carrier}'
-                         AND b.gen NOT IN ('Baden-Württemberg (Bodensee)',
-                                           'Bayern (Bodensee)')""",
-            con=db.engine(),
-        ).set_index("state").capacity
-
-    else:
-        if boundary == 'Everything':
-            target = pd.read_sql(
-                f"""SELECT capacity, nuts as state
-                             FROM {cfg['sources']['capacities']} a
-                             WHERE nuts = 'DE'
-                             AND scenario_name = '{scenario}'
-                             AND carrier = '{carrier}'""",
-                con=db.engine(),
-            ).set_index("state").capacity
-        else:
-            target = pd.read_sql(
-                f"""SELECT capacity, nuts as state
-                             FROM {cfg['sources']['capacities']} a
-                             WHERE nuts = 'DE'
-                             AND scenario_name = '{scenario}'
-                             AND carrier = '{carrier}'""",
-                con=db.engine(),
-            ).set_index("state").capacity/16
-
-    return target
 
 def filter_mastr_geometry(mastr, federal_state=None):
     """Filter data from MaStR by geometry

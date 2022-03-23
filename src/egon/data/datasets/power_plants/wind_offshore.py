@@ -8,10 +8,64 @@ import pandas as pd
 from egon.data import db
 from egon.data.config import settings
 import egon.data.config
-from egon.data.datasets.power_plants import (
-    select_target
-)
 
+
+def select_target(carrier, scenario):
+    """Select installed capacity per scenario and carrier
+
+    Parameters
+    ----------
+    carrier : str
+        Name of energy carrier
+    scenario : str
+        Name of scenario
+
+    Returns
+    -------
+    pandas.Series
+        Target values for carrier and scenario
+
+    """
+    cfg = egon.data.config.datasets()["power_plants"]
+    boundary = settings()["egon-data"]["--dataset-boundary"]
+
+
+    if scenario =='eGon2035':
+        target = pd.read_sql(
+            f"""SELECT DISTINCT ON (b.gen)
+                         REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
+                         a.capacity
+                         FROM {cfg['sources']['capacities']} a,
+                         {cfg['sources']['geom_federal_states']} b
+                         WHERE a.nuts = b.nuts
+                         AND scenario_name = '{scenario}'
+                         AND carrier = '{carrier}'
+                         AND b.gen NOT IN ('Baden-Württemberg (Bodensee)',
+                                           'Bayern (Bodensee)')""",
+            con=db.engine(),
+        ).set_index("state").capacity
+
+    else:
+        if boundary == 'Everything':
+            target = pd.read_sql(
+                f"""SELECT capacity, nuts as state
+                             FROM {cfg['sources']['capacities']} a
+                             WHERE nuts = 'DE'
+                             AND scenario_name = '{scenario}'
+                             AND carrier = '{carrier}'""",
+                con=db.engine(),
+            ).set_index("state").capacity
+        else:
+            target = pd.read_sql(
+                f"""SELECT capacity, nuts as state
+                             FROM {cfg['sources']['capacities']} a
+                             WHERE nuts = 'DE'
+                             AND scenario_name = '{scenario}'
+                             AND carrier = '{carrier}'""",
+                con=db.engine(),
+            ).set_index("state").capacity/16
+
+    return target
 
 def insert_egon2035(export = True):
     """
@@ -285,3 +339,20 @@ def insert_egon100RE():
         con=db.engine(),
         if_exists="append",
     )
+
+def insert():
+    """
+    Function to call all offshore-relevant functions
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    """
+
+    insert_egon2035()
+    insert_egon100RE()
