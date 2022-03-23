@@ -188,7 +188,7 @@ class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(create_table, download_pypsa_technology_data, insert_scenarios),
         )

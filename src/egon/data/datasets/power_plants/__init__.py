@@ -26,6 +26,7 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
+from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.wind_offshore import select_target
 import egon.data.config
 import egon.data.datasets.power_plants.pv_rooftop as pv_rooftop
@@ -129,6 +130,41 @@ def scale_prox2now(df, target, level="federal_state"):
     return df
 
 
+def select_target(carrier, scenario):
+    """Select installed capacity per scenario and carrier
+
+    Parameters
+    ----------
+    carrier : str
+        Name of energy carrier
+    scenario : str
+        Name of scenario
+
+    Returns
+    -------
+    pandas.Series
+        Target values for carrier and scenario
+
+    """
+    cfg = egon.data.config.datasets()["power_plants"]
+
+    return (
+        pd.read_sql(
+            f"""SELECT DISTINCT ON (b.gen)
+                         REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
+                         a.capacity
+                         FROM {cfg['sources']['capacities']} a,
+                         {cfg['sources']['geom_federal_states']} b
+                         WHERE a.nuts = b.nuts
+                         AND scenario_name = '{scenario}'
+                         AND carrier = '{carrier}'
+                         AND b.gen NOT IN ('Baden-Württemberg (Bodensee)',
+                                           'Bayern (Bodensee)')""",
+            con=db.engine(),
+        )
+        .set_index("state")
+        .capacity
+    )
 
 
 def filter_mastr_geometry(mastr, federal_state=None):

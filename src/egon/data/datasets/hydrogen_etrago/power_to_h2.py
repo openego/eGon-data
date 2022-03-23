@@ -13,7 +13,7 @@ from egon.data import db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_power_to_h2_to_power(scn_name='eGon2035'):
+def insert_power_to_h2_to_power(scn_name="eGon2035"):
     """Define power-to-H2-to-power capacities and insert in etrago_link table.
 
     The potentials for power-to-h2 in electrolysis and h2-to-power in fuel
@@ -83,6 +83,11 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
         "H2tP": scn_params["capital_cost"]["H2_to_power"],
     }
 
+    lifetime = {
+        "PtH2": scn_params["lifetime"]["power_to_H2"],
+        "H2tP": scn_params["lifetime"]["H2_to_power"],
+    }
+
     # Drop unused columns
     gdf.drop(columns=["geom_gas", "geom_AC", "dist"], inplace=True)
 
@@ -103,6 +108,7 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
         gdf["efficiency"] = efficiency[key]
 
         gdf["capital_cost"] = capital_cost[key]
+        gdf["lifetime"] = lifetime[key]
 
         gdf["length"] = length
 
@@ -139,10 +145,10 @@ def insert_power_to_h2_to_power(scn_name='eGon2035'):
         select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
 
         INSERT INTO grid.egon_etrago_link (scn_name, link_id, bus0,
-                                                  bus1, p_nom, p_nom_extendable, capital_cost,length,
+                                                  bus1, p_nom, p_nom_extendable, capital_cost, lifetime, length,
                                                   geom, topo, efficiency, carrier, p_nom_max)
         SELECT scn_name, link_id, bus0,
-            bus1, p_nom, p_nom_extendable, capital_cost, length,
+            bus1, p_nom, p_nom_extendable, capital_cost, lifetime, length,
             geom, topo, efficiency, carrier, p_nom_max
         FROM grid.egon_etrago_h2_link;
 

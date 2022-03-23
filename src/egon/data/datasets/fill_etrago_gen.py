@@ -103,8 +103,6 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
         }
     )
 
-    etrago_pp = etrago_pp.reindex(columns=etrago_gen_orig.columns)
-    etrago_pp = etrago_pp.drop(columns="generator_id")
     etrago_pp.to_sql(
         name=f"{cfg['targets']['etrago_generators']['table']}",
         schema=f"{cfg['targets']['etrago_generators']['schema']}",
