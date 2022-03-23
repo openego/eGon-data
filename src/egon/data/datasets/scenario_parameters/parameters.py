@@ -188,13 +188,17 @@ def electricity(scenario):
         # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
         parameters["overnight_cost"] = {
             "ac_ehv_overhead_line": 2.5e6
-            / parameters["electrical_parameters"]["ac_line_380kV"][
-                "s_nom"
-            ],  # [EUR/km/MW]
+            / (
+                2
+                * parameters["electrical_parameters"]["ac_line_380kV"]["s_nom"]
+            ),  # [EUR/km/MW]
             "ac_ehv_cable": 11.5e6
-            / parameters["electrical_parameters"]["ac_cable_380kV"][
-                "s_nom"
-            ],  # [EUR/km/MW]
+            / (
+                2
+                * parameters["electrical_parameters"]["ac_cable_380kV"][
+                    "s_nom"
+                ]
+            ),  # [EUR/km/MW]
             "ac_hv_overhead_line": 0.06e6
             / parameters["electrical_parameters"]["ac_line_110kV"][
                 "s_nom"
