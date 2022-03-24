@@ -69,6 +69,10 @@ def insert_buses(carrier, scenario):
             SELECT ST_Centroid(geom) AS geom
             FROM {sources['mv_grids']['schema']}.
             {sources['mv_grids']['table']}
+            WHERE bus_id IN (
+                SELECT bus_id FROM 
+                demand.egon_etrago_timeseries_individual_heating
+                WHERE scenario = '{scenario}')
             """
         )
         heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
@@ -593,7 +597,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )
