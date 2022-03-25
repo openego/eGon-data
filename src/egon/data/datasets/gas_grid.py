@@ -18,6 +18,9 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.etrago_helpers import (
+    copy_and_modify_buses, copy_and_modify_links
+)
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -26,9 +29,9 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
-            tasks=(insert_gas_data),
+            tasks=(insert_gas_data, insert_gas_data_eGon100RE),
         )
 
 
@@ -666,3 +669,13 @@ def insert_gas_data():
     abroad_gas_nodes_list = insert_gas_buses_abroad()
 
     insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
+
+
+def insert_gas_data_eGon100RE():
+    """Overall function for importing gas data from SciGRID_gas
+    Returns
+    -------
+    None.
+    """
+    copy_and_modify_buses("eGon2035", "eGon100RE", {"carrier": ["CH4"]})
+    copy_and_modify_links("eGon2035", "eGon100RE", ["CH4"], "gas")
