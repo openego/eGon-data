@@ -40,12 +40,12 @@ def insert():
         x1 = df["Laengengrad"].isnull().sum()
         x2 = df["Breitengrad"].isnull().sum()
         print(" ")
-        print("Untersuchung des MaStR-Datensatzes:")
-        print("originale Anzahl der Zeilen im Datensatz: " + str(len(df)))
-        print("NaNs für Längen- und Breitengrad: " + str(x1) + " & " + str(x2))
+        print("Examination of MaStR data set:")
+        print("original number of rows in the data set: " + str(len(df)))
+        print("NaNs for longitude and latitude: " + str(x1) + " & " + str(x2))
         df.dropna(inplace=True)
         print(
-            "Anzahl der Zeilen im Datensatz nach Dropping der NaNs: "
+            "Number of rows after neglecting NaNs: "
             + str(len(df))
         )
         print(" ")
@@ -110,18 +110,18 @@ def insert():
         ### examine data concerning voltage level
         x1 = mastr["voltage_level"].isnull().sum()
         print(" ")
-        print("Untersuchung des MaStR-Datensatzes für Spannungsebenen:")
+        print("Examination of voltage levels in MaStR data set:")
         print(
-            "Anzahl der Zeilen im MaStR-Datensatz vorher: " + str(len(mastr))
+            "Original number of rows in MaStR: " + str(len(mastr))
         )
         print(
-            "NaNs in Spannungsebene aufgrund a) keine Zuordnung zur Nummer oder b) fehlender Daten: "
+            "NaNs in voltage level caused by a) a missing assignment to the number or b) insufficient data: "
             + str(x1)
         )
         # drop PVs with missing values due to a) no assignemtn of MaStR-numbers or b) missing data in row
         mastr.dropna(inplace=True)
         print(
-            "Anzahl der Zeilen im Datensatz nach Dropping der NaNs: "
+            "Number of rows after neglecting NaNs: "
             + str(len(mastr))
         )
 
@@ -136,10 +136,10 @@ def insert():
         mastr.drop(index_names, inplace=True)
 
         ### further examination
-        print("Anzahl der PVs in der Niederspannungsebene: " + str(x2))
-        print("Anzahl der PVs in der NSMS-Ebene: " + str(x3))
+        print("Number of PVs in low voltage level: " + str(x2))
+        print("Number of PVs in LVMV level: " + str(x3))
         print(
-            "Anzahl der Zeilen im Datensatz nach Dropping dieser Ebenen: "
+            "Number of rows after dropping entries assigned to these levels: "
             + str(len(mastr))
         )
         print(" ")
@@ -213,17 +213,17 @@ def insert():
         count_delete = count_small - count_join
         print(" ")
         print(
-            "Untersuchung der Zusammenfassung von Potentialflächen im Bereich Roads and Railways"
+            "Examination of potential areas in category 'Roads and Railways'"
         )
-        print("Länge des Dataframes der Flächen vorher: " + str(before))
-        print("Anzahl kleiner Flächen: " + str(count_small))
+        print("Length of original data frame: " + str(before))
+        print("Number of small areas: " + str(count_small))
         print(
-            "Anzahl der durchgeführten Prozedur des Zusammenfassens: "
+            "Number of joins: "
             + str(count_join)
         )
-        print("gelöschte Flächen (not joined): " + str(count_delete))
+        print("Deleted areas (not joined): " + str(count_delete))
         print(
-            "Länge des Dataframes der Flächen danach: "
+            "Length of resulting data frame: "
             + str(len(potentials_rora))
         )
         print(" ")
@@ -262,17 +262,17 @@ def insert():
         count_delete = count_small - count_join
         print(" ")
         print(
-            "Untersuchung der Zusammenfassung von Potentialflächen im Bereich Agriculture"
+            "Examination of potential areas in category 'Agriculture'"
         )
-        print("Länge des Dataframes der Flächen vorher: " + str(before))
-        print("Anzahl kleiner Flächen: " + str(count_small))
+        print("Length of original data frame: " + str(before))
+        print("Number of small areas: " + str(count_small))
         print(
-            "Anzahl der durchgeführten Prozedur des Zusammenfassens: "
+            "Number of joins: "
             + str(count_join)
         )
-        print("gelöschte Flächen (not joined): " + str(count_delete))
+        print("Deleted areas (not joined): " + str(count_delete))
         print(
-            "Länge des Dataframes der Flächen danach: "
+            "Length of resulting data frame: "
             + str(len(potentials_agri))
         )
         print(" ")
@@ -297,11 +297,11 @@ def insert():
         ### examination of intersection of areas
         print(" ")
         print(
-            "Überprüfung der Funktion zur Meidung der Intersection von Potentialflächen:"
+            "Review function to avoid intersection of potential areas:"
         )
-        print("Länge potentials_agri vorher: " + str(agri_vorher))
-        print("Anzahl der auftretenden Fälle: " + str(len(o)))
-        print("Länge potentials_agri nachher: " + str(len(potentials_agri)))
+        print("Initial length potentials_agri: " + str(agri_vorher))
+        print("Number of occurred cases: " + str(len(o)))
+        print("Resulting length potentials_agri: " + str(len(potentials_agri)))
         print(" ")
 
         return potentials_rora, potentials_agri
@@ -501,15 +501,15 @@ def insert():
 
         print(" ")
         print(
-            "Untersuchung der (übrigen) Potentialflächen in den MV Grid Districts: "
+            "Examination of remaining potential areas in MV grid districts: "
         )
-        print("Anzahl der Potentialflächen: " + str(anz))
-        print(" -> verteilt über " + str(anz_distr) + " Districts")
+        print("Number of potential areas: " + str(anz))
+        print(" -> distributed to " + str(anz_distr) + " districts")
         print(
-            "Anzahl der Flächen mit einem Potential >= 5,5 MW: " + str(anz_big)
+            "Number of areas with a potential >= 5,5 MW: " + str(anz_big)
         )
         print(
-            "Anzahl der Flächen mit einem Potential < 5,5 MW: "
+            "Number of areas with a potential < 5,5 MW: "
             + str(anz_small)
         )
         print(" ")
@@ -577,7 +577,7 @@ def insert():
         ###
         print(" ")
         print(
-            "Installierte Kapazität auf Flächen existierender PV-Parks (Bestandsflächen): "
+            "Installed capacity on areas with existing plants: "
             + str(total_pv_power / 1000)
             + " MW"
         )
@@ -598,12 +598,12 @@ def insert():
 
             ###
             print(
-                "Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität ist ausreichend."
+                "Expansion of existing PV parks on potential areas to achieve target capacity is sufficient."
             )
             print(
-                "Installierte Leistung ist größer als der Zielwert, es wird eine Skalierung vorgenommen:"
+                "Installed power is greater than the target value, scaling is applied:"
             )
-            print("Saklierungsfaktor: " + str(scale_factor))
+            print("Scaling factor: " + str(scale_factor))
 
         # build new pv parks if sum of installed capacity is below target value
         elif total_pv_power < target_power:
@@ -612,11 +612,11 @@ def insert():
 
             ###
             print(
-                "Ausweitung existierender PV-Parks auf Potentialflächen zur Erreichung der Zielkapazität NICHT ausreichend:"
+                "Expansion of existing PV parks on potential areas to achieve target capacity is unsufficient:"
             )
-            print("Restkapazität: " + str(rest_cap / 1000) + " MW")
+            print("Residual capacity: " + str(rest_cap / 1000) + " MW")
             print(
-                "Restkapazität wird zunächst über übrige Potentialflächen Road & Railway verteilt."
+                "Residual capacity will initially be distributed via remaining potential areas 'Road & Railway'."
             )
 
             # build pv parks in potential areas road & railway
@@ -642,9 +642,9 @@ def insert():
 
                 ###
                 print(
-                    "Restkapazität ist mit dem Skalierungsfaktor "
+                    "Residual capacity got distributed via scaling factor "
                     + str(scale_factor)
-                    + " über übrige Potentialflächen Road & Railway verteilt."
+                    + " to remaining potential areas 'Road & Railway'."
                 )
 
             # build pv parks on potential areas ariculture if still necessary
@@ -654,11 +654,11 @@ def insert():
 
                 ###
                 print(
-                    "Verteilung über Potentialflächen Road & Railway zur Erreichung der Zielkapazität NICHT ausreichend:"
+                    "Distribution via potential areas Road & Railway unsufficient to achieve target capacity:"
                 )
-                print("Restkapazität: " + str(rest_cap / 1000) + " MW")
+                print("Residual capacity: " + str(rest_cap / 1000) + " MW")
                 print(
-                    "Restkapazität wird über übrige Potentialflächen Agriculture verteilt."
+                    "Residual capacity is distributed to remaining potential areas 'Agriculture'."
                 )
 
                 pv_per_distr_i_2 = build_additional_pv(
@@ -688,9 +688,9 @@ def insert():
 
                     ###
                     print(
-                        "Restkapazität ist mit dem Skalierungsfaktor "
+                        "Residual capacity got distributed via scaling factor "
                         + str(scale_factor)
-                        + " über übrige Potentialflächen Road & Railway und Agriculture verteilt."
+                        + " to remaining potential areas 'Road & Railway' and 'Agriculture'."
                     )
 
             # assign grid level to pv_per_distr
@@ -711,7 +711,7 @@ def insert():
 
             ###
             print(
-                "Installierte Leistung der PV-Parks insgesamt: "
+                "Total installed capacity of PV farms: "
                 + str(total_pv_power / 1000)
                 + " MW"
             )
@@ -877,39 +877,39 @@ def insert():
             rora_i_hv = rora_i[rora_i["voltage_level"] == 4]
             agri_i_mv = agri_i[agri_i["voltage_level"] == 5]
             agri_i_hv = agri_i[agri_i["voltage_level"] == 4]
-            print("eGon2035: Untersuchung der Spannungslevel pro Bundesland:")
-            print("a) PVs auf Potentialflächen Road & Railway: ")
+            print("eGon2035: Examination of voltage level per federal state:")
+            print("a) PVs on potential areas Road & Railway: ")
             print(
-                "Insgesamt installierte Leistung: "
+                "Total installed capacity: "
                 + str(rora_i["installed capacity in kW"].sum() / 1000)
                 + " MW"
             )
-            print("Anzahl der PV-Parks: " + str(len(rora_i)))
-            print(" - davon Mittelspannung: " + str(len(rora_i_mv)))
-            print(" - davon Hochspannung: " + str(len(rora_i_hv)))
-            print("b) PVs auf Potentialflächen Agriculture: ")
+            print("Number of PV farms: " + str(len(rora_i)))
+            print(" - thereof MV: " + str(len(rora_i_mv)))
+            print(" - thereof HV: " + str(len(rora_i_hv)))
+            print("b) PVs on potential areas Agriculture: ")
             print(
-                "Insgesamt installierte Leistung: "
+                "Total installed capacity: "
                 + str(agri_i["installed capacity in kW"].sum() / 1000)
                 + " MW"
             )
-            print("Anzahl der PV-Parks: " + str(len(agri_i)))
-            print(" - davon Mittelspannung: " + str(len(agri_i_mv)))
-            print(" - davon Hochspannung: " + str(len(agri_i_hv)))
-            print("c) PVs auf zusätzlichen Potentialflächen pro MV-District: ")
+            print("Number of PV farms: " + str(len(agri_i)))
+            print(" - thereof MV: " + str(len(agri_i_mv)))
+            print(" - dthereof HV: " + str(len(agri_i_hv)))
+            print("c) PVs on additional potential areas per MV-District: ")
             if len(distr_i) > 0:
                 distr_i_mv = distr_i[distr_i["voltage_level"] == 5]
                 distr_i_hv = distr_i[distr_i["voltage_level"] == 4]
                 print(
-                    "Insgesamt installierte Leistung: "
+                    "Total installed capacity: "
                     + str(distr_i["installed capacity in kW"].sum() / 1000)
                     + " MW"
                 )
-                print("Anzahl der PV-Parks: " + str(len(distr_i)))
-                print(" - davon Mittelspannung: " + str(len(distr_i_mv)))
-                print(" - davon Hochspannung: " + str(len(distr_i_hv)))
+                print("Number of PV farms: " + str(len(distr_i)))
+                print(" - thereof MV: " + str(len(distr_i_mv)))
+                print(" - thereof HV: " + str(len(distr_i_hv)))
             else:
-                print(" -> zusätzlicher Ausbau nicht notwendig")
+                print(" -> No additional expansion necessary")
             print(" ")
 
             pv_rora = pv_rora.append(rora_i)
@@ -1196,37 +1196,37 @@ def insert():
     pv_agri_hv = pv_agri[pv_agri["voltage_level"] == 4]
 
     print(" ")
-    print("eGon2035: Untersuchung der Spannungslevel (gesamt):")
-    print("a) PVs auf Potentialflächen Road & Railway: ")
+    print("eGon2035: Examination of overall voltage levels:")
+    print("a) PVs on potential areas Road & Railway: ")
     print(
-        "Insgesamt installierte Leistung: "
+        "Total installed capacity: "
         + str(pv_rora["installed capacity in kW"].sum() / 1000)
         + " MW"
     )
-    print("Anzahl der PV-Parks: " + str(len(pv_rora)))
-    print(" - davon Mittelspannung: " + str(len(pv_rora_mv)))
-    print(" - davon Hochspannung: " + str(len(pv_rora_hv)))
-    print("b) PVs auf Potentialflächen Agriculture: ")
+    print("Number of PV farms: " + str(len(pv_rora)))
+    print(" - thereof MV: " + str(len(pv_rora_mv)))
+    print(" - thereof HV: " + str(len(pv_rora_hv)))
+    print("b) PVs on potential areas Agriculture: ")
     print(
-        "Insgesamt installierte Leistung: "
+        "Total installed capacity: "
         + str(pv_agri["installed capacity in kW"].sum() / 1000)
         + " MW"
     )
-    print("Anzahl der PV-Parks: " + str(len(pv_agri)))
-    print(" - davon Mittelspannung: " + str(len(pv_agri_mv)))
-    print(" - davon Hochspannung: " + str(len(pv_agri_hv)))
-    print("c) PVs auf zusätzlichen Potentialflächen pro MV-District: ")
+    print("Number of PV farms: " + str(len(pv_agri)))
+    print(" - thereof MV: " + str(len(pv_agri_mv)))
+    print(" - thereof HV: " + str(len(pv_agri_hv)))
+    print("c) PVs on additional potential areas per MV-District: ")
     if len(pv_per_distr) > 0:
         print(
-            "Insgesamt installierte Leistung: "
+            "Total installed capacity: "
             + str(pv_per_distr["installed capacity in kW"].sum() / 1000)
             + " MW"
         )
-        print("Anzahl der PV-Parks: " + str(len(pv_per_distr)))
-        print(" - davon Mittelspannung: " + str(len(pv_per_distr_mv)))
-        print(" - davon Hochspannung: " + str(len(pv_per_distr_hv)))
+        print("Number of PV farms: " + str(len(pv_per_distr)))
+        print(" - thereof MV: " + str(len(pv_per_distr_mv)))
+        print(" - thereof HV: " + str(len(pv_per_distr_hv)))
     else:
-        print(" -> zusätzlicher Ausbau nicht notwendig")
+        print(" -> No additional expansion needed")
     print(" ")
     ###
 
