@@ -130,7 +130,7 @@ def calc_capacities():
                 "Scenario",
             ]
         )
-        .set_index("Node/Line")
+        .set_index("Node/Line").sort_index()
     )
 
     df_conv_2030 = (
@@ -205,13 +205,14 @@ def calc_capacities():
     conversion_factor = 1000/24
     grouped_capacities["cap_2035"] = grouped_capacities["cap_2035"]*conversion_factor
     
-    print(grouped_capacities)
     # Calculation of ratio Biomethane/Conventional to estimate CO2 content/cost
     
     # choose capacities for considered countries
-    return grouped_capacities[
+    grouped_capacities = grouped_capacities[
         grouped_capacities["Node/Line"].str[:2].isin(countries)
     ]
+    print(grouped_capacities)
+    return grouped_capacities
 
 
 def insert_generators(gen):
@@ -229,7 +230,6 @@ def insert_generators(gen):
     """
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
-    print(map_buses)
 
     # Delete existing data
     db.execute_sql(
@@ -376,7 +376,7 @@ def tyndp_gas_generation():
     None.
     """
     capacities = calc_capacities()
-    # insert_generators(capacities)
+    insert_generators(capacities)
 
     # insert_storage(capacities)
 
