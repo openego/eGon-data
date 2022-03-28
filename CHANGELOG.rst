@@ -441,5 +441,5 @@ Bug fixes
   `#693 <https://github.com/openego/eGon-data/issues/693>`_
 * Assign DLR capacities to every transmission line
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
-* Fix assignemnt of imedabces to etrago tables
+* Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
