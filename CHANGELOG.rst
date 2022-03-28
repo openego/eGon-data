@@ -189,7 +189,8 @@ Added
   `#566 <https://github.com/openego/eGon-data/issues/566>`_
 * Add efficiency, capital_cost and marginal_cost to gas related data in
   etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
-
+* Add wind onshore farms for the eGon100RE scenario
+  `#690 <https://github.com/openego/eGon-data/issues/690>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -310,8 +311,10 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
+* Create H2 pipeline infrastructure for eGon100RE
+  `#638 <https://github.com/openego/eGon-data/issues/638>`_
 * Change refinement method for households types
-  `##651 <https://github.com/openego/eGon-data/issues/#651>`_
+  `#651 <https://github.com/openego/eGon-data/issues/#651>`_
 * H2 feed in links are changed to non extendable
   `#653 <https://github.com/openego/eGon-data/issues/653>`_
 * Remove the '_fixed' suffix
@@ -432,3 +435,11 @@ Bug fixes
   `#676 <https://github.com/openego/eGon-data/issues/676>`_
 * Distribute rural heat supply to residetntial and service demands
   `#679 <https://github.com/openego/eGon-data/issues/679>`_
+* Fix time series creation for pv rooftop
+  `#688 <https://github.com/openego/eGon-data/issues/688>`_
+* Fix extraction of buildings without amenities
+  `#693 <https://github.com/openego/eGon-data/issues/693>`_
+* Assign DLR capacities to every transmission line
+  `#683 <https://github.com/openego/eGon-data/issues/683>`_
+* Fix twisted number error residential demand
+  `#704 <https://github.com/openego/eGon-data/issues/704>`_

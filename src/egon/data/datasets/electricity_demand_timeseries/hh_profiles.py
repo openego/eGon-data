@@ -210,7 +210,7 @@ class HouseholdDemands(Dataset):
 
         super().__init__(
             name="Household Demands",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 houseprofiles_in_census_cells,
@@ -311,12 +311,12 @@ def get_iee_hh_demand_profiles_raw():
 
     Notes
     -----
-    The household electricity demand profiles have been generated for a leap
-    year (8784 hours) starting on a Friday. The weather year is 2011 and the
-    heat timeseries 2011 are generated for 2011 too (cf. dataset
-    :mod:`egon.data.datasets.heat_demand_timeseries.HTS`), having 8760h and
-    starting on a Saturday. To align the profiles, the first day of the IEE
-    profiles are deleted, resulting in 8760h starting on Saturday.
+    The household electricity demand profiles have been generated for 2016
+    which is a leap year (8784 hours) starting on a Friday. The weather year
+    is 2011 and the heat timeseries 2011 are generated for 2011 too (cf.
+    dataset :mod:`egon.data.datasets.heat_demand_timeseries.HTS`), having
+    8760h and starting on a Saturday. To align the profiles, the first day of
+    the IEE profiles are deleted, resulting in 8760h starting on Saturday.
 
     Returns
     -------
@@ -1083,6 +1083,16 @@ def refine_census_data_at_cell_level(
     IEE profiles specifications. To do this, proportionate allocation is
     applied at nuts1 level and within household type clusters.
 
+    .. csv-table:: Mapping table
+    :header: "characteristics_code", "characteristics_text", "mapping"
+
+    "1", "Einpersonenhaushalte (Singlehaushalte)", "SR; SO"
+    "2", "Paare ohne Kind(er)", "PR; PO"
+    "3", "Paare mit Kind(ern)", "P1; P2; P3"
+    "4", "Alleinerziehende Elternteile", "SK"
+    "5", "Mehrpersonenhaushalte ohne Kernfamilie", "OR; OO"
+
+
     Parameters
     ----------
     df_census_households_grid: pd.DataFrame
@@ -1098,8 +1108,8 @@ def refine_census_data_at_cell_level(
     mapping_zensus_hh_subgroups = {
         1: ["SR", "SO"],
         2: ["PR", "PO"],
-        3: ["SK"],
-        4: ["P1", "P2", "P3"],
+        3: ["P1", "P2", "P3"],
+        4: ["SK"],
         5: ["OR", "OO"],
     }
 
@@ -1406,8 +1416,9 @@ def get_load_timeseries(
     ):
         if aggregate:
             part_load = (
-                df_iee_profiles.loc[:,
-                df["cell_profile_ids"].sum()].sum(axis=1)
+                df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(
+                    axis=1
+                )
                 * factor
                 / 1e6
             )  # from Wh to MWh
@@ -1418,8 +1429,9 @@ def get_load_timeseries(
                 * factor
                 / 1e6
             )  # from Wh to MWh
-            full_load = pd.concat(
-                [full_load, part_load], axis=1).dropna(axis=1)
+            full_load = pd.concat([full_load, part_load], axis=1).dropna(
+                axis=1
+            )
         else:
             raise KeyError("Parameter 'aggregate' needs to be bool value!")
     if peak_load_only:
@@ -1699,64 +1711,6 @@ def get_hh_profiles_from_db(profile_ids):
     return df_profile_loads
 
 
-def get_scaled_profiles_from_db(
-    attribute, list_of_identifiers, year, aggregate=True, peak_load_only=False
-):
-    """Retrieve selection of scaled household electricity demand profiles
-
-    Parameters
-    ----------
-    attribute: str
-        attribute to filter the table
-
-        * nuts3
-        * nuts1
-        * cell_id
-
-    list_of_identifiers: list of str/int
-        nuts3/nuts1 need to be str
-        cell_id need to be int
-
-    year: int
-         * 2035
-         * 2050
-
-    aggregate: bool
-        If True, all profiles are summed. This uses a lot of RAM if a high
-        attribute level is chosen
-
-    peak_load_only: bool
-        If True, only peak load value is returned
-
-    Notes
-    -----
-    Aggregate == False option can use a lot of RAM if many profiles are selected
-
-
-    Returns
-    -------
-    pd.Series or float
-     Aggregated time series for given `cell_ids` or peak load of this time
-     series in MWh.
-    """
-    cell_demand_metadata = get_cell_demand_metadata_from_db(
-        attribute=attribute, list_of_identifiers=list_of_identifiers
-    )
-    profile_ids = cell_demand_metadata.cell_profile_ids.sum()
-
-    df_iee_profiles = get_hh_profiles_from_db(profile_ids)
-
-    scaled_profiles = get_load_timeseries(
-        df_iee_profiles=df_iee_profiles,
-        df_hh_profiles_in_census_cells=cell_demand_metadata,
-        cell_ids=cell_demand_metadata.index.to_list(),
-        year=year,
-        aggregate=aggregate,
-        peak_load_only=peak_load_only,
-    )
-    return scaled_profiles
-
-
 def mv_grid_district_HH_electricity_load(
     scenario_name, scenario_year, drop_table=False
 ):
@@ -1852,3 +1806,61 @@ def mv_grid_district_HH_electricity_load(
         chunksize=10000,
         index=False,
     )
+
+
+def get_scaled_profiles_from_db(
+    attribute, list_of_identifiers, year, aggregate=True, peak_load_only=False
+):
+    """Retrieve selection of scaled household electricity demand profiles
+
+    Parameters
+    ----------
+    attribute: str
+        attribute to filter the table
+
+        * nuts3
+        * nuts1
+        * cell_id
+
+    list_of_identifiers: list of str/int
+        nuts3/nuts1 need to be str
+        cell_id need to be int
+
+    year: int
+         * 2035
+         * 2050
+
+    aggregate: bool
+        If True, all profiles are summed. This uses a lot of RAM if a high
+        attribute level is chosen
+
+    peak_load_only: bool
+        If True, only peak load value is returned
+
+    Notes
+    -----
+    Aggregate == False option can use a lot of RAM if many profiles are selected
+
+
+    Returns
+    -------
+    pd.Series or float
+     Aggregated time series for given `cell_ids` or peak load of this time
+     series in MWh.
+    """
+    cell_demand_metadata = get_cell_demand_metadata_from_db(
+        attribute=attribute, list_of_identifiers=list_of_identifiers
+    )
+    profile_ids = cell_demand_metadata.cell_profile_ids.sum()
+
+    df_iee_profiles = get_hh_profiles_from_db(profile_ids)
+
+    scaled_profiles = get_load_timeseries(
+        df_iee_profiles=df_iee_profiles,
+        df_hh_profiles_in_census_cells=cell_demand_metadata,
+        cell_ids=cell_demand_metadata.index.to_list(),
+        year=year,
+        aggregate=aggregate,
+        peak_load_only=peak_load_only,
+    )
+    return scaled_profiles

@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets.etrago_helpers import copy_and_modify_links
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -134,15 +135,15 @@ def insert_power_to_h2_to_power(scn_name="eGon2035"):
         db.execute_sql(
             f"""
         DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier[key]}'
-        AND scn_name = '{scn_name}' AND bus0 IN (
+        AND scn_name = '{scn_name}' AND bus0 NOT IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
-        ) AND bus1 IN (
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
+        ) AND bus1 NOT IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
 
-        select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
+        select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326);
 
         INSERT INTO grid.egon_etrago_link (scn_name, link_id, bus0,
                                                   bus1, p_nom, p_nom_extendable, capital_cost, lifetime, length,
@@ -204,3 +205,10 @@ def map_buses(scn_name):
     )
 
     return gdf.rename(columns={"bus_id": "bus1", "geom": "geom_gas"})
+
+
+def insert_power_to_h2_to_power_eGon100RE():
+    """Copy H2/power links from the eGon2035 to the eGon100RE scenario."""
+    copy_and_modify_links(
+        "eGon2035", "eGon100RE", ["H2_to_power", "power_to_H2"], "gas"
+    )
