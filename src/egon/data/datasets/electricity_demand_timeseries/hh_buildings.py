@@ -77,10 +77,15 @@ integer. Ceiling is applied to avoid rounding to amount of 0 buildings.
 * As this datasets is a cascade after profile assignement at census cells
 also check drawbacks and limitations in hh_profiles.py.
 
+
+
 Example Query
 -----
 
+
 * Get a list with number of houses, households and household types per census cell
+
+.. code-block:: SQL
 
     SELECT t1.cell_id, building_count, hh_count, hh_types
         FROM(
