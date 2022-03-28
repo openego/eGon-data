@@ -195,7 +195,8 @@ def generate_dsm_profile(
 def generate_load_time_series(
     ev_data_df: pd.DataFrame,
     start_date: str,
-    timestep: str
+    timestep: str,
+    charging_eff: float
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -210,6 +211,8 @@ def generate_load_time_series(
         Start date used for timeindex
     timestep : str
         Interval used for timeindex
+    charging_eff : float
+        Chargin efficiency used in simBEV
 
     Returns
     -------
@@ -276,11 +279,8 @@ def generate_load_time_series(
         load_time_series_df.load_time_series.sum() / 4,
         ev_data_df.charging_demand.sum()
         / 1000
-        / (
-            ev_data_df.charging_capacity_nominal
-            / ev_data_df.charging_capacity_grid
-        ).mean(),
-        decimal=0, #4,
+        / charging_eff,
+        decimal=0,
     )
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
@@ -383,7 +383,7 @@ def load_evs_trips(
     return trip_data
 
 
-def write_model_data_to_db(#export_results_grid_district(
+def write_model_data_to_db(
     static_params_dict: dict,
     load_time_series_df: pd.DataFrame,
     dsm_profile_df: pd.DataFrame,
@@ -509,7 +509,8 @@ def generate_model_data_grid_district(
     load_ts = generate_load_time_series(
         ev_data_df=trip_data,
         start_date=run_config.start_date,
-        timestep=f"{int(run_config.stepsize)}Min"
+        timestep=f"{int(run_config.stepsize)}Min",
+        charging_eff=float(run_config.eta_cp)
     )
 
     # Generate static paras
