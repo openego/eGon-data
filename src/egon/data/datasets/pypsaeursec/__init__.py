@@ -571,7 +571,6 @@ def neighbor_reduction():
             .set_crs(4326)
         )
 
-
         # Unify carrier names
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
@@ -602,8 +601,7 @@ def neighbor_reduction():
             "ror": "run_of_river",
             "offwind-ac": "wind_offshore",
             "offwind-dc": "wind_offshore",
-            "urban_central_solar_thermal": "urban_central_solar_thermal_collector"
-
+            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
         },
         inplace=True,
     )
@@ -631,8 +629,7 @@ def neighbor_reduction():
             "electricity": "AC",
             "DC": "AC",
             "industry_electricity": "AC",
-            "H2_pipeline": "H2_system_boundary"
-
+            "H2_pipeline": "H2_system_boundary",
         },
         inplace=True,
     )
@@ -656,13 +653,7 @@ def neighbor_reduction():
 
     neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
 
-    neighbor_stores.carrier.replace(
-        {
-            "Li_ion": "battery",
-
-        },
-        inplace=True,
-    )
+    neighbor_stores.carrier.replace({"Li_ion": "battery"}, inplace=True)
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
@@ -683,12 +674,7 @@ def neighbor_reduction():
     neighbor_storage.carrier = neighbor_storage.carrier.str.replace(" ", "_")
 
     neighbor_storage.carrier.replace(
-        {
-            "PHS": "pumped_hydro",
-            "hydro": "reservoir",
-
-        },
-        inplace=True,
+        {"PHS": "pumped_hydro", "hydro": "reservoir"}, inplace=True
     )
 
     for i in ["name", "p_nom_opt"]:
@@ -791,8 +777,7 @@ def neighbor_reduction():
     # writing neighboring lines_t s_max_pu to etrago tables
     if not network.lines_t["s_max_pu"].empty:
         neighbor_lines_t_etrago = pd.DataFrame(
-            columns=["scn_name", "s_max_pu"],
-            index=neighbor_lines_t.columns,
+            columns=["scn_name", "s_max_pu"], index=neighbor_lines_t.columns
         )
         neighbor_lines_t_etrago["scn_name"] = "eGon100RE"
 
