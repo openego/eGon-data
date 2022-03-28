@@ -1,5 +1,8 @@
 """
-Calculate number of electric vehicles and allocate on different spatial levels
+* Calculate number of electric vehicles and allocate on different spatial
+levels: :func:`allocate_evs_numbers`
+* Allocate specific EVs to MV grid districts:
+:func:`allocate_evs_to_grid_districts`
 """
 
 import pandas as pd

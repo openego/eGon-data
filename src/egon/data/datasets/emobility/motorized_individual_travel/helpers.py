@@ -1,3 +1,7 @@
+"""
+Helpers: constants and functions for motorized individual travel
+"""
+
 import json
 import pandas as pd
 import numpy as np

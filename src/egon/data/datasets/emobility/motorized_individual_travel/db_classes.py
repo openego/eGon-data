@@ -1,5 +1,5 @@
 """
-DB tables / ORM classes for motorized individual travel
+DB tables / SQLAlchemy ORM classes for motorized individual travel
 """
 
 from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Integer, SmallInteger, String

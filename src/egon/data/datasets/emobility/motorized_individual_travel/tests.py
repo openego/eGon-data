@@ -1,3 +1,7 @@
+"""
+Sanity checks for motorized individual travel
+"""
+
 from numpy.testing import assert_allclose
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     CONFIG_EV
