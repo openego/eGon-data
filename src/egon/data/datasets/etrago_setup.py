@@ -29,7 +29,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.3",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
@@ -41,14 +41,14 @@ class EgonPfHvBus(Base):
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
-    v_nom = Column(Float(53))
+    v_nom = Column(Float(53), server_default="1.")
     type = Column(Text)
     carrier = Column(Text)
-    v_mag_pu_set_fixed = Column(Float(53))
-    v_mag_pu_min = Column(Float(53))
-    v_mag_pu_max = Column(Float(53))
-    x = Column(Float(53))
-    y = Column(Float(53))
+    v_mag_pu_set = Column(Float(53))
+    v_mag_pu_min = Column(Float(53), server_default="0.")
+    v_mag_pu_max = Column(Float(53), server_default="inf")
+    x = Column(Float(53), server_default="0.")
+    y = Column(Float(53), server_default="0.")
     geom = Column(Geometry("POINT", 4326), index=True)
     country = Column(Text, server_default=text("'DE'::text"))
 
@@ -72,29 +72,31 @@ class EgonPfHvGenerator(Base):
     control = Column(Text)
     type = Column(Text)
     carrier = Column(Text)
-    p_nom = Column(Float(53))
-    p_nom_extendable = Column(Boolean)
-    p_nom_min = Column(Float(53))
-    p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
-    p_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
-    sign = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
-    capital_cost = Column(Float(53))
-    efficiency = Column(Float(53))
-    committable = Column(Boolean)
-    start_up_cost = Column(Float(53))
-    shut_down_cost = Column(Float(53))
-    min_up_time = Column(BigInteger)
-    min_down_time = Column(BigInteger)
-    up_time_before = Column(BigInteger)
-    down_time_before = Column(BigInteger)
-    ramp_limit_up = Column(Float(53))
-    ramp_limit_down = Column(Float(53))
-    ramp_limit_start_up = Column(Float(53))
-    ramp_limit_shut_down = Column(Float(53))
+    p_nom = Column(Float(53), server_default="0.")
+    p_nom_extendable = Column(Boolean, server_default="False")
+    p_nom_min = Column(Float(53), server_default="0.")
+    p_nom_max = Column(Float(53), server_default="inf")
+    p_min_pu = Column(Float(53), server_default="0.")
+    p_max_pu = Column(Float(53), server_default="1.")
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
+    sign = Column(Float(53), server_default="1.")
+    marginal_cost = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
+    capital_cost = Column(Float(53), server_default="0.")
+    efficiency = Column(Float(53), server_default="1.")
+    committable = Column(Boolean, server_default="False")
+    start_up_cost = Column(Float(53), server_default="0.")
+    shut_down_cost = Column(Float(53), server_default="0.")
+    min_up_time = Column(BigInteger, server_default="0")
+    min_down_time = Column(BigInteger, server_default="0")
+    up_time_before = Column(BigInteger, server_default="0")
+    down_time_before = Column(BigInteger, server_default="0")
+    ramp_limit_up = Column(Float(53), server_default="NaN")
+    ramp_limit_down = Column(Float(53), server_default="NaN")
+    ramp_limit_start_up = Column(Float(53), server_default="1.")
+    ramp_limit_shut_down = Column(Float(53), server_default="1.")
 
 
 class EgonPfHvGeneratorTimeseries(Base):
@@ -121,22 +123,24 @@ class EgonPfHvLine(Base):
     bus1 = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    x = Column(Numeric)
-    r = Column(Numeric)
-    g = Column(Numeric)
-    b = Column(Numeric)
-    s_nom = Column(Numeric)
-    s_nom_extendable = Column(Boolean)
-    s_nom_min = Column(Float(53))
-    s_nom_max = Column(Float(53))
-    s_max_pu_fixed = Column(Float(53))
-    capital_cost = Column(Float(53))
-    length = Column(Float(53))
+    x = Column(Numeric, server_default="0.")
+    r = Column(Numeric, server_default="0.")
+    g = Column(Numeric, server_default="0.")
+    b = Column(Numeric, server_default="0.")
+    s_nom = Column(Numeric, server_default="0.")
+    s_nom_extendable = Column(Boolean, server_default="False")
+    s_nom_min = Column(Float(53), server_default="0.")
+    s_nom_max = Column(Float(53), server_default="inf")
+    s_max_pu = Column(Float(53), server_default="1.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
+    capital_cost = Column(Float(53), server_default="0.")
+    length = Column(Float(53), server_default="0.")
     cables = Column(Integer)
-    terrain_factor = Column(Float(53))
-    num_parallel = Column(Float(53))
-    v_ang_min = Column(Float(53))
-    v_ang_max = Column(Float(53))
+    terrain_factor = Column(Float(53), server_default="1.")
+    num_parallel = Column(Float(53), server_default="1.")
+    v_ang_min = Column(Float(53), server_default="-inf")
+    v_ang_max = Column(Float(53), server_default="inf")
     v_nom = Column(Float(53))
     geom = Column(Geometry("MULTILINESTRING", 4326))
     topo = Column(Geometry("LINESTRING", 4326))
@@ -162,18 +166,20 @@ class EgonPfHvLink(Base):
     bus1 = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    efficiency_fixed = Column(Float(53))
-    p_nom = Column(Numeric)
-    p_nom_extendable = Column(Boolean)
-    p_nom_min = Column(Float(53))
-    p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
-    p_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    capital_cost = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
-    length = Column(Float(53))
-    terrain_factor = Column(Float(53))
+    efficiency = Column(Float(53), server_default="1.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
+    p_nom = Column(Numeric, server_default="0.")
+    p_nom_extendable = Column(Boolean, server_default="False")
+    p_nom_min = Column(Float(53), server_default="0.")
+    p_nom_max = Column(Float(53), server_default="inf")
+    p_min_pu = Column(Float(53), server_default="0.")
+    p_max_pu = Column(Float(53), server_default="1.")
+    p_set = Column(Float(53))
+    capital_cost = Column(Float(53), server_default="0.")
+    marginal_cost = Column(Float(53), server_default="0.")
+    length = Column(Float(53), server_default="0.")
+    terrain_factor = Column(Float(53), server_default="1.")
     geom = Column(Geometry("MULTILINESTRING", 4326))
     topo = Column(Geometry("LINESTRING", 4326))
 
@@ -201,9 +207,9 @@ class EgonPfHvLoad(Base):
     bus = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
-    sign = Column(Float(53))
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
+    sign = Column(Float(53), server_default="-1.")
 
 
 class EgonPfHvLoadTimeseries(Base):
@@ -222,7 +228,7 @@ class EgonPfHvCarrier(Base):
     __table_args__ = {"schema": "grid"}
 
     name = Column(Text, primary_key=True, nullable=False)
-    co2_emissions = Column(Float(53))
+    co2_emissions = Column(Float(53), server_default="0.")
     color = Column(Text)
     nice_name = Column(Text)
     commentary = Column(Text)
@@ -238,25 +244,27 @@ class EgonPfHvStorage(Base):
     control = Column(Text)
     type = Column(Text)
     carrier = Column(Text)
-    p_nom = Column(Float(53))
-    p_nom_extendable = Column(Boolean)
-    p_nom_min = Column(Float(53))
-    p_nom_max = Column(Float(53))
-    p_min_pu_fixed = Column(Float(53))
-    p_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
-    sign = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
-    capital_cost = Column(Float(53))
-    state_of_charge_initial = Column(Float(53))
-    cyclic_state_of_charge = Column(Boolean)
-    state_of_charge_set_fixed = Column(Float(53))
-    max_hours = Column(Float(53))
-    efficiency_store = Column(Float(53))
-    efficiency_dispatch = Column(Float(53))
-    standing_loss = Column(Float(53))
-    inflow_fixed = Column(Float(53))
+    p_nom = Column(Float(53), server_default="0.")
+    p_nom_extendable = Column((Boolean), server_default="False")
+    p_nom_min = Column(Float(53), server_default="0.")
+    p_nom_max = Column(Float(53), server_default="inf")
+    p_min_pu = Column(Float(53), server_default="-1.")
+    p_max_pu = Column(Float(53), server_default="1.")
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
+    sign = Column(Float(53), server_default="1")
+    marginal_cost = Column(Float(53), server_default="0.")
+    capital_cost = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
+    state_of_charge_initial = Column(Float(53), server_default="0")
+    cyclic_state_of_charge = Column(Boolean, server_default="False")
+    state_of_charge_set = Column(Float(53))
+    max_hours = Column(Float(53), server_default="1")
+    efficiency_store = Column(Float(53), server_default="1.")
+    efficiency_dispatch = Column(Float(53), server_default="1.")
+    standing_loss = Column(Float(53), server_default="0.")
+    inflow = Column(Float(53), server_default="0.")
 
 
 class EgonPfHvStorageTimeseries(Base):
@@ -284,20 +292,22 @@ class EgonPfHvStore(Base):
     bus = Column(BigInteger)
     type = Column(Text)
     carrier = Column(Text)
-    e_nom = Column(Float(53))
-    e_nom_extendable = Column(Boolean)
-    e_nom_min = Column(Float(53))
-    e_nom_max = Column(Float(53))
-    e_min_pu_fixed = Column(Float(53))
-    e_max_pu_fixed = Column(Float(53))
-    p_set_fixed = Column(Float(53))
-    q_set_fixed = Column(Float(53))
-    e_initial = Column(Float(53))
-    e_cyclic = Column(Boolean)
-    sign = Column(Float(53))
-    marginal_cost_fixed = Column(Float(53))
-    capital_cost = Column(Float(53))
-    standing_loss = Column(Float(53))
+    e_nom = Column(Float(53), server_default="0.")
+    e_nom_extendable = Column((Boolean), server_default="False")
+    e_nom_min = Column(Float(53), server_default="0.")
+    e_nom_max = Column(Float(53), server_default="inf")
+    e_min_pu = Column(Float(53), server_default="0.")
+    e_max_pu = Column(Float(53), server_default="1.")
+    p_set = Column(Float(53))
+    q_set = Column(Float(53))
+    e_initial = Column(Float(53), server_default="0.")
+    e_cyclic = Column(Boolean, server_default="False")
+    sign = Column(Float(53), server_default="1")
+    marginal_cost = Column(Float(53), server_default="0.")
+    capital_cost = Column(Float(53), server_default="0.")
+    standing_loss = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
 
 
 class EgonPfHvStoreTimeseries(Base):
@@ -333,24 +343,26 @@ class EgonPfHvTransformer(Base):
     bus0 = Column(BigInteger)
     bus1 = Column(BigInteger)
     type = Column(Text)
-    model = Column(Text)
-    x = Column(Numeric)
-    r = Column(Numeric)
-    g = Column(Numeric)
-    b = Column(Numeric)
-    s_nom = Column(Float(53))
-    s_nom_extendable = Column(Boolean)
-    s_nom_min = Column(Float(53))
-    s_nom_max = Column(Float(53))
-    s_max_pu_fixed = Column(Float(53))
-    tap_ratio = Column(Float(53))
-    tap_side = Column(BigInteger)
-    tap_position = Column(BigInteger)
-    phase_shift = Column(Float(53))
-    v_ang_min = Column(Float(53))
-    v_ang_max = Column(Float(53))
-    capital_cost = Column(Float(53))
-    num_parallel = Column(Float(53))
+    model = Column((Text), server_default="t")
+    x = Column((Numeric), server_default="0.")
+    r = Column((Numeric), server_default="0.")
+    g = Column((Numeric), server_default="0.")
+    b = Column((Numeric), server_default="0.")
+    s_nom = Column(Float(53), server_default="0.")
+    s_nom_extendable = Column((Boolean), server_default="False")
+    s_nom_min = Column(Float(53), server_default="0.")
+    s_nom_max = Column(Float(53), server_default="inf")
+    s_max_pu = Column(Float(53), server_default="1.")
+    tap_ratio = Column(Float(53), server_default="1.")
+    tap_side = Column((BigInteger), server_default="0")
+    tap_position = Column((BigInteger), server_default="0")
+    phase_shift = Column(Float(53), server_default="0.")
+    build_year = Column(BigInteger, server_default="0")
+    lifetime = Column(Float(53), server_default="inf")
+    v_ang_min = Column(Float(53), server_default="-inf")
+    v_ang_max = Column(Float(53), server_default="inf")
+    capital_cost = Column(Float(53), server_default="0.")
+    num_parallel = Column(Float(53), server_default="1.")
     geom = Column(Geometry("MULTILINESTRING", 4326))
     topo = Column(Geometry("LINESTRING", 4326))
 
@@ -374,6 +386,16 @@ class EgonPfHvBusmap(Base):
     bus1 = Column(Text, primary_key=True, nullable=False)
     path_length = Column(Numeric)
     version = Column(Text, primary_key=True, nullable=False)
+
+
+class EgonPfHvGasVoronoi(Base):
+    __tablename__ = "egon_gas_voronoi"
+    __table_args__ = {"schema": "grid"}
+
+    scn_name = Column(Text, primary_key=True, nullable=False)
+    bus_id = Column(BigInteger, primary_key=True, nullable=False)
+    carrier = Column(Text)
+    geom = Column(Geometry("GEOMETRY", 4326))
 
 
 def create_tables():
@@ -480,6 +502,7 @@ def create_tables():
     EgonPfHvTransformer.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvBusmap.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)
     # Create new tables
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
@@ -502,6 +525,7 @@ def create_tables():
         bind=engine, checkfirst=True
     )
     EgonPfHvBusmap.__table__.create(bind=engine, checkfirst=True)
+    EgonPfHvGasVoronoi.__table__.create(bind=engine, checkfirst=True)
 
 
 def temp_resolution():
@@ -579,7 +603,7 @@ def insert_carriers():
                 "pumped_hydro",
                 "battery",
                 "OCGT",
-            ],
+            ]
         }
     )
 
@@ -607,18 +631,18 @@ def check_carriers():
         """
     )
     unknown_carriers = {}
-    tables = ['bus', 'store', 'storage', 'link', 'line', 'generator', 'load']
+    tables = ["bus", "store", "storage", "link", "line", "generator", "load"]
 
     for table in tables:
-    # Delete existing entries
+        # Delete existing entries
         data = db.select_dataframe(
             f"""
             SELECT carrier FROM grid.egon_etrago_{table}
             """
         )
-        unknown_carriers[table] = (
-            data[~data['carrier'].isin(carriers)]['carrier'].unique()
-        )
+        unknown_carriers[table] = data[~data["carrier"].isin(carriers)][
+            "carrier"
+        ].unique()
 
     if len(unknown_carriers) > 0:
         msg = (

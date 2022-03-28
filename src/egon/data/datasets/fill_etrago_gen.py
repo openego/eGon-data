@@ -11,7 +11,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.4",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -22,9 +22,6 @@ def fill_etrago_generators():
     con = db.engine()
     cfg = egon.data.config.datasets()["generators_etrago"]
 
-    # Delete power plants from previous iterations of this script
-    delete_previuos_gen(cfg)
-
     # Load required tables
     (
         power_plants,
@@ -33,6 +30,9 @@ def fill_etrago_generators():
         etrago_gen_orig,
         pp_time,
     ) = load_tables(con, cfg)
+
+    # Delete power plants from previous iterations of this script
+    delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants)
 
     renew_feedin = adjust_renew_feedin_table(
         renew_feedin=renew_feedin, cfg=cfg
@@ -103,8 +103,6 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
         }
     )
 
-    etrago_pp = etrago_pp.reindex(columns=etrago_gen_orig.columns)
-    etrago_pp = etrago_pp.drop(columns="generator_id")
     etrago_pp.to_sql(
         name=f"{cfg['targets']['etrago_generators']['table']}",
         schema=f"{cfg['targets']['etrago_generators']['schema']}",
@@ -141,13 +139,6 @@ def fill_etrago_gen_time_table(
     etrago_pp_time = etrago_pp_time.drop(columns="generator_id")
     etrago_pp_time["p_max_pu"] = etrago_pp_time["p_max_pu"].apply(list)
     etrago_pp_time["temp_id"] = 1
-
-    db.execute_sql(
-        f"""DELETE FROM 
-                   {cfg['targets']['etrago_gen_time']['schema']}.
-                   {cfg['targets']['etrago_gen_time']['table']}
-                   """
-    )
 
     etrago_pp_time.to_sql(
         name=f"{cfg['targets']['etrago_gen_time']['table']}",
@@ -232,21 +223,33 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     return renew_feedin
 
 
-def delete_previuos_gen(cfg):
-    db.execute_sql(
-        f"""DELETE FROM 
-                   {cfg['targets']['etrago_generators']['schema']}.
-                   {cfg['targets']['etrago_generators']['table']}
-                   WHERE carrier <> 'CH4' AND carrier <> 'solar_rooftop'
-                   AND carrier <> 'solar_thermal_collector'
-                   AND carrier <> 'geo_thermal'
-                   AND bus IN (
-                       SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
-                       {cfg['sources']['bus']['table']}
-                       WHERE country = 'DE'
-                       AND carrier = 'AC')
-                   """
-    )
+def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
+    carrier_delete = list(power_plants.carrier.unique())
+
+    if carrier_delete:
+        db.execute_sql(
+            f"""DELETE FROM 
+                    {cfg['targets']['etrago_generators']['schema']}.
+                    {cfg['targets']['etrago_generators']['table']}
+                    WHERE carrier IN {*carrier_delete,}
+                    AND bus IN (
+                        SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
+                        {cfg['sources']['bus']['table']}
+                        WHERE country = 'DE'
+                        AND carrier = 'AC')
+                    """
+        )
+
+        db.execute_sql(
+            f"""DELETE FROM 
+                    {cfg['targets']['etrago_gen_time']['schema']}.
+                    {cfg['targets']['etrago_gen_time']['table']}
+                    WHERE generator_id NOT IN (
+                        SELECT generator_id FROM
+                        {cfg['targets']['etrago_generators']['schema']}.
+                        {cfg['targets']['etrago_generators']['table']})
+                    """
+        )
 
 
 def set_timeseries(power_plants, renew_feedin):

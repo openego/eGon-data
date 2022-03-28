@@ -161,6 +161,8 @@ Added
   `#265 <https://github.com/openego/eGon-data/issues/265>`_
 * Include biomass CHP plants to eTraGo tables
   `#498 <https://github.com/openego/eGon-data/issues/498>`_
+* Include Pypsa default values in table creation
+  `#544 <https://github.com/openego/eGon-data/issues/544>`_
 * Include PHS in eTraGo tables
   `#333 <https://github.com/openego/eGon-data/issues/333>`_
 * Include feedin time series for wind offshore
@@ -187,7 +189,8 @@ Added
   `#566 <https://github.com/openego/eGon-data/issues/566>`_
 * Add efficiency, capital_cost and marginal_cost to gas related data in
   etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
-
+* Add wind onshore farms for the eGon100RE scenario
+  `#690 <https://github.com/openego/eGon-data/issues/690>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
@@ -289,13 +292,16 @@ Changed
   `#422 <https://github.com/openego/eGon-data/issues/422>`_
 * Add information on plz, city and federal state to data on mastr without chp
   `#425 <https://github.com/openego/eGon-data/issues/425>`_
-* Assign residentail heat demands to osm buildings
+* Assign residential heat demands to osm buildings
   `#557 <https://github.com/openego/eGon-data/issues/557>`_
 * Add foreign gas buses and adjust cross bording pipelines
   `#545 <https://github.com/openego/eGon-data/issues/545>`_
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
+*  Aggregate generators and stores for CH4
+  `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
+  `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
   the dataset. Import files from data bundle.
   `#592 <https://github.com/openego/eGon-data/issues/592>`_
@@ -305,7 +311,26 @@ Changed
 * H2 demand is met from the H2_grid buses. In Addtion, it can be met from the
   H2_saltcavern buses if a proximity criterion is fulfilled
   `#620 <https://github.com/openego/eGon-data/issues/620>`_
-
+* Create H2 pipeline infrastructure for eGon100RE
+  `#638 <https://github.com/openego/eGon-data/issues/638>`_
+* Change refinement method for households types
+  `#651 <https://github.com/openego/eGon-data/issues/#651>`_
+* H2 feed in links are changed to non extendable
+  `#653 <https://github.com/openego/eGon-data/issues/653>`_
+* Remove the '_fixed' suffix
+  `#628 <https://github.com/openego/eGon-data/issues/628>`_
+* Fill table demand.egon_demandregio_zensus_electricity after profile allocation
+  `#620 <https://github.com/openego/eGon-data/issues/586>`_
+* Change method of building assignment
+  `#663 <https://github.com/openego/eGon-data/issues/663>`_
+* Create new OSM residential building table
+  `#587 <https://github.com/openego/eGon-data/issues/587>`_
+* Move python-operators out of pipeline
+  `#644 <https://github.com/openego/eGon-data/issues/644>`_
+* Add annualized investment costs to eTraGo tables
+  `#672 <https://github.com/openego/eGon-data/issues/672>`_
+* Improve modelling of NG and biomethane production
+  `#678 <https://github.com/openego/eGon-data/issues/678>`_
 
 Bug fixes
 ---------
@@ -394,7 +419,27 @@ Bug fixes
   `#625 <https://github.com/openego/eGon-data/issues/625>`_
 * Fix deleting from eTraGo tables
   `#613 <https://github.com/openego/eGon-data/issues/613>`_
+* Fix positions of the foreign gas buses
+  `#618 <https://github.com/openego/eGon-data/issues/618>`_
 * Create and fill transfer_busses table in substation-dataset
   `#610 <https://github.com/openego/eGon-data/issues/610>`_
 * H2 steel tanks are removed again from saltcavern storage
   `#621 <https://github.com/openego/eGon-data/issues/621>`_
+* Timeseries not deleted from grid.etrago_generator_timeseries
+  `#645 <https://github.com/openego/eGon-data/issues/645>`_
+* Fix function to get scaled hh profiles
+  `#674 <https://github.com/openego/eGon-data/issues/674>`_
+* Change order of pypsa-eur-sec and scenario-capacities
+  `#589 <https://github.com/openego/eGon-data/issues/589>`_
+* Fix gas storages capacities
+  `#676 <https://github.com/openego/eGon-data/issues/676>`_
+* Distribute rural heat supply to residetntial and service demands
+  `#679 <https://github.com/openego/eGon-data/issues/679>`_
+* Fix time series creation for pv rooftop
+  `#688 <https://github.com/openego/eGon-data/issues/688>`_
+* Fix extraction of buildings without amenities
+  `#693 <https://github.com/openego/eGon-data/issues/693>`_
+* Assign DLR capacities to every transmission line
+  `#683 <https://github.com/openego/eGon-data/issues/683>`_
+* Fix twisted number error residential demand
+  `#704 <https://github.com/openego/eGon-data/issues/704>`_

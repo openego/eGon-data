@@ -149,10 +149,9 @@ def export_to_db():
                 "bus",
                 "type",
                 "carrier",
-                "p_set_fixed",
-                "q_set_fixed",
-                "sign",
                 "p_set",
+                "q_set",
+                "sign",
             ]
         )
         load_timeseries = pd.DataFrame(
