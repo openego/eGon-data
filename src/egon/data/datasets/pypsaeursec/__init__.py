@@ -602,6 +602,8 @@ def neighbor_reduction():
             "offwind-ac": "wind_offshore",
             "offwind-dc": "wind_offshore",
             "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
+            "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
+            "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
         },
         inplace=True,
     )
@@ -809,7 +811,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.3",
+            version="0.0.3.dev",
             dependencies=dependencies,
             tasks=tasks,
         )
