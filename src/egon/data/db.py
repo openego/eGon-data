@@ -8,6 +8,9 @@ from egon.data import config
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
+
 
 def credentials():
     """Return local database connection parameters.
@@ -221,13 +224,17 @@ def next_etrago_id(component):
     Parameters
     ----------
     component : str
-        Name of componenet
+        Name of component
 
     Returns
     -------
     next_id : int
         Next index value
 
+    Notes
+    -----
+    To catch concurrent DB commits, consider to use
+    :func:`check_db_unique_violation` instead.
     """
 
     if component=='transformer':
@@ -247,3 +254,84 @@ def next_etrago_id(component):
         next_id = 1
 
     return next_id
+
+
+def check_db_unique_violation(func):
+    """Wrapper to catch psycopg's UniqueViolation errors during concurrent DB
+    commits.
+
+    Preferrably used with :func:`next_etrago_id`. Retries DB operation 10
+    times before raising original exception.
+
+    Can be used as a decorator like this:
+
+    >>> @check_db_unique_violation
+    ... def commit_something_to_database():
+    ...     # commit something here
+    ...
+    >>> commit_something_to_database()
+
+    Examples
+    --------
+    Add new bus to eTraGo's bus table:
+
+    >>> from egon.data import db
+    ... from egon.data.datasets.etrago_setup import EgonPfHvBus
+    ...
+    ... @check_db_unique_violation
+    ... def add_etrago_bus():
+    ...     bus_id = db.next_etrago_id("bus")
+    ...     with db.session_scope() as session:
+    ...         emob_bus_id = db.next_etrago_id("bus")
+    ...         session.add(
+    ...             EgonPfHvBus(
+    ...                 scn_name="eGon2035",
+    ...                 bus_id=bus_id,
+    ...                 v_nom=1,
+    ...                 carrier="whatever",
+    ...                 x=52,
+    ...                 y=13,
+    ...                 geom="<some_geom>"
+    ...             )
+    ...         )
+    ...         session.commit()
+    ...
+    >>> add_etrago_bus()
+
+    Parameters
+    ----------
+
+    func: func
+        Function to wrap
+
+    Notes
+    -----
+    Background: using :func:`next_etrago_id` may cause trouble if tasks are
+    executed simultaneously, cf.
+    https://github.com/openego/eGon-data/issues/514
+
+    Important: your function requires a way to escape the violation as the
+    loop will not terminate until the error is resolved! In case of eTraGo
+    tables you can use :func:`next_etrago_id`, see example above.
+    """
+    def commit(*args, **kwargs):
+        unique_violation = True
+        ret = None
+        ctr = 0
+        while unique_violation:
+            try:
+                ret = func(*args, **kwargs)
+            except IntegrityError as e:
+                if isinstance(e.orig, UniqueViolation):
+                    print("Entry is not unique, retrying...")
+                    ctr += 1
+                    if ctr > 10:
+                        print("No success after 10 retries, exiting...")
+                        raise e
+                else:
+                    raise e
+            else:
+                unique_violation = False
+        return ret
+
+    return commit

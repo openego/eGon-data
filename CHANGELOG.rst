@@ -191,6 +191,8 @@ Added
   etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
 * Add wind onshore farms for the eGon100RE scenario
   `#690 <https://github.com/openego/eGon-data/issues/690>`_
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 
