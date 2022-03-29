@@ -280,7 +280,7 @@ def generate_load_time_series(
         ev_data_df.charging_demand.sum()
         / 1000
         / charging_eff,
-        decimal=0,
+        decimal=-1,
     )
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
