@@ -20,6 +20,7 @@ from egon.data.datasets.etrago_helpers import (
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.gas_prod import assign_bus_id
+from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -47,7 +48,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon100RE",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon100RE),
         )
@@ -71,23 +72,21 @@ def read_industrial_demand(scn_name, carrier):
     """
     target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
     df_corr = pd.read_json(target_file)
-    df_corr = df_corr[["id_region", "name_short"]].copy()
-    df_corr = df_corr.set_index("id_region")
+    df_corr = df_corr.loc[:, ["id_region", "name_short"]]
+    df_corr.set_index("id_region", inplace=True)
 
     target_file = (
         Path(".")
         / "datasets/gas_data/demand"
         / (carrier + "_" + scn_name + ".json")
     )
-    industrial_loads_list = pd.read_json(target_file)
-    industrial_loads_list = industrial_loads_list[
-        ["id_region", "values"]
-    ].copy()
-    industrial_loads_list = industrial_loads_list.set_index("id_region")
+    industrial_loads = pd.read_json(target_file)
+    industrial_loads = industrial_loads.loc[:, ["id_region", "values"]]
+    industrial_loads.set_index("id_region", inplace=True)
 
     # Match the id_region to obtain the NUT3 region names
     industrial_loads_list = pd.concat(
-        [industrial_loads_list, df_corr], axis=1, join="inner"
+        [industrial_loads, df_corr], axis=1, join="inner"
     )
     industrial_loads_list["NUTS0"] = (industrial_loads_list["name_short"].str)[
         0:2
@@ -157,8 +156,6 @@ def read_industrial_CH4_demand(scn_name="eGon2035"):
 
     Parameters
     ----------
-    df_corr : pandas.core.frame.DataFrame
-        Correspondance for openffe region to NUTS
     scn_name : str
         Name of the scenario
 
@@ -192,8 +189,6 @@ def read_industrial_H2_demand(scn_name="eGon2035"):
 
     Parameters
     ----------
-    df_corr : pandas.core.frame.DataFrame
-        Correspondance for openffe region to NUTS
     scn_name : str
         Name of the scenario
 
@@ -433,9 +428,40 @@ def insert_industrial_gas_demand_egon100RE():
 
     # see https://github.com/openego/eGon-data/issues/626
     # On test mode data are stupidly incorrect, since PES data is for whole Germany
-    CH4_total_PES = 105490000
-    H2_total_PES = 42090000
+    n = read_network()
+
+    try:
+        H2_total_PES = (
+            n.loads[n.loads["carrier"] == "H2 for industry"].loc[
+                "DE0 0 H2 for industry", "p_set"
+            ]
+            * 8760
+        )
+    except KeyError:
+        H2_total_PES = 42090000
+
+    try:
+        CH4_total_PES = (
+            n.loads[n.loads["carrier"] == "gas for industry"].loc[
+                "DE0 0 gas for industry", "p_set"
+            ]
+            * 8760
+        )
+    except KeyError:
+        CH4_total_PES = 105490000
+
+    boundary = settings()["egon-data"]["--dataset-boundary"]
+    if boundary != "Everything":
+        # modify values for test mode
+        # the values are obtained by evaluating the share of H2 demand in
+        # test region (NUTS1: DEF, Schleswig-Holstein) with respect to the H2
+        # demand in full Germany model (NUTS0: DE). To task has been outsourced
+        # to save processing cost
+        H2_total_PES *= 0.01855683050330346
+        CH4_total_PES *= 0.01855683050330346
+
     H2_total = industrial_gas_demand_H2["p_set"].apply(sum).astype(float).sum()
+
     industrial_gas_demand_CH4["p_set"] = industrial_gas_demand_H2[
         "p_set"
     ].apply(lambda x: [val / H2_total * CH4_total_PES for val in x])
