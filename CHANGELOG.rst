@@ -331,6 +331,8 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
+* Unify carrier names for both scenarios
+  `#575 <https://github.com/openego/eGon-data/issues/575>`_
 
 Bug fixes
 ---------
@@ -443,3 +445,4 @@ Bug fixes
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
+
