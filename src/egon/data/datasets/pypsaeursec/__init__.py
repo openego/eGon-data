@@ -811,7 +811,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.3.dev",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks,
         )
