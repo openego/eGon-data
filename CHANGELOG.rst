@@ -443,3 +443,5 @@ Bug fixes
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
+* Fix industrial H2 and CH4 demand for eGon100RE scenario
+  `#687 <https://github.com/openego/eGon-data/issues/687>`_

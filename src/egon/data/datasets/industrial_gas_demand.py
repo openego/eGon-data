@@ -425,9 +425,7 @@ def insert_industrial_gas_demand_egon100RE():
 
     # adjust H2 and CH4 total demands (values from PES)
     # CH4 demand = 0 in 100RE, therefore scale H2 ts
-
-    # see https://github.com/openego/eGon-data/issues/626
-    # On test mode data are stupidly incorrect, since PES data is for whole Germany
+    # fallback values see https://github.com/openego/eGon-data/issues/626
     n = read_network()
 
     try:
