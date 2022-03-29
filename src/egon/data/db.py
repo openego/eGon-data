@@ -1,15 +1,15 @@
+from contextlib import contextmanager
 import codecs
 import functools
-from contextlib import contextmanager
 
+from psycopg2.errors import UniqueViolation
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
-from egon.data import config
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
-from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
+from egon.data import config
 
 
 def credentials():
@@ -85,8 +85,10 @@ def submit_comment(json, schema, table):
     """
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
-    check_json_str = "SELECT obj_description('{0}.{1}'::regclass)::json".format(
-        schema, table
+    check_json_str = (
+        "SELECT obj_description('{0}.{1}'::regclass)::json".format(
+            schema, table
+        )
     )
 
     execute_sql(prefix_str + json + ";")
@@ -160,7 +162,7 @@ def session_scoped(function):
 
 
 def select_dataframe(sql, index_col=None):
-    """ Select data from local database as pandas.DataFrame
+    """Select data from local database as pandas.DataFrame
 
     Parameters
     ----------
@@ -185,7 +187,7 @@ def select_dataframe(sql, index_col=None):
 
 
 def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
-    """ Select data from local database as geopandas.GeoDataFrame
+    """Select data from local database as geopandas.GeoDataFrame
 
     Parameters
     ----------
@@ -219,7 +221,7 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
 
 
 def next_etrago_id(component):
-    """ Select next id value for components in etrago tables
+    """Select next id value for components in etrago tables
 
     Parameters
     ----------
@@ -237,10 +239,10 @@ def next_etrago_id(component):
     :func:`check_db_unique_violation` instead.
     """
 
-    if component=='transformer':
-        id_column = 'trafo_id'
+    if component == "transformer":
+        id_column = "trafo_id"
     else:
-        id_column = f'{component}_id'
+        id_column = f"{component}_id"
 
     max_id = select_dataframe(
         f"""
@@ -314,6 +316,7 @@ def check_db_unique_violation(func):
     loop will not terminate until the error is resolved! In case of eTraGo
     tables you can use :func:`next_etrago_id`, see example above.
     """
+
     def commit(*args, **kwargs):
         unique_violation = True
         ret = None
