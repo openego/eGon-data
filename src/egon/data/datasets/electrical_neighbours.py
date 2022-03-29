@@ -18,7 +18,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -1026,6 +1026,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
+        "RU":   "RU00",
     }
 
 
