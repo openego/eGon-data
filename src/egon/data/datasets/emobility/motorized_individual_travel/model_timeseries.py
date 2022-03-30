@@ -27,28 +27,26 @@ https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pd
 * eGon100RE: home=1.0, work=1.0
 """
 
-import os
-import json
-from pathlib import Path
-import pandas as pd
-import numpy as np
 from collections import Counter
+from pathlib import Path
+import json
+import os
+
 from sqlalchemy.sql import func
+import numpy as np
+import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+    EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
-    EgonEvMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     DATASET_CFG,
     WORKING_DIR,
     read_simbev_metadata_file,
-    reduce_mem_usage
+    reduce_mem_usage,
 )
 from egon.data.datasets.etrago_setup import (
     EgonPfHvBus,
@@ -57,8 +55,9 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvLoad,
     EgonPfHvLoadTimeseries,
     EgonPfHvStore,
-    EgonPfHvStoreTimeseries
+    EgonPfHvStoreTimeseries,
 )
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def data_preprocessing(
@@ -89,14 +88,12 @@ def data_preprocessing(
     max_duplicates = max(count_profiles.values())
 
     # get ev data for given profiles
-    ev_data_df = ev_data_df.loc[ev_data_df.ev_id.isin(
-        scenario_data.ev_id.unique())
+    ev_data_df = ev_data_df.loc[
+        ev_data_df.ev_id.isin(scenario_data.ev_id.unique())
     ]
 
     # drop faulty data
-    ev_data_df = ev_data_df.loc[
-        ev_data_df.park_start < ev_data_df.park_end
-    ]
+    ev_data_df = ev_data_df.loc[ev_data_df.park_start < ev_data_df.park_end]
 
     if max_duplicates >= 2:
         # duplicate profiles if necessary
@@ -122,8 +119,9 @@ def data_preprocessing(
             ev_data_df.charging_capacity_grid / 10 ** 3
         ),
         minimum_charging_time=(
-            ev_data_df.charging_demand /
-            ev_data_df.charging_capacity_nominal * 4
+            ev_data_df.charging_demand
+            / ev_data_df.charging_capacity_nominal
+            * 4
         ),
         location=ev_data_df.location.str.replace("/", "_"),
     )
@@ -165,10 +163,7 @@ def data_preprocessing(
 
 
 def generate_dsm_profile(
-    start_date: str,
-    end_date: str,
-    restriction_time: int,
-    min_soc: float
+    start_date: str, end_date: str, restriction_time: int, min_soc: float
 ) -> pd.DataFrame:
     """Generate DSM profile (min SoC for each timestep)
 
@@ -189,9 +184,13 @@ def generate_dsm_profile(
         DSM profile
     """
     # Calc no of timesteps for year
-    timestep_count = len(pd.date_range(
-        start=f"{start_date} 00:00:00", end=f"{end_date} 23:00:00", freq='H'
-    ))
+    timestep_count = len(
+        pd.date_range(
+            start=f"{start_date} 00:00:00",
+            end=f"{end_date} 23:00:00",
+            freq="H",
+        )
+    )
     dsm_profile_week = np.zeros((24 * 7,))
     dsm_profile_week[(np.arange(0, 7, 1) * 24 + restriction_time)] = min_soc
     weeks, rest = divmod(timestep_count, len(dsm_profile_week))
@@ -206,7 +205,7 @@ def generate_load_time_series(
     ev_data_df: pd.DataFrame,
     start_date: str,
     timestep: str,
-    charging_eff: float
+    charging_eff: float,
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -287,9 +286,7 @@ def generate_load_time_series(
 
     np.testing.assert_almost_equal(
         load_time_series_df.load_time_series.sum() / 4,
-        ev_data_df.charging_demand.sum()
-        / 1000
-        / charging_eff,
+        ev_data_df.charging_demand.sum() / 1000 / charging_eff,
         decimal=-1,
     )
 
@@ -299,7 +296,8 @@ def generate_load_time_series(
 
 
 def generate_static_params(
-    ev_data_df: pd.DataFrame, load_time_series_df: pd.DataFrame,
+    ev_data_df: pd.DataFrame,
+    load_time_series_df: pd.DataFrame,
 ) -> dict:
     """Calculate static parameters from trip data.
 
@@ -358,42 +356,43 @@ def load_evs_trips(
         charging_condition = EgonEvTrip.charging_demand >= 0
 
     with db.session_scope() as session:
-        query = session.query(
-            EgonEvTrip.egon_ev_pool_ev_id.label("ev_id"),
-            EgonEvTrip.location,
-            EgonEvTrip.charging_capacity_nominal,
-            EgonEvTrip.charging_capacity_grid,
-            EgonEvTrip.charging_capacity_battery,
-            EgonEvTrip.soc_start,
-            EgonEvTrip.soc_end,
-            EgonEvTrip.charging_demand,
-            EgonEvTrip.park_start,
-            EgonEvTrip.park_end,
-            EgonEvTrip.drive_start,
-            EgonEvTrip.drive_end,
-            EgonEvTrip.consumption,
-            EgonEvPool.type
-        ).join(
-            EgonEvPool,
-            EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id
-        ).filter(
-            EgonEvTrip.egon_ev_pool_ev_id.in_(evs_ids)
-        ).filter(
-            charging_condition
-        ).order_by(
-            EgonEvTrip.egon_ev_pool_ev_id, EgonEvTrip.simbev_event_id
+        query = (
+            session.query(
+                EgonEvTrip.egon_ev_pool_ev_id.label("ev_id"),
+                EgonEvTrip.location,
+                EgonEvTrip.charging_capacity_nominal,
+                EgonEvTrip.charging_capacity_grid,
+                EgonEvTrip.charging_capacity_battery,
+                EgonEvTrip.soc_start,
+                EgonEvTrip.soc_end,
+                EgonEvTrip.charging_demand,
+                EgonEvTrip.park_start,
+                EgonEvTrip.park_end,
+                EgonEvTrip.drive_start,
+                EgonEvTrip.drive_end,
+                EgonEvTrip.consumption,
+                EgonEvPool.type,
+            )
+            .join(
+                EgonEvPool, EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id
+            )
+            .filter(EgonEvTrip.egon_ev_pool_ev_id.in_(evs_ids))
+            .filter(charging_condition)
+            .order_by(
+                EgonEvTrip.egon_ev_pool_ev_id, EgonEvTrip.simbev_event_id
+            )
         )
     trip_data = pd.read_sql(
-        query.statement,
-        query.session.bind,
-        index_col=None
-    ).astype({
-        'ev_id': 'int',
-        'park_start': 'int',
-        'park_end': 'int',
-        'drive_start': 'int',
-        'drive_end': 'int'
-    })
+        query.statement, query.session.bind, index_col=None
+    ).astype(
+        {
+            "ev_id": "int",
+            "park_start": "int",
+            "park_end": "int",
+            "drive_start": "int",
+            "drive_end": "int",
+        }
+    )
     return trip_data
 
 
@@ -404,7 +403,7 @@ def write_model_data_to_db(
     bus_id: int,
     scenario_name: str,
     run_config: pd.DataFrame,
-    bat_cap: pd.DataFrame
+    bat_cap: pd.DataFrame,
 ) -> None:
     """Write all results for grid district to database
 
@@ -428,10 +427,7 @@ def write_model_data_to_db(
     None
     """
 
-    def calc_initial_ev_soc(
-        bus_id: int,
-        scenario_name: str
-    ) -> pd.DataFrame:
+    def calc_initial_ev_soc(bus_id: int, scenario_name: str) -> pd.DataFrame:
         """Calculate an average initial state of charge for EVs in MV grid
         district.
 
@@ -439,26 +435,32 @@ def write_model_data_to_db(
         and battery capacity for each EV type.
         """
         with db.session_scope() as session:
-            query_ev_soc = session.query(
-                EgonEvPool.type,
-                func.count(EgonEvTrip.egon_ev_pool_ev_id).label("ev_count"),
-                func.avg(EgonEvTrip.soc_start).label("ev_soc_start")
-            ).select_from(
-                EgonEvTrip
-            ).join(
-                EgonEvPool,
-                EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id
-            ).join(
-                EgonEvMvGridDistrict,
-                EgonEvMvGridDistrict.egon_ev_pool_ev_id == EgonEvTrip.egon_ev_pool_ev_id
-            ).filter(
-                EgonEvTrip.scenario == scenario_name,
-                EgonEvPool.scenario == scenario_name,
-                EgonEvMvGridDistrict.scenario == scenario_name,
-                EgonEvMvGridDistrict.bus_id == bus_id,
-                EgonEvTrip.simbev_event_id == 0
-            ).group_by(
-                EgonEvPool.type
+            query_ev_soc = (
+                session.query(
+                    EgonEvPool.type,
+                    func.count(EgonEvTrip.egon_ev_pool_ev_id).label(
+                        "ev_count"
+                    ),
+                    func.avg(EgonEvTrip.soc_start).label("ev_soc_start"),
+                )
+                .select_from(EgonEvTrip)
+                .join(
+                    EgonEvPool,
+                    EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id,
+                )
+                .join(
+                    EgonEvMvGridDistrict,
+                    EgonEvMvGridDistrict.egon_ev_pool_ev_id
+                    == EgonEvTrip.egon_ev_pool_ev_id,
+                )
+                .filter(
+                    EgonEvTrip.scenario == scenario_name,
+                    EgonEvPool.scenario == scenario_name,
+                    EgonEvMvGridDistrict.scenario == scenario_name,
+                    EgonEvMvGridDistrict.bus_id == bus_id,
+                    EgonEvTrip.simbev_event_id == 0,
+                )
+                .group_by(EgonEvPool.type)
             )
 
         initial_soc_per_ev_type = pd.read_sql(
@@ -466,16 +468,18 @@ def write_model_data_to_db(
         )
 
         initial_soc_per_ev_type[
-            "battery_capacity_sum"] = initial_soc_per_ev_type.ev_count.multiply(
-            bat_cap
-        )
+            "battery_capacity_sum"
+        ] = initial_soc_per_ev_type.ev_count.multiply(bat_cap)
         initial_soc_per_ev_type[
-            "ev_soc_start_abs"] = initial_soc_per_ev_type.battery_capacity_sum.multiply(
+            "ev_soc_start_abs"
+        ] = initial_soc_per_ev_type.battery_capacity_sum.multiply(
             initial_soc_per_ev_type.ev_soc_start
         )
 
-        return (initial_soc_per_ev_type.ev_soc_start_abs.sum() /
-                initial_soc_per_ev_type.battery_capacity_sum.sum())
+        return (
+            initial_soc_per_ev_type.ev_soc_start_abs.sum()
+            / initial_soc_per_ev_type.battery_capacity_sum.sum()
+        )
 
     @db.check_db_unique_violation
     def write_to_db() -> None:
@@ -487,7 +491,7 @@ def write_model_data_to_db(
                 EgonPfHvBus.bus_id,
                 EgonPfHvBus.x,
                 EgonPfHvBus.y,
-                EgonPfHvBus.geom
+                EgonPfHvBus.geom,
             ).filter(
                 EgonPfHvBus.scn_name == scenario_name,
                 EgonPfHvBus.bus_id == bus_id,
@@ -505,7 +509,7 @@ def write_model_data_to_db(
                     carrier="eMob MIT",
                     x=etrago_bus.x,
                     y=etrago_bus.y,
-                    geom=etrago_bus.geom
+                    geom=etrago_bus.geom,
                 )
             )
 
@@ -520,8 +524,9 @@ def write_model_data_to_db(
                     # carrier="BEV charger",
                     carrier="eMob MIT",
                     efficiency=float(run_config.eta_cp),
-                    p_nom=(load_time_series_df
-                           .simultaneous_plugged_in_charging_capacity.max()),
+                    p_nom=(
+                        load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+                    ),
                     p_nom_extendable=False,
                     p_nom_min=0,
                     p_nom_max=np.Inf,
@@ -562,7 +567,7 @@ def write_model_data_to_db(
                     e_initial=initial_soc_mean,
                     e_cyclic=True,
                     sign=1,
-                    standing_loss=0
+                    standing_loss=0,
                 )
             )
             session.add(
@@ -570,7 +575,7 @@ def write_model_data_to_db(
                     scn_name=scenario_name,
                     store_id=emob_store_id,
                     temp_id=1,
-                    e_min_pu=dsm_profile_df.min_soc.to_list()
+                    e_min_pu=dsm_profile_df.min_soc.to_list(),
                 )
             )
 
@@ -583,7 +588,7 @@ def write_model_data_to_db(
                     bus=emob_bus_id,
                     # carrier="land transport EV",
                     carrier="eMob MIT",
-                    sign=-1
+                    sign=-1,
                 )
             )
             session.add(
@@ -656,7 +661,7 @@ def generate_model_data_grid_district(
     evs_grid_district: pd.DataFrame,
     scenario_variation_parameters: dict,
     bat_cap_dict: dict,
-    run_config: pd.DataFrame
+    run_config: pd.DataFrame,
 ) -> tuple:
     """Generates timeseries from simBEV trip data for MV grid district
 
@@ -680,8 +685,7 @@ def generate_model_data_grid_district(
     # Load trip data
     print("  Loading trips...")
     trip_data = load_evs_trips(
-        evs_ids=evs_grid_district.ev_id.unique(),
-        charging_events_only=True
+        evs_ids=evs_grid_district.ev_id.unique(), charging_events_only=True
     )
 
     print("  Preprocessing data...")
@@ -694,9 +698,7 @@ def generate_model_data_grid_district(
     flex_dict = scenario_variation_parameters["flex_share"]
 
     # Preprocess trip data
-    trip_data = data_preprocessing(
-        evs_grid_district, trip_data, flex_dict
-    )
+    trip_data = data_preprocessing(evs_grid_district, trip_data, flex_dict)
 
     # Generate load timeseries
     print("  Generating load timeseries...")
@@ -704,7 +706,7 @@ def generate_model_data_grid_district(
         ev_data_df=trip_data,
         start_date=run_config.start_date,
         timestep=f"{int(run_config.stepsize)}Min",
-        charging_eff=float(run_config.eta_cp)
+        charging_eff=float(run_config.eta_cp),
     )
 
     # Generate static paras
@@ -717,7 +719,7 @@ def generate_model_data_grid_district(
         start_date=run_config.start_date,
         end_date=run_config.end_date,
         restriction_time=model_parameters["restriction_time"],
-        min_soc=model_parameters["min_soc"]
+        min_soc=model_parameters["min_soc"],
     )
 
     return static_params, load_ts, dsm_profile
@@ -751,20 +753,19 @@ def generate_model_data(scenario_name: str):
 
     # Get substations
     with db.session_scope() as session:
-        query = session.query(
-            EgonEvMvGridDistrict.bus_id,
-            EgonEvMvGridDistrict.egon_ev_pool_ev_id.label("ev_id"),
-        ).filter(
-            EgonEvMvGridDistrict.scenario == scenario_name
-        ).filter(
-            EgonEvMvGridDistrict.scenario_variation == scenario_var_name
-        ).filter(
-            EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None)
+        query = (
+            session.query(
+                EgonEvMvGridDistrict.bus_id,
+                EgonEvMvGridDistrict.egon_ev_pool_ev_id.label("ev_id"),
+            )
+            .filter(EgonEvMvGridDistrict.scenario == scenario_name)
+            .filter(
+                EgonEvMvGridDistrict.scenario_variation == scenario_var_name
+            )
+            .filter(EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None))
         )
     evs_grid_district = pd.read_sql(
-        query.statement,
-        query.session.bind,
-        index_col=None
+        query.statement, query.session.bind, index_col=None
     ).astype({"ev_id": "int"})
 
     mvgd_bus_ids = evs_grid_district.bus_id.unique()
@@ -776,22 +777,26 @@ def generate_model_data(scenario_name: str):
 
     # Get run metadata
     meta_tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
-    meta_run_config = read_simbev_metadata_file(scenario_name,
-                                                "config").loc["basic"]
+    meta_run_config = read_simbev_metadata_file(scenario_name, "config").loc[
+        "basic"
+    ]
 
     # Generate timeseries for each MVGD
     print("GENERATE MODEL DATA...")
     for bus_id in mvgd_bus_ids:
         print(f"Processing grid district {bus_id}...")
-        static_params, load_ts, dsm_profile = \
-            generate_model_data_grid_district(
-                evs_grid_district=evs_grid_district[
-                    evs_grid_district.bus_id == bus_id
-                    ],
-                scenario_variation_parameters=scenario_variation_parameters,
-                bat_cap_dict=meta_tech_data.battery_capacity.to_dict(),
-                run_config=meta_run_config
-            )
+        (
+            static_params,
+            load_ts,
+            dsm_profile,
+        ) = generate_model_data_grid_district(
+            evs_grid_district=evs_grid_district[
+                evs_grid_district.bus_id == bus_id
+            ],
+            scenario_variation_parameters=scenario_variation_parameters,
+            bat_cap_dict=meta_tech_data.battery_capacity.to_dict(),
+            run_config=meta_run_config,
+        )
         write_model_data_to_db(
             static_params_dict=static_params,
             load_time_series_df=load_ts,
@@ -799,7 +804,7 @@ def generate_model_data(scenario_name: str):
             bus_id=bus_id,
             scenario_name=scenario_name,
             run_config=meta_run_config,
-            bat_cap=meta_tech_data.battery_capacity
+            bat_cap=meta_tech_data.battery_capacity,
         )
 
 
