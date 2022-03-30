@@ -33,6 +33,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from collections import Counter
+from sqlalchemy.sql import func
 
 from egon.data import db
 from egon.data.datasets.scenario_parameters import (
@@ -48,6 +49,15 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     WORKING_DIR,
     read_simbev_metadata_file,
     reduce_mem_usage
+)
+from egon.data.datasets.etrago_setup import (
+    EgonPfHvBus,
+    EgonPfHvLink,
+    EgonPfHvLinkTimeseries,
+    EgonPfHvLoad,
+    EgonPfHvLoadTimeseries,
+    EgonPfHvStore,
+    EgonPfHvStoreTimeseries
 )
 
 
@@ -293,6 +303,10 @@ def generate_static_params(
 ) -> dict:
     """Calculate static parameters from trip data.
 
+    * cumulative initial SoC
+    * cumulative battery capacity
+    * simultaneous plugged in charging capacity
+
     Parameters
     ----------
     ev_data_df : pd.DataFrame
@@ -389,8 +403,10 @@ def write_model_data_to_db(
     dsm_profile_df: pd.DataFrame,
     bus_id: int,
     scenario_name: str,
+    run_config: pd.DataFrame,
+    bat_cap: pd.DataFrame
 ) -> None:
-    """Export all results for grid district as CSVs and add metadata JSON
+    """Write all results for grid district to database
 
     Parameters
     ----------
@@ -404,37 +420,185 @@ def write_model_data_to_db(
         ID of grid district
     scenario_name : str
         Scenario name
+    run_config : pd.DataFrame
+        simBEV metadata: run config
 
     Returns
     -------
     None
     """
 
-    print("  Writing model timeseries...")
-    load_time_series_df = load_time_series_df.assign(
-        ev_availability=(
-            load_time_series_df.flex_time_series
-            / static_params_dict["link_bev_charger.p_nom_MW"]
+    def calc_initial_ev_soc(
+        bus_id: int,
+        scenario_name: str
+    ) -> pd.DataFrame:
+        """Calculate an average initial state of charge for EVs in MV grid
+        district.
+
+        This is done by weighting the initial SoCs at timestep=0 with EV count
+        and battery capacity for each EV type.
+        """
+        with db.session_scope() as session:
+            query_ev_soc = session.query(
+                EgonEvPool.type,
+                func.count(EgonEvTrip.egon_ev_pool_ev_id).label("ev_count"),
+                func.avg(EgonEvTrip.soc_start).label("ev_soc_start")
+            ).select_from(
+                EgonEvTrip
+            ).join(
+                EgonEvPool,
+                EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id
+            ).join(
+                EgonEvMvGridDistrict,
+                EgonEvMvGridDistrict.egon_ev_pool_ev_id == EgonEvTrip.egon_ev_pool_ev_id
+            ).filter(
+                EgonEvTrip.scenario == scenario_name,
+                EgonEvPool.scenario == scenario_name,
+                EgonEvMvGridDistrict.scenario == scenario_name,
+                EgonEvMvGridDistrict.bus_id == bus_id,
+                EgonEvTrip.simbev_event_id == 0
+            ).group_by(
+                EgonEvPool.type
+            )
+
+        initial_soc_per_ev_type = pd.read_sql(
+            query_ev_soc.statement, query_ev_soc.session.bind, index_col="type"
         )
-    )
 
-    # Resample to 1h
-    hourly_load_time_series_df = load_time_series_df.resample("1H").mean()
+        initial_soc_per_ev_type[
+            "battery_capacity_sum"] = initial_soc_per_ev_type.ev_count.multiply(
+            bat_cap
+        )
+        initial_soc_per_ev_type[
+            "ev_soc_start_abs"] = initial_soc_per_ev_type.battery_capacity_sum.multiply(
+            initial_soc_per_ev_type.ev_soc_start
+        )
 
-    # Align load and DSM timeseries
-    if len(hourly_load_time_series_df) >= len(dsm_profile_df):
-        hourly_load_time_series_df = hourly_load_time_series_df.iloc[
-            : len(dsm_profile_df)
-        ]
-    else:
-        dsm_profile_df = dsm_profile_df.iloc[: len(hourly_load_time_series_df)]
-    dsm_profile_df.index = hourly_load_time_series_df.index
+        return (initial_soc_per_ev_type.ev_soc_start_abs.sum() /
+                initial_soc_per_ev_type.battery_capacity_sum.sum())
 
-    # Write to eTraGo tables
-    # PLACEHOLDER
+    @db.check_db_unique_violation
+    def write_to_db() -> None:
+        """Write model data to eTraGo tables"""
+        with db.session_scope() as session:
+            # Get eTraGo substation bus
+            query = session.query(
+                EgonPfHvBus.scn_name,
+                EgonPfHvBus.bus_id,
+                EgonPfHvBus.x,
+                EgonPfHvBus.y,
+                EgonPfHvBus.geom
+            ).filter(
+                EgonPfHvBus.scn_name == scenario_name,
+                EgonPfHvBus.bus_id == bus_id,
+            )
+            etrago_bus = query.first()
 
-    # Export to working dir if requested
-    if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
+            # eMob MIT bus
+            emob_bus_id = db.next_etrago_id("bus")
+            session.add(
+                EgonPfHvBus(
+                    scn_name=scenario_name,
+                    bus_id=emob_bus_id,
+                    v_nom=1,
+                    # carrier="Li ion",
+                    carrier="eMob MIT",
+                    x=etrago_bus.x,
+                    y=etrago_bus.y,
+                    geom=etrago_bus.geom
+                )
+            )
+
+            # eMob MIT link [bus_el] -> [bus_ev]
+            emob_link_id = db.next_etrago_id("link")
+            session.add(
+                EgonPfHvLink(
+                    scn_name=scenario_name,
+                    link_id=emob_link_id,
+                    bus0=etrago_bus.bus_id,
+                    bus1=emob_bus_id,
+                    # carrier="BEV charger",
+                    carrier="eMob MIT",
+                    efficiency=float(run_config.eta_cp),
+                    p_nom=(load_time_series_df
+                           .simultaneous_plugged_in_charging_capacity.max()),
+                    p_nom_extendable=False,
+                    p_nom_min=0,
+                    p_nom_max=np.Inf,
+                    p_min_pu=0,
+                    p_max_pu=1,
+                    # p_set_fixed=0,
+                    capital_cost=0,
+                    marginal_cost=0,
+                    length=0,
+                    terrain_factor=1,
+                )
+            )
+            session.add(
+                EgonPfHvLinkTimeseries(
+                    scn_name=scenario_name,
+                    link_id=emob_link_id,
+                    temp_id=1,
+                    p_min_pu=None,
+                    p_max_pu=hourly_load_time_series_df.ev_availability.to_list(),
+                )
+            )
+
+            # eMob MIT store
+            emob_store_id = db.next_etrago_id("store")
+            session.add(
+                EgonPfHvStore(
+                    scn_name=scenario_name,
+                    store_id=emob_store_id,
+                    bus=emob_bus_id,
+                    # carrier="battery storage",
+                    carrier="eMob MIT",
+                    e_nom=static_params_dict["store_ev_battery.e_nom_MWh"],
+                    e_nom_extendable=False,
+                    e_nom_min=0,
+                    e_nom_max=np.Inf,
+                    e_min_pu=0,
+                    e_max_pu=1,
+                    e_initial=initial_soc_mean,
+                    e_cyclic=True,
+                    sign=1,
+                    standing_loss=0
+                )
+            )
+            session.add(
+                EgonPfHvStoreTimeseries(
+                    scn_name=scenario_name,
+                    store_id=emob_store_id,
+                    temp_id=1,
+                    e_min_pu=dsm_profile_df.min_soc.to_list()
+                )
+            )
+
+            # eMob MIT load
+            emob_load_id = db.next_etrago_id("load")
+            session.add(
+                EgonPfHvLoad(
+                    scn_name=scenario_name,
+                    load_id=emob_load_id,
+                    bus=emob_bus_id,
+                    # carrier="land transport EV",
+                    carrier="eMob MIT",
+                    sign=-1
+                )
+            )
+            session.add(
+                EgonPfHvLoadTimeseries(
+                    scn_name=scenario_name,
+                    load_id=emob_load_id,
+                    temp_id=1,
+                    p_set=hourly_load_time_series_df.load_time_series.to_list(),
+                )
+            )
+
+            session.commit()
+
+    def write_to_file():
+        """Write model data to file (for debugging purposes)"""
         results_dir = WORKING_DIR / Path("results", scenario_name, str(bus_id))
         results_dir.mkdir(exist_ok=True, parents=True)
 
@@ -456,6 +620,36 @@ def write_model_data_to_db(
 
         with open(file, "w") as f:
             json.dump(static_params_dict, f, indent=4)
+
+    print("  Writing model timeseries...")
+    load_time_series_df = load_time_series_df.assign(
+        ev_availability=(
+            load_time_series_df.flex_time_series
+            / static_params_dict["link_bev_charger.p_nom_MW"]
+        )
+    )
+
+    # Resample to 1h
+    hourly_load_time_series_df = load_time_series_df.resample("1H").mean()
+
+    # Align load and DSM timeseries
+    if len(hourly_load_time_series_df) >= len(dsm_profile_df):
+        hourly_load_time_series_df = hourly_load_time_series_df.iloc[
+            : len(dsm_profile_df)
+        ]
+    else:
+        dsm_profile_df = dsm_profile_df.iloc[: len(hourly_load_time_series_df)]
+    dsm_profile_df.index = hourly_load_time_series_df.index
+
+    # Get average SoC
+    initial_soc_mean = calc_initial_ev_soc(bus_id, scenario_name)
+
+    # Write to database
+    write_to_db()
+
+    # Export to working dir if requested
+    if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
+        write_to_file()
 
 
 def generate_model_data_grid_district(
@@ -599,7 +793,13 @@ def generate_model_data(scenario_name: str):
                 run_config=meta_run_config
             )
         write_model_data_to_db(
-            static_params, load_ts, dsm_profile, bus_id, scenario_name
+            static_params_dict=static_params,
+            load_time_series_df=load_ts,
+            dsm_profile_df=dsm_profile,
+            bus_id=bus_id,
+            scenario_name=scenario_name,
+            run_config=meta_run_config,
+            bat_cap=meta_tech_data.battery_capacity
         )
 
 
