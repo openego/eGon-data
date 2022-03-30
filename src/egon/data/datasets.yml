@@ -1025,3 +1025,9 @@ gas_neighbours:
     buses:
       schema: 'grid'
       table: 'egon_etrago_bus'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'

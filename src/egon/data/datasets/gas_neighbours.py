@@ -4,10 +4,12 @@
 import ast
 import zipfile
 
+from pathlib import Path
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
@@ -362,7 +364,7 @@ def calc_capacities():
     grouped_capacities["cap_2035"] = (
         grouped_capacities["cap_2035"] * conversion_factor
     )
-    print(grouped_capacities)
+
     # Add generator in Russia
     grouped_capacities = grouped_capacities.append(
         {
@@ -377,7 +379,6 @@ def calc_capacities():
     grouped_capacities = grouped_capacities[
         grouped_capacities["index"].str[:2].isin(countries)
     ]
-    print(grouped_capacities)
     return grouped_capacities
 
 
@@ -454,7 +455,7 @@ def insert_generators(gen):
 #     """
 
 
-def calc_global_demand():
+def calc_global_demand(Norway_global_demand_1y):
     """Calculates global gas demands from TYNDP data
 
     Returns
@@ -473,6 +474,7 @@ def calc_global_demand():
         "CZ",
         "DK",
         "FR",
+        "LU",
         "NL",
         "NO",
         "SE",
@@ -522,17 +524,197 @@ def calc_global_demand():
         .drop(columns=["Parameter", "Year"])
     )
 
+    # Conversion GWh/d to MWh/h
+    conversion_factor = 1000 / 24
+
     df_2035 = pd.concat([df_2040, df_2030], axis=1)
-    df_2035["GlobD_2035"] = (df_2035["Value_2030"] + df_2035["Value_2040"]) / 2
+    df_2035["GlobD_2035"] = (
+        (df_2035["Value_2030"] + df_2035["Value_2040"]) / 2
+    ) * conversion_factor
+    df_2035.loc["NOS0"] = [
+        0,
+        0,
+        Norway_global_demand_1y / 8760,
+    ]  # Manually add Norway demand
     grouped_demands = df_2035.drop(
         columns=["Value_2030", "Value_2040"]
     ).reset_index()
-    # unit: GWh/d
 
     # choose demands for considered countries
     return grouped_demands[
         grouped_demands["Node/Line"].str[:2].isin(countries)
     ]
+
+
+def import_gas_demandTS():
+    cwd = Path(".")
+    target_file = (
+        cwd
+        / "data_bundle_egon_data"
+        / "pypsa_eur_sec"
+        / "2021-egondata-integration"
+        / "postnetworks"
+        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+    )
+
+    network = pypsa.Network(str(target_file))
+
+    wanted_countries = [
+        "AT",
+        "BE",
+        "CH",
+        "CZ",
+        "DK",
+        "GB",
+        "FR",
+        "LU",
+        "NL",
+        "NO",
+        "PL",
+        "SE",
+    ]
+
+    # Set country tag for all buses
+    network.buses.country = network.buses.index.str[:2]
+    neighbors = network.buses[network.buses.country != "DE"]
+    neighbors = neighbors[
+        (neighbors["country"].isin(wanted_countries))
+        & (neighbors["carrier"] == "residential rural heat")
+    ].drop_duplicates(subset="country")
+
+    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    neighbor_loads_t_index = neighbor_loads.index[
+        neighbor_loads.index.isin(network.loads_t.p_set.columns)
+    ]
+    neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
+    Norway_global_demand = neighbor_loads_t[
+        "NO3 0 residential rural heat"
+    ].sum()
+
+    for i in neighbor_loads_t.columns:
+        neighbor_loads_t[i] = neighbor_loads_t[i] / neighbor_loads_t[i].sum()
+
+    return Norway_global_demand, neighbor_loads_t
+
+
+def insert_gas_demand(global_demand, gas_demandTS):
+    """Insert gas final demands for foreign countries
+
+    Parameters
+    ----------
+    global_demand : pandas.DataFrame
+        Global gas demand per foreign node in 1 year
+    gas_demandTS : pandas.DataFrame
+        Normalized time serie of the demand per foreign country
+
+    Returns
+    -------
+    None.
+
+    """
+    targets = config.datasets()["gas_neighbours"]["targets"]
+    map_buses = get_map_buses()
+
+    # Delete existing data
+
+    db.execute_sql(
+        f"""
+        DELETE FROM 
+        {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
+        WHERE "load_id" IN (
+            SELECT load_id FROM 
+            {targets['loads']['schema']}.{targets['loads']['table']}
+            WHERE bus IN (
+                SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon2035')
+            AND scn_name = 'eGon2035'
+            AND carrier = 'CH4'            
+        );
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['loads']['schema']}.{targets['loads']['table']}
+        WHERE bus IN (
+            SELECT bus_id FROM
+            {targets['buses']['schema']}.{targets['buses']['table']}
+            WHERE country != 'DE'
+            AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+        AND carrier = 'CH4'
+        """
+    )
+
+    # Set bus_id
+    global_demand.loc[
+        global_demand[global_demand["Node/Line"].isin(map_buses.keys())].index,
+        "Node/Line",
+    ] = global_demand.loc[
+        global_demand[global_demand["Node/Line"].isin(map_buses.keys())].index,
+        "Node/Line",
+    ].map(
+        map_buses
+    )
+    global_demand.loc[:, "bus"] = (
+        get_foreign_bus_id().loc[global_demand.loc[:, "Node/Line"]].values
+    )
+
+    # Add missing columns
+    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    global_demand = global_demand.assign(**c)
+
+    new_id = db.next_etrago_id("load")
+    global_demand["load_id"] = range(new_id, new_id + len(global_demand))
+
+    ch4_demand_TS = global_demand.copy()
+    # Remove useless columns
+    global_demand = global_demand.drop(columns=["Node/Line", "GlobD_2035"])
+
+    print(global_demand)
+    # Insert data to db
+    global_demand.to_sql(
+        targets["loads"]["table"],
+        db.engine(),
+        schema=targets["loads"]["schema"],
+        index=False,
+        if_exists="append",
+    )
+
+    # Insert time series
+    ch4_demand_TS["Node/Line"] = ch4_demand_TS["Node/Line"].replace(
+        ["UK00"], "GB"
+    )
+
+    p_set = []
+    for index, row in ch4_demand_TS.iterrows():
+        normalized_TS_df = gas_demandTS.loc[
+            :, gas_demandTS.columns.str.contains(row["Node/Line"][:2])
+        ]
+        p_set.append(
+            (
+                normalized_TS_df[normalized_TS_df.columns[0]]
+                * row["GlobD_2035"]
+            ).tolist()
+        )
+
+    ch4_demand_TS["p_set"] = p_set
+    ch4_demand_TS["temp_id"] = 1
+    ch4_demand_TS = ch4_demand_TS.drop(
+        columns=["Node/Line", "GlobD_2035", "bus", "carrier"]
+    )
+
+    print(ch4_demand_TS)
+    ch4_demand_TS.to_sql(
+        targets["load_timeseries"]["table"],
+        db.engine(),
+        schema=targets["load_timeseries"]["schema"],
+        index=False,
+        if_exists="append",
+    )
 
 
 def tyndp_gas_generation():
@@ -557,9 +739,7 @@ def tyndp_gas_demand():
     -------
     None.
     """
+    Norway_global_demand_1y, gas_demandTS = import_gas_demandTS()
+    global_demand = calc_global_demand(Norway_global_demand_1y)
 
-    global_demand = calc_global_demand()
-    print(global_demand)
-    # gas_demandTS = import_gas_demandTS()
-
-    # insert_demand(global_demand)
+    insert_gas_demand(global_demand, gas_demandTS)
