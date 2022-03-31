@@ -1018,16 +1018,19 @@ tyndp:
 gas_neighbours:
   sources:
     tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
   targets:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
-    buses:
-      schema: 'grid'
-      table: 'egon_etrago_bus'
     loads:
       schema: 'grid'
       table: 'egon_etrago_load'
     load_timeseries:
       schema: 'grid'
       table: 'egon_etrago_load_timeseries'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'

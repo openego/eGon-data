@@ -395,6 +395,7 @@ def insert_generators(gen):
     None.
 
     """
+    sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
     scn_params = get_sector_parameters("gas", "eGon2035")
@@ -406,7 +407,7 @@ def insert_generators(gen):
         {targets['generators']['schema']}.{targets['generators']['table']}
         WHERE bus IN (
             SELECT bus_id FROM
-            {targets['buses']['schema']}.{targets['buses']['table']}
+            {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
@@ -612,6 +613,7 @@ def insert_gas_demand(global_demand, gas_demandTS):
     None.
 
     """
+    sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
@@ -626,7 +628,7 @@ def insert_gas_demand(global_demand, gas_demandTS):
             {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE bus IN (
                 SELECT bus_id FROM
-                {targets['buses']['schema']}.{targets['buses']['table']}
+                {sources['buses']['schema']}.{sources['buses']['table']}
                 WHERE country != 'DE'
                 AND scn_name = 'eGon2035')
             AND scn_name = 'eGon2035'
@@ -641,7 +643,7 @@ def insert_gas_demand(global_demand, gas_demandTS):
         {targets['loads']['schema']}.{targets['loads']['table']}
         WHERE bus IN (
             SELECT bus_id FROM
-            {targets['buses']['schema']}.{targets['buses']['table']}
+            {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
@@ -717,6 +719,152 @@ def insert_gas_demand(global_demand, gas_demandTS):
     )
 
 
+def calc_ch4_storage_capacities():
+    target_file = (
+        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Storages.csv"
+    )
+
+    ch4_storage_capacities = pd.read_csv(
+        target_file,
+        delimiter=";",
+        decimal=".",
+        usecols=["country_code", "param"],
+    )
+
+    wanted_countries = [
+        "AT",
+        "BE",
+        "CH",
+        "CZ",
+        "DK",
+        "GB",
+        "FR",
+        "LU",
+        "NL",
+        "NO",
+        "PL",
+        "SE",
+    ]
+
+    ch4_storage_capacities = ch4_storage_capacities[
+        ch4_storage_capacities["country_code"].isin(wanted_countries)
+    ]
+
+    map_countries_scigrid = {
+        "AT": "AT00",
+        "BE": "BE00",
+        "CZ": "CZ00",
+        "DK": "DKE1",
+        "EE": "EE00",
+        "EL": "GR00",
+        "ES": "ES00",
+        "FI": "FI00",
+        "FR": "FR00",
+        "GB": "UK00",
+        "IT": "ITCN",
+        "LT": "LT00",
+        "LV": "LV00",
+        "MT": "MT00",
+        "NL": "NL00",
+        "PL": "PL00",
+        "PT": "PT00",
+        "SE": "SE01",
+    }
+
+    # Define new columns
+    max_workingGas_M_m3 = []
+    end_year = []
+
+    for index, row in ch4_storage_capacities.iterrows():
+        param = ast.literal_eval(row["param"])
+        end_year.append(param["end_year"])
+        max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
+
+    end_year = [float("inf") if x == None else x for x in end_year]
+    ch4_storage_capacities = ch4_storage_capacities.assign(end_year=end_year)
+    ch4_storage_capacities = ch4_storage_capacities[
+        ch4_storage_capacities["end_year"] >= 2035
+    ]
+
+    # Calculate e_nom
+    conv_factor = (
+        10830  # M_m3 to MWh - gross calorific value = 39 MJ/m3 (eurogas.org)
+    )
+    ch4_storage_capacities["e_nom"] = [
+        conv_factor * i for i in max_workingGas_M_m3
+    ]
+
+    ch4_storage_capacities.drop(
+        ["param", "end_year"],
+        axis=1,
+        inplace=True,
+    )
+
+    ch4_storage_capacities["Country"] = ch4_storage_capacities[
+        "country_code"
+    ].map(map_countries_scigrid)
+    ch4_storage_capacities = ch4_storage_capacities.groupby(
+        ["country_code"]
+    ).agg(
+        {
+            "e_nom": "sum",
+            "Country": "first",
+        },
+    )
+
+    ch4_storage_capacities.loc[:, "bus"] = (
+        get_foreign_bus_id()
+        .loc[ch4_storage_capacities.loc[:, "Country"]]
+        .values
+    )
+
+    return ch4_storage_capacities
+
+
+def insert_storage(ch4_storage_capacities):
+    sources = config.datasets()["gas_neighbours"]["sources"]
+    targets = config.datasets()["gas_neighbours"]["targets"]
+
+    # Clean table
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
+        WHERE "carrier" = 'CH4'
+        AND scn_name = 'eGon2035'
+        AND bus IN (
+            SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+            WHERE scn_name = 'eGon2035' 
+            AND country != 'DE'
+            );
+        """
+    )
+    # Add missing columns
+    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    ch4_storage_capacities = ch4_storage_capacities.assign(**c)
+
+    new_id = db.next_etrago_id("store")
+    ch4_storage_capacities["store_id"] = range(
+        new_id, new_id + len(ch4_storage_capacities)
+    )
+
+    ch4_storage_capacities.drop(
+        ["Country"],
+        axis=1,
+        inplace=True,
+    )
+
+    ch4_storage_capacities = ch4_storage_capacities.reset_index(drop=True)
+    print(ch4_storage_capacities)
+    # Insert data to db
+    ch4_storage_capacities.to_sql(
+        targets["stores"]["table"],
+        db.engine(),
+        schema=targets["stores"]["schema"],
+        index=False,
+        if_exists="append",
+    )
+
+
 def tyndp_gas_generation():
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
@@ -728,7 +876,8 @@ def tyndp_gas_generation():
     capacities = calc_capacities()
     insert_generators(capacities)
 
-    # insert_storage(capacities)
+    ch4_storage_capacities = calc_ch4_storage_capacities()
+    insert_storage(ch4_storage_capacities)
 
 
 def tyndp_gas_demand():
