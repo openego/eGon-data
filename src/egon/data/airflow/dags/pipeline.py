@@ -259,7 +259,6 @@ with airflow.DAG(
             osm_buildings_streets_residential_zensus_mapping,
         ]
     )
-    hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
         "electricity_demand_timeseries"
         ".hh_profiles"
@@ -271,7 +270,6 @@ with airflow.DAG(
         dependencies=[householdprofiles_in_cencus_cells]
     )
 
-    hh_demand_buildings_setup.insert_into(pipeline)
     map_houseprofiles_to_buildings = tasks[
         "electricity_demand_timeseries"
         ".hh_buildings"
