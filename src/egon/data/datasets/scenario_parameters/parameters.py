@@ -467,7 +467,7 @@ def mobility(scenario):
                         "3_shopping": 0,
                         "4_private_ridesharing": 0,
                         "5_leisure": 0,
-                        "6_home": 1,
+                        "6_home": 0.8,
                         "7_charging_hub": 0,
                     },
                     "model_parameters": {
