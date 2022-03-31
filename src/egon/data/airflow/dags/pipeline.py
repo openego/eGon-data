@@ -44,8 +44,12 @@ from egon.data.datasets.hydrogen_etrago import (
     HydrogenStoreEtrago,
 )
 from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
-from egon.data.datasets.industrial_gas_demand import IndustrialGasDemandeGon2035
-from egon.data.datasets.industrial_gas_demand import IndustrialGasDemandeGon100RE
+from egon.data.datasets.industrial_gas_demand import (
+    IndustrialGasDemandeGon2035,
+)
+from egon.data.datasets.industrial_gas_demand import (
+    IndustrialGasDemandeGon100RE,
+)
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea
@@ -157,9 +161,7 @@ with airflow.DAG(
     setup_etrago = EtragoSetup(dependencies=[setup])
     etrago_input_data = tasks["etrago_setup.create-tables"]
 
-    substation_extraction = SubstationExtraction(
-        dependencies=[osm, vg250]
-    )
+    substation_extraction = SubstationExtraction(dependencies=[osm, vg250])
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
@@ -219,15 +221,12 @@ with airflow.DAG(
     )
 
     # Download industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand(
-        dependencies=[setup]
-    )
+    industrial_gas_demand = IndustrialGasDemand(dependencies=[setup])
     # Extract landuse areas from osm data set
     load_area = LoadArea(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
     renewable_feedin = RenewableFeedin(dependencies=[weather_data, vg250])
-
 
     # District heating areas demarcation
     district_heating_areas = DistrictHeatingAreas(
@@ -239,13 +238,7 @@ with airflow.DAG(
     )
 
     # Calculate dynamic line rating for HV trans lines
-    dlr = Calculate_dlr(
-        dependencies=[
-            osmtgmod,
-            data_bundle,
-            weather_data,
-        ]
-    )
+    dlr = Calculate_dlr(dependencies=[osmtgmod, data_bundle, weather_data])
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
@@ -266,7 +259,7 @@ with airflow.DAG(
             zensus_vg250,
             demandregio,
             osm_buildings_streets_residential_zensus_mapping,
-        ],
+        ]
     )
     hh_demand_profiles_setup.insert_into(pipeline)
     householdprofiles_in_cencus_cells = tasks[
@@ -275,10 +268,9 @@ with airflow.DAG(
         ".houseprofiles-in-census-cells"
     ]
 
-
     # Household electricity demand buildings
     hh_demand_buildings_setup = hh_buildings.setup(
-        dependencies=[householdprofiles_in_cencus_cells],
+        dependencies=[householdprofiles_in_cencus_cells]
     )
 
     hh_demand_buildings_setup.insert_into(pipeline)
@@ -380,18 +372,12 @@ with airflow.DAG(
 
     # Power-to-gas-to-power chain installations
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=[
-            insert_hydrogen_buses,
-            insert_h2_grid
-        ]
+        dependencies=[insert_hydrogen_buses, insert_h2_grid]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            insert_hydrogen_buses,
-            insert_h2_grid
-        ]
+        dependencies=[insert_hydrogen_buses, insert_h2_grid]
     )
 
     # Create gas voronoi eGon100RE
@@ -405,7 +391,9 @@ with airflow.DAG(
     )
 
     # CH4 storages import
-    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons_egon2035])
+    insert_data_ch4_storages = CH4Storages(
+        dependencies=[create_gas_polygons_egon2035]
+    )
 
     # Assign industrial gas demand eGon2035
     assign_industrial_gas_demand = IndustrialGasDemandeGon2035(
@@ -418,10 +406,7 @@ with airflow.DAG(
     )
     # Aggregate gas loads, stores and generators
     aggrgate_gas = GasAggregation(
-        dependencies=[
-            gas_production_insert_data,
-            insert_data_ch4_storages,
-        ]
+        dependencies=[gas_production_insert_data, insert_data_ch4_storages]
     )
 
     # CHP locations
@@ -460,7 +445,6 @@ with airflow.DAG(
     create_ocgt = OpenCycleGasTurbineEtrago(
         dependencies=[create_gas_polygons_egon2035, power_plants]
     )
-
 
     # Fill eTraGo Generators tables
     fill_etrago_generators = Egon_etrago_gen(
@@ -540,9 +524,5 @@ with airflow.DAG(
     # Storages to eTrago
 
     storage_etrago = StorageEtrago(
-        dependencies=[
-            pumped_hydro,
-            setup_etrago,
-            scenario_parameters,
-        ]
+        dependencies=[pumped_hydro, setup_etrago, scenario_parameters]
     )
