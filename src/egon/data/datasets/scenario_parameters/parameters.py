@@ -443,6 +443,10 @@ def mobility(scenario):
     parameters : dict
         List of parameters of mobility sector
 
+    Notes
+    -----
+    For a detailed description of the parameters see module
+    :mod:`egon.data.datasets.emobility.motorized_individual_travel`.
     """
 
     if scenario == "eGon2035":
