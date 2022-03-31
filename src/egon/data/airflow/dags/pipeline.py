@@ -27,7 +27,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.gas_aggregation import GasAggregation
-from egon.data.datasets.gas_areas import GasAreaseGon2035, GasAreaseGon100RE
+from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -43,12 +43,10 @@ from egon.data.datasets.hydrogen_etrago import (
     HydrogenPowerLinkEtrago,
     HydrogenStoreEtrago,
 )
-from egon.data.datasets.industrial_gas_demand import IndustrialGasDemand
 from egon.data.datasets.industrial_gas_demand import (
-    IndustrialGasDemandeGon2035,
-)
-from egon.data.datasets.industrial_gas_demand import (
+    IndustrialGasDemand,
     IndustrialGasDemandeGon100RE,
+    IndustrialGasDemandeGon2035,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
