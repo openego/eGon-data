@@ -478,15 +478,6 @@ def mobility(scenario):
             }
         }
 
-        # Investment costs can be annualzied based on overnight investment
-        # costs and life time using the following function:
-        # for comp in parameters["overnight_cost"].keys():
-        #     parameters["capital_cost"][comp] = annualize_capital_costs(
-        #         parameters["overnight_cost"][comp],
-        #         parameters["lifetime"][comp],
-        #         global_settings(scenario)["interest_rate"],
-        #     )
-
     elif scenario == "eGon100RE":
         # eGon100RE has 3 Scenario variations
         #   * allocation will always be done for all scenarios
