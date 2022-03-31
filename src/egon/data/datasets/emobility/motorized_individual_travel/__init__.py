@@ -43,21 +43,21 @@ is given in its `documentation <https://simbev.readthedocs.io>`_.
     "PHEV", "medium", 11, 40, 20, 0.1782
     "PHEV", "luxury", 11, 120, 30, 0.2138
 
-* RegioStaR7
-
-The tech data and assumptions of the run can be found in the metadata:
+The complete tech data and assumptions of the run can be found in the metadata:
 *<WORKING_DIRECTORY>/data_bundle_egon_data/emobility/mit_trip_data/<SCENARIO>/
 metadata_simbev_run.json*.efficiency_fixed
 
-* Add run params (all in meta file?)
+* explain scenario parameters
+
+* run params (all in meta file?)
 
 **EV allocation**
 
 The EVs per registration district (Zulassungsbezirk) is taken from KBA's
 vehicle registration data. The numbers per EV type (BEV and PHEV)
-RegioStaR7
 
-scenario parameters: shares
+* RegioStaR7
+* scenario parameters: shares
 
 **Further notes**
 
