@@ -96,8 +96,7 @@ with airflow.DAG(
 
     tasks = pipeline.task_dict
 
-    database_setup = database.Setup()
-    setup = tasks["database.setup"]
+    setup = database.Setup()
 
     osm = OpenStreetMap(dependencies=[setup])
     osm_download = tasks["osm.download"]
