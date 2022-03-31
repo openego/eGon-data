@@ -428,7 +428,7 @@ with airflow.DAG(
             re_potential_areas,
             scenario_parameters,
             scenario_capacities,
-            Vg250MvGridDistricts,
+            vg250_mv_grid_districts,
             chp,
             zensus_mv_grid_districts,
             cts_electricity_demand_annual,
@@ -488,7 +488,7 @@ with airflow.DAG(
             mastr_data,
             scenario_parameters,
             scenario_capacities,
-            Vg250MvGridDistricts,
+            vg250_mv_grid_districts,
             power_plants,
         ]
     )
