@@ -324,6 +324,14 @@ Changed
 Bug Fixes
 ---------
 
+* Some dependencies have their upper versions restricted now. This is
+  mostly due to us not yet supporting Airflow 2.0 which means that it
+  will no longer work with certain packages, but we also won't get and
+  upper version limit for those from Airflow because version 1.X is
+  unlikely to to get an update. So we had to make some implicit
+  dependencies explicit in order to give them them upper version limits.
+  Done via `PR #692`_ in order to fix issues `#343`_, `#556`_, `#641`_
+  and `#669`_.
 * Heat demand data import
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
@@ -425,3 +433,9 @@ Bug Fixes
   `#676 <https://github.com/openego/eGon-data/issues/676>`_
 * Distribute rural heat supply to residetntial and service demands
   `#679 <https://github.com/openego/eGon-data/issues/679>`_
+
+.. _PR #692: https://github.com/openego/eGon-data/pull/692
+.. _#343: https://github.com/openego/eGon-data/issues/343
+.. _#556: https://github.com/openego/eGon-data/issues/556
+.. _#641: https://github.com/openego/eGon-data/issues/641
+.. _#669: https://github.com/openego/eGon-data/issues/669
