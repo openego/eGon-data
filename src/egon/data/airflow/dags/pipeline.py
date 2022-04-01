@@ -99,7 +99,6 @@ with airflow.DAG(
     setup = database.Setup()
 
     osm = OpenStreetMap(dependencies=[setup])
-    osm_download = tasks["osm.download"]
 
     data_bundle = DataBundle(dependencies=[setup])
 
@@ -137,9 +136,6 @@ with airflow.DAG(
     osm_buildings_streets = OsmBuildingsStreets(
         dependencies=[osm, zensus_miscellaneous]
     )
-    osm_buildings_streets_residential_zensus_mapping = tasks[
-        "osm_buildings_streets.create-buildings-residential-zensus-mapping"
-    ]
 
     # Import saltcavern storage potentials
     saltcavern_storage = SaltcavernData(dependencies=[data_bundle, vg250])
@@ -156,21 +152,18 @@ with airflow.DAG(
     # setting etrago input tables
 
     setup_etrago = EtragoSetup(dependencies=[setup])
-    etrago_input_data = tasks["etrago_setup.create-tables"]
 
     substation_extraction = SubstationExtraction(dependencies=[osm, vg250])
 
     # osmTGmod ehv/hv grid model generation
     osmtgmod = Osmtgmod(
         dependencies=[
-            osm_download,
             scenario_parameters,
             setup_etrago,
             substation_extraction,
+            tasks["osm.download"],
         ]
     )
-
-    osmtgmod_substation = tasks["osmtgmod_substation"]
 
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
@@ -199,7 +192,7 @@ with airflow.DAG(
 
     # create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[osmtgmod_substation, vg250]
+        dependencies=[tasks["osmtgmod_substation"], vg250]
     )
 
     # MV grid districts
@@ -251,46 +244,46 @@ with airflow.DAG(
     hh_demand_profiles_setup = hh_profiles.HouseholdDemands(
         dependencies=[
             demandregio,
-            osm_buildings_streets_residential_zensus_mapping,
+            tasks[
+                "osm_buildings_streets"
+                ".create-buildings-residential-zensus-mapping"
+            ],
             vg250,
             zensus_miscellaneous,
             zensus_mv_grid_districts,
             zensus_vg250,
         ]
     )
-    householdprofiles_in_cencus_cells = tasks[
-        "electricity_demand_timeseries"
-        ".hh_profiles"
-        ".houseprofiles-in-census-cells"
-    ]
 
     # Household electricity demand buildings
     hh_demand_buildings_setup = hh_buildings.setup(
-        dependencies=[householdprofiles_in_cencus_cells]
+        dependencies=[
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_profiles"
+                ".houseprofiles-in-census-cells"
+            ]
+        ]
     )
-
-    map_houseprofiles_to_buildings = tasks[
-        "electricity_demand_timeseries"
-        ".hh_buildings"
-        ".map-houseprofiles-to-buildings"
-    ]
 
     # Get household electrical demands for cencus cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
-        dependencies=[map_houseprofiles_to_buildings]
+        dependencies=[
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".map-houseprofiles-to-buildings"
+            ]
+        ]
     )
-
-    elec_annual_household_demands_cells = tasks[
-        "electricity_demand.get-annual-household-el-demand-cells"
-    ]
 
     # Distribute electrical CTS demands to zensus grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
             demandregio,
-            etrago_input_data,
             heat_demand_Germany,
             household_electricity_demand_annual,
+            tasks["etrago_setup.create-tables"],
             zensus_mv_grid_districts,
             zensus_vg250,
         ]
@@ -329,10 +322,10 @@ with airflow.DAG(
     gas_grid_insert_data = GasNodesandPipes(
         dependencies=[
             data_bundle,
-            etrago_input_data,
             foreign_lines,
             osmtgmod,
             scenario_parameters,
+            tasks["etrago_setup.create-tables"],
         ]
     )
 
@@ -421,7 +414,6 @@ with airflow.DAG(
         dependencies=[
             chp,
             cts_electricity_demand_annual,
-            etrago_input_data,
             household_electricity_demand_annual,
             mastr_data,
             mv_grid_districts,
@@ -431,6 +423,7 @@ with airflow.DAG(
             scenario_parameters,
             setup,
             substation_extraction,
+            tasks["etrago_setup.create-tables"],
             vg250_mv_grid_districts,
             zensus_mv_grid_districts,
         ]
