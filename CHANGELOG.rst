@@ -460,6 +460,8 @@ Bug Fixes
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
+* Clean up `"pipeline.py"`
+  `#562 <https://github.com/openego/eGon-data/issues/562>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
