@@ -595,7 +595,57 @@ def import_ch4_demandTS():
     return Norway_global_demand, neighbor_loads_t
 
 
-def insert_gas_demand(global_demand, gas_demandTS):
+def import_power_to_h2_demandTS():
+    """Import from the PyPSA-eur-sec run the timeseries of
+    industry demand heat per neighbor country and normalize it
+    in order to model the power-to-H2 hourly resolved demand profile.
+
+    Parameters
+    ----------
+    None.
+
+    Returns
+    -------
+    neighbor_loads_t: pandas.DataFrame
+        Normalized CH4 hourly resolved demand profiles per neighbor country
+
+    """
+
+    cwd = Path(".")
+    target_file = (
+        cwd
+        / "data_bundle_egon_data"
+        / "pypsa_eur_sec"
+        / "2021-egondata-integration"
+        / "postnetworks"
+        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+    )
+
+    network = pypsa.Network(str(target_file))
+
+    # Set country tag for all buses
+    network.buses.country = network.buses.index.str[:2]
+    neighbors = network.buses[network.buses.country != "DE"]
+    neighbors = neighbors[
+        (neighbors["country"].isin(countries))
+        & (
+            neighbors["carrier"] == "residential rural heat"
+        )  # no available industry profile for now, using another timeserie
+    ]  # .drop_duplicates(subset="country")
+
+    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    neighbor_loads_t_index = neighbor_loads.index[
+        neighbor_loads.index.isin(network.loads_t.p_set.columns)
+    ]
+    neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
+
+    for i in neighbor_loads_t.columns:
+        neighbor_loads_t[i] = neighbor_loads_t[i] / neighbor_loads_t[i].sum()
+
+    return neighbor_loads_t
+
+
+def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     """Insert gas final demands for foreign countries
 
     Parameters
@@ -844,6 +894,250 @@ def insert_storage(ch4_storage_capacities):
         targets["stores"]["table"],
         db.engine(),
         schema=targets["stores"]["schema"],
+        index=False,
+        if_exists="append",
+    )
+
+
+def calc_global_power_to_h2_demand():
+    """Calculates global power demand linked to h2 production from TYNDP data
+
+    Returns
+    -------
+    pandas.DataFrame
+        Global power-to-h2 demand per foreign node
+
+    """
+    sources = config.datasets()["gas_neighbours"]["sources"]
+    countries = [
+        "AT",
+        "BE",
+        "CH",
+        "CZ",
+        "DK",
+        "FR",
+        "LU",
+        "NL",
+        "NO",
+        "SE",
+        "PL",
+        "UK",
+    ]
+
+    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    df = pd.read_excel(
+        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
+        sheet_name="Gas Data",
+    )
+
+    df = (
+        df.query(
+            'Scenario == "Distributed Energy" & '
+            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Parameter == "P2H2"'
+        )
+        .drop(
+            columns=[
+                "Generator_ID",
+                "Climate Year",
+                "Simulation_ID",
+                "Node 1",
+                "Path",
+                "Direct/Indirect",
+                "Sector",
+                "Note",
+                "Category",
+                "Case",
+                "Scenario",
+                "Parameter",
+            ]
+        )
+        .set_index("Node/Line")
+    )
+
+    df_2030 = (
+        df[df["Year"] == 2030]
+        .rename(columns={"Value": "Value_2030"})
+        .drop(columns=["Year"])
+    )
+    df_2040 = (
+        df[df["Year"] == 2040]
+        .rename(columns={"Value": "Value_2040"})
+        .drop(columns=["Year"])
+    )
+
+    # Conversion GWh/d to MWh/h
+    conversion_factor = 1000 / 24
+
+    df_2035 = pd.concat([df_2040, df_2030], axis=1)
+    df_2035["GlobD_2035"] = (
+        (df_2035["Value_2030"] + df_2035["Value_2040"]) / 2
+    ) * conversion_factor
+
+    global_power_to_h2_demand = df_2035.drop(
+        columns=["Value_2030", "Value_2040"]
+    )
+
+    # choose demands for considered countries
+    global_power_to_h2_demand = global_power_to_h2_demand[
+        (global_power_to_h2_demand.index.str[:2].isin(countries))
+        & (global_power_to_h2_demand["GlobD_2035"] != 0)
+    ]
+
+    # Split in two the demands for DK and UK
+    global_power_to_h2_demand.loc["DKW1"] = (
+        global_power_to_h2_demand.loc["DKE1"] / 2
+    )
+    global_power_to_h2_demand.loc["DKE1"] = (
+        global_power_to_h2_demand.loc["DKE1"] / 2
+    )
+    global_power_to_h2_demand.loc["UKNI"] = (
+        global_power_to_h2_demand.loc["UK00"] / 2
+    )
+    global_power_to_h2_demand.loc["UK00"] = (
+        global_power_to_h2_demand.loc["UK00"] / 2
+    )
+    global_power_to_h2_demand = global_power_to_h2_demand.reset_index()
+
+    return global_power_to_h2_demand
+
+
+def insert_power_to_h2_demand(
+    global_power_to_h2_demand, normalized_power_to_h2_demandTS
+):
+    sources = config.datasets()["gas_neighbours"]["sources"]
+    targets = config.datasets()["gas_neighbours"]["targets"]
+    map_buses = get_map_buses()
+
+    # Delete existing data
+
+    db.execute_sql(
+        f"""
+        DELETE FROM 
+        {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
+        WHERE "load_id" IN (
+            SELECT load_id FROM 
+            {targets['loads']['schema']}.{targets['loads']['table']}
+            WHERE bus IN (
+                SELECT bus_id FROM
+                {sources['buses']['schema']}.{sources['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon2035')
+            AND scn_name = 'eGon2035'
+            AND carrier = 'H2 for industry'            
+        );
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['loads']['schema']}.{targets['loads']['table']}
+        WHERE bus IN (
+            SELECT bus_id FROM
+            {sources['buses']['schema']}.{sources['buses']['table']}
+            WHERE country != 'DE'
+            AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+        AND carrier = 'H2 for industry'
+        """
+    )
+
+    # Set bus_id
+    global_power_to_h2_demand.loc[
+        global_power_to_h2_demand[
+            global_power_to_h2_demand["Node/Line"].isin(map_buses.keys())
+        ].index,
+        "Node/Line",
+    ] = global_power_to_h2_demand.loc[
+        global_power_to_h2_demand[
+            global_power_to_h2_demand["Node/Line"].isin(map_buses.keys())
+        ].index,
+        "Node/Line",
+    ].map(
+        map_buses
+    )
+    global_power_to_h2_demand.loc[:, "bus"] = (
+        get_foreign_bus_id()
+        .loc[global_power_to_h2_demand.loc[:, "Node/Line"]]
+        .values
+    )
+
+    # Add missing columns
+    c = {"scn_name": "eGon2035", "carrier": "H2 for industry"}
+    global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
+
+    new_id = db.next_etrago_id("load")
+    global_power_to_h2_demand["load_id"] = range(
+        new_id, new_id + len(global_power_to_h2_demand)
+    )
+
+    power_to_h2_demand_TS = global_power_to_h2_demand.copy()
+    # Remove useless columns
+    global_power_to_h2_demand = global_power_to_h2_demand.drop(
+        columns=["Node/Line", "GlobD_2035"]
+    )
+
+    print(global_power_to_h2_demand)
+    # Insert data to db
+    global_power_to_h2_demand.to_sql(
+        targets["loads"]["table"],
+        db.engine(),
+        schema=targets["loads"]["schema"],
+        index=False,
+        if_exists="append",
+    )
+
+    # Insert time series
+    normalized_power_to_h2_demandTS = normalized_power_to_h2_demandTS.drop(
+        columns=[
+            "NO3 0 residential rural heat",
+            "CH0 0 residential rural heat",
+            "LU0 0 residential rural heat",
+        ]
+    )
+    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
+        "Node/Line"
+    ].replace(["UK00"], "GB4")
+    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
+        "Node/Line"
+    ].replace(["UKNI"], "GB5")
+    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
+        "Node/Line"
+    ].replace(["DKW1"], "DK3")
+    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
+        "Node/Line"
+    ].replace(["DKE1"], "DK0")
+    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
+        "Node/Line"
+    ].replace(["SE02"], "SE3")
+
+    p_set = []
+    for index, row in power_to_h2_demand_TS.iterrows():
+        normalized_TS_df = normalized_power_to_h2_demandTS.loc[
+            :,
+            normalized_power_to_h2_demandTS.columns.str.contains(
+                row["Node/Line"][:3]
+            ),
+        ]
+        p_set.append(
+            (
+                normalized_TS_df[normalized_TS_df.columns[0]]
+                * row["GlobD_2035"]
+            ).tolist()
+        )
+
+    power_to_h2_demand_TS["p_set"] = p_set
+    power_to_h2_demand_TS["temp_id"] = 1
+    power_to_h2_demand_TS = power_to_h2_demand_TS.drop(
+        columns=["Node/Line", "GlobD_2035", "bus", "carrier"]
+    )
+
+    print(power_to_h2_demand_TS)
+    power_to_h2_demand_TS.to_sql(
+        targets["load_timeseries"]["table"],
+        db.engine(),
+        schema=targets["load_timeseries"]["schema"],
         index=False,
         if_exists="append",
     )
