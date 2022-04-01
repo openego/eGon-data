@@ -102,7 +102,7 @@ with airflow.DAG(
 
     data_bundle = DataBundle(dependencies=[setup])
 
-    # VG250 (Verwaltungsgebiete 250) data import
+    # Import VG250 (Verwaltungsgebiete 250) data
     vg250 = Vg250(dependencies=[setup])
 
     # Scenario table
@@ -111,10 +111,10 @@ with airflow.DAG(
     # Download TYNDP data
     tyndp_data = Tyndp(dependencies=[setup])
 
-    # Zensus population import
+    # Import zensus population
     zensus_population = ZensusPopulation(dependencies=[setup, vg250])
 
-    # Combine Zensus and VG250 data
+    # Combine zensus and VG250 data
     zensus_vg250 = ZensusVg250(dependencies=[vg250, zensus_population])
 
     # Download and import zensus data on households, buildings and apartments
@@ -122,7 +122,7 @@ with airflow.DAG(
         dependencies=[zensus_population, zensus_vg250]
     )
 
-    # DemandRegio data import
+    # Import DemandRegio data
     demandregio = DemandRegio(
         dependencies=[data_bundle, scenario_parameters, setup, vg250]
     )
@@ -132,7 +132,7 @@ with airflow.DAG(
         dependencies=[demandregio, zensus_population, zensus_vg250]
     )
 
-    # OSM buildings, streets, amenities
+    # OSM (OpenStreetMap) buildings, streets and amenities
     osm_buildings_streets = OsmBuildingsStreets(
         dependencies=[osm, zensus_miscellaneous]
     )
@@ -149,13 +149,12 @@ with airflow.DAG(
     # download only, processing in PyPSA-Eur-Sec fork
     hd_abroad = HeatDemandEurope(dependencies=[setup])
 
-    # setting etrago input tables
-
+    # Set eTraGo input tables
     setup_etrago = EtragoSetup(dependencies=[setup])
 
     substation_extraction = SubstationExtraction(dependencies=[osm, vg250])
 
-    # osmTGmod ehv/hv grid model generation
+    # Generate the osmTGmod ehv/hv grid model
     osmtgmod = Osmtgmod(
         dependencies=[
             scenario_parameters,
@@ -165,7 +164,7 @@ with airflow.DAG(
         ]
     )
 
-    # run pypsa-eur-sec
+    # Run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
             data_bundle,
@@ -176,7 +175,7 @@ with airflow.DAG(
         ]
     )
 
-    # NEP data import
+    # Import NEP (Netzentwicklungsplan) data
     scenario_capacities = ScenarioCapacities(
         dependencies=[
             data_bundle,
@@ -187,15 +186,15 @@ with airflow.DAG(
         ]
     )
 
-    # Retrieve MaStR data
+    # Retrieve MaStR (Marktstammdatenregister) data
     mastr_data = mastr_data_setup(dependencies=[setup])
 
-    # create Voronoi polygons
+    # Create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
         dependencies=[tasks["osmtgmod_substation"], vg250]
     )
 
-    # MV grid districts
+    # MV (medium voltage) grid districts
     mv_grid_districts = mv_grid_districts_setup(
         dependencies=[substation_voronoi]
     )
@@ -205,20 +204,21 @@ with airflow.DAG(
         dependencies=[data_bundle, setup]
     )
 
-    # Future heat demand calculation based on Peta5_0_1 data
+    # Calculate future heat demand based on Peta5_0_1 data
     heat_demand_Germany = HeatDemandImport(
         dependencies=[scenario_parameters, vg250, zensus_vg250]
     )
 
     # Download industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(dependencies=[setup])
-    # Extract landuse areas from osm data set
+
+    # Extract landuse areas from the `osm` dataset
     load_area = LoadArea(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
     renewable_feedin = RenewableFeedin(dependencies=[vg250, weather_data])
 
-    # District heating areas demarcation
+    # Demarcate district heating areas
     district_heating_areas = DistrictHeatingAreas(
         dependencies=[
             heat_demand_Germany,
@@ -227,7 +227,8 @@ with airflow.DAG(
         ]
     )
 
-    # Calculate dynamic line rating for HV trans lines
+    # TODO: What does "trans" stand for?
+    # Calculate dynamic line rating for HV (high voltage) trans lines
     dlr = Calculate_dlr(dependencies=[data_bundle, osmtgmod, weather_data])
 
     # Map zensus grid districts
@@ -240,7 +241,7 @@ with airflow.DAG(
         dependencies=[mv_grid_districts, vg250]
     )
 
-    # Create HH demand profiles on census level
+    # Create household demand profiles on zensus level
     hh_demand_profiles_setup = hh_profiles.HouseholdDemands(
         dependencies=[
             demandregio,
@@ -293,7 +294,6 @@ with airflow.DAG(
     industrial_sites = MergeIndustrialSites(
         dependencies=[data_bundle, setup, vg250]
     )
-
     demand_curves_industry = IndustrialDemandCurves(
         dependencies=[
             demandregio,
@@ -318,7 +318,7 @@ with airflow.DAG(
         dependencies=[run_pypsaeursec, tyndp_data]
     )
 
-    # Gas grid import
+    # Import gas grid
     gas_grid_insert_data = GasNodesandPipes(
         dependencies=[
             data_bundle,
@@ -372,12 +372,12 @@ with airflow.DAG(
         dependencies=[insert_h2_grid, vg250]
     )
 
-    # Gas prod import
+    # Import gas production
     gas_production_insert_data = CH4Production(
         dependencies=[create_gas_polygons_egon2035]
     )
 
-    # CH4 storages import
+    # Import CH4 storages
     insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons_egon2035]
     )
@@ -391,6 +391,7 @@ with airflow.DAG(
     assign_industrial_gas_demand = IndustrialGasDemandeGon100RE(
         dependencies=[create_gas_polygons_egon100RE, industrial_gas_demand]
     )
+
     # Aggregate gas loads, stores and generators
     aggrgate_gas = GasAggregation(
         dependencies=[gas_production_insert_data, insert_data_ch4_storages]
@@ -433,7 +434,7 @@ with airflow.DAG(
         dependencies=[create_gas_polygons_egon2035, power_plants]
     )
 
-    # Fill eTraGo Generators tables
+    # Fill eTraGo generators tables
     fill_etrago_generators = Egon_etrago_gen(
         dependencies=[power_plants, weather_data]
     )
@@ -461,7 +462,7 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # DSM
+    # DSM (demand site management)
     components_dsm = dsm_Potential(
         dependencies=[
             cts_electricity_demand_annual,
@@ -471,7 +472,6 @@ with airflow.DAG(
     )
 
     # Pumped hydro units
-
     pumped_hydro = PumpedHydro(
         dependencies=[
             mastr_data,
@@ -497,7 +497,7 @@ with airflow.DAG(
         ]
     )
 
-    # HTS to etrago table
+    # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
         dependencies=[
             district_heating_areas,
@@ -507,8 +507,7 @@ with airflow.DAG(
         ]
     )
 
-    # Storages to eTrago
-
+    # Storages to eTraGo
     storage_etrago = StorageEtrago(
         dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
     )
