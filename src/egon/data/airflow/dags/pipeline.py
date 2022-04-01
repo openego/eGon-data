@@ -383,12 +383,12 @@ with airflow.DAG(
     )
 
     # Assign industrial gas demand eGon2035
-    assign_industrial_gas_demand = IndustrialGasDemandeGon2035(
+    IndustrialGasDemandeGon2035(
         dependencies=[create_gas_polygons_egon2035, industrial_gas_demand]
     )
 
     # Assign industrial gas demand eGon100RE
-    assign_industrial_gas_demand = IndustrialGasDemandeGon100RE(
+    IndustrialGasDemandeGon100RE(
         dependencies=[create_gas_polygons_egon100RE, industrial_gas_demand]
     )
 
