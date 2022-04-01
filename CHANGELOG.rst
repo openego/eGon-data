@@ -190,8 +190,10 @@ Added
 * Add efficiency, capital_cost and marginal_cost to gas related data in
   etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
 
-
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
+.. _PR #703: https://github.com/openego/eGon-data/pull/703
+.. _#702: https://github.com/openego/eGon-data/issues/702
+.. _#267: https://github.com/openego/eGon-data/issues/267
 
 
 Changed
