@@ -8,21 +8,17 @@ Unreleased
 Added
 -----
 
-
 * Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
   `egon.data.subprocess.run`. This wrapper catches errors better and
   displays better error messages than Python's built-in function. Use
   this wrapper wenn calling other programs in Airflow tasks.
-
 * You can now override the default database configuration using command
   line arguments. Look for the switches starting with ``--database`` in
   ``egon-data --help``. See `PR #159`_ for more details.
-
 * Docker will not be used if there is already a service listening on the
   HOST:PORT combination configured for the database.
-
 * You can now supply values for the command line arguments for
   ``egon-data`` using a configuration file. If the configuration file
   doesn't exist, it will be created by ``egon-data`` on it's first run.
@@ -32,15 +28,12 @@ Added
   There's also the new function `egon.data.config.settings` which
   returns the current configuration settings. See `PR #159`_ for more
   details.
-
 * You can now use tasks which are not part of a ``Dataset``, i.e. which are
   unversioned, as dependencies of a dataset. See `PR #318`_ for more
   details.
-
 * You can now force the tasks of a ``Dataset`` to be always executed by
   giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
   #318`_ for more details.
-
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
@@ -329,6 +322,7 @@ Changed
 
 Bug fixes
 ---------
+
 * Heat demand data import
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
