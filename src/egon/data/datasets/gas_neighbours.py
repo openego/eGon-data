@@ -13,9 +13,29 @@ import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.electrical_neighbours import get_map_buses
+from egon.data.datasets.electrical_neighbours import (
+    get_map_buses,
+    get_foreign_bus_id,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.etrago_setup as etrago
+
+countries = [
+    "AT",
+    "BE",
+    "CH",
+    "CZ",
+    "DK",
+    "FR",
+    "GB",
+    "LU",
+    "NL",
+    "NO",
+    "PL",
+    "RU",
+    "SE",
+    "UK",
+]
 
 
 class GasNeighbours(Dataset):
@@ -28,7 +48,7 @@ class GasNeighbours(Dataset):
         )
 
 
-def get_foreign_bus_id():
+def get_foreign_gas_bus_id():
     """Calculate the etrago bus id from gas nodes of TYNDP based on the geometry
 
     Returns
@@ -154,21 +174,6 @@ def calc_capacities():
     """
 
     sources = config.datasets()["gas_neighbours"]["sources"]
-
-    countries = [
-        "AT",
-        "BE",
-        "CH",
-        "CZ",
-        "DK",
-        "FR",
-        "NL",
-        "NO",
-        "SE",
-        "PL",
-        "UK",
-        "RU",
-    ]
 
     # insert installed capacities
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
@@ -419,7 +424,9 @@ def insert_generators(gen):
     gen.loc[gen[gen["index"].isin(map_buses.keys())].index, "index"] = gen.loc[
         gen[gen["index"].isin(map_buses.keys())].index, "index"
     ].map(map_buses)
-    gen.loc[:, "bus"] = get_foreign_bus_id().loc[gen.loc[:, "index"]].values
+    gen.loc[:, "bus"] = (
+        get_foreign_gas_bus_id().loc[gen.loc[:, "index"]].values
+    )
 
     # Add missing columns
     c = {"scn_name": "eGon2035", "carrier": "CH4"}
@@ -436,6 +443,7 @@ def insert_generators(gen):
     # Remove useless columns
     gen = gen.drop(columns=["index", "ratioConv_2035", "cap_2035"])
 
+    print(gen)
     # Insert data to db
     gen.to_sql(
         targets["generators"]["table"],
@@ -456,32 +464,17 @@ def insert_generators(gen):
 #     """
 
 
-def calc_global_demand(Norway_global_demand_1y):
+def calc_global_ch4_demand(Norway_global_demand_1y):
     """Calculates global gas demands from TYNDP data
 
     Returns
     -------
     pandas.DataFrame
-        Global gas demand per foreign node and energy carrier
+        Global (yearly) CH4 final demand per foreign node
 
     """
 
     sources = config.datasets()["gas_neighbours"]["sources"]
-
-    countries = [
-        "AT",
-        "BE",
-        "CH",
-        "CZ",
-        "DK",
-        "FR",
-        "LU",
-        "NL",
-        "NO",
-        "SE",
-        "PL",
-        "UK",
-    ]
 
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
     df = pd.read_excel(
@@ -547,7 +540,26 @@ def calc_global_demand(Norway_global_demand_1y):
     ]
 
 
-def import_gas_demandTS():
+def import_ch4_demandTS():
+    """Import from the PyPSA-eur-sec run the timeseries of
+    residential rural heat per neighbor country.
+    This timeserie is used to calculate:
+    - the global (yearly) heat demand of Norway (that will be supplied by CH4)
+    - the normalized CH4 hourly resolved demand profile
+
+    Parameters
+    ----------
+    None.
+
+    Returns
+    -------
+    Norway_global_demand: Float
+        Yearly heat demand of Norway in MWh
+    neighbor_loads_t: pandas.DataFrame
+        Normalized CH4 hourly resolved demand profiles per neighbor country
+
+    """
+
     cwd = Path(".")
     target_file = (
         cwd
@@ -560,26 +572,11 @@ def import_gas_demandTS():
 
     network = pypsa.Network(str(target_file))
 
-    wanted_countries = [
-        "AT",
-        "BE",
-        "CH",
-        "CZ",
-        "DK",
-        "GB",
-        "FR",
-        "LU",
-        "NL",
-        "NO",
-        "PL",
-        "SE",
-    ]
-
     # Set country tag for all buses
     network.buses.country = network.buses.index.str[:2]
     neighbors = network.buses[network.buses.country != "DE"]
     neighbors = neighbors[
-        (neighbors["country"].isin(wanted_countries))
+        (neighbors["country"].isin(countries))
         & (neighbors["carrier"] == "residential rural heat")
     ].drop_duplicates(subset="country")
 
@@ -662,7 +659,7 @@ def insert_gas_demand(global_demand, gas_demandTS):
         map_buses
     )
     global_demand.loc[:, "bus"] = (
-        get_foreign_bus_id().loc[global_demand.loc[:, "Node/Line"]].values
+        get_foreign_gas_bus_id().loc[global_demand.loc[:, "Node/Line"]].values
     )
 
     # Add missing columns
@@ -693,8 +690,9 @@ def insert_gas_demand(global_demand, gas_demandTS):
 
     p_set = []
     for index, row in ch4_demand_TS.iterrows():
-        normalized_TS_df = gas_demandTS.loc[
-            :, gas_demandTS.columns.str.contains(row["Node/Line"][:2])
+        normalized_TS_df = normalized_ch4_demandTS.loc[
+            :,
+            normalized_ch4_demandTS.columns.str.contains(row["Node/Line"][:2]),
         ]
         p_set.append(
             (
@@ -731,23 +729,8 @@ def calc_ch4_storage_capacities():
         usecols=["country_code", "param"],
     )
 
-    wanted_countries = [
-        "AT",
-        "BE",
-        "CH",
-        "CZ",
-        "DK",
-        "GB",
-        "FR",
-        "LU",
-        "NL",
-        "NO",
-        "PL",
-        "SE",
-    ]
-
     ch4_storage_capacities = ch4_storage_capacities[
-        ch4_storage_capacities["country_code"].isin(wanted_countries)
+        ch4_storage_capacities["country_code"].isin(countries)
     ]
 
     map_countries_scigrid = {
@@ -812,8 +795,9 @@ def calc_ch4_storage_capacities():
         },
     )
 
+    ch4_storage_capacities = ch4_storage_capacities.drop(["RU"])
     ch4_storage_capacities.loc[:, "bus"] = (
-        get_foreign_bus_id()
+        get_foreign_gas_bus_id()
         .loc[ch4_storage_capacities.loc[:, "Country"]]
         .values
     )
@@ -888,7 +872,12 @@ def tyndp_gas_demand():
     -------
     None.
     """
-    Norway_global_demand_1y, gas_demandTS = import_gas_demandTS()
-    global_demand = calc_global_demand(Norway_global_demand_1y)
+    Norway_global_demand_1y, normalized_ch4_demandTS = import_ch4_demandTS()
+    global_ch4_demand = calc_global_ch4_demand(Norway_global_demand_1y)
+    insert_ch4_demand(global_ch4_demand, normalized_ch4_demandTS)
 
-    insert_gas_demand(global_demand, gas_demandTS)
+    normalized_power_to_h2_demandTS = import_power_to_h2_demandTS()
+    global_power_to_h2_demand = calc_global_power_to_h2_demand()
+    insert_power_to_h2_demand(
+        global_power_to_h2_demand, normalized_power_to_h2_demandTS
+    )
