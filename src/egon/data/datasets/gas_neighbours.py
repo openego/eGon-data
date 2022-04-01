@@ -909,20 +909,6 @@ def calc_global_power_to_h2_demand():
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
-    countries = [
-        "AT",
-        "BE",
-        "CH",
-        "CZ",
-        "DK",
-        "FR",
-        "LU",
-        "NL",
-        "NO",
-        "SE",
-        "PL",
-        "UK",
-    ]
 
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
     df = pd.read_excel(
