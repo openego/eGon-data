@@ -189,6 +189,15 @@ Added
   `#566 <https://github.com/openego/eGon-data/issues/566>`_
 * Add efficiency, capital_cost and marginal_cost to gas related data in
   etrago tables `#596 <https://github.com/openego/eGon-data/issues/596>`_
+* The shared memory under `"/dev/shm"` is now shared between host and
+  container. This was done because Docker has a rather tiny default for
+  the size of `"/dev/shm"` which caused random problems. Guessing what
+  size is correct is also not a good idea, so sharing between host and
+  container seems like the best option. This restricts using `egon-data`
+  with docker to Linux and MacOS, if the latter has `"/dev/shm"` but
+  seems like the best course of action for now. Done via `PR #703`_ and
+  hopefully prevents issues `#702`_ and `#267`_ from ever occurring
+  again.
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
