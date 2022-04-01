@@ -320,7 +320,8 @@ Changed
 * Add annualized investment costs to eTraGo tables
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 
-Bug fixes
+
+Bug Fixes
 ---------
 
 * Heat demand data import
