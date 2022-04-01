@@ -8,21 +8,17 @@ Unreleased
 Added
 -----
 
-
 * Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
   `egon.data.subprocess.run`. This wrapper catches errors better and
   displays better error messages than Python's built-in function. Use
   this wrapper wenn calling other programs in Airflow tasks.
-
 * You can now override the default database configuration using command
   line arguments. Look for the switches starting with ``--database`` in
   ``egon-data --help``. See `PR #159`_ for more details.
-
 * Docker will not be used if there is already a service listening on the
   HOST:PORT combination configured for the database.
-
 * You can now supply values for the command line arguments for
   ``egon-data`` using a configuration file. If the configuration file
   doesn't exist, it will be created by ``egon-data`` on it's first run.
@@ -32,15 +28,12 @@ Added
   There's also the new function `egon.data.config.settings` which
   returns the current configuration settings. See `PR #159`_ for more
   details.
-
 * You can now use tasks which are not part of a ``Dataset``, i.e. which are
   unversioned, as dependencies of a dataset. See `PR #318`_ for more
   details.
-
 * You can now force the tasks of a ``Dataset`` to be always executed by
   giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
   #318`_ for more details.
-
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
@@ -334,8 +327,18 @@ Changed
 * Add automatic filtering of gas data
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 
-Bug fixes
+
+Bug Fixes
 ---------
+
+* Some dependencies have their upper versions restricted now. This is
+  mostly due to us not yet supporting Airflow 2.0 which means that it
+  will no longer work with certain packages, but we also won't get and
+  upper version limit for those from Airflow because version 1.X is
+  unlikely to to get an update. So we had to make some implicit
+  dependencies explicit in order to give them them upper version limits.
+  Done via `PR #692`_ in order to fix issues `#343`_, `#556`_, `#641`_
+  and `#669`_.
 * Heat demand data import
   `#157 <https://github.com/openego/eGon-data/issues/157>`_
 * Substation sequence
@@ -445,3 +448,9 @@ Bug fixes
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
+
+.. _PR #692: https://github.com/openego/eGon-data/pull/692
+.. _#343: https://github.com/openego/eGon-data/issues/343
+.. _#556: https://github.com/openego/eGon-data/issues/556
+.. _#641: https://github.com/openego/eGon-data/issues/641
+.. _#669: https://github.com/openego/eGon-data/issues/669
