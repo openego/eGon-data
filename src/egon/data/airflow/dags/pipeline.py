@@ -407,6 +407,7 @@ with airflow.DAG(
             mastr_data,
             mv_grid_districts,
             scenario_capacities,
+            load_area,
         ]
     )
 
