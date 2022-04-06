@@ -129,7 +129,7 @@ with airflow.DAG(
 
     # Society prognosis
     society_prognosis = SocietyPrognosis(
-        dependencies=[demandregio, zensus_population, zensus_vg250]
+        dependencies=[demandregio, zensus_miscellaneous]
     )
 
     # OSM (OpenStreetMap) buildings, streets and amenities
