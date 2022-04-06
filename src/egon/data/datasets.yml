@@ -1021,6 +1021,9 @@ gas_neighbours:
     buses:
       schema: 'grid'
       table: 'egon_etrago_bus'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
   targets:
     generators:
       schema: 'grid'
@@ -1034,3 +1037,6 @@ gas_neighbours:
     stores:
       schema: 'grid'
       table: 'egon_etrago_store'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
