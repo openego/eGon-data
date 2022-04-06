@@ -5,7 +5,9 @@ import ast
 import zipfile
 
 from pathlib import Path
-from shapely.geometry import LineString
+from urllib.request import urlretrieve
+from geoalchemy2.types import Geometry
+from shapely.geometry import LineString, MultiLineString
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
@@ -44,7 +46,7 @@ class GasNeighbours(Dataset):
             name="GasNeighbours",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=({tyndp_gas_generation, tyndp_gas_demand}),  # grid
+            tasks=({tyndp_gas_generation, tyndp_gas_demand, grid}),
         )
 
 
@@ -1129,6 +1131,320 @@ def insert_power_to_h2_demand(
     )
 
 
+def calculate_ch4_grid_capacities():
+    """Calculates CH4 grid capacities for foreign countries based on TYNDP-data
+
+    Parameters
+    ----------
+    None.
+
+    Returns
+    -------
+    cap_DE : pandas.DataFrame
+    cap : pandas.DataFrame
+
+    """
+    sources = config.datasets()["gas_neighbours"]["sources"]
+
+    # Download file
+    basename = "ENTSOG_TYNDP_2020_Annex_C2_Capacities_per_country.xlsx"
+    url = "https://www.entsog.eu/sites/default/files/2021-07/" + basename
+    target_file = Path(".") / "datasets" / "gas_data" / basename
+
+    # urlretrieve(url, target_file)
+    map_pipelines = {
+        "NORDSTREAM": "RU00",
+        "NORDSTREAM 2": "RU00",
+        "OPAL": "DE",
+        "YAMAL (BY)": "RU00",
+        "Denmark": "DKE1",
+        "Belgium": "BE00",
+        "Netherlands": "NL00",
+        "Norway": "NOM1",
+        "Switzerland": "CH00",
+        "Poland": "PL00",
+        "United Kingdom": "UK00",
+        "Germany": "DE",
+        "Austria": "AT00",
+        "France": "FR00",
+        "Czechia": "CZ00",
+        "Russia": "RU00",
+        "Luxemburg": "LUB1",
+    }
+
+    grid_countries = [
+        "NORDSTREAM",
+        "NORDSTREAM 2",
+        "OPAL",
+        "YAMAL (BY)",
+        "Denmark",
+        "Belgium",
+        "Netherlands",
+        "Norway",
+        "Switzerland",
+        "Poland",
+        "United Kingdom",
+        "Germany",
+        "Austria",
+        "France",
+        "Czechia",
+        "Russia",
+        "Luxemburg",
+    ]
+
+    # Read-in data from csv-file
+    pipe_capacities_list = pd.read_excel(
+        target_file,
+        sheet_name="Transmission Peak Capacity",
+        skiprows=range(4),
+    )
+    pipe_capacities_list = pipe_capacities_list[
+        ["To Country", "Unnamed: 3", "From Country", 2035]
+    ].rename(
+        columns={
+            "Unnamed: 3": "Scenario",
+            "To Country": "To_Country",
+            "From Country": "From_Country",
+        }
+    )
+    pipe_capacities_list["To_Country"] = pd.Series(
+        pipe_capacities_list["To_Country"]
+    ).fillna(method="ffill")
+    pipe_capacities_list["From_Country"] = pd.Series(
+        pipe_capacities_list["From_Country"]
+    ).fillna(method="ffill")
+    pipe_capacities_list = pipe_capacities_list[
+        pipe_capacities_list["Scenario"] == "Advanced"
+    ].drop(columns={"Scenario"})
+    pipe_capacities_list = pipe_capacities_list[
+        (
+            (pipe_capacities_list["To_Country"].isin(grid_countries))
+            & (pipe_capacities_list["From_Country"].isin(grid_countries))
+        )
+        & (pipe_capacities_list[2035] != 0)
+    ]
+    pipe_capacities_list["To_Country"] = pipe_capacities_list[
+        "To_Country"
+    ].map(map_pipelines)
+    pipe_capacities_list["From_Country"] = pipe_capacities_list[
+        "From_Country"
+    ].map(map_pipelines)
+    pipe_capacities_list["countrycombination"] = pipe_capacities_list[
+        ["To_Country", "From_Country"]
+    ].apply(
+        lambda x: tuple(sorted([str(x.To_Country), str(x.From_Country)])),
+        axis=1,
+    )
+
+    pipeline_strategies = {
+        "To_Country": "first",
+        "From_Country": "first",
+        2035: sum,
+    }
+
+    pipe_capacities_list = pipe_capacities_list.groupby(
+        ["countrycombination"]
+    ).agg(pipeline_strategies)
+
+    # Conversion GWh/d to MWh/h
+    pipe_capacities_list["p_nom"] = pipe_capacities_list[2035] * (1000 / 24)
+
+    DE_pipe_capacities_list = pipe_capacities_list[
+        (pipe_capacities_list["To_Country"] == "DE")
+        | (pipe_capacities_list["From_Country"] == "DE")
+    ]
+
+    Neighbouring_pipe_capacities_list = pipe_capacities_list[
+        (pipe_capacities_list["To_Country"] != "DE")
+        & (pipe_capacities_list["From_Country"] != "DE")
+    ].reset_index()
+
+    print(Neighbouring_pipe_capacities_list)
+
+    Neighbouring_pipe_capacities_list.loc[:, "bus0"] = (
+        get_foreign_gas_bus_id()
+        .loc[Neighbouring_pipe_capacities_list.loc[:, "To_Country"]]
+        .values
+    )
+    Neighbouring_pipe_capacities_list.loc[:, "bus1"] = (
+        get_foreign_gas_bus_id()
+        .loc[Neighbouring_pipe_capacities_list.loc[:, "From_Country"]]
+        .values
+    )
+
+    # Add topo, geom and length
+    bus_geom = db.select_geodataframe(
+        """SELECT bus_id, geom
+        FROM grid.egon_etrago_bus
+        WHERE scn_name = 'eGon2035'
+        AND carrier = 'CH4'
+        AND country != 'DE'
+        """,
+        epsg=4326,
+    ).set_index("bus_id")
+
+    coordinates_bus0 = []
+    coordinates_bus1 = []
+
+    for index, row in Neighbouring_pipe_capacities_list.iterrows():
+        coordinates_bus0.append(bus_geom["geom"].loc[int(row["bus0"])])
+        coordinates_bus1.append(bus_geom["geom"].loc[int(row["bus1"])])
+
+    Neighbouring_pipe_capacities_list["coordinates_bus0"] = coordinates_bus0
+    Neighbouring_pipe_capacities_list["coordinates_bus1"] = coordinates_bus1
+
+    Neighbouring_pipe_capacities_list[
+        "topo"
+    ] = Neighbouring_pipe_capacities_list.apply(
+        lambda row: LineString(
+            [row["coordinates_bus0"], row["coordinates_bus1"]]
+        ),
+        axis=1,
+    )
+    Neighbouring_pipe_capacities_list[
+        "geom"
+    ] = Neighbouring_pipe_capacities_list.apply(
+        lambda row: MultiLineString([row["topo"]]), axis=1
+    )
+    Neighbouring_pipe_capacities_list[
+        "length"
+    ] = Neighbouring_pipe_capacities_list.apply(
+        lambda row: row["topo"].length, axis=1
+    )
+
+    # Remove useless columns
+    Neighbouring_pipe_capacities_list = Neighbouring_pipe_capacities_list.drop(
+        columns=[
+            "To_Country",
+            "From_Country",
+            "countrycombination",
+            2035,
+            "coordinates_bus0",
+            "coordinates_bus1",
+        ]
+    )
+
+    # Select cross-bording links
+    df = db.select_dataframe(
+        f"""SELECT scn_name, link_id, bus0, bus1, p_nom, carrier, length, topo, geom
+                    FROM {sources['links']['schema']}.{sources['links']['table']}
+                    WHERE scn_name = 'eGon2035' 
+                    AND carrier = 'CH4'
+        ;"""
+    )
+    # AND (((bus0 IN (SELECT bus_id
+    #     FROM {sources['buses']['schema']}.{sources['buses']['table']}
+    #     WHERE scn_name = 'eGon2035'
+    #     AND carrier = 'CH4'
+    #     AND country != 'DE'))
+    # OR (bus1 IN (SELECT bus_id
+    #     FROM {sources['buses']['schema']}.{sources['buses']['table']}
+    #     WHERE scn_name = 'eGon2035'
+    #     AND carrier = 'CH4'
+    #     AND country != 'DE'))
+
+    cap_DE = df
+    # print(DE_pipe_capacities_list)
+
+    return cap_DE, Neighbouring_pipe_capacities_list
+
+
+def insert_ch4_grid_capacities(cap_DE, Neighbouring_pipe_capacities_list):
+    """Insert CH4 grid capacities for foreign countries based on TYNDP-data
+
+    Parameters
+    ----------
+    cap_DE : pandas.DataFrame
+    cap : pandas.DataFrame
+
+    Returns
+    -------
+    None.
+
+    """
+    sources = config.datasets()["gas_neighbours"]["sources"]
+    targets = config.datasets()["gas_neighbours"]["targets"]
+
+    # Insert border crossing CH4 pipelines between foreign countries
+    # Delete existing data
+    db.execute_sql(
+        f"""
+        DELETE FROM 
+        {sources['links']['schema']}.{sources['links']['table']}
+        WHERE "bus0" IN (
+            SELECT bus_id FROM 
+            {sources['buses']['schema']}.{sources['buses']['table']}
+                WHERE country != 'DE'
+                AND carrier = 'CH4'
+                AND scn_name = 'eGon2035')
+        OR "bus1" IN (
+            SELECT bus_id FROM 
+            {sources['buses']['schema']}.{sources['buses']['table']}
+                WHERE country != 'DE'
+                AND carrier = 'CH4'
+                AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+        AND carrier = 'CH4'            
+        ;
+        """
+    )
+
+    # Add missing columns
+    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    Neighbouring_pipe_capacities_list = (
+        Neighbouring_pipe_capacities_list.assign(**c)
+    )
+
+    new_id = db.next_etrago_id("link")
+    Neighbouring_pipe_capacities_list["link_id"] = range(
+        new_id, new_id + len(Neighbouring_pipe_capacities_list)
+    )
+    Neighbouring_pipe_capacities_list = (
+        Neighbouring_pipe_capacities_list.set_geometry("geom", crs=4326)
+    )
+
+    print(Neighbouring_pipe_capacities_list)
+    # Neighbouring_pipe_capacities_list.to_postgis(
+    #     targets["links"]["table"],
+    #     db.engine(),
+    #     schema=targets["links"]["schema"],
+    #     index=False,
+    #     if_exists="append",
+    #     dtype={"geom": Geometry(), "topo": Geometry()},
+    # )
+    # Insert data to db
+    db.execute_sql(
+        f"""DELETE FROM grid.egon_etrago_link 
+        WHERE "carrier" = 'CH4' 
+        AND scn_name = 'eGon2035';
+        """
+    )
+    Neighbouring_pipe_capacities_list.to_postgis(
+        "egon_etrago_gas_link",
+        db.engine(),
+        schema="grid",
+        index=False,
+        if_exists="replace",
+        dtype={"geom": Geometry(), "topo": Geometry()},
+    )
+
+    db.execute_sql(
+        f"""
+    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
+
+    INSERT INTO {sources['links']['schema']}.{sources['links']['table']} (
+        scn_name, link_id, carrier,
+        bus0, bus1,p_nom, length, geom, topo)
+    
+    SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, length, geom, topo
+
+    FROM grid.egon_etrago_gas_link;
+
+    DROP TABLE grid.egon_etrago_gas_link;
+        """
+    )
+
+
 def tyndp_gas_generation():
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
@@ -1161,3 +1477,16 @@ def tyndp_gas_demand():
     insert_power_to_h2_demand(
         global_power_to_h2_demand, normalized_power_to_h2_demandTS
     )
+
+
+def grid():
+    """Insert data from TYNDP 2020 accordning to NEP 2021
+    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+
+    Returns
+    -------
+    None.
+    """
+    cap_DE, Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
+    # print(cap_DE)
+    insert_ch4_grid_capacities(cap_DE, Neighbouring_pipe_capacities_list)
