@@ -404,10 +404,10 @@ with airflow.DAG(
             create_gas_polygons_egon2035,
             district_heating_areas,
             industrial_sites,
+            load_area,
             mastr_data,
             mv_grid_districts,
             scenario_capacities,
-            load_area,
         ]
     )
 
@@ -494,8 +494,8 @@ with airflow.DAG(
             heat_demand_Germany,
             hh_demand_buildings_setup,
             vg250,
-            zensus_mv_grid_districts,
             weather_data,
+            zensus_mv_grid_districts,
         ]
     )
 
