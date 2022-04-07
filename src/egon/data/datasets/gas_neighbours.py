@@ -1085,21 +1085,18 @@ def insert_power_to_h2_demand(
             "LU0 0 residential rural heat",
         ]
     )
-    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
-        "Node/Line"
-    ].replace(["UK00"], "GB4")
-    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
-        "Node/Line"
-    ].replace(["UKNI"], "GB5")
-    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
-        "Node/Line"
-    ].replace(["DKW1"], "DK3")
-    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
-        "Node/Line"
-    ].replace(["DKE1"], "DK0")
-    power_to_h2_demand_TS["Node/Line"] = power_to_h2_demand_TS[
-        "Node/Line"
-    ].replace(["SE02"], "SE3")
+
+    power_to_h2_demand_TS = power_to_h2_demand_TS.replace(
+        {
+            "Node/Line": {
+                "UK00": "GB4",
+                "UKNI": "GB5",
+                "DKW1": "DK3",
+                "DKE1": "DK0",
+                "SE02": "SE3",
+            }
+        }
+    )
 
     p_set = []
     for index, row in power_to_h2_demand_TS.iterrows():
