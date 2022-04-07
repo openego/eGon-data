@@ -380,13 +380,9 @@ def insert_gas_pipeline_list(
     ]
 
     # Remove links disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
-    # TODO: automatic test for disconnected links
-    # TODO: remove link test if length = 0
+    # Remove manually for disconnected link EntsoG_Map__ST_195
     gas_pipelines_list = gas_pipelines_list[
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
-    ]
-    gas_pipelines_list = gas_pipelines_list[
-        ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_5")
     ]
 
     gas_pipelines_list["link_id"] = range(
@@ -440,11 +436,13 @@ def insert_gas_pipeline_list(
     diameter = []
     geom = []
     topo = []
+    length_km = []
 
     for index, row in gas_pipelines_list.iterrows():
 
         param = ast.literal_eval(row["param"])
         diameter.append(param["diameter_mm"])
+        length_km.append(param["length_km"])
 
         long_e = json.loads(row["long"])
         lat_e = json.loads(row["lat"])
@@ -464,6 +462,7 @@ def insert_gas_pipeline_list(
     gas_pipelines_list["diameter"] = diameter
     gas_pipelines_list["geom"] = geom
     gas_pipelines_list["topo"] = topo
+    gas_pipelines_list["length_km"] = length_km
     gas_pipelines_list = gas_pipelines_list.set_geometry("geom", crs=4326)
 
     country_0 = []
@@ -482,6 +481,11 @@ def insert_gas_pipeline_list(
     gas_pipelines_list.loc[
         gas_pipelines_list["country_1"] == "FI", "country_1"
     ] = "RU"
+
+    # Remove link test if length = 0
+    gas_pipelines_list = gas_pipelines_list[
+        gas_pipelines_list["length_km"] != 0
+    ]
 
     # Adjust columns
     bus0 = []
@@ -627,6 +631,7 @@ def insert_gas_pipeline_list(
             "max_transport_capacity_Gwh/d",
             "lat",
             "long",
+            "length_km",
         ]
     )
 
