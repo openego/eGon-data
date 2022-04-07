@@ -1246,6 +1246,10 @@ def calculate_ch4_grid_capacities():
         ["countrycombination"]
     ).agg(pipeline_strategies)
 
+    # Add manually DK-SE and AT-CH pipes (Scigrid gas data)
+    pipe_capacities_list.loc["(DKE1, SE02)"] = ["DKE1", "SE02", 651]
+    pipe_capacities_list.loc["(AT00, CH00)"] = ["AT00", "CH00", 651]
+
     # Conversion GWh/d to MWh/h
     pipe_capacities_list["p_nom"] = pipe_capacities_list[2035] * (1000 / 24)
 
@@ -1404,14 +1408,7 @@ def insert_ch4_grid_capacities(cap_DE, Neighbouring_pipe_capacities_list):
     )
 
     print(Neighbouring_pipe_capacities_list)
-    # Neighbouring_pipe_capacities_list.to_postgis(
-    #     targets["links"]["table"],
-    #     db.engine(),
-    #     schema=targets["links"]["schema"],
-    #     index=False,
-    #     if_exists="append",
-    #     dtype={"geom": Geometry(), "topo": Geometry()},
-    # )
+
     # Insert data to db
     db.execute_sql(
         f"""DELETE FROM grid.egon_etrago_link 
