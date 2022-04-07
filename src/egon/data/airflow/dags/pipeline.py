@@ -210,7 +210,9 @@ with airflow.DAG(
     )
 
     # Download industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand(dependencies=[setup])
+    industrial_gas_demand = IndustrialGasDemand(
+        dependencies=[scenario_parameters]
+    )
 
     # Extract landuse areas from the `osm` dataset
     load_area = LoadArea(dependencies=[osm, vg250])
@@ -402,6 +404,7 @@ with airflow.DAG(
         dependencies=[
             create_gas_polygons_egon100RE,
             create_gas_polygons_egon2035,
+            demand_curves_industry,
             district_heating_areas,
             industrial_sites,
             load_area,
