@@ -1139,8 +1139,7 @@ def calculate_ch4_grid_capacities():
 
     Returns
     -------
-    cap_DE : pandas.DataFrame
-    cap : pandas.DataFrame
+    Neighbouring_pipe_capacities_list : pandas.DataFrame
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -1252,17 +1251,12 @@ def calculate_ch4_grid_capacities():
     # Conversion GWh/d to MWh/h
     pipe_capacities_list["p_nom"] = pipe_capacities_list[2035] * (1000 / 24)
 
-    DE_pipe_capacities_list = pipe_capacities_list[
-        (pipe_capacities_list["To_Country"] == "DE")
-        | (pipe_capacities_list["From_Country"] == "DE")
-    ]
+    # Border crossing CH4 pipelines between foreign countries
 
     Neighbouring_pipe_capacities_list = pipe_capacities_list[
         (pipe_capacities_list["To_Country"] != "DE")
         & (pipe_capacities_list["From_Country"] != "DE")
     ].reset_index()
-
-    print(Neighbouring_pipe_capacities_list)
 
     Neighbouring_pipe_capacities_list.loc[:, "bus0"] = (
         get_foreign_gas_bus_id()
@@ -1275,13 +1269,90 @@ def calculate_ch4_grid_capacities():
         .values
     )
 
+    # Adjust columns
+    Neighbouring_pipe_capacities_list = Neighbouring_pipe_capacities_list.drop(
+        columns=[
+            "To_Country",
+            "From_Country",
+            "countrycombination",
+            2035,
+        ]
+    )
+
+    new_id = db.next_etrago_id("link")
+    Neighbouring_pipe_capacities_list["link_id"] = range(
+        new_id, new_id + len(Neighbouring_pipe_capacities_list)
+    )
+
+    # Border crossing CH4 pipelines between DE and neighbouring countries
+    DE_pipe_capacities_list = pipe_capacities_list[
+        (pipe_capacities_list["To_Country"] == "DE")
+        | (pipe_capacities_list["From_Country"] == "DE")
+    ].reset_index()
+
+    dict_cross_pipes_DE = {
+        ("AT00", "DE"): "AT",
+        ("BE00", "DE"): "BE",
+        ("CH00", "DE"): "CH",
+        ("CZ00", "DE"): "CZ",
+        ("DE", "DKE1"): "DK",
+        ("DE", "FR00"): "FR",
+        ("DE", "LUB1"): "LU",
+        ("DE", "NL00"): "NL",
+        ("DE", "NOM1"): "NO",
+        ("DE", "PL00"): "PL",
+        ("DE", "RU00"): "RU",
+    }
+
+    DE_pipe_capacities_list["country_code"] = DE_pipe_capacities_list[
+        "countrycombination"
+    ].map(dict_cross_pipes_DE)
+    DE_pipe_capacities_list = DE_pipe_capacities_list.set_index("country_code")
+
+    for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
+
+        # Select cross-bording links
+        cap_DE = db.select_dataframe(
+            f"""SELECT link_id, bus0, bus1
+                FROM {sources['links']['schema']}.{sources['links']['table']}
+                    WHERE scn_name = 'eGon2035' 
+                    AND carrier = 'CH4'
+                    AND (("bus0" IN (
+                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                            WHERE country = 'DE'
+                            AND carrier = 'CH4'
+                            AND scn_name = 'eGon2035')
+                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                            WHERE country = '{country_code}'
+                            AND carrier = 'CH4'
+                            AND scn_name = 'eGon2035')
+                    )
+                    OR ("bus0" IN (
+                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                            WHERE country = '{country_code}'
+                            AND carrier = 'CH4'
+                            AND scn_name = 'eGon2035')
+                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                            WHERE country = 'DE'
+                            AND carrier = 'CH4'
+                            AND scn_name = 'eGon2035'))
+                    )
+            ;"""
+        )
+
+        cap_DE["p_nom"] = DE_pipe_capacities_list.at[
+            country_code, "p_nom"
+        ] / len(cap_DE.index)
+        Neighbouring_pipe_capacities_list = (
+            Neighbouring_pipe_capacities_list.append(cap_DE)
+        )
+
     # Add topo, geom and length
     bus_geom = db.select_geodataframe(
         """SELECT bus_id, geom
         FROM grid.egon_etrago_bus
         WHERE scn_name = 'eGon2035'
         AND carrier = 'CH4'
-        AND country != 'DE'
         """,
         epsg=4326,
     ).set_index("bus_id")
@@ -1318,47 +1389,30 @@ def calculate_ch4_grid_capacities():
     # Remove useless columns
     Neighbouring_pipe_capacities_list = Neighbouring_pipe_capacities_list.drop(
         columns=[
-            "To_Country",
-            "From_Country",
-            "countrycombination",
-            2035,
             "coordinates_bus0",
             "coordinates_bus1",
         ]
     )
 
-    # Select cross-bording links
-    df = db.select_dataframe(
-        f"""SELECT scn_name, link_id, bus0, bus1, p_nom, carrier, length, topo, geom
-                    FROM {sources['links']['schema']}.{sources['links']['table']}
-                    WHERE scn_name = 'eGon2035' 
-                    AND carrier = 'CH4'
-        ;"""
+    # Add missing columns
+    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    Neighbouring_pipe_capacities_list = (
+        Neighbouring_pipe_capacities_list.assign(**c)
     )
-    # AND (((bus0 IN (SELECT bus_id
-    #     FROM {sources['buses']['schema']}.{sources['buses']['table']}
-    #     WHERE scn_name = 'eGon2035'
-    #     AND carrier = 'CH4'
-    #     AND country != 'DE'))
-    # OR (bus1 IN (SELECT bus_id
-    #     FROM {sources['buses']['schema']}.{sources['buses']['table']}
-    #     WHERE scn_name = 'eGon2035'
-    #     AND carrier = 'CH4'
-    #     AND country != 'DE'))
 
-    cap_DE = df
-    # print(DE_pipe_capacities_list)
+    Neighbouring_pipe_capacities_list = (
+        Neighbouring_pipe_capacities_list.set_geometry("geom", crs=4326)
+    )
 
-    return cap_DE, Neighbouring_pipe_capacities_list
+    return Neighbouring_pipe_capacities_list
 
 
-def insert_ch4_grid_capacities(cap_DE, Neighbouring_pipe_capacities_list):
+def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
     """Insert CH4 grid capacities for foreign countries based on TYNDP-data
 
     Parameters
     ----------
-    cap_DE : pandas.DataFrame
-    cap : pandas.DataFrame
+    Neighbouring_pipe_capacities_list : pandas.DataFrame
 
     Returns
     -------
@@ -1392,22 +1446,7 @@ def insert_ch4_grid_capacities(cap_DE, Neighbouring_pipe_capacities_list):
         """
     )
 
-    # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
-    Neighbouring_pipe_capacities_list = (
-        Neighbouring_pipe_capacities_list.assign(**c)
-    )
-
-    new_id = db.next_etrago_id("link")
-    Neighbouring_pipe_capacities_list["link_id"] = range(
-        new_id, new_id + len(Neighbouring_pipe_capacities_list)
-    )
-    Neighbouring_pipe_capacities_list = (
-        Neighbouring_pipe_capacities_list.set_geometry("geom", crs=4326)
-    )
-
     print(Neighbouring_pipe_capacities_list)
-
     # Insert data to db
     db.execute_sql(
         f"""DELETE FROM grid.egon_etrago_link 
@@ -1483,6 +1522,5 @@ def grid():
     -------
     None.
     """
-    cap_DE, Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
-    # print(cap_DE)
-    insert_ch4_grid_capacities(cap_DE, Neighbouring_pipe_capacities_list)
+    Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
+    insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list)
