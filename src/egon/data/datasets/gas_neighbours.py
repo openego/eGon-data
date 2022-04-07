@@ -760,6 +760,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     )
 
     print(ch4_demand_TS)
+    # Insert data to DB
     ch4_demand_TS.to_sql(
         targets["load_timeseries"]["table"],
         db.engine(),
@@ -1122,6 +1123,7 @@ def insert_power_to_h2_demand(
     )
 
     print(power_to_h2_demand_TS)
+    # Insert data to db
     power_to_h2_demand_TS.to_sql(
         targets["load_timeseries"]["table"],
         db.engine(),
