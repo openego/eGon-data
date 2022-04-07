@@ -19,7 +19,8 @@ from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_helpers import (
-    copy_and_modify_buses, copy_and_modify_links
+    copy_and_modify_buses,
+    copy_and_modify_links,
 )
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -29,7 +30,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(insert_gas_data, insert_gas_data_eGon100RE),
         )
@@ -56,6 +57,7 @@ def download_SciGRID_gas_data():
         "PipeSegments",
         "Productions",
         "Storages",
+        "LNGs",
     ]  #'Compressors'
     files = []
     for i in components:
@@ -267,6 +269,18 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
+    # Add central bus in Russia
+    gdf_abroad_buses = gdf_abroad_buses.append(
+        {
+            "scn_name": scn_name,
+            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+            "x": 41,
+            "y": 55,
+            "country": "RU",
+            "carrier": main_gas_carrier,
+        },
+        ignore_index=True,
+    )
     # if in test mode, add bus in center of Germany
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
@@ -466,7 +480,7 @@ def insert_gas_pipeline_list(
     ] = "NO"
     gas_pipelines_list.loc[
         gas_pipelines_list["country_1"] == "FI", "country_1"
-    ] = "SE"
+    ] = "RU"
 
     # Remove link test if length = 0
     gas_pipelines_list = gas_pipelines_list[

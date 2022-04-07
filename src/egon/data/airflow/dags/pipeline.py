@@ -14,6 +14,7 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
+from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -328,6 +329,14 @@ with airflow.DAG(
             osmtgmod,
             scenario_parameters,
             tasks["etrago_setup.create-tables"],
+        ]
+    )
+
+    # Gas abroad
+    gas_abroad_insert_data = GasNeighbours(
+        dependencies=[
+            gas_grid_insert_data,
+            foreign_lines,
         ]
     )
 

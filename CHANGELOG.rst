@@ -338,7 +338,8 @@ Changed
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
 * Add automatic filtering of gas data
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
-
+* Add gas data in neighbouring countries
+  `#727 <https://github.com/openego/eGon-data/issues/727>`_
 
 Bug Fixes
 ---------
