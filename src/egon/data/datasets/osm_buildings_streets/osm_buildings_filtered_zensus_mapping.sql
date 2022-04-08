@@ -3,9 +3,9 @@
  * Adapted by: nesnoj (jonathan.amme@rl-institut.de)
 */
 
--------------------------------------------------------
--- Create mapping table of buildings to zensus cells --
--------------------------------------------------------
+----------------------------------------------------------------
+-- Create mapping table of filtered buildings to zensus cells --
+----------------------------------------------------------------
 -- Only selecting buildings wihtin the purged census cells
 -- purged of cells with unpopulated areas
 -- https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449

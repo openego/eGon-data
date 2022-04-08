@@ -4,38 +4,44 @@ The central module containing all code dealing with importing CH4 production dat
 """
 from pathlib import Path
 from urllib.request import urlretrieve
-
-# import os
 import ast
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Production(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CH4Production",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(import_gas_generators),
         )
 
 
-def load_NG_generators():
+def load_NG_generators(scn_name):
     """Define the natural CH4 production units in Germany
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     Returns
     -------
     CH4_generators_list :
         Dataframe containing the natural gas production units in Germany
 
     """
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     target_file = (
         Path(".")
         / "datasets"
@@ -101,19 +107,16 @@ def load_NG_generators():
     ).set_geometry("geom", crs=4326)
 
     # Insert p_nom
-    # Total production in Germany
-    Total_NG_extracted_2035 = 36  # [TWh] Netzentwicklungsplan Gas 2020–2030
-    Total_NG_capacity_2035 = Total_NG_extracted_2035 * 1000000 / (24 * 365)
-
-    # Regionalization of the production
-    share = []
+    p_nom = []
     for index, row in NG_generators_list.iterrows():
         param = ast.literal_eval(row["param"])
-        share.append(param["max_supply_M_m3_per_d"])
+        p_nom.append(param["max_supply_M_m3_per_d"])
 
-    NG_generators_list["p_nom"] = [
-        (i / (sum(share)) * Total_NG_capacity_2035) for i in share
-    ]
+    conversion_factor = 437.5  # MCM/day to MWh/h
+    NG_generators_list["p_nom"] = [i * conversion_factor for i in p_nom]
+
+    # Add missing columns
+    NG_generators_list["marginal_cost"] = scn_params["marginal_cost"]["CH4"]
 
     # Remove useless columns
     NG_generators_list = NG_generators_list.drop(
@@ -123,15 +126,22 @@ def load_NG_generators():
     return NG_generators_list
 
 
-def load_biogas_generators():
+def load_biogas_generators(scn_name):
     """Define the biogas production units in Germany
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     Returns
     -------
     CH4_generators_list :
         Dataframe containing the biogas production units in Germany
 
     """
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
     url = (
@@ -204,20 +214,17 @@ def load_biogas_generators():
         )
 
     # Insert p_nom
-    # Total production in Germany
-    Total_biogas_extracted_2035 = (
-        10
-    )  # [TWh] Netzentwicklungsplan Gas 2020–2030
-    Total_biogas_capacity_2035 = (
-        Total_biogas_extracted_2035 * 1000000 / (24 * 365)
-    )
+    conversion_factor = 0.01083  # m^3/h to MWh/h
+    biogas_generators_list["p_nom"] = [
+        i * conversion_factor
+        for i in biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"]
+    ]
 
-    # Regionalization of the production
-    biogas_generators_list["p_nom"] = (
-        biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"]
-        / biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
-        * Total_biogas_capacity_2035
-    )
+    # Add missing columns
+    biogas_generators_list["marginal_cost"] = scn_params["marginal_cost"][
+        "biogas"
+    ]
+
     # Remove useless columns
     biogas_generators_list = biogas_generators_list.drop(
         columns=["x", "y", "Koordinaten", "Einspeisung Biomethan [(N*m^3)/h)]"]
@@ -239,29 +246,31 @@ def assign_bus_id(dataframe, scn_name, carrier):
 
     Returns
     -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and bus_id
+    res : pandas.DataFrame
+        Dataframe including bus_id
     """
 
     voronoi = db.select_geodataframe(
         f"""
-        SELECT id, bus_id, geom FROM grid.egon_voronoi_{carrier.lower()}
-        WHERE scn_name = '{scn_name}';
+        SELECT bus_id, geom FROM grid.egon_gas_voronoi
+        WHERE scn_name = '{scn_name}' AND carrier = '{carrier}';
         """,
         epsg=4326,
     )
 
     res = gpd.sjoin(dataframe, voronoi)
     res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right", "id"])
+    res = res.drop(columns=["index_right"])
 
     # Assert that all power plants have a bus_id
-    assert res.bus.notnull().all(), f"Some points are not attached to a {carrier} bus."
+    assert (
+        res.bus.notnull().all()
+    ), f"Some points are not attached to a {carrier} bus."
 
     return res
 
 
-def import_gas_generators(scn_name='eGon2035'):
+def import_gas_generators(scn_name="eGon2035"):
     """Insert list of gas production units in database
 
     Parameters
@@ -272,13 +281,18 @@ def import_gas_generators(scn_name='eGon2035'):
     # Connect to local database
     engine = db.engine()
 
+    # Select source and target from dataset configuration
+    source = config.datasets()["gas_prod"]["source"]
+    target = config.datasets()["gas_prod"]["target"]
+
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4' AND
-        scn_name = '{scn_name}' AND bus IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
+        WHERE "carrier" = 'CH4' AND
+        scn_name = '{scn_name}' AND bus not IN (
+            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )
@@ -287,14 +301,13 @@ def import_gas_generators(scn_name='eGon2035'):
     new_id = db.next_etrago_id("generator")
 
     CH4_generators_list = pd.concat(
-        [load_NG_generators(), load_biogas_generators()]
+        [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
     )
     CH4_generators_list["generator_id"] = range(
         new_id, new_id + len(CH4_generators_list)
     )
 
     # Add missing columns
-    #    CH4_generators_list['p_set'] = CH4_generators_list['p_nom']
     c = {"scn_name": scn_name, "carrier": "CH4"}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
@@ -308,9 +321,9 @@ def import_gas_generators(scn_name='eGon2035'):
 
     # Insert data to db
     CH4_generators_list.to_sql(
-        "egon_etrago_generator",
+        target["stores"]["table"],
         engine,
-        schema="grid",
+        schema=target["stores"]["schema"],
         index=False,
         if_exists="append",
     )

@@ -39,7 +39,7 @@ def aggregate_gas(scn_name="eGon2035"):
     components = [
         # Generator
         {
-            "columns": "scn_name, generator_id, bus, p_nom, carrier",
+            "columns": "scn_name, generator_id, bus, p_nom, carrier, marginal_cost",
             "name": "generators",
             "strategies": {
                 "scn_name": "first",
@@ -47,11 +47,12 @@ def aggregate_gas(scn_name="eGon2035"):
                 "p_nom": "sum",
                 "bus": "first",
                 "carrier": "first",
+                "marginal_cost": "first",
             },
         },
         # Store
         {
-            "columns": "scn_name, store_id, bus, e_nom, carrier",
+            "columns": "scn_name, store_id, bus, e_nom, carrier, marginal_cost",
             "name": "stores",
             "strategies": {
                 "scn_name": "first",
@@ -66,15 +67,17 @@ def aggregate_gas(scn_name="eGon2035"):
     for comp in components:
         df = db.select_dataframe(
             f"""SELECT {comp["columns"]}
-                    FROM {sources[comp["name"]]['schema']}.{targets[comp["name"]]['table']}
+                    FROM {sources[comp["name"]]['schema']}.{sources[comp["name"]]['table']}
                     WHERE scn_name = '{scn_name}' 
                     AND carrier = 'CH4';"""
         )
-        df = df.groupby(["bus", "carrier"]).agg(comp["strategies"])
+        df = df.groupby(["bus", "carrier", "marginal_cost"]).agg(
+            comp["strategies"]
+        )
 
         # Clean table
         db.execute_sql(
-            f"""DELETE FROM {sources[comp["name"]]['schema']}.{targets[comp["name"]]['table']} 
+            f"""DELETE FROM {targets[comp["name"]]['schema']}.{targets[comp["name"]]['table']} 
                         WHERE carrier = 'CH4'
                         AND scn_name = '{scn_name}';"""
         )
@@ -83,7 +86,7 @@ def aggregate_gas(scn_name="eGon2035"):
         df.to_sql(
             targets[comp["name"]]["table"],
             engine,
-            schema=sources[comp["name"]]["schema"],
+            schema=targets[comp["name"]]["schema"],
             index=False,
             if_exists="append",
         )
