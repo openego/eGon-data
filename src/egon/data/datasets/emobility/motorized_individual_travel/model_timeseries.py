@@ -505,8 +505,8 @@ def write_model_data_to_db(
                     scn_name=scenario_name,
                     bus_id=emob_bus_id,
                     v_nom=1,
-                    # carrier="Li ion",
-                    carrier="eMob MIT",
+                    carrier="Li ion",
+                    # carrier="eMob MIT",
                     x=etrago_bus.x,
                     y=etrago_bus.y,
                     geom=etrago_bus.geom,
@@ -521,8 +521,8 @@ def write_model_data_to_db(
                     link_id=emob_link_id,
                     bus0=etrago_bus.bus_id,
                     bus1=emob_bus_id,
-                    # carrier="BEV charger",
-                    carrier="eMob MIT",
+                    carrier="BEV charger",
+                    # carrier="eMob MIT",
                     efficiency=float(run_config.eta_cp),
                     p_nom=(
                         load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
@@ -556,8 +556,8 @@ def write_model_data_to_db(
                     scn_name=scenario_name,
                     store_id=emob_store_id,
                     bus=emob_bus_id,
-                    # carrier="battery storage",
-                    carrier="eMob MIT",
+                    carrier="battery storage",
+                    # carrier="eMob MIT",
                     e_nom=static_params_dict["store_ev_battery.e_nom_MWh"],
                     e_nom_extendable=False,
                     e_nom_min=0,
@@ -586,8 +586,8 @@ def write_model_data_to_db(
                     scn_name=scenario_name,
                     load_id=emob_load_id,
                     bus=emob_bus_id,
-                    # carrier="land transport EV",
-                    carrier="eMob MIT",
+                    carrier="land transport EV",
+                    # carrier="eMob MIT",
                     sign=-1,
                 )
             )
