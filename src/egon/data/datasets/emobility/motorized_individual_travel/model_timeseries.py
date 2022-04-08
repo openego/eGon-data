@@ -783,8 +783,11 @@ def generate_model_data(scenario_name: str):
 
     # Generate timeseries for each MVGD
     print("GENERATE MODEL DATA...")
+    ctr = 0
     for bus_id in mvgd_bus_ids:
-        print(f"Processing grid district {bus_id}...")
+        ctr += 1
+        print(f"Processing grid district {bus_id}... "
+              f"({ctr}/{len(mvgd_bus_ids)})")
         (
             static_params,
             load_ts,
