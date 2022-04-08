@@ -103,9 +103,9 @@ def insert_capacities_per_federal_state_nep():
     # Delete rows if already exist
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
-        WHERE scenario_name = 'eGon2035' 
+        WHERE scenario_name = 'eGon2035'
         AND nuts != 'DE'
         """
     )
@@ -588,7 +588,9 @@ def eGon100_capacities():
             "ror": "run_of_river",
             "PHS": "pumped_hydro",
             "OCGT": "gas",
-            "rural_ground_heat_pump": "rural_heat_pump",
+            "rural_ground_heat_pump": "residential_rural_heat_pump",
+            "urban_central_air_heat_pump": "urban_central_heat_pump",
+            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
         },
         inplace=True,
     )
@@ -606,7 +608,7 @@ def eGon100_capacities():
 
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
         WHERE scenario_name='eGon100RE'
         """

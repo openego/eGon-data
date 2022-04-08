@@ -8,6 +8,7 @@ Unreleased
 Added
 -----
 
+
 * Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
@@ -34,6 +35,7 @@ Added
 * You can now force the tasks of a ``Dataset`` to be always executed by
   giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
   #318`_ for more details.
+
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
@@ -338,6 +340,8 @@ Changed
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
 * Add automatic filtering of gas data
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
+* Unify carrier names for both scenarios
+  `#575 <https://github.com/openego/eGon-data/issues/575>`_
 
 
 Bug Fixes
