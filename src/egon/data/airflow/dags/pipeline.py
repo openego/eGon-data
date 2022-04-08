@@ -230,8 +230,7 @@ with airflow.DAG(
         ]
     )
 
-    # TODO: What does "trans" stand for?
-    # Calculate dynamic line rating for HV (high voltage) trans lines
+    # Calculate dynamic line rating for HV (high voltage) transmission lines
     dlr = Calculate_dlr(dependencies=[data_bundle, osmtgmod, weather_data])
 
     # Map zensus grid districts
