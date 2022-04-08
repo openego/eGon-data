@@ -341,6 +341,8 @@ Changed
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 * Unify carrier names for both scenarios
   `#575 <https://github.com/openego/eGon-data/issues/575>`_
+* Include electricity storages for eGon100RE scenario
+  `#581 <https://github.com/openego/eGon-data/issues/581>`_
 
 
 Bug Fixes
