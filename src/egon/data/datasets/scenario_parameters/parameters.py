@@ -82,6 +82,7 @@ def global_settings(scenario):
                 "coal": 20.2,  # [EUR/MWh]
                 "lignite": 4.0,  # [EUR/MWh]
                 "nuclear": 1.7,  # [EUR/MWh]
+                "biomass": 40, # Dummyvalue, ToDo: Find a suitable source
             },
             "co2_costs": 76.5,  # [EUR/t_CO2]
             "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
@@ -290,6 +291,12 @@ def electricity(scenario):
             * global_settings(scenario)["co2_emissions"][
                 "other_non_renewable"
             ],
+            "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
+            + read_costs(costs, "lignite", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["lignite"],
+            "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
+            + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "pv": read_costs(costs, "solar", "VOM"),

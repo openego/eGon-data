@@ -8,7 +8,6 @@ Unreleased
 Added
 -----
 
-
 * Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
@@ -468,6 +467,9 @@ Bug Fixes
   `#562 <https://github.com/openego/eGon-data/issues/562>`_
 * Add missing dataset dependencies in "pipeline.py"
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
+* Add missing marginal costs for conventional generators in Germany
+  `#722 <https://github.com/openego/eGon-data/issues/722>`_
+  
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
