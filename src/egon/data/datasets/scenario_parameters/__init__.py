@@ -105,7 +105,7 @@ def insert_scenarios():
 
 
 def get_sector_parameters(sector, scenario=None):
-    """ Returns parameters for each sector as dictionary.
+    """Returns parameters for each sector as dictionary.
 
     If scenario=None data for all scenarios is returned as pandas.DataFrame.
     Otherwise the parameters of the specific scenario are returned as a dict.

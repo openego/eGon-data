@@ -8,7 +8,6 @@ Unreleased
 Added
 -----
 
-
 * Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
@@ -35,7 +34,6 @@ Added
 * You can now force the tasks of a ``Dataset`` to be always executed by
   giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
   #318`_ for more details.
-
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
@@ -195,6 +193,8 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 * Allocate supply capacities for eGon100RE scenario
   `#580 <https://github.com/openego/eGon-data/issues/580>`_
 

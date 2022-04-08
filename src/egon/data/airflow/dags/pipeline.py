@@ -24,6 +24,9 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_buildings,
     hh_profiles,
 )
+from egon.data.datasets.emobility.motorized_individual_travel import (
+    MotorizedIndividualTravel,
+)
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
@@ -523,4 +526,16 @@ with airflow.DAG(
     # Storages to eTraGo
     storage_etrago = StorageEtrago(
         dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
+    )
+
+    # eMobility: motorized individual travel
+    emobility_mit = MotorizedIndividualTravel(
+        dependencies=[
+            scenario_parameters,
+            mv_grid_districts,
+            map_zensus_grid_districts,
+            zensus_vg250,
+            data_bundle,
+            setup_etrago,
+        ]
     )
