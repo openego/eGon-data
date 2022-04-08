@@ -846,7 +846,7 @@ def calc_capacities():
     df_2035 = pd.DataFrame(index=df_2030.index)
     df_2035["cap_2030"] = df_2030.Value
     df_2035["cap_2040"] = df_2040.Value
-    df_2035.fillna(0., inplace=True)
+    df_2035.fillna(0.0, inplace=True)
     df_2035["cap_2035"] = (
         df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
     )
@@ -894,6 +894,19 @@ def insert_generators(capacities):
         """
     )
 
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['generators_timeseries']['schema']}.
+        {targets['generators_timeseries']['table']}
+        WHERE generator_id NOT IN (
+            SELECT bus_id FROM
+            {targets['generators']['schema']}.{targets['generators']['table']}
+            WHERE country != 'DE'
+            AND scn_name = 'eGon2035')
+        """
+    )
+
     # Select generators from TYNDP capacities
     gen = capacities[
         capacities.carrier.isin(
@@ -926,7 +939,7 @@ def insert_generators(capacities):
         get_foreign_bus_id().loc[gen.loc[:, "Node/Line"]].values
     )
 
-    # insert data
+    # insert generators data
     session = sessionmaker(bind=db.engine())()
     for i, row in gen.iterrows():
         entry = etrago.EgonPfHvGenerator(
@@ -935,6 +948,72 @@ def insert_generators(capacities):
             bus=row.bus,
             carrier=row.carrier,
             p_nom=row.cap_2035,
+        )
+
+        session.add(entry)
+        session.commit()
+
+    # assign generators time-series data
+    map_carriers = {
+        "onwind": "wind_onshore",
+        "offwind-ac": "wind_offshore",
+        "offwind-dc": "wind_offshore",
+        "solar": "solar",
+    }
+
+    sql = f"""SELECT * FROM
+    {targets['generators_timeseries']['schema']}.
+    {targets['generators_timeseries']['table']}
+    WHERE scn_name = 'eGon2035'
+    """
+    series_egon100 = pd.read_sql_query(sql, db.engine())
+
+    sql = f""" SELECT * FROM
+    {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE bus IN (
+        SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+    """
+    gen_2035 = pd.read_sql_query(sql, db.engine())
+    gen_2035 = gen_2035[gen_2035.carrier.isin(map_carriers.values())]
+
+    sql = f""" SELECT * FROM
+    {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE bus IN (
+        SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon100RE')
+        AND scn_name = 'eGon100RE'
+    """
+    gen_100 = pd.read_sql_query(sql, db.engine())
+
+    gen_100["carrier"] = gen_100["carrier"].map(map_carriers)
+    gen_100 = gen_100[gen_100["carrier"].notna()]
+
+    egon_2035_to_100 = {}
+    for i, gen in gen_2035.iterrows():
+        gen_id_100 = gen_100[
+            (gen_100["bus"] == gen["bus"])
+            & (gen_100["carrier"] == gen["carrier"])
+        ]["generator_id"].values[0]
+
+        egon_2035_to_100[gen["generator_id"]] = gen_id_100
+
+    # insert generators data
+    session = sessionmaker(bind=db.engine())()
+    for gen_id in gen_2035.generator_id:
+        serie = series_egon100[
+            series_egon100.generator_id == egon_2035_to_100[gen_id]
+        ]["p_max_pu"].values[0]
+        entry = etrago.EgonPfHvGeneratorTimeseries(
+            scn_name="eGon2035",
+            generator_id=gen_id,
+            temp_id=1,
+            p_max_pu=serie,
         )
 
         session.add(entry)
