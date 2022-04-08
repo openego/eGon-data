@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -589,9 +589,13 @@ def eGon100_capacities():
             "PHS": "pumped_hydro",
             "OCGT": "gas",
             "rural_ground_heat_pump": "rural_heat_pump",
+            "hydro": "reservoir",
         },
         inplace=True,
     )
+
+    # Model reservoirs as generators
+    df.loc["reservoir", "component"] = "generators"
 
     # Reset index
     df = df.reset_index()

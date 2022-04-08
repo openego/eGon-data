@@ -153,7 +153,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
             "p_nom": capacities,
             "generator_id": range(new_id, new_id + len(demand)),
         }
-    )
+    ).set_index("bus")
 
     # Select feedin timeseries
     weather_cells = db.select_geodataframe(
@@ -189,7 +189,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
     )
 
     # Create timeseries only for mv grid districts with pv rooftop
-    join = join[join.index_right.isin(pv_rooftop.bus)]
+    join = join[join.index_right.isin(pv_rooftop.index)]
 
     timeseries = pd.DataFrame(
         data={
@@ -219,3 +219,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
         if_exists="append",
         con=db.engine(),
     )
+
+def insert():
+    pv_rooftop_per_mv_grid("eGon2035", "federal_state")
+    pv_rooftop_per_mv_grid("eGon100RE", "Germany")

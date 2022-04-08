@@ -8,6 +8,7 @@ Unreleased
 Added
 -----
 
+
 * Include description of the egon-data workflow in our documentation
   `#23 <https://github.com/openego/eGon-data/issues/23>`_
 * There's now a wrapper around `subprocess.run` in
@@ -194,6 +195,8 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
+* Allocate supply capacities for eGon100RE scenario
+  `#580 <https://github.com/openego/eGon-data/issues/580>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
