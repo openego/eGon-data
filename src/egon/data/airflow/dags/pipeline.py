@@ -592,11 +592,11 @@ with airflow.DAG(
     # eMobility: motorized individual travel
     emobility_mit = MotorizedIndividualTravel(
         dependencies=[
-            scenario_parameters,
+            data_bundle,
             mv_grid_districts,
+            scenario_parameters,
+            setup_etrago,
             zensus_mv_grid_districts,
             zensus_vg250,
-            data_bundle,
-            setup_etrago,
         ]
     )
