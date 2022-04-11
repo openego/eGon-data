@@ -900,10 +900,10 @@ def insert_generators(capacities):
         {targets['generators_timeseries']['schema']}.
         {targets['generators_timeseries']['table']}
         WHERE generator_id NOT IN (
-            SELECT bus_id FROM
+            SELECT generator_id FROM
             {targets['generators']['schema']}.{targets['generators']['table']}
-            WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
+        )
+        AND scn_name = 'eGon2035'
         """
     )
 
@@ -964,7 +964,7 @@ def insert_generators(capacities):
     sql = f"""SELECT * FROM
     {targets['generators_timeseries']['schema']}.
     {targets['generators_timeseries']['table']}
-    WHERE scn_name = 'eGon2035'
+    WHERE scn_name = 'eGon100RE'
     """
     series_egon100 = pd.read_sql_query(sql, db.engine())
 
@@ -994,6 +994,8 @@ def insert_generators(capacities):
     gen_100["carrier"] = gen_100["carrier"].map(map_carriers)
     gen_100 = gen_100[gen_100["carrier"].notna()]
 
+    # egon_2035_to_100 map the timeseries used in the scenario eGon100RE
+    # to the same bus and carrier for the scenario egon2035
     egon_2035_to_100 = {}
     for i, gen in gen_2035.iterrows():
         gen_id_100 = gen_100[
@@ -1003,8 +1005,9 @@ def insert_generators(capacities):
 
         egon_2035_to_100[gen["generator_id"]] = gen_id_100
 
-    # insert generators data
+    # insert generators_timeseries data
     session = sessionmaker(bind=db.engine())()
+
     for gen_id in gen_2035.generator_id:
         serie = series_egon100[
             series_egon100.generator_id == egon_2035_to_100[gen_id]
