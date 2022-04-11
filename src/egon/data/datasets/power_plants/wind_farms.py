@@ -26,7 +26,7 @@ def insert():
     )
 
     # target_power_df has the expected capacity of each federal state
-    sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities WHERE scenario_name='eGon2035'"
+    sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities"
     target_power_df = pd.read_sql(sql, con)
 
     # mv_districts has geographic info of medium voltage districts in Germany
@@ -56,7 +56,10 @@ def insert():
     )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
     target_power_df = target_power_df.to_crs(3035)
-
+    
+    #Create the shape for full Germany
+    target_power_df.at['DE', 'geom'] = target_power_df['geom'].unary_union
+    target_power_df.at['DE', 'name'] = 'Germany'
     # Generate WFs for Germany based on potential areas and existing WFs
     wf_areas, wf_areas_ni = generate_wind_farms()
 
@@ -472,37 +475,40 @@ def generate_map():
     con = db.engine()
 
     # Import wind farms from egon-data
-    sql = "SELECT  carrier, el_capacity, geom FROM supply.egon_power_plants"
-    wind_farms = gpd.GeoDataFrame.from_postgis(
+    sql = """SELECT  carrier, el_capacity, geom, scenario FROM supply.egon_power_plants
+    WHERE carrier = 'wind_onshore'"""
+    wind_farms_t = gpd.GeoDataFrame.from_postgis(
         sql, con, geom_col="geom", crs=4326
     )
-    wind_farms = wind_farms.to_crs(3035)
+    wind_farms_t = wind_farms_t.to_crs(3035)
 
-    # mv_districts has geographic info of medium voltage districts in Germany
-    sql = "SELECT geom FROM grid.egon_mv_grid_district"
-    mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
-    mv_districts = mv_districts.to_crs(3035)
-
-    mv_districts["power"] = 0.0
-    for std in mv_districts.index:
-        try:
-            mv_districts.at[std, "power"] = gpd.clip(
-                wind_farms, mv_districts.at[std, "geom"]
-            ).el_capacity.sum()
-        except:
-            print(std)
-
-    fig, ax = plt.subplots(1, 1)
-    mv_districts.geom.plot(linewidth=0.2, ax=ax, color="black")
-    mv_districts.plot(
-        ax=ax,
-        column="power",
-        cmap="magma_r",
-        legend=True,
-        legend_kwds={
-            "label": "Installed capacity in MW",
-            "orientation": "vertical",
-        },
-    )
-    plt.savefig("wind_farms_map.png", dpi=300)
+    for scenario in wind_farms_t.scenario.unique():
+        wind_farms = wind_farms_t[wind_farms_t['scenario'] == scenario]
+        # mv_districts has geographic info of medium voltage districts in Germany
+        sql = "SELECT geom FROM grid.egon_mv_grid_district"
+        mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
+        mv_districts = mv_districts.to_crs(3035)
+    
+        mv_districts["power"] = 0.0
+        for std in mv_districts.index:
+            try:
+                mv_districts.at[std, "power"] = gpd.clip(
+                    wind_farms, mv_districts.at[std, "geom"]
+                ).el_capacity.sum()
+            except:
+                print(std)
+    
+        fig, ax = plt.subplots(1, 1)
+        mv_districts.geom.plot(linewidth=0.2, ax=ax, color="black")
+        mv_districts.plot(
+            ax=ax,
+            column="power",
+            cmap="magma_r",
+            legend=True,
+            legend_kwds={
+                "label": "Installed capacity in MW",
+                "orientation": "vertical",
+            },
+        )
+        plt.savefig(f'wind_farms_{scenario}.png', dpi=300)
     return 0
