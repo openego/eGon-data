@@ -193,6 +193,8 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
+* Add electric scenario parameters for eGon100RE
+  `#699 <https://github.com/openego/eGon-data/issues/699>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
