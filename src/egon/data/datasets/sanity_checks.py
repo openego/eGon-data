@@ -1,6 +1,6 @@
 """
 This module does sanity checks for both the eGon2035 and the eGon100RE scenario seperately where a percentage 
-error is given to showcase difference in output and input values. They are input data in Supply to be yet provided.
+error is given to showcase difference in output and input values. Please note that there are missing input technologies in the supply tables.
  Authors: @ALonso, @dana
 """
 
@@ -18,11 +18,13 @@ class SanityChecks(Dataset):
             name="SanityChecks",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(sanitycheck_electricity, sanitycheck_heat),
+            tasks=(sanitycheck_eGon2035_electricity_generator, sanitycheck_eGon2035_electricity_storage, 
+                   sanitycheck_eGon2035_electricity_load, sanitycheck_eGon2035_heat, sanitycheck_eGon100RE_electricity,
+                   sanitycheck_eGon100RE_electricity_storage, sanitycheck_eGon100RE_heat_generator,sanitycheck_eGon100RE_heat_link)
         )
 
 
-def sanitycheck_electricity():
+def sanitycheck_eGon2035_electricity_generator():
 
     """Returns sanity checks for electricity.
     Parameters
@@ -33,11 +35,43 @@ def sanitycheck_electricity():
     -------
     None
     """
+carriers_electricity = ["other_non_renewable", "other_renewable", "reservoir", "run_of_river", "oil"]
+for carrier in carriers_electricity:
+    sum_output = db.select_dataframe(
+        f"""
+         SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
+         FROM grid.egon_etrago_generator
+         WHERE scn_name = 'eGon100RE'
+         AND carrier IN ('{carrier}')
+         GROUP BY (scn_name); 
+     """
+    )
+    
+    sum_input = db.select_dataframe(
+        f"""
+        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
+        FROM supply.egon_scenario_capacities
+        WHERE carrier= '{carrier}'
+        AND scenario_name IN ('eGon100RE')
+        GROUP BY (carrier);
+    """
+    )
 
-    print(f"Results for installed generation capacity in DE:")
+    sum_input["Error"] = (
+        (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
+        / sum_input["input_capacity_MW"]
+    ) * 100
+
+    g1 = sum_input["Error"].values[0]
+    g = round(g1, 2)
+
+    print(f"The target values for {carrier} differ by {g}  %")
+    
+    
+    print("Results for installed generation capacity in DE:")
 
     sum_installed_gen_cap_DE = db.select_dataframe(
-        f"""
+        """
     SELECT scn_name, a.carrier, ROUND(SUM(p_nom::numeric), 2) as capacity_mw, ROUND(c.capacity::numeric, 2) as target_capacity
     FROM grid.egon_etrago_generator a
     JOIN supply.egon_scenario_capacities c 
@@ -52,7 +86,7 @@ def sanitycheck_electricity():
     )
 
     sum_installed_gen_biomass_cap_DE = db.select_dataframe(
-        f"""
+        """
     SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as capacity_mw_biogass
     FROM grid.egon_etrago_generator
     WHERE bus IN (
@@ -104,10 +138,21 @@ def sanitycheck_electricity():
     print(f"The target values for Wind Offshore differ by {d}  %")
 
     print(f"The target values for Wind Onshore differ by {f}  %")
+    
+def sanitycheck_eGon2035_electricity_storage():
 
-    print(f"Results for installed storage capacity in DE:")
+    """Returns sanity checks for electricity.
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    print("Results for installed storage capacity in DE:")
     sum_installed_storage_cap_DE = db.select_dataframe(
-        f"""
+        """
     SELECT scn_name, a.carrier, ROUND(SUM(p_nom::numeric), 2) as capacity_mw, ROUND(c.capacity::numeric, 2) as target_capacity
     FROM grid.egon_etrago_storage a
     JOIN supply.egon_scenario_capacities c 
@@ -133,12 +178,23 @@ def sanitycheck_electricity():
     g1 = sum_installed_storage_cap_DE["Error"].values[0]
     g = round(g1, 2)
 
-    print(f"The target values for Pumped Hydro differ by {g}  %")
+    print("The target values for Pumped Hydro differ by {g}  %")
+    
+def sanitycheck_eGon2035_electricity_load():
 
+    """Returns sanity checks for electricity.
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     print("Results for summary of loads in DE grid:")
 
     sum_loads_DE_grid = db.select_dataframe(
-        f"""
+        """
     SELECT a.scn_name, a.carrier,  ROUND((SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric, 2) as load_twh
     FROM grid.egon_etrago_load a
     JOIN grid.egon_etrago_load_timeseries b
@@ -158,7 +214,7 @@ def sanitycheck_electricity():
     sum_loads_DE_AC_grid = sum_loads_DE_grid["load_twh"].values[1]
 
     sum_loads_DE_demand_regio_cts_ind = db.select_dataframe(
-        f"""
+        """
     SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_regio_cts_ind
     FROM demand.egon_demandregio_cts_ind
     WHERE scenario= 'eGon2035'
@@ -173,7 +229,7 @@ def sanitycheck_electricity():
     ].values[0]
 
     sum_loads_DE_demand_regio_hh = db.select_dataframe(
-        f"""
+        """
     SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_regio_hh
     FROM demand.egon_demandregio_hh
     WHERE scenario= 'eGon2035'
@@ -191,7 +247,7 @@ def sanitycheck_electricity():
     sum_loads_DE_AC_demand = demand_regio_cts_ind + demand_regio_hh
 
     sum_loads_DE_demand_peta_heat = db.select_dataframe(
-        f"""
+        """
     SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_peta_heat
     FROM demand.egon_peta_heat
     WHERE scenario= 'eGon2035'
@@ -213,7 +269,7 @@ def sanitycheck_electricity():
     print(f"The target values for Sum loads AC DE differ by {Error_AC}  %")
 
 
-def sanitycheck_heat():
+def sanitycheck_eGon2035_heat():
 
     """Returns sanity checks for heat.
     Parameters
@@ -226,7 +282,7 @@ def sanitycheck_heat():
     """
 
     sum_loads_DE_grid1 = db.select_dataframe(
-        f"""
+        """
      SELECT a.scn_name, a.carrier,  ROUND((SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric, 2) as load_twh
      FROM grid.egon_etrago_load a
      JOIN grid.egon_etrago_load_timeseries b
@@ -249,7 +305,7 @@ def sanitycheck_heat():
     )
 
     sum_loads_DE_demand_peta_heat = db.select_dataframe(
-        f"""
+        """
     SELECT scenario, ROUND(SUM(demand::numeric/1000000), 2) as demand_mw_peta_heat
     FROM demand.egon_peta_heat
     WHERE scenario= 'eGon2035'
@@ -275,7 +331,7 @@ def sanitycheck_heat():
     print(f"The target values for Sum loads Heat DE differ by {Error_heat}  %")
 
     sum_urban_central_heat_pump_supply = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_heat_pump_MW 
     FROM supply.egon_scenario_capacities
     WHERE carrier= 'urban_central_heat_pump'
@@ -287,7 +343,7 @@ def sanitycheck_heat():
     )
 
     sum_central_heat_pump_grid = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as Central_heat_pump_MW 
     FROM grid.egon_etrago_link
     WHERE carrier= 'central_heat_pump'
@@ -314,7 +370,7 @@ def sanitycheck_heat():
     )
 
     sum_urban_central_resistive_heater_supply = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_resistive_heater_MW 
     FROM supply.egon_scenario_capacities
     WHERE carrier= 'urban_central_resistive_heater'
@@ -326,7 +382,7 @@ def sanitycheck_heat():
     )
 
     sum_central_resistive_heater_grid = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as Central_resistive_heater_MW 
     FROM grid.egon_etrago_link
     WHERE carrier= 'central_resistive_heater'
@@ -358,7 +414,7 @@ def sanitycheck_heat():
     )
 
     sum_urban_central_solar_thermal_collector_supply = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_solar_thermal_collector_MW 
     FROM supply.egon_scenario_capacities
     WHERE carrier= 'urban_central_solar_thermal_collector'
@@ -371,7 +427,7 @@ def sanitycheck_heat():
     )
 
     sum_solar_thermal_collector_grid = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as solar_thermal_collector_MW 
     FROM grid.egon_etrago_generator
     WHERE carrier= 'solar_thermal_collector'
@@ -404,7 +460,7 @@ def sanitycheck_heat():
     )
 
     sum_urban_central_geo_thermal_supply = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_geo_thermal_MW 
     FROM supply.egon_scenario_capacities
     WHERE carrier= 'urban_central_geo_thermal'
@@ -417,7 +473,7 @@ def sanitycheck_heat():
     )
 
     sum_geo_thermal_grid = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as geo_thermal_MW 
     FROM grid.egon_etrago_generator
     WHERE carrier= 'geo_thermal'
@@ -447,7 +503,7 @@ def sanitycheck_heat():
     )
 
     sum_residential_rural_heat_pump_supply = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Residential_rural_heat_pump_MW 
     FROM supply.egon_scenario_capacities
     WHERE carrier= 'residential_rural_heat_pump'
@@ -460,7 +516,7 @@ def sanitycheck_heat():
     )
 
     sum_rural_heat_pump_grid = db.select_dataframe(
-        f"""
+        """
     SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as rural_heat_pump_MW 
     FROM grid.egon_etrago_link
     WHERE carrier= 'rural_heat_pump'
@@ -490,25 +546,6 @@ def sanitycheck_heat():
     )
 
     # Sanity_checks_eGon100RE
-
-
-import pandas as pd
-
-from egon.data import db
-from egon.data.datasets import Dataset
-from egon.data.datasets.electricity_demand.temporal import insert_cts_load
-import egon.data.config
-
-
-class SanityChecks(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="SanityChecks",
-            version="0.0.0",
-            dependencies=dependencies,
-            tasks=(sanitycheck_electricity, sanitycheck_heat),
-        )
-
 
 def sanitycheck_eGon100RE_electricity():
 
@@ -569,7 +606,7 @@ def sanitycheck_eGon100RE_electricity():
     for carrier in carriers_electricity:
         if carrier == "offwind-dc" or "offwind-ac":
             sum_output = db.select_dataframe(
-                f"""
+                """
                  SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
                  FROM grid.egon_etrago_generator
                  WHERE scn_name = 'eGon100RE'
@@ -580,7 +617,7 @@ def sanitycheck_eGon100RE_electricity():
 
         carrier = "wind_offshore"
         sum_input = db.select_dataframe(
-            f"""
+            """
         SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
         FROM supply.egon_scenario_capacities
         WHERE carrier= ('wind_offshore')
@@ -598,6 +635,55 @@ def sanitycheck_eGon100RE_electricity():
         g = round(g1, 2)
 
         print(f"The target values for {carrier} differ by {g}  %")
+        
+def sanitycheck_eGon100RE_electricity_storage():
+
+    """Returns sanity checks for heat.
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+
+carriers_Heating_storage_units = ["hydro", "PHS"]
+for carrier in carriers_Heating_storage_units:
+    sum_output = db.select_dataframe(
+        f"""
+             SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
+             FROM grid.egon_etrago_storage
+             WHERE scn_name = 'eGon100RE'
+             AND carrier IN ('{carrier}')
+             GROUP BY (scn_name); 
+             """
+    )
+if carrier == "hydro":
+    carrier = "hydro"
+
+elif carrier == "PHS":
+    carrier = "pumped_hydro"
+
+    sum_input = db.select_dataframe(
+        f"""
+            SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
+            FROM supply.egon_scenario_capacities
+            WHERE carrier= '{carrier}'
+            AND scenario_name IN ('eGon100RE')
+            GROUP BY (carrier);
+            """
+    )
+
+    sum_input["Error"] = (
+        (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
+        / sum_input["input_capacity_MW"]
+    ) * 100
+
+    g1 = sum_input["Error"].values[0]
+    g = round(g1, 2)
+    print(f"The target values for {carrier} differ by {g}  %")
 
     # Sanity_checks_eGon100RE_Heating
 
@@ -616,7 +702,7 @@ def sanitycheck_eGon100RE_heat_generator():
     # Urban_central_solar_thermal
 
     sum_output_urban_central_solar_thermal = db.select_dataframe(
-        f"""
+        """
      SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
      FROM grid.egon_etrago_generator
      WHERE scn_name = 'eGon100RE'
@@ -626,7 +712,7 @@ def sanitycheck_eGon100RE_heat_generator():
     )
 
     sum_input_urban_central_solar_thermal = db.select_dataframe(
-        f"""
+        """
        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
        FROM supply.egon_scenario_capacities
        WHERE carrier= ('urban_central_solar_thermal')
@@ -652,7 +738,7 @@ def sanitycheck_eGon100RE_heat_generator():
     # Urban_central_Geo_thermal
 
     sum_output_urban_central_geo_thermal = db.select_dataframe(
-        f"""
+        """
     SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
     FROM grid.egon_etrago_generator
     WHERE scn_name = 'eGon100RE'
@@ -662,7 +748,7 @@ def sanitycheck_eGon100RE_heat_generator():
     )
 
     sum_input_urban_central_geo_thermal = db.select_dataframe(
-        f"""
+        """
        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
        FROM supply.egon_scenario_capacities
        WHERE carrier= ('urban_central_geo_thermal')
@@ -687,7 +773,7 @@ def sanitycheck_eGon100RE_heat_generator():
     # For_residential_rural_solar_thermal+service_rural_solar_thermal=rural_solar_thermal
 
     sum_output_rural_solar_thermal = db.select_dataframe(
-        f"""
+        """
         SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
         FROM grid.egon_etrago_generator
         WHERE scn_name = 'eGon100RE'
@@ -697,7 +783,7 @@ def sanitycheck_eGon100RE_heat_generator():
     )
 
     sum_input_rural_solar_thermal = db.select_dataframe(
-        f"""
+        """
        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
        FROM supply.egon_scenario_capacities
        WHERE carrier= ('rural_solar_thermal)
@@ -777,10 +863,10 @@ elif carrier == "services rural resistive heater":
 
     print(f"The target values for {carrier} differ by {g}  %")
 
-    # For_yet_to_be_Added_technologies(Urban_gas and heat pump)
+    # For_yet_to_be_Added_technologies(Urban_gas)
 
     sum_output_urban_gas = db.select_dataframe(
-        f"""
+        """
             SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
             FROM grid.egon_etrago_link
             WHERE scn_name = 'eGon100RE'
@@ -790,7 +876,7 @@ elif carrier == "services rural resistive heater":
     )
 
     sum_input_urban_gas = db.select_dataframe(
-        f"""
+        """
             SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
             FROM supply.egon_scenario_capacities
             WHERE carrier= ('urban_central_gas_CHP', 'urban_central_gas_boiler')
@@ -815,7 +901,7 @@ elif carrier == "services rural resistive heater":
     # Heat_Pump_to_be_added
 
     sum_output_heat_pump = db.select_dataframe(
-        f"""
+        """
         SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
         FROM grid.egon_etrago_link
         WHERE scn_name = 'eGon100RE'
@@ -825,7 +911,7 @@ elif carrier == "services rural resistive heater":
     )
 
     sum_input_heat_pump = db.select_dataframe(
-        f"""
+        """
         SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
         FROM supply.egon_scenario_capacities
         WHERE carrier= ('rural_heat_pump')
@@ -848,51 +934,3 @@ elif carrier == "services rural resistive heater":
     print(f"The target values for rural heat pump differ by {g}  %")
 
 
-def sanitycheck_eGon100RE_heat_storage():
-
-    """Returns sanity checks for heat.
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-    """
-
-
-carriers_Heating_storage_units = ["hydro", "PHS"]
-for carrier in carriers_Heating_storage_units:
-    sum_output = db.select_dataframe(
-        f"""
-             SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
-             FROM grid.egon_etrago_storage
-             WHERE scn_name = 'eGon100RE'
-             AND carrier IN ('{carrier}')
-             GROUP BY (scn_name); 
-             """
-    )
-if carrier == "hydro":
-    carrier = "hydro"
-
-elif carrier == "PHS":
-    carrier = "pumped_hydro"
-
-    sum_input = db.select_dataframe(
-        f"""
-            SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
-            FROM supply.egon_scenario_capacities
-            WHERE carrier= '{carrier}'
-            AND scenario_name IN ('eGon100RE')
-            GROUP BY (carrier);
-            """
-    )
-
-    sum_input["Error"] = (
-        (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
-        / sum_input["input_capacity_MW"]
-    ) * 100
-
-    g1 = sum_input["Error"].values[0]
-    g = round(g1, 2)
-    print(f"The target values for {carrier} differ by {g}  %")
