@@ -44,10 +44,7 @@ def insert():
         print("original number of rows in the data set: " + str(len(df)))
         print("NaNs for longitude and latitude: " + str(x1) + " & " + str(x2))
         df.dropna(inplace=True)
-        print(
-            "Number of rows after neglecting NaNs: "
-            + str(len(df))
-        )
+        print("Number of rows after neglecting NaNs: " + str(len(df)))
         print(" ")
 
         # derive dataframe for locations
@@ -111,19 +108,14 @@ def insert():
         x1 = mastr["voltage_level"].isnull().sum()
         print(" ")
         print("Examination of voltage levels in MaStR data set:")
-        print(
-            "Original number of rows in MaStR: " + str(len(mastr))
-        )
+        print("Original number of rows in MaStR: " + str(len(mastr)))
         print(
             "NaNs in voltage level caused by a) a missing assignment to the number or b) insufficient data: "
             + str(x1)
         )
         # drop PVs with missing values due to a) no assignemtn of MaStR-numbers or b) missing data in row
         mastr.dropna(inplace=True)
-        print(
-            "Number of rows after neglecting NaNs: "
-            + str(len(mastr))
-        )
+        print("Number of rows after neglecting NaNs: " + str(len(mastr)))
 
         # drop PVs in low voltage level
         index_names = mastr[mastr["voltage_level"] == "Niederspannung"].index
@@ -217,15 +209,9 @@ def insert():
         )
         print("Length of original data frame: " + str(before))
         print("Number of small areas: " + str(count_small))
-        print(
-            "Number of joins: "
-            + str(count_join)
-        )
+        print("Number of joins: " + str(count_join))
         print("Deleted areas (not joined): " + str(count_delete))
-        print(
-            "Length of resulting data frame: "
-            + str(len(potentials_rora))
-        )
+        print("Length of resulting data frame: " + str(len(potentials_rora)))
         print(" ")
 
         # agriculture
@@ -261,20 +247,12 @@ def insert():
         count_join = len(o)
         count_delete = count_small - count_join
         print(" ")
-        print(
-            "Examination of potential areas in category 'Agriculture'"
-        )
+        print("Examination of potential areas in category 'Agriculture'")
         print("Length of original data frame: " + str(before))
         print("Number of small areas: " + str(count_small))
-        print(
-            "Number of joins: "
-            + str(count_join)
-        )
+        print("Number of joins: " + str(count_join))
         print("Deleted areas (not joined): " + str(count_delete))
-        print(
-            "Length of resulting data frame: "
-            + str(len(potentials_agri))
-        )
+        print("Length of resulting data frame: " + str(len(potentials_agri)))
         print(" ")
 
         # calculate new areas
@@ -296,9 +274,7 @@ def insert():
 
         ### examination of intersection of areas
         print(" ")
-        print(
-            "Review function to avoid intersection of potential areas:"
-        )
+        print("Review function to avoid intersection of potential areas:")
         print("Initial length potentials_agri: " + str(agri_vorher))
         print("Number of occurred cases: " + str(len(o)))
         print("Resulting length potentials_agri: " + str(len(potentials_agri)))
@@ -505,13 +481,8 @@ def insert():
         )
         print("Number of potential areas: " + str(anz))
         print(" -> distributed to " + str(anz_distr) + " districts")
-        print(
-            "Number of areas with a potential >= 5,5 MW: " + str(anz_big)
-        )
-        print(
-            "Number of areas with a potential < 5,5 MW: "
-            + str(anz_small)
-        )
+        print("Number of areas with a potential >= 5,5 MW: " + str(anz_big))
+        print("Number of areas with a potential < 5,5 MW: " + str(anz_small))
         print(" ")
 
         for index, dist in distr.iterrows():
@@ -628,7 +599,7 @@ def insert():
             pv_per_distr_i.index = range(0, len(pv_per_distr_i))
             # delete empty grid districts
             index_names = pv_per_distr_i[
-                pv_per_distr_i["installed capacity in kW"] == 0.0
+                pv_per_distr_i["installed capacity in kW"].isna()
             ].index
             pv_per_distr_i.drop(index_names, inplace=True)
 
@@ -650,7 +621,11 @@ def insert():
             # build pv parks on potential areas ariculture if still necessary
             elif pv_per_distr_i["installed capacity in kW"].sum() < rest_cap:
 
-                rest_cap = target_power - total_pv_power
+                rest_cap = (
+                    target_power
+                    - total_pv_power
+                    - pv_per_distr_i["installed capacity in kW"].sum()
+                )
 
                 ###
                 print(
@@ -666,23 +641,22 @@ def insert():
                 )
                 # change index to add different Dataframes in the end
                 pv_per_distr_i_2["grid_district"] = pv_per_distr_i_2.index
-                pv_per_distr_i_2.index = range(
-                    len(pv_per_distr_i), 2 * len(pv_per_distr_i)
-                )
+                pv_per_distr_i_2.index = range(len(pv_per_distr_i_2))
+
                 # delete empty grid districts
                 index_names = pv_per_distr_i_2[
-                    pv_per_distr_i_2["installed capacity in kW"] == 0.0
+                    pv_per_distr_i_2["installed capacity in kW"].isna()
                 ].index
                 pv_per_distr_i_2.drop(index_names, inplace=True)
-                pv_per_distr_i.append(pv_per_distr_i_2)
+                breakpoint()
 
-                if pv_per_distr_i["installed capacity in kW"].sum() > rest_cap:
+                if pv_per_distr_i_2["installed capacity in kW"].sum() > rest_cap:
                     scale_factor = (
                         rest_cap
-                        / pv_per_distr_i["installed capacity in kW"].sum()
+                        / pv_per_distr_i_2["installed capacity in kW"].sum()
                     )
-                    pv_per_distr_i["installed capacity in kW"] = (
-                        pv_per_distr_i["installed capacity in kW"]
+                    pv_per_distr_i_2["installed capacity in kW"] = (
+                        pv_per_distr_i_2["installed capacity in kW"]
                         * scale_factor
                     )
 
@@ -692,6 +666,10 @@ def insert():
                         + str(scale_factor)
                         + " to remaining potential areas 'Road & Railway' and 'Agriculture'."
                     )
+                
+                pv_per_distr_i = pv_per_distr_i.append(
+                    pv_per_distr_i_2, ignore_index=True
+                )
 
             # assign grid level to pv_per_distr
             v_lvl = pd.Series(dtype=int, index=pv_per_distr_i.index)
@@ -753,7 +731,7 @@ def insert():
         print(" ")
 
         # MaStR-data: existing PV farms
-        mastr = mastr_existing_pv(path, pow_per_area)
+        # mastr = mastr_existing_pv(path, pow_per_area)
 
         ###
         print(" ")
@@ -761,7 +739,28 @@ def insert():
         print(" ")
 
         # database-data: potential areas for new PV farms
-        potentials_rora, potentials_agri = potential_areas(con, join_buffer)
+        # potentials_rora, potentials_agri = potential_areas(con, join_buffer)
+
+        #######################################################################
+        mastr = gpd.GeoDataFrame(
+            pd.read_pickle(
+                "/home/student/Documents/Ego-n/Solar_ground/mastr.pkl"
+            ),
+            geometry="geometry",
+        )
+        potentials_rora = gpd.GeoDataFrame(
+            pd.read_pickle(
+                "/home/student/Documents/Ego-n/Solar_ground/potentials_rora.pkl"
+            ),
+            geometry="geom",
+        )
+        potentials_agri = gpd.GeoDataFrame(
+            pd.read_pickle(
+                "/home/student/Documents/Ego-n/Solar_ground/potentials_agri.pkl"
+            ),
+            geometry="geom",
+        )
+        #######################################################################
 
         ###
         print(" ")
@@ -829,6 +828,7 @@ def insert():
 
         # check target value per state
         for i in nuts:
+            i = "DE4"
             target_power = (
                 target[target["nuts"] == i]["capacity"].iloc[0] * 1000
             )
@@ -916,7 +916,7 @@ def insert():
             pv_agri = pv_agri.append(agri_i)
             if len(distr_i) > 0:
                 pv_per_distr = pv_per_distr.append(distr_i)
-
+        breakpoint()
         # 2) scenario: eGon100RE
 
         # assumption for target value of installed capacity in Germany per scenario
@@ -1062,7 +1062,6 @@ def insert():
             pv_per_distr_100RE["installed capacity in kW"] > 0
         ]
 
-
         return (
             pv_rora,
             pv_agri,
@@ -1144,7 +1143,7 @@ def insert():
         insert_pv_parks["scenario"] = scenario_name
 
         # change name and crs of geometry column
-        insert_pv_parks.set_crs(epsg= 3035, allow_override= True, inplace= True)
+        insert_pv_parks.set_crs(epsg=3035, allow_override=True, inplace=True)
         insert_pv_parks = (
             insert_pv_parks.rename({"geometry": "geom"}, axis=1)
             .set_geometry("geom")
