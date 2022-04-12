@@ -497,7 +497,7 @@ def sanitycheck_heat():
     print(
         f"The target values for Sum loads Residential Rural Heat Pump DE differ by {Error_residential_rural_heat_pump}  %"
     )
-    __________________________________________________________________________
+  
     
     #Sanity_checks_eGon100RE
     
@@ -564,7 +564,7 @@ def sanitycheck_eGon100RE_electricity():
         )
         
             
-        sum_installed_cap_DE["Error"] = (
+        sum_input["Error"] = (
             (
                 sum_output["output_capacity_MW"]
                 - sum_input["input_capacity_MW"]
@@ -572,7 +572,7 @@ def sanitycheck_eGon100RE_electricity():
             / sum_input["input_capacity_MW"]
         ) * 100
         
-        g1 = sum_installed_cap_DE["Error"].values[0]
+        g1 = sum_input["Error"].values[0]
         g = round(g1, 2)
     
         print(f"The target values for {carrier} differ by {g}  %")
@@ -604,7 +604,7 @@ def sanitycheck_eGon100RE_electricity():
         """   
         )
    
-        sum_installed_cap_DE["Error"] = (
+        sum_input["Error"] = (
             (
                 sum_output["output_capacity_MW"]
                 - sum_input["input_capacity_MW"]
@@ -612,7 +612,7 @@ def sanitycheck_eGon100RE_electricity():
             / sum_input["input_capacity_MW"]
         ) * 100
         
-        g1 = sum_installed_cap_DE["Error"].values[0]
+        g1 = sum_input["Error"].values[0]
         g = round(g1, 2)
     
         print(f"The target values for {carrier} differ by {g}  %")  
@@ -653,7 +653,7 @@ def sanitycheck_eGon100RE_heat_generator():
        """   
        )
        
-    sum_installed_cap_DE["Error"] = (
+    sum_input_urban_central_solar_thermal["Error"] = (
         (
             sum_output_urban_central_solar_thermal["output_capacity_MW"]
             - sum_input_urban_central_solar_thermal["input_capacity_MW"]
@@ -661,7 +661,7 @@ def sanitycheck_eGon100RE_heat_generator():
         / sum_input_urban_central_solar_thermal["input_capacity_MW"]
     ) * 100
     
-    g1 = sum_installed_cap_DE["Error"].values[0]
+    g1 = sum_input_urban_central_solar_thermal["Error"].values[0]
     g = round(g1, 2)
     print(f"The target values for urban central solar thermal differ by {g}  %") 
         
@@ -689,7 +689,7 @@ def sanitycheck_eGon100RE_heat_generator():
        """   
        )
    
-    sum_installed_cap_DE["Error"] = (
+    sum_input_urban_central_geo_thermal["Error"] = (
         (
             sum_output_urban_central_geo_thermal["output_capacity_MW"]
             - sum_input_urban_central_geo_thermal["input_capacity_MW"]
@@ -697,7 +697,7 @@ def sanitycheck_eGon100RE_heat_generator():
         / sum_input_urban_central_geo_thermal["input_capacity_MW"]
     ) * 100
     
-    g1 = sum_installed_cap_DE["Error"].values[0]
+    g1 = sum_input_urban_central_geo_thermal["Error"].values[0]
     g = round(g1, 2)
 
     print(f"The target values for urban central geo thermal differ by {g}  %") 
@@ -726,7 +726,7 @@ def sanitycheck_eGon100RE_heat_generator():
        """   
        )
        
-    sum_installed_cap_DE["Error"] = (
+    sum_input_rural_solar_thermal["Error"] = (
         (
             sum_output_rural_solar_thermal["output_capacity_MW"]
             - sum_input_rural_solar_thermal["input_capacity_MW"]
@@ -734,7 +734,7 @@ def sanitycheck_eGon100RE_heat_generator():
         / sum_input_rural_solar_thermal["input_capacity_MW"]
     ) * 100
     
-    g1 = sum_installed_cap_DE["Error"].values[0]
+    g1 = sum_input_rural_solar_thermal["Error"].values[0]
     g = round(g1, 2)
 
     print(f"The target values for rural solar thermal differ by {g}  %") 
@@ -810,13 +810,13 @@ elif carrier== "services rural resistive heater":
         )
 
     sum_input_urban_gas= db.select_dataframe(
-                f"""
+           f"""
             SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
             FROM supply.egon_scenario_capacities
             WHERE carrier= ('urban_central_gas_CHP', 'urban_central_gas_boiler')
             AND scenario_name IN ('eGon100RE')
             GROUP BY (carrier);
-            """   
+        """   
             )
    
     sum_input_urban_gas["Error"] = (
@@ -899,7 +899,7 @@ elif carrier== "PHS":
     carrier= "pumped_hydro" 
       
     sum_input = db.select_dataframe(
-                f"""
+            f"""
             SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
             FROM supply.egon_scenario_capacities
             WHERE carrier= '{carrier}'
@@ -907,17 +907,16 @@ elif carrier== "PHS":
             GROUP BY (carrier);
             """   
             )
-    
-    sum_installed_cap_DE["Error"] = (
-            (
-                sum_output["output_capacity_MW"]
-                - sum_input["input_capacity_MW"]
-            )
-            / sum_input["input_capacity_MW"]
-        ) * 100
-        
-        g1 = sum_installed_cap_DE["Error"].values[0]
-        g = round(g1, 2)
                     
-        print(f"The target values for {carrier} differ by {g}  %")
+    sum_input["Error"] = (
+        (
+            sum_output["output_capacity_MW"]
+            - sum_input["input_capacity_MW"]
+        )
+        / sum_input["input_capacity_MW"]
+    ) * 100
+    
+    g1 = sum_input["Error"].values[0]
+    g = round(g1, 2)
+    print(f"The target values for {carrier} differ by {g}  %")
                
