@@ -97,7 +97,9 @@ class EgonPfHvGenerator(Base):
     ramp_limit_down = Column(Float(53), server_default="NaN")
     ramp_limit_start_up = Column(Float(53), server_default="1.")
     ramp_limit_shut_down = Column(Float(53), server_default="1.")
-    e_nom_max = Column(Float(53), server_default="inf")
+    e_nom_max = Column(
+        Float(53), server_default="inf"
+    )  # [MWh(/y)] Value to be used in eTraGo to set constraint for the production over the year
 
 
 class EgonPfHvGeneratorTimeseries(Base):
