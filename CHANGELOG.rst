@@ -476,6 +476,8 @@ Bug Fixes
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
 * Add missing marginal costs for conventional generators in Germany
   `#722 <https://github.com/openego/eGon-data/issues/722>`_
+* Fix assignemnt of impedances (x) to etrago tables
+  `#710 <https://github.com/openego/eGon-data/issues/710>`_
   
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
