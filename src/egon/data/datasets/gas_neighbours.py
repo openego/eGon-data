@@ -1149,7 +1149,7 @@ def calculate_ch4_grid_capacities():
     url = "https://www.entsog.eu/sites/default/files/2021-07/" + basename
     target_file = Path(".") / "datasets" / "gas_data" / basename
 
-    # urlretrieve(url, target_file)
+    urlretrieve(url, target_file)
     map_pipelines = {
         "NORDSTREAM": "RU00",
         "NORDSTREAM 2": "RU00",
