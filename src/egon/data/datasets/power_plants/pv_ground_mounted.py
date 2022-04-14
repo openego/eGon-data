@@ -777,7 +777,7 @@ def insert():
         print(" ")
 
         # MaStR-data: existing PV farms
-        # mastr = mastr_existing_pv(path, pow_per_area)
+        mastr = mastr_existing_pv(path, pow_per_area)
 
         ###
         print(" ")
@@ -785,9 +785,10 @@ def insert():
         print(" ")
 
         # database-data: potential areas for new PV farms
-        # potentials_rora, potentials_agri = potential_areas(con, join_buffer)
+        potentials_rora, potentials_agri = potential_areas(con, join_buffer)
 
         #######################################################################
+        """
         mastr = gpd.GeoDataFrame(
             pd.read_pickle(
                 "/home/student/Documents/Ego-n/Solar_ground/mastr.pkl"
@@ -806,6 +807,7 @@ def insert():
             ),
             geometry="geom",
         )
+        """
         #######################################################################
 
         ###
@@ -875,7 +877,7 @@ def insert():
         agri = agri.set_geometry("centroid")
         potentials_rora = potentials_rora.set_geometry("geom")
         potentials_agri = potentials_agri.set_geometry("geom")
-        nuts = ["DE1", "DE3"]
+
         # check target value per state
         for i in nuts:
 
