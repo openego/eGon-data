@@ -953,7 +953,9 @@ def insert():
             print("Number of PV farms: " + str(len(agri_i)))
             print(" - thereof MV: " + str(len(agri_i_mv)))
             print(" - dthereof HV: " + str(len(agri_i_hv)))
-            print("c) PVs on additional potential areas per MV-District: ")
+            print("c) Existing PVs not in potential areas: ")
+            print("Number of PV farms: " + str(len(exist_i)))
+            print("d) PVs on additional potential areas per MV-District: ")
             if len(distr_i) > 0:
                 distr_i_mv = distr_i[distr_i["voltage_level"] == 5]
                 distr_i_hv = distr_i[distr_i["voltage_level"] == 4]
@@ -1149,6 +1151,8 @@ def insert():
             Pv parks on selected potential areas of raod and railway
         pv_agri : gpd.GeoDataFrame()
             Pv parks on selected potential areas of raod and railway
+        pv_exist : gpd.GeoDataFrame()
+            Existing Pv parks on selected areas
         pv_per_distr: gpd.GeoDataFrame()
             Additionally built pv parks on potential areas per mv grid district
         scenario_name:
@@ -1202,7 +1206,7 @@ def insert():
         insert_pv_parks.index = pd.RangeIndex(
             start=pv_park_id, stop=pv_park_id + len(insert_pv_parks), name="id"
         )
-        breakpoint()
+
         # insert into database
         insert_pv_parks.reset_index().to_postgis(
             "egon_power_plants",
@@ -1264,7 +1268,9 @@ def insert():
     print("Number of PV farms: " + str(len(pv_agri)))
     print(" - thereof MV: " + str(len(pv_agri_mv)))
     print(" - thereof HV: " + str(len(pv_agri_hv)))
-    print("c) PVs on additional potential areas per MV-District: ")
+    print("c) Existing PVs not in potential areas: ")
+    print("Number of PV farms: " + str(len(pv_exist)))
+    print("d) PVs on additional potential areas per MV-District: ")
     if len(pv_per_distr) > 0:
         print(
             "Total installed capacity: "
@@ -1278,6 +1284,8 @@ def insert():
         print(" -> No additional expansion needed")
     print(" ")
     ###
+    
+    ###########################################################################
     con = db.engine()
     sql = "SELECT capacity,scenario_name,nuts FROM supply.egon_scenario_capacities WHERE carrier='solar'"
     target = pd.read_sql(sql, con)
@@ -1306,6 +1314,7 @@ def insert():
     print(f'2035 cap: {solar_2035["installed capacity in kW"].sum()}')
     target2035 = target[target.scenario_name == "eGon2035"]
     print(f'Target2035: {target2035.capacity.sum()}')
+    ###########################################################################
 
     # save to DB
     if (
