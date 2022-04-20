@@ -464,6 +464,8 @@ Bug Fixes
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
 * Clean up `"pipeline.py"`
   `#562 <https://github.com/openego/eGon-data/issues/562>`_
+* Assign timeseries data to crossborder generators ego2035
+  `#724 <https://github.com/openego/eGon-data/issues/724>`_
 * Add missing dataset dependencies in "pipeline.py"
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
 
