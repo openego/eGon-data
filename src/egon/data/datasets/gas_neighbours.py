@@ -1448,12 +1448,6 @@ def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
 
     print(Neighbouring_pipe_capacities_list)
     # Insert data to db
-    db.execute_sql(
-        f"""DELETE FROM grid.egon_etrago_link 
-        WHERE "carrier" = 'CH4' 
-        AND scn_name = 'eGon2035';
-        """
-    )
     Neighbouring_pipe_capacities_list.to_postgis(
         "egon_etrago_gas_link",
         db.engine(),
