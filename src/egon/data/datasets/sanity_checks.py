@@ -591,8 +591,8 @@ def sanitycheck_eGon100RE_electricity():
         )
 
         sum_input["Error"] = (
-            (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
-            / sum_input["input_capacity_MW"]
+            (sum_output["output_capacity_mw"] - sum_input["input_capacity_mw"])
+            / sum_input["input_capacity_mw"]
         ) * 100
 
         g1 = sum_input["Error"].values[0]
@@ -627,8 +627,8 @@ def sanitycheck_eGon100RE_electricity():
         )
 
         sum_input["Error"] = (
-            (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
-            / sum_input["input_capacity_MW"]
+            (sum_output["output_capacity_mw"] - sum_input["input_capacity_mw"])
+            / sum_input["input_capacity_mw"]
         ) * 100
 
         g1 = sum_input["Error"].values[0]
@@ -677,8 +677,8 @@ elif carrier == "PHS":
     )
 
     sum_input["Error"] = (
-        (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
-        / sum_input["input_capacity_MW"]
+        (sum_output["output_capacity_mw"] - sum_input["input_capacity_mw"])
+        / sum_input["input_capacity_mw"]
     ) * 100
 
     g1 = sum_input["Error"].values[0]
@@ -723,10 +723,10 @@ def sanitycheck_eGon100RE_heat_generator():
 
     sum_input_urban_central_solar_thermal["Error"] = (
         (
-            sum_output_urban_central_solar_thermal["output_capacity_MW"]
-            - sum_input_urban_central_solar_thermal["input_capacity_MW"]
+            sum_output_urban_central_solar_thermal["output_capacity_mw"]
+            - sum_input_urban_central_solar_thermal["input_capacity_mw"]
         )
-        / sum_input_urban_central_solar_thermal["input_capacity_MW"]
+        / sum_input_urban_central_solar_thermal["input_capacity_mw"]
     ) * 100
 
     g1 = sum_input_urban_central_solar_thermal["Error"].values[0]
@@ -759,10 +759,10 @@ def sanitycheck_eGon100RE_heat_generator():
 
     sum_input_urban_central_geo_thermal["Error"] = (
         (
-            sum_output_urban_central_geo_thermal["output_capacity_MW"]
-            - sum_input_urban_central_geo_thermal["input_capacity_MW"]
+            sum_output_urban_central_geo_thermal["output_capacity_mw"]
+            - sum_input_urban_central_geo_thermal["input_capacity_mw"]
         )
-        / sum_input_urban_central_geo_thermal["input_capacity_MW"]
+        / sum_input_urban_central_geo_thermal["input_capacity_mw"]
     ) * 100
 
     g1 = sum_input_urban_central_geo_thermal["Error"].values[0]
@@ -794,10 +794,10 @@ def sanitycheck_eGon100RE_heat_generator():
 
     sum_input_rural_solar_thermal["Error"] = (
         (
-            sum_output_rural_solar_thermal["output_capacity_MW"]
-            - sum_input_rural_solar_thermal["input_capacity_MW"]
+            sum_output_rural_solar_thermal["output_capacity_mw"]
+            - sum_input_rural_solar_thermal["input_capacity_mw"]
         )
-        / sum_input_rural_solar_thermal["input_capacity_MW"]
+        / sum_input_rural_solar_thermal["input_capacity_mw"]
     ) * 100
 
     g1 = sum_input_rural_solar_thermal["Error"].values[0]
@@ -890,7 +890,7 @@ elif carrier == "services rural resistive heater":
             sum_output_urban_gas["output_capacity_mw"]
             - sum_input_urban_gas["input_capacity_mw"]
         )
-        / sum_input_urban_gas["input_capacity_MW"]
+        / sum_input_urban_gas["input_capacity_mw"]
     ) * 100
 
     g1 = sum_input_urban_gas["Error"].values[0]
