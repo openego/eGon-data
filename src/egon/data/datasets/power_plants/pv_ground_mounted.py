@@ -1279,7 +1279,7 @@ def insert():
         print(" -> No additional expansion needed")
     print(" ")
     ###
-
+    """
     ###########################################################################
     con = db.engine()
     sql = "SELECT capacity,scenario_name,nuts FROM supply.egon_scenario_capacities WHERE carrier='solar'"
@@ -1310,7 +1310,7 @@ def insert():
     target2035 = target[target.scenario_name == "eGon2035"]
     print(f"Target2035: {target2035.capacity.sum()}")
     ###########################################################################
-
+    """
     # save to DB
     if (
         pv_rora["installed capacity in kW"].sum() > 0
