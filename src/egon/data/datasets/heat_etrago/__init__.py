@@ -109,14 +109,14 @@ def insert_store(scenario, carrier):
         {targets['heat_links']['table']}
         WHERE carrier LIKE '{carrier}_store%'
         AND scn_name = '{scenario}'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -129,8 +129,8 @@ def insert_store(scenario, carrier):
         {targets['heat_stores']['table']}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
-        AND bus IN 
-        (SELECT bus_id 
+        AND bus IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -222,6 +222,9 @@ def insert_store(scenario, carrier):
             "carrier": carrier + "_store",
             "capital_cost": get_sector_parameters("heat", "eGon2035")[
                 "capital_cost"
+            ][f"{carrier.split('_')[0]}_water_tank"],
+            "lifetime": get_sector_parameters("heat", "eGon2035")[
+                "lifetime"
             ][f"{carrier.split('_')[0]}_water_tank"],
             "e_nom_extendable": True,
             "store_id": range(
@@ -414,7 +417,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         f"""
         SELECT c.bus_id as bus0, b.bus_id as bus1,
         capacity, a.carrier, scenario as scn_name
-        FROM  {sources['district_heating_supply']['schema']}.
+        FROM {sources['district_heating_supply']['schema']}.
         {sources['district_heating_supply']['table']} a
         JOIN {targets['heat_buses']['schema']}.
         {targets['heat_buses']['table']} b
@@ -426,6 +429,8 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='central_heat'
+        AND c.carrier='CH4'
+        AND c.scn_name = '{scenario}'
         """
     )
 
@@ -514,6 +519,8 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='rural_heat'
+        AND c.carrier='CH4'
+        AND c.scn_name = '{scenario}'
         """
     )
 

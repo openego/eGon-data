@@ -17,12 +17,15 @@ voltage grids.
   Resulting tables:
   * All buildings: `openstreetmap.osm_buildings`
   * Filtered buildings: `openstreetmap.osm_buildings_filtered`
+  * Residential buildings: `openstreetmap.osm_buildings_residential`
 * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
   see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
   Resulting table: `openstreetmap.osm_amenities_shops_filtered`
 * Create a mapping table for building's osm IDs to the Zensus cells the
   building's centroid is located in.
-  Resulting table: `boundaries.egon_map_zensus_buildings_filtered`
+  Resulting tables:
+  * `boundaries.egon_map_zensus_buildings_filtered` (filtered)
+  * `boundaries.egon_map_zensus_buildings_residential` (residential only)
 * Enrich each building by number of apartments from Zensus table
   `society.egon_destatis_zensus_apartment_building_population_per_ha`
   by splitting up the cell's sum equally to the buildings. In some cases, a
@@ -72,33 +75,62 @@ def execute_sql_script(script):
 
 
 def preprocessing():
+    print("Extracting buildings, amenities and shops...")
     sql_scripts = [
         "osm_amenities_shops_preprocessing.sql",
-        "osm_buildings_filter.sql",
-        "osm_buildings_zensus_mapping.sql",
-        "osm_buildings_temp_tables.sql",
+        "osm_buildings_extract.sql",
     ]
     for script in sql_scripts:
         execute_sql_script(script)
 
 
+def filter_buildings():
+    print("Filter buildings...")
+    execute_sql_script("osm_buildings_filter.sql")
+
+
+def filter_buildings_residential():
+    print("Filter residential buildings...")
+    execute_sql_script("osm_buildings_filter_residential.sql")
+
+
+def create_buildings_filtered_zensus_mapping():
+    print("Create census mapping table for filtered buildings...")
+    execute_sql_script("osm_buildings_filtered_zensus_mapping.sql")
+
+
+def create_buildings_residential_zensus_mapping():
+    print("Create census mapping table for residential buildings...")
+    execute_sql_script("osm_buildings_residential_zensus_mapping.sql")
+
+
+def create_buildings_temp_tables():
+    print("Create temp tables for buildings...")
+    execute_sql_script("osm_buildings_temp_tables.sql")
+
+
 def extract_buildings_w_amenities():
+    print("Extracting buildings with amenities...")
     execute_sql_script("osm_results_buildings_w_amenities.sql")
 
 
 def extract_buildings_wo_amenities():
+    print("Extracting buildings without amenities...")
     execute_sql_script("osm_results_buildings_wo_amenities.sql")
 
 
 def extract_amenities():
+    print("Extracting amenities...")
     execute_sql_script("osm_results_amenities.sql")
 
 
 def extract_ways():
+    print("Extracting ways...")
     execute_sql_script("osm_ways_preprocessing.sql")
 
 
 def drop_temp_tables():
+    print("Dropping temp tables...")
     execute_sql_script("drop_temp_tables.sql")
 
 
@@ -110,10 +142,16 @@ class OsmBuildingsStreets(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OsmBuildingsStreets",
-            version="0.0.1",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 preprocessing,
+                {filter_buildings, filter_buildings_residential},
+                {
+                    create_buildings_filtered_zensus_mapping,
+                    create_buildings_residential_zensus_mapping,
+                },
+                create_buildings_temp_tables,
                 {
                     extract_buildings_w_amenities,
                     extract_buildings_wo_amenities,

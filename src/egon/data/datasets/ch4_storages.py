@@ -4,12 +4,13 @@ The central module containing all code dealing with importing gas storages data
 """
 from pathlib import Path
 import ast
+from telnetlib import GA
 
 import geopandas
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.gas_grid import (
@@ -23,7 +24,7 @@ class CH4Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CH4Storages",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(import_ch4_storages),
         )
@@ -59,17 +60,20 @@ def import_installed_ch4_storages(scn_name):
     ]
 
     # Define new columns
-    e_nom = []
+    max_workingGas_M_m3 = []
     NUTS1 = []
     end_year = []
     for index, row in Gas_storages_list.iterrows():
         param = ast.literal_eval(row["param"])
         NUTS1.append(param["nuts_id_1"])
         end_year.append(param["end_year"])
-        e_nom.append(param["max_power_MW"])
+        max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    Gas_storages_list = Gas_storages_list.assign(e_nom=e_nom)
     Gas_storages_list = Gas_storages_list.assign(NUTS1=NUTS1)
+
+    # Calculate e_nom
+    conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
+    Gas_storages_list["e_nom"] = [conv_factor * i for i in max_workingGas_M_m3]
 
     end_year = [float("inf") if x == None else x for x in end_year]
     Gas_storages_list = Gas_storages_list.assign(end_year=end_year)
@@ -139,6 +143,7 @@ def import_installed_ch4_storages(scn_name):
             "bus_id",
         ]
     )
+
     return Gas_storages_list
 
 
@@ -159,6 +164,9 @@ def import_ch4_grid_capacity(scn_name):
         Dataframe containing the gas stores in Germany modelling the gas grid storage capacity
 
     """
+    # Select source from dataset configuration
+    source = config.datasets()["gas_stores"]["source"]
+
     Gas_grid_capacity = 130000  # Storage capacity of the CH4 grid - G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
     N_ch4_nodes_G = ch4_nodes_number_G(
         define_gas_nodes_list()
@@ -168,7 +176,7 @@ def import_ch4_grid_capacity(scn_name):
     )  # Storage capacity associated to each CH4 node of the german grid
 
     sql_gas = f"""SELECT bus_id, scn_name, carrier, geom
-                FROM grid.egon_etrago_bus
+                FROM {source['buses']['schema']}.{source['buses']['table']}
                 WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
                 AND country = 'DE';"""
     Gas_storages_list = db.select_geodataframe(sql_gas, epsg=4326)
@@ -184,10 +192,12 @@ def import_ch4_grid_capacity(scn_name):
 
 
 def import_ch4_storages():
-    """Insert list of gas storages units in database
-    """
+    """Insert list of gas storages units in database"""
     # Connect to local database
     engine = db.engine()
+
+    # Select target from dataset configuration
+    target = config.datasets()["gas_stores"]["target"]
 
     # TODO move this to function call, how to do it is directly called in task list?
     scn_name = "eGon2035"
@@ -195,7 +205,7 @@ def import_ch4_storages():
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE "carrier" = 'CH4'
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}';
         """
     )
@@ -217,9 +227,9 @@ def import_ch4_storages():
 
     # Insert data to db
     gas_storages_list.to_sql(
-        "egon_etrago_store",
+        target["stores"]["table"],
         engine,
-        schema="grid",
+        schema=target["stores"]["schema"],
         index=False,
         if_exists="append",
     )

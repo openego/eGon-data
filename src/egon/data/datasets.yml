@@ -260,13 +260,25 @@ society_prognosis:
       table: 'egon_household_prognosis'
 
 scenario_input:
-  eGon2035:
-    paths:
-      "capacities": "NEP2035_V2021_scnC2035.xlsx"
-      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
-  eGon100RE:
-    paths:
-      "capacities": "nodal_capacities.csv"
+  sources:
+    eGon2035:
+      capacities: "NEP2035_V2021_scnC2035.xlsx"
+      list_conv_pp: "Kraftwerksliste_NEP_2021_konv.csv"
+    eGon100RE:
+      capacities: "nodal_capacities.csv"
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+  targets:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    nep_conventional_powerplants:
+      schema: 'supply'
+      table: 'egon_nep_2021_conventional_powerplants'
 
 mastr:
   technologies:
@@ -589,7 +601,7 @@ etrago_heat:
       table: 'egon_peta_heat'
     ch4_voronoi:
       schema: 'grid'
-      table: 'egon_voronoi_ch4'
+      table: 'egon_gas_voronoi'
   targets:
     heat_buses:
       schema: 'grid'
@@ -876,6 +888,26 @@ gas_aggregation:
       schema: 'grid'
       table: 'egon_etrago_store'
 
+gas_stores:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+gas_prod:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+
 weather_BusID:
   sources:
     power_plants:
@@ -969,6 +1001,9 @@ electrical_neighbours:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
+    generators_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
     storage:
       schema: 'grid'
       table: 'egon_etrago_storage'
