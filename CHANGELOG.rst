@@ -338,9 +338,9 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
-* Add automatic filtering of gas data
+* Add automatic filtering of gas data: Pipelines of length zero and gas buses
+  isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
-
 
 Bug Fixes
 ---------
