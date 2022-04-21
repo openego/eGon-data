@@ -872,6 +872,17 @@ generators_etrago:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
 
+
+gas_grid:
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+
+
 gas_aggregation:
   sources:
     generators:
