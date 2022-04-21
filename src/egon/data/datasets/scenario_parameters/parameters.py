@@ -305,13 +305,7 @@ def electricity(scenario):
         }
 
     elif scenario == "eGon100RE":
-<<<<<<< HEAD
         costs = read_csv(2050)
-=======
-
-        costs = read_csv(2050)
-
->>>>>>> features/#590_filter_isolated_gas_buses
         parameters = {"grid_topology": "Status Quo"}
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
