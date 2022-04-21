@@ -1311,6 +1311,7 @@ def insert():
     print(f"Target2035: {target2035.capacity.sum()}")
     ###########################################################################
     """
+    
     # save to DB
     if (
         pv_rora["installed capacity in kW"].sum() > 0
