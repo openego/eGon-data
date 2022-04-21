@@ -468,6 +468,8 @@ Bug Fixes
   `#724 <https://github.com/openego/eGon-data/issues/724>`_
 * Add missing dataset dependencies in "pipeline.py"
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
+* Fix assignemnt of impedances (x) to etrago tables
+  `#710 <https://github.com/openego/eGon-data/issues/710>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
