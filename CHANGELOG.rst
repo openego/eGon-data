@@ -197,6 +197,8 @@ Added
   `#514 <https://github.com/openego/eGon-data/issues/514>`_
 * Allocate supply capacities for eGon100RE scenario
   `#580 <https://github.com/openego/eGon-data/issues/580>`_
+* Add electric scenario parameters for eGon100RE
+  `#699 <https://github.com/openego/eGon-data/issues/699>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -340,7 +342,8 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
-* Add automatic filtering of gas data
+* Add automatic filtering of gas data: Pipelines of length zero and gas buses
+  isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 * Add gas data in neighbouring countries
   `#727 <https://github.com/openego/eGon-data/issues/727>`_
@@ -348,7 +351,8 @@ Changed
   `#575 <https://github.com/openego/eGon-data/issues/575>`_
 * Include electricity storages for eGon100RE scenario
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
-
+* Aggregate DSM components per substation
+  '#661 <https://github.com/openego/eGon-data/issues/661>'_
 
 Bug Fixes
 ---------

@@ -521,10 +521,12 @@ def to_pypsa():
 
     for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
 
-        capital_cost = get_sector_parameters("electricity", "eGon2035")[
-            "capital_cost"
-        ]
-        lifetime = get_sector_parameters("electricity", "eGon2035")["lifetime"]
+        capital_cost = get_sector_parameters(
+            "electricity", scenario_name.replace("'", "")
+        )["capital_cost"]
+        lifetime = get_sector_parameters(
+            "electricity", scenario_name.replace("'", "")
+        )["lifetime"]
         db.execute_sql(
             f"""
             -- BUS DATA

@@ -674,6 +674,33 @@ def insert_gas_pipeline_list(
     )
 
 
+def remove_isolated_gas_buses():
+    """Delete gas buses which are not connected to the gas grid.
+
+    Returns
+    -------
+    None.
+    """
+    targets = config.datasets()["gas_grid"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']}
+        WHERE "carrier" = 'CH4'
+        AND scn_name = 'eGon2035'
+        AND country = 'DE'
+        AND "bus_id" NOT IN
+            (SELECT bus0 FROM {targets['links']['schema']}.{targets['links']['table']}
+            WHERE scn_name = 'eGon2035'
+            AND carrier = 'CH4')
+        AND "bus_id" NOT IN
+            (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']}
+            WHERE scn_name = 'eGon2035'
+            AND carrier = 'CH4');
+    """
+    )
+
+
 def insert_gas_data():
     """Overall function for importing gas data from SciGRID_gas
     Returns
@@ -688,6 +715,7 @@ def insert_gas_data():
     abroad_gas_nodes_list = insert_gas_buses_abroad()
 
     insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
+    remove_isolated_gas_buses()
 
 
 def insert_gas_data_eGon100RE():
