@@ -340,7 +340,8 @@ Changed
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
 * Add automatic filtering of gas data
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
-
+* Aggregate DSM components per substation
+  '#661 <https://github.com/openego/eGon-data/issues/661>'_
 
 Bug Fixes
 ---------
