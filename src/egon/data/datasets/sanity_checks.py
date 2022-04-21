@@ -39,7 +39,7 @@ carriers_electricity = ["other_non_renewable", "other_renewable", "reservoir", "
 for carrier in carriers_electricity:
     sum_output = db.select_dataframe(
         f"""
-         SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
+         SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_mw
          FROM grid.egon_etrago_generator
          WHERE scn_name = 'eGon100RE'
          AND carrier IN ('{carrier}')
@@ -49,7 +49,7 @@ for carrier in carriers_electricity:
     
     sum_input = db.select_dataframe(
         f"""
-        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
+        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_mw
         FROM supply.egon_scenario_capacities
         WHERE carrier= '{carrier}'
         AND scenario_name IN ('eGon100RE')
@@ -58,8 +58,8 @@ for carrier in carriers_electricity:
     )
 
     sum_input["Error"] = (
-        (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
-        / sum_input["input_capacity_MW"]
+        (sum_output.output_capacity_mw - sum_input.input_capacity_mw)
+        / sum_input.input_capacity_mw
     ) * 100
 
     g1 = sum_input["Error"].values[0]
@@ -332,7 +332,7 @@ def sanitycheck_eGon2035_heat():
 
     sum_urban_central_heat_pump_supply = db.select_dataframe(
         """
-    SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_heat_pump_MW 
+    SELECT carrier, ROUND(SUM(capacity::numeric), 2) as Urban_central_heat_pump_mw 
     FROM supply.egon_scenario_capacities
     WHERE carrier= 'urban_central_heat_pump'
     AND scenario_name IN ('eGon2035')
@@ -344,7 +344,7 @@ def sanitycheck_eGon2035_heat():
 
     sum_central_heat_pump_grid = db.select_dataframe(
         """
-    SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as Central_heat_pump_MW 
+    SELECT carrier, ROUND(SUM(p_nom::numeric), 2) as Central_heat_pump_mw 
     FROM grid.egon_etrago_link
     WHERE carrier= 'central_heat_pump'
     AND scn_name IN ('eGon2035')
@@ -854,8 +854,8 @@ elif carrier == "services rural resistive heater":
     )
 
     sum_output["Error"] = (
-        (sum_output["output_capacity_MW"] - sum_input["input_capacity_MW"])
-        / sum_input["input_capacity_MW"]
+        (sum_output["output_capacity_mw"] - sum_input["input_capacity_mw"])
+        / sum_input["input_capacity_mw"]
     ) * 100
 
     g1 = sum_output["Error"].values[0]
@@ -887,8 +887,8 @@ elif carrier == "services rural resistive heater":
 
     sum_input_urban_gas["Error"] = (
         (
-            sum_output_urban_gas["output_capacity_MW"]
-            - sum_input_urban_gas["input_capacity_MW"]
+            sum_output_urban_gas["output_capacity_mw"]
+            - sum_input_urban_gas["input_capacity_mw"]
         )
         / sum_input_urban_gas["input_capacity_MW"]
     ) * 100
@@ -922,15 +922,17 @@ elif carrier == "services rural resistive heater":
 
     sum_input_heat_pump["Error"] = (
         (
-            sum_output_heat_pump["output_capacity_MW"]
-            - sum_input_heat_pump["input_capacity_MW"]
+            sum_output_heat_pump["output_capacity_mw"]
+            - sum_input_heat_pump["input_capacity_mw"]
         )
-        / sum_input_heat_pump["input_capacity_MW"]
+        / sum_input_heat_pump["input_capacity_mw"]
     ) * 100
 
     g1 = sum_input_heat_pump["Error"].values[0]
     g = round(g1, 2)
 
     print(f"The target values for rural heat pump differ by {g}  %")
+    
+    
 
 
