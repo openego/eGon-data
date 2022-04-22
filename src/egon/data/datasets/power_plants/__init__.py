@@ -93,6 +93,7 @@ def create_tables():
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
+    print("Tables were created")
 
 
 def scale_prox2now(df, target, level="federal_state"):
@@ -223,49 +224,49 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     return mastr_loc
 
-def get_location(unmatched):
-    """ Gets a geolocation for units which do not have information on the
-    exact geolocation but a city information.
+# def get_location(unmatched):
+#     """ Gets a geolocation for units which do not have information on the
+#     exact geolocation but a city information.
 
-    Parameters
-    ----------
-    unmatched : pandas.DataFrame
-        df without exact geolocation but containing
-        a city information
+#     Parameters
+#     ----------
+#     unmatched : pandas.DataFrame
+#         df without exact geolocation but containing
+#         a city information
 
-    Returns
-    -------
-    unmatched: pandas.DataFrame
-        Units for which no geolocation could be identified
+#     Returns
+#     -------
+#     unmatched: pandas.DataFrame
+#         Units for which no geolocation could be identified
 
-    located : pandas.DataFrame
-        Units with a geolocation based on their city information
+#     located : pandas.DataFrame
+#         Units with a geolocation based on their city information
 
-    """
+#     """
 
-    geolocator = Nominatim(user_agent="egon_data")
+#     geolocator = Nominatim(user_agent="egon_data")
 
-    # Create array of cities
-    cities = unmatched.city.values
+#     # Create array of cities
+#     cities = unmatched.city.values
 
-    # identify longitude and latitude for all cities in the array
-    for city in cities:
-        lon = geolocator.geocode(city).longitude
-        lat = geolocator.geocode(city).latitude
+#     # identify longitude and latitude for all cities in the array
+#     for city in cities:
+#         lon = geolocator.geocode(city).longitude
+#         lat = geolocator.geocode(city).latitude
 
-        # write information on lon and lat to df
-        unmatched.loc[unmatched.city == city, "lon"] = lon
-        unmatched.loc[unmatched.city == city, "lat"] = lat
+#         # write information on lon and lat to df
+#         unmatched.loc[unmatched.city == city, "lon"] = lon
+#         unmatched.loc[unmatched.city == city, "lat"] = lat
 
-    # Get a point geometry from lon and lat information
-    unmatched["geometry"] = gpd.points_from_xy(unmatched.lon, unmatched.lat)
-    unmatched.crs = "EPSG:4326"
+#     # Get a point geometry from lon and lat information
+#     unmatched["geometry"] = gpd.points_from_xy(unmatched.lon, unmatched.lat)
+#     unmatched.crs = "EPSG:4326"
 
-    # Copy units with lon and lat to a new dataframe
-    located = unmatched.copy()
-    located.dropna(subset=["geometry"], inplace=True)
+#     # Copy units with lon and lat to a new dataframe
+#     located = unmatched.copy()
+#     located.dropna(subset=["geometry"], inplace=True)
 
-    return located
+#     return located
 
 
 def insert_biomass_plants(scenario):
@@ -394,19 +395,19 @@ def insert_hydro_plants(scenario):
             )
         ]
 
-        # Extract entries without exact geolocation
-        mastr_getgeom = mastr[
-            mastr.Laengengrad.isnull() | mastr.Breitengrad.isnull()
-        ].rename(columns={"Gemeinde": "city"})
+        # # Extract entries without exact geolocation
+        # mastr_getgeom = mastr[
+        #     mastr.Laengengrad.isnull() | mastr.Breitengrad.isnull()
+        # ].rename(columns={"Gemeinde": "city"})
 
-        # Get geolocation based on city information
-        mastr_getgeom = get_location(mastr_getgeom)
+        # # Get geolocation based on city information
+        # mastr_getgeom = get_location(mastr_getgeom)
 
 
         # Choose only entries with valid geometries inside DE/test mode
-        mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
+        mastr = filter_mastr_geometry(mastr).set_geometry("geometry")
 
-        mastr = mastr_loc.append(mastr_getgeom)
+        # mastr = mastr_loc.append(mastr_getgeom)
 
         # Scaling will be done per federal state in case of eGon2035 scenario.
         if scenario == "eGon2035":
@@ -659,11 +660,13 @@ def insert_hydro_biomass():
         """
     )
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2035"]:
         insert_hydro_plants(scenario)
-
+        
+    print("Hydro for eGon2035 succesful")
     # Insert biomass plants for eGon2035 only. Biomass is not included in p-e-s
     insert_biomass_plants("eGon2035")
+    print("Finished biomass insertion")
 
 
 def allocate_conventional_non_chp_power_plants():
@@ -680,7 +683,7 @@ def allocate_conventional_non_chp_power_plants():
          AND scenario='eGon2035';
          """
     )
-
+    
     for carrier in carrier:
 
         nep = select_nep_power_plants(carrier)
@@ -823,3 +826,4 @@ def allocate_conventional_non_chp_power_plants():
                 )
                 session.add(entry)
             session.commit()
+    print("conventional generators were inserted")
