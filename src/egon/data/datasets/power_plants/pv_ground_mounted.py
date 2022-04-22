@@ -729,10 +729,11 @@ def insert():
         pv_exist = gpd.GeoDataFrame(pv_exist, geometry="centroid", crs=3035)
 
         # German states
-        sql = "SELECT geometry as geom, nuts FROM boundaries.vg250_lan"
-        states = gpd.GeoDataFrame.from_postgis(sql, con).to_crs(3035)
-
-        pv_exist = gpd.clip(pv_exist, states.unary_union)
+        sql = "SELECT geometry as geom, gf FROM boundaries.vg250_lan"
+        land = gpd.GeoDataFrame.from_postgis(sql, con).to_crs(3035)
+        land = land[(land["gf"] != 1) & (land["gf"] != 2)]
+        land = land.unary_union
+        pv_exist = gpd.clip(pv_exist, land)
 
         return pv_exist
 
@@ -822,7 +823,7 @@ def insert():
         # build new PV farms
         pv_rora = build_pv(pv_rora, pow_per_area)
         pv_agri = build_pv(pv_agri, pow_per_area)
-
+        
         # keep the existing pv_farms that don't intercept potential areas
         exist = keep_existing_pv(mastr, con)
 
