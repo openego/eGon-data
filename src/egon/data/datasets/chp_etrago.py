@@ -240,9 +240,9 @@ def insert():
     )
 
     # Add marginal cost
-    chp_el_ind["marginal_cost"] = get_sector_parameters(
-        "gas", "eGon2035"
-    )["marginal_cost"]["CH4"]
+    chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
+        "marginal_cost"
+    ]["CH4"]
 
     chp_el_ind.to_postgis(
         targets["link"]["table"],

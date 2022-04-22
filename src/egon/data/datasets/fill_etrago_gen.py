@@ -99,18 +99,23 @@ def add_marginal_costs(power_plants):
 
     # Read marginal costs from scenario capacities
 
-    marginal_costs = pd.DataFrame.from_dict(get_sector_parameters("electricity", "eGon2035")[
-            "marginal_cost"
-        ], orient = 'index').rename(columns= {0: 'marginal_cost'})
+    marginal_costs = pd.DataFrame.from_dict(
+        get_sector_parameters("electricity", "eGon2035")["marginal_cost"],
+        orient="index",
+    ).rename(columns={0: "marginal_cost"})
 
-    power_plants = power_plants.merge(right=marginal_costs, left_on = 'carrier', right_index = True)
+    power_plants = power_plants.merge(
+        right=marginal_costs, left_on="carrier", right_index=True
+    )
 
     return power_plants
 
 
 def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
 
-    etrago_pp = etrago_pp2[["carrier", "el_capacity", "bus_id", "scenario", "marginal_cost"]]
+    etrago_pp = etrago_pp2[
+        ["carrier", "el_capacity", "bus_id", "scenario", "marginal_cost"]
+    ]
     etrago_pp = etrago_pp.rename(
         columns={
             "el_capacity": "p_nom",
