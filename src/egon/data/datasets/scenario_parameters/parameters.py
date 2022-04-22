@@ -603,9 +603,6 @@ def gas(scenario):
             "OCGT": read_costs(costs, "OCGT", "VOM"),
         }
 
-    elif scenario == "eGon100RE":
-        parameters = {"main_gas_carrier": "H2"}
-
     else:
         print(f"Scenario name {scenario} is not valid.")
 
