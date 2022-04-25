@@ -1,11 +1,11 @@
 """The central module containing all code dealing with gas neighbours
 """
 
+from pathlib import Path
+from urllib.request import urlretrieve
 import ast
 import zipfile
 
-from pathlib import Path
-from urllib.request import urlretrieve
 from geoalchemy2.types import Geometry
 from shapely.geometry import LineString, MultiLineString
 from sqlalchemy.orm import sessionmaker
@@ -16,8 +16,8 @@ import pypsa
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electrical_neighbours import (
-    get_map_buses,
     get_foreign_bus_id,
+    get_map_buses,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.etrago_setup as etrago
@@ -454,16 +454,6 @@ def insert_generators(gen):
         index=False,
         if_exists="append",
     )
-
-
-# def grid():
-#     """Insert gas grid compoenents for neighbouring countries
-
-#     Returns
-#     -------
-#     None.
-
-#     """
 
 
 def calc_global_ch4_demand(Norway_global_demand_1y):
