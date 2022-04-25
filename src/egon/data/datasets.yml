@@ -1001,6 +1001,9 @@ electrical_neighbours:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
+    generators_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
     storage:
       schema: 'grid'
       table: 'egon_etrago_storage'
