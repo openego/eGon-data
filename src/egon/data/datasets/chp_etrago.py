@@ -109,10 +109,10 @@ def insert():
         db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
     )
 
-    # Add marginal cost
+    # Add marginal cost which is only VOM in case of gas chp 
     chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
         "marginal_cost"
-    ]["CH4"]
+    ]["gas_chp"]
 
     # Insert into database
     chp_el.to_postgis(
@@ -239,10 +239,10 @@ def insert():
         db.next_etrago_id("link"), len(chp_el_ind) + db.next_etrago_id("link")
     )
 
-    # Add marginal cost
+    # Add marginal cost which is only VOM in case of gas chp 
     chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
         "marginal_cost"
-    ]["CH4"]
+    ]["gas_chp"]
 
     chp_el_ind.to_postgis(
         targets["link"]["table"],
