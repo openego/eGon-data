@@ -372,11 +372,11 @@ def calc_capacities():
         grouped_capacities["cap_2035"] * conversion_factor
     )
 
-    # Add generator in Russia
+    # Add generator in Russia of infinite capacity
     grouped_capacities = grouped_capacities.append(
         {
-            "cap_2035": 100000000000,
-            "e_nom_max": 8.76e14,
+            "cap_2035": float("inf"),
+            "e_nom_max": float("inf"),
             "ratioConv_2035": 1,
             "index": "RU",
         },
