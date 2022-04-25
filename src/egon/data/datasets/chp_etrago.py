@@ -15,7 +15,7 @@ class ChpEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ChpEtrago",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(insert),
         )
@@ -109,7 +109,7 @@ def insert():
         db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
     )
 
-    # Add marginal cost which is only VOM in case of gas chp 
+    # Add marginal cost which is only VOM in case of gas chp
     chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
         "marginal_cost"
     ]["gas_chp"]
@@ -239,7 +239,7 @@ def insert():
         db.next_etrago_id("link"), len(chp_el_ind) + db.next_etrago_id("link")
     )
 
-    # Add marginal cost which is only VOM in case of gas chp 
+    # Add marginal cost which is only VOM in case of gas chp
     chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
         "marginal_cost"
     ]["gas_chp"]
