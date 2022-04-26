@@ -30,6 +30,7 @@ from egon.data.datasets.emobility.motorized_individual_travel import (
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
@@ -168,6 +169,9 @@ with airflow.DAG(
         ]
     )
 
+    # Fix eHV subnetworks in Germany manually
+    fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
+
     # Run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -234,7 +238,9 @@ with airflow.DAG(
     )
 
     # Calculate dynamic line rating for HV (high voltage) transmission lines
-    dlr = Calculate_dlr(dependencies=[data_bundle, osmtgmod, weather_data])
+    dlr = Calculate_dlr(
+        dependencies=[data_bundle, osmtgmod, weather_data, fix_subnetworks]
+    )
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
