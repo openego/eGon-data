@@ -181,7 +181,9 @@ def osmtgmod(
     docker_db_config=None,
 ):
 
-    if "germany-21" in filtered_osm_pbf_path_to_file:
+    if ("germany-21" in filtered_osm_pbf_path_to_file) | (
+        "germany-22" in filtered_osm_pbf_path_to_file
+    ):
         """
         Manually add under construction substation expansion in Garenfeld
         to existing substation. (see:)
