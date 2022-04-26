@@ -18,11 +18,11 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.etrago_helpers import (
     copy_and_modify_buses,
     copy_and_modify_links,
 )
-from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -96,14 +96,6 @@ def define_gas_nodes_list():
     # Ajouter tri pour ne conserver que les pays ayant des pipelines en commun.
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
-
-    # Remove buses disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
-    gas_nodes_list = gas_nodes_list[
-        ~gas_nodes_list["id"].str.match("SEQ_11790_p")
-    ]
-    gas_nodes_list = gas_nodes_list[
-        ~gas_nodes_list["id"].str.match("Stor_EU_107")
-    ]
 
     gas_nodes_list["bus_id"] = range(new_id, new_id + len(gas_nodes_list))
     gas_nodes_list = gas_nodes_list.set_index("id")
@@ -379,7 +371,7 @@ def insert_gas_pipeline_list(
         gas_pipelines_list["country_code"].str.contains("DE")
     ]
 
-    # Remove links disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
+    # Remove links disconnected of the rest of the grid
     # Remove manually for disconnected link EntsoG_Map__ST_195
     gas_pipelines_list = gas_pipelines_list[
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
@@ -603,6 +595,11 @@ def insert_gas_pipeline_list(
     gas_pipelines_list["length"] = length_adjusted
     gas_pipelines_list["pipe_class"] = pipe_class
 
+    # Remove pipes having the same node for start and end
+    gas_pipelines_list = gas_pipelines_list[
+        gas_pipelines_list["bus0"] != gas_pipelines_list["bus1"]
+    ]
+
     gas_pipelines_list = gas_pipelines_list.merge(
         classification,
         how="left",
@@ -676,7 +673,6 @@ def insert_gas_pipeline_list(
 
 def remove_isolated_gas_buses():
     """Delete gas buses which are not connected to the gas grid.
-
     Returns
     -------
     None.
