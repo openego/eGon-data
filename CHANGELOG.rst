@@ -490,3 +490,7 @@ Bug Fixes
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
 .. _#669: https://github.com/openego/eGon-data/issues/669
+
+* Fix solar ground mounted total installed capacity
+  `#695 <https://github.com/openego/eGon-data/issues/695>`_
+
