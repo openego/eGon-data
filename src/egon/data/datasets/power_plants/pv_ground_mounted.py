@@ -800,7 +800,7 @@ def insert():
         # build new PV farms
         pv_rora = build_pv(pv_rora, pow_per_area)
         pv_agri = build_pv(pv_agri, pow_per_area)
-        
+
         # keep the existing pv_farms that don't intercept potential areas
         exist = keep_existing_pv(mastr, con)
 
@@ -1257,7 +1257,7 @@ def insert():
         print(" -> No additional expansion needed")
     print(" ")
     ###
-    
+
     # save to DB
     if (
         pv_rora["installed capacity in kW"].sum() > 0
