@@ -781,29 +781,6 @@ def insert():
         # database-data: potential areas for new PV farms
         potentials_rora, potentials_agri = potential_areas(con, join_buffer)
 
-        #######################################################################
-        """
-        mastr = gpd.GeoDataFrame(
-            pd.read_pickle(
-                "/home/student/Documents/Ego-n/Solar_ground/mastr.pkl"
-            ),
-            geometry="geometry",
-        )
-        potentials_rora = gpd.GeoDataFrame(
-            pd.read_pickle(
-                "/home/student/Documents/Ego-n/Solar_ground/potentials_rora.pkl"
-            ),
-            geometry="geom",
-        )
-        potentials_agri = gpd.GeoDataFrame(
-            pd.read_pickle(
-                "/home/student/Documents/Ego-n/Solar_ground/potentials_agri.pkl"
-            ),
-            geometry="geom",
-        )
-        """
-        #######################################################################
-
         ###
         print(" ")
         print("select potentials area")
@@ -1280,38 +1257,6 @@ def insert():
         print(" -> No additional expansion needed")
     print(" ")
     ###
-    """
-    ###########################################################################
-    con = db.engine()
-    sql = "SELECT capacity,scenario_name,nuts FROM supply.egon_scenario_capacities WHERE carrier='solar'"
-    target = pd.read_sql(sql, con)
-
-    solar_100RE = pv_rora_100RE.append(
-        [pv_agri_100RE, pv_exist_100RE, pv_per_distr_100RE], ignore_index=True
-    )
-    solar_100RE = gpd.GeoDataFrame(solar_100RE, geometry="centroid", crs=3035)
-    solar_100RE.drop(columns="geom", inplace=True)
-    solar_100RE.to_file(
-        "/home/student/Documents/Ego-n/Crossborder_timeser/100RE.geojson",
-        driver="GeoJSON",
-    )
-    print(f'100RE cap: {solar_100RE["installed capacity in kW"].sum()}')
-    target100 = target[target.scenario_name == "eGon100RE"]
-    print(f"Target100: {target100.capacity.sum()}")
-    solar_2035 = pv_rora.append(
-        [pv_agri, pv_exist, pv_per_distr], ignore_index=True
-    )
-    solar_2035 = gpd.GeoDataFrame(solar_2035, geometry="centroid", crs=3035)
-    solar_2035.drop(columns="geom", inplace=True)
-    solar_2035.to_file(
-        "/home/student/Documents/Ego-n/Crossborder_timeser/2035.geojson",
-        driver="GeoJSON",
-    )
-    print(f'2035 cap: {solar_2035["installed capacity in kW"].sum()}')
-    target2035 = target[target.scenario_name == "eGon2035"]
-    print(f"Target2035: {target2035.capacity.sum()}")
-    ###########################################################################
-    """
     
     # save to DB
     if (
