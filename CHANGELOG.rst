@@ -195,6 +195,8 @@ Added
   again.
 * Provide wrapper to catch DB unique violation
   `#514 <https://github.com/openego/eGon-data/issues/514>`_
+* Add electric scenario parameters for eGon100RE
+  `#699 <https://github.com/openego/eGon-data/issues/699>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -340,7 +342,8 @@ Changed
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
 * Add automatic filtering of gas data
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
-
+* Aggregate DSM components per substation
+  '#661 <https://github.com/openego/eGon-data/issues/661>'_
 
 Bug Fixes
 ---------
@@ -464,6 +467,12 @@ Bug Fixes
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
 * Clean up `"pipeline.py"`
   `#562 <https://github.com/openego/eGon-data/issues/562>`_
+* Assign timeseries data to crossborder generators ego2035
+  `#724 <https://github.com/openego/eGon-data/issues/724>`_
+* Add missing dataset dependencies in "pipeline.py"
+  `#725 <https://github.com/openego/eGon-data/issues/725>`_
+* Fix assignemnt of impedances (x) to etrago tables
+  `#710 <https://github.com/openego/eGon-data/issues/710>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
