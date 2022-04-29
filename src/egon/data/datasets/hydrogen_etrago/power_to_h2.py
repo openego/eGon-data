@@ -111,7 +111,7 @@ def insert_power_to_h2_to_power(scn_name="eGon2035"):
         gdf["capital_cost"] = capital_cost[key]
         gdf["lifetime"] = lifetime[key]
 
-        gdf["length"] = length
+        gdf["length"] = 0
 
         gdf["p_nom"] = 0
         gdf["p_nom_extendable"] = True
@@ -145,9 +145,11 @@ def insert_power_to_h2_to_power(scn_name="eGon2035"):
 
         select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326);
 
-        INSERT INTO grid.egon_etrago_link (scn_name, link_id, bus0,
-                                                  bus1, p_nom, p_nom_extendable, capital_cost, lifetime, length,
-                                                  geom, topo, efficiency, carrier, p_nom_max)
+        INSERT INTO grid.egon_etrago_link (
+            scn_name, link_id, bus0,
+            bus1, p_nom, p_nom_extendable, capital_cost, lifetime, length,
+            geom, topo, efficiency, carrier, p_nom_max
+        )
         SELECT scn_name, link_id, bus0,
             bus1, p_nom, p_nom_extendable, capital_cost, lifetime, length,
             geom, topo, efficiency, carrier, p_nom_max
