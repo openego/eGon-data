@@ -443,3 +443,5 @@ Bug fixes
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
+* Set length attribute to 0 for non-pipeline links
+  `#741 <https://github.com/openego/eGon-data/issues/741>`_
