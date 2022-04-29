@@ -484,8 +484,13 @@ Bug Fixes
   `#724 <https://github.com/openego/eGon-data/issues/724>`_
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
+<<<<<<< HEAD
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
+=======
+* Set lengths of non-pipeline links to 0
+  `#741 <https://github.com/openego/eGon-data/issues/741>`_
+>>>>>>> fix/#741-non-pipeline-link-lengths
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
