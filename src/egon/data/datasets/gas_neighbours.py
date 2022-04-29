@@ -8,8 +8,8 @@ import zipfile
 
 from geoalchemy2.types import Geometry
 from shapely.geometry import LineString, MultiLineString
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pypsa
 
@@ -20,7 +20,6 @@ from egon.data.datasets.electrical_neighbours import (
     get_map_buses,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.datasets.etrago_setup as etrago
 
 countries = [
     "AT",
@@ -418,7 +417,7 @@ def insert_generators(gen):
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'
+        AND carrier = 'CH4';
         """
     )
 
@@ -1451,7 +1450,7 @@ def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
         f"""
     select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
 
-    INSERT INTO {sources['links']['schema']}.{sources['links']['table']} (
+    INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
         scn_name, link_id, carrier,
         bus0, bus1,p_nom, length, geom, topo)
     
