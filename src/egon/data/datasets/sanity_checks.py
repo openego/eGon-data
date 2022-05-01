@@ -5,7 +5,6 @@ error is given to showcase difference in output and input values. Please note th
 """
 
 import pandas as pd
-
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import insert_cts_load
@@ -18,9 +17,16 @@ class SanityChecks(Dataset):
             name="SanityChecks",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(sanitycheck_eGon2035_electricity_generator, sanitycheck_eGon2035_electricity_storage, 
-                   sanitycheck_eGon2035_electricity_load, sanitycheck_eGon2035_heat, sanitycheck_eGon100RE_electricity,
-                   sanitycheck_eGon100RE_electricity_storage, sanitycheck_eGon100RE_heat_generator,sanitycheck_eGon100RE_heat_link)
+            tasks=(
+                sanitycheck_eGon2035_electricity_generator,
+                sanitycheck_eGon2035_electricity_storage,
+                sanitycheck_eGon2035_electricity_load,
+                sanitycheck_eGon2035_heat,
+                sanitycheck_eGon100RE_electricity,
+                sanitycheck_eGon100RE_electricity_storage,
+                sanitycheck_eGon100RE_heat_generator,
+                sanitycheck_eGon100RE_heat_link,
+            ),
         )
 
 
@@ -35,28 +41,50 @@ def sanitycheck_eGon2035_electricity_generator():
     -------
     None
     """
-carriers_electricity = ["other_non_renewable", "other_renewable", "reservoir", "run_of_river", "oil"]
+
+
+carriers_electricity = [
+    "other_non_renewable",
+    "other_renewable",
+    "reservoir",
+    "run_of_river",
+    "oil",
+]
 for carrier in carriers_electricity:
+
     sum_output = db.select_dataframe(
         f"""
          SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_mw
          FROM grid.egon_etrago_generator
          WHERE scn_name = 'eGon100RE'
-         AND carrier IN ('{carrier}')
-         GROUP BY (scn_name); 
+         AND carrier IN ('{carrier}') 
+         GROUP BY (scn_name);
+         
      """
     )
-    
+
     sum_input = db.select_dataframe(
         f"""
-        SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_mw
-        FROM supply.egon_scenario_capacities
-        WHERE carrier= '{carrier}'
-        AND scenario_name IN ('eGon100RE')
-        GROUP BY (carrier);
-    """
+            SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_mw
+            FROM supply.egon_scenario_capacities
+            WHERE carrier= '{carrier}' 
+            AND scenario_name IN ('eGon100RE')
+            GROUP BY (carrier);
+        """
     )
 
+if sum_output.shape[0] == 0 and (sum_input.input_capacity_mw.sum() == 0):
+    print(f"{carrier} needs to be added")
+
+elif sum_input.shape[0] > 0 and sum_output.shape[0] == 0:
+    print(
+        f"capacity for {carrier} is not distributed correctly, please check and follow up to reslove matter"
+    )
+
+elif sum_output.shape[0] == 0:
+    print(f"No output value for {carrier}, please check carrier")
+
+elif sum_output.shape[0] > 0 and sum_input.shape[0] > 0:
     sum_input["Error"] = (
         (sum_output.output_capacity_mw - sum_input.input_capacity_mw)
         / sum_input.input_capacity_mw
@@ -64,10 +92,8 @@ for carrier in carriers_electricity:
 
     g1 = sum_input["Error"].values[0]
     g = round(g1, 2)
+    print(f"The target values for {carrier} differ by {g} %")
 
-    print(f"The target values for {carrier} differ by {g}  %")
-    
-    
     print("Results for installed generation capacity in DE:")
 
     sum_installed_gen_cap_DE = db.select_dataframe(
@@ -78,7 +104,7 @@ for carrier in carriers_electricity:
     ON (c.carrier = a.carrier)
     WHERE bus IN (
     SELECT bus_id FROM grid.egon_etrago_bus
-    WHERE scn_name = 'eGon2035'
+    WHERE scn_name = 'eGon2035' 
     AND country = 'DE')
     AND c.scenario_name='eGon2035'
     GROUP BY (scn_name, a.carrier, c.capacity);
@@ -87,11 +113,11 @@ for carrier in carriers_electricity:
 
     sum_installed_gen_biomass_cap_DE = db.select_dataframe(
         """
-    SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as capacity_mw_biogass
+    SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as capacity_mw_biogas
     FROM grid.egon_etrago_generator
     WHERE bus IN (
     SELECT bus_id FROM grid.egon_etrago_bus
-    WHERE scn_name = 'eGon2035'
+    WHERE scn_name = 'eGon2035' 
     AND country = 'DE')
     AND carrier IN ('central_biomass_CHP_heat', 'biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
     GROUP BY (scn_name);
@@ -108,7 +134,7 @@ for carrier in carriers_electricity:
 
     sum_installed_gen_biomass_cap_DE["Error"] = (
         (
-            sum_installed_gen_biomass_cap_DE["capacity_mw_biogass"]
+            sum_installed_gen_biomass_cap_DE["capacity_mw_biogas"]
             - sum_installed_gen_cap_DE["target_capacity"]
         )
         / sum_installed_gen_cap_DE["target_capacity"]
@@ -138,7 +164,8 @@ for carrier in carriers_electricity:
     print(f"The target values for Wind Offshore differ by {d}  %")
 
     print(f"The target values for Wind Onshore differ by {f}  %")
-    
+
+
 def sanitycheck_eGon2035_electricity_storage():
 
     """Returns sanity checks for electricity.
@@ -179,7 +206,8 @@ def sanitycheck_eGon2035_electricity_storage():
     g = round(g1, 2)
 
     print("The target values for Pumped Hydro differ by {g}  %")
-    
+
+
 def sanitycheck_eGon2035_electricity_load():
 
     """Returns sanity checks for electricity.
@@ -547,6 +575,7 @@ def sanitycheck_eGon2035_heat():
 
     # Sanity_checks_eGon100RE
 
+
 def sanitycheck_eGon100RE_electricity():
 
     """Returns sanity checks for eGon100RE scenario.
@@ -635,7 +664,8 @@ def sanitycheck_eGon100RE_electricity():
         g = round(g1, 2)
 
         print(f"The target values for {carrier} differ by {g}  %")
-        
+
+
 def sanitycheck_eGon100RE_electricity_storage():
 
     """Returns sanity checks for heat.
@@ -823,6 +853,7 @@ carriers_Heating_link = [
     "urban central air heat pump",
     "urban central resistive heater",
     "services rural resistive heater",
+    "urban_gas",
 ]
 for carrier in carriers_Heating_link:
     sum_output = db.select_dataframe(
@@ -834,7 +865,10 @@ for carrier in carriers_Heating_link:
              GROUP BY (scn_name); 
          """
     )
-if carrier == "urban central air heat pump":
+if sum_output.shape[0] == 0:
+    print(f"{carrier} is not distributed correctly, please revise")
+
+elif carrier == "urban central air heat pump":
     carrier = "urban_central_air_heat_pump"
 
 elif carrier == "urban central resistive heater":
@@ -862,41 +896,6 @@ elif carrier == "services rural resistive heater":
     g = round(g1, 2)
 
     print(f"The target values for {carrier} differ by {g}  %")
-
-    # For_yet_to_be_Added_technologies(Urban_gas)
-
-    sum_output_urban_gas = db.select_dataframe(
-        """
-            SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_MW
-            FROM grid.egon_etrago_link
-            WHERE scn_name = 'eGon100RE'
-            AND carrier IN ('urban_gas')
-            GROUP BY (scn_name); 
-        """
-    )
-
-    sum_input_urban_gas = db.select_dataframe(
-        """
-            SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_MW 
-            FROM supply.egon_scenario_capacities
-            WHERE carrier= ('urban_central_gas_CHP', 'urban_central_gas_boiler')
-            AND scenario_name IN ('eGon100RE')
-            GROUP BY (carrier);
-        """
-    )
-
-    sum_input_urban_gas["Error"] = (
-        (
-            sum_output_urban_gas["output_capacity_mw"]
-            - sum_input_urban_gas["input_capacity_mw"]
-        )
-        / sum_input_urban_gas["input_capacity_mw"]
-    ) * 100
-
-    g1 = sum_input_urban_gas["Error"].values[0]
-    g = round(g1, 2)
-
-    print(f"The target values for rural urban gas differ by {g}  %")
 
     # Heat_Pump_to_be_added
 
@@ -932,7 +931,3 @@ elif carrier == "services rural resistive heater":
     g = round(g1, 2)
 
     print(f"The target values for rural heat pump differ by {g}  %")
-    
-    
-
-
