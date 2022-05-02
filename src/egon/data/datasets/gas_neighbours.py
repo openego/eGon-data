@@ -374,13 +374,14 @@ def calc_capacities():
     # Add generator in Russia of infinite capacity
     grouped_capacities = grouped_capacities.append(
         {
-            "cap_2035": float("inf"),
-            "e_nom_max": float("inf"),
+            "cap_2035": 1e9,
+            "e_nom_max": np.inf,
             "ratioConv_2035": 1,
             "index": "RU",
         },
         ignore_index=True,
     )
+
     # choose capacities for considered countries
     grouped_capacities = grouped_capacities[
         grouped_capacities["index"].str[:2].isin(countries)
