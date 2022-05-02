@@ -248,10 +248,8 @@ def fix_subnetworks(scn_name):
         #### Missing 220kV line from Wolmirstedt to Stendal
         add_line(
             # Wolmirstedt
-            11,
-            637225336209951,
-            52,
-            26707328151311,
+            11.637225336209951,
+            52.26707328151311,
             # Stendal
             11.7689,
             52.505533,
