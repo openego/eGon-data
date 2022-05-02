@@ -252,15 +252,15 @@ def assign_bus_id(dataframe, scn_name, carrier):
 
     voronoi = db.select_geodataframe(
         f"""
-        SELECT id, bus_id, geom FROM grid.egon_voronoi_{carrier.lower()}
-        WHERE scn_name = '{scn_name}';
+        SELECT bus_id, geom FROM grid.egon_gas_voronoi
+        WHERE scn_name = '{scn_name}' AND carrier = '{carrier}';
         """,
         epsg=4326,
     )
 
     res = gpd.sjoin(dataframe, voronoi)
     res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right", "id"])
+    res = res.drop(columns=["index_right"])
 
     # Assert that all power plants have a bus_id
     assert (
@@ -288,11 +288,11 @@ def import_gas_generators(scn_name="eGon2035"):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
         WHERE "carrier" = 'CH4' AND
-        scn_name = '{scn_name}' AND bus IN (
+        scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )

@@ -5,10 +5,11 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_H2_overground_storage(scn_name='eGon2035'):
+def insert_H2_overground_storage(scn_name="eGon2035"):
     """Insert H2 steel tank storage for every H2 bus."""
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -44,10 +45,10 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}' AND bus IN (
+        DELETE FROM grid.egon_etrago_store WHERE carrier = '{carrier}' AND
+        scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )
@@ -67,7 +68,7 @@ def insert_H2_overground_storage(scn_name='eGon2035'):
     )
 
 
-def insert_H2_saltcavern_storage(scn_name='eGon2035'):
+def insert_H2_saltcavern_storage(scn_name="eGon2035"):
     """Insert H2 saltcavern storage for every H2_saltcavern bus in the table."""
 
     # Datatables sources and targets
@@ -130,10 +131,10 @@ def insert_H2_saltcavern_storage(scn_name='eGon2035'):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_store WHERE 'carrier' = '{carrier}' AND
-        scn_name = '{scn_name}' AND bus IN (
+        DELETE FROM grid.egon_etrago_store WHERE carrier = '{carrier}' AND
+        scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country = 'DE'
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
         );
         """
     )
@@ -344,4 +345,11 @@ def calculate_and_map_saltcavern_storage_potential():
         index=True,
         if_exists="replace",
         dtype={"geometry": Geometry()},
+    )
+
+
+def insert_H2_storage_eGon100RE():
+    """Copy H2 storage from the eGon2035 to the eGon100RE scenario."""
+    copy_and_modify_stores(
+        "eGon2035", "eGon100RE", ["H2_underground", "H2_overground"], "gas"
     )

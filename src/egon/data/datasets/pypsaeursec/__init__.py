@@ -18,6 +18,7 @@ from egon.data import __path__, db
 from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subproc
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def run_pypsa_eur_sec():
@@ -523,6 +524,10 @@ def neighbor_reduction():
             .set_crs(4326)
         )
 
+        neighbor_lines["lifetime"] = get_sector_parameters("electricity", scn)[
+            "lifetime"
+        ]["ac_ehv_overhead_line"]
+
         neighbor_lines.to_postgis(
             "egon_etrago_line",
             engine,
@@ -766,7 +771,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks,
         )
