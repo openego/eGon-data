@@ -490,6 +490,8 @@ Bug Fixes
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
 * Create rural_heat buses only for mv grid districts with heat load
   `#708 <https://github.com/openego/eGon-data/issues/708>`_
+* Fix country_code attribution of two gas buses
+  `#710 <https://github.com/openego/eGon-data/issues/744>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
