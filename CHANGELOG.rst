@@ -342,7 +342,7 @@ Changed
   isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 * Aggregate DSM components per substation
-  '#661 <https://github.com/openego/eGon-data/issues/661>'_
+  `#661 <https://github.com/openego/eGon-data/issues/661>`_
 
 Bug Fixes
 ---------
