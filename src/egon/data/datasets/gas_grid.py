@@ -92,7 +92,13 @@ def define_gas_nodes_list():
         usecols=["lat", "long", "id", "country_code", "param"],
     )
 
-    # Ajouter tri pour ne conserver que les pays ayant des pipelines en commun.
+    # Correct non valid neighbouring country nodes
+    gas_nodes_list.loc[
+        gas_nodes_list["id"] == "INET_N_1182", "country_code"
+    ] = "AT"
+    gas_nodes_list.loc[
+        gas_nodes_list["id"] == "SEQ_10608_p", "country_code"
+    ] = "NL"
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
 
@@ -137,7 +143,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
 
     gas_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
-    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    ]  # To eventually replace with a test if the nodes are in the german boundaries.
 
     # Cut data to federal state if in testmode
     NUTS1 = []
@@ -460,6 +466,12 @@ def insert_gas_pipeline_list(
     gas_pipelines_list.loc[
         gas_pipelines_list["country_1"] == "FI", "country_1"
     ] = "SE"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["id"] == "INET_PL_385_EE_3_Seg_0_Seg_1", "country_1"
+    ] = "AT"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["id"] == "LKD_PS_0_Seg_0_Seg_3", "country_0"
+    ] = "NL"
 
     # Remove link test if length = 0
     gas_pipelines_list = gas_pipelines_list[
