@@ -18,7 +18,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -607,8 +607,8 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             SELECT bus_id FROM
             {sources['electricity_buses']['schema']}.
             {sources['electricity_buses']['table']}
-            WHERE x = 12.214770465804179
-            AND y = 54.100265527140884
+            WHERE x = 12.213671694775988
+            AND y = 54.09974494662279
             AND v_nom = 380
             AND scn_name = '{scenario}'
             AND carrier = 'AC'
