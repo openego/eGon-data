@@ -474,6 +474,10 @@ Bug Fixes
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
 * Fix country_code attribution of two gas buses
   `#710 <https://github.com/openego/eGon-data/issues/744>`_
+* Fix voronoi assignemnt for enclaves
+  `#734 <https://github.com/openego/eGon-data/issues/734>`_
+* Set lengths of non-pipeline links to 0
+  `#741 <https://github.com/openego/eGon-data/issues/741>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
