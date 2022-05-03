@@ -492,6 +492,9 @@ Bug Fixes
   `#708 <https://github.com/openego/eGon-data/issues/708>`_
 * Fix country_code attribution of two gas buses
   `#710 <https://github.com/openego/eGon-data/issues/744>`_
+* Change table name from :code:`boundaries.saltstructures_inspee` to
+  :code:`boundaries.inspee_saltstructures`
+  `#746 <https://github.com/openego/eGon-data/issues/746>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

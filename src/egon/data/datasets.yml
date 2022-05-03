@@ -38,14 +38,14 @@ bgr:
   processed:
     schema: "boundaries"
     file_table_map:
-      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "saltstructures_inspee"
+      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "inspee_saltstructures"
   sources:
     vg250_federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
     saltcaverns:
       schema: 'boundaries'
-      table: 'saltstructures_inspee'
+      table: 'inspee_saltstructures'
   targets:
     storage_potential:
       schema: 'grid'
