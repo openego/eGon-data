@@ -333,12 +333,14 @@ def generate_static_params(
 
 
 def load_evs_trips(
-    evs_ids: list, charging_events_only: bool = True
+    scenario_name: str, evs_ids: list, charging_events_only: bool = True
 ) -> pd.DataFrame:
     """Load trips for EVs
 
     Parameters
     ----------
+    scenario_name : str
+        Scenario name
     evs_ids : list of int
         IDs of EV to load the trips for
     charging_events_only : bool
@@ -377,6 +379,8 @@ def load_evs_trips(
                 EgonEvPool, EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id
             )
             .filter(EgonEvTrip.egon_ev_pool_ev_id.in_(evs_ids))
+            .filter(EgonEvTrip.scenario == scenario_name)
+            .filter(EgonEvPool.scenario == scenario_name)
             .filter(charging_condition)
             .order_by(
                 EgonEvTrip.egon_ev_pool_ev_id, EgonEvTrip.simbev_event_id
