@@ -340,10 +340,13 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
-* Add automatic filtering of gas data
+* Add automatic filtering of gas data: Pipelines of length zero and gas buses
+  isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 * Aggregate DSM components per substation
-  '#661 <https://github.com/openego/eGon-data/issues/661>'_
+  `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Update OSM dataset from 2021-02-02 to 2022-01-01
+  `#486 <https://github.com/openego/eGon-data/issues/486>`_
 
 Bug Fixes
 ---------
@@ -473,6 +476,10 @@ Bug Fixes
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
+* Fix voronoi assignemnt for enclaves
+  `#734 <https://github.com/openego/eGon-data/issues/734>`_
+* Set lengths of non-pipeline links to 0
+  `#741 <https://github.com/openego/eGon-data/issues/741>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
