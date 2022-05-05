@@ -662,8 +662,9 @@ def write_model_data_to_db(
 
 
 def generate_model_data_grid_district(
-    evs_grid_district: pd.DataFrame,
+    scenario_name: str,
     scenario_variation_parameters: dict,
+    evs_grid_district: pd.DataFrame,
     bat_cap_dict: dict,
     run_config: pd.DataFrame,
 ) -> tuple:
@@ -671,10 +672,12 @@ def generate_model_data_grid_district(
 
     Parameters
     ----------
-    evs_grid_district : pd.DataFrame
-        EV data for grid district
+    scenario_name : str
+        Scenario name
     scenario_variation_parameters : dict
         Scenario variation parameters
+    evs_grid_district : pd.DataFrame
+        EV data for grid district
     bat_cap_dict : dict
         Battery capacity per EV type
     run_config : pd.DataFrame
@@ -689,7 +692,9 @@ def generate_model_data_grid_district(
     # Load trip data
     print("  Loading trips...")
     trip_data = load_evs_trips(
-        evs_ids=evs_grid_district.ev_id.unique(), charging_events_only=True
+        scenario_name=scenario_name,
+        evs_ids=evs_grid_district.ev_id.unique(),
+        charging_events_only=True
     )
 
     print("  Preprocessing data...")
@@ -790,17 +795,18 @@ def generate_model_data(scenario_name: str):
     ctr = 0
     for bus_id in mvgd_bus_ids:
         ctr += 1
-        print(f"Processing grid district {bus_id}... "
+        print(f"Processing grid district: bus {bus_id}... "
               f"({ctr}/{len(mvgd_bus_ids)})")
         (
             static_params,
             load_ts,
             dsm_profile,
         ) = generate_model_data_grid_district(
+            scenario_name=scenario_name,
+            scenario_variation_parameters=scenario_variation_parameters,
             evs_grid_district=evs_grid_district[
                 evs_grid_district.bus_id == bus_id
             ],
-            scenario_variation_parameters=scenario_variation_parameters,
             bat_cap_dict=meta_tech_data.battery_capacity.to_dict(),
             run_config=meta_run_config,
         )
