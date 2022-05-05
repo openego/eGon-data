@@ -159,9 +159,9 @@ def neighbor_reduction():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2021-egondata-integration"
+            / "2022-05-04-egondata-integration"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
         )
 
     network = pypsa.Network(str(target_file))
@@ -771,7 +771,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=tasks,
         )
