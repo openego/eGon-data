@@ -355,6 +355,8 @@ Changed
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
+* Update deposit id to access v0.6 of the zenodo repository
+  `#627 <https://github.com/openego/eGon-data/issues/627>`_
 
 Bug Fixes
 ---------
