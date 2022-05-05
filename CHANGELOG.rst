@@ -478,6 +478,8 @@ Bug Fixes
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
+* Use db.next_etrago_id in dsm dataset
+  `#748 <https://github.com/openego/eGon-data/issues/748>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
