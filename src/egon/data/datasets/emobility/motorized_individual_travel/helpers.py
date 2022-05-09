@@ -53,6 +53,7 @@ CONFIG_EV = {
 }
 TRIP_COLUMN_MAPPING = {
     "location": "location",
+    "use_case": "use_case",
     "nominal_charging_capacity_kW": "charging_capacity_nominal",
     "grid_charging_capacity_kW": "charging_capacity_grid",
     "battery_charging_capacity_kW": "charging_capacity_battery",
