@@ -62,8 +62,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 def data_preprocessing(
     scenario_data: pd.DataFrame,
-    ev_data_df: pd.DataFrame,
-    flex_dict: dict,
+    ev_data_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Filter SimBEV data to match region requirements. Duplicates profiles
     if necessary. Pre-calculates necessary parameters for the load time series.
@@ -74,8 +73,6 @@ def data_preprocessing(
         EV per grid district
     ev_data_df : pd.Dataframe
         Trip data
-    flex_dict : dict
-        Shares of charging infrastructure where charging can take place
 
     Returns
     -------
@@ -113,7 +110,7 @@ def data_preprocessing(
             ev_data_df = ev_data_df.append(duplicates_df)
 
     # calculate time necessary to fulfill the charging demand and brutto
-    # charging capacity in mva
+    # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
         charging_capacity_grid_MW=(
             ev_data_df.charging_capacity_grid / 10 ** 3
@@ -144,17 +141,29 @@ def data_preprocessing(
         last_timestep=ev_data_df.park_start + full_timesteps + 1,
     )
 
-    # calculate flexible charging capacity
+    # Calculate flexible charging capacity:
+    # only for private charging facilities at home and work
     flex_share = ev_data_df.location.map(flex_dict)
 
-    ev_data_df = ev_data_df.assign(
-        flex_charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid_MW * flex_share
-        ),
-        flex_last_timestep_charging_capacity_grid_MW=(
-            ev_data_df.last_timestep_charging_capacity_grid_MW * flex_share
-        ),
-    )
+    ev_data_df.flex_charging_capacity_grid_MW = 0
+    ev_data_df.flex_charging_capacity_grid_MW.at[
+        (ev_data_df.location == "0_work") &
+        (ev_data_df.use_case == "work")
+    ] = charging_capacity_grid_MW
+    ev_data_df.flex_charging_capacity_grid_MW.at[
+        (ev_data_df.location == "6_home") &
+        (ev_data_df.use_case == "home")
+    ] = charging_capacity_grid_MW
+
+    ev_data_df.flex_last_timestep_charging_capacity_grid_MW = 0
+    ev_data_df.flex_last_timestep_charging_capacity_grid_MW.at[
+        (ev_data_df.location == "0_work") &
+        (ev_data_df.use_case == "work")
+    ] = charging_capacity_grid_MW
+    ev_data_df.flex_last_timestep_charging_capacity_grid_MW.at[
+        (ev_data_df.location == "6_home") &
+        (ev_data_df.use_case == "home")
+    ] = last_timestep_charging_capacity_grid_MW
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -702,12 +711,8 @@ def generate_model_data_grid_district(
     trip_data["bat_cap"] = trip_data.type.apply(lambda _: bat_cap_dict[_])
     trip_data.drop(columns=["type"], inplace=True)
 
-    # TODO: change this when SimBEV issue #33 is solved
-    #  https://github.com/rl-institut/simbev/issues/33
-    flex_dict = scenario_variation_parameters["flex_share"]
-
     # Preprocess trip data
-    trip_data = data_preprocessing(evs_grid_district, trip_data, flex_dict)
+    trip_data = data_preprocessing(evs_grid_district, trip_data)
 
     # Generate load timeseries
     print("  Generating load timeseries...")
