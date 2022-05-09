@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -499,7 +499,7 @@ def eGon100_capacities():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2021-egondata-integration"
+            / "2022-05-04-egondata-integration"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
