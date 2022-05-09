@@ -478,6 +478,9 @@ Bug Fixes
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
+* Change table name from :code:`boundaries.saltstructures_inspee` to
+  :code:`boundaries.inspee_saltstructures`
+  `#746 <https://github.com/openego/eGon-data/issues/746>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
