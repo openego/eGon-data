@@ -478,6 +478,8 @@ Bug Fixes
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
+* Fix carrier name for solar ground mounted in scenario parameters
+  `#752 <https://github.com/openego/eGon-data/issues/752>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
