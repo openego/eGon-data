@@ -41,8 +41,6 @@ def sanitycheck_eGon2035_electricity():
     None
     """
 
-    # Check input and output values for the carriers "other_non_renewable",
-    # "other_renewable", "reservoir", "run_of_river" and "oil"
 
     scn = "eGon2035"
 
@@ -58,6 +56,11 @@ def sanitycheck_eGon2035_electricity():
         "reservoir",
         "run_of_river",
         "oil",
+        "wind_onshore",
+        "wind_offshore",
+        "solar",
+        "solar_rooftop",
+        "biomass"
     ]
 
     for carrier in carriers_electricity:
@@ -67,18 +70,37 @@ def sanitycheck_eGon2035_electricity():
                  FROM grid.egon_etrago_generator
                  WHERE scn_name = '{scn}'
                  AND carrier IN ('{carrier}')
+                 AND bus IN
+                     (SELECT bus_id
+                       FROM grid.egon_etrago_bus
+                       WHERE scn_name = 'eGon2035'
+                       AND country = 'DE')
                  GROUP BY (scn_name);
             """
         )
 
-        sum_input = db.select_dataframe(
-            f"""SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_mw
-                 FROM supply.egon_scenario_capacities
-                 WHERE carrier= '{carrier}'
-                 AND scenario_name ='{scn}'
-                 GROUP BY (carrier);
-            """
-        )
+        if carrier == 'biomass':
+            sum_input = db.select_dataframe(
+                """SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as input_capacity_mw
+                    FROM grid.egon_etrago_generator
+                    WHERE bus IN (
+                        SELECT bus_id FROM grid.egon_etrago_bus
+                        WHERE scn_name = 'eGon2035'
+                        AND country = 'DE')
+                    AND carrier IN ('central_biomass_CHP_heat', 'biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
+                    GROUP BY (scn_name);
+                """
+            )
+
+        else:
+            sum_input = db.select_dataframe(
+                f"""SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_mw
+                     FROM supply.egon_scenario_capacities
+                     WHERE carrier= '{carrier}'
+                     AND scenario_name ='{scn}'
+                     GROUP BY (carrier);
+                """
+            )
 
         if (
             sum_output.output_capacity_mw.sum() == 0
@@ -115,81 +137,6 @@ def sanitycheck_eGon2035_electricity():
                 f"'{carrier}': "
                 + str(round(g, 2)) + " %"
             )
-
-    # Check input and output values for the carriers "solar",
-    # "wind" and "biomass"
-
-    sum_installed_gen_cap_DE = db.select_dataframe(
-        """SELECT scn_name, a.carrier, ROUND(SUM(p_nom::numeric), 2) as capacity_mw, ROUND(c.capacity::numeric, 2) as target_capacity
-            FROM grid.egon_etrago_generator a
-            JOIN supply.egon_scenario_capacities c
-            ON (c.carrier = a.carrier)
-            WHERE bus IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = 'eGon2035'
-                AND country = 'DE')
-            AND c.scenario_name='eGon2035'
-            GROUP BY (scn_name, a.carrier, c.capacity);
-        """
-    )
-
-    sum_installed_gen_cap_DE["error"] = (
-        (
-            sum_installed_gen_cap_DE["capacity_mw"]
-            - sum_installed_gen_cap_DE["target_capacity"]
-        )
-        / sum_installed_gen_cap_DE["target_capacity"]
-    ) * 100
-
-    sum_installed_gen_cap_DE = sum_installed_gen_cap_DE.round({"error": 2})
-
-    carriers_electricity = [
-        "wind_onshore",
-        "wind_offshore",
-        "solar",
-        "solar_rooftop",
-    ]
-
-    for carrier in carriers_electricity:
-
-        e = sum_installed_gen_cap_DE.loc[
-            sum_installed_gen_cap_DE["carrier"] == carrier, "error"
-        ].values[0]
-
-        print(
-            f"'{carrier}': "
-            + str(round(e, 2)) + " %"
-        )
-
-    # Compare input and output value for biomass
-
-    sum_installed_gen_biomass_cap_DE = db.select_dataframe(
-        """SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as capacity_mw_biogas
-            FROM grid.egon_etrago_generator
-            WHERE bus IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = 'eGon2035'
-                AND country = 'DE')
-            AND carrier IN ('central_biomass_CHP_heat', 'biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
-            GROUP BY (scn_name);
-        """
-    )
-
-    sum_installed_gen_biomass_cap_DE["error"] = (
-        (
-            sum_installed_gen_biomass_cap_DE["capacity_mw_biogas"]
-            - sum_installed_gen_cap_DE["target_capacity"]
-        )
-        / sum_installed_gen_cap_DE["target_capacity"]
-    ) * 100
-
-    e = sum_installed_gen_biomass_cap_DE["error"].values[0]
-
-    print(
-        "'biomass': "
-        + str(round(e, 2)) + " %"
-    )
-
 
 
     # Section to check storage capacities
