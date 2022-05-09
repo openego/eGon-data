@@ -387,7 +387,8 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens.index]
+    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
+
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
