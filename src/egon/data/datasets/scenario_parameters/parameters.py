@@ -301,7 +301,7 @@ def electricity(scenario):
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
-            "pv": read_costs(costs, "solar", "VOM"),
+            "solar": read_costs(costs, "solar", "VOM"),
         }
 
     elif scenario == "eGon100RE":
@@ -466,7 +466,7 @@ def electricity(scenario):
         parameters["marginal_cost"] = {
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
-            "pv": read_costs(costs, "solar", "VOM"),
+            "solar": read_costs(costs, "solar", "VOM"),
         }
 
     else:

@@ -501,6 +501,8 @@ Bug Fixes
   `#746 <https://github.com/openego/eGon-data/issues/746>`_
 * Use db.next_etrago_id in dsm dataset
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
+* Fix carrier name for solar ground mounted in scenario parameters
+  `#752 <https://github.com/openego/eGon-data/issues/752>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
