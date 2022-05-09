@@ -34,7 +34,6 @@ Added
 * You can now force the tasks of a ``Dataset`` to be always executed by
   giving the version of the ``Dataset`` a ``".dev"`` suffix. See `PR
   #318`_ for more details.
-
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
@@ -194,6 +193,8 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
+* Add electric scenario parameters for eGon100RE
+  `#699 <https://github.com/openego/eGon-data/issues/699>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -337,8 +338,13 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
-* Add automatic filtering of gas data
+* Add automatic filtering of gas data: Pipelines of length zero and gas buses
+  isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
+* Aggregate DSM components per substation
+  `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Update OSM dataset from 2021-02-02 to 2022-01-01
+  `#486 <https://github.com/openego/eGon-data/issues/486>`_
 * Include electricity storages for eGon100RE scenario
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 
@@ -464,6 +470,16 @@ Bug Fixes
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
 * Clean up `"pipeline.py"`
   `#562 <https://github.com/openego/eGon-data/issues/562>`_
+* Assign timeseries data to crossborder generators ego2035
+  `#724 <https://github.com/openego/eGon-data/issues/724>`_
+* Add missing dataset dependencies in "pipeline.py"
+  `#725 <https://github.com/openego/eGon-data/issues/725>`_
+* Fix assignemnt of impedances (x) to etrago tables
+  `#710 <https://github.com/openego/eGon-data/issues/710>`_
+* Fix voronoi assignemnt for enclaves
+  `#734 <https://github.com/openego/eGon-data/issues/734>`_
+* Set lengths of non-pipeline links to 0
+  `#741 <https://github.com/openego/eGon-data/issues/741>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

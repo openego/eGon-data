@@ -26,6 +26,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
@@ -129,7 +130,7 @@ with airflow.DAG(
 
     # Society prognosis
     society_prognosis = SocietyPrognosis(
-        dependencies=[demandregio, zensus_population, zensus_vg250]
+        dependencies=[demandregio, zensus_miscellaneous]
     )
 
     # OSM (OpenStreetMap) buildings, streets and amenities
@@ -163,6 +164,9 @@ with airflow.DAG(
             tasks["osm.download"],
         ]
     )
+
+    # Fix eHV subnetworks in Germany manually
+    fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
 
     # Run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
@@ -210,7 +214,9 @@ with airflow.DAG(
     )
 
     # Download industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand(dependencies=[setup])
+    industrial_gas_demand = IndustrialGasDemand(
+        dependencies=[scenario_parameters]
+    )
 
     # Extract landuse areas from the `osm` dataset
     load_area = LoadArea(dependencies=[osm, vg250])
@@ -229,7 +235,9 @@ with airflow.DAG(
 
     # TODO: What does "trans" stand for?
     # Calculate dynamic line rating for HV (high voltage) trans lines
-    dlr = Calculate_dlr(dependencies=[data_bundle, osmtgmod, weather_data])
+    dlr = Calculate_dlr(
+        dependencies=[data_bundle, osmtgmod, weather_data, fix_subnetworks]
+    )
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
@@ -402,8 +410,10 @@ with airflow.DAG(
         dependencies=[
             create_gas_polygons_egon100RE,
             create_gas_polygons_egon2035,
+            demand_curves_industry,
             district_heating_areas,
             industrial_sites,
+            load_area,
             mastr_data,
             mv_grid_districts,
             scenario_capacities,
@@ -493,6 +503,7 @@ with airflow.DAG(
             heat_demand_Germany,
             hh_demand_buildings_setup,
             vg250,
+            weather_data,
             zensus_mv_grid_districts,
         ]
     )
