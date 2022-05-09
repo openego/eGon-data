@@ -62,6 +62,8 @@ class EgonEvTrip(Base):
 
     Columns
     -------
+    scenario:
+        Scenario
     event_id:
         Unique id of EV event
     egon_ev_pool_ev_id:
@@ -70,15 +72,21 @@ class EgonEvTrip(Base):
         id of EV event, unique within a specific EV dataset
     location:
         Location of EV event, one of
-            * 0_work
-            * 1_business
-            * 2_school
-            * 3_shopping
-            * 4_private/ridesharing
-            * 5_leisure
-            * 6_home
-            * 7_charging_hub
-            * driving
+            * "0_work"
+            * "1_business"
+            * "2_school"
+            * "3_shopping"
+            * "4_private/ridesharing"
+            * "5_leisure"
+            * "6_home"
+            * "7_charging_hub"
+            * "driving"
+    use_case:
+        Use case of EV event, one of
+            * "public" (public charging)
+            * "home" (private charging at 6_home)
+            * "work" (private charging at 0_work)
+            * <empty> (driving events)
     charging_capacity_nominal:
         Nominal charging capacity in kW
     charging_capacity_grid:
@@ -124,6 +132,7 @@ class EgonEvTrip(Base):
     egon_ev_pool_ev_id = Column(Integer, nullable=False, index=True)
     simbev_event_id = Column(Integer)
     location = Column(String(21))
+    use_case = Column(String(8))
     charging_capacity_nominal = Column(REAL)
     charging_capacity_grid = Column(REAL)
     charging_capacity_battery = Column(REAL)
