@@ -53,7 +53,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -276,9 +276,7 @@ def insert_biomass_plants(scenario):
     for i, row in mastr_loc.iterrows():
         if not row.ThermischeNutzleistung > 0:
             entry = EgonPowerPlants(
-                sources={
-                    "el_capacity": "MaStR scaled with NEP 2021",
-                },
+                sources={"el_capacity": "MaStR scaled with NEP 2021"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier="biomass",
                 el_capacity=row.Nettonennleistung,
@@ -365,9 +363,7 @@ def insert_hydro_plants(scenario):
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
-                sources={
-                    "el_capacity": "MaStR scaled with NEP 2021",
-                },
+                sources={"el_capacity": "MaStR scaled with NEP 2021"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
                 el_capacity=row.Nettonennleistung,
@@ -522,7 +518,7 @@ def assign_bus_id(power_plants, cfg):
             ehv_grid_districts,
         )
 
-        if 'bus_id_right' in ehv_join.columns:
+        if "bus_id_right" in ehv_join.columns:
             power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,

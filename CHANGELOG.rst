@@ -483,6 +483,8 @@ Bug Fixes
 * Change table name from :code:`boundaries.saltstructures_inspee` to
   :code:`boundaries.inspee_saltstructures`
   `#746 <https://github.com/openego/eGon-data/issues/746>`_
+* Add missing marginal costs for conventional generators in Germany
+  `#722 <https://github.com/openego/eGon-data/issues/722>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
