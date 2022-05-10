@@ -143,8 +143,6 @@ def data_preprocessing(
 
     # Calculate flexible charging capacity:
     # only for private charging facilities at home and work
-    flex_share = ev_data_df.location.map(flex_dict)
-
     ev_data_df.flex_charging_capacity_grid_MW = 0
     ev_data_df.flex_charging_capacity_grid_MW.at[
         (ev_data_df.location == "0_work") &
