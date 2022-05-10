@@ -477,10 +477,17 @@ Bug Fixes
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
+* Fix country_code attribution of two gas buses
+  `#710 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
+* Change table name from :code:`boundaries.saltstructures_inspee` to
+  :code:`boundaries.inspee_saltstructures`
+  `#746 <https://github.com/openego/eGon-data/issues/746>`_
+* Add missing marginal costs for conventional generators in Germany
+  `#722 <https://github.com/openego/eGon-data/issues/722>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
