@@ -143,29 +143,23 @@ def data_preprocessing(
 
     # Calculate flexible charging capacity:
     # only for private charging facilities at home and work
-    ev_data_df.flex_charging_capacity_grid_MW = 0
-    ev_data_df.at[
-        (ev_data_df.location == "0_work") &
-        (ev_data_df.use_case == "work"),
-        "flex_charging_capacity_grid_MW"
-    ] = ev_data_df.charging_capacity_grid_MW
-    ev_data_df.at[
-        (ev_data_df.location == "6_home") &
-        (ev_data_df.use_case == "home"),
-        "flex_charging_capacity_grid_MW"
-    ] = ev_data_df.charging_capacity_grid_MW
+    mask_work = (
+        (ev_data_df.location == "0_work") & (ev_data_df.use_case == "work")
+    )
+    mask_home = (
+        (ev_data_df.location == "6_home") & (ev_data_df.use_case == "home")
+    )
 
-    ev_data_df.flex_last_timestep_charging_capacity_grid_MW = 0
-    ev_data_df.at[
-        (ev_data_df.location == "0_work") &
-        (ev_data_df.use_case == "work"),
-        "flex_last_timestep_charging_capacity_grid_MW"
-    ] = ev_data_df.last_timestep_charging_capacity_grid_MW
-    ev_data_df.at[
-        (ev_data_df.location == "6_home") &
-        (ev_data_df.use_case == "home"),
-        "flex_last_timestep_charging_capacity_grid_MW"
-    ] = ev_data_df.last_timestep_charging_capacity_grid_MW
+    ev_data_df["flex_charging_capacity_grid_MW"] = 0
+    ev_data_df.loc[
+        mask_work | mask_home, "flex_charging_capacity_grid_MW"
+    ] = ev_data_df.loc[mask_work | mask_home, "charging_capacity_grid_MW"]
+
+    ev_data_df["flex_last_timestep_charging_capacity_grid_MW"] = 0
+    ev_data_df.loc[
+        mask_work | mask_home, "flex_last_timestep_charging_capacity_grid_MW"
+    ] = ev_data_df.loc[
+        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"]
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -373,6 +367,7 @@ def load_evs_trips(
             session.query(
                 EgonEvTrip.egon_ev_pool_ev_id.label("ev_id"),
                 EgonEvTrip.location,
+                EgonEvTrip.use_case,
                 EgonEvTrip.charging_capacity_nominal,
                 EgonEvTrip.charging_capacity_grid,
                 EgonEvTrip.charging_capacity_battery,
