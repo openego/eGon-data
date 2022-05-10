@@ -144,24 +144,28 @@ def data_preprocessing(
     # Calculate flexible charging capacity:
     # only for private charging facilities at home and work
     ev_data_df.flex_charging_capacity_grid_MW = 0
-    ev_data_df.flex_charging_capacity_grid_MW.at[
+    ev_data_df.at[
         (ev_data_df.location == "0_work") &
-        (ev_data_df.use_case == "work")
-    ] = charging_capacity_grid_MW
-    ev_data_df.flex_charging_capacity_grid_MW.at[
+        (ev_data_df.use_case == "work"),
+        "flex_charging_capacity_grid_MW"
+    ] = ev_data_df.charging_capacity_grid_MW
+    ev_data_df.at[
         (ev_data_df.location == "6_home") &
-        (ev_data_df.use_case == "home")
-    ] = charging_capacity_grid_MW
+        (ev_data_df.use_case == "home"),
+        "flex_charging_capacity_grid_MW"
+    ] = ev_data_df.charging_capacity_grid_MW
 
     ev_data_df.flex_last_timestep_charging_capacity_grid_MW = 0
-    ev_data_df.flex_last_timestep_charging_capacity_grid_MW.at[
+    ev_data_df.at[
         (ev_data_df.location == "0_work") &
-        (ev_data_df.use_case == "work")
-    ] = charging_capacity_grid_MW
-    ev_data_df.flex_last_timestep_charging_capacity_grid_MW.at[
+        (ev_data_df.use_case == "work"),
+        "flex_last_timestep_charging_capacity_grid_MW"
+    ] = ev_data_df.last_timestep_charging_capacity_grid_MW
+    ev_data_df.at[
         (ev_data_df.location == "6_home") &
-        (ev_data_df.use_case == "home")
-    ] = last_timestep_charging_capacity_grid_MW
+        (ev_data_df.use_case == "home"),
+        "flex_last_timestep_charging_capacity_grid_MW"
+    ] = ev_data_df.last_timestep_charging_capacity_grid_MW
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
