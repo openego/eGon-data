@@ -4,6 +4,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 
 
@@ -44,6 +45,8 @@ def fill_etrago_generators():
         etrago_gen_orig=etrago_gen_orig,
         cfg=cfg,
     )
+
+    etrago_pp = add_marginal_costs(etrago_pp)
 
     etrago_gen_table = fill_etrago_gen_table(
         etrago_pp2=etrago_pp, etrago_gen_orig=etrago_gen_orig, cfg=cfg, con=con
@@ -92,9 +95,27 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
     return etrago_pp
 
 
+def add_marginal_costs(power_plants):
+
+    # Read marginal costs from scenario capacities
+
+    marginal_costs = pd.DataFrame.from_dict(
+        get_sector_parameters("electricity", "eGon2035")["marginal_cost"],
+        orient="index",
+    ).rename(columns={0: "marginal_cost"})
+
+    power_plants = power_plants.merge(
+        right=marginal_costs, left_on="carrier", right_index=True
+    )
+
+    return power_plants
+
+
 def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
 
-    etrago_pp = etrago_pp2[["carrier", "el_capacity", "bus_id", "scenario"]]
+    etrago_pp = etrago_pp2[
+        ["carrier", "el_capacity", "bus_id", "scenario", "marginal_cost"]
+    ]
     etrago_pp = etrago_pp.rename(
         columns={
             "el_capacity": "p_nom",
@@ -228,7 +249,7 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
 
     if carrier_delete:
         db.execute_sql(
-            f"""DELETE FROM 
+            f"""DELETE FROM
                     {cfg['targets']['etrago_generators']['schema']}.
                     {cfg['targets']['etrago_generators']['table']}
                     WHERE carrier IN {*carrier_delete,}
@@ -241,7 +262,7 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
         )
 
         db.execute_sql(
-            f"""DELETE FROM 
+            f"""DELETE FROM
                     {cfg['targets']['etrago_gen_time']['schema']}.
                     {cfg['targets']['etrago_gen_time']['table']}
                     WHERE generator_id NOT IN (
