@@ -345,6 +345,8 @@ Changed
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
+* Include electricity storages for eGon100RE scenario
+  `#581 <https://github.com/openego/eGon-data/issues/581>`_
 
 Bug Fixes
 ---------
