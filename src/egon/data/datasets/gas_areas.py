@@ -12,7 +12,7 @@ class GasAreaseGon2035(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasAreaseGon2035",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(voronoi_egon2035),
         )
@@ -22,7 +22,7 @@ class GasAreaseGon100RE(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasAreaseGon100RE",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(voronoi_egon100RE),
         )
