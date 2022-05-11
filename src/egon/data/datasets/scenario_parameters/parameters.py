@@ -598,7 +598,7 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "NEP C 2035": {
-                    "ev_count": 14000000,
+                    "ev_count": 15100000,
                     "bev_mini_share": 0.1589,
                     "bev_medium_share": 0.3533,
                     "bev_luxury_share": 0.1053,
