@@ -338,6 +338,8 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
+* Unify carrier names for both scenarios
+  `#575 <https://github.com/openego/eGon-data/issues/575>`_
 * Add automatic filtering of gas data: Pipelines of length zero and gas buses
   isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
@@ -347,6 +349,9 @@ Changed
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
 * Update deposit id to access v0.6 of the zenodo repository
   `#627 <https://github.com/openego/eGon-data/issues/627>`_
+* Include electricity storages for eGon100RE scenario
+  `#581 <https://github.com/openego/eGon-data/issues/581>`_
+
 
 Bug Fixes
 ---------
@@ -476,10 +481,21 @@ Bug Fixes
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
+* Fix country_code attribution of two gas buses
+  `#710 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
+* Change table name from :code:`boundaries.saltstructures_inspee` to
+  :code:`boundaries.inspee_saltstructures`
+  `#746 <https://github.com/openego/eGon-data/issues/746>`_
+* Add missing marginal costs for conventional generators in Germany
+  `#722 <https://github.com/openego/eGon-data/issues/722>`_
+* Fix carrier name for solar ground mounted in scenario parameters
+  `#752 <https://github.com/openego/eGon-data/issues/752>`_
+* Create rural_heat buses only for mv grid districts with heat load
+  `#708 <https://github.com/openego/eGon-data/issues/708>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
