@@ -1,6 +1,5 @@
 import egon.data.config
 from egon.data import db
-import psycopg2
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -13,7 +12,7 @@ class dsm_Potential(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DSM_potentials",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing),
         )
@@ -485,6 +484,7 @@ def dsm_cts_ind_processing():
         dsm_stores = pd.DataFrame(index=dsm_buses.index)
         dsm_stores["bus"] = dsm_buses["bus_id"].copy()
         dsm_stores["scn_name"] = dsm_buses["scn_name"].copy()
+        dsm_stores["original_bus"] = dsm_buses["original_bus"].copy()
 
         # set store_id
         target3 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
@@ -514,6 +514,151 @@ def dsm_cts_ind_processing():
 
         return dsm_buses, dsm_links, dsm_stores
 
+    def aggregate_components(con, df_dsm_buses, df_dsm_links, df_dsm_stores):
+
+        # aggregate buses
+
+        grouper = [df_dsm_buses.original_bus, df_dsm_buses.scn_name]
+
+        df_dsm_buses = df_dsm_buses.groupby(grouper).first()
+
+        df_dsm_buses.reset_index(inplace=True)
+        df_dsm_buses.sort_values("scn_name", inplace=True)
+
+        # aggregate links
+
+        df_dsm_links["p_max"] = df_dsm_links["p_max"].apply(
+            lambda x: np.array(x)
+        )
+        df_dsm_links["p_min"] = df_dsm_links["p_min"].apply(
+            lambda x: np.array(x)
+        )
+
+        grouper = [df_dsm_links.original_bus, df_dsm_links.scn_name]
+        p_nom = df_dsm_links.groupby(grouper)["p_nom"].sum()
+        p_max = df_dsm_links.groupby(grouper)["p_max"].apply(np.sum)
+        p_min = df_dsm_links.groupby(grouper)["p_min"].apply(np.sum)
+
+        df_dsm_links = df_dsm_links.groupby(grouper).first()
+        df_dsm_links.p_nom = p_nom
+        df_dsm_links.p_max = p_max
+        df_dsm_links.p_min = p_min
+
+        df_dsm_links["p_max"] = df_dsm_links["p_max"].apply(lambda x: list(x))
+        df_dsm_links["p_min"] = df_dsm_links["p_min"].apply(lambda x: list(x))
+
+        df_dsm_links.reset_index(inplace=True)
+        df_dsm_links.sort_values("scn_name", inplace=True)
+
+        # aggregate stores
+
+        df_dsm_stores["e_max"] = df_dsm_stores["e_max"].apply(
+            lambda x: np.array(x)
+        )
+        df_dsm_stores["e_min"] = df_dsm_stores["e_min"].apply(
+            lambda x: np.array(x)
+        )
+
+        grouper = [df_dsm_stores.original_bus, df_dsm_stores.scn_name]
+        e_nom = df_dsm_stores.groupby(grouper)["e_nom"].sum()
+        e_max = df_dsm_stores.groupby(grouper)["e_max"].apply(np.sum)
+        e_min = df_dsm_stores.groupby(grouper)["e_min"].apply(np.sum)
+
+        df_dsm_stores = df_dsm_stores.groupby(grouper).first()
+        df_dsm_stores.e_nom = e_nom
+        df_dsm_stores.e_max = e_max
+        df_dsm_stores.e_min = e_min
+
+        df_dsm_stores["e_max"] = df_dsm_stores["e_max"].apply(
+            lambda x: list(x)
+        )
+        df_dsm_stores["e_min"] = df_dsm_stores["e_min"].apply(
+            lambda x: list(x)
+        )
+
+        df_dsm_stores.reset_index(inplace=True)
+        df_dsm_stores.sort_values("scn_name", inplace=True)
+
+        # select new bus_ids for aggregated buses and add to links and stores
+
+        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
+            "bus"
+        ]
+        sql = f"""SELECT bus_id FROM {target1['schema']}.{target1['table']}"""
+        max_id = pd.read_sql_query(sql, con)
+        max_id = max_id["bus_id"].max()
+        if np.isnan(max_id):
+            max_id = 0
+        dsm_id = max_id + 1
+
+        buses = db.select_geodataframe(
+            f"""SELECT bus_id, geom FROM
+                {target1['schema']}.{target1['table']}"""
+        )
+        max_id = buses["bus_id"].max()
+        if np.isnan(max_id):
+            max_id = 0
+        dsm_id = max_id + 1
+
+        bus_id = pd.Series(index=df_dsm_buses.index, dtype=int)
+        bus_id.iloc[0 : int((len(bus_id) / 2))] = range(
+            dsm_id, int((dsm_id + len(df_dsm_buses) / 2))
+        )
+        bus_id.iloc[int((len(bus_id) / 2)) : len(bus_id)] = range(
+            dsm_id, int((dsm_id + len(df_dsm_buses) / 2))
+        )
+
+        df_dsm_buses["bus_id"] = bus_id
+        df_dsm_links["dsm_bus"] = bus_id
+        df_dsm_stores["bus"] = bus_id
+
+        # select new link_ids for aggregated links
+        target2 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
+            "link"
+        ]
+        sql = f"""SELECT link_id FROM {target2['schema']}.{target2['table']}"""
+        max_id = pd.read_sql_query(sql, con)
+        max_id = max_id["link_id"].max()
+        if np.isnan(max_id):
+            max_id = 0
+        dsm_id = max_id + 1
+
+        link_id = pd.Series(index=df_dsm_links.index, dtype=int)
+        link_id.iloc[0 : int((len(link_id) / 2))] = range(
+            dsm_id, int((dsm_id + len(df_dsm_links) / 2))
+        )
+        link_id.iloc[int((len(link_id) / 2)) : len(link_id)] = range(
+            dsm_id, int((dsm_id + len(df_dsm_links) / 2))
+        )
+
+        df_dsm_links["link_id"] = link_id
+
+        # select new store_ids to aggregated stores
+
+        target3 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
+            "store"
+        ]
+        sql = (
+            f"""SELECT store_id FROM {target3['schema']}.{target3['table']}"""
+        )
+        max_id = pd.read_sql_query(sql, con)
+        max_id = max_id["store_id"].max()
+        if np.isnan(max_id):
+            max_id = 0
+        dsm_id = max_id + 1
+
+        store_id = pd.Series(index=df_dsm_stores.index, dtype=int)
+        store_id.iloc[0 : int((len(store_id) / 2))] = range(
+            dsm_id, int((dsm_id + len(df_dsm_stores) / 2))
+        )
+        store_id.iloc[int((len(store_id) / 2)) : len(store_id)] = range(
+            dsm_id, int((dsm_id + len(df_dsm_stores) / 2))
+        )
+
+        df_dsm_stores["store_id"] = store_id
+
+        return df_dsm_buses, df_dsm_links, df_dsm_stores
+
     def data_export(con, dsm_buses, dsm_links, dsm_stores, carrier):
 
         """
@@ -536,15 +681,18 @@ def dsm_cts_ind_processing():
 
         # dsm_buses
 
-        insert_buses = gpd.GeoDataFrame(index=dsm_buses.index)
+        insert_buses = gpd.GeoDataFrame(
+            index=dsm_buses.index,
+            data=dsm_buses["geom"],
+            geometry="geom",
+            crs=dsm_buses.crs,
+        )
         insert_buses["scn_name"] = dsm_buses["scn_name"]
         insert_buses["bus_id"] = dsm_buses["bus_id"]
         insert_buses["v_nom"] = dsm_buses["v_nom"]
         insert_buses["carrier"] = carrier
         insert_buses["x"] = dsm_buses["x"]
         insert_buses["y"] = dsm_buses["y"]
-        insert_buses["geom"] = dsm_buses["geom"]
-        insert_buses.set_geometry("geom", inplace=True)
 
         # insert into database
         insert_buses.to_postgis(
@@ -699,8 +847,6 @@ def dsm_cts_ind_processing():
         print("CTS per osm-area: cooling, ventilation and air conditioning")
         print(" ")
 
-        delete_dsm_entries("dsm-cts")
-
         dsm = cts_data_import(con, cts_cool_vent_ac_share)
 
         # calculate combined potentials of cooling, ventilation and air conditioning in CTS
@@ -713,15 +859,15 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm
         )
 
-        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-cts")
+        df_dsm_buses = dsm_buses.copy()
+        df_dsm_links = dsm_links.copy()
+        df_dsm_stores = dsm_stores.copy()
 
         # industry per osm-area: cooling and ventilation
 
         print(" ")
         print("industry per osm-area: cooling and ventilation")
         print(" ")
-
-        delete_dsm_entries("dsm-ind-osm")
 
         dsm = ind_osm_data_import(con, ind_cool_vent_share)
 
@@ -735,15 +881,20 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm
         )
 
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-osm"
+        df_dsm_buses = gpd.GeoDataFrame(
+            pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
+            crs="EPSG:4326",
+        )
+        df_dsm_links = pd.DataFrame(
+            pd.concat([df_dsm_links, dsm_links], ignore_index=True)
+        )
+        df_dsm_stores = pd.DataFrame(
+            pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
         )
 
         # industry sites
 
         # industry sites: different applications
-
-        delete_dsm_entries("dsm-ind-sites")
 
         dsm = ind_sites_data_import(con)
 
@@ -779,8 +930,15 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm_paper
         )
 
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
+        df_dsm_buses = gpd.GeoDataFrame(
+            pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
+            crs="EPSG:4326",
+        )
+        df_dsm_links = pd.DataFrame(
+            pd.concat([df_dsm_links, dsm_links], ignore_index=True)
+        )
+        df_dsm_stores = pd.DataFrame(
+            pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
         )
 
         print(" ")
@@ -806,8 +964,15 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm_recycled_paper
         )
 
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
+        df_dsm_buses = gpd.GeoDataFrame(
+            pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
+            crs="EPSG:4326",
+        )
+        df_dsm_links = pd.DataFrame(
+            pd.concat([df_dsm_links, dsm_links], ignore_index=True)
+        )
+        df_dsm_stores = pd.DataFrame(
+            pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
         )
 
         print(" ")
@@ -833,8 +998,15 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm_pulp
         )
 
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
+        df_dsm_buses = gpd.GeoDataFrame(
+            pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
+            crs="EPSG:4326",
+        )
+        df_dsm_links = pd.DataFrame(
+            pd.concat([df_dsm_links, dsm_links], ignore_index=True)
+        )
+        df_dsm_stores = pd.DataFrame(
+            pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
         )
 
         # industry sites: cement
@@ -860,8 +1032,15 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm_cement
         )
 
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
+        df_dsm_buses = gpd.GeoDataFrame(
+            pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
+            crs="EPSG:4326",
+        )
+        df_dsm_links = pd.DataFrame(
+            pd.concat([df_dsm_links, dsm_links], ignore_index=True)
+        )
+        df_dsm_stores = pd.DataFrame(
+            pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
         )
 
         # industry sites: ventilation in WZ23
@@ -887,8 +1066,30 @@ def dsm_cts_ind_processing():
             con, p_max, p_min, e_max, e_min, dsm
         )
 
-        data_export(
-            con, dsm_buses, dsm_links, dsm_stores, carrier="dsm-ind-sites"
+        df_dsm_buses = gpd.GeoDataFrame(
+            pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
+            crs="EPSG:4326",
         )
+        df_dsm_links = pd.DataFrame(
+            pd.concat([df_dsm_links, dsm_links], ignore_index=True)
+        )
+        df_dsm_stores = pd.DataFrame(
+            pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
+        )
+
+        # aggregate DSM components per substation
+
+        dsm_buses, dsm_links, dsm_stores = aggregate_components(
+            con, df_dsm_buses, df_dsm_links, df_dsm_stores
+        )
+
+        # export aggregated DSM components to database
+
+        delete_dsm_entries("dsm-cts")
+        delete_dsm_entries("dsm-ind-osm")
+        delete_dsm_entries("dsm-ind-sites")
+        delete_dsm_entries("dsm")
+
+        data_export(con, dsm_buses, dsm_links, dsm_stores, carrier="dsm")
 
     dsm_cts_ind()
