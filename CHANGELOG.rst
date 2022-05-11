@@ -473,6 +473,8 @@ Bug Fixes
   `#693 <https://github.com/openego/eGon-data/issues/693>`_
 * Assign DLR capacities to every transmission line
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
+* Fix solar ground mounted total installed capacity
+  `#695 <https://github.com/openego/eGon-data/issues/695>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
 * Clean up `"pipeline.py"`
