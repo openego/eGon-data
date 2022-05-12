@@ -522,9 +522,9 @@ def import_ch4_demandTS():
         cwd
         / "data_bundle_egon_data"
         / "pypsa_eur_sec"
-        / "2021-egondata-integration"
+        / "2022-05-04-egondata-integration"
         / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+        / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
     )
 
     network = pypsa.Network(str(target_file))
@@ -573,9 +573,9 @@ def import_power_to_h2_demandTS():
         cwd
         / "data_bundle_egon_data"
         / "pypsa_eur_sec"
-        / "2021-egondata-integration"
+        / "2022-05-04-egondata-integration"
         / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+        / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
     )
 
     network = pypsa.Network(str(target_file))
