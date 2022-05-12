@@ -478,7 +478,7 @@ def insert_gas_pipeline_list(
     ] = "NO"
     gas_pipelines_list.loc[
         gas_pipelines_list["country_1"] == "FI", "country_1"
-    ] = "SE"
+    ] = "RU"
     gas_pipelines_list.loc[
         gas_pipelines_list["id"] == "INET_PL_385_EE_3_Seg_0_Seg_1", "country_1"
     ] = "AT"

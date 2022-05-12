@@ -349,10 +349,6 @@ Changed
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 * Add gas data in neighbouring countries
   `#727 <https://github.com/openego/eGon-data/issues/727>`_
-* Unify carrier names for both scenarios
-  `#575 <https://github.com/openego/eGon-data/issues/575>`_
-* Include electricity storages for eGon100RE scenario
-  `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
