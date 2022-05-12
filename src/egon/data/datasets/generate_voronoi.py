@@ -29,7 +29,9 @@ def get_voronoi_geodataframe(buses, boundary):
 
     coords = buses[["x", "y"]].values  # coordinates of the respective buses
 
-    region_polys, region_pts = voronoi_regions_from_coords(coords, boundary)
+    region_polys, region_pts = voronoi_regions_from_coords(
+        coords, boundary, per_geom=False
+    )
 
     gpd_input_dict = {
         "bus_id": [],  # original bus_id in the buses dataframe
