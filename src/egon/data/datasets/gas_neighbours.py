@@ -315,9 +315,7 @@ def calc_capacity_per_year(df, lng, year):
     )
 
     # Some values are duplicated (DE00 in 2030)
-    df_conv_peak = df_conv_peak[
-        ~df_conv_peak.index.duplicated(keep="first")
-    ]
+    df_conv_peak = df_conv_peak[~df_conv_peak.index.duplicated(keep="first")]
     df_conv_average = df_conv_average[
         ~df_conv_average.index.duplicated(keep="first")
     ]
