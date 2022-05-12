@@ -413,7 +413,6 @@ def insert_generators(gen):
     # Remove useless columns
     gen = gen.drop(columns=["index", "ratioConv_2035", "cap_2035"])
 
-    print(gen)
     # Insert data to db
     gen.to_sql(
         targets["generators"]["table"],
@@ -683,7 +682,6 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     # Remove useless columns
     global_demand = global_demand.drop(columns=["Node/Line", "GlobD_2035"])
 
-    print(global_demand)
     # Insert data to db
     global_demand.to_sql(
         targets["loads"]["table"],
@@ -717,7 +715,6 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
         columns=["Node/Line", "GlobD_2035", "bus", "carrier"]
     )
 
-    print(ch4_demand_TS)
     # Insert data to DB
     ch4_demand_TS.to_sql(
         targets["load_timeseries"]["table"],
@@ -849,7 +846,6 @@ def insert_storage(ch4_storage_capacities):
     )
 
     ch4_storage_capacities = ch4_storage_capacities.reset_index(drop=True)
-    print(ch4_storage_capacities)
     # Insert data to db
     ch4_storage_capacities.to_sql(
         targets["stores"]["table"],
@@ -1025,7 +1021,6 @@ def insert_power_to_h2_demand(
         columns=["Node/Line", "GlobD_2035"]
     )
 
-    print(global_power_to_h2_demand)
     # Insert data to db
     global_power_to_h2_demand.to_sql(
         targets["loads"]["table"],
@@ -1077,7 +1072,6 @@ def insert_power_to_h2_demand(
         columns=["Node/Line", "GlobD_2035", "bus", "carrier"]
     )
 
-    print(power_to_h2_demand_TS)
     # Insert data to db
     power_to_h2_demand_TS.to_sql(
         targets["load_timeseries"]["table"],
@@ -1404,7 +1398,6 @@ def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
         """
     )
 
-    print(Neighbouring_pipe_capacities_list)
     # Insert data to db
     Neighbouring_pipe_capacities_list.to_postgis(
         "egon_etrago_gas_link",
