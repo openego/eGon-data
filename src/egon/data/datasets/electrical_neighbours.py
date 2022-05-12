@@ -19,7 +19,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )

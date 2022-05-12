@@ -592,7 +592,7 @@ def assign_bus_id(power_plants, cfg):
             ehv_grid_districts,
         )
 
-        if 'bus_id_right' in ehv_join.columns:
+        if "bus_id_right" in ehv_join.columns:
             power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,
@@ -683,7 +683,7 @@ def allocate_conventional_non_chp_power_plants():
          AND scenario='eGon2035';
          """
     )
-    
+
     for carrier in carrier:
 
         nep = select_nep_power_plants(carrier)

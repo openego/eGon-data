@@ -98,7 +98,9 @@ def global_settings(scenario):
         }
 
     elif scenario == "eGon100RE":
-        parameters = {"weather_year": 2011, "population_year": 2050,
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2050,
             "fuel_costs": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
                 "oil": 73.8,  # [EUR/MWh]
                 "gas": 25.6,  # [EUR/MWh]
@@ -115,7 +117,8 @@ def global_settings(scenario):
                 "oil": 0.288,  # [t_CO2/MW_th]
                 "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
-            }}
+            },
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -305,31 +308,10 @@ def electricity(scenario):
         }
 
     elif scenario == "eGon100RE":
+
         costs = read_csv(2050)
+
         parameters = {"grid_topology": "Status Quo"}
-        # Insert effciencies in p.u.
-        parameters["efficiency"] = {
-            "battery": {
-                "store": read_costs(costs, "battery inverter", "efficiency")
-                ** 0.5,
-                "dispatch": read_costs(costs, "battery inverter", "efficiency")
-                ** 0.5,
-                "standing_loss": 0,
-                "max_hours": 6,
-            },
-            "pumped_hydro": {
-                "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
-                "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
-                "standing_loss": 0,
-                "max_hours": 6,
-            },
-        }
-        # Insert capital costs
-        parameters["capital_cost"] = {
-            "battery": read_costs(costs, "battery inverter", "investment")
-            + parameters["efficiency"]["battery"]["max_hours"]
-            * read_costs(costs, "battery storage", "investment")  # [EUR/MW]
-        }
 
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
@@ -554,6 +536,7 @@ def gas(scenario):
             * global_settings(scenario)["co2_emissions"]["gas"],
             "OCGT": read_costs(costs, "OCGT", "VOM"),
             "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
         # Insert max gas production (generator) over the year
