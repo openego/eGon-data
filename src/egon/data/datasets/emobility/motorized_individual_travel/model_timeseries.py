@@ -208,9 +208,7 @@ def generate_dsm_profile(
 
 def generate_load_time_series(
     ev_data_df: pd.DataFrame,
-    start_date: str,
-    timestep: str,
-    charging_eff: float,
+    run_config: pd.DataFrame
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -221,12 +219,8 @@ def generate_load_time_series(
     ----------
     ev_data_df : pd.DataFrame
         Full trip data
-    start_date : str
-        Start date used for timeindex
-    timestep : str
-        Interval used for timeindex
-    charging_eff : float
-        Chargin efficiency used in simBEV
+    run_config : pd.DataFrame
+        simBEV metadata: run config
 
     Returns
     -------
@@ -235,9 +229,9 @@ def generate_load_time_series(
     """
     # instantiate timeindex
     timeindex = pd.date_range(
-        start_date,
-        periods=ev_data_df.last_timestep.max() + 1,
-        freq=timestep,
+        start=f"{run_config.start_date} 00:00:00",
+        end=f"{run_config.end_date} 23:45:00",
+        freq=f"{int(run_config.stepsize)}Min",
     )
 
     load_time_series_df = pd.DataFrame(
@@ -291,7 +285,7 @@ def generate_load_time_series(
 
     np.testing.assert_almost_equal(
         load_time_series_df.load_time_series.sum() / 4,
-        ev_data_df.charging_demand.sum() / 1000 / charging_eff,
+        ev_data_df.charging_demand.sum() / 1000 / float(run_config.eta_cp),
         decimal=-1,
     )
 
@@ -715,9 +709,7 @@ def generate_model_data_grid_district(
     print("  Generating load timeseries...")
     load_ts = generate_load_time_series(
         ev_data_df=trip_data,
-        start_date=run_config.start_date,
-        timestep=f"{int(run_config.stepsize)}Min",
-        charging_eff=float(run_config.eta_cp),
+        run_config=run_config
     )
 
     # Generate static paras
