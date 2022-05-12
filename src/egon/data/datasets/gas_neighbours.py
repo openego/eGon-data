@@ -207,133 +207,9 @@ def calc_capacities():
         .sort_index()
     )
 
-    df_conv_2030_peak = (
-        df[
-            (df["Parameter"] == "Conventional")
-            & (df["Year"] == 2030)
-            & (df["Case"] == "Peak")
-        ]
-        .rename(columns={"Value": "Value_conv_2030_peak"})
-        .drop(columns=["Parameter", "Year", "Case"])
-    )
-    df_conv_2030_average = (
-        df[
-            (df["Parameter"] == "Conventional")
-            & (df["Year"] == 2030)
-            & (df["Case"] == "Average")
-        ]
-        .rename(columns={"Value": "Value_conv_2030_average"})
-        .drop(columns=["Parameter", "Year", "Case"])
-    )
-    df_bioch4_2030 = (
-        df[
-            (df["Parameter"] == "Biomethane")
-            & (df["Year"] == 2030)
-            & (
-                df["Case"] == "Peak"
-            )  # Peak and Average have the same valus for biogas production in 2030 and 2040
-        ]
-        .rename(columns={"Value": "Value_bio_2030"})
-        .drop(columns=["Parameter", "Year", "Case"])
-    )
-
-    df_conv_2030_peak = df_conv_2030_peak[
-        ~df_conv_2030_peak.index.duplicated(keep="first")
-    ]  # DE00 is duplicated
-    df_conv_2030_average = df_conv_2030_average[
-        ~df_conv_2030_average.index.duplicated(keep="first")
-    ]  # DE00 is duplicated
-
     lng = read_LNG_capacities()
-    df_2030 = pd.concat(
-        [df_conv_2030_peak, df_conv_2030_average, df_bioch4_2030, lng], axis=1
-    ).fillna(0)
-    df_2030 = df_2030[
-        ~(
-            (df_2030["Value_conv_2030_peak"] == 0)
-            & (df_2030["Value_bio_2030"] == 0)
-            & (df_2030["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"] == 0)
-        )
-    ]
-    df_2030["Value_conv_2030"] = (
-        df_2030["Value_conv_2030_peak"]
-        + df_2030["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
-    )
-    df_2030["CH4_2030"] = (
-        df_2030["Value_conv_2030"] + df_2030["Value_bio_2030"]
-    )
-    df_2030["ratioConv_2030"] = (
-        df_2030["Value_conv_2030_peak"] / df_2030["CH4_2030"]
-    )
-    df_2030["e_nom_max_2030"] = (
-        df_2030["Value_conv_2030_average"] + df_2030["Value_bio_2030"]
-    )
-    df_2030 = df_2030.drop(
-        columns=[
-            "LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)",
-            "Value_conv_2030_peak",
-            "Value_conv_2030_average",
-        ]
-    )
-    df_conv_2040_peak = (
-        df[
-            (df["Parameter"] == "Conventional")
-            & (df["Year"] == 2040)
-            & (df["Case"] == "Peak")
-        ]
-        .rename(columns={"Value": "Value_conv_2040_peak"})
-        .drop(columns=["Parameter", "Year", "Case"])
-    )
-    df_conv_2040_average = (
-        df[
-            (df["Parameter"] == "Conventional")
-            & (df["Year"] == 2040)
-            & (df["Case"] == "Average")
-        ]
-        .rename(columns={"Value": "Value_conv_2040_average"})
-        .drop(columns=["Parameter", "Year", "Case"])
-    )
-    df_bioch4_2040 = (
-        df[
-            (df["Parameter"] == "Biomethane")
-            & (df["Year"] == 2040)
-            & (
-                df["Case"] == "Peak"
-            )  # Peak and Average have the same valus for biogas production in 2030 and 2040
-        ]
-        .rename(columns={"Value": "Value_bio_2040"})
-        .drop(columns=["Parameter", "Year", "Case"])
-    )
-    df_2040 = pd.concat(
-        [df_conv_2040_peak, df_conv_2040_average, df_bioch4_2040, lng], axis=1
-    ).fillna(0)
-    df_2040 = df_2040[
-        ~(
-            (df_2040["Value_conv_2040_peak"] == 0)
-            & (df_2040["Value_bio_2040"] == 0)
-            & (df_2040["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"] == 0)
-        )
-    ]
-    df_2040["Value_conv_2040"] = (
-        df_2040["Value_conv_2040_peak"]
-        + df_2040["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
-    )
-    df_2040["CH4_2040"] = (
-        df_2040["Value_conv_2040"] + df_2040["Value_bio_2040"]
-    )
-    df_2040["ratioConv_2040"] = (
-        df_2040["Value_conv_2040_peak"] / df_2040["CH4_2040"]
-    )
-    df_2040["e_nom_max_2040"] = (
-        df_2040["Value_conv_2040_average"] + df_2040["Value_bio_2040"]
-    )
-    df_2040 = df_2040.drop(
-        columns=[
-            "LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)",
-            "Value_conv_2040_average",
-            "Value_conv_2040_peak",
-        ]
-    )
+    df_2030 = calc_capacity_per_year(df, lng, 2030)
+    df_2040 = calc_capacity_per_year(df, lng, 2040)
 
     # Conversion GWh/d to MWh/h
     conversion_factor = 1000 / 24
@@ -387,6 +263,98 @@ def calc_capacities():
         grouped_capacities["index"].str[:2].isin(countries)
     ]
     return grouped_capacities
+
+
+def calc_capacity_per_year(df, lng, year):
+    """Calculates gas production capacities from TYNDP data for a specified year
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing all TYNDP data.
+
+    lng : geopandas.GeoDataFrame
+        Georeferenced LNG terminal capacities.
+
+    year : int
+        Year to calculate gas production capacity for.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Gas production capacities per foreign node and energy carrier
+    """
+    df_conv_peak = (
+        df[
+            (df["Parameter"] == "Conventional")
+            & (df["Year"] == year)
+            & (df["Case"] == "Peak")
+        ]
+        .rename(columns={"Value": f"Value_conv_{year}_peak"})
+        .drop(columns=["Parameter", "Year", "Case"])
+    )
+    df_conv_average = (
+        df[
+            (df["Parameter"] == "Conventional")
+            & (df["Year"] == year)
+            & (df["Case"] == "Average")
+        ]
+        .rename(columns={"Value": f"Value_conv_{year}_average"})
+        .drop(columns=["Parameter", "Year", "Case"])
+    )
+    df_bioch4 = (
+        df[
+            (df["Parameter"] == "Biomethane")
+            & (df["Year"] == year)
+            & (
+                df["Case"] == "Peak"
+            )  # Peak and Average have the same valus for biogas production in 2030 and 2040
+        ]
+        .rename(columns={"Value": f"Value_bio_{year}"})
+        .drop(columns=["Parameter", "Year", "Case"])
+    )
+
+    # Some values are duplicated (DE00 in 2030)
+    df_conv_peak = df_conv_peak[
+        ~df_conv_peak.index.duplicated(keep="first")
+    ]
+    df_conv_average = df_conv_average[
+        ~df_conv_average.index.duplicated(keep="first")
+    ]
+
+    df_year = pd.concat(
+        [df_conv_peak, df_conv_average, df_bioch4, lng], axis=1
+    ).fillna(0)
+    df_year = df_year[
+        ~(
+            (df_year[f"Value_conv_{year}_peak"] == 0)
+            & (df_year[f"Value_bio_{year}"] == 0)
+            & (df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"] == 0)
+        )
+    ]
+    df_year[f"Value_conv_{year}"] = (
+        df_year[f"Value_conv_{year}_peak"]
+        + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
+    )
+    df_year[f"CH4_{year}"] = (
+        df_year[f"Value_conv_{year}"] + df_year[f"Value_bio_{year}"]
+    )
+    df_year[f"ratioConv_{year}"] = (
+        df_year[f"Value_conv_{year}_peak"] / df_year[f"CH4_{year}"]
+    )
+    df_year[f"e_nom_max_{year}"] = (
+        df_year[f"Value_conv_{year}_average"] + df_year[f"Value_bio_{year}"]
+    )
+    df_year = df_year.drop(
+        columns=[
+            "LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)",
+            f"Value_conv_{year}_average",
+            f"Value_conv_{year}_peak",
+        ]
+    )
+
+    return df_year
+
 
 
 def insert_generators(gen):
