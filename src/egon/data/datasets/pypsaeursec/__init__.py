@@ -159,9 +159,9 @@ def neighbor_reduction():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2021-egondata-integration"
+            / "2022-05-04-egondata-integration"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
         )
 
     network = pypsa.Network(str(target_file))
@@ -387,7 +387,8 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens.index]
+    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
+
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
@@ -816,7 +817,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=tasks,
         )

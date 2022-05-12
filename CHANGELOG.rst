@@ -340,10 +340,6 @@ Changed
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
 * Unify carrier names for both scenarios
   `#575 <https://github.com/openego/eGon-data/issues/575>`_
-* Add automatic filtering of gas data
-  `#590 <https://github.com/openego/eGon-data/issues/590>`_
-* Aggregate DSM components per substation
-  '#661 <https://github.com/openego/eGon-data/issues/661>'_
 * Add automatic filtering of gas data: Pipelines of length zero and gas buses
   isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
@@ -351,9 +347,11 @@ Changed
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
+* Update deposit id to access v0.6 of the zenodo repository
+  `#627 <https://github.com/openego/eGon-data/issues/627>`_
 * Include electricity storages for eGon100RE scenario
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
-  
+
 
 Bug Fixes
 ---------
