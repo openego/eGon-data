@@ -121,6 +121,9 @@ def copy_and_modify_links(from_scn, to_scn, carriers, sector):
     gdf["scn_name"] = to_scn
     scn_params = get_sector_parameters(sector, to_scn)
 
+    new_id = db.next_etrago_id("Link")
+    gdf["link_id"] = range(new_id, new_id + len(gdf))
+
     for carrier in carriers:
         for param in ["capital_cost", "marginal_cost", "efficiency"]:
             try:
@@ -185,6 +188,9 @@ def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
     df["scn_name"] = to_scn
     scn_params = get_sector_parameters(sector, to_scn)
 
+    new_id = db.next_etrago_id("Store")
+    df["store_id"] = range(new_id, new_id + len(df))
+
     for carrier in carriers:
         for param in ["capital_cost", "marginal_cost"]:
             try:
@@ -246,6 +252,9 @@ def copy_and_modify_buses(from_scn, to_scn, filter_dict):
     )
 
     gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
+
+    new_id = db.next_etrago_id("Bus")
+    gdf["bus_id"] = range(new_id, new_id + len(gdf))
 
     db.execute_sql(
         f"""
