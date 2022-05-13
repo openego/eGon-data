@@ -615,23 +615,13 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "NEP C 2035": {
-                    "ev_count": 14000000,
+                    "ev_count": 15100000,
                     "bev_mini_share": 0.1589,
                     "bev_medium_share": 0.3533,
                     "bev_luxury_share": 0.1053,
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "flex_share": {
-                        "0_work": 1,
-                        "1_business": 0,
-                        "2_school": 0,
-                        "3_shopping": 0,
-                        "4_private_ridesharing": 0,
-                        "5_leisure": 0,
-                        "6_home": 0.8,
-                        "7_charging_hub": 0,
-                    },
                     "model_parameters": {
                         "restriction_time": 7,
                         "min_soc": 0.75,
@@ -655,16 +645,6 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "flex_share": {
-                        "0_work": 1,
-                        "1_business": 0,
-                        "2_school": 0,
-                        "3_shopping": 0,
-                        "4_private_ridesharing": 0,
-                        "5_leisure": 0,
-                        "6_home": 1,
-                        "7_charging_hub": 0,
-                    },
                     "model_parameters": {
                         "restriction_time": 7,
                         "min_soc": 0.75,
@@ -678,16 +658,6 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "flex_share": {
-                        "0_work": 1,
-                        "1_business": 0,
-                        "2_school": 0,
-                        "3_shopping": 0,
-                        "4_private_ridesharing": 0,
-                        "5_leisure": 0,
-                        "6_home": 1,
-                        "7_charging_hub": 0,
-                    },
                     "model_parameters": {
                         "restriction_time": 7,
                         "min_soc": 0.75,
@@ -701,16 +671,6 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "flex_share": {
-                        "0_work": 1,
-                        "1_business": 0,
-                        "2_school": 0,
-                        "3_shopping": 0,
-                        "4_private_ridesharing": 0,
-                        "5_leisure": 0,
-                        "6_home": 1,
-                        "7_charging_hub": 0,
-                    },
                     "model_parameters": {
                         "restriction_time": 7,
                         "min_soc": 0.75,

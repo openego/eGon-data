@@ -28,6 +28,7 @@ https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pd
 """
 
 from collections import Counter
+import datetime as dt
 from pathlib import Path
 import json
 import os
@@ -62,8 +63,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 def data_preprocessing(
     scenario_data: pd.DataFrame,
-    ev_data_df: pd.DataFrame,
-    flex_dict: dict,
+    ev_data_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Filter SimBEV data to match region requirements. Duplicates profiles
     if necessary. Pre-calculates necessary parameters for the load time series.
@@ -74,8 +74,6 @@ def data_preprocessing(
         EV per grid district
     ev_data_df : pd.Dataframe
         Trip data
-    flex_dict : dict
-        Shares of charging infrastructure where charging can take place
 
     Returns
     -------
@@ -113,7 +111,7 @@ def data_preprocessing(
             ev_data_df = ev_data_df.append(duplicates_df)
 
     # calculate time necessary to fulfill the charging demand and brutto
-    # charging capacity in mva
+    # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
         charging_capacity_grid_MW=(
             ev_data_df.charging_capacity_grid / 10 ** 3
@@ -144,17 +142,25 @@ def data_preprocessing(
         last_timestep=ev_data_df.park_start + full_timesteps + 1,
     )
 
-    # calculate flexible charging capacity
-    flex_share = ev_data_df.location.map(flex_dict)
-
-    ev_data_df = ev_data_df.assign(
-        flex_charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid_MW * flex_share
-        ),
-        flex_last_timestep_charging_capacity_grid_MW=(
-            ev_data_df.last_timestep_charging_capacity_grid_MW * flex_share
-        ),
+    # Calculate flexible charging capacity:
+    # only for private charging facilities at home and work
+    mask_work = (
+        (ev_data_df.location == "0_work") & (ev_data_df.use_case == "work")
     )
+    mask_home = (
+        (ev_data_df.location == "6_home") & (ev_data_df.use_case == "home")
+    )
+
+    ev_data_df["flex_charging_capacity_grid_MW"] = 0
+    ev_data_df.loc[
+        mask_work | mask_home, "flex_charging_capacity_grid_MW"
+    ] = ev_data_df.loc[mask_work | mask_home, "charging_capacity_grid_MW"]
+
+    ev_data_df["flex_last_timestep_charging_capacity_grid_MW"] = 0
+    ev_data_df.loc[
+        mask_work | mask_home, "flex_last_timestep_charging_capacity_grid_MW"
+    ] = ev_data_df.loc[
+        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"]
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -203,9 +209,7 @@ def generate_dsm_profile(
 
 def generate_load_time_series(
     ev_data_df: pd.DataFrame,
-    start_date: str,
-    timestep: str,
-    charging_eff: float,
+    run_config: pd.DataFrame
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -216,12 +220,8 @@ def generate_load_time_series(
     ----------
     ev_data_df : pd.DataFrame
         Full trip data
-    start_date : str
-        Start date used for timeindex
-    timestep : str
-        Interval used for timeindex
-    charging_eff : float
-        Chargin efficiency used in simBEV
+    run_config : pd.DataFrame
+        simBEV metadata: run config
 
     Returns
     -------
@@ -230,9 +230,10 @@ def generate_load_time_series(
     """
     # instantiate timeindex
     timeindex = pd.date_range(
-        start_date,
-        periods=ev_data_df.last_timestep.max() + 1,
-        freq=timestep,
+        start=dt.datetime.fromisoformat(f"{run_config.start_date} 00:00:00"),
+        end=dt.datetime.fromisoformat(f"{run_config.end_date} 23:45:00") +
+            dt.timedelta(minutes=int(run_config.stepsize)),
+        freq=f"{int(run_config.stepsize)}Min",
     )
 
     load_time_series_df = pd.DataFrame(
@@ -286,7 +287,7 @@ def generate_load_time_series(
 
     np.testing.assert_almost_equal(
         load_time_series_df.load_time_series.sum() / 4,
-        ev_data_df.charging_demand.sum() / 1000 / charging_eff,
+        ev_data_df.charging_demand.sum() / 1000 / float(run_config.eta_cp),
         decimal=-1,
     )
 
@@ -362,6 +363,7 @@ def load_evs_trips(
             session.query(
                 EgonEvTrip.egon_ev_pool_ev_id.label("ev_id"),
                 EgonEvTrip.location,
+                EgonEvTrip.use_case,
                 EgonEvTrip.charging_capacity_nominal,
                 EgonEvTrip.charging_capacity_grid,
                 EgonEvTrip.charging_capacity_battery,
@@ -702,20 +704,14 @@ def generate_model_data_grid_district(
     trip_data["bat_cap"] = trip_data.type.apply(lambda _: bat_cap_dict[_])
     trip_data.drop(columns=["type"], inplace=True)
 
-    # TODO: change this when SimBEV issue #33 is solved
-    #  https://github.com/rl-institut/simbev/issues/33
-    flex_dict = scenario_variation_parameters["flex_share"]
-
     # Preprocess trip data
-    trip_data = data_preprocessing(evs_grid_district, trip_data, flex_dict)
+    trip_data = data_preprocessing(evs_grid_district, trip_data)
 
     # Generate load timeseries
     print("  Generating load timeseries...")
     load_ts = generate_load_time_series(
         ev_data_df=trip_data,
-        start_date=run_config.start_date,
-        timestep=f"{int(run_config.stepsize)}Min",
-        charging_eff=float(run_config.eta_cp),
+        run_config=run_config
     )
 
     # Generate static paras
