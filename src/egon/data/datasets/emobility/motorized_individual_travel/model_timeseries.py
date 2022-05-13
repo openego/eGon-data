@@ -28,6 +28,7 @@ https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pd
 """
 
 from collections import Counter
+import datetime as dt
 from pathlib import Path
 import json
 import os
@@ -229,8 +230,9 @@ def generate_load_time_series(
     """
     # instantiate timeindex
     timeindex = pd.date_range(
-        start=f"{run_config.start_date} 00:00:00",
-        end=f"{run_config.end_date} 23:45:00",
+        start=dt.datetime.fromisoformat(f"{run_config.start_date} 00:00:00"),
+        end=dt.datetime.fromisoformat(f"{run_config.end_date} 23:45:00") +
+            dt.timedelta(minutes=int(run_config.stepsize)),
         freq=f"{int(run_config.stepsize)}Min",
     )
 
