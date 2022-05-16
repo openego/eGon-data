@@ -635,7 +635,7 @@ def write_model_data_to_db(
     print("  Writing model timeseries...")
     load_time_series_df = load_time_series_df.assign(
         ev_availability=(
-            load_time_series_df.flex_time_series
+            load_time_series_df.simultaneous_plugged_in_charging_capacity
             / static_params_dict["link_bev_charger.p_nom_MW"]
         )
     )
