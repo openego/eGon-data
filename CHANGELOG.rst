@@ -498,6 +498,10 @@ Bug Fixes
   `#752 <https://github.com/openego/eGon-data/issues/752>`_
 * Create rural_heat buses only for mv grid districts with heat load
   `#708 <https://github.com/openego/eGon-data/issues/708>`_
+* Solve problem while creating generators series data egon2035
+  `#758 <https://github.com/openego/eGon-data/issues/758>`_
+* Assign new id numbers to objects copied from one to a different scenario
+  `#754 <https://github.com/openego/eGon-data/issues/754>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
