@@ -197,6 +197,7 @@ def import_ch4_storages():
     engine = db.engine()
 
     # Select target from dataset configuration
+    source = config.datasets()["gas_stores"]["source"]
     target = config.datasets()["gas_stores"]["target"]
 
     # TODO move this to function call, how to do it is directly called in task list?
@@ -205,8 +206,14 @@ def import_ch4_storages():
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  WHERE "carrier" = 'CH4'
-        AND scn_name = '{scn_name}';
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
+        WHERE "carrier" = 'CH4'
+        AND scn_name = '{scn_name}'
+        AND bus IN (
+            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+            WHERE scn_name = '{scn_name}' 
+            AND country = 'DE'
+            );
         """
     )
 

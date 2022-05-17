@@ -892,6 +892,7 @@ def insert_generators(capacities):
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
+        AND carrier != 'CH4'
         """
     )
 
@@ -1135,6 +1136,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
+        "RU":   "RU00",
     }
 
 

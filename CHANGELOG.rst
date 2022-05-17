@@ -343,6 +343,8 @@ Changed
 * Add automatic filtering of gas data: Pipelines of length zero and gas buses
   isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
+* Add gas data in neighbouring countries
+  `#727 <https://github.com/openego/eGon-data/issues/727>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
