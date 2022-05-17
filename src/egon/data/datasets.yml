@@ -211,6 +211,8 @@ substation_extraction:
     ehv_substation:
       schema: 'grid'
       table: 'egon_ehv_substation'
+    transfer_busses:
+      table: 'transfer_busses_complete'
 
 substation_voronoi:
   sources:
@@ -258,13 +260,25 @@ society_prognosis:
       table: 'egon_household_prognosis'
 
 scenario_input:
-  eGon2035:
-    paths:
-      "capacities": "NEP2035_V2021_scnC2035.xlsx"
-      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
-  eGon100RE:
-    paths:
-      "capacities": "nodal_capacities.csv"
+  sources:
+    eGon2035:
+      capacities: "NEP2035_V2021_scnC2035.xlsx"
+      list_conv_pp: "Kraftwerksliste_NEP_2021_konv.csv"
+    eGon100RE:
+      capacities: "nodal_capacities.csv"
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+  targets:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    nep_conventional_powerplants:
+      schema: 'supply'
+      table: 'egon_nep_2021_conventional_powerplants'
 
 mastr:
   technologies:
@@ -280,23 +294,16 @@ mastr:
   deposit_id: 808086
 
 re_potential_areas:
-  original_data:
-    source:
-      url:
-        #TODO: finally replace sandbox
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_agriculture.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_road_railway.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_wind.gpkg?download=1"
-      url_testmode:
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_agriculture_SH.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_road_railway_SH.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_wind_SH.gpkg?download=1"
-    target:
-      schema: "supply"
-      path_table_map:
-        "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
-        "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
-        "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
+  target:
+    schema: "supply"
+    path_table_map:
+      "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
+      "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
+      "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
+    path_table_map_testmode:
+      "potentialarea_pv_agriculture_SH.gpkg": "egon_re_potential_area_pv_agriculture"
+      "potentialarea_pv_road_railway_SH.gpkg": "egon_re_potential_area_pv_road_railway"
+      "potentialarea_wind_SH.gpkg": "egon_re_potential_area_wind"
 
 peta5_0_1_res_heat_demands:
   original_data:
@@ -504,7 +511,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5743452
+      deposit_id: 5846441
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -550,7 +557,7 @@ heat_supply:
       schema: 'demand'
       table: 'egon_map_zensus_district_heating_areas'
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
   targets:
     district_heating_supply:
@@ -594,7 +601,7 @@ etrago_heat:
       table: 'egon_peta_heat'
     ch4_voronoi:
       schema: 'grid'
-      table: 'egon_voronoi_ch4'
+      table: 'egon_gas_voronoi'
   targets:
     heat_buses:
       schema: 'grid'
@@ -726,6 +733,9 @@ electrical_load_curves_industry:
 
 etrago_electricity:
   sources:
+    etrago_buses:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
     osm_curves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
@@ -756,7 +766,7 @@ chp_location:
     egon_mv_grid_district: 'grid.egon_mv_grid_district'
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
     osm_landuse:
       table: 'osm_landuse'
@@ -791,7 +801,7 @@ chp_etrago:
       schema: 'demand'
       table: 'egon_district_heating_areas'
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
   targets:
     link:
@@ -840,6 +850,9 @@ DSM_CTS_industry:
 
 generators_etrago:
   sources:
+    bus:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
@@ -858,6 +871,53 @@ generators_etrago:
     etrago_gen_time:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
+
+
+gas_grid:
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+
+
+gas_aggregation:
+  sources:
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+  targets:
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+gas_stores:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+gas_prod:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
 
 weather_BusID:
   sources:
@@ -937,6 +997,9 @@ electrical_neighbours:
     lines:
       schema: 'grid'
       table: 'egon_etrago_line'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
     transformers:
       schema: 'grid'
       table: 'egon_etrago_transformer'
@@ -949,6 +1012,9 @@ electrical_neighbours:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
+    generators_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
     storage:
       schema: 'grid'
       table: 'egon_etrago_storage'

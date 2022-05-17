@@ -24,7 +24,7 @@ class Calculate_dlr(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="dlr",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(dlr,),
         )
@@ -60,11 +60,13 @@ def dlr():
     con = db.engine()
 
     sql = f"""
-    SELECT scn_name, line_id, geom, s_nom FROM
+    SELECT scn_name, line_id, topo, s_nom FROM
     {cfg['sources']['trans_lines']['schema']}.
     {cfg['sources']['trans_lines']['table']}
     """
-    df = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
+    df = gpd.GeoDataFrame.from_postgis(
+        sql, con, crs="EPSG:4326", geom_col="topo"
+    )
 
     trans_lines_R = {}
     for i in regions.Region:
@@ -74,20 +76,22 @@ def dlr():
     trans_lines["in_regions"] = [[] for i in range(len(df))]
 
     trans_lines[["line_id", "geometry", "scn_name"]] = df[
-        ["line_id", "geom", "scn_name"]
+        ["line_id", "topo", "scn_name"]
     ]
-
+    trans_lines = gpd.GeoDataFrame(trans_lines)
     # Assign to each transmission line the region to which it belongs
     for i in trans_lines_R:
         for j in trans_lines_R[i].index:
             trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
+    trans_lines["crossborder"] = ~trans_lines.within(regions.unary_union)
 
     DLR = []
+
     # Assign to each transmision line the final values of DLR based on location
     # and type of line (overhead or underground)
     for i in trans_lines.index:
-        # lines completely out of the Germany border have DLR = 1
-        if len(trans_lines.loc[i][1]) == 0:
+        # The concept of DLR does not apply to crossborder lines
+        if trans_lines.loc[i, "crossborder"] == True:
             DLR.append([1] * 8760)
             continue
         # Underground lines have DLR = 1
@@ -115,7 +119,10 @@ def dlr():
     trans_lines["s_max_pu"] = DLR
 
     # delete unnecessary columns
-    trans_lines.drop(columns=["in_regions", "s_nom", "geometry"], inplace=True)
+    trans_lines.drop(
+        columns=["in_regions", "s_nom", "geometry", "crossborder"],
+        inplace=True,
+    )
 
     # Modify column "s_max_pu" to fit the requirement of the table
     trans_lines["s_max_pu"] = trans_lines.apply(
@@ -269,7 +276,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
             )
 
     # The next loop use the min wind speed and max temperature calculated previously to
-    # define the hourly DLR in for each region based on the table given by NEP 2020 pag 31
+    # define the hourly DLR for each region based on the table given by NEP 2020 pag 31
     for i in range(0, len(regions)):
         for j in range(0, len(time)):
             if dlr.iloc[j, 1 + i * 3] <= 5:

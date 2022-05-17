@@ -33,6 +33,7 @@ def insert_buses(carrier, scenario):
         DELETE FROM {target['schema']}.{target['table']}
         WHERE scn_name = '{scenario}'
         AND carrier = '{carrier}'
+        AND country = 'DE'
         """
     )
 
@@ -99,6 +100,7 @@ def insert_store(scenario, carrier):
         {targets['heat_buses']['table']}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
+        AND country = 'DE'
         """
     )
     db.execute_sql(
@@ -107,6 +109,18 @@ def insert_store(scenario, carrier):
         {targets['heat_links']['table']}
         WHERE carrier LIKE '{carrier}_store%'
         AND scn_name = '{scenario}'
+        AND bus0 IN
+        (SELECT bus_id
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN
+        (SELECT bus_id
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
     db.execute_sql(
@@ -115,6 +129,12 @@ def insert_store(scenario, carrier):
         {targets['heat_stores']['table']}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
+        AND bus IN
+        (SELECT bus_id
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -125,6 +145,7 @@ def insert_store(scenario, carrier):
         {targets['heat_buses']['table']}
         WHERE carrier = '{carrier}'
         AND scn_name = '{scenario}'
+        AND country = 'DE'
         """,
         epsg=4326,
     )
@@ -150,7 +171,7 @@ def insert_store(scenario, carrier):
             "bus0": dh_bus.bus_id,
             "bus1": water_tank_bus.bus_id,
             "carrier": carrier + "_store_charger",
-            "efficiency_fixed": get_sector_parameters("heat", "eGon2035")[
+            "efficiency": get_sector_parameters("heat", "eGon2035")[
                 "efficiency"
             ]["water_tank_charger"],
             "p_nom_extendable": True,
@@ -175,7 +196,7 @@ def insert_store(scenario, carrier):
             "bus0": water_tank_bus.bus_id,
             "bus1": dh_bus.bus_id,
             "carrier": carrier + "_store_discharger",
-            "efficiency_fixed": get_sector_parameters("heat", "eGon2035")[
+            "efficiency": get_sector_parameters("heat", "eGon2035")[
                 "efficiency"
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
@@ -201,6 +222,9 @@ def insert_store(scenario, carrier):
             "carrier": carrier + "_store",
             "capital_cost": get_sector_parameters("heat", "eGon2035")[
                 "capital_cost"
+            ][f"{carrier.split('_')[0]}_water_tank"],
+            "lifetime": get_sector_parameters("heat", "eGon2035")[
+                "lifetime"
             ][f"{carrier.split('_')[0]}_water_tank"],
             "e_nom_extendable": True,
             "store_id": range(
@@ -246,6 +270,12 @@ def insert_central_direct_heat(scenario="eGon2035"):
         {targets['heat_generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
+        AND bus IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -387,7 +417,7 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         f"""
         SELECT c.bus_id as bus0, b.bus_id as bus1,
         capacity, a.carrier, scenario as scn_name
-        FROM  {sources['district_heating_supply']['schema']}.
+        FROM {sources['district_heating_supply']['schema']}.
         {sources['district_heating_supply']['table']} a
         JOIN {targets['heat_buses']['schema']}.
         {targets['heat_buses']['table']} b
@@ -399,6 +429,8 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='central_heat'
+        AND c.carrier='CH4'
+        AND c.scn_name = '{scenario}'
         """
     )
 
@@ -406,13 +438,13 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
     # Add efficiency of gas boilers
-    central_boilers["efficiency_fixed"] = get_sector_parameters(
+    central_boilers["efficiency"] = get_sector_parameters(
         "heat", "eGon2035"
     )["efficiency"]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     central_boilers["p_nom"] = central_boilers.capacity.div(
-        central_boilers.efficiency_fixed
+        central_boilers.efficiency
     )
 
     # Drop unused columns
@@ -456,6 +488,18 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         {targets['heat_links']['table']}
         WHERE carrier  = 'rural_gas_boiler'
         AND scn_name = '{scenario}'
+        AND bus0 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        AND bus1 IN 
+        (SELECT bus_id 
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
         """
     )
 
@@ -475,6 +519,8 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         AND b.scn_name = '{scenario}'
         AND a.carrier = 'gas_boiler'
         AND b.carrier='rural_heat'
+        AND c.carrier='CH4'
+        AND c.scn_name = '{scenario}'
         """
     )
 
@@ -482,13 +528,13 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
     rural_boilers = link_geom_from_buses(rural_boilers, scenario)
 
     # Add efficiency of gas boilers
-    rural_boilers["efficiency_fixed"] = get_sector_parameters(
+    rural_boilers["efficiency"] = get_sector_parameters(
         "heat", "eGon2035"
     )["efficiency"]["rural_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     rural_boilers["p_nom"] = rural_boilers.capacity.div(
-        rural_boilers.efficiency_fixed
+        rural_boilers.efficiency
     )
 
     # Drop unused columns
@@ -551,7 +597,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )

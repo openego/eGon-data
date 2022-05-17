@@ -10,6 +10,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.etrago_setup as etrago
 
 
@@ -17,7 +18,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.0",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -469,7 +470,7 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
         DELETE FROM {targets['transformers']['schema']}.
         {targets['transformers']['table']}
         WHERE scn_name = '{scenario}'
-        AND trafo_id IN (
+        AND trafo_id NOT IN (
             SELECT branch_id
             FROM {sources['osmtgmod_branch']['schema']}.
             {sources['osmtgmod_branch']['table']}
@@ -526,6 +527,138 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
     )
 
 
+def foreign_dc_lines(scenario, sources, targets, central_buses):
+    """Insert DC lines to foreign countries manually
+
+    Parameters
+    ----------
+    sources : dict
+        List of dataset sources
+    targets : dict
+        List of dataset targets
+    central_buses : geopandas.GeoDataFrame
+        Buses in the center of foreign countries
+
+    Returns
+    -------
+    None.
+
+    """
+    # Delete existing dc lines to foreign countries
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['links']['schema']}.
+        {targets['links']['table']}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'DC'
+        AND bus0 IN (
+            SELECT bus_id
+            FROM {sources['electricity_buses']['schema']}.
+            {sources['electricity_buses']['table']}
+              WHERE scn_name = '{scenario}'
+              AND carrier = 'AC'
+              AND country = 'DE')
+        AND bus1 IN (
+            SELECT bus_id
+            FROM {sources['electricity_buses']['schema']}.
+            {sources['electricity_buses']['table']}
+              WHERE scn_name = '{scenario}'
+              AND carrier = 'AC'
+              AND country != 'DE')
+        """
+    )
+    capital_cost = get_sector_parameters("electricity", "eGon2035")[
+        "capital_cost"
+    ]
+
+    # Add DC line from Lübeck to Sweden
+    converter_luebeck = db.select_dataframe(
+        f"""
+        SELECT bus_id FROM
+        {sources['electricity_buses']['schema']}.
+        {sources['electricity_buses']['table']}
+        WHERE x = 10.802358024202768
+        AND y = 53.897547401787
+        AND v_nom = 380
+        AND scn_name = '{scenario}'
+        AND carrier = 'AC'
+        """
+    ).squeeze()
+
+    foreign_links = pd.DataFrame(
+        index=[0],
+        data={
+            "link_id": db.next_etrago_id("link"),
+            "bus0": converter_luebeck,
+            "bus1": central_buses[
+                (central_buses.country == "SE") & (central_buses.v_nom == 380)
+            ]
+            .squeeze()
+            .bus_id,
+            "p_nom": 600,
+            "length": 262,
+        },
+    )
+
+    # When not in test-mode, add DC line from Bentwisch to Denmark
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
+        converter_bentwisch = db.select_dataframe(
+            f"""
+            SELECT bus_id FROM
+            {sources['electricity_buses']['schema']}.
+            {sources['electricity_buses']['table']}
+            WHERE x = 12.214770465804179
+            AND y = 54.100265527140884
+            AND v_nom = 380
+            AND scn_name = '{scenario}'
+            AND carrier = 'AC'
+            """
+        ).squeeze()
+
+        foreign_links = foreign_links.append(
+            pd.DataFrame(
+                index=[1],
+                data={
+                    "link_id": db.next_etrago_id("link") + 1,
+                    "bus0": converter_bentwisch,
+                    "bus1": central_buses[
+                        (central_buses.country == "DK")
+                        & (central_buses.v_nom == 380)
+                        & (central_buses.x > 10)
+                    ]
+                    .squeeze()
+                    .bus_id,
+                    "p_nom": 600,
+                    "length": 170,
+                },
+            )
+        )
+
+    # Set parameters for all DC lines
+    foreign_links["capital_cost"] = (
+        capital_cost["dc_cable"] * foreign_links.length
+        + 2 * capital_cost["dc_inverter"]
+    )
+    foreign_links["p_min_pu"] = -1
+    foreign_links["p_nom_extendable"] = True
+    foreign_links["p_nom_min"] = foreign_links["p_nom"]
+    foreign_links["scn_name"] = scenario
+    foreign_links["carrier"] = "DC"
+    foreign_links["efficiency"] = 1
+
+    # Add topology
+    foreign_links = etrago.link_geom_from_buses(foreign_links, scenario)
+
+    # Insert DC lines to the database
+    foreign_links.to_postgis(
+        targets["links"]["table"],
+        schema=targets["links"]["schema"],
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
+
+
 def grid():
     """Insert electrical grid compoenents for neighbouring countries
 
@@ -549,6 +682,8 @@ def grid():
         central_transformer(
             scenario, sources, targets, central_buses, foreign_lines
         )
+
+        foreign_dc_lines(scenario, sources, targets, central_buses)
 
 
 def map_carriers_tyndp():
@@ -711,6 +846,7 @@ def calc_capacities():
     df_2035 = pd.DataFrame(index=df_2030.index)
     df_2035["cap_2030"] = df_2030.Value
     df_2035["cap_2040"] = df_2040.Value
+    df_2035.fillna(0.0, inplace=True)
     df_2035["cap_2035"] = (
         df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
     )
@@ -758,6 +894,19 @@ def insert_generators(capacities):
         """
     )
 
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['generators_timeseries']['schema']}.
+        {targets['generators_timeseries']['table']}
+        WHERE generator_id NOT IN (
+            SELECT generator_id FROM
+            {targets['generators']['schema']}.{targets['generators']['table']}
+        )
+        AND scn_name = 'eGon2035'
+        """
+    )
+
     # Select generators from TYNDP capacities
     gen = capacities[
         capacities.carrier.isin(
@@ -790,7 +939,7 @@ def insert_generators(capacities):
         get_foreign_bus_id().loc[gen.loc[:, "Node/Line"]].values
     )
 
-    # insert data
+    # insert generators data
     session = sessionmaker(bind=db.engine())()
     for i, row in gen.iterrows():
         entry = etrago.EgonPfHvGenerator(
@@ -799,6 +948,75 @@ def insert_generators(capacities):
             bus=row.bus,
             carrier=row.carrier,
             p_nom=row.cap_2035,
+        )
+
+        session.add(entry)
+        session.commit()
+
+    # assign generators time-series data
+    map_carriers = {
+        "onwind": "wind_onshore",
+        "offwind-ac": "wind_offshore",
+        "offwind-dc": "wind_offshore",
+        "solar": "solar",
+    }
+
+    sql = f"""SELECT * FROM
+    {targets['generators_timeseries']['schema']}.
+    {targets['generators_timeseries']['table']}
+    WHERE scn_name = 'eGon100RE'
+    """
+    series_egon100 = pd.read_sql_query(sql, db.engine())
+
+    sql = f""" SELECT * FROM
+    {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE bus IN (
+        SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon2035')
+        AND scn_name = 'eGon2035'
+    """
+    gen_2035 = pd.read_sql_query(sql, db.engine())
+    gen_2035 = gen_2035[gen_2035.carrier.isin(map_carriers.values())]
+
+    sql = f""" SELECT * FROM
+    {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE bus IN (
+        SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon100RE')
+        AND scn_name = 'eGon100RE'
+    """
+    gen_100 = pd.read_sql_query(sql, db.engine())
+
+    gen_100["carrier"] = gen_100["carrier"].map(map_carriers)
+    gen_100 = gen_100[gen_100["carrier"].notna()]
+
+    # egon_2035_to_100 map the timeseries used in the scenario eGon100RE
+    # to the same bus and carrier for the scenario egon2035
+    egon_2035_to_100 = {}
+    for i, gen in gen_2035.iterrows():
+        gen_id_100 = gen_100[
+            (gen_100["bus"] == gen["bus"])
+            & (gen_100["carrier"] == gen["carrier"])
+        ]["generator_id"].values[0]
+
+        egon_2035_to_100[gen["generator_id"]] = gen_id_100
+
+    # insert generators_timeseries data
+    session = sessionmaker(bind=db.engine())()
+
+    for gen_id in gen_2035.generator_id:
+        serie = series_egon100[
+            series_egon100.generator_id == egon_2035_to_100[gen_id]
+        ]["p_max_pu"].values[0]
+        entry = etrago.EgonPfHvGeneratorTimeseries(
+            scn_name="eGon2035",
+            generator_id=gen_id,
+            temp_id=1,
+            p_max_pu=serie,
         )
 
         session.add(entry)
@@ -1012,7 +1230,7 @@ def tyndp_demand():
             data_2040 = data_2030
 
         # According to the NEP, data for 2030 and 2040 is linear interpolated
-        data_2035 = ((data_2030 + data_2040) / 2)[:8760] * 1e-3
+        data_2035 = ((data_2030 + data_2040) / 2)[:8760]
 
         entry = etrago.EgonPfHvLoad(
             scn_name="eGon2035",

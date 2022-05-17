@@ -18,6 +18,7 @@ from egon.data import __path__, db
 from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subproc
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def run_pypsa_eur_sec():
@@ -113,160 +114,6 @@ def run_pypsa_eur_sec():
             "--conda-frontend=conda",
             "Main",
         ]
-    )
-
-
-def eGon100_capacities():
-    """Inserts installed capacities for the eGon100 scenario
-
-    Returns
-    -------
-    None.
-
-    """
-    # read-in installed capacities
-    execute_pypsa_eur_sec = False
-    cwd = Path(".")
-
-    if execute_pypsa_eur_sec:
-        filepath = cwd / "run-pypsa-eur-sec"
-        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-        # Read YAML file
-        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
-        with open(pes_egonconfig, "r") as stream:
-            data_config = yaml.safe_load(stream)
-
-        target_file = (
-            pypsa_eur_sec_repos
-            / "results"
-            / data_config["run"]
-            / "csvs"
-            / "nodal_capacities.csv"
-        )
-
-    else:
-        target_file = (
-            cwd
-            / "data_bundle_egon_data"
-            / "pypsa_eur_sec"
-            / "2021-egondata-integration"
-            / "csvs"
-            / "nodal_capacities.csv"
-        )
-
-    df = pd.read_csv(target_file, skiprows=5)
-    df.columns = ["component", "country", "carrier", "p_nom"]
-
-    df.set_index("carrier", inplace=True)
-
-    df = df[df.country.str[:2] == "DE"]
-
-    # Drop country column
-    df.drop("country", axis=1, inplace=True)
-
-    # Drop copmponents which will be optimized in eGo
-    unused_carrier = [
-        "BEV charger",
-        "DAC",
-        "H2 Electrolysis",
-        "electricity distribution grid",
-        "home battery charger",
-        "home battery discharger",
-        "H2",
-        "Li ion",
-        "home battery",
-        "residential rural water tanks charger",
-        "residential rural water tanks discharger",
-        "services rural water tanks charger",
-        "services rural water tanks discharger",
-        "residential rural water tanks",
-        "services rural water tanks",
-        "urban central water tanks",
-        "urban central water tanks charger",
-        "urban central water tanks discharger",
-        "H2 Fuel Cell",
-    ]
-
-    df = df[~df.index.isin(unused_carrier)]
-
-    df.index = df.index.str.replace(" ", "_")
-
-    # Aggregate offshore wind
-    df = df.append(
-        pd.DataFrame(
-            index=["wind_offshore"],
-            data={
-                "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
-                "component": df.component["offwind-ac"],
-            },
-        )
-    )
-    df = df.drop(["offwind-ac", "offwind-dc"])
-
-    # Aggregate technologies with and without carbon_capture (CC)
-    for carrier in ["SMR", "urban_central_gas_CHP"]:
-        df.p_nom[carrier] += df.p_nom[f"{carrier}_CC"]
-        df = df.drop([f"{carrier}_CC"])
-
-    # Aggregate residential and services rural heat supply
-    for merge_carrier in [
-        "rural_resistive_heater",
-        "rural_ground_heat_pump",
-        "rural_gas_boiler",
-        "rural_solar_thermal",
-    ]:
-        df = df.append(
-            pd.DataFrame(
-                index=[merge_carrier],
-                data={
-                    "p_nom": (
-                        df.p_nom[f"residential_{merge_carrier}"]
-                        + df.p_nom[f"services_{merge_carrier}"]
-                    ),
-                    "component": df.component[f"residential_{merge_carrier}"],
-                },
-            )
-        )
-        df = df.drop(
-            [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
-        )
-
-    # Rename carriers
-    df.rename(
-        {
-            "onwind": "wind_onshore",
-            "ror": "run_of_river",
-            "PHS": "pumped_hydro",
-            "OCGT": "gas",
-            "rural_ground_heat_pump": "rural_heat_pump",
-        },
-        inplace=True,
-    )
-
-    # Reset index
-    df = df.reset_index()
-
-    # Rename columns
-    df.rename(
-        {"p_nom": "capacity", "index": "carrier"}, axis="columns", inplace=True
-    )
-
-    df["scenario_name"] = "eGon100RE"
-    df["nuts"] = "DE"
-
-    db.execute_sql(
-        """
-        DELETE FROM supply.egon_scenario_capacities
-        WHERE scenario_name='eGon100RE'
-        """
-    )
-
-    df.to_sql(
-        "egon_scenario_capacities",
-        schema="supply",
-        con=db.engine(),
-        if_exists="append",
-        index=False,
     )
 
 
@@ -618,10 +465,6 @@ def neighbor_reduction():
     #               "AND country <> 'DE'")
 
     neighbors["scn_name"] = "eGon100RE"
-
-    neighbors = neighbors.rename(
-        columns={"v_mag_pu_set": "v_mag_pu_set_fixed"}
-    )
     neighbors.index = neighbors["new_index"]
 
     for i in ["new_index", "control", "generator", "location", "sub_network"]:
@@ -649,10 +492,6 @@ def neighbor_reduction():
     # prepare and write neighboring crossborder lines to etrago tables
     def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE"):
         neighbor_lines["scn_name"] = scn
-
-        neighbor_lines = neighbor_lines.rename(
-            columns={"s_max_pu": "s_max_pu_fixed"}
-        )
         neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(
             int
         )
@@ -685,6 +524,10 @@ def neighbor_reduction():
             .set_crs(4326)
         )
 
+        neighbor_lines["lifetime"] = get_sector_parameters("electricity", scn)[
+            "lifetime"
+        ]["ac_ehv_overhead_line"]
+
         neighbor_lines.to_postgis(
             "egon_etrago_line",
             engine,
@@ -700,16 +543,6 @@ def neighbor_reduction():
     # prepare and write neighboring crossborder links to etrago tables
     def links_to_etrago(neighbor_links, scn="eGon100RE"):
         neighbor_links["scn_name"] = scn
-
-        neighbor_links = neighbor_links.rename(
-            columns={
-                "efficiency": "efficiency_fixed",
-                "p_min_pu": "p_min_pu_fixed",
-                "p_max_pu": "p_max_pu_fixed",
-                "p_set": "p_set_fixed",
-                "marginal_cost": "marginal_cost_fixed",
-            }
-        )
 
         for i in [
             "name",
@@ -759,13 +592,6 @@ def neighbor_reduction():
     neighbor_gens["scn_name"] = "eGon100RE"
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
     neighbor_gens["p_nom_extendable"] = False
-    neighbor_gens = neighbor_gens.rename(
-        columns={
-            "marginal_cost": "marginal_cost_fixed",
-            "p_min_pu": "p_min_pu_fixed",
-            "p_max_pu": "p_max_pu_fixed",
-        }
-    )
 
     for i in ["name", "weight", "lifetime", "p_set", "q_set", "p_nom_opt"]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
@@ -796,13 +622,6 @@ def neighbor_reduction():
 
     # prepare neighboring stores for etrago tables
     neighbor_stores["scn_name"] = "eGon100RE"
-    neighbor_stores = neighbor_stores.rename(
-        columns={
-            "marginal_cost": "marginal_cost_fixed",
-            "e_min_pu": "e_min_pu_fixed",
-            "e_max_pu": "e_max_pu_fixed",
-        }
-    )
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
@@ -818,17 +637,6 @@ def neighbor_reduction():
 
     # prepare neighboring storage_units for etrago tables
     neighbor_storage["scn_name"] = "eGon100RE"
-    neighbor_storage = neighbor_storage.rename(
-        columns={
-            "marginal_cost": "marginal_cost_fixed",
-            "p_min_pu": "p_min_pu_fixed",
-            "p_max_pu": "p_max_pu_fixed",
-            "state_of_charge_set": "state_of_charge_set_fixed",
-            "inflow": "inflow_fixed",
-            "p_set": "p_set_fixed",
-            "q_set": "q_set_fixed",
-        }
-    )
 
     for i in ["name", "p_nom_opt"]:
         neighbor_storage = neighbor_storage.drop(i, axis=1)
@@ -954,16 +762,16 @@ def neighbor_reduction():
 execute_pypsa_eur_sec = False
 
 if execute_pypsa_eur_sec:
-    tasks = (run_pypsa_eur_sec, {eGon100_capacities, neighbor_reduction})
+    tasks = (run_pypsa_eur_sec, neighbor_reduction)
 else:
-    tasks = {eGon100_capacities, neighbor_reduction}
+    tasks = neighbor_reduction
 
 
 class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.1",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks,
         )
