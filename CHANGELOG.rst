@@ -343,6 +343,8 @@ Changed
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Aggregate NUTS3 industrial loads for CH4 and H2
+  `#452 <https://github.com/openego/eGon-data/issues/452>`_
 
 Bug Fixes
 ---------
