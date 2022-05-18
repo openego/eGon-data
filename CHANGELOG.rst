@@ -357,6 +357,8 @@ Changed
   `#627 <https://github.com/openego/eGon-data/issues/627>`_
 * Include electricity storages for eGon100RE scenario
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
+* Update deposit id to access v0.7 of the zenodo repository
+  `#736 <https://github.com/openego/eGon-data/issues/736>`_
 
 
 Bug Fixes
@@ -491,12 +493,6 @@ Bug Fixes
   `#724 <https://github.com/openego/eGon-data/issues/724>`_
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
-* Fix voronoi assignemnt for enclaves
-  `#734 <https://github.com/openego/eGon-data/issues/734>`_
-* Set lengths of non-pipeline links to 0
-  `#741 <https://github.com/openego/eGon-data/issues/741>`_
-* Create rural_heat buses only for mv grid districts with heat load
-  `#708 <https://github.com/openego/eGon-data/issues/708>`_
 * Fix country_code attribution of two gas buses
   `#710 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
@@ -512,6 +508,8 @@ Bug Fixes
   `#752 <https://github.com/openego/eGon-data/issues/752>`_
 * Create rural_heat buses only for mv grid districts with heat load
   `#708 <https://github.com/openego/eGon-data/issues/708>`_
+* Solve problem while creating generators series data egon2035
+  `#758 <https://github.com/openego/eGon-data/issues/758>`_
 * Assign new id numbers to objects copied from one to a different scenario
   `#754 <https://github.com/openego/eGon-data/issues/754>`_
 
