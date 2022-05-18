@@ -353,6 +353,8 @@ Changed
   `#627 <https://github.com/openego/eGon-data/issues/627>`_
 * Include electricity storages for eGon100RE scenario
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
+* Update deposit id to access v0.7 of the zenodo repository
+  `#736 <https://github.com/openego/eGon-data/issues/736>`_
 
 
 Bug Fixes
