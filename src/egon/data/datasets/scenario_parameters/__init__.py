@@ -163,6 +163,7 @@ def get_sector_parameters(sector, scenario=None):
 
     return values
 
+
 def download_pypsa_technology_data():
     """Downlad PyPSA technology data results."""
     data_path = Path(".") / "pypsa_technology_data"
@@ -184,11 +185,16 @@ def download_pypsa_technology_data():
     with zipfile.ZipFile(target_file, "r") as zip_ref:
         zip_ref.extractall(".")
 
+
 class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
-            tasks=(create_table, download_pypsa_technology_data, insert_scenarios),
+            tasks=(
+                create_table,
+                download_pypsa_technology_data,
+                insert_scenarios,
+            ),
         )

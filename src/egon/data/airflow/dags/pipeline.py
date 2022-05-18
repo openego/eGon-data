@@ -14,6 +14,7 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
+from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -26,6 +27,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
@@ -164,6 +166,9 @@ with airflow.DAG(
         ]
     )
 
+    # Fix eHV subnetworks in Germany manually
+    fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
+
     # Run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -231,7 +236,9 @@ with airflow.DAG(
 
     # TODO: What does "trans" stand for?
     # Calculate dynamic line rating for HV (high voltage) trans lines
-    dlr = Calculate_dlr(dependencies=[data_bundle, osmtgmod, weather_data])
+    dlr = Calculate_dlr(
+        dependencies=[data_bundle, osmtgmod, weather_data, fix_subnetworks]
+    )
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
@@ -328,6 +335,14 @@ with airflow.DAG(
             osmtgmod,
             scenario_parameters,
             tasks["etrago_setup.create-tables"],
+        ]
+    )
+
+    # Gas abroad
+    gas_abroad_insert_data = GasNeighbours(
+        dependencies=[
+            gas_grid_insert_data,
+            foreign_lines,
         ]
     )
 
