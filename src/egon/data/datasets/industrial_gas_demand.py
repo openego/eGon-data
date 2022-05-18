@@ -378,7 +378,7 @@ def insert_new_entries(industrial_gas_demand, scn_name):
         if_exists="append",
     )
 
-    return industrial_gas_demand, load_id, load_id_grouped
+    return industrial_gas_demand
 
 
 def insert_industrial_gas_demand_egon2035():
@@ -415,15 +415,6 @@ def insert_industrial_gas_demand_egon100RE():
     ----------
     scn_name : str
         Name of the scenario
-
-    Parameters
-    ----------
-    industrial_gas_demand : Dataframe
-            Dataframe containing the industrial gas demand in Germany
-        load_id : list
-            IDs of the loads that should be aggregated
-        load_id_grouped :list
-            List of lists containing the load ID that belong together
 
     Returns
     -------
