@@ -19,7 +19,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -956,12 +956,7 @@ def insert_generators(capacities):
         session.commit()
 
     # assign generators time-series data
-    map_carriers = {
-        "onwind": "wind_onshore",
-        "offwind-ac": "wind_offshore",
-        "offwind-dc": "wind_offshore",
-        "solar": "solar",
-    }
+    renew_carriers_2035 = ["wind_onshore", "wind_offshore", "solar"]
 
     sql = f"""SELECT * FROM
     {targets['generators_timeseries']['schema']}.
@@ -980,7 +975,7 @@ def insert_generators(capacities):
         AND scn_name = 'eGon2035'
     """
     gen_2035 = pd.read_sql_query(sql, db.engine())
-    gen_2035 = gen_2035[gen_2035.carrier.isin(map_carriers.values())]
+    gen_2035 = gen_2035[gen_2035.carrier.isin(renew_carriers_2035)]
 
     sql = f""" SELECT * FROM
     {targets['generators']['schema']}.{targets['generators']['table']}
@@ -992,9 +987,7 @@ def insert_generators(capacities):
         AND scn_name = 'eGon100RE'
     """
     gen_100 = pd.read_sql_query(sql, db.engine())
-
-    gen_100["carrier"] = gen_100["carrier"].map(map_carriers)
-    gen_100 = gen_100[gen_100["carrier"].notna()]
+    gen_100 = gen_100[gen_100["carrier"].isin(renew_carriers_2035)]
 
     # egon_2035_to_100 map the timeseries used in the scenario eGon100RE
     # to the same bus and carrier for the scenario egon2035
