@@ -61,35 +61,36 @@ def sanitycheck_eGon2035_electricity():
 
     for carrier in carriers_electricity:
 
-        sum_output = db.select_dataframe(
-            f"""SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_mw
-                 FROM grid.egon_etrago_generator
-                 WHERE scn_name = '{scn}'
-                 AND carrier IN ('{carrier}')
-                 AND bus IN
-                     (SELECT bus_id
-                       FROM grid.egon_etrago_bus
-                       WHERE scn_name = 'eGon2035'
-                       AND country = 'DE')
-                 GROUP BY (scn_name);
-            """
-        )
-
         if carrier == 'biomass':
-            sum_input = db.select_dataframe(
-                """SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as input_capacity_mw
+            sum_output = db.select_dataframe(
+                """SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_mw
                     FROM grid.egon_etrago_generator
                     WHERE bus IN (
                         SELECT bus_id FROM grid.egon_etrago_bus
                         WHERE scn_name = 'eGon2035'
                         AND country = 'DE')
-                    AND carrier IN ('central_biomass_CHP_heat', 'biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
+                    AND carrier IN ('biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
                     GROUP BY (scn_name);
                 """
             )
 
         else:
-            sum_input = db.select_dataframe(
+            sum_output = db.select_dataframe(
+                    f"""SELECT scn_name, ROUND(SUM(p_nom::numeric), 2) as output_capacity_mw
+                         FROM grid.egon_etrago_generator
+                         WHERE scn_name = '{scn}'
+                         AND carrier IN ('{carrier}')
+                         AND bus IN
+                             (SELECT bus_id
+                               FROM grid.egon_etrago_bus
+                               WHERE scn_name = 'eGon2035'
+                               AND country = 'DE')
+                         GROUP BY (scn_name);
+                    """
+                )
+
+
+        sum_input = db.select_dataframe(
                 f"""SELECT carrier, ROUND(SUM(capacity::numeric), 2) as input_capacity_mw
                      FROM supply.egon_scenario_capacities
                      WHERE carrier= '{carrier}'
@@ -130,14 +131,14 @@ def sanitycheck_eGon2035_electricity():
             g = sum_input["error"].values[0]
 
             print(
-                f"'{carrier}': "
-                + str(round(g, 2)) + " %"
-            )
-
+                f"{carrier}: "
+                + str(round(g, 2))
+                + " %"
+                )
 
     # Section to check storage capacities
 
-    sum_installed_storage_cap_DE = db.select_dataframe(
+    sum_installed_storage = db.select_dataframe(
         f"""SELECT scn_name, a.carrier, ROUND(SUM(p_nom::numeric), 2) as capacity_mw, ROUND(c.capacity::numeric, 2) as target_capacity
              FROM grid.egon_etrago_storage a
              JOIN supply.egon_scenario_capacities c
@@ -147,25 +148,26 @@ def sanitycheck_eGon2035_electricity():
                  WHERE scn_name = '{scn}'
                  AND country = 'DE')
              AND c.scenario_name='{scn}'
+             AND a.scn_name = '{scn}'
              GROUP BY (scn_name, a.carrier, c.capacity);
 
         """
     )
 
-    sum_installed_storage_cap_DE["Error"] = (
+    sum_installed_storage["Error"] = (
         (
-            sum_installed_storage_cap_DE["capacity_mw"]
-            - sum_installed_storage_cap_DE["target_capacity"]
+            sum_installed_storage["capacity_mw"]
+            - sum_installed_storage["target_capacity"]
         )
-        / sum_installed_storage_cap_DE["target_capacity"]
+        / sum_installed_storage["target_capacity"]
     ) * 100
 
-    e = sum_installed_storage_cap_DE["Error"].values[0]
+    e = sum_installed_storage["Error"].values[0]
+
 
     print(
-        "The target value for carrier 'pumped_hydro' differs by "
-        + str(round(e, 2))
-        + f" % from the input value in scenario {scn}."
+        "pumped hydro storages: "
+        + str(round(e, 2)) + " %"
     )
 
 
