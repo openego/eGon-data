@@ -191,6 +191,11 @@ UPDATE grid.egon_hvmv_substation
 SET voltage = (SELECT REPLACE (voltage, '-', ''))
 WHERE voltage LIKE '%-%';
 
+-- Copy final table for debugging
+
+CREATE TABLE grid.egon_hvmv_substation_debugging AS 
+TABLE grid.egon_hvmv_substation;
+
 -- drop
 --DROP VIEW IF EXISTS grid.egon_final_result CASCADE;
 --DROP MATERIALIZED VIEW IF EXISTS grid.egon_substations_to_drop CASCADE;
