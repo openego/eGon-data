@@ -112,7 +112,7 @@ def insert():
     # Add marginal cost which is only VOM in case of gas chp
     chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
         "marginal_cost"
-    ]["gas_chp"]
+    ]["chp_gas"]
 
     # Insert into database
     chp_el.to_postgis(
@@ -242,7 +242,7 @@ def insert():
     # Add marginal cost which is only VOM in case of gas chp
     chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
         "marginal_cost"
-    ]["gas_chp"]
+    ]["chp_gas"]
 
     chp_el_ind.to_postgis(
         targets["link"]["table"],
