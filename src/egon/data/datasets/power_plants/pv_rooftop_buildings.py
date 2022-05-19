@@ -6,6 +6,7 @@ Distribute PV rooftop capacities to buildings
 import pandas as pd
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import REAL, Column, Integer, String, Table, func, inspect, ForeignKey
+import random
 #from geoalchemy2 import Geometry
 #from shapely.geometry import Point
 
@@ -17,6 +18,7 @@ from egon.data.datasets.scenario_parameters import EgonScenario
 
 engine = db.engine()
 Base = declarative_base()
+RANDOM_SEED = config.settings()["egon-data"]["--random-seed"]
 
 
 class EgonPowerPlantPvRoofBuildingMapping(Base):
@@ -85,6 +87,10 @@ def load_building_data():
 
 def allocate_to_buildings(pv_units, buildings):
     """Do the allocation"""
+
+    # Please init random stuff (generic and np) with global RANDOM_SEED for
+    # reproducibility
+    
     return []
 
 
@@ -108,7 +114,7 @@ def create_mapping_table(alloc_data):
 
 
 def pv_rooftop_to_buildings():
-    """Main script"""
+    """Main script, executed as task"""
 
     pv_units = load_mastr_data()
     buildings = load_building_data()
