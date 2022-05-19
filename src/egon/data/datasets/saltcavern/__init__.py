@@ -92,7 +92,7 @@ class SaltcavernData(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SaltcavernData",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(to_postgres,),
         )

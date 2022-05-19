@@ -3,22 +3,23 @@
 
 import zipfile
 
-from shapely.geometry import LineString
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import LineString
+from sqlalchemy.orm import sessionmaker
 
+import egon.data.datasets.etrago_setup as etrago
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.datasets.etrago_setup as etrago
 
 
 class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.4",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -891,6 +892,7 @@ def insert_generators(capacities):
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
+        AND carrier != 'CH4'
         """
     )
 
@@ -954,12 +956,7 @@ def insert_generators(capacities):
         session.commit()
 
     # assign generators time-series data
-    map_carriers = {
-        "onwind": "wind_onshore",
-        "offwind-ac": "wind_offshore",
-        "offwind-dc": "wind_offshore",
-        "solar": "solar",
-    }
+    renew_carriers_2035 = ["wind_onshore", "wind_offshore", "solar"]
 
     sql = f"""SELECT * FROM
     {targets['generators_timeseries']['schema']}.
@@ -978,7 +975,7 @@ def insert_generators(capacities):
         AND scn_name = 'eGon2035'
     """
     gen_2035 = pd.read_sql_query(sql, db.engine())
-    gen_2035 = gen_2035[gen_2035.carrier.isin(map_carriers.values())]
+    gen_2035 = gen_2035[gen_2035.carrier.isin(renew_carriers_2035)]
 
     sql = f""" SELECT * FROM
     {targets['generators']['schema']}.{targets['generators']['table']}
@@ -990,9 +987,7 @@ def insert_generators(capacities):
         AND scn_name = 'eGon100RE'
     """
     gen_100 = pd.read_sql_query(sql, db.engine())
-
-    gen_100["carrier"] = gen_100["carrier"].map(map_carriers)
-    gen_100 = gen_100[gen_100["carrier"].notna()]
+    gen_100 = gen_100[gen_100["carrier"].isin(renew_carriers_2035)]
 
     # egon_2035_to_100 map the timeseries used in the scenario eGon100RE
     # to the same bus and carrier for the scenario egon2035
@@ -1053,6 +1048,15 @@ def insert_storage(capacities):
         """
     )
 
+    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
+        "efficiency"
+    ]["pumped_hydro"]
+
+    parameters_battery = scenario_parameters.electricity("eGon2035")[
+        "efficiency"
+    ]["battery"]
+
     # Select storage capacities from TYNDP-data
     store = capacities[capacities.carrier.isin(["battery", "pumped_hydro"])]
 
@@ -1069,6 +1073,21 @@ def insert_storage(capacities):
         get_foreign_bus_id().loc[store.loc[:, "Node/Line"]].values
     )
 
+    # Add columns for additional parameters to df
+    store["dispatch"], store["store"], store["standing_loss"], store[
+        "max_hours"
+    ] = (None, None, None, None)
+
+    # Insert carrier specific parameters
+
+    parameters = ["dispatch", "store", "standing_loss", "max_hours"]
+
+    for x in parameters:
+        store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
+        store.loc[
+            store["carrier"] == "pumped_hydro", x
+        ] = parameters_pumped_hydro[x]
+
     # insert data
     session = sessionmaker(bind=db.engine())()
     for i, row in store.iterrows():
@@ -1076,7 +1095,10 @@ def insert_storage(capacities):
             scn_name="eGon2035",
             storage_id=int(db.next_etrago_id("storage")),
             bus=row.bus,
-            max_hours=6,
+            max_hours=row.max_hours,
+            efficiency_store=row.store,
+            efficiency_dispatch=row.dispatch,
+            standing_loss=row.standing_loss,
             carrier=row.carrier,
             p_nom=row.cap_2035,
         )
@@ -1107,6 +1129,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
+        "RU":   "RU00",
     }
 
 

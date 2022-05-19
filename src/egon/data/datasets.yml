@@ -38,14 +38,14 @@ bgr:
   processed:
     schema: "boundaries"
     file_table_map:
-      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "saltstructures_inspee"
+      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "inspee_saltstructures"
   sources:
     vg250_federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
     saltcaverns:
       schema: 'boundaries'
-      table: 'saltstructures_inspee'
+      table: 'inspee_saltstructures'
   targets:
     storage_potential:
       schema: 'grid'
@@ -511,7 +511,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5846441
+      deposit_id: 6557453
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -1028,3 +1028,29 @@ tyndp:
       capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
       demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
       demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+
+gas_neighbours:
+  sources:
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+  targets:
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'

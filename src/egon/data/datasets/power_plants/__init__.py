@@ -276,9 +276,7 @@ def insert_biomass_plants(scenario):
     for i, row in mastr_loc.iterrows():
         if not row.ThermischeNutzleistung > 0:
             entry = EgonPowerPlants(
-                sources={
-                    "el_capacity": "MaStR scaled with NEP 2021",
-                },
+                sources={"el_capacity": "MaStR scaled with NEP 2021"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier="biomass",
                 el_capacity=row.Nettonennleistung,
@@ -365,9 +363,7 @@ def insert_hydro_plants(scenario):
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
-                sources={
-                    "el_capacity": "MaStR scaled with NEP 2021",
-                },
+                sources={"el_capacity": "MaStR scaled with NEP 2021"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
                 el_capacity=row.Nettonennleistung,
