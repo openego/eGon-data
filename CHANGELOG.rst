@@ -512,6 +512,8 @@ Bug Fixes
   `#708 <https://github.com/openego/eGon-data/issues/708>`_
 * Solve problem while creating generators series data egon2035
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
+* Correct wrong carrier name when assigning marginal costs
+  `#766 <https://github.com/openego/eGon-data/issues/766>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
