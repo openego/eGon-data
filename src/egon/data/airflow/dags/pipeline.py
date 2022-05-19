@@ -535,5 +535,18 @@ with airflow.DAG(
             setup_etrago,
             zensus_mv_grid_districts,
             zensus_vg250,
+            storage_etrago,
+            hts_etrago_table,
+            chp_etrago,
+            components_dsm,
+            heat_etrago,
+            fill_etrago_generators,
+            create_ocgt,
+            insert_H2_storage,
+            insert_power_to_h2_installations,
+            insert_h2_to_ch4_grid_links,
+            create_gas_polygons_egon100RE,
+            gas_production_insert_data,
+            insert_data_ch4_storages,
         ]
     )
