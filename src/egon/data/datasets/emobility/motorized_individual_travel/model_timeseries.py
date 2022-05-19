@@ -245,6 +245,7 @@ def generate_load_time_series(
     load_time_series_array = np.zeros(len(load_time_series_df))
     flex_time_series_array = load_time_series_array.copy()
     simultaneous_plugged_in_charging_capacity = load_time_series_array.copy()
+    simultaneous_plugged_in_charging_capacity_flex = load_time_series_array.copy()
 
     columns = [
         "park_start",
@@ -276,6 +277,7 @@ def generate_load_time_series(
         flex_time_series_array[last_ts] += flex_last_ts_cap
 
         simultaneous_plugged_in_charging_capacity[start:park_end] += cap
+        simultaneous_plugged_in_charging_capacity_flex[start:park_end] += flex_cap
 
     load_time_series_df = load_time_series_df.assign(
         load_time_series=load_time_series_array,
@@ -283,8 +285,12 @@ def generate_load_time_series(
         simultaneous_plugged_in_charging_capacity=(
             simultaneous_plugged_in_charging_capacity
         ),
+        simultaneous_plugged_in_charging_capacity_flex=(
+            simultaneous_plugged_in_charging_capacity_flex
+        ),
     )
 
+    # validate load timeseries
     np.testing.assert_almost_equal(
         load_time_series_df.load_time_series.sum() / 4,
         ev_data_df.charging_demand.sum() / 1000 / float(run_config.eta_cp),
@@ -325,7 +331,7 @@ def generate_static_params(
     static_params_dict = {
         "store_ev_battery.e_nom_MWh": float(max_df.bat_cap.sum() / 10 ** 3),
         "link_bev_charger.p_nom_MW": float(
-            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+            load_time_series_df.simultaneous_plugged_in_charging_capacity_flex.max()
         ),
         "store_ev_battery.e_max_pu": 1,
     }
@@ -531,7 +537,7 @@ def write_model_data_to_db(
                     # carrier="eMob MIT",
                     efficiency=float(run_config.eta_cp),
                     p_nom=(
-                        load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+                        load_time_series_df.simultaneous_plugged_in_charging_capacity_flex.max()
                     ),
                     p_nom_extendable=False,
                     p_nom_min=0,
@@ -635,7 +641,7 @@ def write_model_data_to_db(
     print("  Writing model timeseries...")
     load_time_series_df = load_time_series_df.assign(
         ev_availability=(
-            load_time_series_df.flex_time_series
+            load_time_series_df.simultaneous_plugged_in_charging_capacity_flex
             / static_params_dict["link_bev_charger.p_nom_MW"]
         )
     )
