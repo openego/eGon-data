@@ -53,7 +53,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -522,7 +522,7 @@ def assign_bus_id(power_plants, cfg):
             ehv_grid_districts,
         )
 
-        if 'bus_id_right' in ehv_join.columns:
+        if "bus_id_right" in ehv_join.columns:
             power_plants.loc[power_plants_ehv, "bus_id"] = gpd.sjoin(
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,
