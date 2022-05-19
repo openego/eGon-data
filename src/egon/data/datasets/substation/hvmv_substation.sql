@@ -192,17 +192,17 @@ SET voltage = (SELECT REPLACE (voltage, '-', ''))
 WHERE voltage LIKE '%-%';
 
 -- drop
-DROP VIEW IF EXISTS grid.egon_final_result CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS grid.egon_substations_to_drop CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS grid.egon_buffer_75 CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS grid.egon_buffer_75_a CASCADE;
-DROP VIEW IF EXISTS grid.egon_summary_de CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS grid.egon_summary CASCADE;
-DROP VIEW IF EXISTS grid.egon_summary_total CASCADE;
-DROP VIEW IF EXISTS grid.egon_substation_110kV CASCADE;
-DROP VIEW IF EXISTS grid.egon_way_substations_without_110kV_intersected_by_110kV_line CASCADE;
-DROP VIEW IF EXISTS grid.egon_way_lines_110kV CASCADE;
-DROP VIEW IF EXISTS grid.egon_node_substations_with_110kV CASCADE;
-DROP VIEW IF EXISTS grid.egon_way_substations_without_110kV CASCADE;
-DROP VIEW IF EXISTS grid.egon_way_substations_with_110kV CASCADE;
-DROP VIEW IF EXISTS grid.egon_way_substations CASCADE;
+--DROP VIEW IF EXISTS grid.egon_final_result CASCADE;
+--DROP MATERIALIZED VIEW IF EXISTS grid.egon_substations_to_drop CASCADE;
+--DROP MATERIALIZED VIEW IF EXISTS grid.egon_buffer_75 CASCADE;
+--DROP MATERIALIZED VIEW IF EXISTS grid.egon_buffer_75_a CASCADE;
+--DROP VIEW IF EXISTS grid.egon_summary_de CASCADE;
+--DROP MATERIALIZED VIEW IF EXISTS grid.egon_summary CASCADE;
+--DROP VIEW IF EXISTS grid.egon_summary_total CASCADE;
+--DROP VIEW IF EXISTS grid.egon_substation_110kV CASCADE;
+--DROP VIEW IF EXISTS grid.egon_way_substations_without_110kV_intersected_by_110kV_line CASCADE;
+--DROP VIEW IF EXISTS grid.egon_way_lines_110kV CASCADE;
+--DROP VIEW IF EXISTS grid.egon_node_substations_with_110kV CASCADE;
+--DROP VIEW IF EXISTS grid.egon_way_substations_without_110kV CASCADE;
+--DROP VIEW IF EXISTS grid.egon_way_substations_with_110kV CASCADE;
+--DROP VIEW IF EXISTS grid.egon_way_substations CASCADE;
