@@ -8,7 +8,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
-    """ Initialise bus insertion to etrago table
+    """Initialise bus insertion to etrago table
 
     Parameters
     ----------
@@ -45,7 +45,7 @@ def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
 
 
 def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
-    """ Finalize bus insertion to etrago table
+    """Finalize bus insertion to etrago table
 
     Parameters
     ----------

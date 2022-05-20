@@ -14,9 +14,8 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.config import settings
-import egon.data.config
 from egon.data.datasets import Dataset
-
+import egon.data.config
 
 
 class ZensusPopulation(Dataset):
@@ -29,7 +28,7 @@ class ZensusPopulation(Dataset):
                 download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
-                ),
+            ),
         )
 
 
@@ -43,7 +42,7 @@ class ZensusMiscellaneous(Dataset):
                 download_zensus_misc,
                 create_zensus_misc_tables,
                 zensus_misc_to_postgres,
-                ),
+            ),
         )
 
 
@@ -124,6 +123,7 @@ def create_zensus_pop_table():
         );
         """
     )
+
 
 def create_zensus_misc_tables():
     """Create tables for zensus data in postgres database"""

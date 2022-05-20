@@ -7,18 +7,18 @@
 """
 
 
-import egon.data.config
+from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
 )
-from sqlalchemy import Column, String, Float, Integer, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
-
+import egon.data.config
 
 Base = declarative_base()
 
@@ -119,7 +119,7 @@ def create_tables():
 
 
 def industrial_demand_distr():
-    """ Distribute electrical demands for industry to osm landuse polygons
+    """Distribute electrical demands for industry to osm landuse polygons
     and/or industrial sites, identified earlier in the process.
     The demands per subsector on nuts3-level from demandregio are distributed
     linearly to the area of the corresponding landuse polygons or evenly to

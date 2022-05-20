@@ -331,13 +331,15 @@ def insert_chp_egon2035():
 
     gpd.GeoDataFrame(
         MaStR_konv[
-            ["EinheitMastrNummer",
-             "el_capacity",
-             "geometry",
-             "carrier",
-             'plz',
-             'city',
-             'federal_state']
+            [
+                "EinheitMastrNummer",
+                "el_capacity",
+                "geometry",
+                "carrier",
+                "plz",
+                "city",
+                "federal_state",
+            ]
         ]
     ).to_postgis(
         targets["mastr_conventional_without_chp"]["table"],

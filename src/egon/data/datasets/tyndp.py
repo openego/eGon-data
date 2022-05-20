@@ -1,13 +1,14 @@
 """The central module containing all code dealing with tyndp data
 """
 
+from urllib.request import urlretrieve
 import os
+
 from egon.data import config
 from egon.data.datasets import Dataset
-from urllib.request import urlretrieve
+
 
 class Tyndp(Dataset):
-
     def __init__(self, dependencies):
         super().__init__(
             name="Tyndp",
@@ -16,8 +17,9 @@ class Tyndp(Dataset):
             tasks=(download),
         )
 
+
 def download():
-    """ Download input data from TYNDP 2020
+    """Download input data from TYNDP 2020
     Returns
     -------
     None.
@@ -25,10 +27,10 @@ def download():
     sources = config.datasets()["tyndp"]["sources"]
     targets = config.datasets()["tyndp"]["targets"]
 
-    if not os.path.exists('tyndp'):
-        os.mkdir('tyndp')
+    if not os.path.exists("tyndp"):
+        os.mkdir("tyndp")
 
-    for dataset in ['capacities', 'demand_2030', 'demand_2040']:
+    for dataset in ["capacities", "demand_2030", "demand_2040"]:
 
         target_file = targets[dataset]
 

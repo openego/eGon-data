@@ -19,9 +19,11 @@ def find_bus_id(power_plants, cfg):
     power_plants = power_plants[~power_plants.bus_id.isna()]
 
     power_plants_no_busId = power_plants_no_busId.drop(columns="bus_id")
-    
+
     if len(power_plants_no_busId) > 0:
-        power_plants_no_busId = init_pp.assign_bus_id(power_plants_no_busId, cfg)
+        power_plants_no_busId = init_pp.assign_bus_id(
+            power_plants_no_busId, cfg
+        )
 
     power_plants = power_plants.append(power_plants_no_busId)
 
@@ -107,10 +109,10 @@ def write_power_plants_table(power_plants, cfg, con):
 
     # delete weather dependent power_plants from supply.egon_power_plants
     db.execute_sql(
-        f""" 
+        f"""
     DELETE FROM {cfg['sources']['power_plants']['schema']}.
-    {cfg['sources']['power_plants']['table']} 
-    WHERE carrier IN ('wind_onshore', 'solar') 
+    {cfg['sources']['power_plants']['table']}
+    WHERE carrier IN ('wind_onshore', 'solar')
     """
     )
 
@@ -152,4 +154,3 @@ def write_power_plants_table(power_plants, cfg, con):
     )
 
     return "Bus_id and Weather_id were updated succesfully"
-    

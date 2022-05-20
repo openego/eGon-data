@@ -56,10 +56,10 @@ def insert():
     )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
     target_power_df = target_power_df.to_crs(3035)
-    
-    #Create the shape for full Germany
-    target_power_df.at['DE', 'geom'] = target_power_df['geom'].unary_union
-    target_power_df.at['DE', 'name'] = 'Germany'
+
+    # Create the shape for full Germany
+    target_power_df.at["DE", "geom"] = target_power_df["geom"].unary_union
+    target_power_df.at["DE", "name"] = "Germany"
     # Generate WFs for Germany based on potential areas and existing WFs
     wf_areas, wf_areas_ni = generate_wind_farms()
 
@@ -208,7 +208,7 @@ def generate_wind_farms():
 
     # Exclude areas smaller than X m². X was calculated as the area of
     # 3 WT in the corners of an equilateral triangle with l = 4*rotor_diameter
-    min_area = 4 * (0.126 ** 2) * np.sqrt(3)
+    min_area = 4 * (0.126**2) * np.sqrt(3)
     wf_areas = wf_areas[wf_areas["area [km²]"] > min_area]
 
     # Find the centroid of all the suitable potential areas
@@ -483,12 +483,12 @@ def generate_map():
     wind_farms_t = wind_farms_t.to_crs(3035)
 
     for scenario in wind_farms_t.scenario.unique():
-        wind_farms = wind_farms_t[wind_farms_t['scenario'] == scenario]
+        wind_farms = wind_farms_t[wind_farms_t["scenario"] == scenario]
         # mv_districts has geographic info of medium voltage districts in Germany
         sql = "SELECT geom FROM grid.egon_mv_grid_district"
         mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
         mv_districts = mv_districts.to_crs(3035)
-    
+
         mv_districts["power"] = 0.0
         for std in mv_districts.index:
             try:
@@ -497,7 +497,7 @@ def generate_map():
                 ).el_capacity.sum()
             except:
                 print(std)
-    
+
         fig, ax = plt.subplots(1, 1)
         mv_districts.geom.plot(linewidth=0.2, ax=ax, color="black")
         mv_districts.plot(
@@ -510,5 +510,5 @@ def generate_map():
                 "orientation": "vertical",
             },
         )
-        plt.savefig(f'wind_farms_{scenario}.png', dpi=300)
+        plt.savefig(f"wind_farms_{scenario}.png", dpi=300)
     return 0

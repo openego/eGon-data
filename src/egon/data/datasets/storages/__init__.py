@@ -5,20 +5,19 @@ from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from egon.data.datasets.storages.pumped_hydro import (
-    select_mastr_pumped_hydro,
-    select_nep_pumped_hydro,
-    match_storage_units,
-    get_location,
-    apply_voltage_level_thresholds,
-)
-from egon.data.datasets.power_plants import assign_voltage_level
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets import Dataset
-
+from egon.data.datasets.power_plants import assign_voltage_level
+from egon.data.datasets.storages.pumped_hydro import (
+    apply_voltage_level_thresholds,
+    get_location,
+    match_storage_units,
+    select_mastr_pumped_hydro,
+    select_nep_pumped_hydro,
+)
 
 Base = declarative_base()
 
@@ -43,9 +42,11 @@ class PumpedHydro(Dataset):
             name="Storages",
             version="0.0.1",
             dependencies=dependencies,
-            tasks=(create_tables,
-                   allocate_pumped_hydro_eGon2035,
-                   allocate_pumped_hydro_eGon100RE),
+            tasks=(
+                create_tables,
+                allocate_pumped_hydro_eGon2035,
+                allocate_pumped_hydro_eGon100RE,
+            ),
         )
 
 
@@ -240,7 +241,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
                 bus_id=row.bus_id,
                 scenario=row.scenario,
                 geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-                )
+            )
             session.add(entry)
         session.commit()
 
@@ -279,11 +280,11 @@ def allocate_pumped_hydro_eGon100RE():
 
     if boundary == "Schleswig-Holstein":
         # Break capacity of pumped hydron plants down SH share in eGon2035
-        capacity_phes = capacity.iat[0,0]*0.0176
+        capacity_phes = capacity.iat[0, 0] * 0.0176
 
     elif boundary == "Everything":
         # Select national capacity for pumped hydro
-        capacity_phes = capacity.iat[0,0]
+        capacity_phes = capacity.iat[0, 0]
 
     else:
         raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
@@ -292,11 +293,11 @@ def allocate_pumped_hydro_eGon100RE():
     # for the distribution in eGon100RE scenario
     allocation = allocate_pumped_hydro_eGon2035(export=False)
 
-    scaling_factor = capacity_phes/allocation.el_capacity.sum()
+    scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
     power_plants = allocation.copy()
     power_plants["scenario"] = "eGon100RE"
-    power_plants["el_capacity"] = allocation.el_capacity*scaling_factor
+    power_plants["el_capacity"] = allocation.el_capacity * scaling_factor
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
@@ -310,6 +311,6 @@ def allocate_pumped_hydro_eGon100RE():
             bus_id=row.bus_id,
             scenario=row.scenario,
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-            )
+        )
         session.add(entry)
     session.commit()

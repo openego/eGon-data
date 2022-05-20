@@ -1,7 +1,8 @@
-from egon.data.db import engine
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
+
+from egon.data.db import engine
 
 
 def context():
@@ -180,7 +181,7 @@ def license_geonutzv(attribution):
 
 
 def generate_resource_fields_from_sqla_model(model):
-    """ Generate a template for the resource fields for metadata from a SQL
+    """Generate a template for the resource fields for metadata from a SQL
     Alchemy model.
 
     For details on the fields see field 14.6.1 of `Open Energy Metadata
@@ -218,7 +219,7 @@ def generate_resource_fields_from_sqla_model(model):
 
 
 def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
-    """ Generate a template for the resource fields for metadata from a
+    """Generate a template for the resource fields for metadata from a
     database table.
 
     For details on the fields see field 14.6.1 of `Open Energy Metadata

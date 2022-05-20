@@ -15,10 +15,11 @@ The data are downloaded to be used in the PyPSA-Eur-Sec scenario generator
 
 """
 
-import egon.data.config
+import os
+
 from egon.data import subprocess
 from egon.data.datasets import Dataset
-import os
+import egon.data.config
 
 
 class HeatDemandEurope(Dataset):
@@ -26,8 +27,9 @@ class HeatDemandEurope(Dataset):
     data_config = egon.data.config.datasets()
 
     hotmapsheatdemands_config = data_config[
-        "hotmaps_current_policy_scenario_heat_demands_buildings"]
-    
+        "hotmaps_current_policy_scenario_heat_demands_buildings"
+    ]
+
     target_file = hotmapsheatdemands_config["targets"]["path"]
 
     def __init__(self, dependencies):
@@ -35,7 +37,8 @@ class HeatDemandEurope(Dataset):
             name="heat-demands-europe",
             version=self.target_file + "_hotmaps.0.1",
             dependencies=dependencies,
-            tasks=(download))
+            tasks=(download),
+        )
 
 
 def download():
@@ -59,7 +62,8 @@ def download():
 
     # heat demands
     hotmapsheatdemands_config = data_config[
-        "hotmaps_current_policy_scenario_heat_demands_buildings"]
+        "hotmaps_current_policy_scenario_heat_demands_buildings"
+    ]
 
     target_file = hotmapsheatdemands_config["targets"]["path"]
 

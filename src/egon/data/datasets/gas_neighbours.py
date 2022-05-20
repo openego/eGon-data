@@ -354,7 +354,6 @@ def calc_capacity_per_year(df, lng, year):
     return df_year
 
 
-
 def insert_generators(gen):
     """Insert gas generators for foreign countries based on TYNDP-data
 
@@ -625,10 +624,10 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM 
+            SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE bus IN (
                 SELECT bus_id FROM
@@ -636,7 +635,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
                 WHERE country != 'DE'
                 AND scn_name = 'eGon2035')
             AND scn_name = 'eGon2035'
-            AND carrier = 'CH4'            
+            AND carrier = 'CH4'
         );
         """
     )
@@ -818,12 +817,12 @@ def insert_storage(ch4_storage_capacities):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
+        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
         AND bus IN (
             SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = 'eGon2035' 
+            WHERE scn_name = 'eGon2035'
             AND country != 'DE'
             );
         """
@@ -954,10 +953,10 @@ def insert_power_to_h2_demand(
 
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM 
+            SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE bus IN (
                 SELECT bus_id FROM
@@ -965,7 +964,7 @@ def insert_power_to_h2_demand(
                 WHERE country != 'DE'
                 AND scn_name = 'eGon2035')
             AND scn_name = 'eGon2035'
-            AND carrier = 'H2 for industry'            
+            AND carrier = 'H2 for industry'
         );
         """
     )
@@ -1265,7 +1264,7 @@ def calculate_ch4_grid_capacities():
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
                 FROM {sources['links']['schema']}.{sources['links']['table']}
-                    WHERE scn_name = 'eGon2035' 
+                    WHERE scn_name = 'eGon2035'
                     AND carrier = 'CH4'
                     AND (("bus0" IN (
                         SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
@@ -1376,22 +1375,22 @@ def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
     # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {sources['links']['schema']}.{sources['links']['table']}
         WHERE "bus0" IN (
-            SELECT bus_id FROM 
+            SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
                 WHERE country != 'DE'
                 AND carrier = 'CH4'
                 AND scn_name = 'eGon2035')
         OR "bus1" IN (
-            SELECT bus_id FROM 
+            SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
                 WHERE country != 'DE'
                 AND carrier = 'CH4'
                 AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'            
+        AND carrier = 'CH4'
         ;
         """
     )
@@ -1413,7 +1412,7 @@ def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
     INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
         scn_name, link_id, carrier,
         bus0, bus1,p_nom, length, geom, topo)
-    
+
     SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, length, geom, topo
 
     FROM grid.egon_etrago_gas_link;

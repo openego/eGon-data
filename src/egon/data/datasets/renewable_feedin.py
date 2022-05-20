@@ -124,7 +124,6 @@ def federal_states_per_weather_cell():
             .set_index("w_id")
         )
 
-    
     weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
     return weather_cells.to_crs(4326)
@@ -460,7 +459,7 @@ def heat_pump_cop():
 
     # Calculate coefficient of performance for air sourced heat pumps
     # according to Brown et. al
-    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t ** 2
+    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t**2
 
     df = pd.DataFrame(
         index=temperature.to_pandas().index,

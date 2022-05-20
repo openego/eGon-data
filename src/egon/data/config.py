@@ -68,8 +68,7 @@ def settings() -> dict[str, dict[str, str]]:
                 "--database-port": "59734",
                 "--database-user": "egon",
                 "--dataset-boundary": "Everything",
-                "--docker-container-name":
-                    "egon-data-local-database-container",
+                "--docker-container-name": "egon-data-local-database-container",
                 "--jobs": 1,
                 "--random-seed": 42,
                 "--processes-per-task": 1,
@@ -103,6 +102,7 @@ def datasets(config_file=None):
 
     return yaml.load(open(config_file), Loader=yaml.SafeLoader)
 
+
 def set_numexpr_threads():
     """Sets maximum threads used by NumExpr
 
@@ -114,5 +114,5 @@ def set_numexpr_threads():
     # Read maximum number of threads per task from egon-data.configuration.yaml
     num_processes = settings()["egon-data"]["--processes-per-task"]
 
-    os.environ['NUMEXPR_MAX_THREADS'] = str(num_processes)
-    os.environ['NUMEXPR_NUM_THREADS'] = str(num_processes)
+    os.environ["NUMEXPR_MAX_THREADS"] = str(num_processes)
+    os.environ["NUMEXPR_NUM_THREADS"] = str(num_processes)

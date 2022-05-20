@@ -12,7 +12,7 @@ from egon.data.datasets.etrago_helpers import (
 
 
 def insert_hydrogen_buses(scenario="eGon2035"):
-    """ Insert hydrogen buses to etrago table
+    """Insert hydrogen buses to etrago table
 
     Hydrogen buses are divided into cavern and methane grid attached buses
 
@@ -153,5 +153,7 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
 def insert_hydrogen_buses_eGon100RE():
     """Copy H2 buses from the eGon2035 to the eGon100RE scenario."""
     copy_and_modify_buses(
-        "eGon2035", "eGon100RE", {"carrier": ["H2_grid", "H2_saltcavern"]},
+        "eGon2035",
+        "eGon100RE",
+        {"carrier": ["H2_grid", "H2_saltcavern"]},
     )

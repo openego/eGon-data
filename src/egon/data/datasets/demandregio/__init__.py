@@ -2,28 +2,30 @@
 adjusting data from demandRegio
 
 """
-import pandas as pd
-import numpy as np
-import egon.data.config
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data import db
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-    EgonScenario,
-)
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
+from pathlib import Path
+
+from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import numpy as np
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
 )
-from egon.data.datasets import Dataset
-from pathlib import Path
+from egon.data.datasets.scenario_parameters import (
+    EgonScenario,
+    get_sector_parameters,
+)
+import egon.data.config
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 try:
-    from disaggregator import data, spatial, config
+    from disaggregator import config, data, spatial
 
 except ImportError as e:
-   pass
+    pass
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -124,7 +126,7 @@ def create_tables():
 
 
 def data_in_boundaries(df):
-    """ Select rows with nuts3 code within boundaries, used for testmode
+    """Select rows with nuts3 code within boundaries, used for testmode
 
     Parameters
     ----------
@@ -160,7 +162,7 @@ def data_in_boundaries(df):
 
 
 def insert_cts_ind_wz_definitions():
-    """ Insert demandregio's definitions of CTS and industrial branches
+    """Insert demandregio's definitions of CTS and industrial branches
 
     Returns
     -------
@@ -206,7 +208,7 @@ def insert_cts_ind_wz_definitions():
 
 
 def match_nuts3_bl():
-    """ Function that maps the federal state to each nuts3 region
+    """Function that maps the federal state to each nuts3 region
 
     Returns
     -------
@@ -234,7 +236,7 @@ def match_nuts3_bl():
 
 
 def adjust_cts_ind_nep(ec_cts_ind, sector):
-    """ Add electrical demand of new largescale CTS und industrial consumers
+    """Add electrical demand of new largescale CTS und industrial consumers
     according to NEP 2021, scneario C 2035. Values per federal state are
     linear distributed over all CTS branches and nuts3 regions.
 
@@ -351,7 +353,7 @@ def disagg_households_power(
 
 
 def insert_hh_demand(scenario, year, engine):
-    """ Calculates electrical demands of private households using demandregio's
+    """Calculates electrical demands of private households using demandregio's
     disaggregator and insert results into the database.
 
     Parameters
@@ -391,7 +393,7 @@ def insert_hh_demand(scenario, year, engine):
 
 
 def insert_cts_ind(scenario, year, engine, target_values):
-    """ Calculates electrical demands of CTS and industry using demandregio's
+    """Calculates electrical demands of CTS and industry using demandregio's
     disaggregator, adjusts them according to resulting values of NEP 2021 or
     JRC IDEES and insert results into the database.
 
@@ -455,7 +457,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
 
 def insert_household_demand():
-    """ Insert electrical demands for households according to
+    """Insert electrical demands for households according to
     demandregio using its disaggregator-tool in MWh
 
     Returns
@@ -482,7 +484,7 @@ def insert_household_demand():
 
 
 def insert_cts_ind_demands():
-    """ Insert electricity demands per nuts3-region in Germany according to
+    """Insert electricity demands per nuts3-region in Germany according to
     demandregio using its disaggregator-tool in MWh
 
     Returns
@@ -527,7 +529,7 @@ def insert_cts_ind_demands():
 
 
 def insert_society_data():
-    """ Insert population and number of households per nuts3-region in Germany
+    """Insert population and number of households per nuts3-region in Germany
     according to demandregio using its disaggregator-tool
 
     Returns
@@ -578,7 +580,7 @@ def insert_society_data():
 
 
 def insert_timeseries_per_wz(sector, year):
-    """ Insert normalized electrical load time series for the selected sector
+    """Insert normalized electrical load time series for the selected sector
 
     Parameters
     ----------
@@ -644,7 +646,7 @@ def insert_timeseries_per_wz(sector, year):
 
 
 def timeseries_per_wz():
-    """ Calcultae and insert normalized timeseries per wz for cts and industry
+    """Calcultae and insert normalized timeseries per wz for cts and industry
 
     Returns
     -------

@@ -20,7 +20,7 @@ def insert():
     """
     # Read file with all required input/output tables' names
     cfg = egon.data.config.datasets()["power_plants"]
-    
+
     # load NEP2035_V2021_scnC2035 file
     offshore_path = (
         Path(".")
@@ -48,7 +48,7 @@ def insert():
         "Garrel/Ost": "23837631",
         "Diele": "177829920",
         "Dörpen/West": "142487746",
-        "Emden/Borßum":	"34835258",
+        "Emden/Borßum": "34835258",
         "Emden/Ost": "34835258",
         "Hagermarsch": "79316833",
         "Hanekenfähr": "61918154",
@@ -72,7 +72,7 @@ def insert():
         "Garrel/Ost": "16139",
         "Diele": "16138",
         "Dörpen/West": "15952",
-        "Emden/Borßum":	"15762",
+        "Emden/Borßum": "15762",
         "Emden/Ost": "16140",
         "Hagermarsch": "15951",
         "Hanekenfähr": "16139",
@@ -98,39 +98,29 @@ def insert():
         SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
         as osm_id FROM {cfg["sources"]["buses_data"]}
         """
-        
+
     busses = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="point"
     )
-    
+
     # Drop NANs in column osm_id
-    busses.dropna(subset= ['osm_id'], inplace= True)
-    
+    busses.dropna(subset=["osm_id"], inplace=True)
+
     # Create columns for bus_id and geometry in the offshore df
     offshore["bus_id"] = np.nan
     offshore["geom"] = Point(0, 0)
 
     # Match bus_id and geometry
     for index, wind_park in offshore.iterrows():
-        if (
-            len(
-                busses[
-                    busses["osm_id"] == wind_park["osm_id"]
-                ].index
-            )
-            > 0
-        ):
-            bus_ind = busses[
-                busses["osm_id"] == wind_park["osm_id"]
-            ].index[0]
+        if len(busses[busses["osm_id"] == wind_park["osm_id"]].index) > 0:
+            bus_ind = busses[busses["osm_id"] == wind_park["osm_id"]].index[0]
             offshore.at[index, "bus_id"] = busses.at[bus_ind, "bus_id"]
             offshore.at[index, "geom"] = busses.at[bus_ind, "point"]
         else:
             print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
-            
-    
-    offshore["weather_cell_id"] = offshore['Netzverknuepfungspunkt'].map(w_id)
-    offshore['weather_cell_id'] = offshore['weather_cell_id'].apply(int)
+
+    offshore["weather_cell_id"] = offshore["Netzverknuepfungspunkt"].map(w_id)
+    offshore["weather_cell_id"] = offshore["weather_cell_id"].apply(int)
     # Drop offshore wind farms without found connexion point
     offshore.dropna(subset=["bus_id"], inplace=True)
 
@@ -148,7 +138,7 @@ def insert():
     offshore["carrier"] = "wind_offshore"
     offshore["el_capacity"] = offshore["C 2035"]
     offshore["scenario"] = "eGon2035"
-    
+
     # Delete unnecessary columns
     offshore.drop(
         [
@@ -168,9 +158,9 @@ def insert():
     # Delete, in case of existing, previous wind offshore parks
 
     db.execute_sql(
-        f""" 
-    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']} 
-    WHERE carrier IN ('wind_offshore') 
+        f"""
+    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    WHERE carrier IN ('wind_offshore')
     """
     )
 
@@ -205,4 +195,3 @@ def insert():
     )
 
     return 0
-    

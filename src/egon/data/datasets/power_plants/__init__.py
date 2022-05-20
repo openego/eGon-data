@@ -26,7 +26,7 @@ from egon.data.datasets.power_plants.conventional import (
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
-    pv_rooftop_to_buildings
+    pv_rooftop_to_buildings,
 )
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
@@ -66,7 +66,7 @@ class PowerPlants(Dataset):
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
                     pv_rooftop_per_mv_grid,
-                    pv_rooftop_to_buildings
+                    pv_rooftop_to_buildings,
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,

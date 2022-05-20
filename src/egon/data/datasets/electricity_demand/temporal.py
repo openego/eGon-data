@@ -3,12 +3,12 @@ timeseries data using demandregio
 
 """
 
-import pandas as pd
-import egon.data.config
-from egon.data import db
-
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
+
+from egon.data import db
+import egon.data.config
 
 Base = declarative_base()
 
@@ -36,7 +36,7 @@ def create_table():
 
 
 def calc_load_curve(share_wz, annual_demand=1):
-    """ Create aggregated demand curve for service sector
+    """Create aggregated demand curve for service sector
 
     Parameters
     ----------

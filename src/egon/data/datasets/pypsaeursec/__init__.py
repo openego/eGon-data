@@ -16,9 +16,8 @@ import yaml
 
 from egon.data import __path__, db
 from egon.data.datasets import Dataset
-import egon.data.config
-import egon.data.subprocess as subproc
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
@@ -387,8 +386,11 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
-
+    neighbor_gens_t = network.generators_t["p_max_pu"][
+        neighbor_gens[
+            neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)
+        ].index
+    ]
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (

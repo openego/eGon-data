@@ -4,12 +4,13 @@ for district heating areas.
 """
 import geopandas as gpd
 import pandas as pd
+
 from egon.data import config, db
 from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 
 
 def capacity_per_district_heating_category(district_heating_areas, scenario):
-    """ Calculates target values per district heating category and technology
+    """Calculates target values per district heating category and technology
 
     Parameters
     ----------
@@ -109,7 +110,7 @@ def set_technology_data():
 
 
 def select_district_heating_areas(scenario):
-    """ Selects district heating areas per scenario and assigns size-category
+    """Selects district heating areas per scenario and assigns size-category
 
     Parameters
     ----------
@@ -164,7 +165,7 @@ def cascade_per_technology(
     areas, technologies, capacity_per_category, size_dh, max_geothermal_costs=2
 ):
 
-    """ Add plants of one technology suppliing district heating
+    """Add plants of one technology suppliing district heating
 
     Parameters
     ----------

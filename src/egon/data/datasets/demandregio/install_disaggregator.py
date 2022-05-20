@@ -1,16 +1,16 @@
 """This module downloads and installs demandregio's disaggregator from GitHub
 
 """
+from pathlib import Path
 import os
 import shutil
-from pathlib import Path
 
-import egon.data.config
 from egon.data import subprocess
+import egon.data.config
 
 
 def clone_and_install():
-    """ Clone and install repository of demandregio's disaggregator
+    """Clone and install repository of demandregio's disaggregator
 
     Returns
     -------

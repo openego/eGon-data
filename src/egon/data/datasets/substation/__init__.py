@@ -238,9 +238,7 @@ def create_sql_functions():
 
 def transfer_busses():
 
-    targets = egon.data.config.datasets()["substation_extraction"][
-        "targets"
-    ]
+    targets = egon.data.config.datasets()["substation_extraction"]["targets"]
 
     db.execute_sql(
         f"""
@@ -254,4 +252,5 @@ def transfer_busses():
         ref, operator, dbahn, status
         FROM {targets['hvmv_substation']['schema']}.
          {targets['hvmv_substation']['table']} ORDER BY osm_id) as foo;
-        """)
+        """
+    )

@@ -2,17 +2,29 @@ import datetime
 import json
 import time
 
-import egon.data.config
+from geoalchemy2 import Geometry
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Float,
+    Integer,
+    SmallInteger,
+    String,
+    func,
+    select,
+)
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
-from egon.data.metadata import (context, licenses_datenlizenz_deutschland,
-                                meta_metadata)
-from geoalchemy2 import Geometry
-from sqlalchemy import (BigInteger, Column, Float, Integer, SmallInteger,
-                        String, func, select)
-from sqlalchemy.ext.declarative import declarative_base
+from egon.data.metadata import (
+    context,
+    licenses_datenlizenz_deutschland,
+    meta_metadata,
+)
+import egon.data.config
 
 Base = declarative_base()
 
