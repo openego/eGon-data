@@ -7,27 +7,32 @@ from collections import Counter
 from pathlib import Path, PurePath
 from typing import Any
 
+from geoalchemy2 import Geometry
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
 from loguru import logger
-from sqlalchemy import Column, ForeignKey, Integer, String
+from numpy.random import default_rng
+from pyproj.crs.crs import CRS
+from sqlalchemy import BigInteger, Column, Float, String
+from sqlalchemy.dialects.postgresql import HSTORE
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
+    OsmBuildingsSynthetic,
+)
 
-# from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
-#     OsmBuildingsSynthetic,
-# )
-from egon.data.datasets.scenario_parameters import EgonScenario
+# from egon.data.datasets.scenario_parameters import EgonScenario
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 
 engine = db.engine()
 Base = declarative_base()
 SEED = config.settings()["egon-data"]["--random-seed"]
 
+# TODO: move to yml
 # mastr data
 MASTR_PATH = Path("/home/kilian/Documents/PythonProjects/eGon/data/eGon-gogs/")
 
@@ -77,7 +82,8 @@ MASTR_DTYPES = {
     "GemeinsamerWechselrichterMitSpeicher": str,
     "Lage": str,
     "Leistungsbegrenzung": str,
-    # "EinheitlicheAusrichtungUndNeigungswinkel": bool,  # this will parse nan values as false wich is not always correct
+    # this will parse nan values as false wich is not always correct
+    # "EinheitlicheAusrichtungUndNeigungswinkel": bool,
     "Hauptausrichtung": str,
     "HauptausrichtungNeigungswinkel": str,
     "Nebenausrichtung": str,
@@ -92,6 +98,7 @@ MASTR_PARSE_DATES = [
 MASTR_INDEX_COL = "EinheitMastrNummer"
 
 EPSG = 4326
+SRID = 3035
 
 # data cleaning
 MAX_REALISTIC_PV_CAP = 23500
@@ -104,12 +111,14 @@ USER_AGENT = "rli_kh_geocoder"
 
 # show additional logging information
 VERBOSE = False
-LOCAL = False
 
 EXPORT_DIR = Path(__name__).resolve().parent / "data"
 EXPORT_FILE = "mastr_geocoded.gpkg"
 EXPORT_PATH = EXPORT_DIR / EXPORT_FILE
 DRIVER = "GPKG"
+
+# Number of quantiles
+Q = 10
 
 
 def mastr_data(
@@ -403,8 +412,6 @@ def most_plausible(
         min_val = min(val1, val2, val3)
         max_val = max(val1, val2, val3)
 
-    delta = max_val - min_val
-
     if min_val < min_realistic_pv_cap:
         return max_val
 
@@ -647,31 +654,6 @@ def drop_gens_outside_muns(
     return gdf
 
 
-def save_results(
-    mastr_gdf: gpd.GeoDataFrame,
-    export_path: PurePath,
-    driver: str,
-    layer: str | None,
-) -> None:
-    """
-    Save results.
-
-    Parameters
-    -----------
-    mastr_gdf : geopandas.GeoDataFrame
-        GeoDataFrame to save.
-    export_path : pathlib.PurePath
-        Path to export data to.
-    driver : str
-        The OGR format driver used to write the vector file.
-    layer : str, optional
-        Name of your data if writing into data formats
-        which allow multiple layers.
-    """
-    export_path.parent.mkdir(parents=True, exist_ok=True)
-    mastr_gdf.to_file(export_path, driver=driver, layer=layer)
-
-
 def load_mastr_data():
     """Read PV rooftop data from MaStR CSV
 
@@ -712,98 +694,417 @@ def load_mastr_data():
 
     valid_mastr_gdf = add_ags_to_gens(valid_mastr_gdf, municipalities_gdf)
 
-    valid_mastr_gdf = drop_gens_outside_muns(valid_mastr_gdf)
-
-    if LOCAL:
-        save_results(
-            valid_mastr_gdf, EXPORT_PATH, DRIVER, EXPORT_FILE.split(".")[0]
-        )
-
-    return valid_mastr_gdf
+    return drop_gens_outside_muns(valid_mastr_gdf)
 
 
-def mastr_geo_data(
-    mastr_path: PurePath,
-    layer: str | None,
+class OsmBuildingsFiltered(Base):
+    __tablename__ = "osm_buildings_filtered"
+    __table_args__ = {"schema": "openstreetmap"}
+
+    osm_id = Column(BigInteger)
+    amenity = Column(String)
+    building = Column(String)
+    name = Column(String)
+    geom = Column(Geometry(srid=SRID), index=True)
+    area = Column(Float)
+    geom_point = Column(Geometry(srid=SRID), index=True)
+    tags = Column(HSTORE)
+    id = Column(BigInteger, primary_key=True, index=True)
+
+
+def osm_buildings(
+    limit: int | None,
+    to_crs: CRS,
 ) -> gpd.GeoDataFrame:
     """
-    Read MaStR data from gpkg.
+    Read OSM buildings data from eGo^n Database.
 
     Parameters
     -----------
-    mastr_path : pathlib.PurePath
-        Path to the geocoded MaStR data.
-    layer : str, optional
-        Name of your data if reading from data formats
-        which allow multiple layers.
+    to_crs : pyproj.crs.crs.CRS
+        CRS to transform geometries to.
 
     Returns
     -------
     geopandas.GeoDataFrame
-        GeoDataFrame containing geocoded MaStR data.
+        GeoDataFrame containing OSM buildings data.
     """
-    gdf = gpd.read_file(
-        mastr_path,
-        layer=layer,
+    with db.session_scope() as session:
+        query = session.query(
+            OsmBuildingsFiltered.id,
+            OsmBuildingsFiltered.area,
+            OsmBuildingsFiltered.geom_point.label("geom"),
+        )
+
+    return gpd.read_postgis(
+        query.statement, query.session.bind, index_col="id"
+    ).to_crs(to_crs)
+
+
+def synthetic_buildings(
+    to_crs: CRS,
+) -> gpd.GeoDataFrame:
+    """
+    Read synthetic buildings data from eGo^n Database.
+
+    Parameters
+    -----------
+    to_crs : pyproj.crs.crs.CRS
+        CRS to transform geometries to.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data.
+    """
+    with db.session_scope() as session:
+        query = session.query(
+            OsmBuildingsSynthetic.id,
+            OsmBuildingsSynthetic.area,
+            OsmBuildingsSynthetic.geom_point.label("geom"),
+        )
+
+    return gpd.read_postgis(
+        query.statement, query.session.bind, index_col="id"
+    ).to_crs(to_crs)
+
+
+def add_ags_to_buildings(
+    buildings_gdf: gpd.GeoDataFrame,
+    municipalities_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Add information about AGS ID to buildings.
+
+    Parameters
+    -----------
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data.
+    municipalities_gdf : geopandas.GeoDataFrame
+        GeoDataFrame with municipality data.
+
+    Returns
+    -------
+    gepandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data
+        with AGS ID added.
+    """
+    return buildings_gdf.sjoin(
+        municipalities_gdf,
+        how="left",
+        predicate="intersects",
+    ).rename(columns={"index_right": "ags"})
+
+
+def drop_buildings_outside_muns(
+    buildings_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Drop all buildings outside of municipalities.
+
+    Parameters
+    -----------
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data.
+
+    Returns
+    -------
+    gepandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data
+        with buildings without an AGS ID dropped.
+    """
+    gdf = buildings_gdf.loc[~buildings_gdf.ags.isna()]
+
+    logger.debug(
+        f"{len(buildings_gdf) - len(gdf)} "
+        f"({(len(buildings_gdf) - len(gdf)) / len(buildings_gdf) * 100:g}%) "
+        f"of {len(buildings_gdf)} values are outside of the municipalities "
+        "and are therefore dropped."
     )
 
-    logger.debug("Geocoded MaStR data loaded.")
-
-    return gdf.set_index("EinheitMastrNummer")
+    return gdf
 
 
-class EgonPowerPlantPvRoofBuildingMapping(Base):
-    __tablename__ = "egon_power_plants_pv_roof_building_mapping"
-    __table_args__ = {"schema": "supply"}
+def load_building_data():
+    """Read buildings from DB
 
-    scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
-    osm_buildings_id = Column(Integer, primary_key=True)
-    pv_roof_unit_id = Column(
-        Integer, primary_key=True
-    )  # will later point to new power plant table
+    Tables:
+    * `openstreetmap.osm_buildings_filtered` (from OSM)
+    * `openstreetmap.osm_buildings_synthetic` (synthetic, creaed by us)
+
+    Use column `id` for both as it is unique hence you concat both datasets.
+    """
+
+    municipalities_gdf = municipality_data()
+
+    osm_buildings_gdf = osm_buildings(municipalities_gdf.crs)
+    synthetic_buildings_gdf = synthetic_buildings(municipalities_gdf.crs)
+
+    buildings_gdf = gpd.GeoDataFrame(
+        pd.concat(
+            [
+                osm_buildings_gdf,
+                synthetic_buildings_gdf,
+            ]
+        ),
+        crs=osm_buildings_gdf.crs,
+    )
+
+    buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
+
+    return drop_buildings_outside_muns(buildings_ags_gdf)
 
 
-# def load_building_data():
-#     """Read buildings from DB
+def sort_and_qcut_df(
+    df: pd.DataFrame | gpd.GeoDataFrame,
+    col: str,
+    q: int,
+) -> pd.DataFrame | gpd.GeoDataFrame:
+    """
+    Determine the quantile of a given attribute in a (Geo)DataFrame.
+
+    Sort the (Geo)DataFrame ascendingly for the given attribute.
+
+    Parameters
+    -----------
+    df : pandas.DataFrame or geopandas.GeoDataFrame
+        (Geo)DataFrame to sort and qcut.
+    col : str
+        Name of the attribute to sort and qcut the (Geo)DataFrame on.
+    q : int
+        Number of quantiles.
+
+    Returns
+    -------
+    pandas.DataFrame or gepandas.GeoDataFrame
+        Sorted and qcut (Geo)DataFrame.
+    """
+    df = df.sort_values(col, ascending=True)
+
+    df = df.assign(
+        quant=pd.qcut(
+            df[col],
+            q=q,
+            labels=range(q),
+        )
+    )
+
+    return df
+
+
+def allocate_pv(
+    q_mastr_gdf: gpd.GeoDataFrame,
+    q_buildings_gdf: gpd.GeoDataFrame,
+    seed: int,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """
+    Allocate the MaStR pv generators to the OSM buildings.
+
+    This will determine a building for each pv generator if there are more
+    buildings than generators within a given AGS. Primarily generators are
+    distributed with the same qunatile as the buildings. Multiple assignment
+    is excluded.
+
+    Parameters
+    -----------
+    q_mastr_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing geocoded and qcut MaStR data.
+    q_buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing qcut OSM buildings data.
+    seed : int
+        Seed to use for random operations with NumPy and pandas.
+
+    Returns
+    -------
+    tuple with two geopandas.GeoDataFrame\s  # noqa: W605
+        GeoDataFrame containing MaStR data allocated to building IDs.
+        GeoDataFrame containing building data allocated to MaStR IDs.
+    """
+    rng = default_rng(seed=seed)
+
+    q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
+    q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
+
+    for ags in q_buildings_gdf.ags.unique():
+        buildings = q_buildings_gdf.loc[
+            (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
+        ]
+        gens = q_mastr_gdf.loc[
+            (q_mastr_gdf.ags == ags) & (q_mastr_gdf.building_id.isna())
+        ]
+
+        len_build = len(buildings)
+        len_gens = len(gens)
+
+        # TODO: @Jonathan FYI this part is probably unnecessary when all
+        #  building data is loaded
+        if len_build < len_gens:
+            gens = gens.sample(len_build, random_state=seed)
+            logger.error(
+                f"There are {len_gens} generators and only {len_build}"
+                f" buildings in AGS {ags}. {len_gens - len(gens)} "
+                "generators were truncated to match the amount of buildings."
+            )
+
+            assert len_build == len(gens)
+
+        for quant in gens.quant.unique():
+            q_buildings = q_buildings_gdf.loc[
+                (q_buildings_gdf.quant == quant)
+                & (q_buildings_gdf.ags == ags)
+                & (q_buildings_gdf.gens_id.isna())
+            ]
+            q_gens = gens.loc[gens.quant == quant]
+
+            len_build = len(q_buildings)
+            len_gens = len(q_gens)
+
+            # TODO: @Jonathan FYI this part is probably unnecessary when all
+            #  building data is loaded
+            if len_build < len_gens:
+                delta = len_gens - len_build
+
+                logger.warning(
+                    f"There are {len_gens} generators and only {len_build} "
+                    f"buildings in AGS {ags} and quantile {quant}. {delta} "
+                    f"buildings from AGS {ags} will be added randomly."
+                )
+
+                add_buildings = pd.Index(
+                    rng.choice(
+                        q_buildings_gdf.loc[
+                            (q_buildings_gdf.quant != quant)
+                            & (q_buildings_gdf.ags == ags)
+                            & (q_buildings_gdf.gens_id.isna())
+                        ].index,
+                        size=delta,
+                        replace=False,
+                    )
+                )
+
+                q_buildings = q_buildings_gdf.loc[
+                    q_buildings.index.append(add_buildings)
+                ]
+
+                assert len(q_buildings) == len(q_gens)
+
+            chosen_buildings = pd.Index(
+                rng.choice(
+                    q_buildings.index,
+                    size=len(q_gens),
+                    replace=False,
+                )
+            )
+
+            q_mastr_gdf.loc[q_gens.index] = q_mastr_gdf.loc[
+                q_gens.index
+            ].assign(building_id=chosen_buildings)
+
+            q_buildings_gdf.loc[chosen_buildings] = q_buildings_gdf.loc[
+                chosen_buildings
+            ].assign(gens_id=q_gens.index)
+
+    return q_mastr_gdf, q_buildings_gdf
+
+
+def validate_output(
+    desagg_mastr_gdf: pd.DataFrame | gpd.GeoDataFrame,
+    desagg_buildings_gdf: pd.DataFrame | gpd.GeoDataFrame,
+) -> None:
+    """
+    Validate output.
+
+    Parameters
+    -----------
+    desagg_mastr_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing MaStR data allocated to building IDs.
+    desagg_buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing building data allocated to MaStR IDs.
+
+    """
+    assert len(
+        desagg_mastr_gdf.loc[~desagg_mastr_gdf.building_id.isna()]
+    ) == len(desagg_buildings_gdf.loc[~desagg_buildings_gdf.gens_id.isna()])
+    assert (
+        np.sort(
+            desagg_mastr_gdf.loc[
+                ~desagg_mastr_gdf.building_id.isna()
+            ].building_id.unique()
+        )
+        == np.sort(
+            desagg_buildings_gdf.loc[
+                ~desagg_buildings_gdf.gens_id.isna()
+            ].index.unique()
+        )
+    ).all()
+    assert (
+        np.sort(
+            desagg_mastr_gdf.loc[
+                ~desagg_mastr_gdf.building_id.isna()
+            ].index.unique()
+        )
+        == np.sort(
+            desagg_buildings_gdf.loc[
+                ~desagg_buildings_gdf.gens_id.isna()
+            ].gens_id.unique()
+        )
+    ).all()
+
+    logger.debug("Validated output.")
+
+
+def drop_unallocated_gens(
+    gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Drop generators which did not get allocated.
+
+    TODO: @Jonathan FYI this part is probably unnecessary when all
+     building data is loaded
+
+    Parameters
+    -----------
+    gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing MaStR data allocated to building IDs.
+    """
+    init_len = len(gdf)
+    gdf = gdf.loc[~gdf.building_id.isna()]
+    end_len = len(gdf)
+
+    logger.debug(
+        f"Dropped {init_len - end_len} "
+        f"({((init_len - end_len) / init_len) * 100:g}%)"
+        f" of {init_len} unallocated rows from MaStR DataFrame."
+    )
+
+    return gdf
+
+
+def allocate_to_buildings(
+    mastr_gdf: gpd.GeoDataFrame,
+    buildings_gdf: gpd.GeoDataFrame,
+):
+    """Do the allocation"""
+    q_mastr_gdf = sort_and_qcut_df(mastr_gdf, col="capacity", q=Q)
+    q_buildings_gdf = sort_and_qcut_df(buildings_gdf, col="area", q=Q)
+
+    desagg_mastr_gdf, desagg_buildings_gdf = allocate_pv(
+        q_mastr_gdf, q_buildings_gdf, SEED
+    )
+    validate_output(desagg_mastr_gdf, desagg_buildings_gdf)
+
+    return drop_unallocated_gens(desagg_mastr_gdf)
+
+
+# class EgonPowerPlantPvRoofBuildingMapping(Base):
+#     __tablename__ = "egon_power_plants_pv_roof_building_mapping"
+#     __table_args__ = {"schema": "supply"}
 #
-#     Tables:
-#     * `openstreetmap.osm_buildings_filtered` (from OSM)
-#     * `openstreetmap.osm_buildings_synthetic` (synthetic, creaed by us)
-#
-#     Use column `id` for both as it is unique hen you concat both datasets.
-#     """
-#
-#     # OSM data (infer the table as there is no SQLA model)
-#     buildings_osm = Table(
-#         "osm_buildings_filtered",
-#         Base.metadata,
-#         schema="openstreetmap"
-#     )
-#     inspect(engine).reflecttable(buildings_osm, None)
-#
-#     # Synthetic buildings
-#     with db.session_scope() as session:
-#         cells_query = (
-#             session.query(
-#                 OsmBuildingsSynthetic. ...
-#             ).order_by(OsmBuildingsSynthetic.id)
-#         )
-#     buildings_synthetic = pd.read_sql(
-#         cells_query.statement, cells_query.session.bind, index_col="id"
-#     )
-#
-#     # CONCAT
-#
-#     return []
-#
-#
-# def allocate_to_buildings(pv_units, buildings):
-#     """Do the allocation"""
-#
-#     # Please init random stuff (generic and np) with global RANDOM_SEED for
-#     # reproducibility
-#
-#     return []
+#     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
+#     osm_buildings_id = Column(Integer, primary_key=True)
+#     pv_roof_unit_id = Column(
+#         Integer, primary_key=True
+#     )  # will later point to new power plant table
 #
 #
 # def create_mapping_table(alloc_data):
@@ -828,19 +1129,9 @@ class EgonPowerPlantPvRoofBuildingMapping(Base):
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
-    if not EXPORT_PATH.is_file():
-        mastr_gdf = load_mastr_data()
-    else:
-        mastr_gdf = mastr_gdf = mastr_geo_data(
-            EXPORT_PATH, EXPORT_FILE.split(".")[0]
-        )
-    # buildings = load_building_data()
-    # alloc_data = allocate_to_buildings(pv_units, buildings)
+    mastr_gdf = load_mastr_data()
+
+    buildings_gdf = load_building_data()
+
+    allocate_to_buildings(mastr_gdf, buildings_gdf)
     # create_mapping_table(alloc_data)
-    #
-
-
-if __name__ == "__main__":
-    LOCAL = True
-
-    pv_rooftop_to_buildings()
