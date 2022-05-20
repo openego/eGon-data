@@ -71,7 +71,8 @@ def sanitycheck_eGon2035_electricity():
                         AND country = 'DE')
                     AND carrier IN ('biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
                     GROUP BY (scn_name);
-                """
+                """,
+                warning=False
             )
 
         else:
@@ -86,7 +87,8 @@ def sanitycheck_eGon2035_electricity():
                                WHERE scn_name = 'eGon2035'
                                AND country = 'DE')
                          GROUP BY (scn_name);
-                    """
+                    """,
+                    warning=False
                 )
 
 
@@ -96,7 +98,8 @@ def sanitycheck_eGon2035_electricity():
                      WHERE carrier= '{carrier}'
                      AND scenario_name ='{scn}'
                      GROUP BY (carrier);
-                """
+                """,
+                warning=False
             )
 
         if (
@@ -151,7 +154,8 @@ def sanitycheck_eGon2035_electricity():
              AND a.scn_name = '{scn}'
              GROUP BY (scn_name, a.carrier, c.capacity);
 
-        """
+        """,
+        warning=False
     )
 
     sum_installed_storage["Error"] = (
@@ -189,7 +193,8 @@ def sanitycheck_eGon2035_electricity():
             AND c.country='DE'
             GROUP BY (a.scn_name, a.carrier);
 
-    """
+    """,
+    warning=False
     )["load_twh"].values[0]
 
     input_cts_ind = db.select_dataframe(
@@ -199,7 +204,8 @@ def sanitycheck_eGon2035_electricity():
             AND year IN ('2035')
             GROUP BY (scenario);
 
-        """
+        """,
+        warning=False
     )["demand_mw_regio_cts_ind"].values[0]
 
     input_hh = db.select_dataframe(
@@ -208,7 +214,8 @@ def sanitycheck_eGon2035_electricity():
             WHERE scenario= 'eGon2035'
             AND year IN ('2035')
             GROUP BY (scenario);
-        """
+        """,
+        warning=False
     )["demand_mw_regio_hh"].values[0]
 
     input_demand = input_hh + input_cts_ind
@@ -258,7 +265,8 @@ def sanitycheck_eGon2035_heat():
             AND c.country='DE'
             AND a.carrier IN ('rural_heat', 'central_heat')
             GROUP BY (a.scn_name);
-        """
+        """,
+        warning=False
     )["load_twh"].values[0]
 
 
@@ -268,7 +276,8 @@ def sanitycheck_eGon2035_heat():
             FROM demand.egon_peta_heat
             WHERE scenario= 'eGon2035'
             GROUP BY (scenario);
-        """
+        """,
+        warning=False
     )[
         "demand_mw_peta_heat"
     ].values[0]
@@ -297,7 +306,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'urban_central_heat_pump'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "urban_central_heat_pump_mw"
     ].values[0]
@@ -308,7 +318,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'central_heat_pump'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
-    """
+    """,
+    warning=False
     )["central_heat_pump_mw"].values[0]
 
     e_heat_pump = (
@@ -335,7 +346,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'residential_rural_heat_pump'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "residential_heat_pump_mw"
     ].values[0]
@@ -346,7 +358,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'rural_heat_pump'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
-    """
+    """,
+    warning=False
     )["rural_heat_pump_mw"].values[0]
 
     e_residential_heat_pump = (
@@ -371,7 +384,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'urban_central_resistive_heater'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "urban_central_resistive_heater_mw"
     ].values[0]
@@ -382,7 +396,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'central_resistive_heater'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "central_resistive_heater_mw"
     ].values[0]
@@ -411,7 +426,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'urban_central_solar_thermal_collector'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "solar_thermal_collector_mw"
     ].values[0]
@@ -422,7 +438,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'solar_thermal_collector'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "solar_thermal_collector_mw"
     ].values[0]
@@ -451,7 +468,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'urban_central_geo_thermal'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
-        """
+        """,
+        warning=False
     )[
         "urban_central_geo_thermal_mw"
     ].values[0]
@@ -462,8 +480,8 @@ def sanitycheck_eGon2035_heat():
             WHERE carrier= 'geo_thermal'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
-
-    """
+    """,
+    warning=False
     )["geo_thermal_mw"].values[0]
 
     e_geo_thermal = (
