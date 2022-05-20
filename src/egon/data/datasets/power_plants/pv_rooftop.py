@@ -203,7 +203,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
     pv_rooftop = pv_rooftop.set_index("generator_id")
     pv_rooftop["marginal_cost"] = get_sector_parameters(
         "electricity", "eGon2035"
-    )["marginal_cost"]["pv"]
+    )["marginal_cost"]["solar"]
 
     # Insert data to database
     pv_rooftop.to_sql(
