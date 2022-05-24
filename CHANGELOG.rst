@@ -347,6 +347,8 @@ Changed
   `#727 <https://github.com/openego/eGon-data/issues/727>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Aggregate NUTS3 industrial loads for CH4 and H2
+  `#452 <https://github.com/openego/eGon-data/issues/452>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
 * Update deposit id to access v0.6 of the zenodo repository

@@ -37,7 +37,7 @@ class IndustrialGasDemandeGon2035(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon2035",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon2035),
         )
@@ -47,7 +47,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon100RE",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon100RE),
         )
@@ -404,6 +404,12 @@ def insert_industrial_gas_demand_egon2035():
         ]
     )
 
+    industrial_gas_demand = (
+        industrial_gas_demand.groupby(["bus", "carrier"])["p_set"]
+        .apply(lambda x: [sum(y) for y in zip(*x)])
+        .reset_index(drop=False)
+    )
+
     industrial_gas_demand = insert_new_entries(industrial_gas_demand, scn_name)
     insert_industrial_gas_demand_time_series(industrial_gas_demand)
 
@@ -444,7 +450,15 @@ def insert_industrial_gas_demand_egon100RE():
     ].apply(lambda x: [val / H2_total * H2_total_PES for val in x])
 
     industrial_gas_demand = pd.concat(
-        [industrial_gas_demand_CH4, industrial_gas_demand_H2,]
+        [
+            industrial_gas_demand_CH4,
+            industrial_gas_demand_H2,
+        ]
+    )
+    industrial_gas_demand = (
+        industrial_gas_demand.groupby(["bus", "carrier"])["p_set"]
+        .apply(lambda x: [sum(y) for y in zip(*x)])
+        .reset_index(drop=False)
     )
 
     industrial_gas_demand = insert_new_entries(industrial_gas_demand, scn_name)
