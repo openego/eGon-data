@@ -3,8 +3,8 @@
 The central module containing all code dealing with importing gas storages data
 """
 from pathlib import Path
-import ast
 from telnetlib import GA
+import ast
 
 import geopandas
 import numpy as np
