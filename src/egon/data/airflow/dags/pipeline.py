@@ -14,7 +14,6 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
-from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -34,6 +33,7 @@ from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
+from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.gas_prod import CH4Production
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
@@ -470,19 +470,6 @@ with airflow.DAG(
         ]
     )
 
-    # Heat to eTraGo
-    heat_etrago = HeatEtrago(
-        dependencies=[
-            heat_supply,
-            mv_grid_districts,
-            renewable_feedin,
-            setup_etrago,
-        ]
-    )
-
-    # CHP to eTraGo
-    chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
-
     # DSM (demand site management)
     components_dsm = dsm_Potential(
         dependencies=[
@@ -518,6 +505,20 @@ with airflow.DAG(
             zensus_mv_grid_districts,
         ]
     )
+
+    # Heat to eTraGo
+    heat_etrago = HeatEtrago(
+        dependencies=[
+            heat_supply,
+            mv_grid_districts,
+            renewable_feedin,
+            setup_etrago,
+            heat_time_series,
+        ]
+    )
+
+    # CHP to eTraGo
+    chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
