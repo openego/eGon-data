@@ -5,7 +5,7 @@ import geopandas as gpd
 
 from egon.data import db
 from egon.data.datasets.etrago_setup import link_geom_from_buses
-from egon.data.datasets.gas_prod import assign_bus_id
+from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
