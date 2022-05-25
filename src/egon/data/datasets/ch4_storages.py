@@ -217,20 +217,24 @@ def import_ch4_storages():
         """
     )
 
-    # Select next id value
-    new_id = db.next_etrago_id("store")
-
     gas_storages_list = pd.concat(
         [
             import_installed_ch4_storages(scn_name),
             import_ch4_grid_capacity(scn_name),
         ]
     )
+
+    # Aggregate ch4 stores with same properties at the same bus
+    gas_storages_list = (
+        gas_storages_list.groupby(["bus", "carrier", "scn_name"])
+        .agg({"e_nom": "sum"})
+        .reset_index(drop=False)
+    )
+
+    new_id = db.next_etrago_id("store")
     gas_storages_list["store_id"] = range(
         new_id, new_id + len(gas_storages_list)
     )
-
-    gas_storages_list = gas_storages_list.reset_index(drop=True)
 
     # Insert data to db
     gas_storages_list.to_sql(
