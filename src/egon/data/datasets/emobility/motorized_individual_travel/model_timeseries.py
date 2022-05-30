@@ -142,7 +142,7 @@ def data_preprocessing(
             last_timestep_share * ev_data_df.charging_capacity_grid_MW
         ),
         charge_end=ev_data_df.park_start + full_timesteps,
-        last_timestep=ev_data_df.park_start + full_timesteps + 1,
+        last_timestep=ev_data_df.park_start + full_timesteps,
     )
 
     # Calculate flexible charging capacity:
