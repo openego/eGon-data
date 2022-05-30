@@ -124,6 +124,9 @@ def data_preprocessing(
         location=ev_data_df.location.str.replace("/", "_"),
     )
 
+    # fix driving events
+    ev_data_df.minimum_charging_time.fillna(0, inplace=True)
+
     # calculate charging capacity for last timestep
     (
         full_timesteps,
