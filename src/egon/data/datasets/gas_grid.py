@@ -21,6 +21,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.etrago_helpers import (
     copy_and_modify_buses,
+    copy_and_modify_buses_abroad,
     copy_and_modify_links,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters

@@ -8,7 +8,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
-    """ Initialise bus insertion to etrago table
+    """Initialise bus insertion to etrago table
 
     Parameters
     ----------
@@ -45,7 +45,7 @@ def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
 
 
 def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
-    """ Finalize bus insertion to etrago table
+    """Finalize bus insertion to etrago table
 
     Parameters
     ----------
@@ -252,6 +252,57 @@ def copy_and_modify_buses(from_scn, to_scn, filter_dict):
         DELETE FROM grid.egon_etrago_bus
         WHERE {where_clause} scn_name = '{to_scn}' AND
         country = 'DE'
+        """
+    )
+
+    gdf.to_postgis(
+        "egon_etrago_bus",
+        schema="grid",
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+        dtype={"geom": Geometry()},
+    )
+
+
+def copy_and_modify_buses_abroad(from_scn, to_scn, filter_dict):
+    """
+    Copy buses abroad from one scenario to a different scenario
+
+    Parameters
+    ----------
+    from_scn : str
+        Source scenario.
+    to_scn : str
+        Target scenario.
+    filter_dict : dict
+        Filter buses according the information provided in this dict.
+    """
+    where_clause = ""
+    for column, filters in filter_dict.items():
+        where_clause += (
+            column
+            + " IN "
+            + str(tuple(filters)).replace("',)", "')")
+            + " AND "
+        )
+
+    gdf = db.select_geodataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE {where_clause} scn_name = '{from_scn}' AND
+        country != 'DE'
+        """,
+        epsg=4326,
+    )
+
+    gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE {where_clause} scn_name = '{to_scn}' AND
+        country != 'DE'
         """
     )
 
