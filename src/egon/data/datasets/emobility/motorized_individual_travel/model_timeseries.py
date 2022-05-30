@@ -91,7 +91,7 @@ def data_preprocessing(
     ]
 
     # drop faulty data
-    ev_data_df = ev_data_df.loc[ev_data_df.park_start < ev_data_df.park_end]
+    ev_data_df = ev_data_df.loc[ev_data_df.park_start <= ev_data_df.park_end]
 
     if max_duplicates >= 2:
         # duplicate profiles if necessary
