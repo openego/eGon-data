@@ -727,6 +727,19 @@ def insert_gas_data():
     remove_isolated_gas_buses()
 
 
+def insert_CH4_buses_abroad_eGon100RE():
+    targets = config.datasets()["gas_grid"]["targets"]
+    copy_and_modify_buses_abroad("eGon2035", "eGon100RE", {"carrier": ["CH4"]})
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']}
+        WHERE "carrier" = 'CH4'
+        AND scn_name = 'eGon100RE'
+        AND country = 'RU'
+        """
+    )
+
+
 def insert_gas_data_eGon100RE():
     """Overall function for importing gas data from SciGRID_gas
     Returns
@@ -735,3 +748,4 @@ def insert_gas_data_eGon100RE():
     """
     copy_and_modify_buses("eGon2035", "eGon100RE", {"carrier": ["CH4"]})
     copy_and_modify_links("eGon2035", "eGon100RE", ["CH4"], "gas")
+    insert_CH4_buses_abroad_eGon100RE()
