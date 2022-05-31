@@ -1170,13 +1170,6 @@ def residential_demand_scale(aggregation_level):
         values="area_id", index="zensus_population_id", columns="scenario"
     )
 
-    mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-
-    mv_grid_ind = mv_grid.loc[
-        mv_grid.index.difference(district_heating.index), :
-    ]
-    mv_grid_ind = mv_grid_ind.reset_index()
-
     scenarios = ["eGon2035", "eGon100RE"]
 
     residential_dist_profile = pd.DataFrame()
@@ -1184,8 +1177,22 @@ def residential_demand_scale(aggregation_level):
     residential_zensus_profile = pd.DataFrame()
 
     for scenario in scenarios:
+
+        mv_grid_ind = db.select_dataframe(
+            f"""
+                SELECT bus_id, zensus_population_id FROM 
+                boundaries.egon_map_zensus_grid_districts
+                WHERE zensus_population_id NOT IN (
+                    SELECT zensus_population_id FROM 
+                    demand.egon_map_zensus_district_heating_areas
+                    WHERE scenario = '{scenario}'
+                    )                
+                """
+        )
+
         if aggregation_level == "district":
 
+            # Time series for district heating areas
             scenario_ids = district_heating[scenario]
             scenario_ids.dropna(inplace=True)
             scenario_ids = scenario_ids.to_frame()
