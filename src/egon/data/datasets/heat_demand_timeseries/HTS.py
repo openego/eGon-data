@@ -1090,7 +1090,6 @@ def profile_generator(aggregation_level):
                 how="inner",
             )
 
-            # data = heat_profile_idp.drop(['key_0'], axis= 'columns').transpose().values
             heat_profile_idp.sort_values("bus_id", inplace=True)
             heat_profile_idp.set_index("bus_id", inplace=True)
             heat_profile_idp.drop("key_0", axis=1, inplace=True)
