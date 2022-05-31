@@ -355,12 +355,13 @@ def get_iee_hh_demand_profiles_raw():
 
     df_hh_profiles = pd.read_hdf(hh_profiles_file)
 
-    # Use only last 8760 timesteps of profiles (for details see notes)
-    timesteps_target = 8760
-    if len(df_hh_profiles) > timesteps_target:
-        df_hh_profiles = df_hh_profiles[
-            len(df_hh_profiles) - timesteps_target :
-        ].reset_index(drop=True)
+    # aggregate profile types O2, O1 and O0 as there is no differentiation
+    # possible at cell level see :func:`regroup_nuts1_census_data`.
+    merge_profiles = [i for i in df_hh_profiles.columns if "O1" in i[:3]]
+    merge_profiles += [i for i in df_hh_profiles.columns if "O2" in i[:3]]
+    merge_profiles += [i for i in df_hh_profiles.columns if "O0" in i[:3]]
+    mapping = {f"{old}": f"O0a{i:05d}" for i, old in enumerate(merge_profiles)}
+    df_hh_profiles.rename(columns=mapping, inplace=True)
 
     return df_hh_profiles
 
