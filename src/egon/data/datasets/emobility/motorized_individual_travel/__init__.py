@@ -148,6 +148,11 @@ def create_tables():
     EgonEvMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
 
+    # Create dir for results, if it does not exist
+    result_dir = WORKING_DIR / Path("results")
+    if not os.path.exists(result_dir):
+        os.mkdir(result_dir)
+
 
 def download_and_preprocess():
     """Downloads and preprocesses data from KBA and BMVI
