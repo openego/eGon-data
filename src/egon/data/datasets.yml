@@ -455,7 +455,7 @@ electrical_load_curves_cts:
 hh_demand_profiles:
   sources:
     household_electricity_demand_profiles:
-      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
+      path_testmode: "household_electricity_demand_profiles_2511.hdf5"
       path: "household_electricity_demand_profiles_100k.hdf5"
 
     zensus_household_types:
