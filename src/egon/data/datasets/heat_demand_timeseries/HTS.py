@@ -998,14 +998,14 @@ def profile_generator(aggregation_level):
 
     heat_profile_dist : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every distric heating id
+            normalized heat profiles for every distric heating id
         else
             0
     heat_profile_idp : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every mv grid bus_id
+            normalized heat profiles for every mv grid bus_id
         else
-            heat profiles for every zensus_poppulation_id
+            normalized heat profiles for every zensus_poppulation_id
     """
 
     annual_demand, idp_df, selected_profiles = profile_selector()
@@ -1274,6 +1274,7 @@ def residential_demand_scale(aggregation_level):
                 heat_demand_profile_dist
             )
 
+            # Individual supplied heat demand time series
             district_grid = pd.merge(
                 mv_grid_ind[["bus_id", "zensus_population_id"]],
                 annual_demand[["zensus_population_id", "Station", scenario]],
