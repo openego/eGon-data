@@ -357,6 +357,8 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+*  Update hh electricity profiles
+  `#736 <https://github.com/openego/eGon-data/issues/735>`_
 
 
 Bug Fixes
