@@ -401,6 +401,64 @@ def backup_gas_boilers(scenario):
     )
 
 
+def backup_resistive_heaters(scenario):
+    """Adds backup resistive heaters to district heating grids to
+    meet target values of installed capacities.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    Geopandas.GeoDataFrame
+        List of gas boilers for district heating
+
+    """
+
+    # Select district heating areas from database
+    district_heating_areas = select_district_heating_areas(scenario)
+
+    # Select target value
+    target_value = db.select_dataframe(
+        f"""
+        SELECT capacity
+        FROM supply.egon_scenario_capacities
+        WHERE carrier = 'urban_central_resistive_heater'
+        AND scenario_name = '{scenario}'
+        """
+    ).capacity[0]
+
+    distributed = db.select_dataframe(
+        f"""
+        SELECT SUM(capacity) as capacity
+        FROM supply.egon_district_heating
+        WHERE carrier = 'resistive_heater'
+        AND scenario = '{scenario}'
+        """
+    ).capacity[0]
+
+    if target_value > distributed:
+        df = gpd.GeoDataFrame(
+            data={
+                "district_heating_id": district_heating_areas.index,
+                "capacity": district_heating_areas.demand.div(
+                    district_heating_areas.demand.sum()
+                ).mul(target_value - distributed),
+                "carrier": "resistive_heater",
+                "category": district_heating_areas.category,
+                "geometry": district_heating_areas.geom.centroid,
+                "scenario": scenario,
+            }
+        )
+
+    else:
+        df = gpd.GeoDataFrame()
+
+    return df
+
+
 def plot_heat_supply(resulting_capacities):
 
     from matplotlib import pyplot as plt
