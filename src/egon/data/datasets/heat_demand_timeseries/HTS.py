@@ -1424,19 +1424,17 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     )
     nuts_zensus.drop("zensus_geom", axis=1, inplace=True)
 
-    demand = psycop_df_AF("demand.egon_peta_heat")
-    demand = demand[
-        (demand["sector"] == "service") & (demand["scenario"] == scenario)
-    ]
-    demand.drop(
-        demand.columns.difference(["demand", "zensus_population_id"]),
-        axis=1,
-        inplace=True,
-    )
-    demand.sort_values("zensus_population_id", inplace=True)
-
-    demand_nuts = pd.merge(
-        demand, nuts_zensus, how="left", on="zensus_population_id"
+    demand_nuts = db.select_dataframe(
+        f"""
+        SELECT a.demand, a.zensus_population_id,
+        b.vg250_municipality_id, b.vg250_nuts3
+        FROM demand.egon_peta_heat a
+        JOIN boundaries.egon_map_zensus_vg250 b
+        ON (a.zensus_population_id = b.zensus_population_id)
+        WHERE sector = 'service'
+        AND scenario = '{scenario}'
+        ORDER BY a.zensus_population_id
+        """
     )
 
     mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
