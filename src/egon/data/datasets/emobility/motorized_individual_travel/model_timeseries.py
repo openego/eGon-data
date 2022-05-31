@@ -748,11 +748,6 @@ def generate_model_data(scenario_name: str):
         Scenario name
     """
 
-    # Create dir for results, if it does not exist
-    result_dir = WORKING_DIR / Path("results")
-    if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
-
     # Get scenario variation name
     scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
 
