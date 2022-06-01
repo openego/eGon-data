@@ -1470,7 +1470,7 @@ def houseprofiles_in_census_cells():
 
     def gen_profile_names(n):
         """Join from Format (str),(int) to (str)a000(int)"""
-        a = f"{n[0]}a{int(n[1]):04d}"
+        a = f"{n[0]}a{int(n[1]):05d}"
         return a
 
     # Init random generators using global seed
