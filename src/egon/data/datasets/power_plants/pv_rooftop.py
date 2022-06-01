@@ -7,31 +7,6 @@ from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def next_id(component):
-    """Select next id value for components in pf-tables
-    Parameters
-    ----------
-    component : str
-        Name of componenet
-    Returns
-    -------
-    next_id : int
-        Next index value
-    """
-    max_id = db.select_dataframe(
-        f"""
-        SELECT MAX({component}_id) FROM grid.egon_etrago_{component}
-        """
-    )["max"][0]
-
-    if max_id:
-        next_id = max_id + 1
-    else:
-        next_id = 1
-
-    return next_id
-
-
 def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
     """Intergate solar rooftop per mv grid district
 
@@ -142,7 +117,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
         demand.set_index("bus_id", inplace=True)
 
     # Select next id value
-    new_id = next_id("generator")
+    new_id = db.next_etrago_id("generator")
 
     # Store data in dataframe
     pv_rooftop = pd.DataFrame(

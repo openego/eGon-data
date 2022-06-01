@@ -125,7 +125,7 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except Exception:
         session.rollback()
         raise
     finally:
@@ -224,13 +224,17 @@ def next_etrago_id(component):
     Parameters
     ----------
     component : str
-        Name of componenet
+        Name of component
 
     Returns
     -------
     next_id : int
         Next index value
 
+    Notes
+    -----
+    To catch concurrent DB commits, consider to use
+    :func:`check_db_unique_violation` instead.
     """
 
     if component == "transformer":
