@@ -279,9 +279,9 @@ def check_db_unique_violation(func):
     Add new bus to eTraGo's bus table:
 
     >>> from egon.data import db
-    ... from egon.data.datasets.etrago_setup import EgonPfHvBus
+    >>> from egon.data.datasets.etrago_setup import EgonPfHvBus
     ...
-    ... @check_db_unique_violation
+    >>> @check_db_unique_violation
     ... def add_etrago_bus():
     ...     bus_id = db.next_etrago_id("bus")
     ...     with db.session_scope() as session:
