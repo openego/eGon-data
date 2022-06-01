@@ -195,6 +195,8 @@ Added
   again.
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
