@@ -270,6 +270,7 @@ def check_db_unique_violation(func):
     >>> @check_db_unique_violation
     ... def commit_something_to_database():
     ...     # commit something here
+    ...    return
     ...
     >>> commit_something_to_database()
 
