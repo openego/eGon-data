@@ -598,6 +598,14 @@ def neighbor_reduction():
         # Unify carrier names
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
+        # neighbor_links.carrier.replace(
+        # {
+        #     "gas_for_industry": "CH4",
+        #     "gas_for_industry_CC": "CH4",
+        # },
+        # inplace=True,
+        # )
+
         neighbor_links.to_postgis(
             "egon_etrago_link",
             engine,
@@ -628,6 +636,7 @@ def neighbor_reduction():
             "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
             "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
             "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
+            # "gas": "CH4" -> they should be there because there should be no fossil fuel in eGon100RE
         },
         inplace=True,
     )
@@ -656,6 +665,7 @@ def neighbor_reduction():
             "DC": "AC",
             "industry_electricity": "AC",
             "H2_pipeline": "H2_system_boundary",
+            "gas_for_industry": "CH4"
         },
         inplace=True,
     )
@@ -679,7 +689,13 @@ def neighbor_reduction():
 
     neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
 
-    neighbor_stores.carrier.replace({"Li_ion": "battery"}, inplace=True)
+    neighbor_stores.carrier.replace(
+        {
+            "Li_ion": "battery",
+            "gas": "CH4",
+        },
+        inplace=True,
+    )
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
