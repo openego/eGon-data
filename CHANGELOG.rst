@@ -357,6 +357,8 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+* Add primary key to table openstreetmap.osm_ways_with_segments
+  `#787 <https://github.com/openego/eGon-data/issues/787>`_
 
 
 Bug Fixes
