@@ -195,6 +195,8 @@ Added
   again.
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -347,6 +349,8 @@ Changed
   `#727 <https://github.com/openego/eGon-data/issues/727>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Aggregate NUTS3 industrial loads for CH4 and H2
+  `#452 <https://github.com/openego/eGon-data/issues/452>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
 * Update deposit id to access v0.6 of the zenodo repository
@@ -504,6 +508,8 @@ Bug Fixes
   `#708 <https://github.com/openego/eGon-data/issues/708>`_
 * Solve problem while creating generators series data egon2035
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
+* Correct wrong carrier name when assigning marginal costs
+  `#766 <https://github.com/openego/eGon-data/issues/766>`_
 * Use db.next_etrago_id in dsm and pv_rooftop dataset
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 
