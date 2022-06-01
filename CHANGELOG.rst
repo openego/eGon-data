@@ -195,6 +195,8 @@ Added
   again.
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -510,6 +512,8 @@ Bug Fixes
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
 * Correct wrong carrier name when assigning marginal costs
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
+* Use db.next_etrago_id in dsm and pv_rooftop dataset
+  `#748 <https://github.com/openego/eGon-data/issues/748>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

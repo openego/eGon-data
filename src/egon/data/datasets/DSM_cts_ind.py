@@ -12,7 +12,7 @@ class dsm_Potential(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DSM_potentials",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing),
         )
@@ -580,80 +580,20 @@ def dsm_cts_ind_processing():
         df_dsm_stores.sort_values("scn_name", inplace=True)
 
         # select new bus_ids for aggregated buses and add to links and stores
-
-        target1 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
-            "bus"
-        ]
-        sql = f"""SELECT bus_id FROM {target1['schema']}.{target1['table']}"""
-        max_id = pd.read_sql_query(sql, con)
-        max_id = max_id["bus_id"].max()
-        if np.isnan(max_id):
-            max_id = 0
-        dsm_id = max_id + 1
-
-        buses = db.select_geodataframe(
-            f"""SELECT bus_id, geom FROM
-                {target1['schema']}.{target1['table']}"""
-        )
-        max_id = buses["bus_id"].max()
-        if np.isnan(max_id):
-            max_id = 0
-        dsm_id = max_id + 1
-
-        bus_id = pd.Series(index=df_dsm_buses.index, dtype=int)
-        bus_id.iloc[0 : int((len(bus_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(df_dsm_buses) / 2))
-        )
-        bus_id.iloc[int((len(bus_id) / 2)) : len(bus_id)] = range(
-            dsm_id, int((dsm_id + len(df_dsm_buses) / 2))
-        )
+        bus_id = db.next_etrago_id("Bus") +  df_dsm_buses.index
 
         df_dsm_buses["bus_id"] = bus_id
         df_dsm_links["dsm_bus"] = bus_id
         df_dsm_stores["bus"] = bus_id
 
         # select new link_ids for aggregated links
-        target2 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
-            "link"
-        ]
-        sql = f"""SELECT link_id FROM {target2['schema']}.{target2['table']}"""
-        max_id = pd.read_sql_query(sql, con)
-        max_id = max_id["link_id"].max()
-        if np.isnan(max_id):
-            max_id = 0
-        dsm_id = max_id + 1
-
-        link_id = pd.Series(index=df_dsm_links.index, dtype=int)
-        link_id.iloc[0 : int((len(link_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(df_dsm_links) / 2))
-        )
-        link_id.iloc[int((len(link_id) / 2)) : len(link_id)] = range(
-            dsm_id, int((dsm_id + len(df_dsm_links) / 2))
-        )
+        link_id = db.next_etrago_id("Link") +  df_dsm_links.index
 
         df_dsm_links["link_id"] = link_id
 
         # select new store_ids to aggregated stores
 
-        target3 = egon.data.config.datasets()["DSM_CTS_industry"]["targets"][
-            "store"
-        ]
-        sql = (
-            f"""SELECT store_id FROM {target3['schema']}.{target3['table']}"""
-        )
-        max_id = pd.read_sql_query(sql, con)
-        max_id = max_id["store_id"].max()
-        if np.isnan(max_id):
-            max_id = 0
-        dsm_id = max_id + 1
-
-        store_id = pd.Series(index=df_dsm_stores.index, dtype=int)
-        store_id.iloc[0 : int((len(store_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(df_dsm_stores) / 2))
-        )
-        store_id.iloc[int((len(store_id) / 2)) : len(store_id)] = range(
-            dsm_id, int((dsm_id + len(df_dsm_stores) / 2))
-        )
+        store_id = db.next_etrago_id("Store") +  df_dsm_stores.index
 
         df_dsm_stores["store_id"] = store_id
 
