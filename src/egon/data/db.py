@@ -272,7 +272,7 @@ def check_db_unique_violation(func):
     ...     # commit something here
     ...    return
     ...
-    >>> commit_something_to_database()
+    >>> commit_something_to_database()  # doctest: +SKIP
 
     Examples
     --------
@@ -299,7 +299,7 @@ def check_db_unique_violation(func):
     ...         )
     ...         session.commit()
     ...
-    >>> add_etrago_bus()
+    >>> add_etrago_bus()  # doctest: +SKIP
 
     Parameters
     ----------
