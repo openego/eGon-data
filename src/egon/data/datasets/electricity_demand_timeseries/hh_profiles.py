@@ -151,7 +151,7 @@ class IeeHouseholdLoadProfiles(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(INTEGER, primary_key=True)
-    type = Column(CHAR(7), index=True)
+    type = Column(CHAR(8), index=True)
     load_in_wh = Column(ARRAY(REAL))
 
 
