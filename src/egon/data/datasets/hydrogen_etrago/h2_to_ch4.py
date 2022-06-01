@@ -53,6 +53,45 @@ def insert_h2_to_ch4_to_h2():
 
     scn_params = get_sector_parameters("gas", scn_name)
 
+    pipeline_capacities = db.select_dataframe(
+        f"""
+        SELECT bus0, bus1, p_nom FROM grid.egon_etrago_link
+        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+        AND (
+            bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn_name}' AND country = 'DE'
+            ) OR bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn_name}' AND country = 'DE'
+            )
+        );
+        """
+    )
+
+    feed_in["p_nom"] = 0
+    feed_in["p_nom_extendable"] = False
+    # calculation of H2 energy share via volumetric share outsourced
+    # in a mixture of H2 and CH4 with 15 %vol share at 50 bar and 25 °C, the
+    # energy share of H2 roughly corresponds to 5 % of total energy
+    # therefore, that fraction is multiplied to the pipeline capacity at each
+    # CH4 node for maximum H2 feedin
+    # -> Will upload lookup table to zenodo in future
+    H2_energy_share = 0.05
+
+    for bus in feed_in["bus1"].values:
+        # calculate the total pipeline capacity connected to a specific bus
+        nodal_capacity = pipeline_capacities.loc[
+            (pipeline_capacities["bus0"] == bus)
+            | (pipeline_capacities["bus1"] == bus)
+            , "p_nom"
+        ].sum()
+        # multiply total pipeline capacity with H2 energy share corresponding
+        # to volumetric share
+        feed_in.loc[feed_in["bus1"] == bus, "p_nom"] = (
+            nodal_capacity * H2_energy_share
+        )
+
     # Write new entries
     for table, carrier in zip(
         [methanation, SMR, feed_in], ["H2_to_CH4", "CH4_to_H2", "H2_feedin"]
@@ -61,10 +100,7 @@ def insert_h2_to_ch4_to_h2():
         # set parameters according to carrier name
         table["carrier"] = carrier
         table["efficiency"] = scn_params["efficiency"][carrier]
-        if carrier == "H2_feedin":
-            table["p_nom_extendable"] = False
-            table["p_nom"] = 1e9
-        else:
+        if carrier != "H2_feedin":
             table["p_nom_extendable"] = True
             table["capital_cost"] = scn_params["capital_cost"][carrier]
             table["lifetime"] = scn_params["lifetime"][carrier]
