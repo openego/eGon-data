@@ -471,11 +471,26 @@ def neighbor_reduction():
     neighbors["scn_name"] = "eGon100RE"
     neighbors.index = neighbors["new_index"]
 
+    # Correct geometry and carrier for gas buses
+    gas_neighbors = neighbors[neighbors.carrier == "gas"].set_index(
+        "location", drop=False
+    )
+    neighbors = neighbors[neighbors.carrier != "gas"]
+    for i in ["x", "y"]:
+        gas_neighbors = gas_neighbors.drop(i, axis=1)
+    coordinates = neighbors[neighbors.carrier == "AC"][
+        ["location", "x", "y"]
+    ].set_index("location")
+    gas_neighbors.carrier.replace({"gas": "CH4"}, inplace=True)
+    gas_neighbors = pd.concat([coordinates, gas_neighbors], axis=1).set_index(
+        "new_index", drop=False
+    )
+    neighbors = neighbors.append(gas_neighbors)
+
     for i in ["new_index", "control", "generator", "location", "sub_network"]:
         neighbors = neighbors.drop(i, axis=1)
 
     # Add geometry column
-
     neighbors = (
         gpd.GeoDataFrame(
             neighbors, geometry=gpd.points_from_xy(neighbors.x, neighbors.y)
