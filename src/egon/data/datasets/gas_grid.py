@@ -18,10 +18,11 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from egon.data.datasets.etrago_helpers import (
-    copy_and_modify_buses, copy_and_modify_links
-)
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
+from egon.data.datasets.etrago_helpers import (
+    copy_and_modify_buses,
+    copy_and_modify_links,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -29,7 +30,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.3",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(insert_gas_data, insert_gas_data_eGon100RE),
         )
@@ -56,6 +57,7 @@ def download_SciGRID_gas_data():
         "PipeSegments",
         "Productions",
         "Storages",
+        "LNGs",
     ]  #'Compressors'
     files = []
     for i in components:
@@ -91,17 +93,15 @@ def define_gas_nodes_list():
         usecols=["lat", "long", "id", "country_code", "param"],
     )
 
-    # Ajouter tri pour ne conserver que les pays ayant des pipelines en commun.
+    # Correct non valid neighbouring country nodes
+    gas_nodes_list.loc[
+        gas_nodes_list["id"] == "INET_N_1182", "country_code"
+    ] = "AT"
+    gas_nodes_list.loc[
+        gas_nodes_list["id"] == "SEQ_10608_p", "country_code"
+    ] = "NL"
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
-
-    # Remove buses disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
-    gas_nodes_list = gas_nodes_list[
-        ~gas_nodes_list["id"].str.match("SEQ_11790_p")
-    ]
-    gas_nodes_list = gas_nodes_list[
-        ~gas_nodes_list["id"].str.match("Stor_EU_107")
-    ]
 
     gas_nodes_list["bus_id"] = range(new_id, new_id + len(gas_nodes_list))
     gas_nodes_list = gas_nodes_list.set_index("id")
@@ -144,7 +144,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
 
     gas_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
-    ]  # A remplacer evtmt par un test sur le NUTS0 ?
+    ]  # To eventually replace with a test if the nodes are in the german boundaries.
 
     # Cut data to federal state if in testmode
     NUTS1 = []
@@ -267,6 +267,18 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
+    # Add central bus in Russia
+    gdf_abroad_buses = gdf_abroad_buses.append(
+        {
+            "scn_name": scn_name,
+            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+            "x": 41,
+            "y": 55,
+            "country": "RU",
+            "carrier": main_gas_carrier,
+        },
+        ignore_index=True,
+    )
     # if in test mode, add bus in center of Germany
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
@@ -365,14 +377,10 @@ def insert_gas_pipeline_list(
         gas_pipelines_list["country_code"].str.contains("DE")
     ]
 
-    # Remove links disconnected of the rest of the grid, until the SciGRID_gas data has been corrected.
-    # TODO: automatic test for disconnected links
-    # TODO: remove link test if length = 0
+    # Remove links disconnected of the rest of the grid
+    # Remove manually for disconnected link EntsoG_Map__ST_195
     gas_pipelines_list = gas_pipelines_list[
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
-    ]
-    gas_pipelines_list = gas_pipelines_list[
-        ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_5")
     ]
 
     gas_pipelines_list["link_id"] = range(
@@ -426,11 +434,13 @@ def insert_gas_pipeline_list(
     diameter = []
     geom = []
     topo = []
+    length_km = []
 
     for index, row in gas_pipelines_list.iterrows():
 
         param = ast.literal_eval(row["param"])
         diameter.append(param["diameter_mm"])
+        length_km.append(param["length_km"])
 
         long_e = json.loads(row["long"])
         lat_e = json.loads(row["lat"])
@@ -450,6 +460,7 @@ def insert_gas_pipeline_list(
     gas_pipelines_list["diameter"] = diameter
     gas_pipelines_list["geom"] = geom
     gas_pipelines_list["topo"] = topo
+    gas_pipelines_list["length_km"] = length_km
     gas_pipelines_list = gas_pipelines_list.set_geometry("geom", crs=4326)
 
     country_0 = []
@@ -467,7 +478,18 @@ def insert_gas_pipeline_list(
     ] = "NO"
     gas_pipelines_list.loc[
         gas_pipelines_list["country_1"] == "FI", "country_1"
-    ] = "SE"
+    ] = "RU"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["id"] == "INET_PL_385_EE_3_Seg_0_Seg_1", "country_1"
+    ] = "AT"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["id"] == "LKD_PS_0_Seg_0_Seg_3", "country_0"
+    ] = "NL"
+
+    # Remove link test if length = 0
+    gas_pipelines_list = gas_pipelines_list[
+        gas_pipelines_list["length_km"] != 0
+    ]
 
     # Adjust columns
     bus0 = []
@@ -585,6 +607,11 @@ def insert_gas_pipeline_list(
     gas_pipelines_list["length"] = length_adjusted
     gas_pipelines_list["pipe_class"] = pipe_class
 
+    # Remove pipes having the same node for start and end
+    gas_pipelines_list = gas_pipelines_list[
+        gas_pipelines_list["bus0"] != gas_pipelines_list["bus1"]
+    ]
+
     gas_pipelines_list = gas_pipelines_list.merge(
         classification,
         how="left",
@@ -613,6 +640,7 @@ def insert_gas_pipeline_list(
             "max_transport_capacity_Gwh/d",
             "lat",
             "long",
+            "length_km",
         ]
     )
 
@@ -655,6 +683,32 @@ def insert_gas_pipeline_list(
     )
 
 
+def remove_isolated_gas_buses():
+    """Delete gas buses which are not connected to the gas grid.
+    Returns
+    -------
+    None.
+    """
+    targets = config.datasets()["gas_grid"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']}
+        WHERE "carrier" = 'CH4'
+        AND scn_name = 'eGon2035'
+        AND country = 'DE'
+        AND "bus_id" NOT IN
+            (SELECT bus0 FROM {targets['links']['schema']}.{targets['links']['table']}
+            WHERE scn_name = 'eGon2035'
+            AND carrier = 'CH4')
+        AND "bus_id" NOT IN
+            (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']}
+            WHERE scn_name = 'eGon2035'
+            AND carrier = 'CH4');
+    """
+    )
+
+
 def insert_gas_data():
     """Overall function for importing gas data from SciGRID_gas
     Returns
@@ -669,6 +723,7 @@ def insert_gas_data():
     abroad_gas_nodes_list = insert_gas_buses_abroad()
 
     insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
+    remove_isolated_gas_buses()
 
 
 def insert_gas_data_eGon100RE():
