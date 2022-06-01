@@ -270,17 +270,18 @@ def check_db_unique_violation(func):
     >>> @check_db_unique_violation
     ... def commit_something_to_database():
     ...     # commit something here
+    ...    return
     ...
-    >>> commit_something_to_database()
+    >>> commit_something_to_database()  # doctest: +SKIP
 
     Examples
     --------
     Add new bus to eTraGo's bus table:
 
     >>> from egon.data import db
-    ... from egon.data.datasets.etrago_setup import EgonPfHvBus
+    >>> from egon.data.datasets.etrago_setup import EgonPfHvBus
     ...
-    ... @check_db_unique_violation
+    >>> @check_db_unique_violation
     ... def add_etrago_bus():
     ...     bus_id = db.next_etrago_id("bus")
     ...     with db.session_scope() as session:
@@ -298,7 +299,7 @@ def check_db_unique_violation(func):
     ...         )
     ...         session.commit()
     ...
-    >>> add_etrago_bus()
+    >>> add_etrago_bus()  # doctest: +SKIP
 
     Parameters
     ----------
