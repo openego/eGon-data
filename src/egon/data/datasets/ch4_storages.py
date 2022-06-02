@@ -13,11 +13,11 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.gas_grid import (
     ch4_nodes_number_G,
     define_gas_nodes_list,
 )
-from egon.data.datasets.gas_prod import assign_bus_id
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -232,20 +232,24 @@ def insert_ch4_stores(scn_name):
         """
     )
 
-    # Select next id value
-    new_id = db.next_etrago_id("store")
-
     gas_storages_list = pd.concat(
         [
             import_installed_ch4_storages(scn_name),
             import_ch4_grid_capacity(scn_name),
         ]
     )
+
+    # Aggregate ch4 stores with same properties at the same bus
+    gas_storages_list = (
+        gas_storages_list.groupby(["bus", "carrier", "scn_name"])
+        .agg({"e_nom": "sum"})
+        .reset_index(drop=False)
+    )
+
+    new_id = db.next_etrago_id("store")
     gas_storages_list["store_id"] = range(
         new_id, new_id + len(gas_storages_list)
     )
-
-    gas_storages_list = gas_storages_list.reset_index(drop=True)
 
     # Insert data to db
     gas_storages_list.to_sql(
