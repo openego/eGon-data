@@ -109,6 +109,7 @@ setup(
         "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
         "xarray",
         "xlrd",
+        "snakemake<7",
     ],
     extras_require={
         "dev": [
