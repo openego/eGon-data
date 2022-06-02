@@ -13,11 +13,11 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.gas_grid import (
     ch4_nodes_number_G,
     define_gas_nodes_list,
 )
-from egon.data.datasets.ch4_prod import assign_bus_id
 
 
 class CH4Storages(Dataset):

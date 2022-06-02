@@ -6,8 +6,8 @@ import airflow
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
-from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.ch4_prod import CH4Production
+from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
@@ -15,7 +15,6 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
-from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -31,6 +30,7 @@ from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
+from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
