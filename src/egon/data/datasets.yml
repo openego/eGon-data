@@ -884,22 +884,6 @@ gas_grid:
       table: 'egon_etrago_bus'
 
 
-gas_aggregation:
-  sources:
-    generators:
-      schema: 'grid'
-      table: 'egon_etrago_generator'
-    stores:
-      schema: 'grid'
-      table: 'egon_etrago_store'
-  targets:
-    generators:
-      schema: 'grid'
-      table: 'egon_etrago_generator'
-    stores:
-      schema: 'grid'
-      table: 'egon_etrago_store'
-
 gas_stores:
   source:
     buses:
