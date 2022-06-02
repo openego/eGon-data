@@ -30,7 +30,6 @@ from collections import Counter
 import datetime as dt
 from pathlib import Path
 import json
-import os
 
 from sqlalchemy.sql import func
 import numpy as np
@@ -79,11 +78,6 @@ def data_preprocessing(
     pd.Dataframe
         Trip data
     """
-    # count profiles to respect profiles which are used multiple times
-    count_profiles = Counter(scenario_data.ev_id)  # type: dict
-
-    max_duplicates = max(count_profiles.values())
-
     # get ev data for given profiles
     ev_data_df = ev_data_df.loc[
         ev_data_df.ev_id.isin(scenario_data.ev_id.unique())
@@ -91,23 +85,6 @@ def data_preprocessing(
 
     # drop faulty data
     ev_data_df = ev_data_df.loc[ev_data_df.park_start <= ev_data_df.park_end]
-
-    if max_duplicates >= 2:
-        # duplicate profiles if necessary
-        temp = ev_data_df.copy()
-
-        for count in range(2, max_duplicates + 1):
-            duplicates = [
-                key for key, val in count_profiles.items() if val >= count
-            ]
-
-            duplicates_df = temp.loc[temp.ev_id.isin(duplicates)]
-
-            duplicates_df = duplicates_df.assign(
-                ev_id=duplicates_df.ev_id.astype(str) + f"_{count}"
-            )
-
-            ev_data_df = ev_data_df.append(duplicates_df)
 
     # calculate time necessary to fulfill the charging demand and brutto
     # charging capacity in MVA
@@ -179,7 +156,8 @@ def data_preprocessing(
 
 def generate_load_time_series(
     ev_data_df: pd.DataFrame,
-    run_config: pd.DataFrame
+    run_config: pd.DataFrame,
+    scenario_data: pd.DataFrame,
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -192,12 +170,17 @@ def generate_load_time_series(
         Full trip data
     run_config : pd.DataFrame
         simBEV metadata: run config
+    scenario_data : pd.Dataframe
+        EV per grid district
 
     Returns
     -------
     pd.DataFrame
         time series of the load and the flex potential
     """
+    # Get duplicates dict
+    profile_counter = Counter(scenario_data.ev_id)
+
     # instantiate timeindex
     timeindex = pd.date_range(
         start=dt.datetime.fromisoformat(f"{run_config.start_date} 00:00:00"),
@@ -221,6 +204,7 @@ def generate_load_time_series(
     driving_load_time_series_array = load_time_series_array.copy()
 
     columns = [
+        "ev_id",
         "drive_start",
         "drive_end",
         "park_start",
@@ -241,6 +225,7 @@ def generate_load_time_series(
     # iterate over charging events
     for (
         _,
+        ev_id,
         drive_start,
         drive_end,
         start,
@@ -257,18 +242,20 @@ def generate_load_time_series(
         location,
         consumption
     ) in ev_data_df[columns].itertuples():
-        load_time_series_array[start:end] += cap
-        load_time_series_array[last_ts] += last_ts_cap
+        ev_count = profile_counter[ev_id]
 
-        flex_time_series_array[start:end] += flex_cap
-        flex_time_series_array[last_ts] += flex_last_ts_cap
+        load_time_series_array[start:end] += cap * ev_count
+        load_time_series_array[last_ts] += last_ts_cap * ev_count
+
+        flex_time_series_array[start:end] += flex_cap * ev_count
+        flex_time_series_array[last_ts] += flex_last_ts_cap * ev_count
 
         simultaneous_plugged_in_charging_capacity[
             start:park_end+1
-        ] += cap
+        ] += cap * ev_count
         simultaneous_plugged_in_charging_capacity_flex[
             start:park_end+1
-        ] += flex_cap
+        ] += flex_cap * ev_count
 
         # ====================================================
         # min and max SoC constraints of aggregated EV battery
@@ -276,46 +263,48 @@ def generate_load_time_series(
         # (I) Preserve SoC while driving
         if location == "driving":
             # Full band while driving
-            #soc_min_absolute[drive_start:drive_end+1] += soc_end * bat_cap
-            #soc_max_absolute[drive_start:drive_end+1] += soc_start * bat_cap
+            #soc_min_absolute[drive_start:drive_end+1] += soc_end * bat_cap * ev_count
+            #soc_max_absolute[drive_start:drive_end+1] += soc_start * bat_cap * ev_count
 
             # Real band (decrease SoC while driving)
             soc_min_absolute[
                 drive_start:drive_end+1
             ] += np.linspace(
                 soc_start, soc_end, drive_end-drive_start+2
-            )[1:] * bat_cap
+            )[1:] * bat_cap * ev_count
             soc_max_absolute[
                 drive_start:drive_end+1
             ] += np.linspace(
                 soc_start, soc_end, drive_end-drive_start+2
-            )[1:] * bat_cap
+            )[1:] * bat_cap * ev_count
 
             # Equal distribution of driving load
             if soc_start > soc_end:  # reqd. for PHEV
                 driving_load_time_series_array[
                     drive_start:drive_end+1
-                ] += consumption / (drive_end-drive_start+1)
+                ] += (consumption * ev_count) / (drive_end-drive_start+1)
 
         # (II) Fix SoC bounds while parking w/o charging
         elif soc_start == soc_end:
-            soc_min_absolute[start:park_end+1] += soc_start * bat_cap
-            soc_max_absolute[start:park_end+1] += soc_end * bat_cap
+            soc_min_absolute[start:park_end+1] += soc_start * bat_cap * ev_count
+            soc_max_absolute[start:park_end+1] += soc_end * bat_cap * ev_count
 
         # (III) Set SoC bounds at start and end of parking while charging
         # for flexible and non-flexible events
         elif soc_start < soc_end:
             if flex_cap > 0:
                 # * "flex" (private charging only, band: SoC_min..SoC_max)
-                soc_min_absolute[start:park_end+1] += soc_start * bat_cap
-                soc_max_absolute[start:park_end+1] += soc_end * bat_cap
+                soc_min_absolute[start:park_end+1] += soc_start * bat_cap * \
+                                                      ev_count
+                soc_max_absolute[start:park_end+1] += soc_end * bat_cap * \
+                                                      ev_count
 
                 # * "flex+" (private charging only, band: 0..1)
                 #   (IF USED: add elif with flex scenario)
-                # soc_min_absolute[start] += soc_start * bat_cap
-                # soc_max_absolute[start] += soc_start * bat_cap
-                # soc_min_absolute[park_end] += soc_end * bat_cap
-                # soc_max_absolute[park_end] += soc_end * bat_cap
+                # soc_min_absolute[start] += soc_start * bat_cap * ev_count
+                # soc_max_absolute[start] += soc_start * bat_cap * ev_count
+                # soc_min_absolute[park_end] += soc_end * bat_cap * ev_count
+                # soc_max_absolute[park_end] += soc_end * bat_cap * ev_count
 
             # * Set SoC bounds for non-flexible charging (increase SoC while
             #   charging)
@@ -323,10 +312,10 @@ def generate_load_time_series(
             elif flex_cap == 0:
                 soc_min_absolute[start:park_end+1] += np.linspace(
                     soc_start, soc_end, park_end-start+1
-                ) * bat_cap
+                ) * bat_cap * ev_count
                 soc_max_absolute[start:park_end+1] += np.linspace(
                     soc_start, soc_end, park_end-start+1
-                ) * bat_cap
+                ) * bat_cap * ev_count
 
     # Build timeseries
     load_time_series_df = load_time_series_df.assign(
@@ -350,7 +339,9 @@ def generate_load_time_series(
     # validate load timeseries
     np.testing.assert_almost_equal(
         load_time_series_df.load_time_series.sum() / 4,
-        ev_data_df.charging_demand.sum() / 1000 / float(run_config.eta_cp),
+        (ev_data_df.ev_id.apply(
+            lambda _: profile_counter[_]
+        ) * ev_data_df.charging_demand).sum() / 1000 / float(run_config.eta_cp),
         decimal=-1,
     )
 
@@ -812,7 +803,8 @@ def generate_model_data_grid_district(
     print("  Generating load timeseries...")
     load_ts = generate_load_time_series(
         ev_data_df=trip_data,
-        run_config=run_config
+        run_config=run_config,
+        scenario_data=evs_grid_district
     )
 
     # Generate static paras
