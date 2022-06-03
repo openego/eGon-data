@@ -28,10 +28,9 @@ https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pd
 """
 
 from collections import Counter
-import datetime as dt
 from pathlib import Path
+import datetime as dt
 import json
-import os
 
 from sqlalchemy.sql import func
 import numpy as np
@@ -62,8 +61,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def data_preprocessing(
-    scenario_data: pd.DataFrame,
-    ev_data_df: pd.DataFrame
+    scenario_data: pd.DataFrame, ev_data_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Filter SimBEV data to match region requirements. Duplicates profiles
     if necessary. Pre-calculates necessary parameters for the load time series.
@@ -147,11 +145,11 @@ def data_preprocessing(
 
     # Calculate flexible charging capacity:
     # only for private charging facilities at home and work
-    mask_work = (
-        (ev_data_df.location == "0_work") & (ev_data_df.use_case == "work")
+    mask_work = (ev_data_df.location == "0_work") & (
+        ev_data_df.use_case == "work"
     )
-    mask_home = (
-        (ev_data_df.location == "6_home") & (ev_data_df.use_case == "home")
+    mask_home = (ev_data_df.location == "6_home") & (
+        ev_data_df.use_case == "home"
     )
 
     ev_data_df["flex_charging_capacity_grid_MW"] = 0
@@ -163,7 +161,8 @@ def data_preprocessing(
     ev_data_df.loc[
         mask_work | mask_home, "flex_last_timestep_charging_capacity_grid_MW"
     ] = ev_data_df.loc[
-        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"]
+        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"
+    ]
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -211,8 +210,7 @@ def generate_dsm_profile(
 
 
 def generate_load_time_series(
-    ev_data_df: pd.DataFrame,
-    run_config: pd.DataFrame
+    ev_data_df: pd.DataFrame, run_config: pd.DataFrame
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -234,8 +232,8 @@ def generate_load_time_series(
     # instantiate timeindex
     timeindex = pd.date_range(
         start=dt.datetime.fromisoformat(f"{run_config.start_date} 00:00:00"),
-        end=dt.datetime.fromisoformat(f"{run_config.end_date} 23:45:00") +
-            dt.timedelta(minutes=int(run_config.stepsize)),
+        end=dt.datetime.fromisoformat(f"{run_config.end_date} 23:45:00")
+        + dt.timedelta(minutes=int(run_config.stepsize)),
         freq=f"{int(run_config.stepsize)}Min",
     )
 
@@ -248,7 +246,9 @@ def generate_load_time_series(
     load_time_series_array = np.zeros(len(load_time_series_df))
     flex_time_series_array = load_time_series_array.copy()
     simultaneous_plugged_in_charging_capacity = load_time_series_array.copy()
-    simultaneous_plugged_in_charging_capacity_flex = load_time_series_array.copy()
+    simultaneous_plugged_in_charging_capacity_flex = (
+        load_time_series_array.copy()
+    )
 
     columns = [
         "park_start",
@@ -280,7 +280,9 @@ def generate_load_time_series(
         flex_time_series_array[last_ts] += flex_last_ts_cap
 
         simultaneous_plugged_in_charging_capacity[start:park_end] += cap
-        simultaneous_plugged_in_charging_capacity_flex[start:park_end] += flex_cap
+        simultaneous_plugged_in_charging_capacity_flex[
+            start:park_end
+        ] += flex_cap
 
     load_time_series_df = load_time_series_df.assign(
         load_time_series=load_time_series_array,
@@ -560,7 +562,9 @@ def write_model_data_to_db(
                     link_id=emob_link_id,
                     temp_id=1,
                     p_min_pu=None,
-                    p_max_pu=hourly_load_time_series_df.ev_availability.to_list(),
+                    p_max_pu=(
+                        hourly_load_time_series_df.ev_availability.to_list()
+                    ),
                 )
             )
 
@@ -611,7 +615,9 @@ def write_model_data_to_db(
                     scn_name=scenario_name,
                     load_id=emob_load_id,
                     temp_id=1,
-                    p_set=hourly_load_time_series_df.load_time_series.to_list(),
+                    p_set=(
+                        hourly_load_time_series_df.load_time_series.to_list()
+                    ),
                 )
             )
 
@@ -705,7 +711,7 @@ def generate_model_data_grid_district(
     trip_data = load_evs_trips(
         scenario_name=scenario_name,
         evs_ids=evs_grid_district.ev_id.unique(),
-        charging_events_only=True
+        charging_events_only=True,
     )
 
     print("  Preprocessing data...")
@@ -719,8 +725,7 @@ def generate_model_data_grid_district(
     # Generate load timeseries
     print("  Generating load timeseries...")
     load_ts = generate_load_time_series(
-        ev_data_df=trip_data,
-        run_config=run_config
+        ev_data_df=trip_data, run_config=run_config
     )
 
     # Generate static paras
@@ -795,8 +800,10 @@ def generate_model_data(scenario_name: str):
     ctr = 0
     for bus_id in mvgd_bus_ids:
         ctr += 1
-        print(f"Processing grid district: bus {bus_id}... "
-              f"({ctr}/{len(mvgd_bus_ids)})")
+        print(
+            f"Processing grid district: bus {bus_id}... "
+            f"({ctr}/{len(mvgd_bus_ids)})"
+        )
         (
             static_params,
             load_ts,

@@ -33,7 +33,9 @@ is given in its `documentation <https://simbev.readthedocs.io>`_.
 * Plug-in Hybrid Electric Vehicle (PHEV): mini, medium, luxury
 
 .. csv-table:: EV types
-    :header: "Tecnnology", "Size", "Max. charging capacity slow [kW]", "Max. charging capacity fast [kW]", "Battery capacity [kWh]", "Energy consumption [kWh/km]"
+    :header: "Tecnnology", "Size", "Max. charging capacity slow [kW]",
+             "Max. charging capacity fast [kW]", "Battery capacity [kWh]",
+             "Energy consumption [kWh/km]"
     :widths: 10, 10, 30, 30, 25, 30
 
     "BEV", "mini", 11, 120, 60, 0.1397
@@ -75,6 +77,8 @@ from urllib.request import urlretrieve
 import os
 import tarfile
 
+# ========== Register np datatypes with SQLA ==========
+from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
 
@@ -84,29 +88,26 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
+    EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
-    EgonEvMvGridDistrict
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
     allocate_evs_numbers,
-    allocate_evs_to_grid_districts
-)
-from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
-    generate_model_data_eGon2035,
-    generate_model_data_eGon100RE
+    allocate_evs_to_grid_districts,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
-    WORKING_DIR,
-    DATASET_CFG,
     DATA_BUNDLE_DIR,
+    DATASET_CFG,
     TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
+    WORKING_DIR,
 )
-
-# ========== Register np datatypes with SQLA ==========
-from psycopg2.extensions import register_adapter, AsIs
+from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
+    generate_model_data_eGon100RE,
+    generate_model_data_eGon2035,
+)
 
 
 def adapt_numpy_float64(numpy_float64):
@@ -236,8 +237,9 @@ def extract_trip_file():
     for scenario_name in ["eGon2035", "eGon100RE"]:
         print(f"SCENARIO: {scenario_name}")
         trip_file = trip_dir / Path(
-            DATASET_CFG["original_data"]["sources"][
-                "trips"][scenario_name]["file"]
+            DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
+                "file"
+            ]
         )
 
         tar = tarfile.open(trip_file)
@@ -263,8 +265,9 @@ def write_evs_trips_to_db():
     for scenario_name in ["eGon2035", "eGon100RE"]:
         print(f"SCENARIO: {scenario_name}")
         trip_dir_name = Path(
-            DATASET_CFG["original_data"]["sources"]["trips"][
-                scenario_name]["file"].split(".")[0]
+            DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
+                "file"
+            ].split(".")[0]
         )
 
         trip_dir_root = DATA_BUNDLE_DIR / Path("mit_trip_data", trip_dir_name)
@@ -287,8 +290,9 @@ def write_evs_trips_to_db():
         trip_data = trip_data.reset_index().rename(
             columns={"index": "simbev_event_id"}
         )
-        cols = (["rs7_id", "simbev_ev_id", "simbev_event_id"] +
-                list(TRIP_COLUMN_MAPPING.values()))
+        cols = ["rs7_id", "simbev_ev_id", "simbev_event_id"] + list(
+            TRIP_COLUMN_MAPPING.values()
+        )
         trip_data.index.name = "event_id"
         trip_data = trip_data[cols]
 
@@ -299,12 +303,13 @@ def write_evs_trips_to_db():
 
         # Add EV id to trip DF
         trip_data["egon_ev_pool_ev_id"] = pd.merge(
-            trip_data, evs_unique.reset_index(),
-            on=["rs7_id", "simbev_ev_id"])["ev_id"]
+            trip_data, evs_unique.reset_index(), on=["rs7_id", "simbev_ev_id"]
+        )["ev_id"]
 
         # Split simBEV id into type and id
         evs_unique[["type", "simbev_ev_id"]] = evs_unique[
-            "simbev_ev_id"].str.rsplit("_", 1, expand=True)
+            "simbev_ev_id"
+        ].str.rsplit("_", 1, expand=True)
         evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
         evs_unique["scenario"] = scenario_name
 
@@ -357,9 +362,11 @@ class MotorizedIndividualTravel(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                {(download_and_preprocess, allocate_evs_numbers),
-                 (extract_trip_file, write_evs_trips_to_db)},
+                {
+                    (download_and_preprocess, allocate_evs_numbers),
+                    (extract_trip_file, write_evs_trips_to_db),
+                },
                 allocate_evs_to_grid_districts,
-                {generate_model_data_eGon2035, generate_model_data_eGon100RE}
+                {generate_model_data_eGon2035, generate_model_data_eGon100RE},
             ),
         )
