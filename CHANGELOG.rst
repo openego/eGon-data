@@ -197,7 +197,8 @@ Added
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Introduce Sanity checks for eGon2035 
   `#628 <https://github.com/openego/eGon-data/issues/382>`_
-
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -350,6 +351,8 @@ Changed
   `#727 <https://github.com/openego/eGon-data/issues/727>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Aggregate NUTS3 industrial loads for CH4 and H2
+  `#452 <https://github.com/openego/eGon-data/issues/452>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
 * Update deposit id to access v0.6 of the zenodo repository
@@ -358,6 +361,8 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+* Improve CH4 stores and productions aggregation by removing dedicated task
+  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
 
 
 Bug Fixes
@@ -509,6 +514,8 @@ Bug Fixes
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
 * Correct wrong carrier name when assigning marginal costs
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
+* Use db.next_etrago_id in dsm and pv_rooftop dataset
+  `#748 <https://github.com/openego/eGon-data/issues/748>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
