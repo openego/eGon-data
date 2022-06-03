@@ -1058,3 +1058,4 @@ emobility_mit:
   model_timeseries:
     reduce_memory: True
     export_results_to_csv: True
+    parallel_tasks: 10

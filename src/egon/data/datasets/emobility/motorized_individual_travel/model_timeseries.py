@@ -44,6 +44,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     DATASET_CFG,
     WORKING_DIR,
+    MVGD_MIN_COUNT,
     read_simbev_metadata_file,
     reduce_mem_usage,
 )
@@ -56,6 +57,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
+from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -754,6 +756,19 @@ def write_model_data_to_db(
         write_to_file()
 
 
+def load_grid_district_ids() -> pd.Series:
+    """Load bus IDs of all grid districts"""
+    with db.session_scope() as session:
+        query_mvgd = session.query(
+            MvGridDistricts.bus_id
+        )
+    return pd.read_sql(
+        query_mvgd.statement,
+        query_mvgd.session.bind,
+        index_col=None
+    ).bus_id.sort_values()
+
+
 def generate_model_data_grid_district(
     scenario_name: str,
     scenario_variation_parameters: dict,
@@ -813,21 +828,31 @@ def generate_model_data_grid_district(
     return static_params, load_ts
 
 
-
-def generate_model_data(scenario_name: str):
-    """Generates timeseries from simBEV trip data for all MV grid districts
+def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
+    """Generates timeseries from simBEV trip data for a bunch of MV grid
+    districts.
 
     Parameters
     ----------
     scenario_name : str
         Scenario name
+    bunch : list
+        Bunch of grid districts to generate data for, e.g. [1,2,..,100].
+        Note: `bunch` is NOT a list of grid districts but is used for slicing
+        the ordered list (by bus_id) of grid districts! This is used for
+        parallelization. See
+        :meth:`egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel.generate_model_data_tasks`
     """
+    # Get list of grid districts / substations for this bunch
+    mvgd_bus_ids = load_grid_district_ids().iloc[bunch]
 
     # Get scenario variation name
     scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
 
     print(
-        f"SCENARIO: {scenario_name}, SCENARIO VARIATION: {scenario_var_name}"
+        f"SCENARIO: {scenario_name}, "
+        f"SCENARIO VARIATION: {scenario_var_name}, "
+        f"BUNCH: {bunch[0]}-{bunch[-1]}"
     )
 
     # Load scenario params for scenario and scenario variation
@@ -841,12 +866,15 @@ def generate_model_data(scenario_name: str):
             session.query(
                 EgonEvMvGridDistrict.bus_id,
                 EgonEvMvGridDistrict.egon_ev_pool_ev_id.label("ev_id"),
-            )
-            .filter(EgonEvMvGridDistrict.scenario == scenario_name)
-            .filter(
+            ).filter(
+                EgonEvMvGridDistrict.scenario == scenario_name
+            ).filter(
                 EgonEvMvGridDistrict.scenario_variation == scenario_var_name
+            ).filter(
+                EgonEvMvGridDistrict.bus_id.in_(mvgd_bus_ids)
+            ).filter(
+                EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None)
             )
-            .filter(EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None))
         )
     evs_grid_district = pd.read_sql(
         query.statement, query.session.bind, index_col=None
@@ -894,11 +922,21 @@ def generate_model_data(scenario_name: str):
         )
 
 
-def generate_model_data_eGon2035():
-    """Generates timeseries for eGon2035 scenario"""
-    generate_model_data(scenario_name="eGon2035")
+def generate_model_data_eGon2035_remaining():
+    """Generates timeseries for eGon2035 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="eGon2035",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids()))
+    )
 
 
-def generate_model_data_eGon100RE():
-    """Generates timeseries for eGon100RE scenario"""
-    generate_model_data(scenario_name="eGon100RE")
+def generate_model_data_eGon100RE_remaining():
+    """Generates timeseries for eGon100RE scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="eGon100RE",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids()))
+    )
