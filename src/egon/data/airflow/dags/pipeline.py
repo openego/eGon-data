@@ -63,6 +63,7 @@ from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
+from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
@@ -525,3 +526,13 @@ with airflow.DAG(
     storage_etrago = StorageEtrago(
         dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
     )
+    
+    # Sanity Checks
+    sanity_checks = SanityChecks(
+        dependencies=[
+           storage_etrago,
+           hts_etrago_table,
+           fill_etrago_generators, 
+        ]
+    )
+    
