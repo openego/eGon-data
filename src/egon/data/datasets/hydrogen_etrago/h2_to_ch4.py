@@ -72,12 +72,8 @@ def insert_h2_to_ch4_to_h2():
     feed_in["p_nom"] = 0
     feed_in["p_nom_extendable"] = False
     # calculation of H2 energy share via volumetric share outsourced
-    # in a mixture of H2 and CH4 with 15 %vol share at 50 bar and 25 °C, the
-    # energy share of H2 roughly corresponds to 5 % of total energy
-    # therefore, that fraction is multiplied to the pipeline capacity at each
-    # CH4 node for maximum H2 feedin
-    # -> Will upload lookup table to zenodo in future
-    H2_energy_share = 0.05
+    # in a mixture of H2 and CH4 with 15 %vol share at 50 bar and 25 °C
+    H2_energy_share = H2_CH4_mix_energy_fractions(0.15, T=25, p=50)
 
     for bus in feed_in["bus1"].values:
         # calculate the total pipeline capacity connected to a specific bus
@@ -124,3 +120,71 @@ def insert_h2_to_ch4_eGon100RE():
     copy_and_modify_links(
         "eGon2035", "eGon100RE", ["H2_to_CH4", "CH4_to_H2"], "gas"
     )
+
+
+def H2_CH4_mix_energy_fractions(x, T=25, p=50):
+    """
+    Calculate the fraction of H2 with respect to energy in a H2 CH4 mixture.
+
+    Given the volumetric fraction of H2 in a H2 and CH4 mixture, the fraction
+    of H2 with respect to energy is calculated with the ideal gas mixture law.
+    Beware, that changing the fraction of H2 changes the overall energy within
+    a specific volume of the mixture. If H2 is fed into CH4, the pipeline
+    capacity (based on energy) therefore decreases if the volumetric flow
+    does not change. This effect is neglected in eGon. At 15 vol% H2 the
+    decrease in capacity equals about 10 % if volumetric flow does not change.
+
+    Parameters
+    ----------
+    x : float
+        Volumetric percentage of H2 in the mixture
+    T : int, optional
+        Temperature of the mixture, by default 25
+    p : int, optional
+        Pressure of the mixture, by default 50
+
+    Returns
+    -------
+    float
+        Fraction of H2 in mixture with respect to energy (LHV)
+    """
+
+    # molar masses
+    M_H2 = 0.00201588
+    M_CH4 = 0.0160428
+
+    # universal gas constant (fluid independent!)
+    R_u = 8.31446261815324
+    # individual gas constants
+    R_H2 = R_u / M_H2
+    R_CH4 = R_u / M_CH4
+
+    # volume is fixed: 1m^3, use ideal gas law at 25 °C, 50 bar
+    V = 1
+    T += 273.15
+    p *= 1e5
+    # volumetric shares of gases (specify share of H2)
+    V_H2 = x
+    V_CH4 = 1 - x
+
+    # calculate data of mixture
+    M_mix = V_H2 * M_H2 + V_CH4 * M_CH4
+    R_mix = R_u / M_mix
+    m_mix = p * V / (R_mix * T)
+
+    # calulate masses with volumetric shares at mixture pressure
+    m_H2 = p * V_H2 / (R_H2 * T)
+    m_CH4 = p * V_CH4 / (R_CH4 * T)
+
+    msg = (
+        "Consistency check faild, individual masses are not equal to sum of "
+        "masses. Residual is: " + str(m_mix - m_H2 - m_CH4)
+    )
+    assert round(m_mix - m_H2 - m_CH4, 6) == 0.0, msg
+
+    LHV = {
+        "CH4": 50e6,
+        "H2": 120e6
+    }
+
+    return m_H2 * LHV["H2"] / (m_H2 * LHV["H2"] + m_CH4 * LHV["CH4"])
