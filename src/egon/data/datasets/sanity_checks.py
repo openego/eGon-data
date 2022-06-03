@@ -4,11 +4,8 @@ error is given to showcase difference in output and input values. Please note th
  Authors: @ALonso, @dana
 """
 
-import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.electricity_demand.temporal import insert_cts_load
-import egon.data.config
 
 
 class SanityChecks(Dataset):
@@ -25,9 +22,11 @@ class SanityChecks(Dataset):
 
 
 def sanitycheck_eGon2035_electricity():
+    """Execute basic sanity checks.
 
-    """Returns print statements as sanity checks for electricity generators in
+    Returns print statements as sanity checks for the electricity sector in
     the eGon2035 scenario.
+
     Parameters
     ----------
     None
@@ -255,9 +254,11 @@ def sanitycheck_eGon2035_electricity():
 
 
 def sanitycheck_eGon2035_heat():
+    """Execute basic sanity checks.
 
-    """Returns print statements as sanity checks for electricity generators in
+    Returns print statements as sanity checks for the heat sector in
     the eGon2035 scenario.
+
     Parameters
     ----------
     None

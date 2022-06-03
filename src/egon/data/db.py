@@ -175,7 +175,7 @@ def select_dataframe(sql, index_col=None, warning=True):
 
     df = pd.read_sql(sql, engine(), index_col=index_col)
 
-    if df.size == 0 and warning==True:
+    if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return df
