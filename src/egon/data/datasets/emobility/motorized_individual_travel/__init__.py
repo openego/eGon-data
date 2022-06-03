@@ -78,6 +78,7 @@ import tarfile
 
 import numpy as np
 import pandas as pd
+from airflow.operators.python_operator import PythonOperator
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
@@ -396,23 +397,38 @@ class MotorizedIndividualTravel(Dataset):
             tasks = set()
             for _ in range(parallel_tasks):
                 bunch = range(_ * mvgd_bunch_size, (_ + 1) * mvgd_bunch_size)
-                f = partial(
-                    generate_model_data_bunch,
-                    scenario_name=scenario_name,
-                    bunch=bunch
-                )
-                f.__name__ = (
+                f = PythonOperator(
+                    task_id=(
                     f"generate_model_data_bunch_"
                     f"{scenario_name}_"
                     f"bunch{bunch[0]}-{bunch[-1]}"
+                ),
+                    python_callable=generate_model_data_bunch,
+                    #op_args=["eGon2035", 2035],
+                    op_kwargs={"scenario_name": scenario_name,
+                               "bunch": bunch},
                 )
-                f.__module__ = generate_model_data_bunch.__module__
+                # f = lambda : generate_model_data_bunch(
+                #     scenario_name=scenario_name,
+                #     bunch=bunch
+                # )
+                # def f():
+                #     generate_model_data_bunch(
+                #         scenario_name=scenario_name,
+                #         bunch=bunch
+                #     )
+                # f.__name__ = (
+                #     f"generate_model_data_bunch_"
+                #     f"{scenario_name}_"
+                #     f"bunch{bunch[0]}-{bunch[-1]}"
+                # )
+                # f.__module__ = generate_model_data_bunch.__module__
                 tasks.add(f)
 
-            if scenario_name == "eGon2035":
-                tasks.add(generate_model_data_eGon2035_remaining)
-            elif scenario_name == "eGon100RE":
-                tasks.add(generate_model_data_eGon100RE_remaining)
+            # if scenario_name == "eGon2035":
+            #     tasks.add(generate_model_data_eGon2035_remaining)
+            # elif scenario_name == "eGon100RE":
+            #     tasks.add(generate_model_data_eGon100RE_remaining)
             return tasks
 
         super().__init__(
