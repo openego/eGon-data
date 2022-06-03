@@ -386,13 +386,18 @@ class MotorizedIndividualTravel(Dataset):
                 MVGD_MIN_COUNT,
                 parallel_tasks
             )[0]
-            return list(
+            tasks = set(
                 partial(
                     generate_model_data_bunch,
                     scenario_name=scenario_name,
                     bunch=range(_ * mvgd_bunch_size, (_ + 1) * mvgd_bunch_size)
                 ) for _ in range(parallel_tasks)
             )
+            if scenario_name == "eGon2035":
+                tasks.add(generate_model_data_eGon2035_remaining)
+            elif scenario_name == "eGon100RE":
+                tasks.add(generate_model_data_eGon100RE_remaining)
+            return tasks
 
         super().__init__(
             name="MotorizedIndividualTravel",
@@ -404,10 +409,8 @@ class MotorizedIndividualTravel(Dataset):
                  (extract_trip_file, write_evs_trips_to_db)},
                 allocate_evs_to_grid_districts,
                 {
-                    {generate_model_data_tasks(scenario_name="eGon2035"),
-                     generate_model_data_eGon2035_remaining},
-                    {generate_model_data_tasks(scenario_name="eGon100RE"),
-                     generate_model_data_eGon100RE_remaining}
+                    generate_model_data_tasks(scenario_name="eGon2035"),
+                    generate_model_data_tasks(scenario_name="eGon100RE"),
                 },
             ),
         )
