@@ -41,9 +41,11 @@ class PumpedHydro(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
-            tasks=(create_tables, allocate_pumped_hydro),
+            tasks=(create_tables,
+                   allocate_pumped_hydro_eGon2035,
+                   allocate_pumped_hydro_eGon100RE),
         )
 
 
@@ -66,7 +68,22 @@ def create_tables():
     EgonStorages.__table__.create(bind=engine, checkfirst=True)
 
 
-def allocate_pumped_hydro():
+def allocate_pumped_hydro_eGon2035(export=True):
+    """Allocates pumped_hydro plants for eGon2035 scenario and either exports
+    results to data base or returns as a dataframe
+
+    Parameters
+    ----------
+    export : bool
+        Choose if allocated pumped hydro plants should be exported to the data
+        base. The default is True.
+        If export=False a data frame will be returned
+
+    Returns
+    -------
+    power_plants : pandas.DataFrame
+        List of pumped hydro plants in 'eGon2035' scenario
+    """
 
     carrier = "pumped_hydro"
 
@@ -208,6 +225,79 @@ def allocate_pumped_hydro():
         AND scenario='eGon2035';"""
     )
 
+    # If export = True export pumped_hydro plants to data base
+
+    if export:
+        # Insert into target table
+        session = sessionmaker(bind=db.engine())()
+        for i, row in power_plants.iterrows():
+            entry = EgonStorages(
+                sources={"el_capacity": row.source},
+                source_id={"MastrNummer": row.MaStRNummer},
+                carrier=row.carrier,
+                el_capacity=row.el_capacity,
+                voltage_level=row.voltage_level,
+                bus_id=row.bus_id,
+                scenario=row.scenario,
+                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+                )
+            session.add(entry)
+        session.commit()
+
+    else:
+        return power_plants
+
+
+def allocate_pumped_hydro_eGon100RE():
+    """Allocates pumped_hydro plants for eGon100RE scenario based on a
+    prox-to-now method applied on allocated pumped-hydro plants in the eGon2035
+    scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    carrier = "pumped_hydro"
+    cfg = config.datasets()["power_plants"]
+    boundary = config.settings()["egon-data"]["--dataset-boundary"]
+
+    # Select installed capacity for pumped_hydro in eGon100RE scenario from
+    # scenario capacities table
+    capacity = db.select_dataframe(
+        f"""
+        SELECT capacity
+        FROM {cfg['sources']['capacities']}
+        WHERE carrier = '{carrier}'
+        AND scenario_name = 'eGon100RE';
+        """
+    )
+
+    if boundary == "Schleswig-Holstein":
+        # Break capacity of pumped hydron plants down SH share in eGon2035
+        capacity_phes = capacity.iat[0,0]*0.0176
+
+    elif boundary == "Everything":
+        # Select national capacity for pumped hydro
+        capacity_phes = capacity.iat[0,0]
+
+    else:
+        raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
+
+    # Get allocation of pumped_hydro plants in eGon2035 scenario as the reference
+    # for the distribution in eGon100RE scenario
+    allocation = allocate_pumped_hydro_eGon2035(export=False)
+
+    scaling_factor = capacity_phes/allocation.el_capacity.sum()
+
+    power_plants = allocation.copy()
+    power_plants["scenario"] = "eGon100RE"
+    power_plants["el_capacity"] = allocation.el_capacity*scaling_factor
+
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
     for i, row in power_plants.iterrows():
@@ -220,6 +310,6 @@ def allocate_pumped_hydro():
             bus_id=row.bus_id,
             scenario=row.scenario,
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-        )
+            )
         session.add(entry)
     session.commit()

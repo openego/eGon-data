@@ -1,15 +1,15 @@
+from contextlib import contextmanager
 import codecs
 import functools
-from contextlib import contextmanager
 
+from psycopg2.errors import UniqueViolation
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
-from egon.data import config
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
-from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
+from egon.data import config
 
 
 def credentials():
@@ -85,8 +85,10 @@ def submit_comment(json, schema, table):
     """
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
-    check_json_str = "SELECT obj_description('{0}.{1}'::regclass)::json".format(
-        schema, table
+    check_json_str = (
+        "SELECT obj_description('{0}.{1}'::regclass)::json".format(
+            schema, table
+        )
     )
 
     execute_sql(prefix_str + json + ";")
@@ -159,7 +161,7 @@ def session_scoped(function):
     return wrapped
 
 
-def select_dataframe(sql, index_col=None):
+def select_dataframe(sql, index_col=None, warning=True):
     """ Select data from local database as pandas.DataFrame
 
     Parameters
@@ -178,14 +180,14 @@ def select_dataframe(sql, index_col=None):
 
     df = pd.read_sql(sql, engine(), index_col=index_col)
 
-    if df.size == 0:
+    if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return df
 
 
 def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
-    """ Select data from local database as geopandas.GeoDataFrame
+    """Select data from local database as geopandas.GeoDataFrame
 
     Parameters
     ----------
@@ -219,7 +221,7 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
 
 
 def next_etrago_id(component):
-    """ Select next id value for components in etrago tables
+    """Select next id value for components in etrago tables
 
     Parameters
     ----------
@@ -237,10 +239,10 @@ def next_etrago_id(component):
     :func:`check_db_unique_violation` instead.
     """
 
-    if component=='transformer':
-        id_column = 'trafo_id'
+    if component == "transformer":
+        id_column = "trafo_id"
     else:
-        id_column = f'{component}_id'
+        id_column = f"{component}_id"
 
     max_id = select_dataframe(
         f"""
@@ -268,17 +270,18 @@ def check_db_unique_violation(func):
     >>> @check_db_unique_violation
     ... def commit_something_to_database():
     ...     # commit something here
+    ...    return
     ...
-    >>> commit_something_to_database()
+    >>> commit_something_to_database()  # doctest: +SKIP
 
     Examples
     --------
     Add new bus to eTraGo's bus table:
 
     >>> from egon.data import db
-    ... from egon.data.datasets.etrago_setup import EgonPfHvBus
+    >>> from egon.data.datasets.etrago_setup import EgonPfHvBus
     ...
-    ... @check_db_unique_violation
+    >>> @check_db_unique_violation
     ... def add_etrago_bus():
     ...     bus_id = db.next_etrago_id("bus")
     ...     with db.session_scope() as session:
@@ -296,7 +299,7 @@ def check_db_unique_violation(func):
     ...         )
     ...         session.commit()
     ...
-    >>> add_etrago_bus()
+    >>> add_etrago_bus()  # doctest: +SKIP
 
     Parameters
     ----------
@@ -314,6 +317,7 @@ def check_db_unique_violation(func):
     loop will not terminate until the error is resolved! In case of eTraGo
     tables you can use :func:`next_etrago_id`, see example above.
     """
+
     def commit(*args, **kwargs):
         unique_violation = True
         ret = None

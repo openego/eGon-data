@@ -197,6 +197,10 @@ Added
   `#514 <https://github.com/openego/eGon-data/issues/514>`_
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Introduce Sanity checks for eGon2035 
+  `#628 <https://github.com/openego/eGon-data/issues/382>`_
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -340,13 +344,28 @@ Changed
   `#672 <https://github.com/openego/eGon-data/issues/672>`_
 * Improve modelling of NG and biomethane production
   `#678 <https://github.com/openego/eGon-data/issues/678>`_
+* Unify carrier names for both scenarios
+  `#575 <https://github.com/openego/eGon-data/issues/575>`_
 * Add automatic filtering of gas data: Pipelines of length zero and gas buses
   isolated of the grid are deleted.
   `#590 <https://github.com/openego/eGon-data/issues/590>`_
+* Add gas data in neighbouring countries
+  `#727 <https://github.com/openego/eGon-data/issues/727>`_
 * Aggregate DSM components per substation
   `#661 <https://github.com/openego/eGon-data/issues/661>`_
+* Aggregate NUTS3 industrial loads for CH4 and H2
+  `#452 <https://github.com/openego/eGon-data/issues/452>`_
 * Update OSM dataset from 2021-02-02 to 2022-01-01
   `#486 <https://github.com/openego/eGon-data/issues/486>`_
+* Update deposit id to access v0.6 of the zenodo repository
+  `#627 <https://github.com/openego/eGon-data/issues/627>`_
+* Include electricity storages for eGon100RE scenario
+  `#581 <https://github.com/openego/eGon-data/issues/581>`_
+* Update deposit id to access v0.7 of the zenodo repository
+  `#736 <https://github.com/openego/eGon-data/issues/736>`_
+* Improve CH4 stores and productions aggregation by removing dedicated task
+  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+
 
 Bug Fixes
 ---------
@@ -466,6 +485,8 @@ Bug Fixes
   `#693 <https://github.com/openego/eGon-data/issues/693>`_
 * Assign DLR capacities to every transmission line
   `#683 <https://github.com/openego/eGon-data/issues/683>`_
+* Fix solar ground mounted total installed capacity
+  `#695 <https://github.com/openego/eGon-data/issues/695>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
 * Clean up `"pipeline.py"`
@@ -476,10 +497,27 @@ Bug Fixes
   `#725 <https://github.com/openego/eGon-data/issues/725>`_
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
+* Fix country_code attribution of two gas buses
+  `#710 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
   `#741 <https://github.com/openego/eGon-data/issues/741>`_
+* Change table name from :code:`boundaries.saltstructures_inspee` to
+  :code:`boundaries.inspee_saltstructures`
+  `#746 <https://github.com/openego/eGon-data/issues/746>`_
+* Add missing marginal costs for conventional generators in Germany
+  `#722 <https://github.com/openego/eGon-data/issues/722>`_
+* Fix carrier name for solar ground mounted in scenario parameters
+  `#752 <https://github.com/openego/eGon-data/issues/752>`_
+* Create rural_heat buses only for mv grid districts with heat load
+  `#708 <https://github.com/openego/eGon-data/issues/708>`_
+* Solve problem while creating generators series data egon2035
+  `#758 <https://github.com/openego/eGon-data/issues/758>`_
+* Correct wrong carrier name when assigning marginal costs
+  `#766 <https://github.com/openego/eGon-data/issues/766>`_
+* Use db.next_etrago_id in dsm and pv_rooftop dataset
+  `#748 <https://github.com/openego/eGon-data/issues/748>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
