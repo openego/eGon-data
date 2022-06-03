@@ -72,8 +72,9 @@ def insert_h2_to_ch4_to_h2():
     feed_in["p_nom"] = 0
     feed_in["p_nom_extendable"] = False
     # calculation of H2 energy share via volumetric share outsourced
-    # in a mixture of H2 and CH4 with 15 %vol share at 50 bar and 25 °C
-    H2_energy_share = H2_CH4_mix_energy_fractions(0.15, T=25, p=50)
+    # in a mixture of H2 and CH4 with 15 %vol share
+    H2_share = scn_params["H2_feedin_volumetric_fraction"]
+    H2_energy_share = H2_CH4_mix_energy_fractions(H2_share)
 
     for bus in feed_in["bus1"].values:
         # calculate the total pipeline capacity connected to a specific bus

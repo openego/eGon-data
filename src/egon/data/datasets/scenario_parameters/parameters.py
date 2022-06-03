@@ -476,7 +476,10 @@ def gas(scenario):
 
         costs = read_csv(2035)
 
-        parameters = {"main_gas_carrier": "CH4"}
+        parameters = {
+            "main_gas_carrier": "CH4",
+            "H2_feedin_volumetric_fraction": 0.15,
+        }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
