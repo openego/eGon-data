@@ -197,6 +197,8 @@ Added
   `#514 <https://github.com/openego/eGon-data/issues/514>`_
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Add motorized individual travel
+  `#553 <https://github.com/openego/eGon-data/issues/553>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
