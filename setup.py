@@ -101,6 +101,7 @@ setup(
         "psycopg2",
         "pyaml",
         "pypsa==0.17.1",
+        "pytest",
         "rasterio",
         "rioxarray",
         "rtree",
