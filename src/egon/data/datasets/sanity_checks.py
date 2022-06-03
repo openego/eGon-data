@@ -133,36 +133,74 @@ def sanitycheck_eGon2035_electricity():
 
             print(f"{carrier}: " + str(round(g, 2)) + " %")
 
-    # Section to check storage capacities
+    # Section to check storage units
 
-    sum_installed_storage = db.select_dataframe(
-        f"""SELECT scn_name, a.carrier, SUM(p_nom::numeric) as capacity_mw, c.capacity::numeric as target_capacity
-             FROM grid.egon_etrago_storage a
-             JOIN supply.egon_scenario_capacities c
-             ON (c.carrier = a.carrier)
-             WHERE bus IN (
-                 SELECT bus_id FROM grid.egon_etrago_bus
-                 WHERE scn_name = '{scn}'
-                 AND country = 'DE')
-             AND c.scenario_name='{scn}'
-             AND a.scn_name = '{scn}'
-             GROUP BY (scn_name, a.carrier, c.capacity);
-
-        """,
-        warning=False,
+    print(f"Sanity checks for scenario {scn}")
+    print(
+        "For German electrical storage units the following deviations between the inputs and outputs can be observed:"
     )
 
-    sum_installed_storage["Error"] = (
-        (
-            sum_installed_storage["capacity_mw"]
-            - sum_installed_storage["target_capacity"]
+    carriers_electricity = ["pumped_hydro"]
+
+    for carrier in carriers_electricity:
+
+        sum_output = db.select_dataframe(
+            f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
+                         FROM grid.egon_etrago_storage
+                         WHERE scn_name = '{scn}'
+                         AND carrier IN ('{carrier}')
+                         AND bus IN
+                             (SELECT bus_id
+                               FROM grid.egon_etrago_bus
+                               WHERE scn_name = 'eGon2035'
+                               AND country = 'DE')
+                         GROUP BY (scn_name);
+                    """,
+            warning=False,
         )
-        / sum_installed_storage["target_capacity"]
-    ) * 100
 
-    e = sum_installed_storage["Error"].values[0]
+        sum_input = db.select_dataframe(
+            f"""SELECT carrier, SUM(capacity::numeric) as input_capacity_mw
+                     FROM supply.egon_scenario_capacities
+                     WHERE carrier= '{carrier}'
+                     AND scenario_name ='{scn}'
+                     GROUP BY (carrier);
+                """,
+            warning=False,
+        )
 
-    print("pumped hydro storages: " + str(round(e, 2)) + " %")
+        if (
+            sum_output.output_capacity_mw.sum() == 0
+            and sum_input.input_capacity_mw.sum() == 0
+        ):
+            print(
+                f"No capacity for carrier '{carrier}' needed to be distributed. Everything is fine"
+            )
+
+        elif (
+            sum_input.input_capacity_mw.sum() > 0
+            and sum_output.output_capacity_mw.sum() == 0
+        ):
+            print(
+                f"Error: Capacity for carrier '{carrier}' was not distributed at all!"
+            )
+
+        elif (
+            sum_output.output_capacity_mw.sum() > 0
+            and sum_input.input_capacity_mw.sum() == 0
+        ):
+            print(
+                f"Error: Eventhough no input capacity was provided for carrier '{carrier}' a capacity got distributed!"
+            )
+
+        else:
+            sum_input["error"] = (
+                (sum_output.output_capacity_mw - sum_input.input_capacity_mw)
+                / sum_input.input_capacity_mw
+            ) * 100
+            g = sum_input["error"].values[0]
+
+            print(f"{carrier}: " + str(round(g, 2)) + " %")
 
     # Section to check loads
 
@@ -171,7 +209,7 @@ def sanitycheck_eGon2035_electricity():
     )
 
     output_demand = db.select_dataframe(
-        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
             FROM grid.egon_etrago_load a
             JOIN grid.egon_etrago_load_timeseries b
             ON (a.load_id = b.load_id)
