@@ -12,6 +12,7 @@ Call order
 
 Notes
 -----
+# TODO REWORK
 Share of EV with access to private charging infrastructure (`flex_share`) for
 use cases work and home are not supported by simBEV v0.1.2 and are applied here
 (after simulation). Applying those fixed shares post-simulation introduces
