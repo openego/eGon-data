@@ -3,11 +3,16 @@ Sanity checks for motorized individual travel
 """
 
 from numpy.testing import assert_allclose
+import pytest
+
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    CONFIG_EV
+    CONFIG_EV,
 )
 
 
+@pytest.mark.skip(
+    reason="Can only be tested with eGon database."
+)
 def test_ev_numbers(dataset_name, ev_data, ev_target):
     """Validate cumulative numbers of electric vehicles' distribution
 
@@ -24,11 +29,11 @@ def test_ev_numbers(dataset_name, ev_data, ev_target):
     ev_target : int
         Desired number of EVs
     """
-    assert ev_data.isna().any().any() == False
+    assert ev_data.isna().any().any() is False
 
     assert_allclose(
         ev_data[[_ for _ in CONFIG_EV.keys()]].sum().sum(),
         ev_target,
         rtol=0.0001,
-        err_msg=f"Dataset on EV numbers [{dataset_name}] seems to be flawed."
+        err_msg=f"Dataset on EV numbers [{dataset_name}] seems to be flawed.",
     )
