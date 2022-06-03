@@ -46,11 +46,28 @@ con = db.engine()
   # get MV grid districts
 sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
 distr = gpd.GeoDataFrame.from_postgis(sql, con)
-distr = distr.set_index("bus_id")
+distr = distr.rename({'bus_id': 'bus'},axis=1)
+distr = distr.set_index("bus")
+#distr = distr.rename(index={'bus_id': 'bus'})
 
  # Carriers and p_nom
  
 sqlCarrier = "SELECT carrier, p_nom, bus FROM grid.egon_etrago_generator"
+sqlCarrier = "SELECT * FROM grid.egon_etrago_generator"
 Carriers = pd.read_sql(sqlCarrier,con)
+Carriers = Carriers.loc[Carriers['scn_name'] == 'eGon2035']
 Carriers = Carriers.set_index("bus")
+
+#Carriers.rename(columns={"bus": "bus_id"})
+
+
+#result = distr.merge(Carriers.rename(columns={'bus': "bus_id"}),
+                 #  how='inner',
+                 #  on='bus_id', 
+                 #  copy=False)
         
+# Join data from sql and sqlCarrier 
+
+
+#sqlFinal = pd.merge(Carriers, distr, how="inner", on="bus")
+ 
