@@ -10,9 +10,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 )
 
 
-@pytest.mark.skip(
-    reason="Can only be tested with eGon database."
-)
+@pytest.mark.skip(reason="Can only be tested with eGon database.")
 def test_ev_numbers(dataset_name, ev_data, ev_target):
     """Validate cumulative numbers of electric vehicles' distribution
 
@@ -29,7 +27,7 @@ def test_ev_numbers(dataset_name, ev_data, ev_target):
     ev_target : int
         Desired number of EVs
     """
-    assert ev_data.isna().any().any() is False
+    assert ev_data.isna().any().any() == False
 
     assert_allclose(
         ev_data[[_ for _ in CONFIG_EV.keys()]].sum().sum(),
