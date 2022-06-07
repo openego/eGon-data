@@ -400,7 +400,6 @@ def generate_static_params(
         "link_bev_charger.p_nom_MW": float(
             load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
         ),
-        "store_ev_battery.e_max_pu": 1,
     }
 
     return static_params_dict
