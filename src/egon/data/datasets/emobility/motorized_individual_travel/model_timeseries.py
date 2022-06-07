@@ -372,6 +372,7 @@ def generate_load_time_series(
 def generate_static_params(
     ev_data_df: pd.DataFrame,
     load_time_series_df: pd.DataFrame,
+    evs_grid_district_df: pd.DataFrame,
 ) -> dict:
     """Calculate static parameters from trip data.
 
@@ -395,8 +396,13 @@ def generate_static_params(
         .max()
     )
 
+    # Get EV duplicates dict and weight battery capacity
+    max_df["bat_cap"] = max_df.bat_cap.mul(
+        pd.Series(Counter(evs_grid_district_df.ev_id))
+    )
+
     static_params_dict = {
-        "store_ev_battery.e_nom_MWh": float(max_df.bat_cap.sum() / 10 ** 3),
+        "store_ev_battery.e_nom_MWh": float(max_df.bat_cap.sum() / 1e3),
         "link_bev_charger.p_nom_MW": float(
             load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
         ),
@@ -846,7 +852,9 @@ def generate_model_data_grid_district(
     )
 
     # Generate static params
-    static_params = generate_static_params(trip_data, load_ts)
+    static_params = generate_static_params(
+        trip_data, load_ts, evs_grid_district
+    )
 
     return static_params, load_ts
 
