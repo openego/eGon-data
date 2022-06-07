@@ -572,6 +572,9 @@ def write_model_data_to_db(
                 EgonPfHvBus.carrier == "AC"
             )
             etrago_bus = query.first()
+            if etrago_bus is None:
+                print(f"No AC bus found for scenario {scenario_name} "
+                      f"with bus_id {bus_id} in table egon_etrago_bus!")
 
             # eMob MIT bus
             emob_bus_id = db.next_etrago_id("bus")
