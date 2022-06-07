@@ -28,9 +28,10 @@ https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pd
 """
 
 from collections import Counter
-import datetime as dt
 from pathlib import Path
+import datetime as dt
 import json
+import os
 
 from sqlalchemy.sql import func
 import numpy as np
@@ -63,8 +64,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def data_preprocessing(
-    scenario_data: pd.DataFrame,
-    ev_data_df: pd.DataFrame
+    scenario_data: pd.DataFrame, ev_data_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Filter SimBEV data to match region requirements. Duplicates profiles
     if necessary. Pre-calculates necessary parameters for the load time series.
@@ -126,11 +126,11 @@ def data_preprocessing(
 
     # Calculate flexible charging capacity:
     # only for private charging facilities at home and work
-    mask_work = (
-        (ev_data_df.location == "0_work") & (ev_data_df.use_case == "work")
+    mask_work = (ev_data_df.location == "0_work") & (
+        ev_data_df.use_case == "work"
     )
-    mask_home = (
-        (ev_data_df.location == "6_home") & (ev_data_df.use_case == "home")
+    mask_home = (ev_data_df.location == "6_home") & (
+        ev_data_df.use_case == "home"
     )
 
     ev_data_df["flex_charging_capacity_grid_MW"] = 0
@@ -187,8 +187,8 @@ def generate_load_time_series(
     # instantiate timeindex
     timeindex = pd.date_range(
         start=dt.datetime.fromisoformat(f"{run_config.start_date} 00:00:00"),
-        end=dt.datetime.fromisoformat(f"{run_config.end_date} 23:45:00") +
-            dt.timedelta(minutes=int(run_config.stepsize)),
+        end=dt.datetime.fromisoformat(f"{run_config.end_date} 23:45:00")
+        + dt.timedelta(minutes=int(run_config.stepsize)),
         freq=f"{int(run_config.stepsize)}Min",
     )
 
@@ -621,7 +621,9 @@ def write_model_data_to_db(
                     link_id=emob_link_id,
                     temp_id=1,
                     p_min_pu=None,
-                    p_max_pu=hourly_load_time_series_df.ev_availability.to_list(),
+                    p_max_pu=(
+                        hourly_load_time_series_df.ev_availability.to_list()
+                    ),
                 )
             )
 
@@ -674,7 +676,9 @@ def write_model_data_to_db(
                     scn_name=scenario_name,
                     load_id=emob_load_id,
                     temp_id=1,
-                    p_set=hourly_load_time_series_df.load_time_series.to_list(),
+                    p_set=(
+                        hourly_load_time_series_df.load_time_series.to_list()
+                    ),
                 )
             )
 

@@ -3,8 +3,8 @@
 The central module containing all code dealing with importing gas storages data
 """
 from pathlib import Path
-import ast
 from telnetlib import GA
+import ast
 
 import geopandas
 import numpy as np
@@ -13,18 +13,18 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.gas_grid import (
     ch4_nodes_number_G,
     define_gas_nodes_list,
 )
-from egon.data.datasets.gas_prod import assign_bus_id
 
 
 class CH4Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CH4Storages",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(import_ch4_storages),
         )
@@ -197,6 +197,7 @@ def import_ch4_storages():
     engine = db.engine()
 
     # Select target from dataset configuration
+    source = config.datasets()["gas_stores"]["source"]
     target = config.datasets()["gas_stores"]["target"]
 
     # TODO move this to function call, how to do it is directly called in task list?
@@ -205,13 +206,16 @@ def import_ch4_storages():
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  WHERE "carrier" = 'CH4'
-        AND scn_name = '{scn_name}';
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
+        WHERE "carrier" = 'CH4'
+        AND scn_name = '{scn_name}'
+        AND bus IN (
+            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+            WHERE scn_name = '{scn_name}' 
+            AND country = 'DE'
+            );
         """
     )
-
-    # Select next id value
-    new_id = db.next_etrago_id("store")
 
     gas_storages_list = pd.concat(
         [
@@ -219,11 +223,18 @@ def import_ch4_storages():
             import_ch4_grid_capacity(scn_name),
         ]
     )
+
+    # Aggregate ch4 stores with same properties at the same bus
+    gas_storages_list = (
+        gas_storages_list.groupby(["bus", "carrier", "scn_name"])
+        .agg({"e_nom": "sum"})
+        .reset_index(drop=False)
+    )
+
+    new_id = db.next_etrago_id("store")
     gas_storages_list["store_id"] = range(
         new_id, new_id + len(gas_storages_list)
     )
-
-    gas_storages_list = gas_storages_list.reset_index(drop=True)
 
     # Insert data to db
     gas_storages_list.to_sql(

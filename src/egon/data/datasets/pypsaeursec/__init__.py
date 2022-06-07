@@ -159,9 +159,9 @@ def neighbor_reduction():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2021-egondata-integration"
+            / "2022-05-04-egondata-integration"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
         )
 
     network = pypsa.Network(str(target_file))
@@ -387,7 +387,8 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens.index]
+    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
+
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
@@ -576,6 +577,9 @@ def neighbor_reduction():
             .set_crs(4326)
         )
 
+        # Unify carrier names
+        neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
+
         neighbor_links.to_postgis(
             "egon_etrago_link",
             engine,
@@ -593,6 +597,23 @@ def neighbor_reduction():
     neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
     neighbor_gens["p_nom_extendable"] = False
 
+    # Unify carrier names
+
+    neighbor_gens.carrier = neighbor_gens.carrier.str.replace(" ", "_")
+
+    neighbor_gens.carrier.replace(
+        {
+            "onwind": "wind_onshore",
+            "ror": "run_of_river",
+            "offwind-ac": "wind_offshore",
+            "offwind-dc": "wind_offshore",
+            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
+            "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
+            "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
+        },
+        inplace=True,
+    )
+
     for i in ["name", "weight", "lifetime", "p_set", "q_set", "p_nom_opt"]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
 
@@ -607,6 +628,19 @@ def neighbor_reduction():
 
     # prepare neighboring loads for etrago tables
     neighbor_loads["scn_name"] = "eGon100RE"
+
+    # Unify carrier names
+    neighbor_loads.carrier = neighbor_loads.carrier.str.replace(" ", "_")
+
+    neighbor_loads.carrier.replace(
+        {
+            "electricity": "AC",
+            "DC": "AC",
+            "industry_electricity": "AC",
+            "H2_pipeline": "H2_system_boundary",
+        },
+        inplace=True,
+    )
 
     for i in ["index", "p_set", "q_set"]:
         neighbor_loads = neighbor_loads.drop(i, axis=1)
@@ -623,6 +657,12 @@ def neighbor_reduction():
     # prepare neighboring stores for etrago tables
     neighbor_stores["scn_name"] = "eGon100RE"
 
+    # Unify carrier names
+
+    neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
+
+    neighbor_stores.carrier.replace({"Li_ion": "battery"}, inplace=True)
+
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
 
@@ -637,6 +677,13 @@ def neighbor_reduction():
 
     # prepare neighboring storage_units for etrago tables
     neighbor_storage["scn_name"] = "eGon100RE"
+
+    # Unify carrier names
+    neighbor_storage.carrier = neighbor_storage.carrier.str.replace(" ", "_")
+
+    neighbor_storage.carrier.replace(
+        {"PHS": "pumped_hydro", "hydro": "reservoir"}, inplace=True
+    )
 
     for i in ["name", "p_nom_opt"]:
         neighbor_storage = neighbor_storage.drop(i, axis=1)
@@ -738,8 +785,7 @@ def neighbor_reduction():
     # writing neighboring lines_t s_max_pu to etrago tables
     if not network.lines_t["s_max_pu"].empty:
         neighbor_lines_t_etrago = pd.DataFrame(
-            columns=["scn_name", "s_max_pu"],
-            index=neighbor_lines_t.columns,
+            columns=["scn_name", "s_max_pu"], index=neighbor_lines_t.columns
         )
         neighbor_lines_t_etrago["scn_name"] = "eGon100RE"
 
@@ -771,7 +817,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=tasks,
         )
