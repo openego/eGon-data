@@ -798,7 +798,6 @@ def load_grid_district_ids() -> pd.Series:
 
 def generate_model_data_grid_district(
     scenario_name: str,
-    scenario_variation_parameters: dict,
     evs_grid_district: pd.DataFrame,
     bat_cap_dict: dict,
     run_config: pd.DataFrame,
@@ -809,8 +808,6 @@ def generate_model_data_grid_district(
     ----------
     scenario_name : str
         Scenario name
-    scenario_variation_parameters : dict
-        Scenario variation parameters
     evs_grid_district : pd.DataFrame
         EV data for grid district
     bat_cap_dict : dict
@@ -883,9 +880,9 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
     )
 
     # Load scenario params for scenario and scenario variation
-    scenario_variation_parameters = get_sector_parameters(
-        "mobility", scenario=scenario_name
-    )["motorized_individual_travel"][scenario_var_name]
+    # scenario_variation_parameters = get_sector_parameters(
+    #    "mobility", scenario=scenario_name
+    # )["motorized_individual_travel"][scenario_var_name]
 
     # Get substations
     with db.session_scope() as session:
@@ -929,7 +926,6 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         )
         (static_params, load_ts,) = generate_model_data_grid_district(
             scenario_name=scenario_name,
-            scenario_variation_parameters=scenario_variation_parameters,
             evs_grid_district=evs_grid_district[
                 evs_grid_district.bus_id == bus_id
             ],
