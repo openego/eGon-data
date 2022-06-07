@@ -363,6 +363,8 @@ Changed
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
   `#779 <https://github.com/openego/eGon-data/issues/779>`_
+* Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
+  `#686 <https://github.com/openego/eGon-data/issues/686>`_
 
 
 Bug Fixes
