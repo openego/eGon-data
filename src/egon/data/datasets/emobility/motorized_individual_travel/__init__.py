@@ -77,9 +77,10 @@ from urllib.request import urlretrieve
 import os
 import tarfile
 
+from airflow.operators.python_operator import PythonOperator
+from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
-from airflow.operators.python_operator import PythonOperator
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
@@ -93,26 +94,25 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
     allocate_evs_numbers,
-    allocate_evs_to_grid_districts
-)
-from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
-    generate_model_data_bunch,
-    generate_model_data_eGon2035_remaining,
-    generate_model_data_eGon100RE_remaining,
+    allocate_evs_to_grid_districts,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     DATA_BUNDLE_DIR,
     DATASET_CFG,
+    MVGD_MIN_COUNT,
     TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
-    MVGD_MIN_COUNT,
+)
+from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
+    generate_model_data_bunch,
+    generate_model_data_eGon100RE_remaining,
+    generate_model_data_eGon2035_remaining,
 )
 
-# ========== Register np datatypes with SQLA ==========
-from psycopg2.extensions import AsIs, register_adapter
 
+# ========== Register np datatypes with SQLA ==========
 def adapt_numpy_float64(numpy_float64):
     return AsIs(numpy_float64)
 
@@ -383,13 +383,9 @@ class MotorizedIndividualTravel(Dataset):
                 :func:`egon.data.datasets.emobility.motorized_individual_travel.model_timeseries.generate_model_data`
             """
             parallel_tasks = DATASET_CFG["model_timeseries"].get(
-                "parallel_tasks",
-                1
+                "parallel_tasks", 1
             )
-            mvgd_bunch_size = divmod(
-                MVGD_MIN_COUNT,
-                parallel_tasks
-            )[0]
+            mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
 
             tasks = set()
             for _ in range(parallel_tasks):
@@ -404,7 +400,7 @@ class MotorizedIndividualTravel(Dataset):
                         python_callable=generate_model_data_bunch,
                         op_kwargs={
                             "scenario_name": scenario_name,
-                            "bunch": bunch
+                            "bunch": bunch,
                         },
                     )
                 )

@@ -31,7 +31,6 @@ from collections import Counter
 from pathlib import Path
 import datetime as dt
 import json
-import os
 
 from sqlalchemy.sql import func
 import numpy as np
@@ -45,8 +44,8 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     DATASET_CFG,
-    WORKING_DIR,
     MVGD_MIN_COUNT,
+    WORKING_DIR,
     read_simbev_metadata_file,
     reduce_mem_usage,
 )
@@ -142,14 +141,16 @@ def data_preprocessing(
     ev_data_df.loc[
         mask_work | mask_home, "flex_last_timestep_charging_capacity_grid_MW"
     ] = ev_data_df.loc[
-        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"]
+        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"
+    ]
 
     # Check length of timeseries
     if len(ev_data_df.loc[ev_data_df.last_timestep > 35040]) > 0:
         print("    Warning: Trip data exceeds 1 year and is cropped.")
         # Correct last TS
         ev_data_df.loc[
-            ev_data_df.last_timestep > 35040, "last_timestep"] = 35040
+            ev_data_df.last_timestep > 35040, "last_timestep"
+        ] = 35040
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -201,7 +202,9 @@ def generate_load_time_series(
     load_time_series_array = np.zeros(len(load_time_series_df))
     flex_time_series_array = load_time_series_array.copy()
     simultaneous_plugged_in_charging_capacity = load_time_series_array.copy()
-    simultaneous_plugged_in_charging_capacity_flex = load_time_series_array.copy()
+    simultaneous_plugged_in_charging_capacity_flex = (
+        load_time_series_array.copy()
+    )
     soc_min_absolute = load_time_series_array.copy()
     soc_max_absolute = load_time_series_array.copy()
     driving_load_time_series_array = load_time_series_array.copy()
@@ -222,7 +225,7 @@ def generate_load_time_series(
         "soc_end",
         "bat_cap",
         "location",
-        "consumption"
+        "consumption",
     ]
 
     # iterate over charging events
@@ -243,7 +246,7 @@ def generate_load_time_series(
         soc_end,
         bat_cap,
         location,
-        consumption
+        consumption,
     ) in ev_data_df[columns].itertuples():
         ev_count = profile_counter[ev_id]
 
@@ -253,12 +256,12 @@ def generate_load_time_series(
         flex_time_series_array[start:end] += flex_cap * ev_count
         flex_time_series_array[last_ts] += flex_last_ts_cap * ev_count
 
-        simultaneous_plugged_in_charging_capacity[
-            start:park_end+1
-        ] += cap * ev_count
+        simultaneous_plugged_in_charging_capacity[start : park_end + 1] += (
+            cap * ev_count
+        )
         simultaneous_plugged_in_charging_capacity_flex[
-            start:park_end+1
-        ] += flex_cap * ev_count
+            start : park_end + 1
+        ] += (flex_cap * ev_count)
 
         # ====================================================
         # min and max SoC constraints of aggregated EV battery
@@ -266,41 +269,51 @@ def generate_load_time_series(
         # (I) Preserve SoC while driving
         if location == "driving":
             # Full band while driving
-            #soc_min_absolute[drive_start:drive_end+1] += soc_end * bat_cap * ev_count
-            #soc_max_absolute[drive_start:drive_end+1] += soc_start * bat_cap * ev_count
+            # soc_min_absolute[drive_start:drive_end+1] += soc_end * bat_cap * ev_count
+            # soc_max_absolute[drive_start:drive_end+1] += soc_start * bat_cap * ev_count
 
             # Real band (decrease SoC while driving)
-            soc_min_absolute[
-                drive_start:drive_end+1
-            ] += np.linspace(
-                soc_start, soc_end, drive_end-drive_start+2
-            )[1:] * bat_cap * ev_count
-            soc_max_absolute[
-                drive_start:drive_end+1
-            ] += np.linspace(
-                soc_start, soc_end, drive_end-drive_start+2
-            )[1:] * bat_cap * ev_count
+            soc_min_absolute[drive_start : drive_end + 1] += (
+                np.linspace(soc_start, soc_end, drive_end - drive_start + 2)[
+                    1:
+                ]
+                * bat_cap
+                * ev_count
+            )
+            soc_max_absolute[drive_start : drive_end + 1] += (
+                np.linspace(soc_start, soc_end, drive_end - drive_start + 2)[
+                    1:
+                ]
+                * bat_cap
+                * ev_count
+            )
 
             # Equal distribution of driving load
             if soc_start > soc_end:  # reqd. for PHEV
                 driving_load_time_series_array[
-                    drive_start:drive_end+1
-                ] += (consumption * ev_count) / (drive_end-drive_start+1)
+                    drive_start : drive_end + 1
+                ] += (consumption * ev_count) / (drive_end - drive_start + 1)
 
         # (II) Fix SoC bounds while parking w/o charging
         elif soc_start == soc_end:
-            soc_min_absolute[start:park_end+1] += soc_start * bat_cap * ev_count
-            soc_max_absolute[start:park_end+1] += soc_end * bat_cap * ev_count
+            soc_min_absolute[start : park_end + 1] += (
+                soc_start * bat_cap * ev_count
+            )
+            soc_max_absolute[start : park_end + 1] += (
+                soc_end * bat_cap * ev_count
+            )
 
         # (III) Set SoC bounds at start and end of parking while charging
         # for flexible and non-flexible events
         elif soc_start < soc_end:
             if flex_cap > 0:
                 # * "flex" (private charging only, band: SoC_min..SoC_max)
-                soc_min_absolute[start:park_end+1] += soc_start * bat_cap * \
-                                                      ev_count
-                soc_max_absolute[start:park_end+1] += soc_end * bat_cap * \
-                                                      ev_count
+                soc_min_absolute[start : park_end + 1] += (
+                    soc_start * bat_cap * ev_count
+                )
+                soc_max_absolute[start : park_end + 1] += (
+                    soc_end * bat_cap * ev_count
+                )
 
                 # * "flex+" (private charging only, band: 0..1)
                 #   (IF USED: add elif with flex scenario)
@@ -313,12 +326,16 @@ def generate_load_time_series(
             #   charging)
             # (SKIP THIS PART for "flex++" (private+public charging))
             elif flex_cap == 0:
-                soc_min_absolute[start:park_end+1] += np.linspace(
-                    soc_start, soc_end, park_end-start+1
-                ) * bat_cap * ev_count
-                soc_max_absolute[start:park_end+1] += np.linspace(
-                    soc_start, soc_end, park_end-start+1
-                ) * bat_cap * ev_count
+                soc_min_absolute[start : park_end + 1] += (
+                    np.linspace(soc_start, soc_end, park_end - start + 1)
+                    * bat_cap
+                    * ev_count
+                )
+                soc_max_absolute[start : park_end + 1] += (
+                    np.linspace(soc_start, soc_end, park_end - start + 1)
+                    * bat_cap
+                    * ev_count
+                )
 
     # Build timeseries
     load_time_series_df = load_time_series_df.assign(
@@ -330,21 +347,20 @@ def generate_load_time_series(
         simultaneous_plugged_in_charging_capacity_flex=(
             simultaneous_plugged_in_charging_capacity_flex
         ),
-        soc_min_absolute=(
-            soc_min_absolute / 1e3
-        ),
-        soc_max_absolute=(
-            soc_max_absolute / 1e3
-        ),
-        driving_load_time_series=driving_load_time_series_array / 1e3
+        soc_min_absolute=(soc_min_absolute / 1e3),
+        soc_max_absolute=(soc_max_absolute / 1e3),
+        driving_load_time_series=driving_load_time_series_array / 1e3,
     )
 
     # validate load timeseries
     np.testing.assert_almost_equal(
         load_time_series_df.load_time_series.sum() / 4,
-        (ev_data_df.ev_id.apply(
-            lambda _: profile_counter[_]
-        ) * ev_data_df.charging_demand).sum() / 1000 / float(run_config.eta_cp),
+        (
+            ev_data_df.ev_id.apply(lambda _: profile_counter[_])
+            * ev_data_df.charging_demand
+        ).sum()
+        / 1000
+        / float(run_config.eta_cp),
         decimal=-1,
     )
 
@@ -391,8 +407,10 @@ def generate_static_params(
 
 
 def load_evs_trips(
-    scenario_name: str, evs_ids: list, charging_events_only: bool = False,
-    flex_only_at_charging_events: bool = True
+    scenario_name: str,
+    evs_ids: list,
+    charging_events_only: bool = False,
+    flex_only_at_charging_events: bool = True,
 ) -> pd.DataFrame:
     """Load trips for EVs
 
@@ -569,12 +587,14 @@ def write_model_data_to_db(
             ).filter(
                 EgonPfHvBus.scn_name == scenario_name,
                 EgonPfHvBus.bus_id == bus_id,
-                EgonPfHvBus.carrier == "AC"
+                EgonPfHvBus.carrier == "AC",
             )
             etrago_bus = query.first()
             if etrago_bus is None:
-                print(f"No AC bus found for scenario {scenario_name} "
-                      f"with bus_id {bus_id} in table egon_etrago_bus!")
+                print(
+                    f"No AC bus found for scenario {scenario_name} "
+                    f"with bus_id {bus_id} in table egon_etrago_bus!"
+                )
 
             # eMob MIT bus
             emob_bus_id = db.next_etrago_id("bus")
@@ -642,8 +662,8 @@ def write_model_data_to_db(
                     e_min_pu=0,
                     e_max_pu=1,
                     e_initial=(
-                        initial_soc_mean *
-                        static_params_dict["store_ev_battery.e_nom_MWh"]
+                        initial_soc_mean
+                        * static_params_dict["store_ev_battery.e_nom_MWh"]
                     ),
                     e_cyclic=False,
                     sign=1,
@@ -729,26 +749,28 @@ def write_model_data_to_db(
             "soc_min_absolute": np.min,
             "soc_max_absolute": np.max,
             "ev_availability": np.mean,
-            "driving_load_time_series": np.sum
+            "driving_load_time_series": np.sum,
         }
     )
 
     # Create relative SoC timeseries
     hourly_load_time_series_df = hourly_load_time_series_df.assign(
         soc_min=hourly_load_time_series_df.soc_min_absolute.div(
-            static_params_dict["store_ev_battery.e_nom_MWh"]),
+            static_params_dict["store_ev_battery.e_nom_MWh"]
+        ),
         soc_max=hourly_load_time_series_df.soc_max_absolute.div(
-            static_params_dict["store_ev_battery.e_nom_MWh"])
+            static_params_dict["store_ev_battery.e_nom_MWh"]
+        ),
     )
     hourly_load_time_series_df = hourly_load_time_series_df.assign(
         soc_delta_absolute=(
-            hourly_load_time_series_df.soc_max_absolute -
-            hourly_load_time_series_df.soc_min_absolute
+            hourly_load_time_series_df.soc_max_absolute
+            - hourly_load_time_series_df.soc_min_absolute
         ),
         soc_delta=(
-            hourly_load_time_series_df.soc_max -
-            hourly_load_time_series_df.soc_min
-        )
+            hourly_load_time_series_df.soc_max
+            - hourly_load_time_series_df.soc_min
+        ),
     )
 
     # Crop hourly TS if needed
@@ -768,13 +790,9 @@ def write_model_data_to_db(
 def load_grid_district_ids() -> pd.Series:
     """Load bus IDs of all grid districts"""
     with db.session_scope() as session:
-        query_mvgd = session.query(
-            MvGridDistricts.bus_id
-        )
+        query_mvgd = session.query(MvGridDistricts.bus_id)
     return pd.read_sql(
-        query_mvgd.statement,
-        query_mvgd.session.bind,
-        index_col=None
+        query_mvgd.statement, query_mvgd.session.bind, index_col=None
     ).bus_id.sort_values()
 
 
@@ -812,7 +830,7 @@ def generate_model_data_grid_district(
         scenario_name=scenario_name,
         evs_ids=evs_grid_district.ev_id.unique(),
         charging_events_only=False,
-        flex_only_at_charging_events=True
+        flex_only_at_charging_events=True,
     )
 
     print("  Preprocessing data...")
@@ -828,7 +846,7 @@ def generate_model_data_grid_district(
     load_ts = generate_load_time_series(
         ev_data_df=trip_data,
         run_config=run_config,
-        scenario_data=evs_grid_district
+        scenario_data=evs_grid_district,
     )
 
     # Generate static paras
@@ -875,15 +893,13 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             session.query(
                 EgonEvMvGridDistrict.bus_id,
                 EgonEvMvGridDistrict.egon_ev_pool_ev_id.label("ev_id"),
-            ).filter(
-                EgonEvMvGridDistrict.scenario == scenario_name
-            ).filter(
-                EgonEvMvGridDistrict.scenario_variation == scenario_var_name
-            ).filter(
-                EgonEvMvGridDistrict.bus_id.in_(mvgd_bus_ids)
-            ).filter(
-                EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None)
             )
+            .filter(EgonEvMvGridDistrict.scenario == scenario_name)
+            .filter(
+                EgonEvMvGridDistrict.scenario_variation == scenario_var_name
+            )
+            .filter(EgonEvMvGridDistrict.bus_id.in_(mvgd_bus_ids))
+            .filter(EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None))
         )
     evs_grid_district = pd.read_sql(
         query.statement, query.session.bind, index_col=None
@@ -907,12 +923,11 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
     ctr = 0
     for bus_id in mvgd_bus_ids:
         ctr += 1
-        print(f"Processing grid district: bus {bus_id}... "
-              f"({ctr}/{len(mvgd_bus_ids)})")
-        (
-            static_params,
-            load_ts,
-        ) = generate_model_data_grid_district(
+        print(
+            f"Processing grid district: bus {bus_id}... "
+            f"({ctr}/{len(mvgd_bus_ids)})"
+        )
+        (static_params, load_ts,) = generate_model_data_grid_district(
             scenario_name=scenario_name,
             scenario_variation_parameters=scenario_variation_parameters,
             evs_grid_district=evs_grid_district[
@@ -937,7 +952,7 @@ def generate_model_data_eGon2035_remaining():
     """
     generate_model_data_bunch(
         scenario_name="eGon2035",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids()))
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
 
 
@@ -947,5 +962,5 @@ def generate_model_data_eGon100RE_remaining():
     """
     generate_model_data_bunch(
         scenario_name="eGon100RE",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids()))
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
