@@ -199,8 +199,6 @@ Added
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Introduce Sanity checks for eGon2035
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
-* Provide wrapper to catch DB unique violation
-  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
