@@ -845,7 +845,7 @@ def generate_model_data_grid_district(
         scenario_data=evs_grid_district,
     )
 
-    # Generate static paras
+    # Generate static params
     static_params = generate_static_params(trip_data, load_ts)
 
     return static_params, load_ts
