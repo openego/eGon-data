@@ -1,6 +1,7 @@
 """The central module containing all code dealing with heat sector in etrago
 """
 from operator import ne
+
 from geoalchemy2.types import Geometry
 from shapely.geometry import MultiLineString
 import geopandas as gpd
@@ -51,8 +52,8 @@ def insert_h2_pipelines():
     # the retriffiting share and the capacity factor are obtained from the
     # scenario parameters
     pipelines["p_nom"] *= (
-        scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"] *
-        scn_params["retrofitted_capacity_share"]
+        scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
+        * scn_params["retrofitted_capacity_share"]
     )
     # map pipeline buses
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
@@ -84,9 +85,7 @@ def insert_h2_pipelines():
     new_pipelines = link_geom_from_buses(
         new_pipelines[["bus0", "bus1"]], "eGon2035"
     )
-    new_pipelines[
-        "geom"
-    ] = new_pipelines.apply(
+    new_pipelines["geom"] = new_pipelines.apply(
         lambda row: MultiLineString([row["topo"]]), axis=1
     )
     new_pipelines = new_pipelines.set_geometry("geom", crs=4326)
