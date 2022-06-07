@@ -59,7 +59,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
-from egon.data.datasets.scenario_parameters import get_sector_parameters
+# from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def data_preprocessing(
