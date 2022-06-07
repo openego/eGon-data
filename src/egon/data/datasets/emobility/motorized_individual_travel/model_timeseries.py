@@ -569,6 +569,7 @@ def write_model_data_to_db(
             ).filter(
                 EgonPfHvBus.scn_name == scenario_name,
                 EgonPfHvBus.bus_id == bus_id,
+                EgonPfHvBus.carrier == "AC"
             )
             etrago_bus = query.first()
 
