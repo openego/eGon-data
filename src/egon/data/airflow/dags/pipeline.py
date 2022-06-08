@@ -555,13 +555,12 @@ with airflow.DAG(
             insert_data_ch4_storages,
         ]
     )
-    
+
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
-           storage_etrago,
-           hts_etrago_table,
-           fill_etrago_generators, 
+            storage_etrago,
+            hts_etrago_table,
+            fill_etrago_generators,
         ]
     )
-
