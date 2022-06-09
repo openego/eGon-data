@@ -10,9 +10,9 @@ scenarios eGon2035 and eGon100RE .
 
 # import logging
 # import os
-# from matplotlib import pyplot as plt
-# import matplotlib.patches as mpatches
-#import matplotlib
+from matplotlib import pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib
 #import pandas as pd
 #import numpy as np
 #from math import sqrt, log10
@@ -57,6 +57,27 @@ sqlCarrier = "SELECT * FROM grid.egon_etrago_generator"
 Carriers = pd.read_sql(sqlCarrier,con)
 Carriers = Carriers.loc[Carriers['scn_name'] == 'eGon2035']
 Carriers = Carriers.set_index("bus")
+
+#Solar rooftop 
+SolarRooftop = Carriers.loc[Carriers['carrier'] == 'solar_rooftop']
+SolarRooftopGEO = pd.merge(SolarRooftop, distr, on ='bus')
+
+
+
+gdf = gpd.GeoDataFrame(SolarRooftopGEO , geometry='geom')
+
+
+
+fig, ax = plt.subplots(figsize=(10,10))
+
+ax.set_axis_off();
+
+gdf.plot(column='p_nom', ax=ax, legend=True)
+
+
+
+
+
 
 #Carriers.rename(columns={"bus": "bus_id"})
 
