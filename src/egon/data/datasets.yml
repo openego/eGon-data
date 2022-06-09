@@ -1039,3 +1039,33 @@ gas_neighbours:
     links:
       schema: 'grid'
       table: 'egon_etrago_link'
+
+emobility_mit:
+  original_data:
+    sources:
+      RS7:
+        url: "https://www.bmvi.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
+        file: "regiostar-referenzdateien.xlsx"
+        file_processed: "regiostar-referenzdateien_preprocessed.csv"
+        sheet: "ReferenzGebietsstand2020"
+      KBA:
+        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2"
+        file: "fz1_2021.xlsx"
+        file_processed: "fz1_2021_preprocessed.csv"
+        sheet: "FZ1.1"
+        columns: "D, J:N"
+        skiprows: 8
+      trips:
+        eGon2035:
+          file: "eGon2035_RS7_min2k_2022-05-13_120240_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+        eGon100RE:
+          file: "eGon100RE_RS7_min2k_2022-05-13_120301_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+  scenario:
+    variation:
+      eGon2035: "NEP C 2035"
+      eGon100RE: "Reference 2050"
+  model_timeseries:
+    reduce_memory: True
+    export_results_to_csv: True
