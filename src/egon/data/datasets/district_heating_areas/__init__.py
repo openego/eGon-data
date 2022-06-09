@@ -11,33 +11,33 @@ This module obtains the information from the census tables and the heat demand
 densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
+# for metadata creation
+import json
 import os
-from egon.data import db
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-    EgonScenario,
-)
 
-import pandas as pd
-import geopandas as gpd
+from geoalchemy2.types import Geometry
+from matplotlib import pyplot as plt
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon
-from matplotlib import pyplot as plt
+
+# packages for ORM class definition
+from sqlalchemy import Column, Float, ForeignKey, Integer, Sequence, String
+from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.district_heating_areas.plot import (
     plot_heat_density_sorted,
 )
-
-# for metadata creation
-import json
+from egon.data.datasets.scenario_parameters import (
+    EgonScenario,
+    get_sector_parameters,
+)
 
 # import time
 
-# packages for ORM class definition
-from sqlalchemy import Column, String, Integer, Sequence, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
-
-from egon.data.datasets import Dataset
 
 # class for airflow task management (and version control)
 class DistrictHeatingAreas(Dataset):
@@ -52,6 +52,8 @@ class DistrictHeatingAreas(Dataset):
 
 
 Base = declarative_base()
+
+
 # definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
     __tablename__ = "egon_map_zensus_district_heating_areas"

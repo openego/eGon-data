@@ -1,11 +1,12 @@
-import egon.data.config
-from egon.data import db
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+
+from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
-from egon.data.datasets import Dataset
+import egon.data.config
 
 
 class dsm_Potential(Dataset):
@@ -49,7 +50,8 @@ def dsm_cts_ind_processing():
         dsm["scn_name"] = ts["scn_name"].copy()
         dsm["p_set"] = ts["p_set"].copy()
 
-        # calculate share of timeseries for air conditioning, cooling and ventilation out of CTS-data
+        # calculate share of timeseries for air conditioning, cooling and ventilation
+        # out of CTS-data
 
         timeseries = dsm["p_set"].copy()
         for index, liste in timeseries.iteritems():
@@ -147,7 +149,8 @@ def dsm_cts_ind_processing():
         def calc_ind_site_timeseries(scenario):
 
             # calculate timeseries per site
-            # -> using code from egon.data.datasets.industry.temporal: calc_load_curves_ind_sites
+            # -> using code from egon.data.datasets.industry.temporal:
+            # calc_load_curves_ind_sites
 
             # select demands per industrial site including the subsector information
             source1 = egon.data.config.datasets()["DSM_CTS_industry"][
@@ -175,12 +178,13 @@ def dsm_cts_ind_processing():
                 epsg=3035,
             )
 
-            # replace entries to bring it in line with demandregio's subsector definitions
+            # replace entries to bring it in line with demandregio's subsector
+            # definitions
             demands_ind_sites.replace(1718, 17, inplace=True)
             share_wz_sites = demands_ind_sites.copy()
 
-            # create additional df on wz_share per industrial site, which is always set to one
-            # as the industrial demand per site is subsector specific
+            # create additional df on wz_share per industrial site, which is always set
+            # to one as the industrial demand per site is subsector specific
             share_wz_sites.demand = 1
             share_wz_sites.reset_index(inplace=True)
 
@@ -276,9 +280,11 @@ def dsm_cts_ind_processing():
         s_util: float
             Average annual utilisation rate
         s_inc: float
-            Shiftable share of installed capacity up to which load can be increased considering technical limitations
+            Shiftable share of installed capacity up to which load can be increased
+            considering technical limitations
         s_dec: float
-            Shiftable share of installed capacity up to which load can be decreased considering technical limitations
+            Shiftable share of installed capacity up to which load can be decreased
+            considering technical limitations
         delta_t: int
             Maximum shift duration in hours
         dsm: DataFrame
@@ -580,20 +586,20 @@ def dsm_cts_ind_processing():
         df_dsm_stores.sort_values("scn_name", inplace=True)
 
         # select new bus_ids for aggregated buses and add to links and stores
-        bus_id = db.next_etrago_id("Bus") +  df_dsm_buses.index
+        bus_id = db.next_etrago_id("Bus") + df_dsm_buses.index
 
         df_dsm_buses["bus_id"] = bus_id
         df_dsm_links["dsm_bus"] = bus_id
         df_dsm_stores["bus"] = bus_id
 
         # select new link_ids for aggregated links
-        link_id = db.next_etrago_id("Link") +  df_dsm_links.index
+        link_id = db.next_etrago_id("Link") + df_dsm_links.index
 
         df_dsm_links["link_id"] = link_id
 
         # select new store_ids to aggregated stores
 
-        store_id = db.next_etrago_id("Store") +  df_dsm_stores.index
+        store_id = db.next_etrago_id("Store") + df_dsm_stores.index
 
         df_dsm_stores["store_id"] = store_id
 
@@ -734,7 +740,7 @@ def dsm_cts_ind_processing():
         # links
 
         sql = f"""DELETE FROM {targets["link_timeseries"]["schema"]}.{targets["link_timeseries"]["table"]} t
-        WHERE t.link_id IN 
+        WHERE t.link_id IN
                  (SELECT l.link_id FROM {targets["link"]["schema"]}.{targets["link"]["table"]} l
               WHERE l.carrier LIKE '{carrier}');"""
         db.execute_sql(sql)
@@ -745,7 +751,7 @@ def dsm_cts_ind_processing():
         # stores
 
         sql = f"""DELETE FROM {targets["store_timeseries"]["schema"]}.{targets["store_timeseries"]["table"]} t
-        WHERE t.store_id IN 
+        WHERE t.store_id IN
                  (SELECT s.store_id FROM {targets["store"]["schema"]}.{targets["store"]["table"]} s
               WHERE s.carrier LIKE '{carrier}');"""
         db.execute_sql(sql)
@@ -762,12 +768,17 @@ def dsm_cts_ind_processing():
 
         """
         Execute methodology to create and implement components for DSM considering
-        a) CTS per osm-area: combined potentials of cooling, ventilation and air conditioning
+        a) CTS per osm-area: combined potentials of cooling, ventilation and air
+        conditioning
         b) Industry per osm-are: combined potentials of cooling and ventilation
-        c) Industrial Sites: potentials of ventilation in sites of "Wirtschaftszweig" (WZ) 23
-        d) Industrial Sites: potentials of sites specified by subsectors identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
-                                                                                                Paper, Recycled Paper, Pulp, Cement
-        Modelled using the methods by Heitkoetter et. al.: https://doi.org/10.1016/j.adapen.2020.100001
+        c) Industrial Sites: potentials of ventilation in sites of "Wirtschaftszweig"
+        (WZ) 23
+        d) Industrial Sites: potentials of sites specified by subsectors identified by
+        Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+        Paper, Recycled Paper, Pulp, Cement
+        Modelled using the methods by Heitkoetter et. al.:
+        https://doi.org/10.1016/j.adapen.2020.100001
+
         Parameters
             ----------
         con :
@@ -789,8 +800,8 @@ def dsm_cts_ind_processing():
 
         dsm = cts_data_import(con, cts_cool_vent_ac_share)
 
-        # calculate combined potentials of cooling, ventilation and air conditioning in CTS
-        # using combined parameters by Heitkoetter et. al.
+        # calculate combined potentials of cooling, ventilation and air conditioning in
+        # CTS using combined parameters by Heitkoetter et. al.
         p_max, p_min, e_max, e_min = calculate_potentials(
             s_flex=0.5, s_util=0.67, s_inc=1, s_dec=0, delta_t=1, dsm=dsm
         )

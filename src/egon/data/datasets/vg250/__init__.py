@@ -11,11 +11,10 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import time
 import datetime
-import codecs
 import json
 import os
+import time
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -23,12 +22,12 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-import egon.data.config
 from egon.data.metadata import (
     context,
-    meta_metadata,
     licenses_datenlizenz_deutschland,
+    meta_metadata,
 )
+import egon.data.config
 
 
 def download_files():
@@ -411,7 +410,9 @@ def vg250_metadata_resources_fields():
             "unit": "none",
         },
         {
-            "description": "Seat of the administration (territorial code, deprecated column)",
+            "description": (
+                "Seat of the administration (territorial code, deprecated column)"
+            ),
             "name": "sdv_rs",
             "type": "string",
             "unit": "none",

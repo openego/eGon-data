@@ -3,14 +3,11 @@ The central module containing all code dealing with existing storage units for
 eTraGo.
 """
 
-import geopandas as gpd
-from egon.data import db, config
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-    EgonScenario,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
 class StorageEtrago(Dataset):
@@ -57,7 +54,8 @@ def insert_PHES():
         # Select unused index of buses
         next_bus_id = db.next_etrago_id("storage")
 
-        # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
+        # Add missing PHES specific information suitable for eTraGo selected from
+        # scenario_parameter table
         parameters = scenario_parameters.electricity(scn)["efficiency"][
             "pumped_hydro"
         ]

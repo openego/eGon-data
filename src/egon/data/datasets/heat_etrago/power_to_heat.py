@@ -4,7 +4,6 @@ from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 
-
 from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -44,14 +43,14 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -134,14 +133,14 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier = 'central_heat_pump'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -152,7 +151,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     # Select heat pumps in district heating
     central_heat_pumps = db.select_geodataframe(
         f"""
-        SELECT a.index, a.district_heating_id, a.carrier, a.category, a.capacity, a.geometry, a.scenario, d.feedin as cop 
+        SELECT a.index, a.district_heating_id, a.carrier, a.category, a.capacity, a.geometry, a.scenario, d.feedin as cop
         FROM {sources['district_heating_supply']['schema']}.
             {sources['district_heating_supply']['table']} a
         JOIN {sources['weather_cells']['schema']}.
@@ -196,14 +195,14 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
         WHERE carrier = 'central_resistive_heater'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'

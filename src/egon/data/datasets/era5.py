@@ -2,18 +2,19 @@
 Central module containing all code dealing with importing era5 weather data.
 """
 
-import atlite
-import os
 from pathlib import Path
+import os
 
-import geopandas as gpd
-import egon.data.config
-from egon.data import db
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets import Dataset
-from sqlalchemy import Column, String, Float, Integer, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2 import Geometry
+from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+import atlite
+import geopandas as gpd
+
+from egon.data import db
+from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.config
 
 # will be later imported from another file ###
 Base = declarative_base()

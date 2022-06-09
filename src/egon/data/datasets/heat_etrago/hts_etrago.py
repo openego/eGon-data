@@ -1,9 +1,9 @@
-from egon.data import config, db
-from egon.data.db import next_etrago_id
-from egon.data.datasets import Dataset
-
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.db import next_etrago_id
 
 
 def hts_to_etrago():
@@ -36,9 +36,9 @@ def hts_to_etrago():
             # district heating time series time series
             disct_time_series = db.select_dataframe(
                 f"""
-                                SELECT * FROM 
+                                SELECT * FROM
                                 demand.egon_timeseries_district_heating
-                                WHERE scenario ='{scenario}'                                
+                                WHERE scenario ='{scenario}'
                                 """
             )
             # bus_id connected to corresponding time series
@@ -51,28 +51,28 @@ def hts_to_etrago():
             bus_sub = db.select_dataframe(
                 f"""
                  SELECT {targets['heat_buses']['schema']}.
-                 {targets['heat_buses']['table']}.bus_id as heat_bus_id, 
+                 {targets['heat_buses']['table']}.bus_id as heat_bus_id,
                  {sources['egon_mv_grid_district']['schema']}.
-                             {sources['egon_mv_grid_district']['table']}.bus_id as 
+                             {sources['egon_mv_grid_district']['table']}.bus_id as
                              bus_id FROM
                  {targets['heat_buses']['schema']}.
                  {targets['heat_buses']['table']}
                  JOIN {sources['egon_mv_grid_district']['schema']}.
                              {sources['egon_mv_grid_district']['table']}
                  ON ST_Transform(ST_Centroid({sources['egon_mv_grid_district']['schema']}.
-                             {sources['egon_mv_grid_district']['table']}.geom), 
+                             {sources['egon_mv_grid_district']['table']}.geom),
                                  4326) = {targets['heat_buses']['schema']}.
                                          {targets['heat_buses']['table']}.geom
                  WHERE carrier = '{carrier}'
                  AND scn_name = '{scenario}'
                  """
             )
-            ##**scenario name still needs to be adjusted in bus_sub**
+            # **scenario name still needs to be adjusted in bus_sub**
 
             # individual heating time series
             ind_time_series = db.select_dataframe(
                 f"""
-                                SELECT * FROM 
+                                SELECT * FROM
                                 demand.egon_etrago_timeseries_individual_heating
                                 WHERE scenario ='{scenario}'
                                 """

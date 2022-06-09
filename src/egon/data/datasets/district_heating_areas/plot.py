@@ -8,9 +8,11 @@
 Module containing all code creating with plots of district heating areas
 """
 import os
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-import pandas as pd
+
 from matplotlib import pyplot as plt
+import pandas as pd
+
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 # heat_denisty_per_scenario = {}
 # heat_denisty_per_scenario['eGon2035'] = district_heating_areas(
@@ -23,6 +25,8 @@ from matplotlib import pyplot as plt
 #     from egon.data.processing.district_heating_areas.plot import (
 #         plot_heat_density_sorted)
 #     plot_heat_density_sorted({scenario_name:collection}, scenario_name )
+
+
 def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     """
     Create diagrams for visualisation, sorted by HDD

@@ -3,13 +3,13 @@ timeseries data using demandregio
 
 """
 
-import egon.data.config
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
-from sqlalchemy import ARRAY, Column, Float, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+import egon.data.config
 
 Base = declarative_base()
 
@@ -49,12 +49,14 @@ def identify_bus(load_curves, demand_area):
         epsg=3035,
     )
 
-    # Initialize dataframe to identify peak load per demand area (e.g. osm landuse area or industrial site)
+    # Initialize dataframe to identify peak load per demand area (e.g. osm landuse area
+    # or industrial site)
     peak = pd.DataFrame(columns=["id", "peak_load", "voltage_level"])
     peak["id"] = load_curves.max(axis=0).index
     peak["peak_load"] = load_curves.max(axis=0).values
 
-    # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
+    # Identify voltage_level for every demand area taking thresholds into account which
+    # were defined in the eGon project
     peak.loc[peak["peak_load"] < 0.1, "voltage_level"] = 7
     peak.loc[peak["peak_load"] > 0.1, "voltage_level"] = 6
     peak.loc[peak["peak_load"] > 0.2, "voltage_level"] = 5
@@ -68,12 +70,14 @@ def identify_bus(load_curves, demand_area):
     # Identify all demand areas connected to HVMV buses
     peak_hv = peak[peak["voltage_level"] > 1]
 
-    # Perform a spatial join between the centroid of the demand area and mv grid districts to identify grid connection point
+    # Perform a spatial join between the centroid of the demand area and mv grid
+    # districts to identify grid connection point
     peak_hv["centroid"] = peak_hv["geom"].centroid
     peak_hv = peak_hv.set_geometry("centroid")
     peak_hv_c = gpd.sjoin(peak_hv, griddistrict, how="inner", op="intersects")
 
-    # Perform a spatial join between the polygon of the demand area  and mv grid districts to ensure every area got assign to a bus
+    # Perform a spatial join between the polygon of the demand area and mv grid
+    # districts to ensure every area got assign to a bus
     peak_hv_p = peak_hv[~peak_hv.isin(peak_hv_c)].dropna().set_geometry("geom")
     peak_hv_p = gpd.sjoin(
         peak_hv_p, griddistrict, how="inner", op="intersects"

@@ -3,7 +3,6 @@
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     Column,
     Float,
     Integer,
@@ -26,6 +25,7 @@ from egon.data.datasets.power_plants.conventional import (
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    geocode_mastr_data,
     pv_rooftop_to_buildings,
 )
 import egon.data.config
@@ -66,7 +66,7 @@ class PowerPlants(Dataset):
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
                     pv_rooftop_per_mv_grid,
-                    pv_rooftop_to_buildings,
+                    (geocode_mastr_data, pv_rooftop_to_buildings),
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,

@@ -5,20 +5,19 @@
    processing step bringing three different inputs together.
 
 """
+from pathlib import Path
+from urllib.request import urlretrieve
+import os
 
-
-import egon.data.config
+from geoalchemy2.types import Geometry
+from sqlalchemy import Column, Float, Integer, Sequence, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
-import os
-from urllib.request import urlretrieve
+
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
-from sqlalchemy import Column, String, Float, Integer, Sequence
-from geoalchemy2.types import Geometry
-from sqlalchemy.ext.declarative import declarative_base
-from pathlib import Path
-
+import egon.data.config
 
 Base = declarative_base()
 
@@ -641,7 +640,8 @@ def merge_inputs():
                               LOWER (SUBSTRING(s.companyname, 1, 3))))"""
     )
 
-    # Replace geometry by spatial information from table 'demand.schmidt_industrial_sites' if possible
+    # Replace geometry by spatial information from table
+    # 'demand.schmidt_industrial_sites' if possible
 
     db.execute_sql(
         f"""UPDATE {sites_table} s
