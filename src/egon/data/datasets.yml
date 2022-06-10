@@ -1056,10 +1056,10 @@ emobility_mit:
         skiprows: 8
       trips:
         eGon2035:
-          file: "eGon2035_RS7_min2k_2022-05-13_120240_simbev_run.tar.gz"
+          file: "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
         eGon100RE:
-          file: "eGon100RE_RS7_min2k_2022-05-13_120301_simbev_run.tar.gz"
+          file: "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
   scenario:
     variation:
@@ -1068,3 +1068,4 @@ emobility_mit:
   model_timeseries:
     reduce_memory: True
     export_results_to_csv: True
+    parallel_tasks: 10

@@ -77,7 +77,7 @@ from urllib.request import urlretrieve
 import os
 import tarfile
 
-# ========== Register np datatypes with SQLA ==========
+from airflow.operators.python_operator import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
@@ -100,16 +100,19 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     DATA_BUNDLE_DIR,
     DATASET_CFG,
+    MVGD_MIN_COUNT,
     TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
-    generate_model_data_eGon100RE,
-    generate_model_data_eGon2035,
+    generate_model_data_bunch,
+    generate_model_data_eGon100RE_remaining,
+    generate_model_data_eGon2035_remaining,
 )
 
 
+# ========== Register np datatypes with SQLA ==========
 def adapt_numpy_float64(numpy_float64):
     return AsIs(numpy_float64)
 
@@ -151,8 +154,7 @@ def create_tables():
 
     # Create dir for results, if it does not exist
     result_dir = WORKING_DIR / Path("results")
-    if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
+    result_dir.mkdir(exist_ok=True, parents=True)
 
 
 def download_and_preprocess():
@@ -356,6 +358,59 @@ def write_evs_trips_to_db():
 
 class MotorizedIndividualTravel(Dataset):
     def __init__(self, dependencies):
+        def generate_model_data_tasks(scenario_name):
+            """Dynamically generate tasks for model data creation.
+
+            The goal is to speed up the creation of model timeseries. However,
+            the exact number of parallel task cannot be determined during the
+            DAG building as the number of grid districts (MVGD) is calculated
+            within another pipeline task.
+            Approach: assuming an approx. count of `mvgd_min_count` of 3700,
+            the majority of the MVGDs can be parallelized. The remainder is
+            handled subsequently in XXX.
+            The number of parallel tasks is defined via parameter
+            `parallel_tasks` in the dataset config `datasets.yml`.
+
+            Parameters
+            ----------
+            scenario_name : str
+                Scenario name
+
+            Returns
+            -------
+            set of functools.partial
+                The tasks. Each element is of
+                :func:`egon.data.datasets.emobility.motorized_individual_travel.model_timeseries.generate_model_data`
+            """
+            parallel_tasks = DATASET_CFG["model_timeseries"].get(
+                "parallel_tasks", 1
+            )
+            mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
+
+            tasks = set()
+            for _ in range(parallel_tasks):
+                bunch = range(_ * mvgd_bunch_size, (_ + 1) * mvgd_bunch_size)
+                tasks.add(
+                    PythonOperator(
+                        task_id=(
+                            f"generate_model_data_"
+                            f"{scenario_name}_"
+                            f"bunch{bunch[0]}-{bunch[-1]}"
+                        ),
+                        python_callable=generate_model_data_bunch,
+                        op_kwargs={
+                            "scenario_name": scenario_name,
+                            "bunch": bunch,
+                        },
+                    )
+                )
+
+            if scenario_name == "eGon2035":
+                tasks.add(generate_model_data_eGon2035_remaining)
+            elif scenario_name == "eGon100RE":
+                tasks.add(generate_model_data_eGon100RE_remaining)
+            return tasks
+
         super().__init__(
             name="MotorizedIndividualTravel",
             version="0.0.0.dev",
@@ -367,6 +422,9 @@ class MotorizedIndividualTravel(Dataset):
                     (extract_trip_file, write_evs_trips_to_db),
                 },
                 allocate_evs_to_grid_districts,
-                {generate_model_data_eGon2035, generate_model_data_eGon100RE},
+                {
+                    *generate_model_data_tasks(scenario_name="eGon2035"),
+                    *generate_model_data_tasks(scenario_name="eGon100RE"),
+                },
             ),
         )

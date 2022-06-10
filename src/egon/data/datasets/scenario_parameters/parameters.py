@@ -626,10 +626,7 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "model_parameters": {
-                        "restriction_time": 7,
-                        "min_soc": 0.75,
-                    },
+                    "model_parameters": {},
                 }
             }
         }
@@ -649,10 +646,7 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "model_parameters": {
-                        "restriction_time": 7,
-                        "min_soc": 0.75,
-                    },
+                    "model_parameters": {},
                 },
                 "Mobility Transition 2050": {
                     "ev_count": 37745000,
@@ -662,10 +656,7 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "model_parameters": {
-                        "restriction_time": 7,
-                        "min_soc": 0.75,
-                    },
+                    "model_parameters": {},
                 },
                 "Electrification 2050": {
                     "ev_count": 47700000,
@@ -675,10 +666,7 @@ def mobility(scenario):
                     "phev_mini_share": 0.0984,
                     "phev_medium_share": 0.2189,
                     "phev_luxury_share": 0.0652,
-                    "model_parameters": {
-                        "restriction_time": 7,
-                        "min_soc": 0.75,
-                    },
+                    "model_parameters": {},
                 },
             }
         }
