@@ -363,6 +363,8 @@ Changed
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+* Update deposit id to access v0.8 of the zenodo repository
+  `#760 <https://github.com/openego/eGon-data/issues/760>`_
 
 
 Bug Fixes
