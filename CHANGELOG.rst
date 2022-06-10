@@ -193,10 +193,12 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
-* Add electric scenario parameters for eGon100RE
-  `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Provide wrapper to catch DB unique violation
   `#514 <https://github.com/openego/eGon-data/issues/514>`_
+* Add electric scenario parameters for eGon100RE
+  `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Introduce Sanity checks for eGon2035
+  `#382 <https://github.com/openego/eGon-data/issues/382>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -361,6 +363,8 @@ Changed
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
 *  Update hh electricity profiles
   `#735 <https://github.com/openego/eGon-data/issues/735>`_
+* Improve CH4 stores and productions aggregation by removing dedicated task
+  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
 
 
 Bug Fixes

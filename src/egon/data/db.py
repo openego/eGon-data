@@ -161,8 +161,8 @@ def session_scoped(function):
     return wrapped
 
 
-def select_dataframe(sql, index_col=None):
-    """Select data from local database as pandas.DataFrame
+def select_dataframe(sql, index_col=None, warning=True):
+    """ Select data from local database as pandas.DataFrame
 
     Parameters
     ----------
@@ -180,7 +180,7 @@ def select_dataframe(sql, index_col=None):
 
     df = pd.read_sql(sql, engine(), index_col=index_col)
 
-    if df.size == 0:
+    if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return df
