@@ -27,7 +27,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     read_rs7_data,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.tests import (
-    test_ev_numbers,
+    validate_electric_vehicles_numbers,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -451,7 +451,7 @@ def allocate_evs_numbers():
             )
             # Check EV results if not in testmode
             if TESTMODE_OFF:
-                test_ev_numbers(
+                validate_electric_vehicles_numbers(
                     "EV count in registration districts", ev_data, ev_target
                 )
             # Add scenario columns and write to DB
@@ -476,7 +476,7 @@ def allocate_evs_numbers():
             ev_data_muns = calc_evs_per_municipality(ev_data, rs7_data)
             # Check EV results if not in testmode
             if TESTMODE_OFF:
-                test_ev_numbers(
+                validate_electric_vehicles_numbers(
                     "EV count in municipalities", ev_data_muns, ev_target
                 )
             # Add scenario columns and write to DB
@@ -500,7 +500,7 @@ def allocate_evs_numbers():
             ev_data_mvgds = calc_evs_per_grid_district(ev_data_muns)
             # Check EV results if not in testmode
             if TESTMODE_OFF:
-                test_ev_numbers(
+                validate_electric_vehicles_numbers(
                     "EV count in grid districts", ev_data_mvgds, ev_target
                 )
             # Add scenario columns and write to DB
