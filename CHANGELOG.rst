@@ -193,8 +193,12 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Introduce Sanity checks for eGon2035
+  `#382 <https://github.com/openego/eGon-data/issues/382>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -357,6 +361,8 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+* Improve CH4 stores and productions aggregation by removing dedicated task
+  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add primary key to table openstreetmap.osm_ways_with_segments
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 
@@ -510,6 +516,8 @@ Bug Fixes
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
 * Correct wrong carrier name when assigning marginal costs
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
+* Use db.next_etrago_id in dsm and pv_rooftop dataset
+  `#748 <https://github.com/openego/eGon-data/issues/748>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
