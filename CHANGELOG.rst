@@ -369,6 +369,8 @@ Changed
   `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
   `#686 <https://github.com/openego/eGon-data/issues/686>`_
+* Update deposit id to access v0.8 of the zenodo repository
+  `#760 <https://github.com/openego/eGon-data/issues/760>`_
 
 
 Bug Fixes
