@@ -3,19 +3,17 @@ Sanity checks for motorized individual travel
 """
 
 from numpy.testing import assert_allclose
-import pytest
 
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     CONFIG_EV,
 )
 
 
-@pytest.mark.skip(reason="Can only be tested with eGon database.")
-def test_ev_numbers(dataset_name, ev_data, ev_target):
-    """Validate cumulative numbers of electric vehicles' distribution
+def validate_electric_vehicles_numbers(dataset_name, ev_data, ev_target):
+    """Validate cumulative numbers of electric vehicles' distribution.
 
     Tests
-    * Check if all cells are not nan
+    * Check if all cells are not NaN
     * Check if total number matches produced results (tolerance: 0.01 %)
 
     Parameters
