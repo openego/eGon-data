@@ -578,11 +578,133 @@ def write_model_data_to_db(
             / initial_soc_per_ev_type.battery_capacity_sum.sum()
         )
 
-    @db.check_db_unique_violation
     def write_to_db() -> None:
         """Write model data to eTraGo tables"""
+
+        @db.check_db_unique_violation
+        def write_bus():
+            # eMob MIT bus
+            emob_bus_id = db.next_etrago_id("bus")
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvBus(
+                        scn_name=scenario_name,
+                        bus_id=emob_bus_id,
+                        v_nom=1,
+                        carrier="Li ion",
+                        x=etrago_bus.x,
+                        y=etrago_bus.y,
+                        geom=etrago_bus.geom,
+                    )
+                )
+            return emob_bus_id
+
+        @db.check_db_unique_violation
+        def write_link():
+            # eMob MIT link [bus_el] -> [bus_ev]
+            emob_link_id = db.next_etrago_id("link")
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvLink(
+                        scn_name=scenario_name,
+                        link_id=emob_link_id,
+                        bus0=etrago_bus.bus_id,
+                        bus1=emob_bus_id,
+                        carrier="BEV charger",
+                        efficiency=float(run_config.eta_cp),
+                        p_nom=(
+                            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+                        ),
+                        p_nom_extendable=False,
+                        p_nom_min=0,
+                        p_nom_max=np.Inf,
+                        p_min_pu=0,
+                        p_max_pu=1,
+                        # p_set_fixed=0,
+                        capital_cost=0,
+                        marginal_cost=0,
+                        length=0,
+                        terrain_factor=1,
+                    )
+                )
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvLinkTimeseries(
+                        scn_name=scenario_name,
+                        link_id=emob_link_id,
+                        temp_id=1,
+                        p_min_pu=None,
+                        p_max_pu=(
+                            hourly_load_time_series_df.ev_availability.to_list()
+                        ),
+                    )
+                )
+
+        @db.check_db_unique_violation
+        def write_store():
+            # eMob MIT store
+            emob_store_id = db.next_etrago_id("store")
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvStore(
+                        scn_name=scenario_name,
+                        store_id=emob_store_id,
+                        bus=emob_bus_id,
+                        carrier="battery storage",
+                        e_nom=static_params_dict["store_ev_battery.e_nom_MWh"],
+                        e_nom_extendable=False,
+                        e_nom_min=0,
+                        e_nom_max=np.Inf,
+                        e_min_pu=0,
+                        e_max_pu=1,
+                        e_initial=(
+                            initial_soc_mean
+                            * static_params_dict["store_ev_battery.e_nom_MWh"]
+                        ),
+                        e_cyclic=False,
+                        sign=1,
+                        standing_loss=0,
+                    )
+                )
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvStoreTimeseries(
+                        scn_name=scenario_name,
+                        store_id=emob_store_id,
+                        temp_id=1,
+                        e_min_pu=hourly_load_time_series_df.soc_min.to_list(),
+                        e_max_pu=hourly_load_time_series_df.soc_max.to_list(),
+                    )
+                )
+
+        @db.check_db_unique_violation
+        def write_load():
+            # eMob MIT load
+            emob_load_id = db.next_etrago_id("load")
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvLoad(
+                        scn_name=scenario_name,
+                        load_id=emob_load_id,
+                        bus=emob_bus_id,
+                        carrier="land transport EV",
+                        sign=-1,
+                    )
+                )
+            with db.session_scope() as session:
+                session.add(
+                    EgonPfHvLoadTimeseries(
+                        scn_name=scenario_name,
+                        load_id=emob_load_id,
+                        temp_id=1,
+                        p_set=(
+                            hourly_load_time_series_df.load_time_series.to_list()
+                        ),
+                    )
+                )
+
+        # Get eTraGo substation bus
         with db.session_scope() as session:
-            # Get eTraGo substation bus
             query = session.query(
                 EgonPfHvBus.scn_name,
                 EgonPfHvBus.bus_id,
@@ -596,118 +718,17 @@ def write_model_data_to_db(
             )
             etrago_bus = query.first()
             if etrago_bus is None:
+                # TODO: raise exception here!
                 print(
                     f"No AC bus found for scenario {scenario_name} "
                     f"with bus_id {bus_id} in table egon_etrago_bus!"
                 )
 
-            # eMob MIT bus
-            emob_bus_id = db.next_etrago_id("bus")
-            session.add(
-                EgonPfHvBus(
-                    scn_name=scenario_name,
-                    bus_id=emob_bus_id,
-                    v_nom=1,
-                    carrier="Li ion",
-                    x=etrago_bus.x,
-                    y=etrago_bus.y,
-                    geom=etrago_bus.geom,
-                )
-            )
-
-            # eMob MIT link [bus_el] -> [bus_ev]
-            emob_link_id = db.next_etrago_id("link")
-            session.add(
-                EgonPfHvLink(
-                    scn_name=scenario_name,
-                    link_id=emob_link_id,
-                    bus0=etrago_bus.bus_id,
-                    bus1=emob_bus_id,
-                    carrier="BEV charger",
-                    efficiency=float(run_config.eta_cp),
-                    p_nom=(
-                        load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
-                    ),
-                    p_nom_extendable=False,
-                    p_nom_min=0,
-                    p_nom_max=np.Inf,
-                    p_min_pu=0,
-                    p_max_pu=1,
-                    # p_set_fixed=0,
-                    capital_cost=0,
-                    marginal_cost=0,
-                    length=0,
-                    terrain_factor=1,
-                )
-            )
-            session.add(
-                EgonPfHvLinkTimeseries(
-                    scn_name=scenario_name,
-                    link_id=emob_link_id,
-                    temp_id=1,
-                    p_min_pu=None,
-                    p_max_pu=(
-                        hourly_load_time_series_df.ev_availability.to_list()
-                    ),
-                )
-            )
-
-            # eMob MIT store
-            emob_store_id = db.next_etrago_id("store")
-            session.add(
-                EgonPfHvStore(
-                    scn_name=scenario_name,
-                    store_id=emob_store_id,
-                    bus=emob_bus_id,
-                    carrier="battery storage",
-                    e_nom=static_params_dict["store_ev_battery.e_nom_MWh"],
-                    e_nom_extendable=False,
-                    e_nom_min=0,
-                    e_nom_max=np.Inf,
-                    e_min_pu=0,
-                    e_max_pu=1,
-                    e_initial=(
-                        initial_soc_mean
-                        * static_params_dict["store_ev_battery.e_nom_MWh"]
-                    ),
-                    e_cyclic=False,
-                    sign=1,
-                    standing_loss=0,
-                )
-            )
-            session.add(
-                EgonPfHvStoreTimeseries(
-                    scn_name=scenario_name,
-                    store_id=emob_store_id,
-                    temp_id=1,
-                    e_min_pu=hourly_load_time_series_df.soc_min.to_list(),
-                    e_max_pu=hourly_load_time_series_df.soc_max.to_list(),
-                )
-            )
-
-            # eMob MIT load
-            emob_load_id = db.next_etrago_id("load")
-            session.add(
-                EgonPfHvLoad(
-                    scn_name=scenario_name,
-                    load_id=emob_load_id,
-                    bus=emob_bus_id,
-                    carrier="land transport EV",
-                    sign=-1,
-                )
-            )
-            session.add(
-                EgonPfHvLoadTimeseries(
-                    scn_name=scenario_name,
-                    load_id=emob_load_id,
-                    temp_id=1,
-                    p_set=(
-                        hourly_load_time_series_df.load_time_series.to_list()
-                    ),
-                )
-            )
-
-            session.commit()
+        # Write component data
+        emob_bus_id = write_bus()
+        write_link()
+        write_store()
+        write_load()
 
     def write_to_file():
         """Write model data to file (for debugging purposes)"""
