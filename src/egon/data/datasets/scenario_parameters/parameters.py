@@ -549,7 +549,11 @@ def gas(scenario):
 
         costs = read_csv(2050)
 
-        parameters = {"main_gas_carrier": "H2"}
+        parameters = {
+            "main_gas_carrier": "H2",
+            "retrofitted_CH4pipeline-to-H2pipeline_share": 0.75,
+            "retrofitted_capacity_share": 0.8,
+        }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),

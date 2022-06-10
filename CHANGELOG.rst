@@ -363,6 +363,10 @@ Changed
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+* Add CH4 stores in Germany for eGon100RE
+  `#779 <https://github.com/openego/eGon-data/issues/779>`_
+* Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
+  `#686 <https://github.com/openego/eGon-data/issues/686>`_
 
 
 Bug Fixes
