@@ -530,6 +530,8 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Fix final demand of heat demand timeseries
+  `#781 <https://github.com/openego/eGon-data/issues/781>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

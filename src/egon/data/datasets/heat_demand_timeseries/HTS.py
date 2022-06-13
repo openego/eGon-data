@@ -998,14 +998,14 @@ def profile_generator(aggregation_level):
 
     heat_profile_dist : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every distric heating id
+            normalized heat profiles for every distric heating id
         else
             0
     heat_profile_idp : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every mv grid bus_id
+            normalized heat profiles for every mv grid bus_id
         else
-            heat profiles for every zensus_poppulation_id
+            normalized heat profiles for every zensus_poppulation_id
     """
 
     annual_demand, idp_df, selected_profiles = profile_selector()
@@ -1025,25 +1025,25 @@ def profile_generator(aggregation_level):
 
     scenarios = ["eGon2035", "eGon100RE"]
 
-    district_heating = psycop_df_AF(
-        "demand.egon_map_zensus_district_heating_areas"
-    )
-
     profile_idp = pd.DataFrame()
     profile_dist = pd.DataFrame()
 
     for scenario in scenarios:
+
+        scenario_district_heating_cells = db.select_dataframe(
+            f"""
+            SELECT area_id, zensus_population_id FROM 
+            demand.egon_map_zensus_district_heating_areas
+            WHERE scenario = '{scenario}'
+            """
+        )
+
         if aggregation_level == "district":
 
-            scenario_district_heating_cells = district_heating[
-                district_heating.scenario == scenario
-            ]
-
+            # District heating timeseries
             heat_profile_dist = pd.merge(
                 heat_profile,
-                scenario_district_heating_cells[
-                    ["area_id", "zensus_population_id"]
-                ],
+                scenario_district_heating_cells,
                 on="zensus_population_id",
                 how="inner",
             )
@@ -1053,32 +1053,6 @@ def profile_generator(aggregation_level):
                 "zensus_population_id", axis=1, inplace=True
             )
             heat_profile_dist.set_index("area_id", inplace=True)
-
-            mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-            mv_grid = mv_grid.set_index("zensus_population_id")
-            scenario_district_heating_cells = (
-                scenario_district_heating_cells.set_index(
-                    "zensus_population_id"
-                )
-            )
-
-            mv_grid_ind = mv_grid.loc[
-                mv_grid.index.difference(
-                    scenario_district_heating_cells.index
-                ),
-                :,
-            ]
-
-            heat_profile_idp = pd.merge(
-                heat_profile,
-                mv_grid_ind["bus_id"],
-                left_on=selected_profiles.index,
-                right_on=mv_grid_ind.index,
-                how="inner",
-            )
-            heat_profile_idp.sort_values("bus_id", inplace=True)
-            heat_profile_idp.set_index("bus_id", inplace=True)
-            heat_profile_idp.drop("key_0", axis=1, inplace=True)
 
             heat_profile_dist = heat_profile_dist.groupby(
                 lambda x: x, axis=0
@@ -1091,6 +1065,35 @@ def profile_generator(aggregation_level):
             heat_profile_dist.index.name = "area_id"
             heat_profile_dist.insert(0, "scenario", scenario)
 
+            profile_dist = profile_dist.append(heat_profile_dist)
+
+            # Individual heating demand time series
+            # Select all zensus cells supplied by individual heat
+            mv_grid_ind = db.select_dataframe(
+                f"""
+                SELECT bus_id, zensus_population_id FROM 
+                boundaries.egon_map_zensus_grid_districts
+                WHERE zensus_population_id NOT IN (
+                    SELECT zensus_population_id FROM 
+                    demand.egon_map_zensus_district_heating_areas
+                    WHERE scenario = '{scenario}'
+                    )                
+                """,
+                index_col="zensus_population_id",
+            )
+
+            heat_profile_idp = pd.merge(
+                heat_profile,
+                mv_grid_ind["bus_id"],
+                left_on=selected_profiles.index,
+                right_on=mv_grid_ind.index,
+                how="inner",
+            )
+
+            heat_profile_idp.sort_values("bus_id", inplace=True)
+            heat_profile_idp.set_index("bus_id", inplace=True)
+            heat_profile_idp.drop("key_0", axis=1, inplace=True)
+
             heat_profile_idp = heat_profile_idp.groupby(
                 lambda x: x, axis=0
             ).sum()
@@ -1102,7 +1105,6 @@ def profile_generator(aggregation_level):
             heat_profile_idp.index.name = "bus_id"
             heat_profile_idp.insert(0, "scenario", scenario)
 
-            profile_dist = profile_dist.append(heat_profile_dist)
             profile_idp = profile_idp.append(heat_profile_idp)
 
         else:
@@ -1167,13 +1169,6 @@ def residential_demand_scale(aggregation_level):
         values="area_id", index="zensus_population_id", columns="scenario"
     )
 
-    mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-
-    mv_grid_ind = mv_grid.loc[
-        mv_grid.index.difference(district_heating.index), :
-    ]
-    mv_grid_ind = mv_grid_ind.reset_index()
-
     scenarios = ["eGon2035", "eGon100RE"]
 
     residential_dist_profile = pd.DataFrame()
@@ -1181,8 +1176,22 @@ def residential_demand_scale(aggregation_level):
     residential_zensus_profile = pd.DataFrame()
 
     for scenario in scenarios:
+
+        mv_grid_ind = db.select_dataframe(
+            f"""
+                SELECT bus_id, zensus_population_id FROM 
+                boundaries.egon_map_zensus_grid_districts
+                WHERE zensus_population_id NOT IN (
+                    SELECT zensus_population_id FROM 
+                    demand.egon_map_zensus_district_heating_areas
+                    WHERE scenario = '{scenario}'
+                    )                
+                """
+        )
+
         if aggregation_level == "district":
 
+            # Time series for district heating areas
             scenario_ids = district_heating[scenario]
             scenario_ids.dropna(inplace=True)
             scenario_ids = scenario_ids.to_frame()
@@ -1264,6 +1273,7 @@ def residential_demand_scale(aggregation_level):
                 heat_demand_profile_dist
             )
 
+            # Individual supplied heat demand time series
             district_grid = pd.merge(
                 mv_grid_ind[["bus_id", "zensus_population_id"]],
                 annual_demand[["zensus_population_id", "Station", scenario]],
@@ -1424,19 +1434,17 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     )
     nuts_zensus.drop("zensus_geom", axis=1, inplace=True)
 
-    demand = psycop_df_AF("demand.egon_peta_heat")
-    demand = demand[
-        (demand["sector"] == "service") & (demand["scenario"] == scenario)
-    ]
-    demand.drop(
-        demand.columns.difference(["demand", "zensus_population_id"]),
-        axis=1,
-        inplace=True,
-    )
-    demand.sort_values("zensus_population_id", inplace=True)
-
-    demand_nuts = pd.merge(
-        demand, nuts_zensus, how="left", on="zensus_population_id"
+    demand_nuts = db.select_dataframe(
+        f"""
+        SELECT a.demand, a.zensus_population_id,
+        b.vg250_municipality_id, b.vg250_nuts3
+        FROM demand.egon_peta_heat a
+        JOIN boundaries.egon_map_zensus_vg250 b
+        ON (a.zensus_population_id = b.zensus_population_id)
+        WHERE sector = 'service'
+        AND scenario = '{scenario}'
+        ORDER BY a.zensus_population_id
+        """
     )
 
     mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
@@ -1745,9 +1753,59 @@ def demand_profile_generator(aggregation_level="district"):
         residential_demand_zensus,
     ) = residential_demand_scale(aggregation_level)
 
+    # Compare with target value
+    target = db.select_dataframe(
+        """
+        SELECT scenario, SUM(demand) as demand
+        FROM demand.egon_peta_heat
+        WHERE sector = 'residential'
+        GROUP BY (scenario)
+        """,
+        index_col="scenario",
+    )
+
+    check_residential = (
+        (
+            residential_demand_dist.groupby("scenario").sum().sum(axis=1)
+            + residential_demand_grid.groupby("scenario").sum().sum(axis=1)
+        )
+        - target.demand
+    ) / target.demand
+
+    assert (
+        check_residential.abs().max() < 0.01
+    ), f"""Unexpected deviation between target value and distributed
+        residential heat demand: {check_residential}
+        """
+
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level
     )
+
+    # Compare with target value
+    target_cts = db.select_dataframe(
+        """
+        SELECT scenario, SUM(demand) as demand
+        FROM demand.egon_peta_heat
+        WHERE sector = 'service'
+        GROUP BY (scenario)
+        """,
+        index_col="scenario",
+    )
+
+    check_cts = (
+        (
+            CTS_demand_dist.groupby("scenario").sum().sum(axis=1)
+            + CTS_demand_grid.groupby("scenario").sum().sum(axis=1)
+        )
+        - target_cts.demand
+    ) / target_cts.demand
+
+    assert (
+        check_cts.abs().max() < 0.01
+    ), f"""Unexpected deviation between target value and distributed
+        service heat demand: {check_residential}
+        """
 
     if aggregation_level == "district":
         total_demands_dist = pd.concat(
@@ -1862,7 +1920,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
