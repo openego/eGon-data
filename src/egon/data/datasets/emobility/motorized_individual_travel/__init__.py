@@ -152,7 +152,7 @@ def create_tables():
     # Create dir for results, if it does not exist
     result_dir = WORKING_DIR / Path("results")
     if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
+        os.makedirs(result_dir)
 
 
 def download_and_preprocess():
