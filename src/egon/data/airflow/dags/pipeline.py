@@ -466,19 +466,6 @@ with airflow.DAG(
         ]
     )
 
-    # Heat to eTraGo
-    heat_etrago = HeatEtrago(
-        dependencies=[
-            heat_supply,
-            mv_grid_districts,
-            renewable_feedin,
-            setup_etrago,
-        ]
-    )
-
-    # CHP to eTraGo
-    chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
-
     # DSM (demand site management)
     components_dsm = dsm_Potential(
         dependencies=[
@@ -514,6 +501,20 @@ with airflow.DAG(
             zensus_mv_grid_districts,
         ]
     )
+
+    # Heat to eTraGo
+    heat_etrago = HeatEtrago(
+        dependencies=[
+            heat_supply,
+            mv_grid_districts,
+            renewable_feedin,
+            setup_etrago,
+            heat_time_series,
+        ]
+    )
+
+    # CHP to eTraGo
+    chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
@@ -554,13 +555,12 @@ with airflow.DAG(
             insert_data_ch4_storages,
         ]
     )
-    
+
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
-           storage_etrago,
-           hts_etrago_table,
-           fill_etrago_generators, 
+            storage_etrago,
+            hts_etrago_table,
+            fill_etrago_generators,
         ]
     )
-

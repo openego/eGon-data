@@ -456,8 +456,8 @@ electrical_load_curves_cts:
 hh_demand_profiles:
   sources:
     household_electricity_demand_profiles:
-      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
-      path: "household_electricity_demand_profiles_100k.hdf5"
+      path_testmode: "hh_el_load_profiles_2511.hdf"
+      path: "hh_el_load_profiles_100k.hdf"
 
     zensus_household_types:
       path: "Zensus2011_Personen.csv"
@@ -512,7 +512,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 6557453
+      deposit_id: 6630616
   targets:
     file:
       'data_bundle_egon_data.zip'

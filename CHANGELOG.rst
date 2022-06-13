@@ -364,8 +364,14 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+*  Update hh electricity profiles
+  `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+* Update deposit id to access v0.8 of the zenodo repository
+  `#760 <https://github.com/openego/eGon-data/issues/760>`_
+* Add primary key to table openstreetmap.osm_ways_with_segments
+  `#787 <https://github.com/openego/eGon-data/issues/787>`_
 
 
 Bug Fixes
@@ -522,6 +528,8 @@ Bug Fixes
 * Solving dependency conflict between :code:`black` and :code:`flask`. Upgrading
   :code:`pre-commit` :code:`black` version.
   `#770 <https://github.com/openego/eGon-data/issues/770>`_
+* Add missing dependency to heat_etrago
+  `#771 <https://github.com/openego/eGon-data/issues/771>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
