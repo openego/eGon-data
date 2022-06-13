@@ -6,6 +6,7 @@ import airflow
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
+from egon.data.datasets.ch4_prod import CH4Production
 from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
@@ -14,7 +15,6 @@ from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import dsm_Potential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
-from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
     HouseholdElectricityDemand,
@@ -24,14 +24,16 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_buildings,
     hh_profiles,
 )
+from egon.data.datasets.emobility.motorized_individual_travel import (
+    MotorizedIndividualTravel,
+)
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
-from egon.data.datasets.gas_aggregation import GasAggregation
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
-from egon.data.datasets.gas_prod import CH4Production
+from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
@@ -64,6 +66,7 @@ from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
+from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
@@ -409,11 +412,6 @@ with airflow.DAG(
         dependencies=[create_gas_polygons_egon100RE, industrial_gas_demand]
     )
 
-    # Aggregate gas loads, stores and generators
-    aggrgate_gas = GasAggregation(
-        dependencies=[gas_production_insert_data, insert_data_ch4_storages]
-    )
-
     # CHP locations
     chp = Chp(
         dependencies=[
@@ -531,3 +529,38 @@ with airflow.DAG(
     storage_etrago = StorageEtrago(
         dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
     )
+
+    # eMobility: motorized individual travel
+    emobility_mit = MotorizedIndividualTravel(
+        dependencies=[
+            data_bundle,
+            mv_grid_districts,
+            scenario_parameters,
+            setup_etrago,
+            zensus_mv_grid_districts,
+            zensus_vg250,
+            storage_etrago,
+            hts_etrago_table,
+            chp_etrago,
+            components_dsm,
+            heat_etrago,
+            fill_etrago_generators,
+            create_ocgt,
+            insert_H2_storage,
+            insert_power_to_h2_installations,
+            insert_h2_to_ch4_grid_links,
+            create_gas_polygons_egon100RE,
+            gas_production_insert_data,
+            insert_data_ch4_storages,
+        ]
+    )
+    
+    # Sanity Checks
+    sanity_checks = SanityChecks(
+        dependencies=[
+           storage_etrago,
+           hts_etrago_table,
+           fill_etrago_generators, 
+        ]
+    )
+
