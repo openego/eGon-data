@@ -412,7 +412,7 @@ def clean_mastr_data(
 def zip_and_municipality_from_standort(
     standort: str,
     verbose: bool = False,
-) -> str:
+) -> tuple[str, bool]:
     """
     Get zip code and municipality from Standort string split into a list.
 
@@ -439,7 +439,7 @@ def zip_and_municipality_from_standort(
     for count, elem in enumerate(standort_list):
         if len(elem) != 5:
             continue
-        elif not elem.isnumeric():
+        if not elem.isnumeric():
             continue
 
         found = True
@@ -453,13 +453,13 @@ def zip_and_municipality_from_standort(
             logger.debug(f"Cleaned String:   {cleaned_str}")
 
         return cleaned_str, found
-    else:
-        logger.warning(
-            "Couldn't identify zip code. This entry will be dropped."
-            f" Original standort: {standort}."
-        )
 
-        return standort, found
+    logger.warning(
+        "Couldn't identify zip code. This entry will be dropped."
+        f" Original standort: {standort}."
+    )
+
+    return standort, found
 
 
 def most_plausible(

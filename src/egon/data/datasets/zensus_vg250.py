@@ -3,16 +3,7 @@ import json
 import time
 
 from geoalchemy2 import Geometry
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Float,
-    Integer,
-    SmallInteger,
-    String,
-    func,
-    select,
-)
+from sqlalchemy import BigInteger, Column, Float, Integer, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
@@ -283,7 +274,9 @@ def inside_germany():
         )
 
         # Insert above queried data into new table
-        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(
+        # fmt: off
+        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert(
+        ).from_select(
             (
                 DestatisZensusPopulationPerHaInsideGermany.id,
                 DestatisZensusPopulationPerHaInsideGermany.grid_id,
@@ -293,6 +286,7 @@ def inside_germany():
             ),
             q,
         )
+        # fmt: on
 
         # Execute and commit (trigger transactions in database)
         s.execute(insert)

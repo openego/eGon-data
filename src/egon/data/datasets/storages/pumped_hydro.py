@@ -4,20 +4,11 @@ data from MaStR and NEP.
 """
 
 from geopy.geocoders import Nominatim
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config, db
-from egon.data.datasets.chp.match_nep import match_nep_chp
-from egon.data.datasets.chp.small_chp import assign_use_case
-from egon.data.datasets.power_plants import (
-    assign_bus_id,
-    assign_gas_bus_id,
-    assign_voltage_level,
-    filter_mastr_geometry,
-    select_target,
-)
+from egon.data import db
+from egon.data.datasets.power_plants import filter_mastr_geometry
 import egon.data.config
 
 
