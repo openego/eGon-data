@@ -363,6 +363,8 @@ Changed
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+* Add primary key to table openstreetmap.osm_ways_with_segments
+  `#787 <https://github.com/openego/eGon-data/issues/787>`_
 
 
 Bug Fixes
