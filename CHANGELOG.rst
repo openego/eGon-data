@@ -519,6 +519,9 @@ Bug Fixes
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
 * Use db.next_etrago_id in dsm and pv_rooftop dataset
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
+* Solving dependency conflict between :code:`black` and :code:`flask`. Upgrading
+  :code:`pre-commit` :code:`black` version.
+  `#770 <https://github.com/openego/eGon-data/issues/770>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
