@@ -365,6 +365,8 @@ Changed
   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+* Update deposit id to access v0.8 of the zenodo repository
+  `#760 <https://github.com/openego/eGon-data/issues/760>`_
 * Add primary key to table openstreetmap.osm_ways_with_segments
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 

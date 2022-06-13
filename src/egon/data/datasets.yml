@@ -511,7 +511,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 6557453
+      deposit_id: 6630616
   targets:
     file:
       'data_bundle_egon_data.zip'
