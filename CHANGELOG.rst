@@ -508,6 +508,8 @@ Bug Fixes
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
 * Correct wrong carrier name when assigning marginal costs
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
