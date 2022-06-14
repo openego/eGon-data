@@ -34,7 +34,7 @@ def fill_etrago_generators():
 
     # Delete power plants from previous iterations of this script
     delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants)
-    
+
     renew_feedin = adjust_renew_feedin_table(
         renew_feedin=renew_feedin, cfg=cfg
     )
@@ -80,11 +80,8 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
-
-    if np.isnan(etrago_gen_orig["generator_id"].max()):
-        max_id = 0
-    else:
-        max_id = etrago_gen_orig["generator_id"].max() + 1
+    
+    max_id = db.next_etrago_id("generator")
     etrago_pp["generator_id"] = list(range(max_id, max_id + len(etrago_pp)))
     etrago_pp.set_index("generator_id", inplace=True)
 
@@ -160,7 +157,7 @@ def fill_etrago_gen_time_table(
     cal_timeseries = set_timeseries(
         power_plants=power_plants, renew_feedin=renew_feedin
     )
-
+    
     etrago_pp_time["p_max_pu"] = 0
     etrago_pp_time["p_max_pu"] = etrago_pp_time.apply(cal_timeseries, axis=1)
 
