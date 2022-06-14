@@ -524,6 +524,10 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Pinned and updated :code:`black` versions to avoid dependency
+  issues when installaing eGon-data and version issues when running
+  the pre-commit hooks
+  `#770 <https://github.com/openego/eGon-data/issues/770>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
