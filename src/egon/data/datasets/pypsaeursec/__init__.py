@@ -68,11 +68,13 @@ def run_pypsa_eur_sec():
             yaml.dump(
                 env, outfile, default_flow_style=False, allow_unicode=True
             )
-            
+
         datafile = "pypsa-eur-data-bundle.tar.xz"
         datapath = pypsa_eur_repos / datafile
         if not datapath.exists():
-            urlretrieve(f"https://zenodo.org/record/3517935/files/{datafile}", datapath)
+            urlretrieve(
+                f"https://zenodo.org/record/3517935/files/{datafile}", datapath
+            )
             tar = tarfile.open(datapath)
             tar.extractall(pypsa_eur_repos_data)
 
@@ -103,7 +105,9 @@ def run_pypsa_eur_sec():
     datafile = "pypsa-eur-sec-data-bundle.tar.gz"
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
-        urlretrieve(f"https://zenodo.org/record/5824485/files/{datafile}", datapath)
+        urlretrieve(
+            f"https://zenodo.org/record/5824485/files/{datafile}", datapath
+        )
         tar = tarfile.open(datapath)
         tar.extractall(pypsa_eur_sec_repos_data)
 
@@ -397,8 +401,11 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
-
+    neighbor_gens_t = network.generators_t["p_max_pu"][
+        neighbor_gens[
+            neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)
+        ].index
+    ]
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
