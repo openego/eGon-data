@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-210101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-210101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-220101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-220101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-210101.osm.pbf"
-      file_testmode: "schleswig-holstein-210101.osm.pbf"
+      file: "germany-220101.osm.pbf"
+      file_testmode: "schleswig-holstein-220101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -38,14 +38,14 @@ bgr:
   processed:
     schema: "boundaries"
     file_table_map:
-      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "saltstructures_inspee"
+      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "inspee_saltstructures"
   sources:
     vg250_federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
     saltcaverns:
       schema: 'boundaries'
-      table: 'saltstructures_inspee'
+      table: 'inspee_saltstructures'
   targets:
     storage_potential:
       schema: 'grid'
@@ -211,6 +211,8 @@ substation_extraction:
     ehv_substation:
       schema: 'grid'
       table: 'egon_ehv_substation'
+    transfer_busses:
+      table: 'transfer_busses_complete'
 
 substation_voronoi:
   sources:
@@ -258,13 +260,25 @@ society_prognosis:
       table: 'egon_household_prognosis'
 
 scenario_input:
-  eGon2035:
-    paths:
-      "capacities": "NEP2035_V2021_scnC2035.xlsx"
-      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
-  eGon100RE:
-    paths:
-      "capacities": "nodal_capacities.csv"
+  sources:
+    eGon2035:
+      capacities: "NEP2035_V2021_scnC2035.xlsx"
+      list_conv_pp: "Kraftwerksliste_NEP_2021_konv.csv"
+    eGon100RE:
+      capacities: "nodal_capacities.csv"
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+  targets:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    nep_conventional_powerplants:
+      schema: 'supply'
+      table: 'egon_nep_2021_conventional_powerplants'
 
 mastr:
   technologies:
@@ -441,8 +455,8 @@ electrical_load_curves_cts:
 hh_demand_profiles:
   sources:
     household_electricity_demand_profiles:
-      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
-      path: "household_electricity_demand_profiles_100k.hdf5"
+      path_testmode: "hh_el_load_profiles_2511.hdf"
+      path: "hh_el_load_profiles_100k.hdf"
 
     zensus_household_types:
       path: "Zensus2011_Personen.csv"
@@ -497,7 +511,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5846441
+      deposit_id: 6630616
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -587,7 +601,7 @@ etrago_heat:
       table: 'egon_peta_heat'
     ch4_voronoi:
       schema: 'grid'
-      table: 'egon_voronoi_ch4'
+      table: 'egon_gas_voronoi'
   targets:
     heat_buses:
       schema: 'grid'
@@ -858,6 +872,37 @@ generators_etrago:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
 
+
+gas_grid:
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+
+
+gas_stores:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+gas_prod:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+
 weather_BusID:
   sources:
     power_plants:
@@ -951,6 +996,9 @@ electrical_neighbours:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
+    generators_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
     storage:
       schema: 'grid'
       table: 'egon_etrago_storage'
@@ -964,3 +1012,59 @@ tyndp:
       capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
       demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
       demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+
+gas_neighbours:
+  sources:
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+  targets:
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+
+emobility_mit:
+  original_data:
+    sources:
+      RS7:
+        url: "https://www.bmvi.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
+        file: "regiostar-referenzdateien.xlsx"
+        file_processed: "regiostar-referenzdateien_preprocessed.csv"
+        sheet: "ReferenzGebietsstand2020"
+      KBA:
+        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2"
+        file: "fz1_2021.xlsx"
+        file_processed: "fz1_2021_preprocessed.csv"
+        sheet: "FZ1.1"
+        columns: "D, J:N"
+        skiprows: 8
+      trips:
+        eGon2035:
+          file: "eGon2035_RS7_min2k_2022-05-13_120240_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+        eGon100RE:
+          file: "eGon100RE_RS7_min2k_2022-05-13_120301_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+  scenario:
+    variation:
+      eGon2035: "NEP C 2035"
+      eGon100RE: "Reference 2050"
+  model_timeseries:
+    reduce_memory: True
+    export_results_to_csv: True

@@ -8,13 +8,14 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class ChpEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ChpEtrago",
-            version="0.0.3",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(insert),
         )
@@ -41,13 +42,13 @@ def insert():
         DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon2035'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
          WHERE scn_name = 'eGon2035'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
          WHERE scn_name = 'eGon2035'
          AND country = 'DE')
@@ -107,6 +108,12 @@ def insert():
     chp_el["link_id"] = range(
         db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
     )
+
+    # Add marginal cost which is only VOM in case of gas chp
+    chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
+        "marginal_cost"
+    ]["chp_gas"]
+
     # Insert into database
     chp_el.to_postgis(
         targets["link"]["table"],
@@ -159,6 +166,11 @@ def insert():
         db.next_etrago_id("generator"),
         len(chp_el_gen) + db.next_etrago_id("generator"),
     )
+
+    # Add marginal cost
+    chp_el_gen["marginal_cost"] = get_sector_parameters(
+        "electricity", "eGon2035"
+    )["marginal_cost"]["biomass"]
 
     chp_el_gen.to_sql(
         targets["generator"]["table"],
@@ -227,12 +239,18 @@ def insert():
         db.next_etrago_id("link"), len(chp_el_ind) + db.next_etrago_id("link")
     )
 
+    # Add marginal cost which is only VOM in case of gas chp
+    chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
+        "marginal_cost"
+    ]["chp_gas"]
+
     chp_el_ind.to_postgis(
         targets["link"]["table"],
         schema=targets["link"]["schema"],
         con=db.engine(),
         if_exists="append",
     )
+
     # Insert biomass CHP as generators
     chp_el_ind_gen = pd.DataFrame(
         index=chp_generator_ind,
@@ -250,6 +268,11 @@ def insert():
         db.next_etrago_id("generator"),
         len(chp_el_ind_gen) + db.next_etrago_id("generator"),
     )
+
+    # Add marginal cost
+    chp_el_ind_gen["marginal_cost"] = get_sector_parameters(
+        "electricity", "eGon2035"
+    )["marginal_cost"]["biomass"]
 
     chp_el_ind_gen.to_sql(
         targets["generator"]["table"],
