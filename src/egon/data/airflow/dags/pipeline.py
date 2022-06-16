@@ -172,18 +172,6 @@ with airflow.DAG(
     # Fix eHV subnetworks in Germany manually
     fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
 
-
-    # Import NEP (Netzentwicklungsplan) data
-    scenario_capacities = ScenarioCapacities(
-        dependencies=[
-            data_bundle,
-            run_pypsaeursec,
-            setup,
-            vg250,
-            zensus_population,
-        ]
-    )
-
     # Retrieve MaStR (Marktstammdatenregister) data
     mastr_data = mastr_data_setup(dependencies=[setup])
 
@@ -321,10 +309,9 @@ with airflow.DAG(
             data_bundle,
             demandregio,
             heat_demand_Germany,
-            import_district_heating_areas,
-            import_district_heating_areas,
+            district_heating_areas,
             vg250,
-            map_zensus_grid_districts,
+            zensus_mv_grid_districts,
             hh_demand_buildings_setup,
         ]
     )
@@ -345,6 +332,17 @@ with airflow.DAG(
     # Deal with electrical neighbours
     foreign_lines = ElectricalNeighbours(
         dependencies=[run_pypsaeursec, tyndp_data]
+    )
+
+    # Import NEP (Netzentwicklungsplan) data
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[
+            data_bundle,
+            run_pypsaeursec,
+            setup,
+            vg250,
+            zensus_population,
+        ]
     )
 
     # Import gas grid
