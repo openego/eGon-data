@@ -261,7 +261,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )
