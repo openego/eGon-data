@@ -28,6 +28,7 @@ def run_pypsa_eur_sec():
     filepath.mkdir(parents=True, exist_ok=True)
 
     pypsa_eur_repos = filepath / "pypsa-eur"
+    pypsa_eur_repos_data = pypsa_eur_repos / "data"
     technology_data_repos = filepath / "technology-data"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
     pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data"
@@ -38,16 +39,16 @@ def run_pypsa_eur_sec():
                 "git",
                 "clone",
                 "--branch",
-                "master",
+                "v0.4.0",
                 "https://github.com/PyPSA/pypsa-eur.git",
                 pypsa_eur_repos,
             ]
         )
 
-        subproc.run(
-            ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
-            cwd=pypsa_eur_repos,
-        )
+        # subproc.run(
+        #     ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
+        #     cwd=pypsa_eur_repos,
+        # )
 
         file_to_copy = os.path.join(
             __path__[0], "datasets", "pypsaeursec", "pypsaeur", "Snakefile"
@@ -68,13 +69,22 @@ def run_pypsa_eur_sec():
                 env, outfile, default_flow_style=False, allow_unicode=True
             )
 
+        datafile = "pypsa-eur-data-bundle.tar.xz"
+        datapath = pypsa_eur_repos / datafile
+        if not datapath.exists():
+            urlretrieve(
+                f"https://zenodo.org/record/3517935/files/{datafile}", datapath
+            )
+            tar = tarfile.open(datapath)
+            tar.extractall(pypsa_eur_repos_data)
+
     if not technology_data_repos.exists():
         subproc.run(
             [
                 "git",
                 "clone",
                 "--branch",
-                "v0.2.0",
+                "v0.3.0",
                 "https://github.com/PyPSA/technology-data.git",
                 technology_data_repos,
             ]
@@ -85,15 +95,19 @@ def run_pypsa_eur_sec():
             [
                 "git",
                 "clone",
+                "--branch",
+                "batteries-and-update-pes",
                 "https://github.com/openego/pypsa-eur-sec.git",
                 pypsa_eur_sec_repos,
             ]
         )
 
-    datafile = "pypsa-eur-sec-data-bundle-210418.tar.gz"
+    datafile = "pypsa-eur-sec-data-bundle.tar.gz"
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
-        urlretrieve(f"https://nworbmot.org/{datafile}", datapath)
+        urlretrieve(
+            f"https://zenodo.org/record/5824485/files/{datafile}", datapath
+        )
         tar = tarfile.open(datapath)
         tar.extractall(pypsa_eur_sec_repos_data)
 
@@ -387,8 +401,11 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
-
+    neighbor_gens_t = network.generators_t["p_max_pu"][
+        neighbor_gens[
+            neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)
+        ].index
+    ]
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
@@ -817,7 +834,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=tasks,
         )

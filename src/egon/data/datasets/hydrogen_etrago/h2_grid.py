@@ -1,7 +1,5 @@
 """The central module containing all code dealing with heat sector in etrago
 """
-from operator import ne
-
 from geoalchemy2.types import Geometry
 from shapely.geometry import MultiLineString
 import geopandas as gpd
