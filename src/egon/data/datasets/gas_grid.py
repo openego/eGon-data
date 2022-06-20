@@ -477,11 +477,14 @@ def insert_gas_pipeline_list(
         gas_pipelines_list["country_1"] == "FI", "country_1"
     ] = "RU"
     gas_pipelines_list.loc[
+        gas_pipelines_list["id"] == "ST_2612_Seg_0_Seg_0", "country_0"
+    ] = "AT"  # bus "INET_N_1182" DE -> AT
+    gas_pipelines_list.loc[
         gas_pipelines_list["id"] == "INET_PL_385_EE_3_Seg_0_Seg_1", "country_1"
-    ] = "AT"
+    ] = "AT"  # "INET_N_1182" DE -> AT
     gas_pipelines_list.loc[
         gas_pipelines_list["id"] == "LKD_PS_0_Seg_0_Seg_3", "country_0"
-    ] = "NL"
+    ] = "NL"  # bus "SEQ_10608_p" DE -> NL
 
     # Remove link test if length = 0
     gas_pipelines_list = gas_pipelines_list[
