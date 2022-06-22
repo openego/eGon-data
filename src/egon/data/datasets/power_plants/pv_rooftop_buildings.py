@@ -996,7 +996,7 @@ def allocate_pv(
         Seed to use for random operations with NumPy and pandas.
     Returns
     -------
-    tuple with two geopandas.GeoDataFrame\s  # noqa: W605 # pylint: disable=W605
+    tuple with two geopandas.GeoDataFrame s
         GeoDataFrame containing MaStR data allocated to building IDs.
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
@@ -1886,7 +1886,6 @@ def building_area_range_per_cap_range(
     return building_area_range_normed_dict
 
 
-# pylint: disable=too-many-arguments
 def desaggregate_pv_in_mv_grid(
     buildings_gdf: gpd.GeoDataFrame,
     pv_cap: float | int,
@@ -2145,9 +2144,6 @@ def desaggregate_pv(
         crs=gdf.crs,
         geometry="geom",
     )
-
-
-# pylint: enable=too-many-arguments
 
 
 def add_buildings_meta_data(
