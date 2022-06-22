@@ -1160,20 +1160,7 @@ def residential_demand_scale(aggregation_level):
     h = h_value()
     h = h.reset_index(drop=True)
 
-    district_heating = psycop_df_AF(
-        "demand.egon_map_zensus_district_heating_areas"
-    )
-
-    district_heating = district_heating.pivot_table(
-        values="area_id", index="zensus_population_id", columns="scenario"
-    )
-
     mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-
-    mv_grid_ind = mv_grid.loc[
-        mv_grid.index.difference(district_heating.index), :
-    ]
-    mv_grid_ind = mv_grid_ind.reset_index()
 
     scenarios = ["eGon2035", "eGon100RE"]
 
@@ -1182,6 +1169,24 @@ def residential_demand_scale(aggregation_level):
     residential_zensus_profile = pd.DataFrame()
 
     for scenario in scenarios:
+
+        district_heating = db.select_dataframe(
+            f"""
+            SELECT * FROM 
+            demand.egon_map_zensus_district_heating_areas
+            WHERE scenario = '{scenario}'
+            """
+        )
+
+        district_heating = district_heating.pivot_table(
+            values="area_id", index="zensus_population_id", columns="scenario"
+        )
+
+        mv_grid_ind = mv_grid.loc[
+            mv_grid.index.difference(district_heating.index), :
+        ]
+        mv_grid_ind = mv_grid_ind.reset_index()
+
         if aggregation_level == "district":
 
             scenario_ids = district_heating[scenario]
@@ -1864,7 +1869,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
