@@ -199,6 +199,8 @@ Added
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Introduce Sanity checks for eGon2035
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
+* Add motorized individual travel
+  `#553 <https://github.com/openego/eGon-data/issues/553>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -506,7 +508,7 @@ Bug Fixes
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
 * Fix country_code attribution of two gas buses
-  `#710 <https://github.com/openego/eGon-data/issues/744>`_
+  `#744 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
