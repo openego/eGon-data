@@ -199,6 +199,8 @@ Added
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Introduce Sanity checks for eGon2035
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
+* Add motorized individual travel
+  `#553 <https://github.com/openego/eGon-data/issues/553>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -361,8 +363,16 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+*  Update hh electricity profiles
+  `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+* Add CH4 stores in Germany for eGon100RE
+  `#779 <https://github.com/openego/eGon-data/issues/779>`_
+* Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
+  `#686 <https://github.com/openego/eGon-data/issues/686>`_
+* Update deposit id to access v0.8 of the zenodo repository
+  `#760 <https://github.com/openego/eGon-data/issues/760>`_
 * Add primary key to table openstreetmap.osm_ways_with_segments
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 
@@ -498,7 +508,7 @@ Bug Fixes
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
 * Fix country_code attribution of two gas buses
-  `#710 <https://github.com/openego/eGon-data/issues/744>`_
+  `#744 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
@@ -518,6 +528,8 @@ Bug Fixes
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
 * Use db.next_etrago_id in dsm and pv_rooftop dataset
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
+* Add missing dependency to heat_etrago
+  `#771 <https://github.com/openego/eGon-data/issues/771>`_
 * Fix distribution of resistive heaters in district heating grids
   `#783 <https://github.com/openego/eGon-data/issues/783>`_
 
