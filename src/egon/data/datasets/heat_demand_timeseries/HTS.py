@@ -1025,25 +1025,25 @@ def profile_generator(aggregation_level):
 
     scenarios = ["eGon2035", "eGon100RE"]
 
+    district_heating = psycop_df_AF(
+        "demand.egon_map_zensus_district_heating_areas"
+    )
+
     profile_idp = pd.DataFrame()
     profile_dist = pd.DataFrame()
 
     for scenario in scenarios:
-
-        scenario_district_heating_cells = db.select_dataframe(
-            f"""
-            SELECT area_id, zensus_population_id FROM 
-            demand.egon_map_zensus_district_heating_areas
-            WHERE scenario = '{scenario}'
-            """
-        )
-
         if aggregation_level == "district":
 
-            # District heating timeseries
+            scenario_district_heating_cells = district_heating[
+                district_heating.scenario == scenario
+            ]
+
             heat_profile_dist = pd.merge(
                 heat_profile,
-                scenario_district_heating_cells,
+                scenario_district_heating_cells[
+                    ["area_id", "zensus_population_id"]
+                ],
                 on="zensus_population_id",
                 how="inner",
             )
