@@ -1890,14 +1890,7 @@ def building_area_range_per_cap_range(
 def desaggregate_pv_in_mv_grid(
     buildings_gdf: gpd.GeoDataFrame,
     pv_cap: float | int,
-    prob_dict: dict,
-    cap_share_dict: dict[tuple[int | float, int | float], float],
-    building_area_range_dict: dict[
-        tuple[int | float, int | float], tuple[float | int, float]
-    ],
-    load_factor_dict: dict[tuple[int | float, int | float], float],
-    seed: int,
-    pv_cap_per_sq_m: float | int,
+    **kwargs,
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
@@ -1929,15 +1922,15 @@ def desaggregate_pv_in_mv_grid(
     """
     bus_id = int(buildings_gdf.bus_id.iat[0])
 
-    rng = default_rng(seed=seed)
-    random_state = RandomState(seed=seed)
+    rng = default_rng(seed=kwargs["seed"])
+    random_state = RandomState(seed=kwargs["seed"])
 
     results_df = pd.DataFrame(columns=buildings_gdf.columns)
 
-    for cap_range, share in cap_share_dict.items():
+    for cap_range, share in kwargs["cap_share_dict"].items():
         pv_cap_range = pv_cap * share
 
-        b_area_min, b_area_max = building_area_range_dict[cap_range]
+        b_area_min, b_area_max = kwargs["building_area_range_dict"][cap_range]
 
         cap_range_buildings_gdf = buildings_gdf.loc[
             ~buildings_gdf.index.isin(results_df.index)
@@ -1945,7 +1938,7 @@ def desaggregate_pv_in_mv_grid(
             & (buildings_gdf.building_area <= b_area_max)
         ]
 
-        mean_load_factor = load_factor_dict[cap_range]
+        mean_load_factor = kwargs["load_factor_dict"][cap_range]
         cap_range_buildings_gdf = cap_range_buildings_gdf.assign(
             mean_cap=cap_range_buildings_gdf.max_cap * mean_load_factor,
             load_factor=np.nan,
@@ -1996,7 +1989,7 @@ def desaggregate_pv_in_mv_grid(
             random_state=random_state,
         )
 
-        cap_range_dict = prob_dict[cap_range]
+        cap_range_dict = kwargs["prob_dict"][cap_range]
 
         values_dict = cap_range_dict["values"]
         p_dict = cap_range_dict["probabilities"]
@@ -2011,7 +2004,7 @@ def desaggregate_pv_in_mv_grid(
             load_factor=load_factors,
             capacity=samples_gdf.building_area
             * load_factors
-            * pv_cap_per_sq_m,
+            * kwargs["pv_cap_per_sq_m"],
         )
 
         missing_factor = pv_cap_range / samples_gdf.capacity.sum()
@@ -2048,14 +2041,7 @@ def desaggregate_pv_in_mv_grid(
 def desaggregate_pv(
     buildings_gdf: gpd.GeoDataFrame,
     cap_df: pd.DataFrame,
-    prob_dict: dict,
-    cap_share_dict: dict[tuple[int | float, int | float], float],
-    building_area_range_dict: dict[
-        tuple[int | float, int | float], tuple[float | int, float]
-    ],
-    load_factor_dict: dict[tuple[int | float, int | float], float],
-    seed: int,
-    pv_cap_per_sq_m: float | int,
+    **kwargs,
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
@@ -2137,12 +2123,12 @@ def desaggregate_pv(
         gdf = desaggregate_pv_in_mv_grid(
             buildings_gdf=pot_buildings_gdf,
             pv_cap=pv_missing,
-            prob_dict=prob_dict,
-            cap_share_dict=cap_share_dict,
-            building_area_range_dict=building_area_range_dict,
-            load_factor_dict=load_factor_dict,
-            seed=seed,
-            pv_cap_per_sq_m=pv_cap_per_sq_m,
+            prob_dict=kwargs["prob_dict"],
+            cap_share_dict=kwargs["cap_share_dict"],
+            building_area_range_dict=kwargs["building_area_range_dict"],
+            load_factor_dict=kwargs["load_factor_dict"],
+            seed=kwargs["seed"],
+            pv_cap_per_sq_m=kwargs["pv_cap_per_sq_m"],
         )
 
         allocated_buildings_gdf = pd.concat(
