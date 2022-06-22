@@ -530,6 +530,8 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
