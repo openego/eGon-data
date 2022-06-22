@@ -1054,33 +1054,20 @@ def profile_generator(aggregation_level):
             )
             heat_profile_dist.set_index("area_id", inplace=True)
 
-            heat_profile_dist = heat_profile_dist.groupby(
-                lambda x: x, axis=0
-            ).sum()
-            heat_profile_dist = heat_profile_dist.transpose()
-            heat_profile_dist = heat_profile_dist.apply(lambda x: x.explode())
-            heat_profile_dist.reset_index(drop=True, inplace=True)
-            heat_profile_dist = heat_profile_dist.apply(lambda x: x / x.sum())
-            heat_profile_dist = heat_profile_dist.transpose()
-            heat_profile_dist.index.name = "area_id"
-            heat_profile_dist.insert(0, "scenario", scenario)
-
-            profile_dist = profile_dist.append(heat_profile_dist)
-
-            # Individual heating demand time series
-            # Select all zensus cells supplied by individual heat
-            mv_grid_ind = db.select_dataframe(
-                f"""
-                SELECT bus_id, zensus_population_id FROM 
-                boundaries.egon_map_zensus_grid_districts
-                WHERE zensus_population_id NOT IN (
-                    SELECT zensus_population_id FROM 
-                    demand.egon_map_zensus_district_heating_areas
-                    WHERE scenario = '{scenario}'
-                    )                
-                """,
-                index_col="zensus_population_id",
+            mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
+            mv_grid = mv_grid.set_index("zensus_population_id")
+            scenario_district_heating_cells = (
+                scenario_district_heating_cells.set_index(
+                    "zensus_population_id"
+                )
             )
+
+            mv_grid_ind = mv_grid.loc[
+                mv_grid.index.difference(
+                    scenario_district_heating_cells.index
+                ),
+                :,
+            ]
 
             heat_profile_idp = pd.merge(
                 heat_profile,
@@ -1094,6 +1081,17 @@ def profile_generator(aggregation_level):
             heat_profile_idp.set_index("bus_id", inplace=True)
             heat_profile_idp.drop("key_0", axis=1, inplace=True)
 
+            heat_profile_dist = heat_profile_dist.groupby(
+                lambda x: x, axis=0
+            ).sum()
+            heat_profile_dist = heat_profile_dist.transpose()
+            heat_profile_dist = heat_profile_dist.apply(lambda x: x.explode())
+            heat_profile_dist.reset_index(drop=True, inplace=True)
+            heat_profile_dist = heat_profile_dist.apply(lambda x: x / x.sum())
+            heat_profile_dist = heat_profile_dist.transpose()
+            heat_profile_dist.index.name = "area_id"
+            heat_profile_dist.insert(0, "scenario", scenario)
+
             heat_profile_idp = heat_profile_idp.groupby(
                 lambda x: x, axis=0
             ).sum()
@@ -1105,6 +1103,7 @@ def profile_generator(aggregation_level):
             heat_profile_idp.index.name = "bus_id"
             heat_profile_idp.insert(0, "scenario", scenario)
 
+            profile_dist = profile_dist.append(heat_profile_dist)
             profile_idp = profile_idp.append(heat_profile_idp)
 
         else:
