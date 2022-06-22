@@ -1899,6 +1899,8 @@ def desaggregate_pv_in_mv_grid(
         GeoDataFrame containing buildings within the grid district.
     pv_cap : float, int
         PV capacity to desaggregate.
+    Other Parameters
+    -----------
     prob_dict : dict
         Dictionary with values and probabilities per capacity range.
     cap_share_dict : dict
@@ -2050,6 +2052,8 @@ def desaggregate_pv(
         GeoDataFrame containing OSM buildings data.
     cap_df : pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
+    Other Parameters
+    -----------
     prob_dict : dict
         Dictionary with values and probabilities per capacity range.
     cap_share_dict : dict
