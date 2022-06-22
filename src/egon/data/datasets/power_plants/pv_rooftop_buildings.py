@@ -220,6 +220,8 @@ def mastr_data(
     pandas.DataFrame
         DataFrame containing MaStR data.
     """
+    mastr_path = Path(config.datasets()["power_plants"]["sources"]["mastr_pv"]).resolve()
+
     mastr_df = pd.read_csv(
         mastr_path,
         index_col=index_col,
@@ -259,7 +261,6 @@ def clean_mastr_data(
     min_realistic_pv_cap: int | float,
     rounding: int,
     seed: int,
-    verbose: bool = False,
 ) -> pd.DataFrame:
     """
     Clean the MaStR data from implausible data.
@@ -280,8 +281,6 @@ def clean_mastr_data(
         rounding is 1 a capacity of 9.93 will be rounded to 9.9.
     seed : int
         Seed to use for random operations with NumPy and pandas.
-    verbose : bool
-        Logs additional info if True.
     Returns
     -------
     pandas.DataFrame
@@ -333,7 +332,7 @@ def clean_mastr_data(
         mastr_df.Standort.astype(str)
         .apply(
             zip_and_municipality_from_standort,
-            args=(verbose,),
+            args=(VERBOSE,),
         )
         .tolist(),
         index=mastr_df.index,
@@ -422,6 +421,7 @@ def zip_and_municipality_from_standort(
     standort_list = standort.split()
 
     found = False
+    count = 0
 
     for count, elem in enumerate(standort_list):
         if len(elem) != 5:
@@ -1038,7 +1038,7 @@ def allocate_pv(
         Seed to use for random operations with NumPy and pandas.
     Returns
     -------
-    tuple with two geopandas.GeoDataFrame\s  # noqa: W605
+    tuple with two geopandas.GeoDataFrame\s  # noqa: W605 # pylint: disable=W605
         GeoDataFrame containing MaStR data allocated to building IDs.
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
