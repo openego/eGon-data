@@ -1753,59 +1753,9 @@ def demand_profile_generator(aggregation_level="district"):
         residential_demand_zensus,
     ) = residential_demand_scale(aggregation_level)
 
-    # Compare with target value
-    target = db.select_dataframe(
-        """
-        SELECT scenario, SUM(demand) as demand
-        FROM demand.egon_peta_heat
-        WHERE sector = 'residential'
-        GROUP BY (scenario)
-        """,
-        index_col="scenario",
-    )
-
-    check_residential = (
-        (
-            residential_demand_dist.groupby("scenario").sum().sum(axis=1)
-            + residential_demand_grid.groupby("scenario").sum().sum(axis=1)
-        )
-        - target.demand
-    ) / target.demand
-
-    assert (
-        check_residential.abs().max() < 0.01
-    ), f"""Unexpected deviation between target value and distributed
-        residential heat demand: {check_residential}
-        """
-
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level
     )
-
-    # Compare with target value
-    target_cts = db.select_dataframe(
-        """
-        SELECT scenario, SUM(demand) as demand
-        FROM demand.egon_peta_heat
-        WHERE sector = 'service'
-        GROUP BY (scenario)
-        """,
-        index_col="scenario",
-    )
-
-    check_cts = (
-        (
-            CTS_demand_dist.groupby("scenario").sum().sum(axis=1)
-            + CTS_demand_grid.groupby("scenario").sum().sum(axis=1)
-        )
-        - target_cts.demand
-    ) / target_cts.demand
-
-    assert (
-        check_cts.abs().max() < 0.01
-    ), f"""Unexpected deviation between target value and distributed
-        service heat demand: {check_residential}
-        """
 
     if aggregation_level == "district":
         total_demands_dist = pd.concat(
