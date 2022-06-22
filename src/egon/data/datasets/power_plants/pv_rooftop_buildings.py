@@ -975,7 +975,6 @@ def sort_and_qcut_df(
     )
 
 
-# pylint: disable=R0914
 def allocate_pv(
     q_mastr_gdf: gpd.GeoDataFrame,
     q_buildings_gdf: gpd.GeoDataFrame,
@@ -1002,7 +1001,6 @@ def allocate_pv(
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
     rng = default_rng(seed=seed)
-    random_state = RandomState(seed=seed)
 
     q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
     q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
@@ -1019,7 +1017,7 @@ def allocate_pv(
         len_gens = len(gens)
 
         if len_build < len_gens:
-            gens = gens.sample(len_build, random_state=random_state)
+            gens = gens.sample(len_build, random_state=RandomState(seed=seed))
             logger.error(
                 f"There are {len_gens} generators and only {len_build}"
                 f" buildings in AGS {ags}. {len_gens - len(gens)} "
@@ -1085,9 +1083,6 @@ def allocate_pv(
     logger.debug("Allocated status quo generators to buildings.")
 
     return frame_to_numeric(q_mastr_gdf), frame_to_numeric(q_buildings_gdf)
-
-
-# pylint: enable=R0914
 
 
 def frame_to_numeric(
@@ -1891,6 +1886,7 @@ def building_area_range_per_cap_range(
     return building_area_range_normed_dict
 
 
+# pylint: disable=too-many-arguments
 def desaggregate_pv_in_mv_grid(
     buildings_gdf: gpd.GeoDataFrame,
     pv_cap: float | int,
@@ -2165,6 +2161,9 @@ def desaggregate_pv(
     )
 
 
+# pylint: enable=too-many-arguments
+
+
 def add_buildings_meta_data(
     buildings_gdf: gpd.GeoDataFrame,
     prob_dict: dict,
@@ -2228,8 +2227,6 @@ def allocate_scenarios(
 ):
     grid_districts_gdf = grid_districts(EPSG)
 
-    scenario_df = scenario_data(COMPONENT, CARRIER, scenario)
-
     federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
 
     grid_federal_state_gdf = overlay_grid_districts_with_counties(
@@ -2250,7 +2247,8 @@ def allocate_scenarios(
     )
 
     cap_per_bus_id_df = cap_per_bus_id(
-        buildings_area_per_overlay_gdf, scenario_df
+        buildings_area_per_overlay_gdf,
+        scenario_data(COMPONENT, CARRIER, scenario),
     )
 
     mastr_gdf = determine_end_of_life_gens(
@@ -2382,6 +2380,35 @@ def create_scenario_table(buildings_gdf):
         if_exists="append",
         index=False,
     )
+
+
+def geocode_mastr_data():
+    """Read PV rooftop data from MaStR CSV
+    Note: the source will be replaced as soon as the MaStR data is available
+    in DB.
+    """
+    mastr_df = mastr_data(
+        MASTR_INDEX_COL,
+        MASTR_RELEVANT_COLS,
+        MASTR_DTYPES,
+        MASTR_PARSE_DATES,
+    )
+
+    clean_mastr_df = clean_mastr_data(
+        mastr_df,
+        max_realistic_pv_cap=MAX_REALISTIC_PV_CAP,
+        min_realistic_pv_cap=MIN_REALISTIC_PV_CAP,
+        seed=SEED,
+        rounding=ROUNDING,
+    )
+
+    geocoding_df = geocoding_data(clean_mastr_df)
+
+    ratelimiter = geocoder(USER_AGENT, MIN_DELAY_SECONDS)
+
+    geocode_gdf = geocode_data(geocoding_df, ratelimiter, EPSG)
+
+    create_geocoded_table(geocode_gdf)
 
 
 def pv_rooftop_to_buildings():
