@@ -27,7 +27,7 @@ orientation) is also added random and weighted from MaStR data as basis.
 from __future__ import annotations
 
 from collections import Counter
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Any
 
 from geoalchemy2 import Geometry
@@ -56,8 +56,6 @@ SEED = config.settings()["egon-data"]["--random-seed"]
 
 # TODO: move to yml
 # mastr data
-MASTR_PATH = Path("/home/kilian/Documents/PythonProjects/eGon/data/eGon-gogs/")
-
 MASTR_RELEVANT_COLS = [
     "EinheitMastrNummer",
     "Bruttoleistung",
@@ -194,7 +192,6 @@ COLS_TO_EXPORT = [
 
 
 def mastr_data(
-    mastr_path: PurePath,
     index_col: str | int | list[str] | list[int],
     usecols: list[str],
     dtype: dict[str, Any] | None,
@@ -202,11 +199,9 @@ def mastr_data(
 ) -> pd.DataFrame:
     """
     Read MaStR data from csv.
-    TODO: change this to from DB
+
     Parameters
     -----------
-    mastr_path : pathlib.PurePath
-        Path to the cleaned MaStR data.
     index_col : str, int or list of str or int
         Column(s) to use as the row labels of the DataFrame.
     usecols : list of str
@@ -220,7 +215,9 @@ def mastr_data(
     pandas.DataFrame
         DataFrame containing MaStR data.
     """
-    mastr_path = Path(config.datasets()["power_plants"]["sources"]["mastr_pv"]).resolve()
+    mastr_path = Path(
+        config.datasets()["power_plants"]["sources"]["mastr_pv"]
+    ).resolve()
 
     mastr_df = pd.read_csv(
         mastr_path,
@@ -738,40 +735,6 @@ def create_geocoded_table(geocode_gdf):
     )
 
 
-def geocode_mastr_data():
-    """Read PV rooftop data from MaStR CSV
-    Note: the source will be replaced as soon as the MaStR data is available
-    in DB.
-    """
-    cfg = config.datasets()["power_plants"]
-    mastr_path = MASTR_PATH / cfg["sources"]["mastr_pv"]
-
-    mastr_df = mastr_data(
-        mastr_path,
-        MASTR_INDEX_COL,
-        MASTR_RELEVANT_COLS,
-        MASTR_DTYPES,
-        MASTR_PARSE_DATES,
-    )
-
-    clean_mastr_df = clean_mastr_data(
-        mastr_df,
-        max_realistic_pv_cap=MAX_REALISTIC_PV_CAP,
-        min_realistic_pv_cap=MIN_REALISTIC_PV_CAP,
-        seed=SEED,
-        rounding=ROUNDING,
-        verbose=VERBOSE,
-    )
-
-    geocoding_df = geocoding_data(clean_mastr_df)
-
-    ratelimiter = geocoder(USER_AGENT, MIN_DELAY_SECONDS)
-
-    geocode_gdf = geocode_data(geocoding_df, ratelimiter, EPSG)
-
-    create_geocoded_table(geocode_gdf)
-
-
 def geocoded_data_from_db(
     epsg: str | int,
 ) -> gpd.GeoDataFrame:
@@ -802,11 +765,7 @@ def load_mastr_data():
     Note: the source will be replaced as soon as the MaStR data is available
     in DB.
     """
-    cfg = config.datasets()["power_plants"]
-    mastr_path = MASTR_PATH / cfg["sources"]["mastr_pv"]
-
     mastr_df = mastr_data(
-        mastr_path,
         MASTR_INDEX_COL,
         MASTR_RELEVANT_COLS,
         MASTR_DTYPES,
@@ -819,7 +778,6 @@ def load_mastr_data():
         min_realistic_pv_cap=MIN_REALISTIC_PV_CAP,
         seed=SEED,
         rounding=ROUNDING,
-        verbose=VERBOSE,
     )
 
     geocode_gdf = geocoded_data_from_db(EPSG)
@@ -1017,6 +975,7 @@ def sort_and_qcut_df(
     )
 
 
+# pylint: disable=R0914
 def allocate_pv(
     q_mastr_gdf: gpd.GeoDataFrame,
     q_buildings_gdf: gpd.GeoDataFrame,
@@ -1059,8 +1018,6 @@ def allocate_pv(
         len_build = len(buildings)
         len_gens = len(gens)
 
-        # TODO: @Jonathan FYI this part is probably unnecessary when all
-        #  building data is loaded
         if len_build < len_gens:
             gens = gens.sample(len_build, random_state=random_state)
             logger.error(
@@ -1082,8 +1039,6 @@ def allocate_pv(
             len_build = len(q_buildings)
             len_gens = len(q_gens)
 
-            # TODO: @Jonathan FYI this part is probably unnecessary when all
-            #  building data is loaded
             if len_build < len_gens:
                 delta = len_gens - len_build
 
@@ -1130,6 +1085,9 @@ def allocate_pv(
     logger.debug("Allocated status quo generators to buildings.")
 
     return frame_to_numeric(q_mastr_gdf), frame_to_numeric(q_buildings_gdf)
+
+
+# pylint: enable=R0914
 
 
 def frame_to_numeric(
@@ -1203,8 +1161,7 @@ def drop_unallocated_gens(
 ) -> gpd.GeoDataFrame:
     """
     Drop generators which did not get allocated.
-    TODO: @Jonathan FYI this part is probably unnecessary when all
-     building data is loaded
+
     Parameters
     -----------
     gdf : geopandas.GeoDataFrame

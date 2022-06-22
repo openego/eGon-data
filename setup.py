@@ -104,14 +104,21 @@ setup(
         "rasterio",
         "rioxarray",
         "rtree",
-        "snakemake",
+        "snakemake<7",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
         "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
         "xarray",
         "xlrd",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
+        "dev": [
+            "black==21.12b0",
+            "flake8",
+            "isort>=5",
+            "pre-commit",
+            "pytest",
+            "tox",
+        ]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
