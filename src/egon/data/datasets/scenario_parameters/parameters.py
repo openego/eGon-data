@@ -549,7 +549,18 @@ def gas(scenario):
 
         costs = read_csv(2050)
 
-        parameters = {"main_gas_carrier": "H2"}
+        parameters = {
+            "main_gas_carrier": "H2",
+            "retrofitted_CH4pipeline-to-H2pipeline_share": 0.75,
+            # The H2 network will be based on 75% of converted natural gas pipelines.
+            # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf
+            # This value is used temporary, later on we will use the result of p-e-s
+            "retrofitted_capacity_share": 0.8,
+            # The volumetric energy density of pure H2 at 50 bar vs. pure CH4 at
+            # 50 bar is at about 30 %, however due to less friction volumetric flow can
+            # be increased for pure H2 leading to higher capacities
+            # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf p.10
+        }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
@@ -593,7 +604,7 @@ def gas(scenario):
 
 
 def mobility(scenario):
-    """Returns paramaters of the mobility sector for the selected scenario.
+    """Returns parameters of the mobility sector for the selected scenario.
 
     Parameters
     ----------
@@ -605,25 +616,71 @@ def mobility(scenario):
     parameters : dict
         List of parameters of mobility sector
 
+    Notes
+    -----
+    For a detailed description of the parameters see module
+    :mod:`egon.data.datasets.emobility.motorized_individual_travel`.
     """
 
     if scenario == "eGon2035":
-        parameters = {}
-
-        # Investment costs can be annualzied based on overnight investment
-        # costs and life time using the following function:
-        # for comp in parameters["overnight_cost"].keys():
-        #     parameters["capital_cost"][comp] = annualize_capital_costs(
-        #         parameters["overnight_cost"][comp],
-        #         parameters["lifetime"][comp],
-        #         global_settings(scenario)["interest_rate"],
-        #     )
+        parameters = {
+            "motorized_individual_travel": {
+                "NEP C 2035": {
+                    "ev_count": 15100000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                }
+            }
+        }
 
     elif scenario == "eGon100RE":
-        parameters = {}
+        # eGon100RE has 3 Scenario variations
+        #   * allocation will always be done for all scenarios
+        #   * model data will be written to tables `egon_etrago_*` only
+        #     for the variation as speciefied in `datasets.yml`
+        parameters = {
+            "motorized_individual_travel": {
+                "Reference 2050": {
+                    "ev_count": 25065000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                },
+                "Mobility Transition 2050": {
+                    "ev_count": 37745000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                },
+                "Electrification 2050": {
+                    "ev_count": 47700000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                },
+            }
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
+        parameters = dict()
 
     return parameters
 

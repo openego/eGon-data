@@ -106,5 +106,9 @@ CREATE TABLE openstreetmap.osm_ways_with_segments as
             way_w_segments.geom
     ) ways
     where ways.nodes is not null;
+
+ALTER TABLE openstreetmap.osm_ways_with_segments
+    ADD CONSTRAINT osm_ways_with_segments_osm_id_pkey PRIMARY KEY (osm_id);
+
 CREATE INDEX ON openstreetmap.osm_ways_with_segments USING gist (geom);
 
