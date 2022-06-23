@@ -12,7 +12,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 sanitycheck_eGon2035_electricity,
@@ -391,7 +391,7 @@ def sanitycheck_eGon2035_heat():
     )["urban_central_resistive_heater_mw"].values[0]
 
     resistive_heater_output = db.select_dataframe(
-        """SELECT carrier, SUM(p_nom::numeric), 2 as central_resistive_heater_MW
+        """SELECT carrier, SUM(p_nom::numeric) as central_resistive_heater_MW
             FROM grid.egon_etrago_link
             WHERE carrier= 'central_resistive_heater'
             AND scn_name IN ('eGon2035')

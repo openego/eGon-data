@@ -413,7 +413,7 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.0.dev",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 create_tables,
