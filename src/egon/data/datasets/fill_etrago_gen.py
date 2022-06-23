@@ -80,7 +80,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
-    
+
     max_id = db.next_etrago_id("generator")
     etrago_pp["generator_id"] = list(range(max_id, max_id + len(etrago_pp)))
     etrago_pp.set_index("generator_id", inplace=True)
@@ -92,7 +92,7 @@ def add_marginal_costs(power_plants):
 
     scenarios = power_plants.scenario.unique()
     pp = pd.DataFrame()
-    
+
     for scenario in scenarios:
         pp_scn = power_plants[power_plants["scenario"] == scenario].copy()
         # Read marginal costs from scenario capacities
@@ -100,20 +100,25 @@ def add_marginal_costs(power_plants):
             get_sector_parameters("electricity", scenario)["marginal_cost"],
             orient="index",
         ).rename(columns={0: "marginal_cost"})
-        
+
         # Set marginal costs = 0 for technologies without values
         warning = []
         for carrier in pp_scn.carrier.unique():
             if carrier not in (marginal_costs.index):
                 warning.append(carrier)
                 marginal_costs = marginal_costs.append(
-                    pd.Series(name= carrier, data= {"marginal_cost": 0}))
+                    pd.Series(name=carrier, data={"marginal_cost": 0})
+                )
         if warning:
-            print(f"""There are not marginal_cost values for: \n{warning}
-        in the scenario {scenario}. Missing values set to 0""")
-        pp = pp.append(pp_scn.merge(
-            right=marginal_costs, left_on="carrier", right_index=True
-        ))
+            print(
+                f"""There are not marginal_cost values for: \n{warning}
+        in the scenario {scenario}. Missing values set to 0"""
+            )
+        pp = pp.append(
+            pp_scn.merge(
+                right=marginal_costs, left_on="carrier", right_index=True
+            )
+        )
 
     return pp
 
@@ -157,7 +162,7 @@ def fill_etrago_gen_time_table(
     cal_timeseries = set_timeseries(
         power_plants=power_plants, renew_feedin=renew_feedin
     )
-    
+
     etrago_pp_time["p_max_pu"] = 0
     etrago_pp_time["p_max_pu"] = etrago_pp_time.apply(cal_timeseries, axis=1)
 
