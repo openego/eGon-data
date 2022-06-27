@@ -3,8 +3,8 @@
 The central module containing all code dealing with importing gas storages data
 """
 from pathlib import Path
-import ast
 from telnetlib import GA
+import ast
 
 import geopandas
 import numpy as np
@@ -13,20 +13,21 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.gas_grid import (
     ch4_nodes_number_G,
     define_gas_nodes_list,
 )
-from egon.data.datasets.gas_prod import assign_bus_id
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CH4Storages",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
-            tasks=(import_ch4_storages),
+            tasks=(insert_ch4_storages),
         )
 
 
@@ -182,8 +183,16 @@ def import_ch4_grid_capacity(scn_name):
     Gas_storages_list = db.select_geodataframe(sql_gas, epsg=4326)
 
     # Add missing column
-    Gas_storages_list["e_nom"] = Store_capacity
     Gas_storages_list["bus"] = Gas_storages_list["bus_id"]
+    if scn_name == "eGon100RE":
+        Gas_storages_list["e_nom"] = Store_capacity * (
+            1
+            - get_sector_parameters("gas", scn_name)[
+                "retrofitted_CH4pipeline-to-H2pipeline_share"
+            ]
+        )
+    else:
+        Gas_storages_list["e_nom"] = Store_capacity
 
     # Remove useless columns
     Gas_storages_list = Gas_storages_list.drop(columns=["bus_id", "geom"])
@@ -191,17 +200,23 @@ def import_ch4_grid_capacity(scn_name):
     return Gas_storages_list
 
 
-def import_ch4_storages():
-    """Insert list of gas storages units in database"""
+def insert_ch4_stores(scn_name):
+    """Insert gas stores for specific scenario
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
+
+    Returns
+    ----
+    None"""
+
     # Connect to local database
     engine = db.engine()
 
     # Select target from dataset configuration
     source = config.datasets()["gas_stores"]["source"]
     target = config.datasets()["gas_stores"]["target"]
-
-    # TODO move this to function call, how to do it is directly called in task list?
-    scn_name = "eGon2035"
 
     # Clean table
     db.execute_sql(
@@ -217,20 +232,24 @@ def import_ch4_storages():
         """
     )
 
-    # Select next id value
-    new_id = db.next_etrago_id("store")
-
     gas_storages_list = pd.concat(
         [
             import_installed_ch4_storages(scn_name),
             import_ch4_grid_capacity(scn_name),
         ]
     )
+
+    # Aggregate ch4 stores with same properties at the same bus
+    gas_storages_list = (
+        gas_storages_list.groupby(["bus", "carrier", "scn_name"])
+        .agg({"e_nom": "sum"})
+        .reset_index(drop=False)
+    )
+
+    new_id = db.next_etrago_id("store")
     gas_storages_list["store_id"] = range(
         new_id, new_id + len(gas_storages_list)
     )
-
-    gas_storages_list = gas_storages_list.reset_index(drop=True)
 
     # Insert data to db
     gas_storages_list.to_sql(
@@ -240,3 +259,14 @@ def import_ch4_storages():
         index=False,
         if_exists="append",
     )
+
+
+def insert_ch4_storages():
+    """Overall function for importing the gas stores for both scenarios
+
+    Returns
+    -------
+    None.
+    """
+    insert_ch4_stores("eGon2035")
+    insert_ch4_stores("eGon100RE")

@@ -193,8 +193,14 @@ Added
   seems like the best course of action for now. Done via `PR #703`_ and
   hopefully prevents issues `#702`_ and `#267`_ from ever occurring
   again.
+* Provide wrapper to catch DB unique violation
+  `#514 <https://github.com/openego/eGon-data/issues/514>`_
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Introduce Sanity checks for eGon2035
+  `#382 <https://github.com/openego/eGon-data/issues/382>`_
+* Add motorized individual travel
+  `#553 <https://github.com/openego/eGon-data/issues/553>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -359,6 +365,18 @@ Changed
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
 * Include simplified restrictions for H2 feed-in into CH4 grid
   `#790 <https://github.com/openego/eGon-data/issues/790>`_
+*  Update hh electricity profiles
+  `#735 <https://github.com/openego/eGon-data/issues/735>`_
+* Improve CH4 stores and productions aggregation by removing dedicated task
+  `#775 <https://github.com/openego/eGon-data/pull/775>`_
+* Add CH4 stores in Germany for eGon100RE
+  `#779 <https://github.com/openego/eGon-data/issues/779>`_
+* Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
+  `#686 <https://github.com/openego/eGon-data/issues/686>`_
+* Update deposit id to access v0.8 of the zenodo repository
+  `#760 <https://github.com/openego/eGon-data/issues/760>`_
+* Add primary key to table openstreetmap.osm_ways_with_segments
+  `#787 <https://github.com/openego/eGon-data/issues/787>`_
 
 
 Bug Fixes
@@ -492,7 +510,7 @@ Bug Fixes
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
 * Fix country_code attribution of two gas buses
-  `#710 <https://github.com/openego/eGon-data/issues/744>`_
+  `#744 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
@@ -510,6 +528,17 @@ Bug Fixes
   `#758 <https://github.com/openego/eGon-data/issues/758>`_
 * Correct wrong carrier name when assigning marginal costs
   `#766 <https://github.com/openego/eGon-data/issues/766>`_
+* Use db.next_etrago_id in dsm and pv_rooftop dataset
+  `#748 <https://github.com/openego/eGon-data/issues/748>`_
+* Add missing dependency to heat_etrago
+  `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
+* Fix missing reservoir and run_of_river power plants in eTraGo tables,
+  Modify fill_etrago_gen to also group generators from eGon100RE,
+  Use db.next_etrago_id in fill_etrago_gen
+  `#798 <https://github.com/openego/eGon-data/issues/798>`_
+  `#776 <https://github.com/openego/eGon-data/issues/776>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

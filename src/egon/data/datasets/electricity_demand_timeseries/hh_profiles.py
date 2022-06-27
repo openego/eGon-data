@@ -151,7 +151,7 @@ class IeeHouseholdLoadProfiles(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(INTEGER, primary_key=True)
-    type = Column(CHAR(7), index=True)
+    type = Column(CHAR(8), index=True)
     load_in_wh = Column(ARRAY(REAL))
 
 
@@ -210,7 +210,7 @@ class HouseholdDemands(Dataset):
 
         super().__init__(
             name="Household Demands",
-            version="0.0.8",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(
                 houseprofiles_in_census_cells,
@@ -355,12 +355,13 @@ def get_iee_hh_demand_profiles_raw():
 
     df_hh_profiles = pd.read_hdf(hh_profiles_file)
 
-    # Use only last 8760 timesteps of profiles (for details see notes)
-    timesteps_target = 8760
-    if len(df_hh_profiles) > timesteps_target:
-        df_hh_profiles = df_hh_profiles[
-            len(df_hh_profiles) - timesteps_target :
-        ].reset_index(drop=True)
+    # aggregate profile types O2, O1 and O0 as there is no differentiation
+    # possible at cell level see :func:`regroup_nuts1_census_data`.
+    merge_profiles = [i for i in df_hh_profiles.columns if "O1" in i[:3]]
+    merge_profiles += [i for i in df_hh_profiles.columns if "O2" in i[:3]]
+    merge_profiles += [i for i in df_hh_profiles.columns if "O0" in i[:3]]
+    mapping = {f"{old}": f"O0a{i:05d}" for i, old in enumerate(merge_profiles)}
+    df_hh_profiles.rename(columns=mapping, inplace=True)
 
     return df_hh_profiles
 
@@ -1469,7 +1470,7 @@ def houseprofiles_in_census_cells():
 
     def gen_profile_names(n):
         """Join from Format (str),(int) to (str)a000(int)"""
-        a = f"{n[0]}a{int(n[1]):04d}"
+        a = f"{n[0]}a{int(n[1]):05d}"
         return a
 
     # Init random generators using global seed
