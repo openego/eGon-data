@@ -19,9 +19,7 @@ from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
-from egon.data.datasets.etrago_helpers import (
-    copy_and_modify_buses,
-)
+from egon.data.datasets.etrago_helpers import copy_and_modify_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -29,7 +27,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(insert_gas_data, insert_gas_data_eGon100RE),
         )
