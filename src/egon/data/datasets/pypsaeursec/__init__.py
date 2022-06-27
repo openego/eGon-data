@@ -808,6 +808,7 @@ def neighbor_reduction():
             index_label="line_id",
         )
 
+
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
 execute_pypsa_eur_sec = False
 
