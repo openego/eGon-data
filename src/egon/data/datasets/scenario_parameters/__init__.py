@@ -1,19 +1,20 @@
 """The central module containing all code dealing with scenario table.
 """
-from egon.data import db
-from sqlalchemy import Column, String, VARCHAR
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSONB
-import pandas as pd
-import egon.data.datasets.scenario_parameters.parameters as parameters
-from egon.data.datasets import Dataset
+from pathlib import Path
 from urllib.request import urlretrieve
+import shutil
 import zipfile
 
+from sqlalchemy import VARCHAR, Column, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets import Dataset
 import egon.data.config
-from pathlib import Path
-import shutil
+import egon.data.datasets.scenario_parameters.parameters as parameters
 
 Base = declarative_base()
 
@@ -105,7 +106,7 @@ def insert_scenarios():
 
 
 def get_sector_parameters(sector, scenario=None):
-    """ Returns parameters for each sector as dictionary.
+    """Returns parameters for each sector as dictionary.
 
     If scenario=None data for all scenarios is returned as pandas.DataFrame.
     Otherwise the parameters of the specific scenario are returned as a dict.
@@ -163,6 +164,7 @@ def get_sector_parameters(sector, scenario=None):
 
     return values
 
+
 def download_pypsa_technology_data():
     """Downlad PyPSA technology data results."""
     data_path = Path(".") / "pypsa_technology_data"
@@ -184,11 +186,16 @@ def download_pypsa_technology_data():
     with zipfile.ZipFile(target_file, "r") as zip_ref:
         zip_ref.extractall(".")
 
+
 class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.6",
+            version="0.0.9",
             dependencies=dependencies,
-            tasks=(create_table, download_pypsa_technology_data, insert_scenarios),
+            tasks=(
+                create_table,
+                download_pypsa_technology_data,
+                insert_scenarios,
+            ),
         )

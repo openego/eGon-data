@@ -4,6 +4,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 
 
@@ -11,7 +12,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -45,6 +46,8 @@ def fill_etrago_generators():
         cfg=cfg,
     )
 
+    etrago_pp = add_marginal_costs(etrago_pp)
+
     etrago_gen_table = fill_etrago_gen_table(
         etrago_pp2=etrago_pp, etrago_gen_orig=etrago_gen_orig, cfg=cfg, con=con
     )
@@ -66,35 +69,65 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
     # group power plants by bus and carrier
 
     agg_func = {
-        "sources": numpy_nan,
-        "source_id": numpy_nan,
         "carrier": consistency,
         "el_capacity": np.sum,
         "bus_id": consistency,
-        "voltage_level": numpy_nan,
         "weather_cell_id": power_timeser,
         "scenario": consistency,
-        "geom": numpy_nan,
     }
 
-    etrago_pp = power_plants.groupby(by=["bus_id", "carrier"]).agg(
+    etrago_pp = power_plants.groupby(by=["bus_id", "carrier", "scenario"]).agg(
         func=agg_func
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
 
-    if np.isnan(etrago_gen_orig["generator_id"].max()):
-        max_id = 0
-    else:
-        max_id = etrago_gen_orig["generator_id"].max() + 1
+    max_id = db.next_etrago_id("generator")
     etrago_pp["generator_id"] = list(range(max_id, max_id + len(etrago_pp)))
     etrago_pp.set_index("generator_id", inplace=True)
 
     return etrago_pp
 
 
+def add_marginal_costs(power_plants):
+
+    scenarios = power_plants.scenario.unique()
+    pp = pd.DataFrame()
+
+    for scenario in scenarios:
+        pp_scn = power_plants[power_plants["scenario"] == scenario].copy()
+        # Read marginal costs from scenario capacities
+        marginal_costs = pd.DataFrame.from_dict(
+            get_sector_parameters("electricity", scenario)["marginal_cost"],
+            orient="index",
+        ).rename(columns={0: "marginal_cost"})
+
+        # Set marginal costs = 0 for technologies without values
+        warning = []
+        for carrier in pp_scn.carrier.unique():
+            if carrier not in (marginal_costs.index):
+                warning.append(carrier)
+                marginal_costs = marginal_costs.append(
+                    pd.Series(name=carrier, data={"marginal_cost": 0})
+                )
+        if warning:
+            print(
+                f"""There are not marginal_cost values for: \n{warning}
+        in the scenario {scenario}. Missing values set to 0"""
+            )
+        pp = pp.append(
+            pp_scn.merge(
+                right=marginal_costs, left_on="carrier", right_index=True
+            )
+        )
+
+    return pp
+
+
 def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
 
-    etrago_pp = etrago_pp2[["carrier", "el_capacity", "bus_id", "scenario"]]
+    etrago_pp = etrago_pp2[
+        ["carrier", "el_capacity", "bus_id", "scenario", "marginal_cost"]
+    ]
     etrago_pp = etrago_pp.rename(
         columns={
             "el_capacity": "p_nom",
@@ -149,12 +182,11 @@ def fill_etrago_gen_time_table(
     return etrago_pp_time
 
 
-def load_tables(con, cfg, scenario="eGon2035"):
+def load_tables(con, cfg):
     sql = f"""
     SELECT * FROM
     {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']}
-    WHERE scenario = '{scenario}'
     """
     power_plants = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", index_col="id"
@@ -178,7 +210,6 @@ def load_tables(con, cfg, scenario="eGon2035"):
     SELECT * FROM
     {cfg['targets']['etrago_generators']['schema']}.
     {cfg['targets']['etrago_generators']['table']}
-    WHERE scn_name = '{scenario}'
     """
     etrago_gen_orig = pd.read_sql(sql, con)
 
@@ -186,7 +217,6 @@ def load_tables(con, cfg, scenario="eGon2035"):
     SELECT * FROM
     {cfg['targets']['etrago_gen_time']['schema']}.
     {cfg['targets']['etrago_gen_time']['table']}
-    WHERE scn_name = '{scenario}'
     """
     pp_time = pd.read_sql(sql, con)
 
@@ -228,7 +258,7 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
 
     if carrier_delete:
         db.execute_sql(
-            f"""DELETE FROM 
+            f"""DELETE FROM
                     {cfg['targets']['etrago_generators']['schema']}.
                     {cfg['targets']['etrago_generators']['table']}
                     WHERE carrier IN {*carrier_delete,}
@@ -241,7 +271,7 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
         )
 
         db.execute_sql(
-            f"""DELETE FROM 
+            f"""DELETE FROM
                     {cfg['targets']['etrago_gen_time']['schema']}.
                     {cfg['targets']['etrago_gen_time']['table']}
                     WHERE generator_id NOT IN (
