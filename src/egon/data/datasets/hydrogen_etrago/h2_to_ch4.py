@@ -80,8 +80,8 @@ def insert_h2_to_ch4_to_h2():
         # calculate the total pipeline capacity connected to a specific bus
         nodal_capacity = pipeline_capacities.loc[
             (pipeline_capacities["bus0"] == bus)
-            | (pipeline_capacities["bus1"] == bus)
-            , "p_nom"
+            | (pipeline_capacities["bus1"] == bus),
+            "p_nom",
         ].sum()
         # multiply total pipeline capacity with H2 energy share corresponding
         # to volumetric share
@@ -183,9 +183,6 @@ def H2_CH4_mix_energy_fractions(x, T=25, p=50):
     )
     assert round(m_mix - m_H2 - m_CH4, 6) == 0.0, msg
 
-    LHV = {
-        "CH4": 50e6,
-        "H2": 120e6
-    }
+    LHV = {"CH4": 50e6, "H2": 120e6}
 
     return m_H2 * LHV["H2"] / (m_H2 * LHV["H2"] + m_CH4 * LHV["CH4"])
