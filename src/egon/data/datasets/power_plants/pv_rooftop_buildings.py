@@ -2126,12 +2126,7 @@ def desaggregate_pv(
         gdf = desaggregate_pv_in_mv_grid(
             buildings_gdf=pot_buildings_gdf,
             pv_cap=pv_missing,
-            prob_dict=kwargs["prob_dict"],
-            cap_share_dict=kwargs["cap_share_dict"],
-            building_area_range_dict=kwargs["building_area_range_dict"],
-            load_factor_dict=kwargs["load_factor_dict"],
-            seed=kwargs["seed"],
-            pv_cap_per_sq_m=kwargs["pv_cap_per_sq_m"],
+            **kwargs,
         )
 
         allocated_buildings_gdf = pd.concat(
