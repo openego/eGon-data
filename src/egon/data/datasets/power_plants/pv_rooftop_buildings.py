@@ -27,7 +27,7 @@ orientation) is also added random and weighted from MaStR data as basis.
 from __future__ import annotations
 
 from collections import Counter
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Any
 
 from geoalchemy2 import Geometry
@@ -56,8 +56,6 @@ SEED = config.settings()["egon-data"]["--random-seed"]
 
 # TODO: move to yml
 # mastr data
-MASTR_PATH = Path("/home/kilian/Documents/PythonProjects/eGon/data/eGon-gogs/")
-
 MASTR_RELEVANT_COLS = [
     "EinheitMastrNummer",
     "Bruttoleistung",
@@ -198,7 +196,6 @@ COLS_TO_EXPORT = [
 
 
 def mastr_data(
-    mastr_path: PurePath,
     index_col: str | int | list[str] | list[int],
     usecols: list[str],
     dtype: dict[str, Any] | None,
@@ -206,11 +203,9 @@ def mastr_data(
 ) -> pd.DataFrame:
     """
     Read MaStR data from csv.
-    TODO: change this to from DB
+
     Parameters
     -----------
-    mastr_path : pathlib.PurePath
-        Path to the cleaned MaStR data.
     index_col : str, int or list of str or int
         Column(s) to use as the row labels of the DataFrame.
     usecols : list of str
@@ -224,6 +219,10 @@ def mastr_data(
     pandas.DataFrame
         DataFrame containing MaStR data.
     """
+    mastr_path = Path(
+        config.datasets()["power_plants"]["sources"]["mastr_pv"]
+    ).resolve()
+
     mastr_df = pd.read_csv(
         mastr_path,
         index_col=index_col,
@@ -263,7 +262,6 @@ def clean_mastr_data(
     min_realistic_pv_cap: int | float,
     rounding: int,
     seed: int,
-    verbose: bool = False,
 ) -> pd.DataFrame:
     """
     Clean the MaStR data from implausible data.
@@ -286,8 +284,6 @@ def clean_mastr_data(
         rounding is 1 a capacity of 9.93 will be rounded to 9.9.
     seed : int
         Seed to use for random operations with NumPy and pandas.
-    verbose : bool
-        Logs additional info if True.
     Returns
     -------
     pandas.DataFrame
@@ -339,7 +335,7 @@ def clean_mastr_data(
         mastr_df.Standort.astype(str)
         .apply(
             zip_and_municipality_from_standort,
-            args=(verbose,),
+            args=(VERBOSE,),
         )
         .tolist(),
         index=mastr_df.index,
@@ -428,6 +424,7 @@ def zip_and_municipality_from_standort(
     standort_list = standort.split()
 
     found = False
+    count = 0
 
     for count, elem in enumerate(standort_list):
         if len(elem) != 5:
@@ -744,40 +741,6 @@ def create_geocoded_table(geocode_gdf):
     )
 
 
-def geocode_mastr_data():
-    """Read PV rooftop data from MaStR CSV
-    Note: the source will be replaced as soon as the MaStR data is available
-    in DB.
-    """
-    cfg = config.datasets()["power_plants"]
-    mastr_path = MASTR_PATH / cfg["sources"]["mastr_pv"]
-
-    mastr_df = mastr_data(
-        mastr_path,
-        MASTR_INDEX_COL,
-        MASTR_RELEVANT_COLS,
-        MASTR_DTYPES,
-        MASTR_PARSE_DATES,
-    )
-
-    clean_mastr_df = clean_mastr_data(
-        mastr_df,
-        max_realistic_pv_cap=MAX_REALISTIC_PV_CAP,
-        min_realistic_pv_cap=MIN_REALISTIC_PV_CAP,
-        seed=SEED,
-        rounding=ROUNDING,
-        verbose=VERBOSE,
-    )
-
-    geocoding_df = geocoding_data(clean_mastr_df)
-
-    ratelimiter = geocoder(USER_AGENT, MIN_DELAY_SECONDS)
-
-    geocode_gdf = geocode_data(geocoding_df, ratelimiter, EPSG)
-
-    create_geocoded_table(geocode_gdf)
-
-
 def geocoded_data_from_db(
     epsg: str | int,
 ) -> gpd.GeoDataFrame:
@@ -808,11 +771,7 @@ def load_mastr_data():
     Note: the source will be replaced as soon as the MaStR data is available
     in DB.
     """
-    cfg = config.datasets()["power_plants"]
-    mastr_path = MASTR_PATH / cfg["sources"]["mastr_pv"]
-
     mastr_df = mastr_data(
-        mastr_path,
         MASTR_INDEX_COL,
         MASTR_RELEVANT_COLS,
         MASTR_DTYPES,
@@ -825,7 +784,6 @@ def load_mastr_data():
         min_realistic_pv_cap=MIN_REALISTIC_PV_CAP,
         seed=SEED,
         rounding=ROUNDING,
-        verbose=VERBOSE,
     )
 
     geocode_gdf = geocoded_data_from_db(EPSG)
@@ -1044,12 +1002,11 @@ def allocate_pv(
         Seed to use for random operations with NumPy and pandas.
     Returns
     -------
-    tuple with two geopandas.GeoDataFrame\s  # noqa: W605
+    tuple with two geopandas.GeoDataFrame s
         GeoDataFrame containing MaStR data allocated to building IDs.
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
     rng = default_rng(seed=seed)
-    random_state = RandomState(seed=seed)
 
     q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
     q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
@@ -1065,10 +1022,8 @@ def allocate_pv(
         len_build = len(buildings)
         len_gens = len(gens)
 
-        # TODO: @Jonathan FYI this part is probably unnecessary when all
-        #  building data is loaded
         if len_build < len_gens:
-            gens = gens.sample(len_build, random_state=random_state)
+            gens = gens.sample(len_build, random_state=RandomState(seed=seed))
             logger.error(
                 f"There are {len_gens} generators and only {len_build}"
                 f" buildings in AGS {ags}. {len_gens - len(gens)} "
@@ -1088,8 +1043,6 @@ def allocate_pv(
             len_build = len(q_buildings)
             len_gens = len(q_gens)
 
-            # TODO: @Jonathan FYI this part is probably unnecessary when all
-            #  building data is loaded
             if len_build < len_gens:
                 delta = len_gens - len_build
 
@@ -1217,8 +1170,7 @@ def drop_unallocated_gens(
 ) -> gpd.GeoDataFrame:
     """
     Drop generators which did not get allocated.
-    TODO: @Jonathan FYI this part is probably unnecessary when all
-     building data is loaded
+
     Parameters
     -----------
     gdf : geopandas.GeoDataFrame
@@ -1951,14 +1903,7 @@ def building_area_range_per_cap_range(
 def desaggregate_pv_in_mv_grid(
     buildings_gdf: gpd.GeoDataFrame,
     pv_cap: float | int,
-    prob_dict: dict,
-    cap_share_dict: dict[tuple[int | float, int | float], float],
-    building_area_range_dict: dict[
-        tuple[int | float, int | float], tuple[float | int, float]
-    ],
-    load_factor_dict: dict[tuple[int | float, int | float], float],
-    seed: int,
-    pv_cap_per_sq_m: float | int,
+    **kwargs,
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
@@ -1968,6 +1913,8 @@ def desaggregate_pv_in_mv_grid(
         GeoDataFrame containing buildings within the grid district.
     pv_cap : float, int
         PV capacity to desaggregate.
+    Other Parameters
+    -----------
     prob_dict : dict
         Dictionary with values and probabilities per capacity range.
     cap_share_dict : dict
@@ -1990,15 +1937,15 @@ def desaggregate_pv_in_mv_grid(
     """
     bus_id = int(buildings_gdf.bus_id.iat[0])
 
-    rng = default_rng(seed=seed)
-    random_state = RandomState(seed=seed)
+    rng = default_rng(seed=kwargs["seed"])
+    random_state = RandomState(seed=kwargs["seed"])
 
     results_df = pd.DataFrame(columns=buildings_gdf.columns)
 
-    for cap_range, share in cap_share_dict.items():
+    for cap_range, share in kwargs["cap_share_dict"].items():
         pv_cap_range = pv_cap * share
 
-        b_area_min, b_area_max = building_area_range_dict[cap_range]
+        b_area_min, b_area_max = kwargs["building_area_range_dict"][cap_range]
 
         cap_range_buildings_gdf = buildings_gdf.loc[
             ~buildings_gdf.index.isin(results_df.index)
@@ -2006,7 +1953,7 @@ def desaggregate_pv_in_mv_grid(
             & (buildings_gdf.building_area <= b_area_max)
         ]
 
-        mean_load_factor = load_factor_dict[cap_range]
+        mean_load_factor = kwargs["load_factor_dict"][cap_range]
         cap_range_buildings_gdf = cap_range_buildings_gdf.assign(
             mean_cap=cap_range_buildings_gdf.max_cap * mean_load_factor,
             load_factor=np.nan,
@@ -2057,7 +2004,7 @@ def desaggregate_pv_in_mv_grid(
             random_state=random_state,
         )
 
-        cap_range_dict = prob_dict[cap_range]
+        cap_range_dict = kwargs["prob_dict"][cap_range]
 
         values_dict = cap_range_dict["values"]
         p_dict = cap_range_dict["probabilities"]
@@ -2072,7 +2019,7 @@ def desaggregate_pv_in_mv_grid(
             load_factor=load_factors,
             capacity=samples_gdf.building_area
             * load_factors
-            * pv_cap_per_sq_m,
+            * kwargs["pv_cap_per_sq_m"],
         )
 
         missing_factor = pv_cap_range / samples_gdf.capacity.sum()
@@ -2109,14 +2056,7 @@ def desaggregate_pv_in_mv_grid(
 def desaggregate_pv(
     buildings_gdf: gpd.GeoDataFrame,
     cap_df: pd.DataFrame,
-    prob_dict: dict,
-    cap_share_dict: dict[tuple[int | float, int | float], float],
-    building_area_range_dict: dict[
-        tuple[int | float, int | float], tuple[float | int, float]
-    ],
-    load_factor_dict: dict[tuple[int | float, int | float], float],
-    seed: int,
-    pv_cap_per_sq_m: float | int,
+    **kwargs,
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
@@ -2126,6 +2066,8 @@ def desaggregate_pv(
         GeoDataFrame containing OSM buildings data.
     cap_df : pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
+    Other Parameters
+    -----------
     prob_dict : dict
         Dictionary with values and probabilities per capacity range.
     cap_share_dict : dict
@@ -2198,12 +2140,12 @@ def desaggregate_pv(
         gdf = desaggregate_pv_in_mv_grid(
             buildings_gdf=pot_buildings_gdf,
             pv_cap=pv_missing,
-            prob_dict=prob_dict,
-            cap_share_dict=cap_share_dict,
-            building_area_range_dict=building_area_range_dict,
-            load_factor_dict=load_factor_dict,
-            seed=seed,
-            pv_cap_per_sq_m=pv_cap_per_sq_m,
+            prob_dict=kwargs["prob_dict"],
+            cap_share_dict=kwargs["cap_share_dict"],
+            building_area_range_dict=kwargs["building_area_range_dict"],
+            load_factor_dict=kwargs["load_factor_dict"],
+            seed=kwargs["seed"],
+            pv_cap_per_sq_m=kwargs["pv_cap_per_sq_m"],
         )
 
         allocated_buildings_gdf = pd.concat(
@@ -2319,8 +2261,6 @@ def allocate_scenarios(
 ):
     grid_districts_gdf = grid_districts(EPSG)
 
-    scenario_df = scenario_data(COMPONENT, CARRIER, scenario)
-
     federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
 
     grid_federal_state_gdf = overlay_grid_districts_with_counties(
@@ -2341,7 +2281,8 @@ def allocate_scenarios(
     )
 
     cap_per_bus_id_df = cap_per_bus_id(
-        buildings_area_per_overlay_gdf, scenario_df
+        buildings_area_per_overlay_gdf,
+        scenario_data(COMPONENT, CARRIER, scenario),
     )
 
     mastr_gdf = determine_end_of_life_gens(
@@ -2476,6 +2417,35 @@ def create_scenario_table(buildings_gdf):
         if_exists="append",
         index=False,
     )
+
+
+def geocode_mastr_data():
+    """Read PV rooftop data from MaStR CSV
+    Note: the source will be replaced as soon as the MaStR data is available
+    in DB.
+    """
+    mastr_df = mastr_data(
+        MASTR_INDEX_COL,
+        MASTR_RELEVANT_COLS,
+        MASTR_DTYPES,
+        MASTR_PARSE_DATES,
+    )
+
+    clean_mastr_df = clean_mastr_data(
+        mastr_df,
+        max_realistic_pv_cap=MAX_REALISTIC_PV_CAP,
+        min_realistic_pv_cap=MIN_REALISTIC_PV_CAP,
+        seed=SEED,
+        rounding=ROUNDING,
+    )
+
+    geocoding_df = geocoding_data(clean_mastr_df)
+
+    ratelimiter = geocoder(USER_AGENT, MIN_DELAY_SECONDS)
+
+    geocode_gdf = geocode_data(geocoding_df, ratelimiter, EPSG)
+
+    create_geocoded_table(geocode_gdf)
 
 
 def pv_rooftop_to_buildings():
