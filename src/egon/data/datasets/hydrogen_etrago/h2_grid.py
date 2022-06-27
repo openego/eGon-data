@@ -50,7 +50,7 @@ def insert_h2_pipelines():
     # scenario parameters
     pipelines["p_nom"] *= (
         scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"] *
-        scn_params["retrofitted_capacity_share"]
+        scn_params["retrofitted_H2pipeline_capacity_share"]
     )
     # map pipeline buses
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
