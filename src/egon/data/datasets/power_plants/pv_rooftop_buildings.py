@@ -193,6 +193,7 @@ COLS_TO_EXPORT = [
     "einheitliche_ausrichtung_und_neigungswinkel",
     "hauptausrichtung",
     "hauptausrichtung_neigungswinkel",
+    "voltage_level",
 ]
 
 
@@ -2277,6 +2278,40 @@ def add_buildings_meta_data(
     return buildings_gdf
 
 
+def add_voltage_level(
+    buildings_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Add voltage level derived from generator capacity to the power plants.
+    Parameters
+    -----------
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with desaggregated PV
+        plants.
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing OSM building data with voltage level per generator.
+    """
+
+    def voltage_levels(p: float) -> int:
+        if p < 100:
+            return 7
+        elif p < 200:
+            return 6
+        elif p < 5500:
+            return 5
+        elif p < 20000:
+            return 4
+        elif p < 120000:
+            return 3
+        return 1
+
+    return buildings_gdf.assign(
+        voltage_level=buildings_gdf.capacity.apply(voltage_levels)
+    )
+
+
 def allocate_scenarios(
     mastr_gdf: gpd.GeoDataFrame,
     buildings_gdf: gpd.GeoDataFrame,
@@ -2361,13 +2396,15 @@ def allocate_scenarios(
         pv_cap_per_sq_m=PV_CAP_PER_SQ_M,
     )
 
-    return frame_to_numeric(
+    meta_buildings_gdf = frame_to_numeric(
         add_buildings_meta_data(
             allocated_buildings_gdf,
             probabilities_dict,
             SEED,
         )
     )
+
+    return add_voltage_level(meta_buildings_gdf)
 
 
 class EgonPowerPlantPvRoofBuildingMapping(Base):
@@ -2403,7 +2440,7 @@ def create_mapping_table(desagg_mastr_gdf):
 
 
 class EgonPowerPlantPvRoofBuildingScenario(Base):
-    __tablename__ = "egon_power_plant_pv_roof_building_scenario"
+    __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
     scenario = Column(String)
@@ -2420,6 +2457,7 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     einheitliche_ausrichtung_und_neigungswinkel = Column(Float)
     hauptausrichtung = Column(String)
     hauptausrichtung_neigungswinkel = Column(String)
+    voltage_level = Column(Integer)
 
 
 def create_scenario_table(buildings_gdf):
