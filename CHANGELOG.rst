@@ -199,6 +199,8 @@ Added
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Introduce Sanity checks for eGon2035
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
+* Add motorized individual travel
+  `#553 <https://github.com/openego/eGon-data/issues/553>`_
 * Allocating MaStR PV rooftop power plants to OSM and synthetic buildings.
   Desaggregating PV rooftop scenarios to mv grid districts and OSM and synthetic
   buildings. `#684 <https://github.com/openego/eGon-data/issues/684>`_

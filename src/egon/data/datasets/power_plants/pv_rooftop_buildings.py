@@ -148,7 +148,6 @@ CARRIER = "solar_rooftop"
 SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
 SCENARIO_TIMESTAMP = pd.Timestamp("2035-01-01", tz="UTC")
 PV_ROOFTOP_LIFETIME = pd.Timedelta(30 * 365, unit="D")
-SEED = 5
 
 # Example Modul Trina Vertex S TSM-400DE09M.08 400 Wp
 # https://www.photovoltaik4all.de/media/pdf/92/64/68/Trina_Datasheet_VertexS_DE09-08_2021_A.pdf
@@ -157,12 +156,16 @@ MODUL_SIZE = 1.096 * 1.754  # m²
 PV_CAP_PER_SQ_M = MODUL_CAP / MODUL_SIZE
 
 # Estimation of usable roof area
-# @Jonathan absolutely speculative
 # Factor for the conversion of building area to roof area
-# estimation mean roof pitch: 25°
-AREA_FACTOR = 1.1033
-USABLE_ROOF_SHARE = 0.8  # wild guess
-ROOF_FACTOR = AREA_FACTOR * USABLE_ROOF_SHARE
+# estimation mean roof pitch: 35°
+# estimation usable roof share: 80%
+# estimation that only the south side of the building is used for pv
+# see https://mediatum.ub.tum.de/doc/%20969497/969497.pdf
+# AREA_FACTOR = 1.221
+# USABLE_ROOF_SHARE = 0.8
+# SOUTH_SHARE = 0.5
+# ROOF_FACTOR = AREA_FACTOR * USABLE_ROOF_SHARE * SOUTH_SHARE
+ROOF_FACTOR = 0.5
 
 CAP_RANGES = [
     (0, 30),
@@ -263,10 +266,12 @@ def clean_mastr_data(
 ) -> pd.DataFrame:
     """
     Clean the MaStR data from implausible data.
-    Drop MaStR ID duplicates.
-    Drop generators with implausible capacities.
-    Drop generators without any kind of start-up date.
-    Clean up Standort column and capacity.
+
+    * Drop MaStR ID duplicates.
+    * Drop generators with implausible capacities.
+    * Drop generators without any kind of start-up date.
+    * Clean up Standort column and capacity.
+
     Parameters
     -----------
     mastr_df : pandas.DataFrame
@@ -1160,6 +1165,14 @@ def validate_output(
 ) -> None:
     """
     Validate output.
+
+    * Validate that there are exactly as many buildings with a pv system as there are
+      pv systems with a building
+    * Validate that the building IDs with a pv system are the same building IDs as
+      assigned to the pv systems
+    * Validate that the pv system IDs with a building are the same pv system IDs as
+      assigned to the buildings
+
     Parameters
     -----------
     desagg_mastr_gdf : geopandas.GeoDataFrame
