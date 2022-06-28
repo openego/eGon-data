@@ -532,6 +532,8 @@ Bug Fixes
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
 * Fix distribution of resistive heaters in district heating grids
   `#783 <https://github.com/openego/eGon-data/issues/783>`_
+* Overwrite capacities for conventional power plants with data from nep list
+  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
