@@ -373,7 +373,6 @@ def insert_nep_list_powerplants(export=True):
         List of conventional power plants from nep if export=False
     """
 
-
     sources = egon.data.config.datasets()["scenario_input"]["sources"]
     targets = egon.data.config.datasets()["scenario_input"]["targets"]
 
