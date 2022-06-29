@@ -52,7 +52,7 @@ from egon.data.datasets.zensus_vg250 import Vg250Gem
 
 engine = db.engine()
 Base = declarative_base()
-SEED = config.settings()["egon-data"]["--random-seed"]
+SEED = int(config.settings()["egon-data"]["--random-seed"])
 
 # TODO: move to yml
 # mastr data
@@ -2352,8 +2352,11 @@ def allocate_scenarios(
         Scenario to desaggrgate and allocate.
     Returns
     -------
-    geopandas.GeoDataFrame
-        GeoDataFrame containing OSM buildings matched with pv generators.
+    tuple
+        geopandas.GeoDataFrame
+            GeoDataFrame containing OSM buildings matched with pv generators.
+        pandas.DataFrame
+            DataFrame containingpv rooftop capacity per grid id.
     """
     grid_districts_gdf = grid_districts(EPSG)
 
@@ -2443,11 +2446,14 @@ def allocate_scenarios(
         )
     )
 
-    return add_start_up_date(
-        meta_buildings_gdf,
-        start=last_scenario_gdf.start_up_date.max(),
-        end=SCENARIO_TIMESTAMP[scenario],
-        seed=SEED,
+    return (
+        add_start_up_date(
+            meta_buildings_gdf,
+            start=last_scenario_gdf.start_up_date.max(),
+            end=SCENARIO_TIMESTAMP[scenario],
+            seed=SEED,
+        ),
+        cap_per_bus_id_df,
     )
 
 
@@ -2539,9 +2545,14 @@ def pv_rooftop_to_buildings():
 
     scenario_buildings_gdf = all_buildings_gdf.copy()
 
+    cap_per_bus_id_df = pd.DataFrame()
+
     for scenario in SCENARIOS:
         logger.debug(f"Desaggregating scenario {scenario}.")
-        scenario_buildings_gdf = allocate_scenarios(  # noqa: F841
+        (
+            scenario_buildings_gdf,
+            cap_per_bus_id_scenario_df,
+        ) = allocate_scenarios(  # noqa: F841
             desagg_mastr_gdf,
             desagg_buildings_gdf,
             scenario_buildings_gdf,
@@ -2552,6 +2563,10 @@ def pv_rooftop_to_buildings():
             pd.concat([all_buildings_gdf, scenario_buildings_gdf]),
             crs=scenario_buildings_gdf.crs,
             geometry="geom",
+        )
+
+        cap_per_bus_id_df = pd.concat(
+            [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
 
     # export scenario
