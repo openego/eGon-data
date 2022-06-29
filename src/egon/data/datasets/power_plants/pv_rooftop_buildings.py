@@ -2464,7 +2464,7 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     scenario = Column(String)
     building_id = Column(
         Integer,
-        # primary_key=True,
+        primary_key=True,
         # index=True,
     )
     gens_id = Column(
