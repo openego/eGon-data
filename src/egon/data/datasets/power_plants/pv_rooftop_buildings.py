@@ -143,7 +143,7 @@ Q = 10
 # Scenario Data
 COMPONENT = "generator"
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035", "eGon100RE"]
+SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
 SCENARIO_TIMESTAMP = {
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
@@ -2461,16 +2461,10 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
+    index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)
-    building_id = Column(
-        Integer,
-        primary_key=True,
-        # index=True,
-    )
-    gens_id = Column(
-        String,
-        nullable=True,
-    )
+    building_id = Column(Integer)
+    gens_id = Column(String, nullable=True)
     capacity = Column(Float)
     einheitliche_ausrichtung_und_neigungswinkel = Column(Float)
     hauptausrichtung = Column(String)
@@ -2487,7 +2481,9 @@ def create_scenario_table(buildings_gdf):
         bind=engine, checkfirst=True
     )
 
-    buildings_gdf.rename(columns=COLS_TO_RENAME)[COLS_TO_EXPORT].to_sql(
+    buildings_gdf.rename(columns=COLS_TO_RENAME)[
+        COLS_TO_EXPORT
+    ].reset_index().to_sql(
         name=EgonPowerPlantPvRoofBuildingScenario.__table__.name,
         schema=EgonPowerPlantPvRoofBuildingScenario.__table__.schema,
         con=db.engine(),
