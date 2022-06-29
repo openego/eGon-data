@@ -2556,7 +2556,9 @@ def pv_rooftop_to_buildings():
         )
 
         all_buildings_gdf = gpd.GeoDataFrame(
-            pd.concat([all_buildings_gdf, scenario_buildings_gdf]),
+            pd.concat(
+                [all_buildings_gdf, scenario_buildings_gdf], ignore_index=True
+            ),
             crs=scenario_buildings_gdf.crs,
             geometry="geom",
         )
