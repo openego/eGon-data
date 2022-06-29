@@ -143,7 +143,7 @@ Q = 10
 # Scenario Data
 COMPONENT = "generator"
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
+SCENARIOS = ["eGon2035", "eGon100RE"]
 SCENARIO_TIMESTAMP = pd.Timestamp("2035-01-01", tz="UTC")
 PV_ROOFTOP_LIFETIME = pd.Timedelta(30 * 365, unit="D")
 
@@ -939,6 +939,7 @@ def load_building_data():
                 synthetic_buildings_gdf,
             ]
         ),
+        geometry="geom",
         crs=osm_buildings_gdf.crs,
     ).rename(columns={"area": "building_area"})
 
@@ -2337,15 +2338,13 @@ def allocate_scenarios(
         pv_cap_per_sq_m=PV_CAP_PER_SQ_M,
     )
 
-    meta_buildings_gdf = frame_to_numeric(
+    return frame_to_numeric(
         add_buildings_meta_data(
             allocated_buildings_gdf,
             probabilities_dict,
             SEED,
         )
     )
-
-    return add_voltage_level(meta_buildings_gdf)
 
 
 class EgonPowerPlantPvRoofBuildingMapping(Base):
@@ -2478,7 +2477,8 @@ def pv_rooftop_to_buildings():
             all_buildings_gdf = gpd.GeoDataFrame(
                 pd.concat([all_buildings_gdf, scenario_buildings_gdf]),
                 crs=scenario_buildings_gdf.crs,
+                geometry="geom",
             )
 
     # export scenario
-    create_scenario_table(all_buildings_gdf)
+    create_scenario_table(add_voltage_level(all_buildings_gdf))
