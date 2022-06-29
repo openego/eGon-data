@@ -143,7 +143,7 @@ Q = 10
 # Scenario Data
 COMPONENT = "generator"
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
+SCENARIOS = ["eGon2035", "eGon100RE"]
 SCENARIO_TIMESTAMP = {
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
@@ -2464,8 +2464,8 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     scenario = Column(String)
     building_id = Column(
         Integer,
-        primary_key=True,
-        index=True,
+        # primary_key=True,
+        # index=True,
     )
     gens_id = Column(
         String,
