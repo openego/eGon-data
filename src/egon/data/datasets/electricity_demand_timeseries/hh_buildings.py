@@ -305,7 +305,8 @@ def match_osm_and_zensus_data(
 
 def generate_synthetic_buildings(missing_buildings, edge_length):
     """
-    Generate synthetic square buildings in census cells.
+    Generate synthetic square buildings in census cells for every entry
+    in missing_buildings.
 
     Generate random placed synthetic buildings incl geom data within the bounds
     of the cencus cell. Buildings have each a square area with edge_length^2.
@@ -313,8 +314,8 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     Parameters
     ----------
-    missing_buildings: pd.DataFrame
-        Table with cell_ids and number of missing buildings
+    missing_buildings: pd.Series or pd.DataFrame
+        Table with cell_ids and building number
     edge_length: int
         Edge length of square synthetic building in meter
 
