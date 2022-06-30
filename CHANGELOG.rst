@@ -511,7 +511,7 @@ Bug Fixes
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
 * Fix country_code attribution of two gas buses
-  `#710 <https://github.com/openego/eGon-data/issues/744>`_
+  `#744 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
@@ -542,6 +542,8 @@ Bug Fixes
   `#813 <https://github.com/openego/eGon-data/issues/813>`_
 * Fix distribution of resistive heaters in district heating grids
   `#783 <https://github.com/openego/eGon-data/issues/783>`_
+* Overwrite capacities for conventional power plants with data from nep list
+  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
