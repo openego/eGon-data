@@ -140,12 +140,12 @@ EXPORT_PATH = EXPORT_DIR / EXPORT_FILE
 DRIVER = "GPKG"
 
 # Number of quantiles
-Q = 10
+Q = 5
 
 # Scenario Data
 COMPONENT = "generator"
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
+SCENARIOS = ["eGon2035", "eGon100RE"]
 SCENARIO_TIMESTAMP = {
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
@@ -1073,8 +1073,9 @@ def allocate_pv(
 
     num_ags = len(ags_list)
 
+    t0 = perf_counter()
+
     for count, ags in enumerate(ags_list):
-        t0 = perf_counter()
 
         buildings = q_buildings_gdf.loc[
             (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
@@ -1150,11 +1151,13 @@ def allocate_pv(
                 chosen_buildings
             ].assign(gens_id=q_gens.index)
 
-        if count % 50 == 0:
+        if count % 100 == 0:
             logger.debug(
                 f"Allocation of {count / num_ags * 100:g} % of AGS done. It took "
-                f"{perf_counter() - t0 / 60:g} Minutes."
+                f"{perf_counter() - t0:g} seconds."
             )
+
+            t0 = perf_counter()
 
     logger.debug("Allocated status quo generators to buildings.")
 
@@ -1336,7 +1339,6 @@ def grid_districts(
 
 
 def scenario_data(
-    component: str = "generator",
     carrier: str = "solar_rooftop",
     scenario: str = "eGon2035",
 ) -> pd.DataFrame:
@@ -1357,7 +1359,6 @@ def scenario_data(
     """
     with db.session_scope() as session:
         query = session.query(EgonScenarioCapacities).filter(
-            EgonScenarioCapacities.component == component,
             EgonScenarioCapacities.carrier == carrier,
             EgonScenarioCapacities.scenario_name == scenario,
         )
