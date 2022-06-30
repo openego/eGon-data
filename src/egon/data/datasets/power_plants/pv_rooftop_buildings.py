@@ -27,6 +27,7 @@ orientation) is also added random and weighted from MaStR data as basis.
 from __future__ import annotations
 
 from collections import Counter
+from functools import wraps
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -202,16 +203,18 @@ INCLUDE_SYNTHETIC_BUILDINGS = False
 
 
 def timer_func(func):
-    # This function shows the execution time of
-    # the function object passed
-    def wrap_func(*args, **kwargs):
-        t1 = perf_counter()
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = perf_counter()
         result = func(*args, **kwargs)
-        t2 = perf_counter()
-        logger.debug(f"Function {func.__name__!r} executed in {(t2-t1):.4f}s")
+        end_time = perf_counter()
+        total_time = end_time - start_time
+        print(
+            f"Function {func.__name__}{args} {kwargs} Took {total_time:.4f} seconds"
+        )
         return result
 
-    return wrap_func
+    return timeit_wrapper
 
 
 @timer_func
