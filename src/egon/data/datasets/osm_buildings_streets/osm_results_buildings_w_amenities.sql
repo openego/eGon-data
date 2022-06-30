@@ -76,4 +76,12 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
             bwa.tags_amenity,
             bwa.n_amenities_inside
     ) bwa;
-CREATE INDEX ON openstreetmap.osm_buildings_with_amenities USING gist (geom_building);
+
+ALTER TABLE ONLY openstreetmap.osm_buildings_with_amenities
+    ADD CONSTRAINT pk_osm_buildings_with_amenities PRIMARY KEY (osm_id_amenity);
+
+CREATE INDEX idx_osm_buildings_with_amenities_osm_id_building
+    ON openstreetmap.osm_buildings_with_amenities USING btree (osm_id_building);
+
+CREATE INDEX idx_osm_buildings_with_amenities_geom_building
+    ON openstreetmap.osm_buildings_with_amenities USING gist (geom_building);
