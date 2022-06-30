@@ -17,7 +17,7 @@ def random_point_in_square(geom, tol):
 
     Returns
     -------
-    points:gpd.Series
+    points: gpd.Series
         Series of random points
     """
     # cell bounds - half edge_length to not build buildings on the cell border
