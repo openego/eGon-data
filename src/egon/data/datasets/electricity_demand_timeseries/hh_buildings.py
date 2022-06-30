@@ -154,9 +154,10 @@ class OsmBuildingsSynthetic(Base):
     __table_args__ = {"schema": "openstreetmap"}
 
     id = Column(String, primary_key=True)
+    cell_id = Column(String, index=True)
     geom = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
-    cell_id = Column(String)
+    n_amenities_inside = Column(Integer)
     building = Column(String(11))
     area = Column(REAL)
 
@@ -780,6 +781,7 @@ def map_houseprofiles_to_buildings():
     )
 
     synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
+    synthetic_buildings = synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
@@ -792,10 +794,11 @@ def map_houseprofiles_to_buildings():
         schema="openstreetmap",
         dtype={
             "id": OsmBuildingsSynthetic.id.type,
-            "building": OsmBuildingsSynthetic.building.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
             "geom": OsmBuildingsSynthetic.geom.type,
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
+            "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
+            "building": OsmBuildingsSynthetic.building.type,
             "area": OsmBuildingsSynthetic.area.type,
         },
     )
