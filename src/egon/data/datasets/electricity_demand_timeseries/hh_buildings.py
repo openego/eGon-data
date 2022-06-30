@@ -377,6 +377,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     points = pd.Series([Point(cords) for cords in zip(x, y)])
     points = gpd.GeoSeries(points, crs="epsg:3035")
+
     # Buffer the points using a square cap style
     # Note cap_style: round = 1, flat = 2, square = 3
     buffer = points.buffer(edge_length / 2, cap_style=3)
@@ -401,9 +402,16 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         buildings + len(missing_buildings_geom) + 1,
     )
 
-    missing_buildings_geom = missing_buildings_geom.drop(
-        columns=["building_id", "profiles"]
-    )
+    drop_columns = [
+        i
+        for i in ["building_id", "profiles"]
+        if i in missing_buildings_geom.columns
+    ]
+    if drop_columns:
+        missing_buildings_geom = missing_buildings_geom.drop(
+            columns=drop_columns
+        )
+
     missing_buildings_geom["building"] = "residential"
     missing_buildings_geom["area"] = missing_buildings_geom["geom"].area
 
