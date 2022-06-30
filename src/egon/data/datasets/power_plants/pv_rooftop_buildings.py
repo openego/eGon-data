@@ -27,7 +27,9 @@ orientation) is also added random and weighted from MaStR data as basis.
 from __future__ import annotations
 
 from collections import Counter
+from functools import wraps
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 from geoalchemy2 import Geometry
@@ -52,7 +54,7 @@ from egon.data.datasets.zensus_vg250 import Vg250Gem
 
 engine = db.engine()
 Base = declarative_base()
-SEED = config.settings()["egon-data"]["--random-seed"]
+SEED = int(config.settings()["egon-data"]["--random-seed"])
 
 # TODO: move to yml
 # mastr data
@@ -138,15 +140,16 @@ EXPORT_PATH = EXPORT_DIR / EXPORT_FILE
 DRIVER = "GPKG"
 
 # Number of quantiles
-Q = 10
+Q = 5
 
 # Scenario Data
-COMPONENT = "generator"
 CARRIER = "solar_rooftop"
 SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
-SCENARIO_TIMESTAMP = pd.Timestamp("2035-01-01", tz="UTC")
+SCENARIO_TIMESTAMP = {
+    "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
+    "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
+}
 PV_ROOFTOP_LIFETIME = pd.Timedelta(30 * 365, unit="D")
-SEED = 5
 
 # Example Modul Trina Vertex S TSM-400DE09M.08 400 Wp
 # https://www.photovoltaik4all.de/media/pdf/92/64/68/Trina_Datasheet_VertexS_DE09-08_2021_A.pdf
@@ -155,12 +158,16 @@ MODUL_SIZE = 1.096 * 1.754  # m²
 PV_CAP_PER_SQ_M = MODUL_CAP / MODUL_SIZE
 
 # Estimation of usable roof area
-# @Jonathan absolutely speculative
 # Factor for the conversion of building area to roof area
-# estimation mean roof pitch: 25°
-AREA_FACTOR = 1.1033
-USABLE_ROOF_SHARE = 0.8  # wild guess
-ROOF_FACTOR = AREA_FACTOR * USABLE_ROOF_SHARE
+# estimation mean roof pitch: 35°
+# estimation usable roof share: 80%
+# estimation that only the south side of the building is used for pv
+# see https://mediatum.ub.tum.de/doc/%20969497/969497.pdf
+# AREA_FACTOR = 1.221
+# USABLE_ROOF_SHARE = 0.8
+# SOUTH_SHARE = 0.5
+# ROOF_FACTOR = AREA_FACTOR * USABLE_ROOF_SHARE * SOUTH_SHARE
+ROOF_FACTOR = 0.5
 
 CAP_RANGES = [
     (0, 30),
@@ -188,9 +195,26 @@ COLS_TO_EXPORT = [
     "einheitliche_ausrichtung_und_neigungswinkel",
     "hauptausrichtung",
     "hauptausrichtung_neigungswinkel",
+    "voltage_level",
 ]
 
+INCLUDE_SYNTHETIC_BUILDINGS = False
 
+
+def timer_func(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = perf_counter()
+        result = func(*args, **kwargs)
+        end_time = perf_counter()
+        total_time = end_time - start_time
+        print(f"Function {func.__name__} took {total_time:.4f} seconds.")
+        return result
+
+    return timeit_wrapper
+
+
+@timer_func
 def mastr_data(
     index_col: str | int | list[str] | list[int],
     usecols: list[str],
@@ -252,6 +276,7 @@ def mastr_data(
     return mastr_df
 
 
+@timer_func
 def clean_mastr_data(
     mastr_df: pd.DataFrame,
     max_realistic_pv_cap: int | float,
@@ -261,10 +286,12 @@ def clean_mastr_data(
 ) -> pd.DataFrame:
     """
     Clean the MaStR data from implausible data.
-    Drop MaStR ID duplicates.
-    Drop generators with implausible capacities.
-    Drop generators without any kind of start-up date.
-    Clean up Standort column and capacity.
+
+    * Drop MaStR ID duplicates.
+    * Drop generators with implausible capacities.
+    * Drop generators without any kind of start-up date.
+    * Clean up Standort column and capacity.
+
     Parameters
     -----------
     mastr_df : pandas.DataFrame
@@ -535,6 +562,7 @@ def geocoding_data(
     )
 
 
+@timer_func
 def geocode_data(
     geocoding_df: pd.DataFrame,
     ratelimiter: RateLimiter,
@@ -639,6 +667,7 @@ def drop_invalid_entries_from_gdf(
     return valid_gdf
 
 
+@timer_func
 def municipality_data() -> gpd.GeoDataFrame:
     """
     Get municipality data from eGo^n Database.
@@ -655,6 +684,7 @@ def municipality_data() -> gpd.GeoDataFrame:
     )
 
 
+@timer_func
 def add_ags_to_gens(
     valid_mastr_gdf: gpd.GeoDataFrame,
     municipalities_gdf: gpd.GeoDataFrame,
@@ -721,7 +751,13 @@ class EgonMastrPvRoofGeocoded(Base):
 
 
 def create_geocoded_table(geocode_gdf):
-    """Create geocoded table mastr pv rooftop"""
+    """
+    Create geocoded table mastr pv rooftop
+    Parameters
+    -----------
+    geocode_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing geocoding information on pv rooftop locations.
+    """
     EgonMastrPvRoofGeocoded.__table__.drop(bind=engine, checkfirst=True)
     EgonMastrPvRoofGeocoded.__table__.create(bind=engine, checkfirst=True)
 
@@ -764,6 +800,10 @@ def load_mastr_data():
     """Read PV rooftop data from MaStR CSV
     Note: the source will be replaced as soon as the MaStR data is available
     in DB.
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing MaStR data with geocoded locations.
     """
     mastr_df = mastr_data(
         MASTR_INDEX_COL,
@@ -808,6 +848,7 @@ class OsmBuildingsFiltered(Base):
     id = Column(BigInteger, primary_key=True, index=True)
 
 
+@timer_func
 def osm_buildings(
     to_crs: CRS,
 ) -> gpd.GeoDataFrame:
@@ -834,6 +875,7 @@ def osm_buildings(
     ).to_crs(to_crs)
 
 
+@timer_func
 def synthetic_buildings(
     to_crs: CRS,
 ) -> gpd.GeoDataFrame:
@@ -860,6 +902,7 @@ def synthetic_buildings(
     ).to_crs(to_crs)
 
 
+@timer_func
 def add_ags_to_buildings(
     buildings_gdf: gpd.GeoDataFrame,
     municipalities_gdf: gpd.GeoDataFrame,
@@ -912,29 +955,47 @@ def drop_buildings_outside_muns(
     return gdf
 
 
+@timer_func
 def load_building_data():
-    """Read buildings from DB
+    """
+    Read buildings from DB
     Tables:
+
     * `openstreetmap.osm_buildings_filtered` (from OSM)
-    * `openstreetmap.osm_buildings_synthetic` (synthetic, creaed by us)
-    Use column `id` for both as it is unique hence you concat both datasets.
+    * `openstreetmap.osm_buildings_synthetic` (synthetic, created by us)
+
+    Use column `id` for both as it is unique hence you concat both datasets. If
+    INCLUDE_SYNTHETIC_BUILDINGS is False synthetic buildings will not be loaded.
+
+    Returns
+    -------
+    gepandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with buildings without an AGS ID
+        dropped.
     """
 
     municipalities_gdf = municipality_data()
 
     osm_buildings_gdf = osm_buildings(municipalities_gdf.crs)
 
-    synthetic_buildings_gdf = synthetic_buildings(municipalities_gdf.crs)
+    if INCLUDE_SYNTHETIC_BUILDINGS:
+        synthetic_buildings_gdf = synthetic_buildings(municipalities_gdf.crs)
 
-    buildings_gdf = gpd.GeoDataFrame(
-        pd.concat(
-            [
-                osm_buildings_gdf,
-                synthetic_buildings_gdf,
-            ]
-        ),
-        crs=osm_buildings_gdf.crs,
-    ).rename(columns={"area": "building_area"})
+        buildings_gdf = gpd.GeoDataFrame(
+            pd.concat(
+                [
+                    osm_buildings_gdf,
+                    synthetic_buildings_gdf,
+                ]
+            ),
+            geometry="geom",
+            crs=osm_buildings_gdf.crs,
+        ).rename(columns={"area": "building_area"})
+
+    else:
+        buildings_gdf = osm_buildings_gdf.rename(
+            columns={"area": "building_area"}
+        )
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
@@ -943,6 +1004,7 @@ def load_building_data():
     return drop_buildings_outside_muns(buildings_ags_gdf)
 
 
+@timer_func
 def sort_and_qcut_df(
     df: pd.DataFrame | gpd.GeoDataFrame,
     col: str,
@@ -975,6 +1037,7 @@ def sort_and_qcut_df(
     )
 
 
+@timer_func
 def allocate_pv(
     q_mastr_gdf: gpd.GeoDataFrame,
     q_buildings_gdf: gpd.GeoDataFrame,
@@ -1005,7 +1068,14 @@ def allocate_pv(
     q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
     q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
 
-    for ags in q_buildings_gdf.ags.unique():
+    ags_list = q_buildings_gdf.ags.unique()
+
+    num_ags = len(ags_list)
+
+    t0 = perf_counter()
+
+    for count, ags in enumerate(ags_list):
+
         buildings = q_buildings_gdf.loc[
             (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
         ]
@@ -1080,6 +1150,14 @@ def allocate_pv(
                 chosen_buildings
             ].assign(gens_id=q_gens.index)
 
+        if count % 100 == 0:
+            logger.debug(
+                f"Allocation of {count / num_ags * 100:g} % of AGS done. It took "
+                f"{perf_counter() - t0:g} seconds."
+            )
+
+            t0 = perf_counter()
+
     logger.debug("Allocated status quo generators to buildings.")
 
     return frame_to_numeric(q_mastr_gdf), frame_to_numeric(q_buildings_gdf)
@@ -1113,6 +1191,14 @@ def validate_output(
 ) -> None:
     """
     Validate output.
+
+    * Validate that there are exactly as many buildings with a pv system as there are
+      pv systems with a building
+    * Validate that the building IDs with a pv system are the same building IDs as
+      assigned to the pv systems
+    * Validate that the pv system IDs with a building are the same pv system IDs as
+      assigned to the buildings
+
     Parameters
     -----------
     desagg_mastr_gdf : geopandas.GeoDataFrame
@@ -1161,6 +1247,11 @@ def drop_unallocated_gens(
     -----------
     gdf : geopandas.GeoDataFrame
         GeoDataFrame containing MaStR data allocated to building IDs.
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing MaStR data with generators dropped which did not get
+        allocated.
     """
     init_len = len(gdf)
     gdf = gdf.loc[~gdf.building_id.isna()]
@@ -1175,11 +1266,29 @@ def drop_unallocated_gens(
     return gdf
 
 
+@timer_func
 def allocate_to_buildings(
     mastr_gdf: gpd.GeoDataFrame,
     buildings_gdf: gpd.GeoDataFrame,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Do the allocation"""
+    """
+    Allocate status quo pv rooftop generators to buildings.
+    Parameters
+    -----------
+    mastr_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing MaStR data with geocoded locations.
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with buildings without an AGS ID
+        dropped.
+    Returns
+    -------
+    tuple with two geopandas.GeoDataFrame s
+        GeoDataFrame containing MaStR data allocated to building IDs.
+        GeoDataFrame containing building data allocated to MaStR IDs.
+    """
+    logger.debug("Starting allocation of status quo.")
+    t0 = perf_counter()
+
     q_mastr_gdf = sort_and_qcut_df(mastr_gdf, col="capacity", q=Q)
     q_buildings_gdf = sort_and_qcut_df(buildings_gdf, col="building_area", q=Q)
 
@@ -1189,9 +1298,12 @@ def allocate_to_buildings(
 
     validate_output(desagg_mastr_gdf, desagg_buildings_gdf)
 
+    logger.debug(f"Allocation time: {perf_counter() - t0 / 60:g} Minutes.")
+
     return drop_unallocated_gens(desagg_mastr_gdf), desagg_buildings_gdf
 
 
+@timer_func
 def grid_districts(
     epsg: int,
 ) -> gpd.GeoDataFrame:
@@ -1226,7 +1338,6 @@ def grid_districts(
 
 
 def scenario_data(
-    component: str = "generator",
     carrier: str = "solar_rooftop",
     scenario: str = "eGon2035",
 ) -> pd.DataFrame:
@@ -1234,8 +1345,6 @@ def scenario_data(
     Get scenario capacity data from eGo^n Database.
     Parameters
     -----------
-    component : str
-        Component type to filter table by.
     carrier : str
         Carrier type to filter table by.
     scenario : str
@@ -1247,7 +1356,6 @@ def scenario_data(
     """
     with db.session_scope() as session:
         query = session.query(EgonScenarioCapacities).filter(
-            EgonScenarioCapacities.component == component,
             EgonScenarioCapacities.carrier == carrier,
             EgonScenarioCapacities.scenario_name == scenario,
         )
@@ -1256,7 +1364,7 @@ def scenario_data(
         query.statement, query.session.bind, index_col="index"
     ).sort_index()
 
-    logger.debug("Scenario capacity data loaded.")
+    logger.debug(f"Scenario capacity data loaded. {df}")
 
     return df
 
@@ -1321,6 +1429,7 @@ def federal_state_data(to_crs: CRS) -> gpd.GeoDataFrame:
     return gdf
 
 
+@timer_func
 def overlay_grid_districts_with_counties(
     mv_grid_district_gdf: gpd.GeoDataFrame,
     federal_state_gdf: gpd.GeoDataFrame,
@@ -1355,6 +1464,7 @@ def overlay_grid_districts_with_counties(
     return gdf
 
 
+@timer_func
 def add_overlay_id_to_buildings(
     buildings_gdf: gpd.GeoDataFrame,
     grid_federal_state_gdf: gpd.GeoDataFrame,
@@ -1563,13 +1673,11 @@ def calculate_max_pv_cap_per_building(
         .drop(columns="building_id")
     )
 
-    gdf = gdf.assign(
+    return gdf.assign(
         max_cap=gdf.building_area.multiply(roof_factor * pv_cap_per_sq_m),
         end_of_life=gdf.end_of_life.fillna(True).astype(bool),
         bus_id=gdf.bus_id.astype(int),
     )
-
-    return gdf
 
 
 def calculate_building_load_factor(
@@ -1601,9 +1709,7 @@ def calculate_building_load_factor(
         right_index=True,
     )
 
-    gdf = gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
-
-    return gdf
+    return gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
 
 
 def get_probability_for_property(
@@ -1654,6 +1760,7 @@ def get_probability_for_property(
     return values, probabilities
 
 
+@timer_func
 def probabilities(
     mastr_gdf: gpd.GeoDataFrame,
     cap_ranges: list[tuple[int | float, int | float]] | None = None,
@@ -1886,6 +1993,7 @@ def building_area_range_per_cap_range(
     return building_area_range_normed_dict
 
 
+@timer_func
 def desaggregate_pv_in_mv_grid(
     buildings_gdf: gpd.GeoDataFrame,
     pv_cap: float | int,
@@ -2039,6 +2147,7 @@ def desaggregate_pv_in_mv_grid(
     )
 
 
+@timer_func
 def desaggregate_pv(
     buildings_gdf: gpd.GeoDataFrame,
     cap_df: pd.DataFrame,
@@ -2126,12 +2235,7 @@ def desaggregate_pv(
         gdf = desaggregate_pv_in_mv_grid(
             buildings_gdf=pot_buildings_gdf,
             pv_cap=pv_missing,
-            prob_dict=kwargs["prob_dict"],
-            cap_share_dict=kwargs["cap_share_dict"],
-            building_area_range_dict=kwargs["building_area_range_dict"],
-            load_factor_dict=kwargs["load_factor_dict"],
-            seed=kwargs["seed"],
-            pv_cap_per_sq_m=kwargs["pv_cap_per_sq_m"],
+            **kwargs,
         )
 
         allocated_buildings_gdf = pd.concat(
@@ -2150,6 +2254,7 @@ def desaggregate_pv(
     )
 
 
+@timer_func
 def add_buildings_meta_data(
     buildings_gdf: gpd.GeoDataFrame,
     prob_dict: dict,
@@ -2206,11 +2311,101 @@ def add_buildings_meta_data(
     return buildings_gdf
 
 
+def add_voltage_level(
+    buildings_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Add voltage level derived from generator capacity to the power plants.
+    Parameters
+    -----------
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with desaggregated PV
+        plants.
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing OSM building data with voltage level per generator.
+    """
+
+    def voltage_levels(p: float) -> int:
+        if p < 100:
+            return 7
+        elif p < 200:
+            return 6
+        elif p < 5500:
+            return 5
+        elif p < 20000:
+            return 4
+        elif p < 120000:
+            return 3
+        return 1
+
+    return buildings_gdf.assign(
+        voltage_level=buildings_gdf.capacity.apply(voltage_levels)
+    )
+
+
+def add_start_up_date(
+    buildings_gdf: gpd.GeoDataFrame,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    seed: int,
+):
+    """
+    Randomly and linear add start-up date to new pv generators.
+    Parameters
+    ----------
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with desaggregated PV
+        plants.
+    start : pandas.Timestamp
+        Minimum Timestamp to use.
+    end : pandas.Timestamp
+        Maximum Timestamp to use.
+    seed : int
+        Seed to use for random operations with NumPy and pandas.
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with start-up date added.
+    """
+    rng = default_rng(seed=seed)
+
+    date_range = pd.date_range(start=start, end=end, freq="1D")
+
+    return buildings_gdf.assign(
+        start_up_date=rng.choice(date_range, size=len(buildings_gdf))
+    )
+
+
+@timer_func
 def allocate_scenarios(
     mastr_gdf: gpd.GeoDataFrame,
     buildings_gdf: gpd.GeoDataFrame,
+    last_scenario_gdf: gpd.GeoDataFrame,
     scenario: str,
 ):
+    """
+    Desaggregate and allocate scenario pv rooftop ramp-ups onto buildings.
+    Parameters
+    ----------
+    mastr_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing geocoded MaStR data.
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data.
+    last_scenario_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings matched with pv generators from temporal
+        preceding scenario.
+    scenario : str
+        Scenario to desaggrgate and allocate.
+    Returns
+    -------
+    tuple
+        geopandas.GeoDataFrame
+            GeoDataFrame containing OSM buildings matched with pv generators.
+        pandas.DataFrame
+            DataFrame containingpv rooftop capacity per grid id.
+    """
     grid_districts_gdf = grid_districts(EPSG)
 
     federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
@@ -2234,18 +2429,18 @@ def allocate_scenarios(
 
     cap_per_bus_id_df = cap_per_bus_id(
         buildings_area_per_overlay_gdf,
-        scenario_data(COMPONENT, CARRIER, scenario),
+        scenario_data(CARRIER, scenario),
     )
 
-    mastr_gdf = determine_end_of_life_gens(
-        mastr_gdf,
-        SCENARIO_TIMESTAMP,
+    last_scenario_gdf = determine_end_of_life_gens(
+        last_scenario_gdf,
+        SCENARIO_TIMESTAMP[scenario],
         PV_ROOFTOP_LIFETIME,
     )
 
     buildings_gdf = calculate_max_pv_cap_per_building(
         valid_buildings_gdf,
-        mastr_gdf,
+        last_scenario_gdf,
         PV_CAP_PER_SQ_M,
         ROOF_FACTOR,
     )
@@ -2289,7 +2484,9 @@ def allocate_scenarios(
         pv_cap_per_sq_m=PV_CAP_PER_SQ_M,
     )
 
-    return frame_to_numeric(
+    allocated_buildings_gdf = allocated_buildings_gdf.assign(scenario=scenario)
+
+    meta_buildings_gdf = frame_to_numeric(
         add_buildings_meta_data(
             allocated_buildings_gdf,
             probabilities_dict,
@@ -2297,57 +2494,30 @@ def allocate_scenarios(
         )
     )
 
-
-class EgonPowerPlantPvRoofBuildingMapping(Base):
-    __tablename__ = "egon_power_plants_pv_roof_building_mapping"
-    __table_args__ = {"schema": "supply"}
-
-    einheit_mastr_nummer = Column(
-        String,
-        primary_key=True,
-        index=True,
-    )
-    building_id = Column(Integer, primary_key=True)
-
-
-def create_mapping_table(desagg_mastr_gdf):
-    """Create mapping table pv_unit <-> building"""
-    EgonPowerPlantPvRoofBuildingMapping.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonPowerPlantPvRoofBuildingMapping.__table__.create(
-        bind=engine, checkfirst=True
-    )
-
-    desagg_mastr_gdf[["building_id"]].astype(int).reset_index().rename(
-        columns={"EinheitMastrNummer": "einheit_mastr_nummer"}
-    ).to_sql(
-        name=EgonPowerPlantPvRoofBuildingMapping.__table__.name,
-        schema=EgonPowerPlantPvRoofBuildingMapping.__table__.schema,
-        con=db.engine(),
-        if_exists="append",
-        index=False,
+    return (
+        add_start_up_date(
+            meta_buildings_gdf,
+            start=last_scenario_gdf.start_up_date.max(),
+            end=SCENARIO_TIMESTAMP[scenario],
+            seed=SEED,
+        ),
+        cap_per_bus_id_df,
     )
 
 
 class EgonPowerPlantPvRoofBuildingScenario(Base):
-    __tablename__ = "egon_power_plant_pv_roof_building_scenario"
+    __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
+    index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)
-    building_id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
-    gens_id = Column(
-        String,
-        nullable=True,
-    )
+    building_id = Column(Integer)
+    gens_id = Column(String, nullable=True)
     capacity = Column(Float)
     einheitliche_ausrichtung_und_neigungswinkel = Column(Float)
     hauptausrichtung = Column(String)
     hauptausrichtung_neigungswinkel = Column(String)
+    voltage_level = Column(Integer)
 
 
 def create_scenario_table(buildings_gdf):
@@ -2359,7 +2529,9 @@ def create_scenario_table(buildings_gdf):
         bind=engine, checkfirst=True
     )
 
-    buildings_gdf.rename(columns=COLS_TO_RENAME)[COLS_TO_EXPORT].to_sql(
+    buildings_gdf.rename(columns=COLS_TO_RENAME)[
+        COLS_TO_EXPORT
+    ].reset_index().to_sql(
         name=EgonPowerPlantPvRoofBuildingScenario.__table__.name,
         schema=EgonPowerPlantPvRoofBuildingScenario.__table__.schema,
         con=db.engine(),
@@ -2369,9 +2541,10 @@ def create_scenario_table(buildings_gdf):
 
 
 def geocode_mastr_data():
-    """Read PV rooftop data from MaStR CSV
-    Note: the source will be replaced as soon as the MaStR data is available
-    in DB.
+    """
+    Read PV rooftop data from MaStR CSV
+    TODO: the source will be replaced as soon as the MaStR data is available
+     in DB.
     """
     mastr_df = mastr_data(
         MASTR_INDEX_COL,
@@ -2408,26 +2581,39 @@ def pv_rooftop_to_buildings():
         mastr_gdf, buildings_gdf
     )
 
-    # export status quo
-    create_mapping_table(desagg_mastr_gdf)
+    all_buildings_gdf = (
+        desagg_mastr_gdf.assign(scenario="status_quo")
+        .reset_index()
+        .rename(columns={"geometry": "geom", "EinheitMastrNummer": "gens_id"})
+    )
 
-    for count, scenario in enumerate(SCENARIOS):
+    scenario_buildings_gdf = all_buildings_gdf.copy()
+
+    cap_per_bus_id_df = pd.DataFrame()
+
+    for scenario in SCENARIOS:
         logger.debug(f"Desaggregating scenario {scenario}.")
-        scenario_buildings_gdf = allocate_scenarios(  # noqa: F841
-            desagg_mastr_gdf, desagg_buildings_gdf, scenario
+        (
+            scenario_buildings_gdf,
+            cap_per_bus_id_scenario_df,
+        ) = allocate_scenarios(  # noqa: F841
+            desagg_mastr_gdf,
+            desagg_buildings_gdf,
+            scenario_buildings_gdf,
+            scenario,
         )
 
-        scenario_buildings_gdf = scenario_buildings_gdf.assign(
-            scenario=scenario
+        all_buildings_gdf = gpd.GeoDataFrame(
+            pd.concat(
+                [all_buildings_gdf, scenario_buildings_gdf], ignore_index=True
+            ),
+            crs=scenario_buildings_gdf.crs,
+            geometry="geom",
         )
 
-        if count == 0:
-            all_buildings_gdf = scenario_buildings_gdf.copy()
-        else:
-            all_buildings_gdf = gpd.GeoDataFrame(
-                pd.concat([all_buildings_gdf, scenario_buildings_gdf]),
-                crs=scenario_buildings_gdf.crs,
-            )
+        cap_per_bus_id_df = pd.concat(
+            [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
+        )
 
     # export scenario
-    create_scenario_table(all_buildings_gdf)
+    create_scenario_table(add_voltage_level(all_buildings_gdf))
