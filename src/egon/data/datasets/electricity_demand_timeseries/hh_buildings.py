@@ -114,7 +114,6 @@ from functools import partial
 import random
 
 from geoalchemy2 import Geometry
-from shapely.geometry import Point
 from sqlalchemy import REAL, Column, Integer, String, Table, func, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -127,6 +126,9 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
 )
+from egon.data.datasets.electricity_demand_timeseries.tools import (
+    random_point_in_square,
+)
 import egon.data.config
 
 engine = db.engine()
@@ -134,6 +136,7 @@ Base = declarative_base()
 
 data_config = egon.data.config.datasets()
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
+np.random.seed(RANDOM_SEED)
 
 
 class HouseholdElectricityProfilesOfBuildings(Base):
@@ -364,32 +367,20 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         }
     )
 
-    # cell bounds - half edge_length to not build buildings on the cell border
-    xmin = missing_buildings_geom["geom"].bounds["minx"] + edge_length / 2
-    xmax = missing_buildings_geom["geom"].bounds["maxx"] - edge_length / 2
-    ymin = missing_buildings_geom["geom"].bounds["miny"] + edge_length / 2
-    ymax = missing_buildings_geom["geom"].bounds["maxy"] - edge_length / 2
+    # create random points within census cells
+    points = random_point_in_square(
+        geom=missing_buildings_geom["geom"], tol=edge_length / 2
+    )
 
-    # generate random coordinates within bounds - half edge_length
-    np.random.seed(RANDOM_SEED)
-    x = (xmax - xmin) * np.random.rand(missing_buildings_geom.shape[0]) + xmin
-    y = (ymax - ymin) * np.random.rand(missing_buildings_geom.shape[0]) + ymin
-
-    points = pd.Series([Point(cords) for cords in zip(x, y)])
-    points = gpd.GeoSeries(points, crs="epsg:3035")
-
-    # Buffer the points using a square cap style
-    # Note cap_style: round = 1, flat = 2, square = 3
-    buffer = points.buffer(edge_length / 2, cap_style=3)
-
-    # store center of polygon
+    # Store center of poylon
     missing_buildings_geom["geom_point"] = points
-    # replace cell geom with new building geom
-    missing_buildings_geom["geom"] = buffer
+    # Store  the points using a square cap style
+    missing_buildings_geom["geom"] = points.buffer(
+        distance=edge_length / 2, cap_style=3
+    )
 
-    # get
-    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
     # get table metadata from db by name and schema
+    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
     inspect(engine).reflecttable(buildings, None)
 
     # get max number of building ids from non-filtered building table
