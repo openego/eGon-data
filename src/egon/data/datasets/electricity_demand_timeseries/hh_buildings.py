@@ -156,7 +156,6 @@ class OsmBuildingsSynthetic(Base):
     id = Column(String, primary_key=True)
     geom = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
-    grid_id = Column(String(16))
     cell_id = Column(String)
     building = Column(String(11))
     area = Column(REAL)
@@ -780,6 +779,8 @@ def map_houseprofiles_to_buildings():
         mapping_profiles_to_buildings, synthetic_buildings
     )
 
+    synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
+
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
 
@@ -793,7 +794,6 @@ def map_houseprofiles_to_buildings():
             "id": OsmBuildingsSynthetic.id.type,
             "building": OsmBuildingsSynthetic.building.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
-            "grid_id": OsmBuildingsSynthetic.grid_id.type,
             "geom": OsmBuildingsSynthetic.geom.type,
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
             "area": OsmBuildingsSynthetic.area.type,
