@@ -143,7 +143,6 @@ DRIVER = "GPKG"
 Q = 5
 
 # Scenario Data
-COMPONENT = "generator"
 CARRIER = "solar_rooftop"
 SCENARIOS = ["eGon2035", "eGon100RE"]
 SCENARIO_TIMESTAMP = {
@@ -1346,8 +1345,6 @@ def scenario_data(
     Get scenario capacity data from eGo^n Database.
     Parameters
     -----------
-    component : str
-        Component type to filter table by.
     carrier : str
         Carrier type to filter table by.
     scenario : str
@@ -2432,7 +2429,7 @@ def allocate_scenarios(
 
     cap_per_bus_id_df = cap_per_bus_id(
         buildings_area_per_overlay_gdf,
-        scenario_data(COMPONENT, CARRIER, scenario),
+        scenario_data(CARRIER, scenario),
     )
 
     last_scenario_gdf = determine_end_of_life_gens(
