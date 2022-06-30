@@ -2544,7 +2544,6 @@ def create_scenario_table(buildings_gdf):
     )
 
 
-@timer_func
 def geocode_mastr_data():
     """
     Read PV rooftop data from MaStR CSV
@@ -2575,7 +2574,6 @@ def geocode_mastr_data():
     create_geocoded_table(geocode_gdf)
 
 
-@timer_func
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
