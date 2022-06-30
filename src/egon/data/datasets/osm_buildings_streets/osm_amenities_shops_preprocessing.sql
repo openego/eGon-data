@@ -87,7 +87,7 @@ CREATE TABLE openstreetmap.osm_amenities_shops_filtered AS
 
 -- add PK as some osm ids are not unique
 ALTER TABLE openstreetmap.osm_amenities_shops_filtered
-    ADD COLUMN id SERIAL PRIMARY KEY;
+    ADD COLUMN egon_amenity_id SERIAL PRIMARY KEY;
 
 CREATE INDEX idx_osm_amenities_shops_filtered_geom
     ON openstreetmap.osm_amenities_shops_filtered USING gist (geom);

@@ -13,6 +13,9 @@ CREATE TABLE openstreetmap.osm_amenities_not_in_buildings as
         from openstreetmap.osm_amenities_in_buildings_tmp aib
     );
 
+ALTER TABLE openstreetmap.osm_amenities_not_in_buildings
+RENAME COLUMN id to egon_amenity_id;
+
 ALTER TABLE ONLY openstreetmap.osm_amenities_not_in_buildings
     ADD CONSTRAINT pk_osm_amenities_not_in_buildings PRIMARY KEY (osm_id);
 
