@@ -201,6 +201,20 @@ COLS_TO_EXPORT = [
 INCLUDE_SYNTHETIC_BUILDINGS = False
 
 
+def timer_func(func):
+    # This function shows the execution time of
+    # the function object passed
+    def wrap_func(*args, **kwargs):
+        t1 = perf_counter()
+        result = func(*args, **kwargs)
+        t2 = perf_counter()
+        logger.debug(f"Function {func.__name__!r} executed in {(t2-t1):.4f}s")
+        return result
+
+    return wrap_func
+
+
+@timer_func
 def mastr_data(
     index_col: str | int | list[str] | list[int],
     usecols: list[str],
@@ -262,6 +276,7 @@ def mastr_data(
     return mastr_df
 
 
+@timer_func
 def clean_mastr_data(
     mastr_df: pd.DataFrame,
     max_realistic_pv_cap: int | float,
@@ -547,6 +562,7 @@ def geocoding_data(
     )
 
 
+@timer_func
 def geocode_data(
     geocoding_df: pd.DataFrame,
     ratelimiter: RateLimiter,
@@ -651,6 +667,7 @@ def drop_invalid_entries_from_gdf(
     return valid_gdf
 
 
+@timer_func
 def municipality_data() -> gpd.GeoDataFrame:
     """
     Get municipality data from eGo^n Database.
@@ -667,6 +684,7 @@ def municipality_data() -> gpd.GeoDataFrame:
     )
 
 
+@timer_func
 def add_ags_to_gens(
     valid_mastr_gdf: gpd.GeoDataFrame,
     municipalities_gdf: gpd.GeoDataFrame,
@@ -830,6 +848,7 @@ class OsmBuildingsFiltered(Base):
     id = Column(BigInteger, primary_key=True, index=True)
 
 
+@timer_func
 def osm_buildings(
     to_crs: CRS,
 ) -> gpd.GeoDataFrame:
@@ -856,6 +875,7 @@ def osm_buildings(
     ).to_crs(to_crs)
 
 
+@timer_func
 def synthetic_buildings(
     to_crs: CRS,
 ) -> gpd.GeoDataFrame:
@@ -882,6 +902,7 @@ def synthetic_buildings(
     ).to_crs(to_crs)
 
 
+@timer_func
 def add_ags_to_buildings(
     buildings_gdf: gpd.GeoDataFrame,
     municipalities_gdf: gpd.GeoDataFrame,
@@ -934,6 +955,7 @@ def drop_buildings_outside_muns(
     return gdf
 
 
+@timer_func
 def load_building_data():
     """
     Read buildings from DB
@@ -982,6 +1004,7 @@ def load_building_data():
     return drop_buildings_outside_muns(buildings_ags_gdf)
 
 
+@timer_func
 def sort_and_qcut_df(
     df: pd.DataFrame | gpd.GeoDataFrame,
     col: str,
@@ -1014,6 +1037,7 @@ def sort_and_qcut_df(
     )
 
 
+@timer_func
 def allocate_pv(
     q_mastr_gdf: gpd.GeoDataFrame,
     q_buildings_gdf: gpd.GeoDataFrame,
@@ -1049,6 +1073,8 @@ def allocate_pv(
     num_ags = len(ags_list)
 
     for count, ags in enumerate(ags_list):
+        t0 = perf_counter()
+
         buildings = q_buildings_gdf.loc[
             (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
         ]
@@ -1123,9 +1149,10 @@ def allocate_pv(
                 chosen_buildings
             ].assign(gens_id=q_gens.index)
 
-        if count % 10 == 0:
+        if count % 50 == 0:
             logger.debug(
-                f"Allocation of {count / num_ags * 100:g} % of AGS done."
+                f"Allocation of {count / num_ags * 100:g} % of AGS done. It took "
+                f"{perf_counter() - t0 / 60:g} Minutes."
             )
 
     logger.debug("Allocated status quo generators to buildings.")
@@ -1236,6 +1263,7 @@ def drop_unallocated_gens(
     return gdf
 
 
+@timer_func
 def allocate_to_buildings(
     mastr_gdf: gpd.GeoDataFrame,
     buildings_gdf: gpd.GeoDataFrame,
@@ -1272,6 +1300,7 @@ def allocate_to_buildings(
     return drop_unallocated_gens(desagg_mastr_gdf), desagg_buildings_gdf
 
 
+@timer_func
 def grid_districts(
     epsg: int,
 ) -> gpd.GeoDataFrame:
@@ -1401,6 +1430,7 @@ def federal_state_data(to_crs: CRS) -> gpd.GeoDataFrame:
     return gdf
 
 
+@timer_func
 def overlay_grid_districts_with_counties(
     mv_grid_district_gdf: gpd.GeoDataFrame,
     federal_state_gdf: gpd.GeoDataFrame,
@@ -1435,6 +1465,7 @@ def overlay_grid_districts_with_counties(
     return gdf
 
 
+@timer_func
 def add_overlay_id_to_buildings(
     buildings_gdf: gpd.GeoDataFrame,
     grid_federal_state_gdf: gpd.GeoDataFrame,
@@ -1679,9 +1710,7 @@ def calculate_building_load_factor(
         right_index=True,
     )
 
-    gdf = gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
-
-    return gdf
+    return gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
 
 
 def get_probability_for_property(
@@ -1732,6 +1761,7 @@ def get_probability_for_property(
     return values, probabilities
 
 
+@timer_func
 def probabilities(
     mastr_gdf: gpd.GeoDataFrame,
     cap_ranges: list[tuple[int | float, int | float]] | None = None,
@@ -1964,6 +1994,7 @@ def building_area_range_per_cap_range(
     return building_area_range_normed_dict
 
 
+@timer_func
 def desaggregate_pv_in_mv_grid(
     buildings_gdf: gpd.GeoDataFrame,
     pv_cap: float | int,
@@ -2117,6 +2148,7 @@ def desaggregate_pv_in_mv_grid(
     )
 
 
+@timer_func
 def desaggregate_pv(
     buildings_gdf: gpd.GeoDataFrame,
     cap_df: pd.DataFrame,
@@ -2223,6 +2255,7 @@ def desaggregate_pv(
     )
 
 
+@timer_func
 def add_buildings_meta_data(
     buildings_gdf: gpd.GeoDataFrame,
     prob_dict: dict,
@@ -2346,6 +2379,7 @@ def add_start_up_date(
     )
 
 
+@timer_func
 def allocate_scenarios(
     mastr_gdf: gpd.GeoDataFrame,
     buildings_gdf: gpd.GeoDataFrame,
@@ -2507,6 +2541,7 @@ def create_scenario_table(buildings_gdf):
     )
 
 
+@timer_func
 def geocode_mastr_data():
     """
     Read PV rooftop data from MaStR CSV
@@ -2537,6 +2572,7 @@ def geocode_mastr_data():
     create_geocoded_table(geocode_gdf)
 
 
+@timer_func
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
