@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 from geoalchemy2 import Geometry
@@ -1043,7 +1044,11 @@ def allocate_pv(
     q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
     q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
 
-    for ags in q_buildings_gdf.ags.unique():
+    ags_list = q_buildings_gdf.ags.unique()
+
+    num_ags = len(ags_list)
+
+    for count, ags in enumerate(ags_list):
         buildings = q_buildings_gdf.loc[
             (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
         ]
@@ -1117,6 +1122,11 @@ def allocate_pv(
             q_buildings_gdf.loc[chosen_buildings] = q_buildings_gdf.loc[
                 chosen_buildings
             ].assign(gens_id=q_gens.index)
+
+        if count % 10 == 0:
+            logger.debug(
+                f"Allocation of {count / num_ags * 100:g} % of AGS done."
+            )
 
     logger.debug("Allocated status quo generators to buildings.")
 
@@ -1245,6 +1255,9 @@ def allocate_to_buildings(
         GeoDataFrame containing MaStR data allocated to building IDs.
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
+    logger.debug("Starting allocation of status quo.")
+    t0 = perf_counter()
+
     q_mastr_gdf = sort_and_qcut_df(mastr_gdf, col="capacity", q=Q)
     q_buildings_gdf = sort_and_qcut_df(buildings_gdf, col="building_area", q=Q)
 
@@ -1253,6 +1266,8 @@ def allocate_to_buildings(
     )
 
     validate_output(desagg_mastr_gdf, desagg_buildings_gdf)
+
+    logger.debug(f"Allocation time: {perf_counter() - t0 / 60:g} Minutes.")
 
     return drop_unallocated_gens(desagg_mastr_gdf), desagg_buildings_gdf
 
