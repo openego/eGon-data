@@ -64,6 +64,7 @@ CREATE TABLE openstreetmap.osm_amenities_in_buildings_tmp as
         bf.area,
         bf.geom as geom_building,
         amenity.osm_id as osm_id_amenity,
+        amenity.egon_amenity_id,
         amenity.amenity,
         amenity.name,
         amenity.geom as geom_amenity,
