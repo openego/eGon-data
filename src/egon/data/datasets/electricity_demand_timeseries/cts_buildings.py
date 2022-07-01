@@ -25,36 +25,8 @@ Base = declarative_base()
 data_config = egon.data.config.datasets()
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 
-# import db tables
+
 import saio
-
-saio.register_schema("openstreetmap", engine=engine)
-saio.register_schema("boundaries", engine=engine)
-saio.register_schema("society", engine=engine)
-
-from saio.boundaries import egon_map_zensus_buildings_filtered
-from saio.openstreetmap import (
-    osm_amenities_not_in_buildings,
-    osm_buildings,
-    osm_buildings_with_amenities,
-)
-from saio.society import destatis_zensus_population_per_ha_inside_germany
-
-from egon.data.datasets.demandregio import (
-    EgonDemandRegioCtsInd,
-    EgonDemandRegioWz,
-)
-from egon.data.datasets.electricity_demand import (
-    EgonDemandRegioZensusElectricity,
-)
-from egon.data.datasets.electricity_demand.temporal import (
-    EgonEtragoElectricityCts,
-)
-from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
-    OsmBuildingsSynthetic,
-)
-from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
-from egon.data.datasets.zensus_vg250 import MapZensusVg250
 
 
 def synthetic_buildings_for_amenities():
@@ -70,6 +42,21 @@ def synthetic_buildings_for_amenities():
         Table of synthetic buildings
 
     """
+    # import db tables
+    saio.register_schema("openstreetmap", engine=engine)
+    saio.register_schema("society", engine=engine)
+
+    from saio.openstreetmap import (
+        osm_amenities_not_in_buildings,
+        osm_buildings,
+        osm_buildings_with_amenities,
+    )
+    from saio.society import destatis_zensus_population_per_ha_inside_germany
+
+    from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
+        OsmBuildingsSynthetic,
+    )
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
@@ -159,6 +146,17 @@ def synthetic_buildings_for_amenities():
 
 def buildings_with_amenities():
     """"""
+    # import db tables
+    saio.register_schema("openstreetmap", engine=engine)
+    saio.register_schema("boundaries", engine=engine)
+
+    from saio.boundaries import egon_map_zensus_buildings_filtered
+    from saio.openstreetmap import (
+        osm_amenities_not_in_buildings,
+        osm_buildings,
+        osm_buildings_with_amenities,
+    )
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
