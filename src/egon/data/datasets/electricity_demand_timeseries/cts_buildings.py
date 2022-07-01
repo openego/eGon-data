@@ -218,10 +218,36 @@ def buildings_with_amenities():
     return df_amenities_in_buildings
 
 
+def write_synthetic_buildings_to_db(df_synthetic_buildings):
+    """"""
+    from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
+        OsmBuildingsSynthetic,
+    )
+
+    # Write new buildings incl coord into db
+    df_synthetic_buildings.to_postgis(
+        "osm_buildings_synthetic",
+        con=engine,
+        if_exists="append",
+        schema="openstreetmap",
+        dtype={
+            "id": OsmBuildingsSynthetic.id.type,
+            "cell_id": OsmBuildingsSynthetic.cell_id.type,
+            "geom": OsmBuildingsSynthetic.geom.type,
+            "geom_point": OsmBuildingsSynthetic.geom_point.type,
+            "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
+            "building": OsmBuildingsSynthetic.building.type,
+            "area": OsmBuildingsSynthetic.area.type,
+        },
+    )
+
+
 def cts_to_buildings():
 
     df_synthetic_buildings_for_amenities = synthetic_buildings_for_amenities()
     df_buildings_with_amenities = buildings_with_amenities()
+
+    write_synthetic_buildings_to_db(df_synthetic_buildings_for_amenities)
 
 
 class CtsElectricityBuildings(Dataset):
