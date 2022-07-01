@@ -24,6 +24,9 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_buildings,
     hh_profiles,
 )
+from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
+    CtsElectricityBuildings,
+)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -562,5 +565,14 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+        ]
+    )
+
+    cts_electricity_buildings = CtsElectricityBuildings(
+        dependencies=[
+            osm,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            hh_demand_profiles_setup,
         ]
     )
