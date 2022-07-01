@@ -13,6 +13,7 @@ CREATE TABLE openstreetmap.osm_buildings_with_res_tmp as
     select * from (
         select
             bld.osm_id,
+            bld.id,
             bld.amenity,
             bld.building,
             bld.name,
@@ -33,6 +34,7 @@ drop table if exists openstreetmap.osm_buildings_with_res_tmp2;
 create table openstreetmap.osm_buildings_with_res_tmp2 as
     select
         bld.osm_id,
+        bld.id,
         bld.amenity,
         bld.building,
         bld.name,
@@ -60,6 +62,7 @@ CREATE TABLE openstreetmap.osm_amenities_in_buildings_tmp as
     with amenity as (select * from openstreetmap.osm_amenities_shops_filtered af)
     select
         bf.osm_id as osm_id_building,
+        bf.id,
         bf.building,
         bf.area,
         bf.geom as geom_building,

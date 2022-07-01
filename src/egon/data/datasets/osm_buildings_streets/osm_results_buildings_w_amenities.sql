@@ -9,6 +9,7 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
     select
         bwa.osm_id_amenity,
         bwa.osm_id_building,
+        bwa.id,
         bwa.building,
         bwa.area,
         bwa.geom_building,
@@ -31,6 +32,7 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
         select
             bwa.osm_id_amenity,
             bwa.osm_id_building,
+            bwa.id,
             bwa.building,
             bwa.area,
             bwa.geom_building,
@@ -45,6 +47,7 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
             select
                 b.osm_id_amenity,
                 b.osm_id_building,
+                b.id,
                 coalesce(b.amenity, b.building) as building,
                 b.area,
                 b.geom_building,
@@ -67,6 +70,7 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
         group by
             bwa.osm_id_amenity,
             bwa.osm_id_building,
+            bwa.id,
             bwa.building,
             bwa.area,
             bwa.geom_building,
@@ -79,6 +83,9 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
 
 ALTER TABLE ONLY openstreetmap.osm_buildings_with_amenities
     ADD CONSTRAINT pk_osm_buildings_with_amenities PRIMARY KEY (osm_id_amenity);
+
+CREATE INDEX idx_osm_buildings_with_amenities_id
+    ON openstreetmap.osm_buildings_with_amenities USING btree (id);
 
 CREATE INDEX idx_osm_buildings_with_amenities_osm_id_building
     ON openstreetmap.osm_buildings_with_amenities USING btree (osm_id_building);
