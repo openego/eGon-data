@@ -1,3 +1,4 @@
+from geoalchemy2.shape import to_shape
 from sqlalchemy import Integer, Table, func, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -5,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import (
     calc_load_curve,
     calc_load_curves_cts,
@@ -126,6 +128,9 @@ def synthetic_buildings_for_amenities():
         df_amenities_not_in_buildings.set_index("zensus_population_id"),
         edge_length=5,
     )
+    df_amenities_in_synthetic_buildings.rename(
+        columns={"geom": "geom_building"}, inplace=True
+    )
     # get max number of building ids from synthetic residential table
     with db.session_scope() as session:
         max_synth_residential_id = session.execute(
@@ -150,3 +155,66 @@ def synthetic_buildings_for_amenities():
         )
     )
     return df_amenities_in_synthetic_buildings
+
+
+def buildings_with_amenities():
+    """"""
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                # TODO maybe remove if osm_buildings_with_amenities.id exists
+                osm_buildings.id.label("egon_building_id"),
+                #         osm_buildings_with_amenities.id,
+                #         osm_buildings_with_amenities.osm_id_building,
+                osm_buildings_with_amenities.osm_id_amenity,
+                osm_buildings_with_amenities.building,
+                osm_buildings_with_amenities.n_amenities_inside,
+                osm_buildings_with_amenities.area,
+                osm_buildings_with_amenities.geom_building,
+                osm_buildings_with_amenities.geom_point,
+                egon_map_zensus_buildings_filtered.cell_id.label(
+                    "zensus_population_id"
+                ),
+            )
+            .filter(
+                osm_buildings_with_amenities.osm_id_building
+                == osm_buildings.osm_id
+            )
+            .filter(osm_buildings.id == egon_map_zensus_buildings_filtered.id)
+        )
+    df_amenities_in_buildings = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col=None
+    )
+    # TODO necessary?
+    df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
+        "geom_building"
+    ].apply(to_shape)
+    df_amenities_in_buildings["geom_point"] = df_amenities_in_buildings[
+        "geom_point"
+    ].apply(to_shape)
+
+    # Count amenities per building
+    df_amenities_in_buildings["n_amenities_inside"] = 1
+    df_amenities_in_buildings[
+        "n_amenities_inside"
+    ] = df_amenities_in_buildings.groupby("egon_building_id")[
+        "n_amenities_inside"
+    ].transform(
+        "sum"
+    )
+
+    # Only keep one building for multiple amenities
+    df_amenities_in_buildings = df_amenities_in_buildings.drop_duplicates(
+        "egon_building_id"
+    )
+    df_amenities_in_buildings["building"] = "cts"
+    # TODO maybe remove later
+    df_amenities_in_buildings.sort_values("egon_building_id").reset_index(
+        drop=True, inplace=True
+    )
+    df_amenities_in_buildings.rename(
+        columns={"zensus_population_id": "cell_id", "egon_building_id": "id"},
+        inplace=True,
+    )
+
+    return df_amenities_in_buildings
