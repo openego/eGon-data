@@ -13,11 +13,14 @@ CREATE TABLE openstreetmap.osm_amenities_not_in_buildings as
         from openstreetmap.osm_amenities_in_buildings_tmp aib
     );
 
-ALTER TABLE ONLY openstreetmap.osm_amenities_not_in_buildings
+ALTER TABLE openstreetmap.osm_amenities_not_in_buildings
     ADD CONSTRAINT pk_osm_amenities_not_in_buildings PRIMARY KEY (egon_amenity_id);
+
+ALTER TABLE openstreetmap.osm_amenities_not_in_buildings
+    RENAME COLUMN geom TO geom_amenity;
 
 CREATE INDEX idx_osm_amenities_not_in_buildings_osm_id
     ON openstreetmap.osm_amenities_not_in_buildings using btree (osm_id);
 
 CREATE INDEX idx_osm_amenities_not_in_buildings_geom
-    ON openstreetmap.osm_amenities_not_in_buildings USING gist (geom);
+    ON openstreetmap.osm_amenities_not_in_buildings USING gist (geom_amenity);

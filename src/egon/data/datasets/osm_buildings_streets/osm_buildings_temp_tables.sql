@@ -81,3 +81,4 @@ CREATE TABLE openstreetmap.osm_amenities_in_buildings_tmp as
 
 CREATE INDEX idx_osm_amenities_in_buildings_tmp_geom_building
     ON openstreetmap.osm_amenities_in_buildings_tmp USING gist (geom_building);
+
