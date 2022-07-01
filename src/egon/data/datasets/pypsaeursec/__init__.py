@@ -131,7 +131,7 @@ def run_pypsa_eur_sec():
     )
 
 
-def neighbor_reduction():
+def read_network():
 
     # Set execute_pypsa_eur_sec to False until optional task is implemented
     execute_pypsa_eur_sec = False
@@ -178,7 +178,12 @@ def neighbor_reduction():
             / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
         )
 
-    network = pypsa.Network(str(target_file))
+    return pypsa.Network(str(target_file))
+
+
+def neighbor_reduction():
+
+    network = read_network()
 
     wanted_countries = [
         "DE",
