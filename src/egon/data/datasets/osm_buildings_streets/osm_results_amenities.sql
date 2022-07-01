@@ -16,9 +16,6 @@ CREATE TABLE openstreetmap.osm_amenities_not_in_buildings as
 ALTER TABLE openstreetmap.osm_amenities_not_in_buildings
     ADD CONSTRAINT pk_osm_amenities_not_in_buildings PRIMARY KEY (egon_amenity_id);
 
-ALTER TABLE openstreetmap.osm_amenities_not_in_buildings
-    RENAME COLUMN geom TO geom_amenity;
-
 CREATE INDEX idx_osm_amenities_not_in_buildings_osm_id
     ON openstreetmap.osm_amenities_not_in_buildings using btree (osm_id);
 

@@ -10,11 +10,11 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
         bwa.osm_id,
         bwa.building,
         bwa.area,
-        bwa.geom,
+        bwa.geom_building,
     CASE
-       WHEN (ST_Contains(bwa.geom, ST_Centroid(bwa.geom))) IS TRUE
-       THEN ST_Centroid(bwa.geom)
-       ELSE ST_PointOnSurface(bwa.geom)
+       WHEN (ST_Contains(bwa.geom_building, ST_Centroid(bwa.geom_building))) IS TRUE
+       THEN ST_Centroid(bwa.geom_building)
+       ELSE ST_PointOnSurface(bwa.geom_building)
     END AS geom_point,
     bwa.name,
     bwa.tags,
@@ -28,7 +28,7 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
             bwa.osm_id,
             bwa.building,
             bwa.area,
-            bwa.geom,
+            bwa.geom_building,
             bwa.name,
             bwa.tags,
             SUM(bwa.apartment_count) as apartment_count,
@@ -39,7 +39,7 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
                 coalesce(bf.amenity, bf.building) as building,
                 bf.name,
                 bf.area,
-                bf.geom,
+                bf.geom_building,
                 bf.tags,
                 coalesce(bf.apartment_count, 0) as apartment_count,
                 coalesce(bf.n_apartments_in_n_buildings, 0) as n_apartments_in_n_buildings
@@ -51,10 +51,12 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
             WHERE aib.osm_id_building IS NULL
         ) bwa
         group by
-            bwa.osm_id,
-            bwa.building,
-            bwa.area, bwa.geom,
-            bwa.name,
-        bwa.tags
+             bwa.osm_id,
+             bwa.building,
+             bwa.area,
+             bwa.geom_building,
+             bwa.name,
+             bwa.tags
     ) bwa;
-CREATE INDEX ON openstreetmap.osm_buildings_without_amenities USING gist (geom);
+
+CREATE INDEX ON openstreetmap.osm_buildings_without_amenities USING gist (geom_building);
