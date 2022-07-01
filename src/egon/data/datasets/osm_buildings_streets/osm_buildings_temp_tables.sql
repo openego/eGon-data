@@ -78,4 +78,6 @@ CREATE TABLE openstreetmap.osm_amenities_in_buildings_tmp as
         bf.n_apartments_in_n_buildings
     from amenity, openstreetmap.osm_buildings_with_res_tmp2 bf
     where st_intersects(bf.geom, amenity.geom);
-CREATE INDEX ON openstreetmap.osm_amenities_in_buildings_tmp USING gist (geom_building);
+
+CREATE INDEX idx_osm_amenities_in_buildings_tmp_geom_building
+    ON openstreetmap.osm_amenities_in_buildings_tmp USING gist (geom_building);

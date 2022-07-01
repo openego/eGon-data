@@ -81,8 +81,11 @@ CREATE TABLE openstreetmap.osm_buildings_with_amenities as
             bwa.n_amenities_inside
     ) bwa;
 
-ALTER TABLE ONLY openstreetmap.osm_buildings_with_amenities
-    ADD CONSTRAINT pk_osm_buildings_with_amenities PRIMARY KEY (osm_id_amenity);
+
+-- osm_id_amenity, osm_id_building and id are no unique values
+
+CREATE INDEX idx_osm_buildings_with_amenities_osm_id_amenity
+    ON openstreetmap.osm_buildings_with_amenities USING btree (osm_id_amenity);
 
 CREATE INDEX idx_osm_buildings_with_amenities_id
     ON openstreetmap.osm_buildings_with_amenities USING btree (id);
