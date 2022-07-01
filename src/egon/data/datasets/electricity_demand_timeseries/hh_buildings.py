@@ -782,7 +782,7 @@ def map_houseprofiles_to_buildings():
     )
 
     synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
-    synthetic_buildings = synthetic_buildings["n_amenities_inside"] = 0
+    synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
