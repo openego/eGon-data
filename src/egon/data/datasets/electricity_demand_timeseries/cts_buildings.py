@@ -72,7 +72,7 @@ def synthetic_buildings_for_amenities():
             .filter(
                 func.st_contains(
                     destatis_zensus_population_per_ha_inside_germany.geom,
-                    osm_amenities_not_in_buildings.geom,
+                    osm_amenities_not_in_buildings.geom_amenity,
                 )
             )
             .group_by(
@@ -115,9 +115,7 @@ def synthetic_buildings_for_amenities():
         df_amenities_not_in_buildings.set_index("zensus_population_id"),
         edge_length=5,
     )
-    df_amenities_in_synthetic_buildings.rename(
-        columns={"geom": "geom_building"}, inplace=True
-    )
+
     # get max number of building ids from synthetic residential table
     with db.session_scope() as session:
         max_synth_residential_id = session.execute(
@@ -233,7 +231,7 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
         dtype={
             "id": OsmBuildingsSynthetic.id.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
-            "geom": OsmBuildingsSynthetic.geom.type,
+            "geom_building": OsmBuildingsSynthetic.geom_building.type,
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
             "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
             "building": OsmBuildingsSynthetic.building.type,

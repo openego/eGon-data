@@ -155,7 +155,7 @@ class OsmBuildingsSynthetic(Base):
 
     id = Column(String, primary_key=True)
     cell_id = Column(String, index=True)
-    geom = Column(Geometry("Polygon", 3035), index=True)
+    geom_building = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
     n_amenities_inside = Column(Integer)
     building = Column(String(11))
@@ -375,9 +375,12 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     # Store center of poylon
     missing_buildings_geom["geom_point"] = points
-    # Store  the points using a square cap style
+    # Create building using a square around point
     missing_buildings_geom["geom"] = points.buffer(
         distance=edge_length / 2, cap_style=3
+    )
+    missing_buildings_geom.rename(
+        column={"geom": "geom_building"}, inplace=True
     )
 
     # get table metadata from db by name and schema
@@ -405,7 +408,9 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         )
 
     missing_buildings_geom["building"] = "residential"
-    missing_buildings_geom["area"] = missing_buildings_geom["geom"].area
+    missing_buildings_geom["area"] = missing_buildings_geom[
+        "geom_building"
+    ].area
 
     return missing_buildings_geom
 
@@ -796,7 +801,7 @@ def map_houseprofiles_to_buildings():
         dtype={
             "id": OsmBuildingsSynthetic.id.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
-            "geom": OsmBuildingsSynthetic.geom.type,
+            "geom_building": OsmBuildingsSynthetic.geom_building.type,
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
             "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
             "building": OsmBuildingsSynthetic.building.type,
@@ -822,7 +827,7 @@ def map_houseprofiles_to_buildings():
 setup = partial(
     Dataset,
     name="Demand_Building_Assignment",
-    version="0.0.3",
+    version="0.0.4",
     dependencies=[],
     tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )

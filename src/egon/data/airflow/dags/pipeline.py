@@ -570,7 +570,7 @@ with airflow.DAG(
 
     cts_electricity_buildings = CtsElectricityBuildings(
         dependencies=[
-            osm,
+            osm_buildings_streets,
             cts_electricity_demand_annual,
             hh_demand_buildings_setup,
             hh_demand_profiles_setup,
