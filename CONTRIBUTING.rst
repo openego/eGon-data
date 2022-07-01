@@ -306,7 +306,7 @@ standard version 1.4.1 using the `OMI tool
 
 .. code-block:: bash
 
-  omi translate -f oep-v1.4 metadata_file.json
+  omi translate -f oep-v1.4 -t oep-v1.4 metadata_file.json
 
 If your metadata string is correct, OMI puts the keys in the correct order and
 prints the full string (use `-o` option for export).
