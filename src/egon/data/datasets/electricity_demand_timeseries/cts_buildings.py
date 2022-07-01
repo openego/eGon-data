@@ -218,3 +218,19 @@ def buildings_with_amenities():
     )
 
     return df_amenities_in_buildings
+
+
+def cts_to_buildings():
+
+    df_synthetic_buildings_for_amenities = synthetic_buildings_for_amenities()
+    df_buildings_with_amenities = buildings_with_amenities()
+
+
+class CtsElectricityBuildings(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="CtsElectricityBuildings",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(cts_to_buildings),
+        )
