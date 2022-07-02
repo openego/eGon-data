@@ -380,7 +380,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         distance=edge_length / 2, cap_style=3
     )
     missing_buildings_geom.rename(
-        column={"geom": "geom_building"}, inplace=True
+        columns={"geom": "geom_building"}, inplace=True
     )
 
     # get table metadata from db by name and schema
