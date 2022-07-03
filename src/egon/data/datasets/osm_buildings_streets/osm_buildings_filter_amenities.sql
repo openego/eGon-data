@@ -82,6 +82,11 @@ LEFT JOIN
     ON  amenities.id = filtered.id;
 
 ALTER TABLE openstreetmap.osm_buildings_filtered_with_amenities
+ADD COLUMN buildings VARCHAR;
+
+UPDATE openstreetmap.osm_buildings_filtered_with_amenities SET buildings = 'cts';
+
+ALTER TABLE openstreetmap.osm_buildings_filtered_with_amenities
     ADD CONSTRAINT pk_osm_buildings_filtered_with_amenities PRIMARY KEY (id);
 
 CREATE INDEX idx_osm_buildings_filtered_with_amenities_geom_building
@@ -98,8 +103,8 @@ CREATE TABLE openstreetmap.osm_amenities_not_in_buildings_filtered AS
         FROM openstreetmap.osm_amenities_in_buildings_filtered AS amenities_in_buildings
     );
 
-ALTER TABLE openstreetmap.osm_amenities_not_in_buildings_filtered
-    ADD CONSTRAINT pk_osm_amenities_not_in_buildings_filtered PRIMARY KEY (egon_amenity_id);
+    ALTER TABLE openstreetmap.osm_amenities_not_in_buildings_filtered
+        ADD CONSTRAINT pk_osm_amenities_not_in_buildings_filtered PRIMARY KEY (egon_amenity_id);
 
 CREATE INDEX idx_osm_amenities_not_in_buildings_filtered_osm_id
     ON openstreetmap.osm_amenities_not_in_buildings_filtered using btree (osm_id);
