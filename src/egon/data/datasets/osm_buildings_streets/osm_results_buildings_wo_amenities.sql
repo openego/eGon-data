@@ -8,6 +8,7 @@ drop table if exists openstreetmap.osm_buildings_without_amenities;
 CREATE TABLE openstreetmap.osm_buildings_without_amenities as
     select
         bwa.osm_id,
+        bwa.id,
         bwa.building,
         bwa.area,
         bwa.geom_building,
@@ -26,6 +27,7 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
     from (
         select
             bwa.osm_id,
+            bwa.id,
             bwa.building,
             bwa.area,
             bwa.geom_building,
@@ -36,6 +38,7 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
         from (
             select
                 bf.osm_id,
+                bf.id,
                 coalesce(bf.amenity, bf.building) as building,
                 bf.name,
                 bf.area,
@@ -52,6 +55,7 @@ CREATE TABLE openstreetmap.osm_buildings_without_amenities as
         ) bwa
         group by
              bwa.osm_id,
+             bwa.id,
              bwa.building,
              bwa.area,
              bwa.geom_building,
