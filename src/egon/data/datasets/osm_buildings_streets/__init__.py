@@ -124,6 +124,11 @@ def extract_amenities():
     execute_sql_script("osm_results_amenities.sql")
 
 
+def extract_buildings_filtered_amenities():
+    print("Extracting buildings filtered with and without amenities...")
+    execute_sql_script("osm_buildings_filter_amenities.sql")
+
+
 def extract_ways():
     print("Extracting ways...")
     execute_sql_script("osm_ways_preprocessing.sql")
@@ -147,6 +152,7 @@ class OsmBuildingsStreets(Dataset):
             tasks=(
                 preprocessing,
                 {filter_buildings, filter_buildings_residential},
+                extract_buildings_filtered_amenities,
                 {
                     create_buildings_filtered_zensus_mapping,
                     create_buildings_residential_zensus_mapping,
