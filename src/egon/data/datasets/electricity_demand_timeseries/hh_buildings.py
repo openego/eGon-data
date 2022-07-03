@@ -376,11 +376,12 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     # Store center of poylon
     missing_buildings_geom["geom_point"] = points
     # Create building using a square around point
-    missing_buildings_geom["geom"] = points.buffer(
+    missing_buildings_geom["geom_building"] = points.buffer(
         distance=edge_length / 2, cap_style=3
     )
-    missing_buildings_geom.rename(
-        columns={"geom": "geom_building"}, inplace=True
+    missing_buildings_geom = missing_buildings_geom.drop(columns=["geom"])
+    missing_buildings_geom = gpd.GeoDataFrame(
+        missing_buildings_geom, crs="EPSG:4258", geometry="geom_building"
     )
 
     # get table metadata from db by name and schema
