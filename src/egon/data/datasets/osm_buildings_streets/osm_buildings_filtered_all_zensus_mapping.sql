@@ -20,10 +20,10 @@ CREATE TABLE boundaries.egon_map_zensus_buildings_filtered_all AS
     LEFT JOIN society.destatis_zensus_population_per_ha AS zensus
     ON ST_Within(filtered.geom_point, zensus.geom)
     ) AS t_1
-    WHERE t_1.zensus_population_id  IS NOT null
+    WHERE t_1.zensus_population_id  IS NOT null;
 
 ALTER TABLE ONLY boundaries.egon_map_zensus_buildings_filtered_all
     ADD CONSTRAINT pk_egon_map_zensus_buildings_filtered_all PRIMARY KEY (id);
 
-CREATE INDEX idx_egon_map_zensus_buildings_filtered_all_cell_id
-    ON boundaries.egon_map_zensus_buildings_filtered_all USING btree (cell_id);
+CREATE INDEX idx_egon_map_zensus_buildings_filtered_all_zensus_population_id
+    ON boundaries.egon_map_zensus_buildings_filtered_all USING btree (zensus_population_id);
