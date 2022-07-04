@@ -95,8 +95,15 @@ def filter_buildings_residential():
 
 
 def create_buildings_filtered_zensus_mapping():
-    print("Create census mapping table for filtered buildings...")
+    print(
+        "Create census mapping table for filtered buildings in populated areas..."
+    )
     execute_sql_script("osm_buildings_filtered_zensus_mapping.sql")
+
+
+def create_buildings_filtered_all_zensus_mapping():
+    print("Create census mapping table for all filtered buildings...")
+    execute_sql_script("osm_buildings_filtered_all_zensus_mapping.sql")
 
 
 def create_buildings_residential_zensus_mapping():
@@ -156,6 +163,7 @@ class OsmBuildingsStreets(Dataset):
                 {
                     create_buildings_filtered_zensus_mapping,
                     create_buildings_residential_zensus_mapping,
+                    create_buildings_filtered_all_zensus_mapping,
                 },
                 create_buildings_temp_tables,
                 {
