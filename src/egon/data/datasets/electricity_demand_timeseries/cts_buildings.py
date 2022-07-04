@@ -200,7 +200,7 @@ def buildings_with_amenities():
     saio.register_schema("openstreetmap", engine=engine)
     saio.register_schema("boundaries", engine=engine)
 
-    from saio.boundaries import egon_map_zensus_buildings_filtered
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_buildings_filtered_with_amenities
 
     with db.session_scope() as session:
@@ -215,12 +215,10 @@ def buildings_with_amenities():
             osm_buildings_filtered_with_amenities.area,
             osm_buildings_filtered_with_amenities.geom_building,
             osm_buildings_filtered_with_amenities.geom_point,
-            egon_map_zensus_buildings_filtered.cell_id.label(
-                "zensus_population_id"
-            ),
+            egon_map_zensus_buildings_filtered_all.zensus_population_id,
         ).filter(
             osm_buildings_filtered_with_amenities.id
-            == egon_map_zensus_buildings_filtered.id
+            == egon_map_zensus_buildings_filtered_all.id
         )
     df_amenities_in_buildings = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
@@ -305,7 +303,7 @@ class CtsElectricityBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsElectricityBuildings",
-            version="0.0.1",
+            version="0.0.0.",
             dependencies=dependencies,
             tasks=(cts_to_buildings),
         )
