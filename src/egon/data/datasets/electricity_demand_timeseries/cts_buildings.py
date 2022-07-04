@@ -46,7 +46,7 @@ def synthetic_buildings_for_amenities():
     saio.register_schema("openstreetmap", engine=engine)
     saio.register_schema("society", engine=engine)
 
-    from saio.openstreetmap import osm_amenities_not_in_buildings
+    from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
     from saio.society import destatis_zensus_population_per_ha_inside_germany
 
     from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
@@ -59,16 +59,16 @@ def synthetic_buildings_for_amenities():
                 destatis_zensus_population_per_ha_inside_germany.id.label(
                     "zensus_population_id"
                 ),
-                func.count(osm_amenities_not_in_buildings.osm_id).label(
-                    "n_amenities_inside"
-                ),
+                func.count(
+                    osm_amenities_not_in_buildings_filtered.egon_amenity_id
+                ).label("n_amenities_inside"),
                 #         osm_amenities_not_in_buildings.geom,
                 #         destatis_zensus_population_per_ha_inside_germany.geom
             )
             .filter(
                 func.st_contains(
                     destatis_zensus_population_per_ha_inside_germany.geom,
-                    osm_amenities_not_in_buildings.geom_amenity,
+                    osm_amenities_not_in_buildings_filtered.geom_amenity,
                 )
             )
             .group_by(
@@ -110,6 +110,13 @@ def synthetic_buildings_for_amenities():
     df_amenities_in_synthetic_buildings = generate_synthetic_buildings(
         df_amenities_not_in_buildings.set_index("zensus_population_id"),
         edge_length=5,
+    )
+    # TODO remove after implementation of egon_building_id
+    df_amenities_in_synthetic_buildings.rename(
+        columns={
+            "id": "egon_building_id",
+        },
+        inplace=True,
     )
 
     # get max number of building ids from synthetic residential table
