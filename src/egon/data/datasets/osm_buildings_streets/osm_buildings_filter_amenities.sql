@@ -82,9 +82,9 @@ LEFT JOIN
     ON  amenities.id = filtered.id;
 
 ALTER TABLE openstreetmap.osm_buildings_filtered_with_amenities
-ADD COLUMN buildings VARCHAR;
+ADD COLUMN building VARCHAR(3);
 
-UPDATE openstreetmap.osm_buildings_filtered_with_amenities SET buildings = 'cts';
+UPDATE openstreetmap.osm_buildings_filtered_with_amenities SET building = 'cts';
 
 ALTER TABLE openstreetmap.osm_buildings_filtered_with_amenities
     ADD CONSTRAINT pk_osm_buildings_filtered_with_amenities PRIMARY KEY (id);
