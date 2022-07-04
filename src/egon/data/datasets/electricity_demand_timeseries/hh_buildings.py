@@ -9,7 +9,7 @@ available in the respective cencus cell.
 The resulting data is stored in separate tables
 
 * `openstreetmap.osm_buildings_synthetic`:
-    Lists generated synthetic building with id, cell_id and grid_id
+    Lists generated synthetic building with id and cell_id
 * `demand.egon_household_electricity_profile_of_buildings`:
     Mapping of demand timeseries and buildings including cell_id, building
     area and peak load
@@ -350,9 +350,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     # add geom data of zensus cell
     missing_buildings_geom = pd.merge(
-        left=destatis_zensus_population_per_ha_inside_germany[
-            ["geom", "grid_id"]
-        ],
+        left=destatis_zensus_population_per_ha_inside_germany[["geom"]],
         right=missing_buildings,
         left_index=True,
         right_index=True,
@@ -771,7 +769,7 @@ def map_houseprofiles_to_buildings():
     egon_map_zensus_buildings_residential_synth = pd.concat(
         [
             egon_map_zensus_buildings_residential,
-            synthetic_buildings[["id", "grid_id", "cell_id"]],
+            synthetic_buildings[["id", "cell_id"]],
         ],
         ignore_index=True,
     )
@@ -786,8 +784,8 @@ def map_houseprofiles_to_buildings():
     synthetic_buildings = reduce_synthetic_buildings(
         mapping_profiles_to_buildings, synthetic_buildings
     )
-
-    synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
+    # TODO remove unused code
+    # synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
     synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
