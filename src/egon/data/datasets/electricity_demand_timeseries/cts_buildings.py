@@ -12,10 +12,12 @@ from egon.data.datasets.electricity_demand.temporal import (
     calc_load_curves_cts,
 )
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
+    OsmBuildingsSynthetic,
     generate_synthetic_buildings,
 )
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_ints_until_sum,
+    random_point_in_square,
 )
 import egon.data.config
 
@@ -45,74 +47,111 @@ def synthetic_buildings_for_amenities():
     # import db tables
     saio.register_schema("openstreetmap", engine=engine)
     saio.register_schema("society", engine=engine)
+    saio.register_schema("demand", engine=engine)
+    saio.register_schema("boundaries", engine=engine)
 
+    from saio.demand import egon_demandregio_zensus_electricity
     from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
-    from saio.society import destatis_zensus_population_per_ha_inside_germany
-
-    from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
-        OsmBuildingsSynthetic,
-    )
+    from saio.society import destatis_zensus_population_per_ha
 
     with db.session_scope() as session:
         cells_query = (
             session.query(
-                destatis_zensus_population_per_ha_inside_germany.id.label(
-                    "zensus_population_id"
-                ),
+                egon_demandregio_zensus_electricity.zensus_population_id,
+                # # TODO can be used for square around amenity
+                # #  (1 geom_amenity: 1 geom_building)
+                # #  not unique amenity_ids yet
+                # osm_amenities_not_in_buildings_filtered.geom_amenity,
+                # osm_amenities_not_in_buildings_filtered.egon_amenity_id,
+                # is used to generate n random buildings
+                # (n amenities : 1 randombuilding)
                 func.count(
                     osm_amenities_not_in_buildings_filtered.egon_amenity_id
                 ).label("n_amenities_inside"),
-                #         osm_amenities_not_in_buildings.geom,
-                #         destatis_zensus_population_per_ha_inside_germany.geom
+                destatis_zensus_population_per_ha.geom,
+            )
+            .filter(
+                destatis_zensus_population_per_ha.id
+                == egon_demandregio_zensus_electricity.zensus_population_id
             )
             .filter(
                 func.st_contains(
-                    destatis_zensus_population_per_ha_inside_germany.geom,
+                    destatis_zensus_population_per_ha.geom,
                     osm_amenities_not_in_buildings_filtered.geom_amenity,
                 )
             )
             .group_by(
-                destatis_zensus_population_per_ha_inside_germany.id,
-                #         osm_amenities_not_in_buildings.geom
-                #         destatis_zensus_population_per_ha_inside_germany.geom
+                egon_demandregio_zensus_electricity.zensus_population_id,
+                destatis_zensus_population_per_ha.geom,
             )
         )
 
-    df_amenities_not_in_buildings = pd.read_sql(
-        cells_query.statement, cells_query.session.bind
-    )  # , index_col='id')
+    df_cells_with_amenities_not_in_buildings = gpd.read_postgis(
+        cells_query.statement, cells_query.session.bind, geom_col="geom"
+    )
 
     # number of max amenities per building
     max_amenities = 3
     # amount of amenities is randomly generated within bounds (max_amenities,
     # amenities per cell)
-    df_amenities_not_in_buildings[
+    df_cells_with_amenities_not_in_buildings[
         "n_amenities_inside"
-    ] = df_amenities_not_in_buildings["n_amenities_inside"].apply(
+    ] = df_cells_with_amenities_not_in_buildings["n_amenities_inside"].apply(
         random_ints_until_sum, args=[max_amenities]
     )
+    # Specific amount of amenities per building
     # df_amenities_not_in_buildings[
     #     "n_amenities_inside"
     # ] = df_amenities_not_in_buildings["n_amenities_inside"].apply(
     #     specific_int_until_sum, args=[max_amenities]
     # )
-    df_amenities_not_in_buildings = df_amenities_not_in_buildings.explode(
-        column="n_amenities_inside"
+
+    # Unnest each building
+    df_synthetic_buildings_for_amenities = (
+        df_cells_with_amenities_not_in_buildings.explode(
+            column="n_amenities_inside"
+        )
     )
     # building count per cell
-    df_amenities_not_in_buildings["building_count"] = (
-        df_amenities_not_in_buildings.groupby(
+    df_synthetic_buildings_for_amenities["building_count"] = (
+        df_synthetic_buildings_for_amenities.groupby(
             ["zensus_population_id"]
         ).cumcount()
         + 1
     )
     # generate random synthetic buildings
-    df_amenities_in_synthetic_buildings = generate_synthetic_buildings(
-        df_amenities_not_in_buildings.set_index("zensus_population_id"),
-        edge_length=5,
+    edge_length = 5
+    # create random points within census cells
+    points = random_point_in_square(
+        geom=df_synthetic_buildings_for_amenities["geom"], tol=edge_length / 2
     )
+
+    # Store center of polygon
+    df_synthetic_buildings_for_amenities["geom_point"] = points
+    df_synthetic_buildings_for_amenities = (
+        df_synthetic_buildings_for_amenities.drop(columns=["geom"])
+    )
+
+    # # TODO can be used for square around amenity
+    # df_synthetic_buildings_for_amenities = gpd.read_postgis(
+    #     cells_query.statement, cells_query.session.bind, geom_col="geom_amenity"
+    # )
+    # points = df_synthetic_buildings_for_amenities["geom_amenity"]
+
+    # Create building using a square around point
+    df_synthetic_buildings_for_amenities["geom_building"] = points.buffer(
+        distance=edge_length / 2, cap_style=3
+    )
+
+    # TODO Check CRS
+    df_synthetic_buildings_for_amenities = gpd.GeoDataFrame(
+        df_synthetic_buildings_for_amenities,
+        crs="EPSG:4258",
+        geometry="geom_building",
+    )
+
     # TODO remove after implementation of egon_building_id
-    df_amenities_in_synthetic_buildings.rename(
+    df_synthetic_buildings_for_amenities.rename(
         columns={
             "id": "egon_building_id",
         },
@@ -125,24 +164,27 @@ def synthetic_buildings_for_amenities():
             func.max(OsmBuildingsSynthetic.id)
         ).scalar()
     max_synth_residential_id = int(max_synth_residential_id)
+
     # create sequential ids
-    df_amenities_in_synthetic_buildings["egon_building_id"] = range(
+    df_synthetic_buildings_for_amenities["egon_building_id"] = range(
         max_synth_residential_id + 1,
         max_synth_residential_id
-        + df_amenities_in_synthetic_buildings.shape[0]
+        + df_synthetic_buildings_for_amenities.shape[0]
         + 1,
     )
-    df_amenities_in_synthetic_buildings["building"] = "cts"
+
+    # set building type of synthetic building
+    df_synthetic_buildings_for_amenities["building"] = "cts"
     # TODO remove in #772
-    df_amenities_in_synthetic_buildings = (
-        df_amenities_in_synthetic_buildings.rename(
+    df_synthetic_buildings_for_amenities = (
+        df_synthetic_buildings_for_amenities.rename(
             columns={
                 "zensus_population_id": "cell_id",
                 "egon_building_id": "id",
             }
         )
     )
-    return df_amenities_in_synthetic_buildings
+    return df_synthetic_buildings_for_amenities
 
 
 def buildings_with_amenities():
@@ -217,6 +259,11 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
         OsmBuildingsSynthetic,
     )
 
+    # Only take existing columns
+    columns = [
+        column.key for column in OsmBuildingsSynthetic.__table__.columns
+    ]
+    df_synthetic_buildings = df_synthetic_buildings.loc[:, columns]
     # Write new buildings incl coord into db
     df_synthetic_buildings.to_postgis(
         "osm_buildings_synthetic",
@@ -237,16 +284,21 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
 
 def cts_to_buildings():
 
-    df_synthetic_buildings_for_amenities = synthetic_buildings_for_amenities()
+    # Buildings with amenities
     df_buildings_with_amenities = buildings_with_amenities()
+
+    # Create synthetic buildings for amenites without buildings
+    df_synthetic_buildings_for_amenities = synthetic_buildings_for_amenities()
     write_synthetic_buildings_to_db(df_synthetic_buildings_for_amenities)
+
+    # Create synthetic amenities in cells without amenities but CTS demand
 
 
 class CtsElectricityBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsElectricityBuildings",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(cts_to_buildings),
         )
