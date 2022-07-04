@@ -58,17 +58,17 @@ def synthetic_buildings_for_amenities():
         cells_query = (
             session.query(
                 egon_demandregio_zensus_electricity.zensus_population_id,
-                # # TODO can be used for square around amenity
-                # #  (1 geom_amenity: 1 geom_building)
-                # #  not unique amenity_ids yet
-                # osm_amenities_not_in_buildings_filtered.geom_amenity,
-                # osm_amenities_not_in_buildings_filtered.egon_amenity_id,
-                # is used to generate n random buildings
-                # (n amenities : 1 randombuilding)
-                func.count(
-                    osm_amenities_not_in_buildings_filtered.egon_amenity_id
-                ).label("n_amenities_inside"),
-                destatis_zensus_population_per_ha.geom,
+                # TODO can be used for square around amenity
+                #  (1 geom_amenity: 1 geom_building)
+                #  not unique amenity_ids yet
+                osm_amenities_not_in_buildings_filtered.geom_amenity,
+                osm_amenities_not_in_buildings_filtered.egon_amenity_id,
+                # # TODO can be used to generate n random buildings
+                # # (n amenities : 1 randombuilding)
+                # func.count(
+                #     osm_amenities_not_in_buildings_filtered.egon_amenity_id
+                # ).label("n_amenities_inside"),
+                # destatis_zensus_population_per_ha.geom,
             )
             .filter(
                 destatis_zensus_population_per_ha.id
@@ -80,65 +80,72 @@ def synthetic_buildings_for_amenities():
                     osm_amenities_not_in_buildings_filtered.geom_amenity,
                 )
             )
-            .group_by(
-                egon_demandregio_zensus_electricity.zensus_population_id,
-                destatis_zensus_population_per_ha.geom,
+            .filter(egon_demandregio_zensus_electricity.sector == "service")
+            .filter(
+                egon_demandregio_zensus_electricity.scenario
+                == "eGon2035"
+                #         ).group_by(
+                #             egon_demandregio_zensus_electricity.zensus_population_id,
+                #             destatis_zensus_population_per_ha.geom,
             )
         )
 
-    df_cells_with_amenities_not_in_buildings = gpd.read_postgis(
-        cells_query.statement, cells_query.session.bind, geom_col="geom"
-    )
-
-    # number of max amenities per building
-    max_amenities = 3
-    # amount of amenities is randomly generated within bounds (max_amenities,
-    # amenities per cell)
-    df_cells_with_amenities_not_in_buildings[
-        "n_amenities_inside"
-    ] = df_cells_with_amenities_not_in_buildings["n_amenities_inside"].apply(
-        random_ints_until_sum, args=[max_amenities]
-    )
-    # Specific amount of amenities per building
-    # df_amenities_not_in_buildings[
-    #     "n_amenities_inside"
-    # ] = df_amenities_not_in_buildings["n_amenities_inside"].apply(
-    #     specific_int_until_sum, args=[max_amenities]
+    # df_cells_with_amenities_not_in_buildings = gpd.read_postgis(
+    #     cells_query.statement, cells_query.session.bind, geom_col="geom"
     # )
-
-    # Unnest each building
-    df_synthetic_buildings_for_amenities = (
-        df_cells_with_amenities_not_in_buildings.explode(
-            column="n_amenities_inside"
-        )
-    )
-    # building count per cell
-    df_synthetic_buildings_for_amenities["building_count"] = (
-        df_synthetic_buildings_for_amenities.groupby(
-            ["zensus_population_id"]
-        ).cumcount()
-        + 1
-    )
-    # generate random synthetic buildings
-    edge_length = 5
-    # create random points within census cells
-    points = random_point_in_square(
-        geom=df_synthetic_buildings_for_amenities["geom"], tol=edge_length / 2
-    )
-
-    # Store center of polygon
-    df_synthetic_buildings_for_amenities["geom_point"] = points
-    df_synthetic_buildings_for_amenities = (
-        df_synthetic_buildings_for_amenities.drop(columns=["geom"])
-    )
+    #
+    # # number of max amenities per building
+    # max_amenities = 3
+    # # amount of amenities is randomly generated within bounds (max_amenities,
+    # # amenities per cell)
+    # df_cells_with_amenities_not_in_buildings[
+    #     "n_amenities_inside"
+    # ] = df_cells_with_amenities_not_in_buildings["n_amenities_inside"].apply(
+    #     random_ints_until_sum, args=[max_amenities]
+    # )
+    # # Specific amount of amenities per building
+    # # df_amenities_not_in_buildings[
+    # #     "n_amenities_inside"
+    # # ] = df_amenities_not_in_buildings["n_amenities_inside"].apply(
+    # #     specific_int_until_sum, args=[max_amenities]
+    # # )
+    #
+    # # Unnest each building
+    # df_synthetic_buildings_for_amenities = (
+    #     df_cells_with_amenities_not_in_buildings.explode(
+    #         column="n_amenities_inside"
+    #     )
+    # )
+    # # building count per cell
+    # df_synthetic_buildings_for_amenities["building_count"] = (
+    #     df_synthetic_buildings_for_amenities.groupby(
+    #         ["zensus_population_id"]
+    #     ).cumcount()
+    #     + 1
+    # )
+    # # generate random synthetic buildings
+    # edge_length = 5
+    # # create random points within census cells
+    # points = random_point_in_square(
+    #     geom=df_synthetic_buildings_for_amenities["geom"], tol=edge_length / 2
+    # )
+    #
+    # # Store center of polygon
+    # df_synthetic_buildings_for_amenities["geom_point"] = points
+    # df_synthetic_buildings_for_amenities = (
+    #     df_synthetic_buildings_for_amenities.drop(columns=["geom"])
+    # )
 
     # # TODO can be used for square around amenity
-    # df_synthetic_buildings_for_amenities = gpd.read_postgis(
-    #     cells_query.statement, cells_query.session.bind, geom_col="geom_amenity"
-    # )
-    # points = df_synthetic_buildings_for_amenities["geom_amenity"]
+    df_synthetic_buildings_for_amenities = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        geom_col="geom_amenity",
+    )
+    points = df_synthetic_buildings_for_amenities["geom_amenity"]
 
     # Create building using a square around point
+    edge_length = 5
     df_synthetic_buildings_for_amenities["geom_building"] = points.buffer(
         distance=edge_length / 2, cap_style=3
     )
