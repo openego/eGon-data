@@ -1097,10 +1097,8 @@ def allocate_pv(
             assert len_build == len(gens)
 
         for quant in gens.quant.unique():
-            q_buildings = q_buildings_gdf.loc[
-                (q_buildings_gdf.quant == quant)
-                & (q_buildings_gdf.ags == ags)
-                & (q_buildings_gdf.gens_id.isna())
+            q_buildings = buildings.loc[
+                (buildings.quant == quant) & (buildings.gens_id.isna())
             ]
             q_gens = gens.loc[gens.quant == quant]
 
@@ -1118,17 +1116,16 @@ def allocate_pv(
 
                 add_buildings = pd.Index(
                     rng.choice(
-                        q_buildings_gdf.loc[
-                            (q_buildings_gdf.quant != quant)
-                            & (q_buildings_gdf.ags == ags)
-                            & (q_buildings_gdf.gens_id.isna())
+                        buildings.loc[
+                            (buildings.quant != quant)
+                            & (buildings.gens_id.isna())
                         ].index,
                         size=delta,
                         replace=False,
                     )
                 )
 
-                q_buildings = q_buildings_gdf.loc[
+                q_buildings = buildings.loc[
                     q_buildings.index.append(add_buildings)
                 ]
 
