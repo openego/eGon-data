@@ -48,7 +48,6 @@ def synthetic_buildings_for_amenities():
     saio.register_schema("openstreetmap", engine=engine)
     saio.register_schema("society", engine=engine)
     saio.register_schema("demand", engine=engine)
-    saio.register_schema("boundaries", engine=engine)
 
     from saio.demand import egon_demandregio_zensus_electricity
     from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
@@ -57,12 +56,15 @@ def synthetic_buildings_for_amenities():
     with db.session_scope() as session:
         cells_query = (
             session.query(
-                egon_demandregio_zensus_electricity.zensus_population_id,
+                destatis_zensus_population_per_ha.id.label(
+                    "zensus_population_id"
+                ),
                 # TODO can be used for square around amenity
                 #  (1 geom_amenity: 1 geom_building)
                 #  not unique amenity_ids yet
                 osm_amenities_not_in_buildings_filtered.geom_amenity,
                 osm_amenities_not_in_buildings_filtered.egon_amenity_id,
+                # egon_demandregio_zensus_electricity.demand,
                 # # TODO can be used to generate n random buildings
                 # # (n amenities : 1 randombuilding)
                 # func.count(
@@ -71,25 +73,24 @@ def synthetic_buildings_for_amenities():
                 # destatis_zensus_population_per_ha.geom,
             )
             .filter(
+                func.st_within(
+                    osm_amenities_not_in_buildings_filtered.geom_amenity,
+                    destatis_zensus_population_per_ha.geom,
+                )
+            )
+            .filter(
                 destatis_zensus_population_per_ha.id
                 == egon_demandregio_zensus_electricity.zensus_population_id
             )
             .filter(
-                func.st_contains(
-                    destatis_zensus_population_per_ha.geom,
-                    osm_amenities_not_in_buildings_filtered.geom_amenity,
-                )
-            )
-            .filter(egon_demandregio_zensus_electricity.sector == "service")
-            .filter(
-                egon_demandregio_zensus_electricity.scenario
-                == "eGon2035"
+                egon_demandregio_zensus_electricity.sector == "service",
+                egon_demandregio_zensus_electricity.scenario == "eGon2035"
                 #         ).group_by(
                 #             egon_demandregio_zensus_electricity.zensus_population_id,
                 #             destatis_zensus_population_per_ha.geom,
             )
         )
-
+    # # TODO can be used to generate n random buildings
     # df_cells_with_amenities_not_in_buildings = gpd.read_postgis(
     #     cells_query.statement, cells_query.session.bind, geom_col="geom"
     # )
@@ -196,33 +197,46 @@ def synthetic_buildings_for_amenities():
 
 def buildings_with_amenities():
     """"""
+
     # import db tables
     saio.register_schema("openstreetmap", engine=engine)
     saio.register_schema("boundaries", engine=engine)
+    saio.register_schema("demand", engine=engine)
 
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
+    from saio.demand import egon_demandregio_zensus_electricity
     from saio.openstreetmap import osm_buildings_filtered_with_amenities
 
     with db.session_scope() as session:
-        cells_query = session.query(
-            # TODO maybe remove if osm_buildings_with_amenities.id exists
-            osm_buildings_filtered_with_amenities.id.label("egon_building_id"),
-            #         osm_buildings_with_amenities.id,
-            #         osm_buildings_with_amenities.osm_id_building,
-            # osm_buildings_filtered_with_amenities.osm_id_amenity,
-            osm_buildings_filtered_with_amenities.building,
-            osm_buildings_filtered_with_amenities.n_amenities_inside,
-            osm_buildings_filtered_with_amenities.area,
-            osm_buildings_filtered_with_amenities.geom_building,
-            osm_buildings_filtered_with_amenities.geom_point,
-            egon_map_zensus_buildings_filtered_all.zensus_population_id,
-        ).filter(
-            osm_buildings_filtered_with_amenities.id
-            == egon_map_zensus_buildings_filtered_all.id
+        cells_query = (
+            session.query(
+                osm_buildings_filtered_with_amenities.id.label(
+                    "egon_building_id"
+                ),
+                osm_buildings_filtered_with_amenities.building,
+                osm_buildings_filtered_with_amenities.n_amenities_inside,
+                osm_buildings_filtered_with_amenities.area,
+                osm_buildings_filtered_with_amenities.geom_building,
+                osm_buildings_filtered_with_amenities.geom_point,
+                egon_map_zensus_buildings_filtered_all.zensus_population_id,
+            )
+            .filter(
+                osm_buildings_filtered_with_amenities.id
+                == egon_map_zensus_buildings_filtered_all.id
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.zensus_population_id
+                == egon_map_zensus_buildings_filtered_all.zensus_population_id
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.sector == "service",
+                egon_demandregio_zensus_electricity.scenario == "eGon2035",
+            )
         )
     df_amenities_in_buildings = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
     )
+
     # TODO necessary?
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
