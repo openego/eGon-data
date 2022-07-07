@@ -375,6 +375,8 @@ Changed
   `#760 <https://github.com/openego/eGon-data/issues/760>`_
 * Add primary key to table openstreetmap.osm_ways_with_segments
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
+* Add noflex scenario for motorized individual travel
+  `#821 <https://github.com/openego/eGon-data/issues/821>`_
 
 
 Bug Fixes
