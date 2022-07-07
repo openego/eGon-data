@@ -530,6 +530,8 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Fix country code of gas pipeline DE-AT
+  `#813 <https://github.com/openego/eGon-data/issues/813>`_
 * Fix distribution of resistive heaters in district heating grids
   `#783 <https://github.com/openego/eGon-data/issues/783>`_
 * Fix missing reservoir and run_of_river power plants in eTraGo tables,
