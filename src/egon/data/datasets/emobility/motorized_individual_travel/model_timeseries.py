@@ -59,6 +59,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+
 # from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -269,8 +270,11 @@ def generate_load_time_series(
         # (I) Preserve SoC while driving
         if location == "driving":
             # Full band while driving
-            # soc_min_absolute[drive_start:drive_end+1] += soc_end * bat_cap * ev_count
-            # soc_max_absolute[drive_start:drive_end+1] += soc_start * bat_cap * ev_count
+            # soc_min_absolute[drive_start:drive_end+1] +=
+            # soc_end * bat_cap * ev_count
+            #
+            # soc_max_absolute[drive_start:drive_end+1] +=
+            # soc_start * bat_cap * ev_count
 
             # Real band (decrease SoC while driving)
             soc_min_absolute[drive_start : drive_end + 1] += (
@@ -698,7 +702,7 @@ def write_model_data_to_db(
                         load_id=emob_load_id,
                         temp_id=1,
                         p_set=(
-                            hourly_load_time_series_df.load_time_series.to_list()
+                            hourly_load_time_series_df.driving_load_time_series.to_list()
                         ),
                     )
                 )
