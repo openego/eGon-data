@@ -86,7 +86,7 @@ setup(
         "atlite==0.2.5",
         "cdsapi",
         "click",
-        "geopandas>=0.10.0",
+        "geopandas>=0.10.0,<0.11.0",
         "geopy",
         "geovoronoi==0.3.0",
         "importlib-resources",
