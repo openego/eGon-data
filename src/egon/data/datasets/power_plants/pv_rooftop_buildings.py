@@ -1097,10 +1097,8 @@ def allocate_pv(
             assert len_build == len(gens)
 
         for quant in gens.quant.unique():
-            q_buildings = q_buildings_gdf.loc[
-                (q_buildings_gdf.quant == quant)
-                & (q_buildings_gdf.ags == ags)
-                & (q_buildings_gdf.gens_id.isna())
+            q_buildings = buildings.loc[
+                (buildings.quant == quant) & (buildings.gens_id.isna())
             ]
             q_gens = gens.loc[gens.quant == quant]
 
@@ -1118,17 +1116,16 @@ def allocate_pv(
 
                 add_buildings = pd.Index(
                     rng.choice(
-                        q_buildings_gdf.loc[
-                            (q_buildings_gdf.quant != quant)
-                            & (q_buildings_gdf.ags == ags)
-                            & (q_buildings_gdf.gens_id.isna())
+                        buildings.loc[
+                            (buildings.quant != quant)
+                            & (buildings.gens_id.isna())
                         ].index,
                         size=delta,
                         replace=False,
                     )
                 )
 
-                q_buildings = q_buildings_gdf.loc[
+                q_buildings = buildings.loc[
                     q_buildings.index.append(add_buildings)
                 ]
 
@@ -1287,7 +1284,6 @@ def allocate_to_buildings(
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
     logger.debug("Starting allocation of status quo.")
-    t0 = perf_counter()
 
     q_mastr_gdf = sort_and_qcut_df(mastr_gdf, col="capacity", q=Q)
     q_buildings_gdf = sort_and_qcut_df(buildings_gdf, col="building_area", q=Q)
@@ -1297,8 +1293,6 @@ def allocate_to_buildings(
     )
 
     validate_output(desagg_mastr_gdf, desagg_buildings_gdf)
-
-    logger.debug(f"Allocation time: {perf_counter() - t0 / 60:g} Minutes.")
 
     return drop_unallocated_gens(desagg_mastr_gdf), desagg_buildings_gdf
 
