@@ -1284,7 +1284,6 @@ def allocate_to_buildings(
         GeoDataFrame containing building data allocated to MaStR IDs.
     """
     logger.debug("Starting allocation of status quo.")
-    t0 = perf_counter()
 
     q_mastr_gdf = sort_and_qcut_df(mastr_gdf, col="capacity", q=Q)
     q_buildings_gdf = sort_and_qcut_df(buildings_gdf, col="building_area", q=Q)
@@ -1294,8 +1293,6 @@ def allocate_to_buildings(
     )
 
     validate_output(desagg_mastr_gdf, desagg_buildings_gdf)
-
-    logger.debug(f"Allocation time: {perf_counter() - t0 / 60:g} Minutes.")
 
     return drop_unallocated_gens(desagg_mastr_gdf), desagg_buildings_gdf
 
