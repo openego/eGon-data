@@ -998,14 +998,14 @@ def profile_generator(aggregation_level):
 
     heat_profile_dist : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every distric heating id
+            normalized heat profiles for every distric heating id
         else
             0
     heat_profile_idp : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every mv grid bus_id
+            normalized heat profiles for every mv grid bus_id
         else
-            heat profiles for every zensus_poppulation_id
+            normalized heat profiles for every zensus_poppulation_id
     """
 
     annual_demand, idp_df, selected_profiles = profile_selector()
@@ -1076,6 +1076,7 @@ def profile_generator(aggregation_level):
                 right_on=mv_grid_ind.index,
                 how="inner",
             )
+
             heat_profile_idp.sort_values("bus_id", inplace=True)
             heat_profile_idp.set_index("bus_id", inplace=True)
             heat_profile_idp.drop("key_0", axis=1, inplace=True)
@@ -1159,20 +1160,7 @@ def residential_demand_scale(aggregation_level):
     h = h_value()
     h = h.reset_index(drop=True)
 
-    district_heating = psycop_df_AF(
-        "demand.egon_map_zensus_district_heating_areas"
-    )
-
-    district_heating = district_heating.pivot_table(
-        values="area_id", index="zensus_population_id", columns="scenario"
-    )
-
     mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-
-    mv_grid_ind = mv_grid.loc[
-        mv_grid.index.difference(district_heating.index), :
-    ]
-    mv_grid_ind = mv_grid_ind.reset_index()
 
     scenarios = ["eGon2035", "eGon100RE"]
 
@@ -1181,6 +1169,24 @@ def residential_demand_scale(aggregation_level):
     residential_zensus_profile = pd.DataFrame()
 
     for scenario in scenarios:
+
+        district_heating = db.select_dataframe(
+            f"""
+            SELECT * FROM 
+            demand.egon_map_zensus_district_heating_areas
+            WHERE scenario = '{scenario}'
+            """
+        )
+
+        district_heating = district_heating.pivot_table(
+            values="area_id", index="zensus_population_id", columns="scenario"
+        )
+
+        mv_grid_ind = mv_grid.loc[
+            mv_grid.index.difference(district_heating.index), :
+        ]
+        mv_grid_ind = mv_grid_ind.reset_index()
+
         if aggregation_level == "district":
 
             scenario_ids = district_heating[scenario]
@@ -1264,6 +1270,7 @@ def residential_demand_scale(aggregation_level):
                 heat_demand_profile_dist
             )
 
+            # Individual supplied heat demand time series
             district_grid = pd.merge(
                 mv_grid_ind[["bus_id", "zensus_population_id"]],
                 annual_demand[["zensus_population_id", "Station", scenario]],
@@ -1721,6 +1728,49 @@ def CTS_demand_scale(aggregation_level):
     return CTS_district, CTS_grid, CTS_zensus
 
 
+def store_national_profiles(
+    residential_demand_grid,
+    CTS_demand_grid,
+    residential_demand_dist,
+    CTS_demand_dist,
+):
+    for scenario in CTS_demand_grid.scenario.unique():
+        national_demand = pd.DataFrame(
+            columns=["residential rural", "services rural", "urban central"],
+            index=pd.date_range(
+                datetime(2011, 1, 1, 0), periods=8760, freq="H"
+            ),
+        )
+
+        national_demand["residential rural"] = (
+            residential_demand_grid[
+                residential_demand_grid.scenario == scenario
+            ]
+            .drop("scenario", axis="columns")
+            .sum()
+            .values
+        )
+        national_demand["services rural"] = (
+            CTS_demand_grid[CTS_demand_grid.scenario == scenario]
+            .sum(numeric_only=True)
+            .values
+        )
+        national_demand["urban central"] = (
+            residential_demand_dist[
+                residential_demand_dist.scenario == scenario
+            ]
+            .drop("scenario", axis="columns")
+            .sum()
+            .values
+            + CTS_demand_dist[CTS_demand_dist.scenario == scenario]
+            .drop("scenario", axis="columns")
+            .sum()
+            .values
+        )
+
+        national_demand.to_csv(f"heat_demand_timeseries_DE_{scenario}.csv")
+
+
 def demand_profile_generator(aggregation_level="district"):
     """
 
@@ -1747,6 +1797,14 @@ def demand_profile_generator(aggregation_level="district"):
 
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level
+    )
+
+    # store demand timeseries for pypsa-eur-sec on national level
+    store_national_profiles(
+        residential_demand_grid,
+        CTS_demand_grid,
+        residential_demand_dist,
+        CTS_demand_dist,
     )
 
     if aggregation_level == "district":
@@ -1862,7 +1920,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.5",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )
