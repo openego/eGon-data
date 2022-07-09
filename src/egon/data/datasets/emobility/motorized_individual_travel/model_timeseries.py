@@ -754,7 +754,7 @@ def write_model_data_to_db(
             ]
             write_load(
                 scenario_name=noflex_scenario_name,
-                connection_bus_id=etrago_bus,
+                connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
             )
 
@@ -840,7 +840,9 @@ def write_model_data_to_db(
 
     # Write to database: regular and noflex scenario
     write_to_db(write_noflex_model=False)
+    print('    Writing flex scenario...')
     if write_noflex_model is True:
+        print('    Writing noflex scenario...')
         write_to_db(write_noflex_model=True)
 
     # Export to working dir if requested
