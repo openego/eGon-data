@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.8",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -82,30 +82,6 @@ def create_table():
     NEP2021ConvPowerPlants.__table__.drop(bind=engine, checkfirst=True)
     EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
-
-
-def map_nuts():
-
-    map_nuts = {
-        "BW": "DE1",
-        "NW": "DEA",
-        "HE": "DE7",
-        "BB": "DE4",
-        "HB": "DE5",
-        "RP": "DEB",
-        "ST": "DEE",
-        "SH": "DEF",
-        "MV": "DE8",
-        "TH": "DEG",
-        "NI": "DE9",
-        "SN": "DED",
-        "HH": "DE6",
-        "SL": "DEC",
-        "BE": "DE3",
-        "BY": "DE2",
-    }
-
-    return map_nuts
 
 
 def insert_capacities_per_federal_state_nep():
@@ -235,24 +211,6 @@ def insert_capacities_per_federal_state_nep():
 
         insert_data = insert_data.append(data)
 
-    # Get aggregated capacities from nep's power plant list for certain carrier
-
-    carriers = ["oil", "other_non_renewable", "pumped_hydro"]
-
-    capacities_list = aggr_nep_capacities(carriers)
-
-    # Replace capacities for the named carrier
-
-    updated = insert_data[insert_data["carrier"].isin(carriers)]
-    updated["capacity"] = capacities_list[
-        capacities_list["carrier"].isin(updated["carrier"])
-        & capacities_list["nuts"].isin(updated["nuts"])
-    ]["c2035_capacity"].values
-
-    original = insert_data[~insert_data["carrier"].isin(carriers)]
-
-    insert_data = pd.concat([original, updated])
-
     # Insert data to db
     insert_data.to_sql(
         targets["scenario_capacities"]["table"],
@@ -291,41 +249,6 @@ def population_share():
     )
 
 
-def aggr_nep_capacities(carriers):
-    """Aggregates capacities from NEP power plants list by carrier and federal
-    state
-
-    Returns
-    -------
-    pandas.Dataframe
-        Dataframe with capacities per federal state and carrier
-
-    """
-    # Get list of power plants from nep
-    nep_capacities = insert_nep_list_powerplants(export=False)[
-        ["federal_state", "carrier", "c2035_capacity"]
-    ]
-
-    # Sum up capacities per federal state and carrier
-    capacities_list = (
-        nep_capacities.groupby(["federal_state", "carrier"])["c2035_capacity"]
-        .sum()
-        .to_frame()
-        .reset_index()
-    )
-
-    # Neglect entries with carriers not in argument
-    capacities_list = capacities_list[capacities_list.carrier.isin(carriers)]
-
-    # Include NUTS code
-    capacities_list["nuts"] = capacities_list.federal_state.map(map_nuts())
-
-    # Set new multiindex
-    capacities_list = capacities_list.drop(columns=["federal_state"])
-
-    return capacities_list
-
-
 def map_carrier():
     """Map carriers from NEP and Marktstammdatenregister to carriers from eGon
 
@@ -356,23 +279,15 @@ def map_carrier():
     )
 
 
-def insert_nep_list_powerplants(export=True):
-    """Insert list of conventional powerplants attached to the approval
+def insert_nep_list_powerplants():
+    """Insert list of conventional powerplants attachd to the approval
     of the scenario report by BNetzA
-
-    Parameters
-    ----------
-    export : bool
-        Choose if nep list should be exported to the data
-        base. The default is True.
-        If export=False a data frame will be returned
 
     Returns
     -------
-    kw_liste_nep : pandas.DataFrame
-        List of conventional power plants from nep if export=False
-    """
+    None.
 
+    """
     sources = egon.data.config.datasets()["scenario_input"]["sources"]
     targets = egon.data.config.datasets()["scenario_input"]["targets"]
 
@@ -453,16 +368,13 @@ def insert_nep_list_powerplants(export=True):
 
     kw_liste_nep["carrier"] = map_carrier()[kw_liste_nep.carrier_nep].values
 
-    if export is True:
-        # Insert data to db
-        kw_liste_nep.to_sql(
-            targets["nep_conventional_powerplants"]["table"],
-            engine,
-            schema=targets["nep_conventional_powerplants"]["schema"],
-            if_exists="replace",
-        )
-    else:
-        return kw_liste_nep
+    # Insert data to db
+    kw_liste_nep.to_sql(
+        targets["nep_conventional_powerplants"]["table"],
+        engine,
+        schema=targets["nep_conventional_powerplants"]["schema"],
+        if_exists="replace",
+    )
 
 
 def district_heating_input():
@@ -545,9 +457,9 @@ def insert_data_nep():
 
     """
 
-    insert_nep_list_powerplants(export=True)
-
     insert_capacities_per_federal_state_nep()
+
+    insert_nep_list_powerplants()
 
 
 def eGon100_capacities():
