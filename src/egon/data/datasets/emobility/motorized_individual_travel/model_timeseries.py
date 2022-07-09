@@ -754,7 +754,7 @@ def write_model_data_to_db(
             ]
             write_load(
                 scenario_name=noflex_scenario_name,
-                connection_bus_id=etrago_bus,
+                connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
             )
 
