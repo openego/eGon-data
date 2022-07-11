@@ -1,10 +1,11 @@
 from contextlib import contextmanager
 import codecs
 import functools
+import time
 
-from psycopg2.errors import UniqueViolation
+from psycopg2.errors import UniqueViolation, DeadlockDetected
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
@@ -329,11 +330,22 @@ def check_db_unique_violation(func):
                 if isinstance(e.orig, UniqueViolation):
                     print("Entry is not unique, retrying...")
                     ctr += 1
+                    time.sleep(3)
                     if ctr > 10:
                         print("No success after 10 retries, exiting...")
                         raise e
                 else:
                     raise e
+            # ===== TESTING ON DEADLOCKS START =====
+            except OperationalError as e:
+                if isinstance(e.orig, DeadlockDetected):
+                    print("Deadlock detected, retrying...")
+                    ctr += 1
+                    time.sleep(3)
+                    if ctr > 10:
+                        print("No success after 10 retries, exiting...")
+                        raise e
+            # ===== TESTING ON DEADLOCKS END =======
             else:
                 unique_violation = False
         return ret

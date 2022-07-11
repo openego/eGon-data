@@ -199,6 +199,8 @@ Added
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
 * Introduce Sanity checks for eGon2035
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
+* Add motorized individual travel
+  `#553 <https://github.com/openego/eGon-data/issues/553>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -507,7 +509,7 @@ Bug Fixes
 * Fix assignemnt of impedances (x) to etrago tables
   `#710 <https://github.com/openego/eGon-data/issues/710>`_
 * Fix country_code attribution of two gas buses
-  `#710 <https://github.com/openego/eGon-data/issues/744>`_
+  `#744 <https://github.com/openego/eGon-data/issues/744>`_
 * Fix voronoi assignemnt for enclaves
   `#734 <https://github.com/openego/eGon-data/issues/734>`_
 * Set lengths of non-pipeline links to 0
@@ -529,6 +531,17 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Fix country code of gas pipeline DE-AT
+  `#813 <https://github.com/openego/eGon-data/issues/813>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
+* Fix missing reservoir and run_of_river power plants in eTraGo tables,
+  Modify fill_etrago_gen to also group generators from eGon100RE,
+  Use db.next_etrago_id in fill_etrago_gen
+  `#798 <https://github.com/openego/eGon-data/issues/798>`_
+  `#776 <https://github.com/openego/eGon-data/issues/776>`_
+* Fix model load timeseries in motorized individual travel
+  `#830 <https://github.com/openego/eGon-data/issues/830>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
