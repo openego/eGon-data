@@ -474,12 +474,12 @@ def insert_industrial_gas_demand_egon100RE():
     ].apply(lambda x: [val / H2_total * H2_total_PES for val in x])
 
     # consistency check
-    total_CH4_distributed = industrial_gas_demand_CH4["p_set"].apply(
-        lambda x: sum(x)
-    ).sum()
-    total_H2_distributed = industrial_gas_demand_H2["p_set"].apply(
-        lambda x: sum(x)
-    ).sum()
+    total_CH4_distributed = sum(
+        [sum(x) for x in industrial_gas_demand_CH4["p_set"].to_list()]
+    )
+    total_H2_distributed = sum(
+        [sum(x) for x in industrial_gas_demand_H2["p_set"].to_list()]
+    )
 
     print(
         f"Total amount of industrial H2 demand distributed is "
