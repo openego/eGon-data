@@ -459,7 +459,7 @@ def insert_industrial_gas_demand_egon100RE():
         # modify values for test mode
         # the values are obtained by evaluating the share of H2 demand in
         # test region (NUTS1: DEF, Schleswig-Holstein) with respect to the H2
-        # demand in full Germany model (NUTS0: DE). To task has been outsourced
+        # demand in full Germany model (NUTS0: DE). The task has been outsourced
         # to save processing cost
         H2_total_PES *= 0.01855683050330346
         CH4_total_PES *= 0.01855683050330346
@@ -472,6 +472,28 @@ def insert_industrial_gas_demand_egon100RE():
     industrial_gas_demand_H2["p_set"] = industrial_gas_demand_H2[
         "p_set"
     ].apply(lambda x: [val / H2_total * H2_total_PES for val in x])
+
+    # consistency check
+    total_CH4_distributed = industrial_gas_demand_CH4["p_set"].apply(
+        lambda x: sum(x)
+    ).sum()
+    total_H2_distributed = industrial_gas_demand_H2["p_set"].apply(
+        lambda x: sum(x)
+    ).sum()
+
+    msg = (
+        f"Total amount of industrial H2 demand from P-E-S is equal to "
+        "{H2_total_PES}, which should be identical to the distributed amount "
+        "of {total_H2_distributed}, but it is not."
+    )
+    assert round(H2_total_PES) == round(total_H2_distributed), msg
+
+    msg = (
+        f"Total amount of industrial CH4 demand from P-E-S is equal to "
+        "{CH4_total_PES}, which should be identical to the distributed amount "
+        "of {total_CH4_distributed}, but it is not."
+    )
+    assert round(CH4_total_PES) == round(total_CH4_distributed), msg
 
     industrial_gas_demand = pd.concat(
         [
