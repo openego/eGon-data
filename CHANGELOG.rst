@@ -501,6 +501,8 @@ Bug Fixes
   `#695 <https://github.com/openego/eGon-data/issues/695>`_
 * Fix twisted number error residential demand
   `#704 <https://github.com/openego/eGon-data/issues/704>`_
+* Fix industrial H2 and CH4 demand for eGon100RE scenario
+  `#687 <https://github.com/openego/eGon-data/issues/687>`_
 * Clean up `"pipeline.py"`
   `#562 <https://github.com/openego/eGon-data/issues/562>`_
 * Assign timeseries data to crossborder generators ego2035
