@@ -1182,9 +1182,10 @@ def residential_demand_scale(aggregation_level):
             values="area_id", index="zensus_population_id", columns="scenario"
         )
 
-        mv_grid_ind = mv_grid.loc[
-            mv_grid.index.difference(district_heating.index), :
+        mv_grid_ind = mv_grid[
+            ~mv_grid.zensus_population_id.isin(district_heating.index)
         ]
+
         mv_grid_ind = mv_grid_ind.reset_index()
 
         if aggregation_level == "district":
