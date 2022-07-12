@@ -481,17 +481,22 @@ def insert_industrial_gas_demand_egon100RE():
         lambda x: sum(x)
     ).sum()
 
+    print(
+        f"Total amount of industrial H2 demand distributed is "
+        f"{total_H2_distributed} MWh. Total amount of industrial CH4 demand "
+        f"distributed is {total_CH4_distributed} MWh."
+    )
     msg = (
         f"Total amount of industrial H2 demand from P-E-S is equal to "
-        "{H2_total_PES}, which should be identical to the distributed amount "
-        "of {total_H2_distributed}, but it is not."
+        f"{H2_total_PES}, which should be identical to the distributed amount "
+        f"of {total_H2_distributed}, but it is not."
     )
     assert round(H2_total_PES) == round(total_H2_distributed), msg
 
     msg = (
         f"Total amount of industrial CH4 demand from P-E-S is equal to "
-        "{CH4_total_PES}, which should be identical to the distributed amount "
-        "of {total_CH4_distributed}, but it is not."
+        f"{CH4_total_PES}, which should be identical to the distributed amount "
+        f"of {total_CH4_distributed}, but it is not."
     )
     assert round(CH4_total_PES) == round(total_CH4_distributed), msg
 
