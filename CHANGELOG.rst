@@ -363,10 +363,12 @@ Changed
   `#581 <https://github.com/openego/eGon-data/issues/581>`_
 * Update deposit id to access v0.7 of the zenodo repository
   `#736 <https://github.com/openego/eGon-data/issues/736>`_
+* Include simplified restrictions for H2 feed-in into CH4 grid
+  `#790 <https://github.com/openego/eGon-data/issues/790>`_
 *  Update hh electricity profiles
   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
-  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+  `#775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
   `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
