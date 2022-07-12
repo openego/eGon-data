@@ -138,11 +138,11 @@ def H2_CH4_mix_energy_fractions(x, T=25, p=50):
     Parameters
     ----------
     x : float
-        Volumetric percentage of H2 in the mixture
+        Volumetric fraction of H2 in the mixture
     T : int, optional
-        Temperature of the mixture, by default 25
+        Temperature of the mixture in °C, by default 25
     p : int, optional
-        Pressure of the mixture, by default 50
+        Pressure of the mixture in bar, by default 50
 
     Returns
     -------
