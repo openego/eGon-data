@@ -377,7 +377,8 @@ Changed
   `#760 <https://github.com/openego/eGon-data/issues/760>`_
 * Add primary key to table openstreetmap.osm_ways_with_segments
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
-
+* Update pypsa-eur-sec fork and store national demand time series
+  `#402 <https://github.com/openego/eGon-data/issues/402>`_
 
 Bug Fixes
 ---------
