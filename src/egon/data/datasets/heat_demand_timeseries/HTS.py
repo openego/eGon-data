@@ -999,14 +999,14 @@ def profile_generator(aggregation_level):
 
     heat_profile_dist : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every distric heating id
+            normalized heat profiles for every distric heating id
         else
             0
     heat_profile_idp : pandas.DataFrame
         if aggreation_level = 'district'
-            heat profiles for every mv grid bus_id
+            normalized heat profiles for every mv grid bus_id
         else
-            heat profiles for every zensus_poppulation_id
+            normalized heat profiles for every zensus_poppulation_id
     """
 
     annual_demand, idp_df, selected_profiles = profile_selector()
@@ -1077,6 +1077,7 @@ def profile_generator(aggregation_level):
                 right_on=mv_grid_ind.index,
                 how="inner",
             )
+
             heat_profile_idp.sort_values("bus_id", inplace=True)
             heat_profile_idp.set_index("bus_id", inplace=True)
             heat_profile_idp.drop("key_0", axis=1, inplace=True)
@@ -1160,20 +1161,7 @@ def residential_demand_scale(aggregation_level):
     h = h_value()
     h = h.reset_index(drop=True)
 
-    district_heating = psycop_df_AF(
-        "demand.egon_map_zensus_district_heating_areas"
-    )
-
-    district_heating = district_heating.pivot_table(
-        values="area_id", index="zensus_population_id", columns="scenario"
-    )
-
     mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-
-    mv_grid_ind = mv_grid.loc[
-        mv_grid.index.difference(district_heating.index), :
-    ]
-    mv_grid_ind = mv_grid_ind.reset_index()
 
     scenarios = ["eGon2035", "eGon100RE"]
 
@@ -1182,6 +1170,24 @@ def residential_demand_scale(aggregation_level):
     residential_zensus_profile = pd.DataFrame()
 
     for scenario in scenarios:
+
+        district_heating = db.select_dataframe(
+            f"""
+            SELECT * FROM 
+            demand.egon_map_zensus_district_heating_areas
+            WHERE scenario = '{scenario}'
+            """
+        )
+
+        district_heating = district_heating.pivot_table(
+            values="area_id", index="zensus_population_id", columns="scenario"
+        )
+
+        mv_grid_ind = mv_grid.loc[
+            mv_grid.index.difference(district_heating.index), :
+        ]
+        mv_grid_ind = mv_grid_ind.reset_index()
+
         if aggregation_level == "district":
 
             scenario_ids = district_heating[scenario]
@@ -1265,6 +1271,7 @@ def residential_demand_scale(aggregation_level):
                 heat_demand_profile_dist
             )
 
+            # Individual supplied heat demand time series
             district_grid = pd.merge(
                 mv_grid_ind[["bus_id", "zensus_population_id"]],
                 annual_demand[["zensus_population_id", "Station", scenario]],
@@ -1852,7 +1859,6 @@ def demand_profile_generator(aggregation_level="district"):
 
         final_heat_profiles_grid = pd.DataFrame()
         for scenario in scenarios:
-
             scenario_demand = (
                 total_demands_grid[total_demands_grid.scenario == scenario]
                 .drop("scenario", axis=1)
@@ -1923,7 +1929,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(demand_profile_generator),
         )

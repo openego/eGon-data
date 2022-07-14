@@ -382,6 +382,9 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
+* Add noflex scenario for motorized individual travel
+  `#821 <https://github.com/openego/eGon-data/issues/821>`_
+
 
 Bug Fixes
 ---------
@@ -538,15 +541,17 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
-* Fix country code of gas pipeline DE-AT
-  `#813 <https://github.com/openego/eGon-data/issues/813>`_
-* Fix distribution of resistive heaters in district heating grids
-  `#783 <https://github.com/openego/eGon-data/issues/783>`_
 * Fix missing reservoir and run_of_river power plants in eTraGo tables,
   Modify fill_etrago_gen to also group generators from eGon100RE,
   Use db.next_etrago_id in fill_etrago_gen
   `#798 <https://github.com/openego/eGon-data/issues/798>`_
   `#776 <https://github.com/openego/eGon-data/issues/776>`_
+* Fix country code of gas pipeline DE-AT
+  `#813 <https://github.com/openego/eGon-data/issues/813>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
+* Overwrite capacities for conventional power plants with data from nep list
+  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
 
