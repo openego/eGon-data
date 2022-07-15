@@ -10,7 +10,6 @@ from egon.data import db, config
 from egon.data.datasets.power_plants import (
     assign_voltage_level,
     assign_bus_id,
-    assign_gas_bus_id,
     filter_mastr_geometry,
     select_target,
 )
