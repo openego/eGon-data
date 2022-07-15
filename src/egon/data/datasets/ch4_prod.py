@@ -268,7 +268,9 @@ def import_gas_generators(scn_name="eGon2035"):
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     # Match to associated CH4 bus
-    CH4_generators_list = db.assign_gas_bus_id(CH4_generators_list, scn_name, "CH4")
+    CH4_generators_list = db.assign_gas_bus_id(
+        CH4_generators_list, scn_name, "CH4"
+    )
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])

@@ -124,7 +124,9 @@ def import_installed_ch4_storages(scn_name):
 
     # Match to associated gas bus
     Gas_storages_list = Gas_storages_list.reset_index(drop=True)
-    Gas_storages_list = db.assign_gas_bus_id(Gas_storages_list, scn_name, "CH4")
+    Gas_storages_list = db.assign_gas_bus_id(
+        Gas_storages_list, scn_name, "CH4"
+    )
 
     # Add missing columns
     c = {"scn_name": scn_name, "carrier": "CH4"}

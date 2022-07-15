@@ -502,7 +502,9 @@ def insert_large_chp(sources, target, EgonChp):
     ).bus_id
 
     # Assign gas bus_id
-    insert_chp["gas_bus_id"] = db.assign_gas_bus_id(insert_chp_c, 'eGon2035', 'CH4').bus
+    insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
+        insert_chp_c, "eGon2035", "CH4"
+    ).bus
 
     insert_chp = assign_use_case(insert_chp, sources)
 

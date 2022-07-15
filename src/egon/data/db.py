@@ -3,7 +3,7 @@ import codecs
 import functools
 import time
 
-from psycopg2.errors import UniqueViolation, DeadlockDetected
+from psycopg2.errors import DeadlockDetected, UniqueViolation
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import sessionmaker
@@ -163,7 +163,7 @@ def session_scoped(function):
 
 
 def select_dataframe(sql, index_col=None, warning=True):
-    """ Select data from local database as pandas.DataFrame
+    """Select data from local database as pandas.DataFrame
 
     Parameters
     ----------
