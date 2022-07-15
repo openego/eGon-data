@@ -17,7 +17,6 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     select_target,
 )
-import egon.data.config
 
 
 def select_nep_pumped_hydro():
