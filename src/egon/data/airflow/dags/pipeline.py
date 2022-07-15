@@ -313,6 +313,7 @@ with airflow.DAG(
             vg250,
             zensus_mv_grid_districts,
             hh_demand_buildings_setup,
+            weather_data,
         ]
     )
 

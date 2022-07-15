@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas.io.sql as sqlio
+from pathlib import Path
 import psycopg2
 import xarray as xr
 
@@ -1735,6 +1736,12 @@ def store_national_profiles(
     residential_demand_dist,
     CTS_demand_dist,
 ):
+
+    folder = Path(".") / "input-pypsa-eur-sec"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
     for scenario in CTS_demand_grid.scenario.unique():
         national_demand = pd.DataFrame(
             columns=["residential rural", "services rural", "urban central"],
@@ -1769,7 +1776,9 @@ def store_national_profiles(
             .values
         )
 
-        national_demand.to_csv(f"heat_demand_timeseries_DE_{scenario}.csv")
+        national_demand.to_csv(
+            folder / f"heat_demand_timeseries_DE_{scenario}.csv"
+        )
 
 
 def demand_profile_generator(aggregation_level="district"):

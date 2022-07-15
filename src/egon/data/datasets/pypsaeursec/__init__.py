@@ -95,8 +95,6 @@ def run_pypsa_eur_sec():
             [
                 "git",
                 "clone",
-                "--branch",
-                "batteries-and-update-pes",
                 "https://github.com/openego/pypsa-eur-sec.git",
                 pypsa_eur_sec_repos,
             ]

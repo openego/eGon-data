@@ -3,7 +3,9 @@ and feed this data into the corresponding etraGo tables.
 
 """
 from datetime import datetime
+from pathlib import Path
 
+import os
 import egon.data.config
 import pandas as pd
 from egon.data import db
@@ -133,6 +135,12 @@ def store_national_profiles(
     None.
 
     """
+
+    folder = Path(".") / "input-pypsa-eur-sec"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
     national_demand = pd.DataFrame(
         columns=["residential_and_service", "industry"],
         index=pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H"),
@@ -148,7 +156,9 @@ def store_national_profiles(
         + pd.DataFrame(hh_curves.p_set.tolist()).sum()
     ).values
 
-    national_demand.to_csv(f"electrical_demand_timeseries_DE_{scenario}.csv")
+    national_demand.to_csv(
+        folder / f"electrical_demand_timeseries_DE_{scenario}.csv"
+    )
 
 
 def export_to_db():

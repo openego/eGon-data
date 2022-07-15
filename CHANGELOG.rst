@@ -384,6 +384,10 @@ Changed
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Update pypsa-eur-sec fork and store national demand time series
+  `#402 <https://github.com/openego/eGon-data/issues/402>`_
+* Move and merge the two assign_gas_bus_id functions to a central place
+  `#797 <https://github.com/openego/eGon-data/issues/797>`_
 
 Bug Fixes
 ---------
