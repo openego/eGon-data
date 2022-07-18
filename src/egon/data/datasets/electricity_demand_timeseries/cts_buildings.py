@@ -44,28 +44,15 @@ from saio.openstreetmap import (
 from saio.society import destatis_zensus_population_per_ha
 
 
-def synthetic_buildings_for_amenities():
+def amenities_without_buildings():
     """
-    Synthetic buildings are generated for amenities which could not be
-    allocated to a building. Buildings are randomly spread within census cells.
-    The Number of buildings is derived from amenity count and randomly chosen
-    number of amenities per building <= 3.
 
     Returns
     -------
     pd.DataFrame
-        Table of synthetic buildings
+        Table of amenities without buildings
 
     """
-    # import db tables
-    saio.register_schema("openstreetmap", engine=engine)
-    saio.register_schema("society", engine=engine)
-    saio.register_schema("demand", engine=engine)
-
-    from saio.demand import egon_demandregio_zensus_electricity
-    from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
-    from saio.society import destatis_zensus_population_per_ha
-
     with db.session_scope() as session:
         cells_query = (
             session.query(
@@ -108,47 +95,6 @@ def synthetic_buildings_for_amenities():
     #     cells_query.statement, cells_query.session.bind, geom_col="geom"
     # )
     #
-    # # number of max amenities per building
-    # max_amenities = 3
-    # # amount of amenities is randomly generated within bounds (max_amenities,
-    # # amenities per cell)
-    # df_cells_with_amenities_not_in_buildings[
-    #     "n_amenities_inside"
-    # ] = df_cells_with_amenities_not_in_buildings["n_amenities_inside"].apply(
-    #     random_ints_until_sum, args=[max_amenities]
-    # )
-    # # Specific amount of amenities per building
-    # # df_amenities_not_in_buildings[
-    # #     "n_amenities_inside"
-    # # ] = df_amenities_not_in_buildings["n_amenities_inside"].apply(
-    # #     specific_int_until_sum, args=[max_amenities]
-    # # )
-    #
-    # # Unnest each building
-    # df_synthetic_buildings_for_amenities = (
-    #     df_cells_with_amenities_not_in_buildings.explode(
-    #         column="n_amenities_inside"
-    #     )
-    # )
-    # # building count per cell
-    # df_synthetic_buildings_for_amenities["building_count"] = (
-    #     df_synthetic_buildings_for_amenities.groupby(
-    #         ["zensus_population_id"]
-    #     ).cumcount()
-    #     + 1
-    # )
-    # # generate random synthetic buildings
-    # edge_length = 5
-    # # create random points within census cells
-    # points = random_point_in_square(
-    #     geom=df_synthetic_buildings_for_amenities["geom"], tol=edge_length / 2
-    # )
-    #
-    # # Store center of polygon
-    # df_synthetic_buildings_for_amenities["geom_point"] = points
-    # df_synthetic_buildings_for_amenities = (
-    #     df_synthetic_buildings_for_amenities.drop(columns=["geom"])
-    # )
 
     # # TODO can be used for square around amenity
     df_synthetic_buildings_for_amenities = gpd.read_postgis(
@@ -156,7 +102,9 @@ def synthetic_buildings_for_amenities():
         cells_query.session.bind,
         geom_col="geom_amenity",
     )
-    points = df_synthetic_buildings_for_amenities["geom_amenity"]
+    return df_synthetic_buildings_for_amenities
+
+
 
     # Create building using a square around point
     edge_length = 5
