@@ -267,6 +267,10 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
         OsmBuildingsSynthetic,
     )
 
+    if not "geom_point" in df_synthetic_buildings.columns:
+        df_synthetic_buildings["geom_point"] = df_synthetic_buildings[
+            "geom_building"
+        ].centroid
     # Only take existing columns
     columns = [
         column.key for column in OsmBuildingsSynthetic.__table__.columns
