@@ -105,6 +105,44 @@ def amenities_without_buildings():
     return df_synthetic_buildings_for_amenities
 
 
+def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
+    """
+    Building centers are placed randomly within census cells.
+    The Number of buildings is derived from n_amenity_inside, the selected
+    method and number of amenities per building.
+    """
+    if isinstance(max_amenities, int):
+        # amount of amenities is randomly generated within bounds (max_amenities,
+        # amenities per cell)
+        df["n_amenities_inside"] = df["n_amenities_inside"].apply(
+            random_ints_until_sum, args=[max_amenities]
+        )
+    if isinstance(amenities, int):
+        # Specific amount of amenities per building
+        df["n_amenities_inside"] = df["n_amenities_inside"].apply(
+            specific_int_until_sum, args=[amenities]
+        )
+
+    # Unnest each building
+    df = df.explode(column="n_amenities_inside")
+
+    # building count per cell
+    df["building_count"] = df.groupby(["zensus_population_id"]).cumcount() + 1
+
+    # generate random synthetic buildings
+    edge_length = 5
+    # create random points within census cells
+    points = random_point_in_square(geom=df["geom"], tol=edge_length / 2)
+
+    df.reset_index(drop=True, inplace=True)
+    # Store center of polygon
+    df["geom_point"] = points
+    # Drop geometry of census cell
+    df = df.drop(columns=["geom"])
+
+    return df
+
+
 
     # Create building using a square around point
     edge_length = 5
