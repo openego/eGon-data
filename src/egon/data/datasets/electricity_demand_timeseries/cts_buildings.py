@@ -561,6 +561,33 @@ def calc_building_demand_profile_share(df_cts_buildings):
     return df_demand_share[["id", "bus_id", "scenario", "profile_share"]]
 
 
+def calc_building_profiles(df_demand_share=None, egon_building_id=None, scenario="eGon2035"):
+    """
+
+    """
+
+    if not isinstance(df_demand_share, pd.DataFrame):
+        with db.session_scope() as session:
+            cells_query = session.query(EgonCtsElectricityDemandBuildingShare)
+
+        df_demand_share = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col=None)
+
+    df_cts_profiles = calc_load_curves_cts(scenario)
+
+    # Only calculate selected building profile if egon_building_id is given
+    if isinstance(egon_building_id, int) and egon_building_id in df_demand_share["id"]:
+        df_demand_share = df_demand_share.loc[
+            df_demand_share["id"] == egon_building_id]
+
+    df_building_profiles = pd.DataFrame()
+    for bus_id, df in df_demand_share.groupby('bus_id'):
+        shares = df.set_index("id", drop=True)["profile_share"]
+        profile = df_cts_profiles.loc[:, bus_id]
+        building_profiles = profile.apply(lambda x: x * shares)
+        df_building_profiles = pd.concat([df_building_profiles, building_profiles], axis=1)
+
+    return df_building_profiles
 
 
 def cts_to_buildings():
