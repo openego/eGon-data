@@ -531,26 +531,36 @@ def calc_census_cell_share(scenario="eGon2035"):
     return df_census_share
 
 
-def get_cts_profiles(scenario):
-    scenario = "eGon2035"
-    df_cts_load_curve = calc_load_curves_cts(scenario)
+def calc_building_demand_profile_share(df_cts_buildings):
+    """
+    Share of cts electricity demand profile per bus for every selected building
+    """
 
-    return df_cts_load_curve
+    def calc_building_amenity_share(df_cts_buildings):
+        """"""
+        df_building_amenity_share = 1 / df_cts_buildings.groupby(
+            "zensus_population_id")["n_amenities_inside"].transform("sum")
+        df_building_amenity_share = pd.concat(
+            [
+                df_building_amenity_share.rename("building_amenity_share"),
+                df_cts_buildings[["zensus_population_id", "id"]],
+            ],
+            axis=1,
+        )
+        return df_building_amenity_share
+
+    df_building_amenity_share = calc_building_amenity_share(df_cts_buildings)
+
+    df_census_cell_share = calc_census_cell_share()
+
+    df_demand_share = pd.merge(left=df_building_amenity_share, right=df_census_cell_share,
+                               left_on="zensus_population_id", right_on="zensus_population_id")
+    df_demand_share["profile_share"] = df_demand_share["building_amenity_share"].multiply(
+        df_demand_share["cell_share"])
+
+    return df_demand_share[["id", "bus_id", "scenario", "profile_share"]]
 
 
-def calc_building_amenity_share(df_cts_buildings):
-    """"""
-    df_building_amenity_share = 1 / df_cts_buildings.groupby("cell_id")[
-        "n_amenities_inside"
-    ].transform("sum")
-    df_building_amenity_share = pd.concat(
-        [
-            df_building_amenity_share.rename("building_amenity_share"),
-            df_cts_buildings[["cell_id", "id"]],
-        ],
-        axis=1,
-    )
-    return df_building_amenity_share
 
 
 def cts_to_buildings():
