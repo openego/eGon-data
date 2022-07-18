@@ -598,10 +598,14 @@ def cts_to_buildings():
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
     df_amenities_without_buildings["n_amenities_inside"] = 1
-    df_synthetic_buildings_for_amenities = create_synthetic_buildings(
+    df_synthetic_buildings_with_amenities = create_synthetic_buildings(
         df_amenities_without_buildings, points="geom_amenity"
     )
-    # write_synthetic_buildings_to_db(df_synthetic_buildings_for_amenities)
+    # TODO write to DB
+    # write_synthetic_buildings_to_db(df_synthetic_buildings_with_amenities)
+    write_table_to_postgis(df_synthetic_buildings_with_amenities,
+                           OsmBuildingsSynthetic,
+                           drop=False)
 
     # Cells without amenities but CTS demand and buildings
     df_buildings_without_amenities = buildings_without_amenities()
@@ -621,20 +625,33 @@ def cts_to_buildings():
         df_cells_with_cts_demand_only, amenities=1
     )
     # Leads to only 1 building per cell
-    df_synthetic_buildings_for_synthetic_amenities = (
+    df_synthetic_buildings_without_amenities = (
         create_synthetic_buildings(
             df_cells_with_cts_demand_only, points="geom_point"
         )
     )
-    # write_synthetic_buildings_to_db(df_synthetic_buildings_for_synthetic_amenities)
 
-    columns = ["cell_id", "id", "geom_building", "n_amenities_inside"]
+    # TODO write to DB
+    # write_synthetic_buildings_to_db(df_synthetic_buildings_without_amenities)
+    df_synthetic_buildings_without_amenities.rename(
+        columns={
+            "zensus_population_id": "cell_id",
+            "egon_building_id": "id",
+        },
+        inplace=True,
+    )
+    write_table_to_postgis(df_synthetic_buildings_without_amenities,
+                           OsmBuildingsSynthetic,
+                           drop=False)
+
+    # Concat all buildings
+    columns = ["zensus_population_id", "id", "geom_building", "n_amenities_inside"]
     df_cts_buildings = pd.concat(
         [
             df_buildings_with_amenities[columns],
-            df_synthetic_buildings_for_amenities[columns],
+            df_synthetic_buildings_with_amenities[columns],
             df_buildings_without_amenities[columns],
-            df_synthetic_buildings_for_synthetic_amenities[columns],
+            df_synthetic_buildings_without_amenities[columns],
         ],
         axis=0,
         ignore_index=True,
@@ -642,7 +659,18 @@ def cts_to_buildings():
     # TODO maybe remove after #772
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
-    df_building_amenity_share = calc_building_amenity_share(df_cts_buildings)
+    df_demand_share = calc_building_demand_profile_share(df_cts_buildings)
+
+    # TODO needs to be removed as soon as 'id' is unique
+    # df_demand_share = df_demand_share.drop_duplicates(subset="id")
+
+    write_table_to_postgres(df_demand_share,
+                            EgonCtsElectricityDemandBuildingShare,
+                            drop=True)
+
+    return df_cts_buildings, df_demand_share
+
+
 
     return df_cts_buildings, df_building_amenity_share
 
