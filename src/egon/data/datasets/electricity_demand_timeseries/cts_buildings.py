@@ -143,27 +143,30 @@ def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
     return df
 
 
+def create_synthetic_buildings(df, points=None, crs="EPSG:4258"):
+    """
+    Synthetic buildings are generated around points.
+    """
+    if isinstance(points, str) and points in df.columns:
+        points = df[points]
+    elif isinstance(points, gpd.GeoSeries):
+        pass
+    else:
+        raise ValueError("Points are of the wrong type")
 
     # Create building using a square around point
     edge_length = 5
-    df_synthetic_buildings_for_amenities["geom_building"] = points.buffer(
-        distance=edge_length / 2, cap_style=3
-    )
+    df["geom_building"] = points.buffer(distance=edge_length / 2, cap_style=3)
 
     # TODO Check CRS
-    df_synthetic_buildings_for_amenities = gpd.GeoDataFrame(
-        df_synthetic_buildings_for_amenities,
-        crs="EPSG:4258",
+    df = gpd.GeoDataFrame(
+        df,
+        crs=crs,
         geometry="geom_building",
     )
 
     # TODO remove after implementation of egon_building_id
-    df_synthetic_buildings_for_amenities.rename(
-        columns={
-            "id": "egon_building_id",
-        },
-        inplace=True,
-    )
+    df.rename(columns={"id": "egon_building_id"}, inplace=True)
 
     # get max number of building ids from synthetic residential table
     with db.session_scope() as session:
