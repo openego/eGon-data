@@ -280,6 +280,7 @@ def buildings_with_amenities():
     return df_amenities_in_buildings
 
 
+# TODO maybe replace with tools.write_table_to_db
 def write_synthetic_buildings_to_db(df_synthetic_buildings):
     """"""
     if not "geom_point" in df_synthetic_buildings.columns:
@@ -298,21 +299,26 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
         column.key for column in OsmBuildingsSynthetic.__table__.columns
     ]
     df_synthetic_buildings = df_synthetic_buildings.loc[:, columns]
+
+    dtypes = {i: OsmBuildingsSynthetic.__table__.columns[i].type for i in OsmBuildingsSynthetic.__table__.columns.keys()}
+
     # Write new buildings incl coord into db
     df_synthetic_buildings.to_postgis(
-        "osm_buildings_synthetic",
+        name=OsmBuildingsSynthetic.__tablename__,
         con=engine,
         if_exists="append",
-        schema="openstreetmap",
-        dtype={
-            "id": OsmBuildingsSynthetic.id.type,
-            "cell_id": OsmBuildingsSynthetic.cell_id.type,
-            "geom_building": OsmBuildingsSynthetic.geom_building.type,
-            "geom_point": OsmBuildingsSynthetic.geom_point.type,
-            "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
-            "building": OsmBuildingsSynthetic.building.type,
-            "area": OsmBuildingsSynthetic.area.type,
-        },
+        # schema="openstreetmap",
+        schema=OsmBuildingsSynthetic.__table_args__["schema"],
+        # dtype={
+        #     "id": OsmBuildingsSynthetic.id.type,
+        #     "cell_id": OsmBuildingsSynthetic.cell_id.type,
+        #     "geom_building": OsmBuildingsSynthetic.geom_building.type,
+        #     "geom_point": OsmBuildingsSynthetic.geom_point.type,
+        #     "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
+        #     "building": OsmBuildingsSynthetic.building.type,
+        #     "area": OsmBuildingsSynthetic.area.type,
+        # },
+        dtype=dtypes,
     )
 
 
