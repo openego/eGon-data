@@ -1,5 +1,5 @@
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Integer, Table, func, inspect
+from sqlalchemy import Integer, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -7,17 +7,14 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.electricity_demand.temporal import (
-    calc_load_curve,
-    calc_load_curves_cts,
-)
+from egon.data.datasets.electricity_demand.temporal import calc_load_curves_cts
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
-    generate_synthetic_buildings,
 )
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_ints_until_sum,
     random_point_in_square,
+    specific_int_until_sum,
 )
 import egon.data.config
 
@@ -27,8 +24,24 @@ Base = declarative_base()
 data_config = egon.data.config.datasets()
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 
-
 import saio
+
+# import db tables
+saio.register_schema("openstreetmap", engine=engine)
+saio.register_schema("society", engine=engine)
+saio.register_schema("demand", engine=engine)
+saio.register_schema("boundaries", engine=engine)
+
+from saio.boundaries import egon_map_zensus_buildings_filtered_all
+from saio.demand import egon_demandregio_zensus_electricity
+from saio.openstreetmap import (
+    osm_amenities_not_in_buildings_filtered,
+    osm_amenities_shops_filtered,
+    osm_buildings_filtered,
+    osm_buildings_filtered_with_amenities,
+    osm_buildings_synthetic,
+)
+from saio.society import destatis_zensus_population_per_ha
 
 
 def synthetic_buildings_for_amenities():
