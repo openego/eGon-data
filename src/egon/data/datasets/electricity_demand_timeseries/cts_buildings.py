@@ -1,5 +1,5 @@
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Integer, func
+from sqlalchemy import Column, Float, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -7,6 +7,9 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.electricity_demand import (
+    EgonDemandRegioZensusElectricity,
+)
 from egon.data.datasets.electricity_demand.temporal import calc_load_curves_cts
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
@@ -15,7 +18,10 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_ints_until_sum,
     random_point_in_square,
     specific_int_until_sum,
+    write_table_to_postgis,
+    write_table_to_postgres,
 )
+from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
 engine = db.engine()
