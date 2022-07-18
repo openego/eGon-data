@@ -174,6 +174,9 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:4258"):
     edge_length = 5
     df["geom_building"] = points.buffer(distance=edge_length / 2, cap_style=3)
 
+    if "geom_point" not in df.columns:
+        df["geom_point"] = df["geom_building"].centroid
+
     # TODO Check CRS
     df = gpd.GeoDataFrame(
         df,
@@ -601,11 +604,16 @@ def cts_to_buildings():
     df_synthetic_buildings_with_amenities = create_synthetic_buildings(
         df_amenities_without_buildings, points="geom_amenity"
     )
-    # TODO write to DB
+
+    # TODO write to DB and remove renaming
     # write_synthetic_buildings_to_db(df_synthetic_buildings_with_amenities)
-    write_table_to_postgis(df_synthetic_buildings_with_amenities,
-                           OsmBuildingsSynthetic,
-                           drop=False)
+    write_table_to_postgis(df_synthetic_buildings_with_amenities.rename(
+        columns={
+            "zensus_population_id": "cell_id",
+            "egon_building_id": "id",
+        }),
+        OsmBuildingsSynthetic,
+        drop=False)
 
     # Cells without amenities but CTS demand and buildings
     df_buildings_without_amenities = buildings_without_amenities()
@@ -631,18 +639,15 @@ def cts_to_buildings():
         )
     )
 
-    # TODO write to DB
+    # TODO write to DB and remove renaming
     # write_synthetic_buildings_to_db(df_synthetic_buildings_without_amenities)
-    df_synthetic_buildings_without_amenities.rename(
+    write_table_to_postgis(df_synthetic_buildings_without_amenities.rename(
         columns={
             "zensus_population_id": "cell_id",
             "egon_building_id": "id",
-        },
-        inplace=True,
-    )
-    write_table_to_postgis(df_synthetic_buildings_without_amenities,
-                           OsmBuildingsSynthetic,
-                           drop=False)
+        }),
+        OsmBuildingsSynthetic,
+        drop=False)
 
     # Concat all buildings
     columns = ["zensus_population_id", "id", "geom_building", "n_amenities_inside"]
