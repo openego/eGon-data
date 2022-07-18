@@ -203,7 +203,7 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:4258"):
     # TODO remove in #772
     df = df.rename(
         columns={
-            "zensus_population_id": "cell_id",
+            # "zensus_population_id": "cell_id",
             "egon_building_id": "id",
         }
     )
@@ -270,7 +270,10 @@ def buildings_with_amenities():
         drop=True, inplace=True
     )
     df_amenities_in_buildings.rename(
-        columns={"zensus_population_id": "cell_id", "egon_building_id": "id"},
+        columns={
+            # "zensus_population_id": "cell_id",
+            "egon_building_id": "id"
+        },
         inplace=True,
     )
 
@@ -279,14 +282,17 @@ def buildings_with_amenities():
 
 def write_synthetic_buildings_to_db(df_synthetic_buildings):
     """"""
-    from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
-        OsmBuildingsSynthetic,
-    )
-
     if not "geom_point" in df_synthetic_buildings.columns:
         df_synthetic_buildings["geom_point"] = df_synthetic_buildings[
             "geom_building"
         ].centroid
+
+    df_synthetic_buildings = df_synthetic_buildings.rename(
+        columns={
+            "zensus_population_id": "cell_id",
+            "egon_building_id": "id",
+        }
+    )
     # Only take existing columns
     columns = [
         column.key for column in OsmBuildingsSynthetic.__table__.columns
@@ -389,7 +395,7 @@ def buildings_without_amenities():
 
     df_buildings_without_amenities = df_buildings_without_amenities.rename(
         columns={
-            "zensus_population_id": "cell_id",
+            # "zensus_population_id": "cell_id",
             "egon_building_id": "id",
         }
     )
@@ -402,7 +408,8 @@ def select_cts_buildings(df_buildings_without_amenities):
     # Select one building each cell
     df_buildings_with_cts_demand = (
         df_buildings_without_amenities.drop_duplicates(
-            subset="cell_id", keep="first"
+            # subset="cell_id", keep="first"
+            subset="zensus_population_id", keep="first"
         ).reset_index(drop=True)
     )
     df_buildings_with_cts_demand["n_amenities_inside"] = 1
