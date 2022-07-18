@@ -16,9 +16,9 @@ import yaml
 
 from egon.data import __path__, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def run_pypsa_eur_sec():
@@ -483,7 +483,7 @@ def neighbor_reduction():
 
     db.execute_sql(
         "DELETE FROM grid.egon_etrago_bus "
-                  "WHERE scn_name = 'eGon100RE' "
+        "WHERE scn_name = 'eGon100RE' "
         "AND country <> 'DE'"
     )
 
