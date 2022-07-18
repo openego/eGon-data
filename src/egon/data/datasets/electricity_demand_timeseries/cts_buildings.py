@@ -294,16 +294,296 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
     )
 
 
+def buildings_without_amenities():
+    """ """
+    # buildings_filtered in cts-demand-cells without amenities
+    with db.session_scope() as session:
+
+        # Synthetic Buildings
+        q_synth_buildings = session.query(
+            osm_buildings_synthetic.cell_id.cast(Integer).label(
+                "zensus_population_id"
+            ),
+            osm_buildings_synthetic.id.cast(Integer).label("id"),
+            osm_buildings_synthetic.area.label("area"),
+            osm_buildings_synthetic.geom_building.label("geom_building"),
+            osm_buildings_synthetic.geom_point.label("geom_point"),
+        )
+
+        # Buildings filtered
+        q_buildings_filtered = session.query(
+            egon_map_zensus_buildings_filtered_all.zensus_population_id,
+            osm_buildings_filtered.id,
+            osm_buildings_filtered.area,
+            osm_buildings_filtered.geom_building,
+            osm_buildings_filtered.geom_point,
+        ).filter(
+            osm_buildings_filtered.id
+            == egon_map_zensus_buildings_filtered_all.id
+        )
+
+        # Amenities + zensus_population_id
+        q_amenities = (
+            session.query(
+                destatis_zensus_population_per_ha.id.label(
+                    "zensus_population_id"
+                ),
+            )
+            .filter(
+                func.st_within(
+                    osm_amenities_shops_filtered.geom_amenity,
+                    destatis_zensus_population_per_ha.geom,
+                )
+            )
+            .distinct(destatis_zensus_population_per_ha.id)
+        )
+
+        # Cells with CTS demand but without amenities
+        q_cts_without_amenities = (
+            session.query(
+                egon_demandregio_zensus_electricity.zensus_population_id,
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.sector == "service",
+                egon_demandregio_zensus_electricity.scenario == "eGon2035",
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.zensus_population_id.notin_(
+                    q_amenities
+                )
+            )
+            .distinct()
+        )
+
+        # Buildings filtered + synthetic buildings residential in
+        # cells with CTS demand but without amenities
+        cells_query = q_synth_buildings.union(q_buildings_filtered).filter(
+            egon_map_zensus_buildings_filtered_all.zensus_population_id.in_(
+                q_cts_without_amenities
+            )
+        )
+
+    # df_buildings_without_amenities = pd.read_sql(
+    #     cells_query.statement, cells_query.session.bind, index_col=None)
+    df_buildings_without_amenities = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        geom_col="geom_building",
+    )
+
+    df_buildings_without_amenities = df_buildings_without_amenities.rename(
+        columns={
+            "zensus_population_id": "cell_id",
+            "egon_building_id": "id",
+        }
+    )
+
+    return df_buildings_without_amenities
+
+
+def select_cts_buildings(df_buildings_without_amenities):
+    """ """
+    # Select one building each cell
+    df_buildings_with_cts_demand = (
+        df_buildings_without_amenities.drop_duplicates(
+            subset="cell_id", keep="first"
+        ).reset_index(drop=True)
+    )
+    df_buildings_with_cts_demand["n_amenities_inside"] = 1
+    df_buildings_with_cts_demand["building"] = "cts"
+
+    return df_buildings_with_cts_demand
+
+
+def cells_with_cts_demand_only(df_buildings_without_amenities):
+    """"""
+    # cells mit amenities
+    with db.session_scope() as session:
+        sub_query = (
+            session.query(
+                destatis_zensus_population_per_ha.id.label(
+                    "zensus_population_id"
+                ),
+            )
+            .filter(
+                func.st_within(
+                    osm_amenities_shops_filtered.geom_amenity,
+                    destatis_zensus_population_per_ha.geom,
+                )
+            )
+            .distinct(destatis_zensus_population_per_ha.id)
+        )
+
+        cells_query = (
+            session.query(
+                egon_demandregio_zensus_electricity.zensus_population_id,
+                egon_demandregio_zensus_electricity.scenario,
+                egon_demandregio_zensus_electricity.sector,
+                egon_demandregio_zensus_electricity.demand,
+                destatis_zensus_population_per_ha.geom,
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.sector == "service",
+                egon_demandregio_zensus_electricity.scenario == "eGon2035",
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.zensus_population_id.notin_(
+                    sub_query
+                )
+            )
+            .filter(
+                egon_demandregio_zensus_electricity.zensus_population_id
+                == destatis_zensus_population_per_ha.id
+            )
+        )
+
+    df_cts_cell_without_amenities = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        geom_col="geom",
+        index_col=None,
+    )
+
+    # TODO maybe remove
+    df_buildings_without_amenities = df_buildings_without_amenities.rename(
+        columns={"cell_id": "zensus_population_id"}
+    )
+
+    # Census cells with only cts demand
+    df_cells_only_cts_demand = df_cts_cell_without_amenities.loc[
+        ~df_cts_cell_without_amenities["zensus_population_id"].isin(
+            df_buildings_without_amenities["zensus_population_id"].unique()
+        )
+    ]
+
+    df_cells_only_cts_demand.reset_index(drop=True, inplace=True)
+
+    return df_cells_only_cts_demand
+
+
+def get_census_cell_share():
+    """"""
+
+    from egon.data.datasets.electricity_demand import (
+        EgonDemandRegioZensusElectricity,
+    )
+    from egon.data.datasets.zensus_mv_grid_districts import (
+        MapZensusGridDistricts,
+    )
+
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                EgonDemandRegioZensusElectricity, MapZensusGridDistricts.bus_id
+            )
+            .filter(EgonDemandRegioZensusElectricity.sector == "service")
+            .filter(EgonDemandRegioZensusElectricity.scenario == "eGon2035")
+            .filter(
+                EgonDemandRegioZensusElectricity.zensus_population_id
+                == MapZensusGridDistricts.zensus_population_id
+            )
+        )
+
+    df_demand_regio_electricity_demand = pd.read_sql(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col="zensus_population_id",
+    )
+
+    # get demand share of cell per bus
+    # share ist für scenarios identisch
+    df_census_share = df_demand_regio_electricity_demand[
+        "demand"
+    ] / df_demand_regio_electricity_demand.groupby("bus_id")[
+        "demand"
+    ].transform(
+        "sum"
+    )
+
+    df_census_share = pd.concat(
+        [df_census_share, df_demand_regio_electricity_demand["bus_id"]], axis=1
+    )
+
+    return df_census_share
+
+
+def get_cts_profiles(scenario):
+    scenario = "eGon2035"
+    df_cts_load_curve = calc_load_curves_cts(scenario)
+
+    return df_cts_load_curve
+
+
+def calc_building_amenity_share(df_cts_buildings):
+    """"""
+    df_building_amenity_share = 1 / df_cts_buildings.groupby("cell_id")[
+        "n_amenities_inside"
+    ].transform("sum")
+    df_building_amenity_share = pd.concat(
+        [
+            df_building_amenity_share.rename("building_amenity_share"),
+            df_cts_buildings[["cell_id", "id"]],
+        ],
+        axis=1,
+    )
+    return df_building_amenity_share
+
+
 def cts_to_buildings():
 
     # Buildings with amenities
     df_buildings_with_amenities = buildings_with_amenities()
 
     # Create synthetic buildings for amenites without buildings
-    df_synthetic_buildings_for_amenities = synthetic_buildings_for_amenities()
-    write_synthetic_buildings_to_db(df_synthetic_buildings_for_amenities)
+    df_amenities_without_buildings = amenities_without_buildings()
+    df_amenities_without_buildings["n_amenities_inside"] = 1
+    df_synthetic_buildings_for_amenities = create_synthetic_buildings(
+        df_amenities_without_buildings, points="geom_amenity"
+    )
+    # write_synthetic_buildings_to_db(df_synthetic_buildings_for_amenities)
 
-    # Create synthetic amenities in cells without amenities but CTS demand
+    # Cells without amenities but CTS demand and buildings
+    df_buildings_without_amenities = buildings_without_amenities()
+    df_buildings_without_amenities = select_cts_buildings(
+        df_buildings_without_amenities
+    )
+    df_buildings_without_amenities["n_amenities_inside"] = 1
+
+    # Create synthetic amenities and buildings in cells with only CTS demand
+    df_cells_with_cts_demand_only = cells_with_cts_demand_only(
+        df_buildings_without_amenities
+    )
+    # Only 1 Amenity per cell
+    df_cells_with_cts_demand_only["n_amenities_inside"] = 1
+    # Only 1 Amenity per Building
+    df_cells_with_cts_demand_only = place_buildings_with_amenities(
+        df_cells_with_cts_demand_only, amenities=1
+    )
+    # Leads to only 1 building per cell
+    df_synthetic_buildings_for_synthetic_amenities = (
+        create_synthetic_buildings(
+            df_cells_with_cts_demand_only, points="geom_point"
+        )
+    )
+    # write_synthetic_buildings_to_db(df_synthetic_buildings_for_synthetic_amenities)
+
+    columns = ["cell_id", "id", "geom_building", "n_amenities_inside"]
+    df_cts_buildings = pd.concat(
+        [
+            df_buildings_with_amenities[columns],
+            df_synthetic_buildings_for_amenities[columns],
+            df_buildings_without_amenities[columns],
+            df_synthetic_buildings_for_synthetic_amenities[columns],
+        ],
+        axis=0,
+        ignore_index=True,
+    )
+    # TODO maybe remove after #772
+    df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
+
+    df_building_amenity_share = calc_building_amenity_share(df_cts_buildings)
+
+    return df_cts_buildings, df_building_amenity_share
 
 
 class CtsElectricityBuildings(Dataset):
