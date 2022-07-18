@@ -490,15 +490,8 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
     return df_cells_only_cts_demand
 
 
-def get_census_cell_share():
+def calc_census_cell_share(scenario="eGon2035"):
     """"""
-
-    from egon.data.datasets.electricity_demand import (
-        EgonDemandRegioZensusElectricity,
-    )
-    from egon.data.datasets.zensus_mv_grid_districts import (
-        MapZensusGridDistricts,
-    )
 
     with db.session_scope() as session:
         cells_query = (
@@ -506,7 +499,7 @@ def get_census_cell_share():
                 EgonDemandRegioZensusElectricity, MapZensusGridDistricts.bus_id
             )
             .filter(EgonDemandRegioZensusElectricity.sector == "service")
-            .filter(EgonDemandRegioZensusElectricity.scenario == "eGon2035")
+            .filter(EgonDemandRegioZensusElectricity.scenario == scenario)
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id
                 == MapZensusGridDistricts.zensus_population_id
@@ -528,11 +521,13 @@ def get_census_cell_share():
     ].transform(
         "sum"
     )
+    df_census_share = df_census_share.rename("cell_share")
 
     df_census_share = pd.concat(
-        [df_census_share, df_demand_regio_electricity_demand["bus_id"]], axis=1
+        [df_census_share, df_demand_regio_electricity_demand[["bus_id", "scenario"]]], axis=1
     )
 
+    df_census_share.reset_index(inplace=True)
     return df_census_share
 
 
