@@ -196,16 +196,6 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:4258"):
 
 def buildings_with_amenities():
     """"""
-
-    # import db tables
-    saio.register_schema("openstreetmap", engine=engine)
-    saio.register_schema("boundaries", engine=engine)
-    saio.register_schema("demand", engine=engine)
-
-    from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    from saio.demand import egon_demandregio_zensus_electricity
-    from saio.openstreetmap import osm_buildings_filtered_with_amenities
-
     with db.session_scope() as session:
         cells_query = (
             session.query(
