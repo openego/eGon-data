@@ -50,6 +50,16 @@ from saio.openstreetmap import (
 from saio.society import destatis_zensus_population_per_ha
 
 
+class EgonCtsElectricityDemandBuildingShare(Base):
+    __tablename__ = "egon_cts_electricity_demand_building_share"
+    __table_args__ = {"schema": "demand"}
+
+    id = Column(Integer, primary_key=True)
+    bus_id = Column(Integer, index=True)
+    scenario = Column(String, index=True)
+    profile_share = Column(Float)
+
+
 def amenities_without_buildings():
     """
 
