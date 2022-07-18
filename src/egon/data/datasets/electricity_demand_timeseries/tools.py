@@ -12,7 +12,7 @@ def random_point_in_square(geom, tol):
     ----------
     geom: gpd.Series
         Geometries of square
-    tol: int
+    tol: float
         tolerance to square bounds
 
     Returns
