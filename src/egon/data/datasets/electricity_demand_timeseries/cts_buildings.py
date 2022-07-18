@@ -176,25 +176,22 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:4258"):
     max_synth_residential_id = int(max_synth_residential_id)
 
     # create sequential ids
-    df_synthetic_buildings_for_amenities["egon_building_id"] = range(
+    df["egon_building_id"] = range(
         max_synth_residential_id + 1,
-        max_synth_residential_id
-        + df_synthetic_buildings_for_amenities.shape[0]
-        + 1,
+        max_synth_residential_id + df.shape[0] + 1,
     )
 
+    df["area"] = df["geom_building"].area
     # set building type of synthetic building
-    df_synthetic_buildings_for_amenities["building"] = "cts"
+    df["building"] = "cts"
     # TODO remove in #772
-    df_synthetic_buildings_for_amenities = (
-        df_synthetic_buildings_for_amenities.rename(
-            columns={
-                "zensus_population_id": "cell_id",
-                "egon_building_id": "id",
-            }
-        )
+    df = df.rename(
+        columns={
+            "zensus_population_id": "cell_id",
+            "egon_building_id": "id",
+        }
     )
-    return df_synthetic_buildings_for_amenities
+    return df
 
 
 def buildings_with_amenities():
