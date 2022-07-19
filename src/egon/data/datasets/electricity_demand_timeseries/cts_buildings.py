@@ -619,6 +619,14 @@ def cts_to_buildings():
 
     # Cells without amenities but CTS demand and buildings
     df_buildings_without_amenities = buildings_without_amenities()
+
+    # TODO Fix Adhoc Bugfix duplicated buildings
+    mask = df_buildings_without_amenities.loc[
+        df_buildings_without_amenities['id'].isin(
+            df_buildings_with_amenities['id'])].index
+    df_buildings_without_amenities = df_buildings_without_amenities.drop(
+        index=mask).reset_index(drop=True)
+
     df_buildings_without_amenities = select_cts_buildings(
         df_buildings_without_amenities
     )
