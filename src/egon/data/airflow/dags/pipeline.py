@@ -298,7 +298,7 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             heat_demand_Germany,
-            household_electricity_demand_annual,
+            # household_electricity_demand_annual,
             tasks["etrago_setup.create-tables"],
             zensus_mv_grid_districts,
             zensus_vg250,
@@ -572,7 +572,15 @@ with airflow.DAG(
         dependencies=[
             osm_buildings_streets,
             cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
-            hh_demand_profiles_setup,
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".map-houseprofiles-to-buildings"
+            ],
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_profiles"
+                ".houseprofiles-in-census-cells"
+            ],
         ]
     )
