@@ -159,7 +159,7 @@ def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
     return df
 
 
-def create_synthetic_buildings(df, points=None, crs="EPSG:4258"):
+def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     """
     Synthetic buildings are generated around points.
     """
@@ -414,7 +414,9 @@ def buildings_without_amenities():
 
 def select_cts_buildings(df_buildings_without_amenities):
     """ """
+    # TODO Adapt method
     # Select one building each cell
+    # take the first
     df_buildings_with_cts_demand = (
         df_buildings_without_amenities.drop_duplicates(
             # subset="cell_id", keep="first"
