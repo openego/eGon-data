@@ -661,6 +661,12 @@ def cts_to_buildings():
 
     # Concat all buildings
     columns = ["zensus_population_id", "id", "geom_building", "n_amenities_inside"]
+    # columns = ["zensus_population_id", "id", "geom_building", "n_amenities_inside", "table"]
+    # df_buildings_with_amenities["table"] = "df_buildings_with_amenities"
+    # df_synthetic_buildings_with_amenities["table"] = "df_synthetic_buildings_with_amenities"
+    # df_buildings_without_amenities["table"] = "df_buildings_without_amenities"
+    # df_synthetic_buildings_without_amenities["table"] = "df_synthetic_buildings_without_amenities"
+
     df_cts_buildings = pd.concat(
         [
             df_buildings_with_amenities[columns],
@@ -676,8 +682,9 @@ def cts_to_buildings():
 
     df_demand_share = calc_building_demand_profile_share(df_cts_buildings)
 
-    # TODO needs to be removed as soon as 'id' is unique
-    # df_demand_share = df_demand_share.drop_duplicates(subset="id")
+    # TODO Why are there nonunique ids?
+    #  needs to be removed as soon as 'id' is unique
+    df_demand_share = df_demand_share.drop_duplicates(subset="id")
 
     write_table_to_postgres(df_demand_share,
                             EgonCtsElectricityDemandBuildingShare,
