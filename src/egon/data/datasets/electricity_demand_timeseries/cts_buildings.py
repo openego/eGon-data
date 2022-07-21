@@ -38,15 +38,6 @@ saio.register_schema("society", engine=engine)
 saio.register_schema("demand", engine=engine)
 saio.register_schema("boundaries", engine=engine)
 
-from saio.demand import egon_demandregio_zensus_electricity
-from saio.openstreetmap import (
-    osm_amenities_not_in_buildings_filtered,
-    osm_amenities_shops_filtered,
-    osm_buildings_filtered,
-    osm_buildings_filtered_with_amenities,
-    osm_buildings_synthetic,
-)
-from saio.society import destatis_zensus_population_per_ha
 
 class EgonCtsElectricityDemandBuildingShare(Base):
     __tablename__ = "egon_cts_electricity_demand_building_share"
