@@ -144,7 +144,7 @@ Q = 5
 
 # Scenario Data
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
+SCENARIOS = ["eGon2035", "eGon100RE"]
 SCENARIO_TIMESTAMP = {
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
