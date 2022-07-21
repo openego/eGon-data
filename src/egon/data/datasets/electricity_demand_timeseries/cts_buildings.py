@@ -55,8 +55,8 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     __table_args__ = {"schema": "demand"}
 
     id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
-    scenario = Column(String, index=True)
     profile_share = Column(Float)
 
 
@@ -545,7 +545,7 @@ def calc_census_cell_share(scenario="eGon2035"):
     return df_census_share
 
 
-def calc_building_demand_profile_share(df_cts_buildings):
+def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
     """
     Share of cts electricity demand profile per bus for every selected building
     """
@@ -565,7 +565,7 @@ def calc_building_demand_profile_share(df_cts_buildings):
 
     df_building_amenity_share = calc_building_amenity_share(df_cts_buildings)
 
-    df_census_cell_share = calc_census_cell_share()
+    df_census_cell_share = calc_census_cell_share(scenario)
 
     df_demand_share = pd.merge(left=df_building_amenity_share, right=df_census_cell_share,
                                left_on="zensus_population_id", right_on="zensus_population_id")
@@ -689,7 +689,13 @@ def cts_to_buildings():
     # TODO maybe remove after #772
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
-    df_demand_share = calc_building_demand_profile_share(df_cts_buildings)
+    df_demand_share_2035 = calc_building_demand_profile_share(df_cts_buildings,
+                                                         scenario="eGon2035")
+    df_demand_share_100RE = calc_building_demand_profile_share(df_cts_buildings,
+                                                         scenario="eGon100RE")
+
+    df_demand_share = pd.concat([df_demand_share_2035, df_demand_share_100RE],
+                                axis=0, ignore_index=True)
 
     # TODO Why are there nonunique ids?
     #  needs to be removed as soon as 'id' is unique
