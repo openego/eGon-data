@@ -38,7 +38,6 @@ saio.register_schema("society", engine=engine)
 saio.register_schema("demand", engine=engine)
 saio.register_schema("boundaries", engine=engine)
 
-from saio.demand import egon_demandregio_zensus_electricity
 from saio.openstreetmap import (
     osm_amenities_not_in_buildings_filtered,
     osm_amenities_shops_filtered,
@@ -77,6 +76,8 @@ def amenities_without_buildings():
         Table of amenities without buildings
 
     """
+    from saio.demand import egon_demandregio_zensus_electricity
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
@@ -444,6 +445,8 @@ def select_cts_buildings(df_buildings_without_amenities):
 
 def cells_with_cts_demand_only(df_buildings_without_amenities):
     """"""
+    from saio.demand import egon_demandregio_zensus_electricity
+
     # cells mit amenities
     with db.session_scope() as session:
         sub_query = (
