@@ -1129,23 +1129,21 @@ def allocate_pv(
                     q_buildings.index.append(add_buildings)
                 ]
 
-                assert len(q_buildings) == len(q_gens)
+                assert len(q_buildings) == len_gens
 
             chosen_buildings = pd.Index(
                 rng.choice(
                     q_buildings.index,
-                    size=len(q_gens),
+                    size=len_gens,
                     replace=False,
                 )
             )
 
-            q_mastr_gdf.loc[q_gens.index] = q_mastr_gdf.loc[
-                q_gens.index
-            ].assign(building_id=chosen_buildings)
+            # q_mastr_gdf.loc[q_gens.index] = q_mastr_gdf.loc[
+            #     q_gens.index
+            # ].assign(building_id=chosen_buildings)
 
-            q_buildings_gdf.loc[chosen_buildings] = q_buildings_gdf.loc[
-                chosen_buildings
-            ].assign(gens_id=q_gens.index)
+            q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
 
         if count % 100 == 0:
             logger.debug(
@@ -1154,6 +1152,12 @@ def allocate_pv(
             )
 
             t0 = perf_counter()
+
+    assigned_buildings = q_buildings_gdf.loc[~q_buildings_gdf.gens_id.isna()]
+
+    q_mastr_gdf.loc[
+        assigned_buildings.gens_id, "building_id"
+    ] = assigned_buildings.index
 
     logger.debug("Allocated status quo generators to buildings.")
 
@@ -1358,7 +1362,7 @@ def scenario_data(
         query.statement, query.session.bind, index_col="index"
     ).sort_index()
 
-    logger.debug(f"Scenario capacity data loaded. {df}")
+    logger.debug("Scenario capacity data loaded.")
 
     return df
 

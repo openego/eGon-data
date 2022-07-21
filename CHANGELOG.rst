@@ -371,7 +371,7 @@ Changed
 *  Update hh electricity profiles
   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
-  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+  `#775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
   `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
@@ -380,6 +380,8 @@ Changed
   `#760 <https://github.com/openego/eGon-data/issues/760>`_
 * Add primary key to table openstreetmap.osm_ways_with_segments
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
+* Update pypsa-eur-sec fork and store national demand time series
+  `#402 <https://github.com/openego/eGon-data/issues/402>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Integrate additional industrial electricity demands for eGon100RE
