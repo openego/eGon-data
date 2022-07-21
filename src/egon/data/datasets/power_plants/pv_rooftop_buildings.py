@@ -1362,7 +1362,7 @@ def scenario_data(
         query.statement, query.session.bind, index_col="index"
     ).sort_index()
 
-    logger.debug(f"Scenario capacity data loaded. {df}")
+    logger.debug("Scenario capacity data loaded.")
 
     return df
 
