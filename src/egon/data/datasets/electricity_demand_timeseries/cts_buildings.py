@@ -38,6 +38,7 @@ saio.register_schema("society", engine=engine)
 saio.register_schema("demand", engine=engine)
 saio.register_schema("boundaries", engine=engine)
 
+from saio.demand import egon_demandregio_zensus_electricity
 from saio.openstreetmap import (
     osm_amenities_not_in_buildings_filtered,
     osm_amenities_shops_filtered,
@@ -46,7 +47,6 @@ from saio.openstreetmap import (
     osm_buildings_synthetic,
 )
 from saio.society import destatis_zensus_population_per_ha
-
 
 class EgonCtsElectricityDemandBuildingShare(Base):
     __tablename__ = "egon_cts_electricity_demand_building_share"
@@ -77,6 +77,8 @@ def amenities_without_buildings():
 
     """
     from saio.demand import egon_demandregio_zensus_electricity
+    from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
+    from saio.society import destatis_zensus_population_per_ha
 
     with db.session_scope() as session:
         cells_query = (
@@ -172,6 +174,7 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     """
     Synthetic buildings are generated around points.
     """
+
     if isinstance(points, str) and points in df.columns:
         points = df[points]
     elif isinstance(points, gpd.GeoSeries):
@@ -226,6 +229,8 @@ def buildings_with_amenities():
     """"""
 
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
+    from saio.openstreetmap import osm_buildings_filtered_with_amenities
+    from saio.demand import egon_demandregio_zensus_electricity
 
     with db.session_scope() as session:
         cells_query = (
@@ -298,7 +303,7 @@ def buildings_with_amenities():
 # TODO maybe replace with tools.write_table_to_db
 def write_synthetic_buildings_to_db(df_synthetic_buildings):
     """"""
-    if not "geom_point" in df_synthetic_buildings.columns:
+    if "geom_point" not in df_synthetic_buildings.columns:
         df_synthetic_buildings["geom_point"] = df_synthetic_buildings[
             "geom_building"
         ].centroid
@@ -340,7 +345,13 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
 def buildings_without_amenities():
     """ """
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
+    from saio.demand import egon_demandregio_zensus_electricity
+    from saio.openstreetmap import (
+        osm_amenities_not_in_buildings_filtered,
+        osm_amenities_shops_filtered,
+        osm_buildings_filtered,
+        osm_buildings_synthetic,
+    )
     # buildings_filtered in cts-demand-cells without amenities
     with db.session_scope() as session:
 
@@ -730,7 +741,18 @@ def get_peak_load_cts_buildings():
             df_peak_load.to_dict(orient="records"),
         )
 
-    return df_cts_buildings, df_building_amenity_share
+
+def delete_synthetic_cts_buildings():
+    # import db tables
+    from saio.openstreetmap import osm_buildings_synthetic
+
+    # cells mit amenities
+    with db.session_scope() as session:
+        session.query(
+            osm_buildings_synthetic
+        ).filter(
+            osm_buildings_synthetic.building == 'cts'
+        ).delete()
 
 
 class CtsElectricityBuildings(Dataset):
