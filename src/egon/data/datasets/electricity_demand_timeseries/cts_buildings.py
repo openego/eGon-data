@@ -732,5 +732,8 @@ class CtsElectricityBuildings(Dataset):
             name="CtsElectricityBuildings",
             version="0.0.0.",
             dependencies=dependencies,
-            tasks=(cts_to_buildings),
+            tasks=(cts_to_buildings,
+                   get_peak_load_cts_buildings,
+                   # get_all_cts_building_profiles,
+                   ),
         )
