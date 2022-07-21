@@ -38,7 +38,6 @@ saio.register_schema("society", engine=engine)
 saio.register_schema("demand", engine=engine)
 saio.register_schema("boundaries", engine=engine)
 
-from saio.boundaries import egon_map_zensus_buildings_filtered_all
 from saio.demand import egon_demandregio_zensus_electricity
 from saio.openstreetmap import (
     osm_amenities_not_in_buildings_filtered,
@@ -224,6 +223,9 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
 
 def buildings_with_amenities():
     """"""
+
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
@@ -336,6 +338,8 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
 
 def buildings_without_amenities():
     """ """
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
+
     # buildings_filtered in cts-demand-cells without amenities
     with db.session_scope() as session:
 
@@ -605,7 +609,7 @@ def calc_building_profiles(df_demand_share=None, egon_building_id=None, scenario
 
 
 def cts_to_buildings():
-
+    """"""
     # Buildings with amenities
     df_buildings_with_amenities = buildings_with_amenities()
 
