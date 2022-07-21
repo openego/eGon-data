@@ -1353,14 +1353,31 @@ def scenario_data(
         GeoDataFrame with scenario capacity data in GW.
     """
     with db.session_scope() as session:
-        query = session.query(EgonScenarioCapacities).filter(
-            EgonScenarioCapacities.carrier == carrier,
-            EgonScenarioCapacities.scenario_name == scenario,
-        )
+        if scenario == "eGon2035":
+            query = session.query(EgonScenarioCapacities).filter(
+                EgonScenarioCapacities.carrier == carrier,
+                EgonScenarioCapacities.scenario_name == scenario,
+            )
+
+        else:
+            query = session.query(EgonScenarioCapacities).filter(
+                EgonScenarioCapacities.carrier == carrier,
+            )
 
     df = pd.read_sql(
         query.statement, query.session.bind, index_col="index"
     ).sort_index()
+
+    if scenario == "eGon100RE":
+        # linear to scenario "eGon2035" distribute eGon100RE capacity for germany onto
+        # federal states
+        total_cap = df.loc[df.scenario == scenario].capacity.iat[0]
+
+        df = df.loc[scenario == "eGon2035"].assign(scenario=scenario)
+
+        df = df.assign(
+            capacity=df.capacity.divide(df.capacity.sum()).multiply(total_cap)
+        )
 
     logger.debug("Scenario capacity data loaded.")
 
