@@ -1,5 +1,5 @@
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Column, Float, Integer, String, func
+from sqlalchemy import Column, Float, Integer, String, func, REAL
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -58,6 +58,15 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     bus_id = Column(Integer, index=True)
     scenario = Column(String, index=True)
     profile_share = Column(Float)
+
+
+class CtsPeakLoads(Base):
+    __tablename__ = "egon_cts_peak_loads"
+    __table_args__ = {"schema": "demand"}
+
+    building_id = Column(String, primary_key=True)
+    cts_peak_load_in_w_2035 = Column(REAL)
+    cts_peak_load_in_w_2050 = Column(REAL)
 
 
 def amenities_without_buildings():
@@ -693,6 +702,20 @@ def cts_to_buildings():
     return df_cts_buildings, df_demand_share
 
 
+def get_peak_load_cts_buildings():
+
+    df_building_profiles = calc_building_profiles()
+    df_peak_load = df_building_profiles.max(axis=1)
+
+    CtsPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+    CtsPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+    # Write peak loads into db
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            CtsPeakLoads,
+            df_peak_load.to_dict(orient="records"),
+        )
 
     return df_cts_buildings, df_building_amenity_share
 
