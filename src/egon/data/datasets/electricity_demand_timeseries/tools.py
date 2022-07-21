@@ -3,9 +3,10 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-
 from egon.data import db
+
 engine = db.engine()
+
 
 def random_point_in_square(geom, tol):
     """
@@ -67,19 +68,18 @@ def write_table_to_postgis(df, table, drop=True):
     Append table
     """
 
-    # Only take existing columns
-    columns = [
-        column.key for column in table.__table__.columns
-    ]
-
-    # Only take existing columns
+    # Only take in db table defined columns
+    columns = [column.key for column in table.__table__.columns]
     df = df.loc[:, columns]
 
     if drop:
         table.__table__.drop(bind=engine, checkfirst=True)
         table.__table__.create(bind=engine)
 
-    dtypes = {i: table.__table__.columns[i].type for i in table.__table__.columns.keys()}
+    dtypes = {
+        i: table.__table__.columns[i].type
+        for i in table.__table__.columns.keys()
+    }
 
     # Write new buildings incl coord into db
     df.to_postgis(
@@ -94,12 +94,8 @@ def write_table_to_postgis(df, table, drop=True):
 def write_table_to_postgres(df, table, drop=True):
     """"""
 
-    # Only take existing columns
-    columns = [
-        column.key for column in table.__table__.columns
-    ]
-
-    # Only take existing columns
+    # Only take in db table defined columns
+    columns = [column.key for column in table.__table__.columns]
     df = df.loc[:, columns]
 
     if drop:
