@@ -379,7 +379,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     )
     missing_buildings_geom = missing_buildings_geom.drop(columns=["geom"])
     missing_buildings_geom = gpd.GeoDataFrame(
-        missing_buildings_geom, crs="EPSG:4258", geometry="geom_building"
+        missing_buildings_geom, crs="EPSG:3035", geometry="geom_building"
     )
 
     # get table metadata from db by name and schema
