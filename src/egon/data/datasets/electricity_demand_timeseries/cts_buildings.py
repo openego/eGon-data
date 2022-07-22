@@ -55,9 +55,9 @@ class CtsPeakLoads(Base):
     __tablename__ = "egon_cts_peak_loads"
     __table_args__ = {"schema": "demand"}
 
-    building_id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True)
     cts_peak_load_in_w_2035 = Column(REAL)
-    cts_peak_load_in_w_2050 = Column(REAL)
+    cts_peak_load_in_w_100RE = Column(REAL)
 
 
 def amenities_without_buildings():
