@@ -615,6 +615,8 @@ def cts_to_buildings():
     # Buildings with amenities
     df_buildings_with_amenities = buildings_with_amenities()
 
+    # Remove synthetic CTS buildings if existing
+    delete_synthetic_cts_buildings()
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
     df_amenities_without_buildings["n_amenities_inside"] = 1
