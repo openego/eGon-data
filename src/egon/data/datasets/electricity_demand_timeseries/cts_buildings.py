@@ -718,8 +718,14 @@ def cts_to_buildings():
 
 def get_peak_load_cts_buildings():
 
-    df_building_profiles = calc_building_profiles()
-    df_peak_load = df_building_profiles.max(axis=1)
+    df_building_profiles = calc_building_profiles(scenario="eGon2035")
+    df_peak_load_2035 = df_building_profiles.max(axis=1).rename(
+        "cts_peak_load_in_w_2035")
+    df_building_profiles = calc_building_profiles(scenario="eGon2035")
+    df_peak_load_100RE = df_building_profiles.max(axis=1).rename(
+        "cts_peak_load_in_w_2035")
+    df_peak_load = pd.concat([df_peak_load_2035, df_peak_load_100RE],
+                             axis=1)
 
     CtsPeakLoads.__table__.drop(bind=engine, checkfirst=True)
     CtsPeakLoads.__table__.create(bind=engine, checkfirst=True)
