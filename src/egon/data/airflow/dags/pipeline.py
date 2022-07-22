@@ -299,6 +299,7 @@ with airflow.DAG(
             demandregio,
             heat_demand_Germany,
             # household_electricity_demand_annual,
+            tasks["electricity_demand.create-tables"],
             tasks["etrago_setup.create-tables"],
             zensus_mv_grid_districts,
             zensus_vg250,
