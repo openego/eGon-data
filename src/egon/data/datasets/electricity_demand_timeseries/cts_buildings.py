@@ -22,6 +22,8 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     write_table_to_postgres,
 )
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.datasets.electricity_demand import EgonDemandRegioZensusElectricity
 import egon.data.config
 
 engine = db.engine()
@@ -67,14 +69,12 @@ def amenities_without_buildings():
         Table of amenities without buildings
 
     """
-    from saio.demand import egon_demandregio_zensus_electricity
     from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
-    from saio.society import destatis_zensus_population_per_ha
 
     with db.session_scope() as session:
         cells_query = (
             session.query(
-                destatis_zensus_population_per_ha.id.label(
+                DestatisZensusPopulationPerHa.id.label(
                     "zensus_population_id"
                 ),
                 # TODO can be used for square around amenity
@@ -82,30 +82,30 @@ def amenities_without_buildings():
                 #  not unique amenity_ids yet
                 osm_amenities_not_in_buildings_filtered.geom_amenity,
                 osm_amenities_not_in_buildings_filtered.egon_amenity_id,
-                # egon_demandregio_zensus_electricity.demand,
+                # EgonDemandRegioZensusElectricity.demand,
                 # # TODO can be used to generate n random buildings
                 # # (n amenities : 1 randombuilding)
                 # func.count(
                 #     osm_amenities_not_in_buildings_filtered.egon_amenity_id
                 # ).label("n_amenities_inside"),
-                # destatis_zensus_population_per_ha.geom,
+                # DestatisZensusPopulationPerHa.geom,
             )
             .filter(
                 func.st_within(
                     osm_amenities_not_in_buildings_filtered.geom_amenity,
-                    destatis_zensus_population_per_ha.geom,
+                    DestatisZensusPopulationPerHa.geom,
                 )
             )
             .filter(
-                destatis_zensus_population_per_ha.id
-                == egon_demandregio_zensus_electricity.zensus_population_id
+                DestatisZensusPopulationPerHa.id
+                == EgonDemandRegioZensusElectricity.zensus_population_id
             )
             .filter(
-                egon_demandregio_zensus_electricity.sector == "service",
-                egon_demandregio_zensus_electricity.scenario == "eGon2035"
+                EgonDemandRegioZensusElectricity.sector == "service",
+                EgonDemandRegioZensusElectricity.scenario == "eGon2035"
                 #         ).group_by(
-                #             egon_demandregio_zensus_electricity.zensus_population_id,
-                #             destatis_zensus_population_per_ha.geom,
+                #             EgonDemandRegioZensusElectricity.zensus_population_id,
+                #             DestatisZensusPopulationPerHa.geom,
             )
         )
     # # TODO can be used to generate n random buildings
@@ -221,7 +221,6 @@ def buildings_with_amenities():
 
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_buildings_filtered_with_amenities
-    from saio.demand import egon_demandregio_zensus_electricity
 
     with db.session_scope() as session:
         cells_query = (
@@ -241,12 +240,12 @@ def buildings_with_amenities():
                 == egon_map_zensus_buildings_filtered_all.id
             )
             .filter(
-                egon_demandregio_zensus_electricity.zensus_population_id
+                EgonDemandRegioZensusElectricity.zensus_population_id
                 == egon_map_zensus_buildings_filtered_all.zensus_population_id
             )
             .filter(
-                egon_demandregio_zensus_electricity.sector == "service",
-                egon_demandregio_zensus_electricity.scenario == "eGon2035",
+                EgonDemandRegioZensusElectricity.sector == "service",
+                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
         )
     df_amenities_in_buildings = pd.read_sql(
@@ -336,7 +335,6 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
 def buildings_without_amenities():
     """ """
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    from saio.demand import egon_demandregio_zensus_electricity
     from saio.openstreetmap import (
         osm_amenities_not_in_buildings_filtered,
         osm_amenities_shops_filtered,
@@ -372,30 +370,30 @@ def buildings_without_amenities():
         # Amenities + zensus_population_id
         q_amenities = (
             session.query(
-                destatis_zensus_population_per_ha.id.label(
+                DestatisZensusPopulationPerHa.id.label(
                     "zensus_population_id"
                 ),
             )
             .filter(
                 func.st_within(
                     osm_amenities_shops_filtered.geom_amenity,
-                    destatis_zensus_population_per_ha.geom,
+                    DestatisZensusPopulationPerHa.geom,
                 )
             )
-            .distinct(destatis_zensus_population_per_ha.id)
+            .distinct(DestatisZensusPopulationPerHa.id)
         )
 
         # Cells with CTS demand but without amenities
         q_cts_without_amenities = (
             session.query(
-                egon_demandregio_zensus_electricity.zensus_population_id,
+                EgonDemandRegioZensusElectricity.zensus_population_id,
             )
             .filter(
-                egon_demandregio_zensus_electricity.sector == "service",
-                egon_demandregio_zensus_electricity.scenario == "eGon2035",
+                EgonDemandRegioZensusElectricity.sector == "service",
+                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
             .filter(
-                egon_demandregio_zensus_electricity.zensus_population_id.notin_(
+                EgonDemandRegioZensusElectricity.zensus_population_id.notin_(
                     q_amenities
                 )
             )
@@ -447,45 +445,44 @@ def select_cts_buildings(df_buildings_without_amenities):
 
 def cells_with_cts_demand_only(df_buildings_without_amenities):
     """"""
-    from saio.demand import egon_demandregio_zensus_electricity
-
+    from saio.openstreetmap import osm_amenities_shops_filtered
     # cells mit amenities
     with db.session_scope() as session:
         sub_query = (
             session.query(
-                destatis_zensus_population_per_ha.id.label(
+                DestatisZensusPopulationPerHa.id.label(
                     "zensus_population_id"
                 ),
             )
             .filter(
                 func.st_within(
                     osm_amenities_shops_filtered.geom_amenity,
-                    destatis_zensus_population_per_ha.geom,
+                    DestatisZensusPopulationPerHa.geom,
                 )
             )
-            .distinct(destatis_zensus_population_per_ha.id)
+            .distinct(DestatisZensusPopulationPerHa.id)
         )
 
         cells_query = (
             session.query(
-                egon_demandregio_zensus_electricity.zensus_population_id,
-                egon_demandregio_zensus_electricity.scenario,
-                egon_demandregio_zensus_electricity.sector,
-                egon_demandregio_zensus_electricity.demand,
-                destatis_zensus_population_per_ha.geom,
+                EgonDemandRegioZensusElectricity.zensus_population_id,
+                EgonDemandRegioZensusElectricity.scenario,
+                EgonDemandRegioZensusElectricity.sector,
+                EgonDemandRegioZensusElectricity.demand,
+                DestatisZensusPopulationPerHa.geom,
             )
             .filter(
-                egon_demandregio_zensus_electricity.sector == "service",
-                egon_demandregio_zensus_electricity.scenario == "eGon2035",
+                EgonDemandRegioZensusElectricity.sector == "service",
+                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
             .filter(
-                egon_demandregio_zensus_electricity.zensus_population_id.notin_(
+                EgonDemandRegioZensusElectricity.zensus_population_id.notin_(
                     sub_query
                 )
             )
             .filter(
-                egon_demandregio_zensus_electricity.zensus_population_id
-                == destatis_zensus_population_per_ha.id
+                EgonDemandRegioZensusElectricity.zensus_population_id
+                == DestatisZensusPopulationPerHa.id
             )
         )
 
