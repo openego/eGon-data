@@ -2,8 +2,6 @@
 Central module containing all code dealing with processing era5 weather data.
 """
 
-from pathlib import Path
-
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
