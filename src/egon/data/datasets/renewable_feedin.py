@@ -24,8 +24,25 @@ class RenewableFeedin(Dataset):
             name="RenewableFeedin",
             version="0.0.5",
             dependencies=dependencies,
-            tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore},
+            tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore, mapping_zensus_weather},
         )
+
+
+Base = declarative_base()
+engine = db.engine()
+
+
+class MapZensusWeatherCell(Base):
+    __tablename__ = "egon_map_zensus_weather_cell"
+    __table_args__ = {"schema": "boundaries"}
+
+    zensus_population_id = Column(
+        Integer,
+        ForeignKey(DestatisZensusPopulationPerHa.id),
+        primary_key=True,
+        index=True,
+    )
+    w_id = Column(Integer, ForeignKey(EgonEra5Cells.w_id), index=True)
 
 
 def weather_cells_in_germany(geom_column="geom"):
