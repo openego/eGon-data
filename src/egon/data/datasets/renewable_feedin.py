@@ -22,7 +22,14 @@ class RenewableFeedin(Dataset):
             name="RenewableFeedin",
             version="0.0.6",
             dependencies=dependencies,
-            tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore, mapping_zensus_weather},
+            tasks={
+                wind,
+                pv,
+                solar_thermal,
+                heat_pump_cop,
+                wind_offshore,
+                mapping_zensus_weather,
+            },
         )
 
 
@@ -83,7 +90,8 @@ def offshore_weather_cells(geom_column="geom"):
         FROM {cfg['weather_cells']['schema']}.
         {cfg['weather_cells']['table']}
         WHERE ST_Intersects('SRID=4326;
-        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))', geom)""",
+        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
+         geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -143,7 +151,6 @@ def federal_states_per_weather_cell():
             .drop_duplicates(subset="w_id", keep="first")
             .set_index("w_id")
         )
-
 
     weather_cells = weather_cells.dropna(axis=0, subset=["federal_state"])
 
@@ -207,7 +214,8 @@ def feedin_per_turbine():
     gdf = gpd.GeoDataFrame(geometry=cutout.grid_cells(), crs=4326)
 
     # Calculate feedin-timeseries for E-141
-    # source: https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
+    # source:
+    # https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
     turbine_e141 = {
         "name": "E141 4200 kW",
         "hub_height": 129,
@@ -250,7 +258,8 @@ def feedin_per_turbine():
     gdf["E-141"] = ts_e141.to_pandas().transpose().values.tolist()
 
     # Calculate feedin-timeseries for E-126
-    # source: https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
+    # source:
+    # https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
     turbine_e126 = {
         "name": "E126 4200 kW",
         "hub_height": 159,
@@ -564,14 +573,10 @@ def insert_feedin(data, carrier, weather_year):
 def mapping_zensus_weather():
     """Perform mapping between era5 weather cell and zensus grid"""
 
-    MapZensusWeatherCell.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    MapZensusWeatherCell.__table__.create(
-        bind=engine, checkfirst=True
-    )
+    MapZensusWeatherCell.__table__.drop(bind=engine, checkfirst=True)
+    MapZensusWeatherCell.__table__.create(bind=engine, checkfirst=True)
 
-    schema = MapZensusWeatherCell.__table_args__['schema']
+    schema = MapZensusWeatherCell.__table_args__["schema"]
     table_name = MapZensusWeatherCell.__tablename__
 
     script = f"""
