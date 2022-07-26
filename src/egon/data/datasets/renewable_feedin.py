@@ -561,3 +561,27 @@ def insert_feedin(data, carrier, weather_year):
         con=db.engine(),
         if_exists="append",
     )
+
+
+def mapping_zensus_weather():
+    """Perform mapping between era5 weather cell and zensus grid"""
+
+    MapZensusWeatherCell.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    MapZensusWeatherCell.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    schema = MapZensusWeatherCell.__table_args__['schema']
+    table_name = MapZensusWeatherCell.__tablename__
+
+    script = f"""
+    INSERT INTO {schema}.{table_name}(zensus_population_id, w_id)
+    SELECT zensus.id as zensus_population_id, wc.w_id
+    FROM society.destatis_zensus_population_per_ha as zensus
+    LEFT JOIN supply.egon_era5_weather_cells as wc
+    ON st_within(zensus.geom_point, ST_Transform(wc.geom, 3035))
+    """
+
+    db.execute_sql(sql_string=script)
