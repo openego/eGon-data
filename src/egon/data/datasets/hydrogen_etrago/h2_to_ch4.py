@@ -53,6 +53,42 @@ def insert_h2_to_ch4_to_h2():
 
     scn_params = get_sector_parameters("gas", scn_name)
 
+    pipeline_capacities = db.select_dataframe(
+        f"""
+        SELECT bus0, bus1, p_nom FROM grid.egon_etrago_link
+        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+        AND (
+            bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn_name}' AND country = 'DE'
+            ) OR bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn_name}' AND country = 'DE'
+            )
+        );
+        """
+    )
+
+    feed_in["p_nom"] = 0
+    feed_in["p_nom_extendable"] = False
+    # calculation of H2 energy share via volumetric share outsourced
+    # in a mixture of H2 and CH4 with 15 %vol share
+    H2_share = scn_params["H2_feedin_volumetric_fraction"]
+    H2_energy_share = H2_CH4_mix_energy_fractions(H2_share)
+
+    for bus in feed_in["bus1"].values:
+        # calculate the total pipeline capacity connected to a specific bus
+        nodal_capacity = pipeline_capacities.loc[
+            (pipeline_capacities["bus0"] == bus)
+            | (pipeline_capacities["bus1"] == bus),
+            "p_nom",
+        ].sum()
+        # multiply total pipeline capacity with H2 energy share corresponding
+        # to volumetric share
+        feed_in.loc[feed_in["bus1"] == bus, "p_nom"] = (
+            nodal_capacity * H2_energy_share
+        )
+
     # Write new entries
     for table, carrier in zip(
         [methanation, SMR, feed_in], ["H2_to_CH4", "CH4_to_H2", "H2_feedin"]
@@ -61,10 +97,7 @@ def insert_h2_to_ch4_to_h2():
         # set parameters according to carrier name
         table["carrier"] = carrier
         table["efficiency"] = scn_params["efficiency"][carrier]
-        if carrier == "H2_feedin":
-            table["p_nom_extendable"] = False
-            table["p_nom"] = 1e9
-        else:
+        if carrier != "H2_feedin":
             table["p_nom_extendable"] = True
             table["capital_cost"] = scn_params["capital_cost"][carrier]
             table["lifetime"] = scn_params["lifetime"][carrier]
@@ -88,3 +121,68 @@ def insert_h2_to_ch4_eGon100RE():
     copy_and_modify_links(
         "eGon2035", "eGon100RE", ["H2_to_CH4", "CH4_to_H2"], "gas"
     )
+
+
+def H2_CH4_mix_energy_fractions(x, T=25, p=50):
+    """
+    Calculate the fraction of H2 with respect to energy in a H2 CH4 mixture.
+
+    Given the volumetric fraction of H2 in a H2 and CH4 mixture, the fraction
+    of H2 with respect to energy is calculated with the ideal gas mixture law.
+    Beware, that changing the fraction of H2 changes the overall energy within
+    a specific volume of the mixture. If H2 is fed into CH4, the pipeline
+    capacity (based on energy) therefore decreases if the volumetric flow
+    does not change. This effect is neglected in eGon. At 15 vol% H2 the
+    decrease in capacity equals about 10 % if volumetric flow does not change.
+
+    Parameters
+    ----------
+    x : float
+        Volumetric fraction of H2 in the mixture
+    T : int, optional
+        Temperature of the mixture in °C, by default 25
+    p : int, optional
+        Pressure of the mixture in bar, by default 50
+
+    Returns
+    -------
+    float
+        Fraction of H2 in mixture with respect to energy (LHV)
+    """
+
+    # molar masses
+    M_H2 = 0.00201588
+    M_CH4 = 0.0160428
+
+    # universal gas constant (fluid independent!)
+    R_u = 8.31446261815324
+    # individual gas constants
+    R_H2 = R_u / M_H2
+    R_CH4 = R_u / M_CH4
+
+    # volume is fixed: 1m^3, use ideal gas law at 25 °C, 50 bar
+    V = 1
+    T += 273.15
+    p *= 1e5
+    # volumetric shares of gases (specify share of H2)
+    V_H2 = x
+    V_CH4 = 1 - x
+
+    # calculate data of mixture
+    M_mix = V_H2 * M_H2 + V_CH4 * M_CH4
+    R_mix = R_u / M_mix
+    m_mix = p * V / (R_mix * T)
+
+    # calulate masses with volumetric shares at mixture pressure
+    m_H2 = p * V_H2 / (R_H2 * T)
+    m_CH4 = p * V_CH4 / (R_CH4 * T)
+
+    msg = (
+        "Consistency check faild, individual masses are not equal to sum of "
+        "masses. Residual is: " + str(m_mix - m_H2 - m_CH4)
+    )
+    assert round(m_mix - m_H2 - m_CH4, 6) == 0.0, msg
+
+    LHV = {"CH4": 50e6, "H2": 120e6}
+
+    return m_H2 * LHV["H2"] / (m_H2 * LHV["H2"] + m_CH4 * LHV["CH4"])
