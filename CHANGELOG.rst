@@ -379,6 +379,8 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
+* Add biogas generators ton eGon100RE
+  `#402 <https://github.com/openego/eGon-data/issues/844>`_
 
 Bug Fixes
 ---------
