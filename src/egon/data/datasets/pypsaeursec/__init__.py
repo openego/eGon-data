@@ -492,13 +492,21 @@ def neighbor_reduction():
         neighbors = neighbors.drop(i, axis=1)
 
     # Add geometry column
-
     neighbors = (
         gpd.GeoDataFrame(
             neighbors, geometry=gpd.points_from_xy(neighbors.x, neighbors.y)
         )
         .rename_geometry("geom")
         .set_crs(4326)
+    )
+
+    # Unify carrier names
+    neighbors.carrier.replace(
+        {
+            "gas": "CH4",
+            "gas_for_industry": "CH4_for_industry",
+        },
+        inplace=True,
     )
 
     neighbors.to_postgis(
@@ -600,6 +608,21 @@ def neighbor_reduction():
         # Unify carrier names
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
+        neighbor_links.carrier.replace(
+        {
+            "H2_Electrolysis": "power_to_H2",
+            "H2_Fuel_Cell": "H2_to_power",
+            "H2_pipeline_retrofitted": "H2_retrofit",
+            "SMR": "CH4_to_H2",
+            "SMR_CC": "CH4_to_H2_CC",
+            "Sabatier": "H2_to_CH4",
+            "gas_for_industry": "CH4_for_industry",
+            "gas_for_industry_CC": "CH4_for_industry_CC",
+            "gas_pipeline": "CH4",
+        },
+        inplace=True,
+        )
+
         neighbor_links.to_postgis(
             "egon_etrago_link",
             engine,
@@ -658,6 +681,7 @@ def neighbor_reduction():
             "DC": "AC",
             "industry_electricity": "AC",
             "H2_pipeline": "H2_system_boundary",
+            "gas_for_industry": "CH4_for_industry"
         },
         inplace=True,
     )
@@ -681,7 +705,13 @@ def neighbor_reduction():
 
     neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
 
-    neighbor_stores.carrier.replace({"Li_ion": "battery"}, inplace=True)
+    neighbor_stores.carrier.replace(
+        {
+            "Li_ion": "battery",
+            "gas": "CH4",
+        },
+        inplace=True,
+    )
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
