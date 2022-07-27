@@ -14,7 +14,6 @@ import requests
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
@@ -169,7 +168,7 @@ def read_industrial_CH4_demand(scn_name="eGon2035"):
     industrial_loads_list = read_industrial_demand(scn_name, carrier)
 
     # Match to associated gas bus
-    industrial_loads_list = assign_bus_id(
+    industrial_loads_list = db.assign_gas_bus_id(
         industrial_loads_list, scn_name, carrier
     )
 
@@ -201,10 +200,10 @@ def read_industrial_H2_demand(scn_name="eGon2035"):
     industrial_loads_list = read_industrial_demand(scn_name, "H2")
     industrial_loads_list_copy = industrial_loads_list.copy()
     # Match to associated gas bus
-    industrial_loads_list = assign_bus_id(
+    industrial_loads_list = db.assign_gas_bus_id(
         industrial_loads_list, scn_name, "H2_grid"
     )
-    industrial_loads_saltcavern = assign_bus_id(
+    industrial_loads_saltcavern = db.assign_gas_bus_id(
         industrial_loads_list_copy, scn_name, "H2_saltcavern"
     )
 

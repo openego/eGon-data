@@ -537,39 +537,6 @@ def assign_bus_id(power_plants, cfg):
     return power_plants
 
 
-def assign_gas_bus_id(power_plants):
-    """Assigns gas_bus_ids to power plants according to location
-
-    Parameters
-    ----------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level)
-
-    Returns
-    -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and gas_bus_id
-
-    """
-
-    gas_voronoi = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_gas_voronoi WHERE scn_name = 'eGon2035' AND
-        carrier = 'CH4'
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(power_plants, gas_voronoi)
-    res["gas_bus_id"] = res["bus_id"]
-
-    # Assert that all power plants have a gas_bus_id
-    assert res.gas_bus_id.notnull().all(), f"""Some power plants are
-    not attached to a gas bus: {res[res.gas_bus_id.isnull()]}"""
-
-    return res
-
-
 def insert_hydro_biomass():
     """Insert hydro and biomass power plants in database
 
