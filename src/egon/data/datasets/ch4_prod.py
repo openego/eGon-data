@@ -259,9 +259,13 @@ def import_gas_generators(scn_name="eGon2035"):
         """
     )
 
-    CH4_generators_list = pd.concat(
-        [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
-    )
+    if scn_name == "eGon2035":
+        CH4_generators_list = pd.concat(
+            [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
+        )
+
+    elif scn_name == "eGon100RE":
+        CH4_generators_list = load_biogas_generators(scn_name)
 
     # Add missing columns
     c = {"scn_name": scn_name, "carrier": "CH4"}
@@ -297,3 +301,18 @@ def import_gas_generators(scn_name="eGon2035"):
         index=False,
         if_exists="append",
     )
+
+
+def insert_ch4_generators():
+    """Insert gas production units in database for both scenarios
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    import_gas_generators("eGon2035")
+    import_gas_generators("eGon100RE")
