@@ -733,14 +733,14 @@ def neighbor_reduction():
     )
     neighbor_stores.loc[
         (
-            (neighbor_stores.capital_cost < 85)
+            (neighbor_stores.e_nom_max <= 1e9)
             & (neighbor_stores.carrier == "H2")
         ),
         "carrier",
     ] = "H2_underground"
     neighbor_stores.loc[
         (
-            (neighbor_stores.capital_cost > 2000)
+            (neighbor_stores.e_nom_max > 1e9)
             & (neighbor_stores.carrier == "H2")
         ),
         "carrier",
