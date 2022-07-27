@@ -710,6 +710,20 @@ def neighbor_reduction():
         },
         inplace=True,
     )
+    neighbor_stores.loc[
+        (
+            (neighbor_stores.capital_cost < 85)
+            & (neighbor_stores.carrier == "H2")
+        ),
+        "carrier",
+    ] = "H2_underground"
+    neighbor_stores.loc[
+        (
+            (neighbor_stores.capital_cost > 2000)
+            & (neighbor_stores.carrier == "H2")
+        ),
+        "carrier",
+    ] = "H2_overground"
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
