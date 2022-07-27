@@ -10,7 +10,6 @@ from egon.data import config, db
 from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.power_plants import (
     assign_bus_id,
-    assign_gas_bus_id,
     assign_voltage_level,
     filter_mastr_geometry,
     select_target,
@@ -503,7 +502,9 @@ def insert_large_chp(sources, target, EgonChp):
     ).bus_id
 
     # Assign gas bus_id
-    insert_chp["gas_bus_id"] = assign_gas_bus_id(insert_chp_c).gas_bus_id
+    insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
+        insert_chp_c, "eGon2035", "CH4"
+    ).bus
 
     insert_chp = assign_use_case(insert_chp, sources)
 
