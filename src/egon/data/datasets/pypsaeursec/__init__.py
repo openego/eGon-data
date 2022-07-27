@@ -16,9 +16,9 @@ import yaml
 
 from egon.data import __path__, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def run_pypsa_eur_sec():
@@ -481,12 +481,33 @@ def neighbor_reduction():
     # Connect to local database
     engine = db.engine()
 
-    # db.execute_sql("DELETE FROM grid.egon_etrago_bus "
-    #               "WHERE scn_name = 'eGon100RE' "
-    #               "AND country <> 'DE'")
+    db.execute_sql(
+        "DELETE FROM grid.egon_etrago_bus "
+        "WHERE scn_name = 'eGon100RE' "
+        "AND country <> 'DE'"
+    )
 
     neighbors["scn_name"] = "eGon100RE"
     neighbors.index = neighbors["new_index"]
+
+    # Correct geometry for non AC buses
+    carriers = set(neighbors.carrier.to_list())
+    carriers.remove("AC")
+    non_AC_neighbors = pd.DataFrame()
+    for c in carriers:
+        c_neighbors = neighbors[neighbors.carrier == c].set_index(
+            "location", drop=False
+        )
+        for i in ["x", "y"]:
+            c_neighbors = c_neighbors.drop(i, axis=1)
+        coordinates = neighbors[neighbors.carrier == "AC"][
+            ["location", "x", "y"]
+        ].set_index("location")
+        c_neighbors = pd.concat([coordinates, c_neighbors], axis=1).set_index(
+            "new_index", drop=False
+        )
+        non_AC_neighbors = non_AC_neighbors.append(c_neighbors)
+    neighbors = neighbors[neighbors.carrier == "AC"].append(non_AC_neighbors)
 
     for i in ["new_index", "control", "generator", "location", "sub_network"]:
         neighbors = neighbors.drop(i, axis=1)
@@ -837,7 +858,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=tasks,
         )
