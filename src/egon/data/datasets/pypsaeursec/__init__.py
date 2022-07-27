@@ -16,9 +16,9 @@ import yaml
 
 from egon.data import __path__, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def run_pypsa_eur_sec():
@@ -609,18 +609,18 @@ def neighbor_reduction():
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
         neighbor_links.carrier.replace(
-        {
-            "H2_Electrolysis": "power_to_H2",
-            "H2_Fuel_Cell": "H2_to_power",
-            "H2_pipeline_retrofitted": "H2_retrofit",
-            "SMR": "CH4_to_H2",
-            "SMR_CC": "CH4_to_H2_CC",
-            "Sabatier": "H2_to_CH4",
-            "gas_for_industry": "CH4_for_industry",
-            "gas_for_industry_CC": "CH4_for_industry_CC",
-            "gas_pipeline": "CH4",
-        },
-        inplace=True,
+            {
+                "H2_Electrolysis": "power_to_H2",
+                "H2_Fuel_Cell": "H2_to_power",
+                "H2_pipeline_retrofitted": "H2_retrofit",
+                "SMR": "CH4_to_H2",
+                "SMR_CC": "CH4_to_H2_CC",
+                "Sabatier": "H2_to_CH4",
+                "gas_for_industry": "CH4_for_industry",
+                "gas_for_industry_CC": "CH4_for_industry_CC",
+                "gas_pipeline": "CH4",
+            },
+            inplace=True,
         )
 
         neighbor_links.to_postgis(
@@ -641,7 +641,6 @@ def neighbor_reduction():
     neighbor_gens["p_nom_extendable"] = False
 
     # Unify carrier names
-
     neighbor_gens.carrier = neighbor_gens.carrier.str.replace(" ", "_")
 
     neighbor_gens.carrier.replace(
@@ -681,7 +680,7 @@ def neighbor_reduction():
             "DC": "AC",
             "industry_electricity": "AC",
             "H2_pipeline": "H2_system_boundary",
-            "gas_for_industry": "CH4_for_industry"
+            "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
@@ -702,7 +701,6 @@ def neighbor_reduction():
     neighbor_stores["scn_name"] = "eGon100RE"
 
     # Unify carrier names
-
     neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
 
     neighbor_stores.carrier.replace(
