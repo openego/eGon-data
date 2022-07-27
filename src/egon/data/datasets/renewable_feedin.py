@@ -12,7 +12,9 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.era5 import EgonEra5Cells, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.datasets.zensus_vg250 import (
+    DestatisZensusPopulationPerHaInsideGermany,
+)
 import egon.data.config
 
 
@@ -43,7 +45,7 @@ class MapZensusWeatherCell(Base):
 
     zensus_population_id = Column(
         Integer,
-        ForeignKey(DestatisZensusPopulationPerHa.id),
+        ForeignKey(DestatisZensusPopulationPerHaInsideGermany.id),
         primary_key=True,
         index=True,
     )
@@ -573,17 +575,45 @@ def insert_feedin(data, carrier, weather_year):
 def mapping_zensus_weather():
     """Perform mapping between era5 weather cell and zensus grid"""
 
+    with db.session_scope() as session:
+        cells_query = session.query(
+            DestatisZensusPopulationPerHaInsideGermany.id.label(
+                "zensus_population_id"
+            ),
+            DestatisZensusPopulationPerHaInsideGermany.geom_point,
+        )
+
+    gdf_zensus_population = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+        geom_col="geom_point",
+    )
+
+    with db.session_scope() as session:
+        cells_query = session.query(EgonEra5Cells.w_id, EgonEra5Cells.geom)
+
+    gdf_weather_cell = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+        geom_col="geom",
+    )
+    # CRS is 4326
+    gdf_weather_cell = gdf_weather_cell.to_crs(epsg=3035)
+
+    gdf_zensus_weather = gdf_zensus_population.sjoin(
+        gdf_weather_cell, how="left", predicate="within"
+    )
+
     MapZensusWeatherCell.__table__.drop(bind=engine, checkfirst=True)
+    MapZensusWeatherCell.__table__.create(bind=engine, checkfirst=True)
 
-    schema = MapZensusWeatherCell.__table_args__["schema"]
-    table_name = MapZensusWeatherCell.__tablename__
-
-    script = f"""
-    CREATE TABLE {schema}.{table_name} AS
-    SELECT zensus.id as zensus_population_id, wc.w_id
-    FROM society.destatis_zensus_population_per_ha as zensus
-    LEFT JOIN supply.egon_era5_weather_cells as wc
-    ON st_within(zensus.geom_point, ST_Transform(wc.geom, 3035))
-    """
-
-    db.execute_sql(sql_string=script)
+    # Write mapping into db
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            MapZensusWeatherCell,
+            gdf_zensus_weather[["zensus_population_id", "w_id"]].to_dict(
+                orient="records"
+            ),
+        )
