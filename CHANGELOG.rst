@@ -379,6 +379,8 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
+* Move and merge the two assign_gas_bus_id functions to a central place
+  `#797 <https://github.com/openego/eGon-data/issues/797>`_
 * Add coordinates to non AC buses abroad in eGon100RE
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 
