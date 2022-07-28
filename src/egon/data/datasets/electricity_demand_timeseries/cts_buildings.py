@@ -1,3 +1,4 @@
+from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from sqlalchemy import REAL, Column, Float, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
@@ -55,6 +56,16 @@ class CtsPeakLoads(Base):
     id = Column(String, primary_key=True)
     cts_peak_load_in_w_2035 = Column(REAL)
     cts_peak_load_in_w_100RE = Column(REAL)
+
+
+class CtsBuildings(Base):
+    __tablename__ = "egon_cts_buildings"
+    __table_args__ = {"schema": "openstreetmap"}
+
+    id = Column(Integer, primary_key=True)
+    zensus_population_id = Column(Integer, index=True)
+    geom_building = Column(Geometry("Polygon", 3035))
+    n_amenities_inside = Column(Integer)
 
 
 def amenities_without_buildings():
@@ -710,6 +721,17 @@ def cts_to_buildings():
     )
     # TODO maybe remove after #772
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
+
+    # Write table to db for debugging
+    # TODO remove later
+    df_cts_buildings = gpd.GeoDataFrame(
+        df_cts_buildings, geometry="geom_building", crs=3035
+    )
+    write_table_to_postgis(
+        df_cts_buildings,
+        CtsBuildings,
+        drop=True,
+    )
 
     df_demand_share_2035 = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon2035"
