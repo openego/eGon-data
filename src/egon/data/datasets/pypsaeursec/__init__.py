@@ -481,6 +481,7 @@ def neighbor_reduction():
     # Connect to local database
     engine = db.engine()
 
+    # delete existing buses
     db.execute_sql(
         "DELETE FROM grid.egon_etrago_bus "
         "WHERE scn_name = 'eGon100RE' "
@@ -626,6 +627,23 @@ def neighbor_reduction():
             .set_crs(4326)
         )
 
+        # delete existing links
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_link
+            WHERE scn_name = 'eGon100RE'
+            AND "bus0" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = 'eGon100RE')
+            OR "bus1" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = 'eGon100RE')
+            ;
+        """
+        )
+
         # Unify carrier names
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
@@ -692,6 +710,32 @@ def neighbor_reduction():
     # prepare neighboring loads for etrago tables
     neighbor_loads["scn_name"] = "eGon100RE"
 
+    # delete existing load timeseries and loads
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_load_timeseries
+        WHERE "load_id" IN (
+            SELECT load_id FROM grid.egon_etrago_load
+            WHERE bus IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = 'eGon100RE')
+            AND scn_name = 'eGon100RE'
+        );
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_load
+        WHERE bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE country != 'DE'
+            AND scn_name = 'eGon100RE')
+        AND scn_name = 'eGon100RE';
+        """
+    )
+
     # Unify carrier names
     neighbor_loads.carrier = neighbor_loads.carrier.str.replace(" ", "_")
 
@@ -718,6 +762,17 @@ def neighbor_reduction():
         index_label="load_id",
     )
 
+    # delete existing stores
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_store
+        WHERE scn_name = 'eGon100RE'
+        AND bus IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = 'eGon100RE'
+            AND country != 'DE');
+    """
+    )
     # prepare neighboring stores for etrago tables
     neighbor_stores["scn_name"] = "eGon100RE"
 
