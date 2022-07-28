@@ -110,12 +110,12 @@ def amenities_without_buildings():
     #
 
     # # TODO can be used for square around amenity
-    df_synthetic_buildings_for_amenities = gpd.read_postgis(
+    df_amenities_without_buildings = gpd.read_postgis(
         cells_query.statement,
         cells_query.session.bind,
         geom_col="geom_amenity",
     )
-    return df_synthetic_buildings_for_amenities
+    return df_amenities_without_buildings
 
 
 def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
