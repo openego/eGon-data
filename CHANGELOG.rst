@@ -556,6 +556,8 @@ Bug Fixes
   `#849 <https://github.com/openego/eGon-data/issues/849>`_
 * Fix final demand of heat demand timeseries
   `#781 <https://github.com/openego/eGon-data/issues/781>`_
+* Add extendable batteries only to buses at substations
+  `#852 <https://github.com/openego/eGon-data/issues/852>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
