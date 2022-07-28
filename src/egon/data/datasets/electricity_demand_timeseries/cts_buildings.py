@@ -546,9 +546,13 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
 
     def calc_building_amenity_share(df_cts_buildings):
         """"""
-        df_building_amenity_share = 1 / df_cts_buildings.groupby(
-            "zensus_population_id"
-        )["n_amenities_inside"].transform("sum")
+        df_building_amenity_share = df_cts_buildings[
+            "n_amenities_inside"
+        ] / df_cts_buildings.groupby("zensus_population_id")[
+            "n_amenities_inside"
+        ].transform(
+            "sum"
+        )
         df_building_amenity_share = pd.concat(
             [
                 df_building_amenity_share.rename("building_amenity_share"),
