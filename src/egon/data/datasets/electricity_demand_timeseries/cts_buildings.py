@@ -545,7 +545,10 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
     """
 
     def calc_building_amenity_share(df_cts_buildings):
-        """"""
+        """
+        Calculate the building share by the number amenities per building
+        within a census cell.
+        """
         df_building_amenity_share = df_cts_buildings[
             "n_amenities_inside"
         ] / df_cts_buildings.groupby("zensus_population_id")[
