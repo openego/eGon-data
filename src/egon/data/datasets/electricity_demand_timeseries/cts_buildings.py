@@ -1,9 +1,9 @@
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Column, Float, Integer, String, func, REAL
+from sqlalchemy import REAL, Column, Float, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
-import numpy as np
 import pandas as pd
+import saio
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -23,7 +23,6 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
 )
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
-from egon.data.datasets.electricity_demand import EgonDemandRegioZensusElectricity
 import egon.data.config
 
 engine = db.engine()
@@ -31,8 +30,6 @@ Base = declarative_base()
 
 data_config = egon.data.config.datasets()
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
-
-import saio
 
 # import db tables
 saio.register_schema("openstreetmap", engine=engine)
@@ -74,9 +71,7 @@ def amenities_without_buildings():
     with db.session_scope() as session:
         cells_query = (
             session.query(
-                DestatisZensusPopulationPerHa.id.label(
-                    "zensus_population_id"
-                ),
+                DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
                 # TODO can be used for square around amenity
                 #  (1 geom_amenity: 1 geom_building)
                 #  not unique amenity_ids yet
@@ -130,8 +125,8 @@ def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
     method and number of amenities per building.
     """
     if isinstance(max_amenities, int):
-        # amount of amenities is randomly generated within bounds (max_amenities,
-        # amenities per cell)
+        # amount of amenities is randomly generated within bounds
+        # (max_amenities, amenities per cell)
         df["n_amenities_inside"] = df["n_amenities_inside"].apply(
             random_ints_until_sum, args=[max_amenities]
         )
@@ -310,24 +305,17 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
     ]
     df_synthetic_buildings = df_synthetic_buildings.loc[:, columns]
 
-    dtypes = {i: OsmBuildingsSynthetic.__table__.columns[i].type for i in OsmBuildingsSynthetic.__table__.columns.keys()}
+    dtypes = {
+        i: OsmBuildingsSynthetic.__table__.columns[i].type
+        for i in OsmBuildingsSynthetic.__table__.columns.keys()
+    }
 
     # Write new buildings incl coord into db
     df_synthetic_buildings.to_postgis(
         name=OsmBuildingsSynthetic.__tablename__,
         con=engine,
         if_exists="append",
-        # schema="openstreetmap",
         schema=OsmBuildingsSynthetic.__table_args__["schema"],
-        # dtype={
-        #     "id": OsmBuildingsSynthetic.id.type,
-        #     "cell_id": OsmBuildingsSynthetic.cell_id.type,
-        #     "geom_building": OsmBuildingsSynthetic.geom_building.type,
-        #     "geom_point": OsmBuildingsSynthetic.geom_point.type,
-        #     "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
-        #     "building": OsmBuildingsSynthetic.building.type,
-        #     "area": OsmBuildingsSynthetic.area.type,
-        # },
         dtype=dtypes,
     )
 
@@ -336,11 +324,11 @@ def buildings_without_amenities():
     """ """
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import (
-        osm_amenities_not_in_buildings_filtered,
         osm_amenities_shops_filtered,
         osm_buildings_filtered,
         osm_buildings_synthetic,
     )
+
     # buildings_filtered in cts-demand-cells without amenities
     with db.session_scope() as session:
 
@@ -370,9 +358,7 @@ def buildings_without_amenities():
         # Amenities + zensus_population_id
         q_amenities = (
             session.query(
-                DestatisZensusPopulationPerHa.id.label(
-                    "zensus_population_id"
-                ),
+                DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
             )
             .filter(
                 func.st_within(
@@ -426,17 +412,16 @@ def buildings_without_amenities():
     return df_buildings_without_amenities
 
 
-def select_cts_buildings(df_buildings_without_amenities):
+def select_cts_buildings(df_buildings_wo_amenities):
     """ """
     # TODO Adapt method
     # Select one building each cell
     # take the first
-    df_buildings_with_cts_demand = (
-        df_buildings_without_amenities.drop_duplicates(
-            # subset="cell_id", keep="first"
-            subset="zensus_population_id", keep="first"
-        ).reset_index(drop=True)
-    )
+    df_buildings_with_cts_demand = df_buildings_wo_amenities.drop_duplicates(
+        # subset="cell_id", keep="first"
+        subset="zensus_population_id",
+        keep="first",
+    ).reset_index(drop=True)
     df_buildings_with_cts_demand["n_amenities_inside"] = 1
     df_buildings_with_cts_demand["building"] = "cts"
 
@@ -446,13 +431,12 @@ def select_cts_buildings(df_buildings_without_amenities):
 def cells_with_cts_demand_only(df_buildings_without_amenities):
     """"""
     from saio.openstreetmap import osm_amenities_shops_filtered
+
     # cells mit amenities
     with db.session_scope() as session:
         sub_query = (
             session.query(
-                DestatisZensusPopulationPerHa.id.label(
-                    "zensus_population_id"
-                ),
+                DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
             )
             .filter(
                 func.st_within(
@@ -544,7 +528,11 @@ def calc_census_cell_share(scenario="eGon2035"):
     df_census_share = df_census_share.rename("cell_share")
 
     df_census_share = pd.concat(
-        [df_census_share, df_demand_regio_electricity_demand[["bus_id", "scenario"]]], axis=1
+        [
+            df_census_share,
+            df_demand_regio_electricity_demand[["bus_id", "scenario"]],
+        ],
+        axis=1,
     )
 
     df_census_share.reset_index(inplace=True)
@@ -559,7 +547,8 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
     def calc_building_amenity_share(df_cts_buildings):
         """"""
         df_building_amenity_share = 1 / df_cts_buildings.groupby(
-            "zensus_population_id")["n_amenities_inside"].transform("sum")
+            "zensus_population_id"
+        )["n_amenities_inside"].transform("sum")
         df_building_amenity_share = pd.concat(
             [
                 df_building_amenity_share.rename("building_amenity_share"),
@@ -573,39 +562,51 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
 
     df_census_cell_share = calc_census_cell_share(scenario)
 
-    df_demand_share = pd.merge(left=df_building_amenity_share, right=df_census_cell_share,
-                               left_on="zensus_population_id", right_on="zensus_population_id")
-    df_demand_share["profile_share"] = df_demand_share["building_amenity_share"].multiply(
-        df_demand_share["cell_share"])
+    df_demand_share = pd.merge(
+        left=df_building_amenity_share,
+        right=df_census_cell_share,
+        left_on="zensus_population_id",
+        right_on="zensus_population_id",
+    )
+    df_demand_share["profile_share"] = df_demand_share[
+        "building_amenity_share"
+    ].multiply(df_demand_share["cell_share"])
 
     return df_demand_share[["id", "bus_id", "scenario", "profile_share"]]
 
 
-def calc_building_profiles(df_demand_share=None, egon_building_id=None, scenario="eGon2035"):
-    """
-
-    """
+def calc_building_profiles(
+    df_demand_share=None, egon_building_id=None, scenario="eGon2035"
+):
+    """"""
 
     if not isinstance(df_demand_share, pd.DataFrame):
         with db.session_scope() as session:
             cells_query = session.query(EgonCtsElectricityDemandBuildingShare)
 
         df_demand_share = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None)
+            cells_query.statement, cells_query.session.bind, index_col=None
+        )
 
     df_cts_profiles = calc_load_curves_cts(scenario)
 
     # Only calculate selected building profile if egon_building_id is given
-    if isinstance(egon_building_id, int) and egon_building_id in df_demand_share["id"]:
+    if (
+        isinstance(egon_building_id, int)
+        and egon_building_id in df_demand_share["id"]
+    ):
         df_demand_share = df_demand_share.loc[
-            df_demand_share["id"] == egon_building_id]
+            df_demand_share["id"] == egon_building_id
+        ]
 
     df_building_profiles = pd.DataFrame()
-    for bus_id, df in df_demand_share.groupby('bus_id'):
+    for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("id", drop=True)["profile_share"]
         profile = df_cts_profiles.loc[:, bus_id]
         building_profiles = profile.apply(lambda x: x * shares)
-        df_building_profiles = pd.concat([df_building_profiles, building_profiles], axis=1)
+        df_building_profiles = pd.concat(
+            [df_building_profiles, building_profiles], axis=1
+        )
 
     return df_building_profiles
 
@@ -626,23 +627,29 @@ def cts_to_buildings():
 
     # TODO write to DB and remove renaming
     # write_synthetic_buildings_to_db(df_synthetic_buildings_with_amenities)
-    write_table_to_postgis(df_synthetic_buildings_with_amenities.rename(
-        columns={
-            "zensus_population_id": "cell_id",
-            "egon_building_id": "id",
-        }),
+    write_table_to_postgis(
+        df_synthetic_buildings_with_amenities.rename(
+            columns={
+                "zensus_population_id": "cell_id",
+                "egon_building_id": "id",
+            }
+        ),
         OsmBuildingsSynthetic,
-        drop=False)
+        drop=False,
+    )
 
     # Cells without amenities but CTS demand and buildings
     df_buildings_without_amenities = buildings_without_amenities()
 
     # TODO Fix Adhoc Bugfix duplicated buildings
     mask = df_buildings_without_amenities.loc[
-        df_buildings_without_amenities['id'].isin(
-            df_buildings_with_amenities['id'])].index
+        df_buildings_without_amenities["id"].isin(
+            df_buildings_with_amenities["id"]
+        )
+    ].index
     df_buildings_without_amenities = df_buildings_without_amenities.drop(
-        index=mask).reset_index(drop=True)
+        index=mask
+    ).reset_index(drop=True)
 
     df_buildings_without_amenities = select_cts_buildings(
         df_buildings_without_amenities
@@ -660,30 +667,30 @@ def cts_to_buildings():
         df_cells_with_cts_demand_only, amenities=1
     )
     # Leads to only 1 building per cell
-    df_synthetic_buildings_without_amenities = (
-        create_synthetic_buildings(
-            df_cells_with_cts_demand_only, points="geom_point"
-        )
+    df_synthetic_buildings_without_amenities = create_synthetic_buildings(
+        df_cells_with_cts_demand_only, points="geom_point"
     )
 
     # TODO write to DB and remove renaming
     # write_synthetic_buildings_to_db(df_synthetic_buildings_without_amenities)
-    write_table_to_postgis(df_synthetic_buildings_without_amenities.rename(
-        columns={
-            "zensus_population_id": "cell_id",
-            "egon_building_id": "id",
-        }),
+    write_table_to_postgis(
+        df_synthetic_buildings_without_amenities.rename(
+            columns={
+                "zensus_population_id": "cell_id",
+                "egon_building_id": "id",
+            }
+        ),
         OsmBuildingsSynthetic,
-        drop=False)
+        drop=False,
+    )
 
     # Concat all buildings
-    columns = ["zensus_population_id", "id", "geom_building", "n_amenities_inside"]
-    # columns = ["zensus_population_id", "id", "geom_building", "n_amenities_inside", "table"]
-    # df_buildings_with_amenities["table"] = "df_buildings_with_amenities"
-    # df_synthetic_buildings_with_amenities["table"] = "df_synthetic_buildings_with_amenities"
-    # df_buildings_without_amenities["table"] = "df_buildings_without_amenities"
-    # df_synthetic_buildings_without_amenities["table"] = "df_synthetic_buildings_without_amenities"
-
+    columns = [
+        "zensus_population_id",
+        "id",
+        "geom_building",
+        "n_amenities_inside",
+    ]
     df_cts_buildings = pd.concat(
         [
             df_buildings_with_amenities[columns],
@@ -697,21 +704,26 @@ def cts_to_buildings():
     # TODO maybe remove after #772
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
-    df_demand_share_2035 = calc_building_demand_profile_share(df_cts_buildings,
-                                                         scenario="eGon2035")
-    df_demand_share_100RE = calc_building_demand_profile_share(df_cts_buildings,
-                                                         scenario="eGon100RE")
+    df_demand_share_2035 = calc_building_demand_profile_share(
+        df_cts_buildings, scenario="eGon2035"
+    )
+    df_demand_share_100RE = calc_building_demand_profile_share(
+        df_cts_buildings, scenario="eGon100RE"
+    )
 
-    df_demand_share = pd.concat([df_demand_share_2035, df_demand_share_100RE],
-                                axis=0, ignore_index=True)
+    df_demand_share = pd.concat(
+        [df_demand_share_2035, df_demand_share_100RE],
+        axis=0,
+        ignore_index=True,
+    )
 
     # TODO Why are there nonunique ids?
     #  needs to be removed as soon as 'id' is unique
     df_demand_share = df_demand_share.drop_duplicates(subset="id")
 
-    write_table_to_postgres(df_demand_share,
-                            EgonCtsElectricityDemandBuildingShare,
-                            drop=True)
+    write_table_to_postgres(
+        df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
+    )
 
     return df_cts_buildings, df_demand_share
 
@@ -721,12 +733,15 @@ def get_peak_load_cts_buildings():
     # TODO Check units, maybe MwH?
     df_building_profiles = calc_building_profiles(scenario="eGon2035")
     df_peak_load_2035 = df_building_profiles.max(axis=0).rename(
-        "cts_peak_load_in_w_2035")
+        "cts_peak_load_in_w_2035"
+    )
     df_building_profiles = calc_building_profiles(scenario="eGon2035")
     df_peak_load_100RE = df_building_profiles.max(axis=0).rename(
-        "cts_peak_load_in_w_100RE")
-    df_peak_load = pd.concat([df_peak_load_2035, df_peak_load_100RE],
-                             axis=1).reset_index()
+        "cts_peak_load_in_w_100RE"
+    )
+    df_peak_load = pd.concat(
+        [df_peak_load_2035, df_peak_load_100RE], axis=1
+    ).reset_index()
 
     CtsPeakLoads.__table__.drop(bind=engine, checkfirst=True)
     CtsPeakLoads.__table__.create(bind=engine, checkfirst=True)
@@ -745,10 +760,8 @@ def delete_synthetic_cts_buildings():
 
     # cells mit amenities
     with db.session_scope() as session:
-        session.query(
-            osm_buildings_synthetic
-        ).filter(
-            osm_buildings_synthetic.building == 'cts'
+        session.query(osm_buildings_synthetic).filter(
+            osm_buildings_synthetic.building == "cts"
         ).delete()
 
 
@@ -758,8 +771,9 @@ class CtsElectricityBuildings(Dataset):
             name="CtsElectricityBuildings",
             version="0.0.0.",
             dependencies=dependencies,
-            tasks=(cts_to_buildings,
-                   get_peak_load_cts_buildings,
-                   # get_all_cts_building_profiles,
-                   ),
+            tasks=(
+                cts_to_buildings,
+                get_peak_load_cts_buildings,
+                # get_all_cts_building_profiles,
+            ),
         )
