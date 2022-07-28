@@ -5,28 +5,33 @@
 
 DROP TABLE IF EXISTS openstreetmap.osm_amenities_in_buildings_filtered;
 CREATE TABLE openstreetmap.osm_amenities_in_buildings_filtered as
+SELECT table_2.*, zensus.id as zensus_population_id FROM (
     SELECT * FROM (
-        SELECT
-            amenity.egon_amenity_id,
-            amenity.amenity,
-            amenity.name,
---             amenity.osm_id as osm_id_amenity,
---             amenity.tags as tags_amenity
-            amenity.geom_amenity,
-            filtered.osm_id as osm_id_building,
-            filtered.id,
---             filtered.building,
-            filtered.area,
---             filtered.tags as tags_building,
-            filtered.geom_building
+            SELECT
+                amenity.egon_amenity_id,
+                amenity.amenity,
+                amenity.name,
+    --             amenity.osm_id as osm_id_amenity,
+    --             amenity.tags as tags_amenity
+                amenity.geom_amenity,
+                filtered.osm_id as osm_id_building,
+                filtered.id,
+    --             filtered.building,
+                filtered.area,
+    --             filtered.tags as tags_building,
+                filtered.geom_building
 
 
-        FROM openstreetmap.osm_amenities_shops_filtered as amenity,
-             openstreetmap.osm_buildings_filtered as filtered
-        WHERE st_intersects(filtered.geom_building, amenity.geom_amenity)
---         WHERE ST_DWithin(filtered.geom_building, amenity.geom_amenity, 0)-- 0.00002 2,22 Meter radius
-        ) table_1
-    WHERE table_1.id IS NOT NULL;
+            FROM openstreetmap.osm_amenities_shops_filtered as amenity,
+                 openstreetmap.osm_buildings_filtered as filtered
+            WHERE ST_INTERSECTS(filtered.geom_building, amenity.geom_amenity)
+    --         WHERE ST_DWithin(filtered.geom_building, amenity.geom_amenity, 0)-- 0.00002 2,22 Meter radius
+            ) table_1
+        WHERE table_1.id IS NOT NULL) as table_2,
+        society.destatis_zensus_population_per_ha as zensus
+        WHERE ST_INTERSECTS(table_2.geom_amenity, zensus.geom);
+
+
 
 -- Amenities and Buildings are not unique probably due to overlay buildings
 -- Remove building with smaller area surface to have unique Amenities
