@@ -1867,6 +1867,7 @@ def demand_profile_generator(aggregation_level="district"):
         CTS_demand_dist,
     )
 
+
     if aggregation_level == "district":
         total_demands_dist = pd.concat(
             [residential_demand_dist, CTS_demand_dist]
@@ -1910,6 +1911,7 @@ def demand_profile_generator(aggregation_level="district"):
 
         final_heat_profiles_grid = pd.DataFrame()
         for scenario in scenarios:
+
             scenario_demand = (
                 total_demands_grid[total_demands_grid.scenario == scenario]
                 .drop("scenario", axis=1)
