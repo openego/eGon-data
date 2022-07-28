@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas.io.sql as sqlio
+from pathlib import Path
 import psycopg2
 import xarray as xr
 
@@ -1729,6 +1730,57 @@ def CTS_demand_scale(aggregation_level):
     return CTS_district, CTS_grid, CTS_zensus
 
 
+def store_national_profiles(
+    residential_demand_grid,
+    CTS_demand_grid,
+    residential_demand_dist,
+    CTS_demand_dist,
+):
+
+    folder = Path(".") / "input-pypsa-eur-sec"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
+    for scenario in CTS_demand_grid.scenario.unique():
+        national_demand = pd.DataFrame(
+            columns=["residential rural", "services rural", "urban central"],
+            index=pd.date_range(
+                datetime(2011, 1, 1, 0), periods=8760, freq="H"
+            ),
+        )
+
+        national_demand["residential rural"] = (
+            residential_demand_grid[
+                residential_demand_grid.scenario == scenario
+            ]
+            .drop("scenario", axis="columns")
+            .sum()
+            .values
+        )
+        national_demand["services rural"] = (
+            CTS_demand_grid[CTS_demand_grid.scenario == scenario]
+            .sum(numeric_only=True)
+            .values
+        )
+        national_demand["urban central"] = (
+            residential_demand_dist[
+                residential_demand_dist.scenario == scenario
+            ]
+            .drop("scenario", axis="columns")
+            .sum()
+            .values
+            + CTS_demand_dist[CTS_demand_dist.scenario == scenario]
+            .drop("scenario", axis="columns")
+            .sum()
+            .values
+        )
+
+        national_demand.to_csv(
+            folder / f"heat_demand_timeseries_DE_{scenario}.csv"
+        )
+
+
 def demand_profile_generator(aggregation_level="district"):
     """
 
@@ -1807,6 +1859,15 @@ def demand_profile_generator(aggregation_level="district"):
         service heat demand: {check_residential}
         """
 
+    # store demand timeseries for pypsa-eur-sec on national level
+    store_national_profiles(
+        residential_demand_grid,
+        CTS_demand_grid,
+        residential_demand_dist,
+        CTS_demand_dist,
+    )
+
+
     if aggregation_level == "district":
         total_demands_dist = pd.concat(
             [residential_demand_dist, CTS_demand_dist]
@@ -1850,6 +1911,7 @@ def demand_profile_generator(aggregation_level="district"):
 
         final_heat_profiles_grid = pd.DataFrame()
         for scenario in scenarios:
+
             scenario_demand = (
                 total_demands_grid[total_demands_grid.scenario == scenario]
                 .drop("scenario", axis=1)
