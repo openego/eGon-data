@@ -225,29 +225,14 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
 def buildings_with_amenities():
     """"""
 
-    from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    from saio.openstreetmap import osm_buildings_filtered_with_amenities
+    from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
     with db.session_scope() as session:
         cells_query = (
-            session.query(
-                osm_buildings_filtered_with_amenities.id.label(
-                    "egon_building_id"
-                ),
-                osm_buildings_filtered_with_amenities.building,
-                osm_buildings_filtered_with_amenities.n_amenities_inside,
-                osm_buildings_filtered_with_amenities.area,
-                osm_buildings_filtered_with_amenities.geom_building,
-                osm_buildings_filtered_with_amenities.geom_point,
-                egon_map_zensus_buildings_filtered_all.zensus_population_id,
-            )
-            .filter(
-                osm_buildings_filtered_with_amenities.id
-                == egon_map_zensus_buildings_filtered_all.id
-            )
+            session.query(osm_amenities_in_buildings_filtered)
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id
-                == egon_map_zensus_buildings_filtered_all.zensus_population_id
+                == osm_amenities_in_buildings_filtered.zensus_population_id
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
@@ -258,34 +243,34 @@ def buildings_with_amenities():
         cells_query.statement, cells_query.session.bind, index_col=None
     )
 
-    # TODO necessary?
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
     ].apply(to_shape)
-    df_amenities_in_buildings["geom_point"] = df_amenities_in_buildings[
-        "geom_point"
+    df_amenities_in_buildings["geom_amenity"] = df_amenities_in_buildings[
+        "geom_amenity"
     ].apply(to_shape)
 
-    # # Count amenities per building
-    # df_amenities_in_buildings["n_amenities_inside"] = 1
-    # df_amenities_in_buildings[
-    #     "n_amenities_inside"
-    # ] = df_amenities_in_buildings.groupby("egon_building_id")[
-    #     "n_amenities_inside"
-    # ].transform(
-    #     "sum"
-    # )
-
-    # # Only keep one building for multiple amenities
-    # df_amenities_in_buildings = df_amenities_in_buildings.drop_duplicates(
-    #     "egon_building_id"
-    # )
-    # df_amenities_in_buildings["building"] = "cts"
-    # TODO maybe remove later
-    df_amenities_in_buildings.sort_values("egon_building_id").reset_index(
-        drop=True, inplace=True
+    df_amenities_in_buildings["n_amenities_inside"] = 1
+    # amenities per building
+    # if building covers multiple cells, it exists multiple times
+    df_amenities_in_buildings[
+        "n_amenities_inside"
+    ] = df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
+        "n_amenities_inside"
+    ].transform(
+        "sum"
     )
-    df_amenities_in_buildings.rename(
+    # reduce to buildings
+    df_buildings_with_amenities = df_amenities_in_buildings.drop_duplicates(
+        ["id", "zensus_population_id"]
+    )
+    df_buildings_with_amenities = df_buildings_with_amenities.reset_index(
+        drop=True
+    )
+    df_buildings_with_amenities = df_buildings_with_amenities[
+        ["id", "zensus_population_id", "geom_building", "n_amenities_inside"]
+    ]
+    df_buildings_with_amenities.rename(
         columns={
             # "zensus_population_id": "cell_id",
             "egon_building_id": "id"
@@ -293,7 +278,7 @@ def buildings_with_amenities():
         inplace=True,
     )
 
-    return df_amenities_in_buildings
+    return df_buildings_with_amenities
 
 
 # TODO maybe replace with tools.write_table_to_db
