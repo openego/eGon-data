@@ -62,7 +62,8 @@ class CtsBuildings(Base):
     __tablename__ = "egon_cts_buildings"
     __table_args__ = {"schema": "openstreetmap"}
 
-    id = Column(Integer, primary_key=True)
+    serial = Column(Integer, primary_key=True)
+    id = Column(Integer)
     zensus_population_id = Column(Integer, index=True)
     geom_building = Column(Geometry("Polygon", 3035))
     n_amenities_inside = Column(Integer)
@@ -864,6 +865,9 @@ def cts_to_buildings():
     # TODO remove later
     df_cts_buildings = gpd.GeoDataFrame(
         df_cts_buildings, geometry="geom_building", crs=3035
+    )
+    df_cts_buildings = df_cts_buildings.reset_index().rename(
+        columns={"index": "serial"}
     )
     write_table_to_postgis(
         df_cts_buildings,
