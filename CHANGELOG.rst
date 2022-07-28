@@ -550,6 +550,8 @@ Bug Fixes
   `#776 <https://github.com/openego/eGon-data/issues/776>`_
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
+* Add imports that have been wrongly deleted
+  `#849 <https://github.com/openego/eGon-data/issues/849>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
