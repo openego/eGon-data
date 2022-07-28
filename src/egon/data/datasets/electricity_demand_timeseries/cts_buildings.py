@@ -66,6 +66,7 @@ class CtsBuildings(Base):
     zensus_population_id = Column(Integer, index=True)
     geom_building = Column(Geometry("Polygon", 3035))
     n_amenities_inside = Column(Integer)
+    source = Column(String)
 
 
 def amenities_without_buildings():
@@ -701,7 +702,14 @@ def cts_to_buildings():
         "id",
         "geom_building",
         "n_amenities_inside",
+        "source",
     ]
+
+    df_buildings_with_amenities["source"] = "bwa"
+    df_synthetic_buildings_with_amenities["source"] = "sbwa"
+    df_buildings_without_amenities["source"] = "bwoa"
+    df_synthetic_buildings_without_amenities["source"] = "sbwoa"
+
     df_cts_buildings = pd.concat(
         [
             df_buildings_with_amenities[columns],
