@@ -631,11 +631,19 @@ def calc_building_profiles(
 
 def cts_to_buildings():
     """"""
+
+    # #### NOTE
+    # #### Cells with CTS demand, amenities and buildings do not change
+    # #### within the scenarios, only the demand itself. Therefore
+    # #### scenario eGon2035 can be used universally to determine
+    # #### buildings
+
     # Buildings with amenities
     df_buildings_with_amenities = buildings_with_amenities()
 
     # Remove synthetic CTS buildings if existing
     delete_synthetic_cts_buildings()
+
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
     df_amenities_without_buildings["n_amenities_inside"] = 1
