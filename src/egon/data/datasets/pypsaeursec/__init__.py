@@ -179,6 +179,93 @@ def read_network():
     return pypsa.Network(str(target_file))
 
 
+def clean_database():
+    """Remove all components abroad for eGon100RE of the database
+
+    Remove all components abroad and their associated time series of
+    the datase for the scenario 'eGon100RE'.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    """
+    scn_name = "eGon100RE"
+    source = config.datasets()["gas_stores"]["source"]
+
+    comp_one_port = ["load", "generator", "store", "storage"]
+
+    # delete existing components and associated timeseries
+    for comp in comp_one_port:
+        db.execute_sql(
+            f"""
+            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
+            WHERE {comp + "_id"} IN (
+                SELECT {comp + "_id"} FROM {"grid.egon_etrago_" + comp}
+                WHERE bus IN (
+                    SELECT bus_id FROM grid.egon_etrago_bus
+                    WHERE country != 'DE'
+                    AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+            );
+
+            DELETE FROM {"grid.egon_etrago_" + comp}
+            WHERE bus IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            AND scn_name = '{scn_name}';
+            """
+        )
+
+    comp_2_ports = [
+        "line",
+        "transformer",
+        "link",
+    ]
+
+    for comp, id in zip(comp_2_ports, ["line_id", "trafo_id", "link_id"]):
+        db.execute_sql(
+            f"""
+            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
+            WHERE scn_name = '{scn_name}'
+            AND {id} IN (
+                SELECT {id} FROM {"grid.egon_etrago_" + comp}
+            WHERE "bus0" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            OR "bus1" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            );
+
+            DELETE FROM {"grid.egon_etrago_" + comp}
+            WHERE scn_name = '{scn_name}'
+            AND "bus0" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            OR "bus1" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            ;
+        """
+        )
+
+    db.execute_sql(
+        "DELETE FROM grid.egon_etrago_bus "
+        "WHERE scn_name = '{scn_name}' "
+        "AND country <> 'DE'"
+    )
+
+
 def neighbor_reduction():
 
     network = read_network()
@@ -481,13 +568,6 @@ def neighbor_reduction():
     # Connect to local database
     engine = db.engine()
 
-    # delete existing buses
-    db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = 'eGon100RE' "
-        "AND country <> 'DE'"
-    )
-
     neighbors["scn_name"] = "eGon100RE"
     neighbors.index = neighbors["new_index"]
 
@@ -627,23 +707,6 @@ def neighbor_reduction():
             .set_crs(4326)
         )
 
-        # delete existing links
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_link
-            WHERE scn_name = 'eGon100RE'
-            AND "bus0" IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE country != 'DE'
-                AND scn_name = 'eGon100RE')
-            OR "bus1" IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE country != 'DE'
-                AND scn_name = 'eGon100RE')
-            ;
-        """
-        )
-
         # Unify carrier names
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
@@ -710,32 +773,6 @@ def neighbor_reduction():
     # prepare neighboring loads for etrago tables
     neighbor_loads["scn_name"] = "eGon100RE"
 
-    # delete existing load timeseries and loads
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_load_timeseries
-        WHERE "load_id" IN (
-            SELECT load_id FROM grid.egon_etrago_load
-            WHERE bus IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE country != 'DE'
-                AND scn_name = 'eGon100RE')
-            AND scn_name = 'eGon100RE'
-        );
-        """
-    )
-
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_load
-        WHERE bus IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE country != 'DE'
-            AND scn_name = 'eGon100RE')
-        AND scn_name = 'eGon100RE';
-        """
-    )
-
     # Unify carrier names
     neighbor_loads.carrier = neighbor_loads.carrier.str.replace(" ", "_")
 
@@ -762,17 +799,6 @@ def neighbor_reduction():
         index_label="load_id",
     )
 
-    # delete existing stores
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_store
-        WHERE scn_name = 'eGon100RE'
-        AND bus IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'eGon100RE'
-            AND country != 'DE');
-    """
-    )
     # prepare neighboring stores for etrago tables
     neighbor_stores["scn_name"] = "eGon100RE"
 
@@ -946,9 +972,9 @@ def neighbor_reduction():
 execute_pypsa_eur_sec = False
 
 if execute_pypsa_eur_sec:
-    tasks = (run_pypsa_eur_sec, neighbor_reduction)
+    tasks = (run_pypsa_eur_sec, clean_database, neighbor_reduction)
 else:
-    tasks = neighbor_reduction
+    tasks = (clean_database, neighbor_reduction)
 
 
 class PypsaEurSec(Dataset):
