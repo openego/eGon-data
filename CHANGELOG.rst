@@ -371,7 +371,7 @@ Changed
 *  Update hh electricity profiles
   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
-  `#775 <https://github.com/openego/eGon-data/pull/775>`_
+  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
   `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
@@ -555,6 +555,12 @@ Bug Fixes
   Use db.next_etrago_id in fill_etrago_gen
   `#798 <https://github.com/openego/eGon-data/issues/798>`_
   `#776 <https://github.com/openego/eGon-data/issues/776>`_
+* Fix country code of gas pipeline DE-AT
+  `#813 <https://github.com/openego/eGon-data/issues/813>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
+* Overwrite capacities for conventional power plants with data from nep list
+  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
 * Fix gas costs
