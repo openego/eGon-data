@@ -71,12 +71,13 @@ class CtsBuildings(Base):
 
 def amenities_without_buildings():
     """
+    Amenities which have no buildings assigned and are in
+    a cell with cts demand are determined.
 
     Returns
     -------
     pd.DataFrame
         Table of amenities without buildings
-
     """
     from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
 
@@ -132,9 +133,14 @@ def amenities_without_buildings():
 
 def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
     """
-    Building centers are placed randomly within census cells.
+    Building centroids are placed randomly within census cells.
     The Number of buildings is derived from n_amenity_inside, the selected
     method and number of amenities per building.
+
+    Returns
+    -------
+    df: gpd.GeoDataFrame
+        Table of buildings centroids
     """
     if isinstance(max_amenities, int):
         # amount of amenities is randomly generated within bounds
@@ -171,6 +177,20 @@ def place_buildings_with_amenities(df, amenities=None, max_amenities=None):
 def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     """
     Synthetic buildings are generated around points.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Table of census cells
+    points: gpd.GeoSeries or str
+        List of points to place buildings around or column name of df
+    crs: str
+        CRS of result table
+
+    Returns
+    -------
+    df: gpd.GeoDataFrame
+        Synthetic buildings
     """
 
     if isinstance(points, str) and points in df.columns:
@@ -224,7 +244,19 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
 
 
 def buildings_with_amenities():
-    """"""
+    """
+    Amenities which are assigned to buildings are determined
+    and grouped per building and zensus cell. Buildings
+    covering multiple cells therefore exists multiple times
+    but in different zensus cells. This is necessary to cover
+    all cells with a cts demand. The buildings are aggregated
+    afterwards during the calculation of the profile_share.
+
+    Returns
+    -------
+    df_buildings_with_amenities: gpd.GeoDataFrame
+        Contains all buildings with amenities per zensus cell.
+    """
 
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
@@ -282,7 +314,7 @@ def buildings_with_amenities():
     return df_buildings_with_amenities
 
 
-# TODO maybe replace with tools.write_table_to_db
+# TODO Remove as depricated
 def write_synthetic_buildings_to_db(df_synthetic_buildings):
     """"""
     if "geom_point" not in df_synthetic_buildings.columns:
@@ -318,7 +350,16 @@ def write_synthetic_buildings_to_db(df_synthetic_buildings):
 
 
 def buildings_without_amenities():
-    """ """
+    """
+    Buildings (filtered and synthetic) in cells with
+    cts demand but no amenities are determined.
+
+    Returns
+    -------
+    df_buildings_without_amenities: gpd.GeoDataFrame
+        Table of buildings without amenities in zensus cells
+        with cts demand.
+    """
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import (
         osm_amenities_shops_filtered,
@@ -410,7 +451,16 @@ def buildings_without_amenities():
 
 
 def select_cts_buildings(df_buildings_wo_amenities):
-    """ """
+    """
+    Buildings (filtered and synthetic) in cells with
+    cts demand are selected. Only the first building
+    is taken for each cell and 1 amenities is assigned.
+
+    Returns
+    -------
+    df_buildings_with_cts_demand: gpd.GeoDataFrame
+        Table of buildings
+    """
     # TODO Adapt method
     # Select one building each cell
     # take the first
@@ -426,7 +476,15 @@ def select_cts_buildings(df_buildings_wo_amenities):
 
 
 def cells_with_cts_demand_only(df_buildings_without_amenities):
-    """"""
+    """
+    Cells with cts demand but no amenities or buildilngs
+    are determined.
+
+    Returns
+    -------
+    df_cells_only_cts_demand: gpd.GeoDataFrame
+        Table of cells with cts demand but no amenities or buildings
+    """
     from saio.openstreetmap import osm_amenities_shops_filtered
 
     # cells mit amenities
@@ -492,7 +550,21 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
 
 
 def calc_census_cell_share(scenario="eGon2035"):
-    """"""
+    """
+    The profile share for each census cell is calculated by it's
+    share of annual demand per substation bus. The annual demand
+    per cell is defined by DemandRegio. The share is for both
+    scenarios identical as the annual demand is linearly scaled.
+
+    Parameters
+    ----------
+    scenario: str
+        Scenario for which the share is calculated.
+
+    Returns
+    -------
+    df_census_share: pd.DataFrame
+    """
 
     with db.session_scope() as session:
         cells_query = (
@@ -514,7 +586,6 @@ def calc_census_cell_share(scenario="eGon2035"):
     )
 
     # get demand share of cell per bus
-    # share ist für scenarios identisch
     df_census_share = df_demand_regio_electricity_demand[
         "demand"
     ] / df_demand_regio_electricity_demand.groupby("bus_id")[
@@ -539,6 +610,22 @@ def calc_census_cell_share(scenario="eGon2035"):
 def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
     """
     Share of cts electricity demand profile per bus for every selected building
+    is calculated. Building-amenity share is multiplied with census cell share
+    to get the substation bus profile share for each building. The share is
+    grouped and aggregated per building as some cover multiple cells.
+
+    Parameters
+    ----------
+    df_cts_buildings: gpd.GeoDataFrame
+        Table of all buildings with cts demand assigned
+    scenario: str
+        Scenario for which the share is calculated.
+
+    Returns
+    -------
+    df_building_share: pd.DataFrame
+        Table of bus profile share per building
+
     """
 
     def calc_building_amenity_share(df_cts_buildings):
@@ -595,7 +682,24 @@ def calc_building_profiles(
     bus_id=None,
     scenario="eGon2035",
 ):
-    """"""
+    """
+    Calculate the demand profile for each building. The profile is
+    calculated by the demand share of the building per substation bus.
+
+    Parameters
+    ----------
+    df_demand_share: pd.DataFrame
+        Table of demand share per building. If not given, table is
+        sourced from database.
+    egon_building_id: int
+        Id of the building for which the profile is calculated. If not
+        given, the profiles are calculated for all buildings.
+
+    Returns
+    -------
+    df_building_profiles: pd.DataFrame
+        Table of demand profile per building
+    """
 
     if not isinstance(df_demand_share, pd.DataFrame):
         with db.session_scope() as session:
@@ -639,13 +743,23 @@ def calc_building_profiles(
 
 
 def cts_to_buildings():
-    """"""
+    """
+    Assigns CTS demand to buildings and calculates the respective demand
+    profiles. The demand profile per substation are disaggregated per
+    annual demand share of each census cell and by the number of amenities
+    per building within the cell. If no building data is available,
+    synthetic buildings are generated around the amenities. If no amenities
+    but cts demand is available, buildings are randomly selected. If no
+    building nor amenity is available, random synthetic buildings are
+    generated. The demand share is stored in the database.
 
-    # #### NOTE
-    # #### Cells with CTS demand, amenities and buildings do not change
-    # #### within the scenarios, only the demand itself. Therefore
-    # #### scenario eGon2035 can be used universally to determine
-    # #### buildings
+    Note:
+    -----
+    Cells with CTS demand, amenities and buildings do not change within
+    the scenarios, only the demand itself. Therefore scenario eGon2035
+    can be used universally to determine the cts buildings but not for
+    he demand share.
+    """
 
     # Buildings with amenities
     df_buildings_with_amenities = buildings_with_amenities()
@@ -782,6 +896,9 @@ def cts_to_buildings():
 
 
 def get_peak_load_cts_buildings():
+    """
+    Get peak load of all CTS buildings for both scenarios and store in DB.
+    """
 
     # TODO Check units, maybe MwH?
     df_building_profiles = calc_building_profiles(scenario="eGon2035")
@@ -808,6 +925,11 @@ def get_peak_load_cts_buildings():
 
 
 def delete_synthetic_cts_buildings():
+    """
+    All synthetic cts buildings are deleted from the DB. This is necessary if
+    the task is run multiple times as the existing synthetic buildings
+    influence the results.
+    """
     # import db tables
     from saio.openstreetmap import osm_buildings_synthetic
 
