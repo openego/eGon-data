@@ -195,7 +195,6 @@ def clean_database():
 
     """
     scn_name = "eGon100RE"
-    source = config.datasets()["gas_stores"]["source"]
 
     comp_one_port = ["load", "generator", "store", "storage"]
 
@@ -218,8 +217,7 @@ def clean_database():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
-            AND scn_name = '{scn_name}';
-            """
+            AND scn_name = '{scn_name}';"""
         )
 
     comp_2_ports = [
@@ -255,8 +253,7 @@ def clean_database():
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
-            ;
-        """
+            ;"""
         )
 
     db.execute_sql(
