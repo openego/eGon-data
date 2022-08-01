@@ -576,7 +576,17 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    return df_demand_share[["id", "bus_id", "scenario", "profile_share"]]
+    df_demand_share = df_demand_share[
+        ["id", "bus_id", "scenario", "profile_share"]
+    ]
+    # Group and aggregate per building for multi cell buildings
+    df_demand_share = (
+        df_demand_share.groupby(["scenario", "bus_id", "id"])
+        .sum()
+        .reset_index()
+    )
+
+    return df_demand_share
 
 
 def calc_building_profiles(
