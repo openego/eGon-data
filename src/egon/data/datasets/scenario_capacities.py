@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -84,9 +84,9 @@ def create_table():
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 
-def map_nuts():
+def nuts_mapping():
 
-    map_nuts = {
+    nuts_mapping = {
         "BW": "DE1",
         "NW": "DEA",
         "HE": "DE7",
@@ -105,7 +105,7 @@ def map_nuts():
         "BY": "DE2",
     }
 
-    return map_nuts
+    return nuts_mapping
 
 
 def insert_capacities_per_federal_state_nep():
@@ -241,16 +241,21 @@ def insert_capacities_per_federal_state_nep():
 
     capacities_list = aggr_nep_capacities(carriers)
 
-    # Replace capacities for the named carrier
-
+    # Filter by carrier
     updated = insert_data[insert_data["carrier"].isin(carriers)]
-    updated["capacity"] = capacities_list[
-        capacities_list["carrier"].isin(updated["carrier"])
-        & capacities_list["nuts"].isin(updated["nuts"])
-    ]["c2035_capacity"].values
 
+    # Merge to replace capacities
+    updated = (
+        updated.merge(capacities_list, on=["carrier", "nuts"], how="left")
+        .fillna(0)
+        .drop(["capacity"], axis=1)
+        .rename(columns={"c2035_capacity": "capacity"})
+    )
+
+    # Remove updated entries from df
     original = insert_data[~insert_data["carrier"].isin(carriers)]
 
+    # Join dfs
     insert_data = pd.concat([original, updated])
 
     # Insert data to db
@@ -318,10 +323,12 @@ def aggr_nep_capacities(carriers):
     capacities_list = capacities_list[capacities_list.carrier.isin(carriers)]
 
     # Include NUTS code
-    capacities_list["nuts"] = capacities_list.federal_state.map(map_nuts())
+    capacities_list["nuts"] = capacities_list.federal_state.map(nuts_mapping())
 
-    # Set new multiindex
-    capacities_list = capacities_list.drop(columns=["federal_state"])
+    # Drop entries for foreign plants with nan values and federal_state column
+    capacities_list = capacities_list.dropna(subset=["nuts"]).drop(
+        columns=["federal_state"]
+    )
 
     return capacities_list
 
