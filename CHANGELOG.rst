@@ -204,6 +204,8 @@ Added
 * Allocating MaStR PV rooftop power plants to OSM and synthetic buildings.
   Desaggregating PV rooftop scenarios to mv grid districts and OSM and synthetic
   buildings. `#684 <https://github.com/openego/eGon-data/issues/684>`_
+* Add mapping zensus - weather cells
+  `#845 <https://github.com/openego/eGon-data/issues/845>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -371,7 +373,7 @@ Changed
 *  Update hh electricity profiles
   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
-  `#PR775 <https://github.com/openego/eGon-data/pull/775>`_
+  `#775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
   `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Assigment of H2 and CH4 capacitites for pipelines in eGon100RE
