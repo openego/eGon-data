@@ -590,7 +590,10 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
 
 
 def calc_building_profiles(
-    df_demand_share=None, egon_building_id=None, scenario="eGon2035"
+    df_demand_share=None,
+    egon_building_id=None,
+    bus_id=None,
+    scenario="eGon2035",
 ):
     """"""
 
@@ -604,15 +607,25 @@ def calc_building_profiles(
 
     df_cts_profiles = calc_load_curves_cts(scenario)
 
-    # Only calculate selected building profile if egon_building_id is given
-    if (
-        isinstance(egon_building_id, int)
-        and egon_building_id in df_demand_share["id"]
-    ):
-        df_demand_share = df_demand_share.loc[
-            df_demand_share["id"] == egon_building_id
-        ]
+    # get demand share of selected building id
+    if isinstance(egon_building_id, int):
+        if egon_building_id in df_demand_share["id"]:
+            df_demand_share = df_demand_share.loc[
+                df_demand_share["id"] == egon_building_id
+            ]
+        else:
+            raise KeyError(f"Building with id {egon_building_id} not found")
 
+    # get demand share of all buildings for selected bus id
+    if isinstance(bus_id, int):
+        if bus_id in df_demand_share["bus_id"]:
+            df_demand_share = df_demand_share.loc[
+                df_demand_share["bus_id"] == bus_id
+            ]
+        else:
+            raise KeyError(f"Bus with id {bus_id} not found")
+
+    # get demand profile for all buildings for selected demand share
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("id", drop=True)["profile_share"]
