@@ -344,6 +344,7 @@ def buildings_with_amenities():
         )
         # TODO maybe adapt method
         # place random amenity in cell
+        df_lost_cells["n_amenities_inside"] = 1
         df_lost_cells = place_buildings_with_amenities(
             df_lost_cells, amenities=1
         )
@@ -354,7 +355,9 @@ def buildings_with_amenities():
             },
             inplace=True,
         )
-        df_lost_cells.drop(columns="building_count", inplace=True)
+        df_lost_cells.drop(
+            columns=["building_count", "n_amenities_inside"], inplace=True
+        )
 
     # drop duplicated buildings
     df_amenities_in_buildings.drop_duplicates(
