@@ -884,10 +884,6 @@ def cts_to_buildings():
         ignore_index=True,
     )
 
-    # TODO Why are there nonunique ids?
-    #  needs to be removed as soon as 'id' is unique
-    df_demand_share = df_demand_share.drop_duplicates(subset="id")
-
     write_table_to_postgres(
         df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
     )
