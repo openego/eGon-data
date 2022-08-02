@@ -250,20 +250,32 @@ def buildings_with_amenities():
     and grouped per building and zensus cell. Buildings
     covering multiple cells therefore exists multiple times
     but in different zensus cells. This is necessary to cover
-    all cells with a cts demand. The buildings are aggregated
+    all cells with a cts demand. If buildings exist in multiple
+    substations, their amenities are summed and assigned and kept in
+    one substation only. If as a result, a census cell is uncovered,
+    a synthetic amenity is placed. The buildings are aggregated
     afterwards during the calculation of the profile_share.
 
     Returns
     -------
     df_buildings_with_amenities: gpd.GeoDataFrame
         Contains all buildings with amenities per zensus cell.
+    df_lost_cells: gpd.GeoDataFrame
+        Contains synthetic amenities in lost cells. Might be empty
     """
 
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
     with db.session_scope() as session:
         cells_query = (
-            session.query(osm_amenities_in_buildings_filtered)
+            session.query(
+                osm_amenities_in_buildings_filtered,
+                MapZensusGridDistricts.bus_id,
+            )
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == osm_amenities_in_buildings_filtered.zensus_population_id
+            )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id
                 == osm_amenities_in_buildings_filtered.zensus_population_id
@@ -285,8 +297,75 @@ def buildings_with_amenities():
     ].apply(to_shape)
 
     df_amenities_in_buildings["n_amenities_inside"] = 1
-    # amenities per building
-    # if building covers multiple cells, it exists multiple times
+
+    # add identifier column for buildings in multiple substations
+    df_amenities_in_buildings[
+        "duplicate_identifier"
+    ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
+        "n_amenities_inside"
+    ].transform(
+        "cumsum"
+    )
+    df_amenities_in_buildings = df_amenities_in_buildings.sort_values(
+        ["id", "duplicate_identifier"]
+    )
+    # sum amenities of buildings with multiple substations
+    df_amenities_in_buildings[
+        "n_amenities_inside"
+    ] = df_amenities_in_buildings.groupby(["id", "duplicate_identifier"])[
+        "n_amenities_inside"
+    ].transform(
+        "sum"
+    )
+    # identify lost zensus cells
+    df_lost_cells = df_amenities_in_buildings.loc[
+        df_amenities_in_buildings.duplicated(
+            subset=["id", "duplicate_identifier"], keep="first"
+        )
+    ]["zensus_population_id"]
+
+    # check if lost zensus cells are already covered
+    if (
+        df_amenities_in_buildings["zensus_population_id"]
+        .isin(df_lost_cells)
+        .any()
+    ):
+        # query geom data for cell if not
+        with db.session_scope() as session:
+            cells_query = session.query(
+                DestatisZensusPopulationPerHa.id,
+                DestatisZensusPopulationPerHa.geom,
+            ).filter(DestatisZensusPopulationPerHa.id.in_(df_lost_cells))
+
+        df_lost_cells = gpd.read_postgis(
+            cells_query.statement,
+            cells_query.session.bind,
+            geom_col="geom",
+        )
+        # TODO maybe adapt method
+        # place random amenity in cell
+        df_lost_cells = place_buildings_with_amenities(
+            df_lost_cells, amenities=1
+        )
+        df_lost_cells.rename(
+            columns={
+                "id": "zensus_population_id",
+                "geom_point": "geom_amenity",
+            },
+            inplace=True,
+        )
+        df_lost_cells.drop(columns="building_count", inplace=True)
+
+    # drop duplicated buildings
+    df_amenities_in_buildings.drop_duplicates(
+        subset=["id", "duplicate_identifier"], keep="first", inplace=True
+    )
+    # drop helper columns
+    df_amenities_in_buildings.drop(
+        columns=["duplicate_identifier"], inplace=True
+    )
+
+    # sum amenities per building and cell
     df_amenities_in_buildings[
         "n_amenities_inside"
     ] = df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
@@ -294,13 +373,12 @@ def buildings_with_amenities():
     ].transform(
         "sum"
     )
-    # reduce to buildings
+    # drop duplicated buildings
     df_buildings_with_amenities = df_amenities_in_buildings.drop_duplicates(
         ["id", "zensus_population_id"]
     )
-    df_buildings_with_amenities = df_buildings_with_amenities.reset_index(
-        drop=True
-    )
+    df_buildings_with_amenities.reset_index(inplace=True, drop=True)
+
     df_buildings_with_amenities = df_buildings_with_amenities[
         ["id", "zensus_population_id", "geom_building", "n_amenities_inside"]
     ]
@@ -312,7 +390,7 @@ def buildings_with_amenities():
         inplace=True,
     )
 
-    return df_buildings_with_amenities
+    return df_buildings_with_amenities, df_lost_cells
 
 
 # TODO Remove as depricated
@@ -763,13 +841,29 @@ def cts_to_buildings():
     """
 
     # Buildings with amenities
-    df_buildings_with_amenities = buildings_with_amenities()
+    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
 
     # Remove synthetic CTS buildings if existing
     delete_synthetic_cts_buildings()
 
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
+    if not df_lost_cells.empty():
+        df_lost_cells = place_buildings_with_amenities(
+            df_lost_cells, amenities=1
+        )
+        df_lost_cells.rename(
+            columns={
+                "id": "zensus_population_id",
+                "geom_point": "geom_amenity",
+            },
+            inplace=True,
+        )
+        df_lost_cells.drop(columns="building_count", inplace=True)
+        df_amenities_without_buildings = df_amenities_without_buildings.append(
+            df_lost_cells, ignore_index=True
+        )
+
     df_amenities_without_buildings["n_amenities_inside"] = 1
     df_synthetic_buildings_with_amenities = create_synthetic_buildings(
         df_amenities_without_buildings, points="geom_amenity"
