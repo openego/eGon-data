@@ -324,8 +324,13 @@ def buildings_with_amenities():
         )
     ]["zensus_population_id"]
 
+    # drop duplicated buildings
+    df_amenities_in_buildings.drop_duplicates(
+        subset=["id", "duplicate_identifier"], keep="first", inplace=True
+    )
+
     # check if lost zensus cells are already covered
-    if (
+    if not (
         df_amenities_in_buildings["zensus_population_id"]
         .isin(df_lost_cells)
         .any()
@@ -358,11 +363,9 @@ def buildings_with_amenities():
         df_lost_cells.drop(
             columns=["building_count", "n_amenities_inside"], inplace=True
         )
+    else:
+        df_lost_cells = None
 
-    # drop duplicated buildings
-    df_amenities_in_buildings.drop_duplicates(
-        subset=["id", "duplicate_identifier"], keep="first", inplace=True
-    )
     # drop helper columns
     df_amenities_in_buildings.drop(
         columns=["duplicate_identifier"], inplace=True
@@ -851,7 +854,7 @@ def cts_to_buildings():
 
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
-    if not df_lost_cells.empty():
+    if df_lost_cells:
         df_lost_cells = place_buildings_with_amenities(
             df_lost_cells, amenities=1
         )
