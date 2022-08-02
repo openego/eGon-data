@@ -514,8 +514,7 @@ def to_pypsa():
     db.execute_sql(
         """
             -- CLEAN UP OF TABLES
-            DELETE FROM grid.egon_etrago_bus
-            WHERE carrier = 'AC';
+            DELETE FROM grid.egon_etrago_bus;
             DELETE FROM grid.egon_etrago_line;
             DELETE FROM grid.egon_etrago_transformer;
             """
@@ -776,7 +775,7 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
