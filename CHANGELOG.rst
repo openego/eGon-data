@@ -552,6 +552,8 @@ Bug Fixes
   `#776 <https://github.com/openego/eGon-data/issues/776>`_
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
+* Fix gas costs
+  `#830 <https://github.com/openego/eGon-data/issues/847>`_
 * Add imports that have been wrongly deleted
   `#849 <https://github.com/openego/eGon-data/issues/849>`_
 * Fix final demand of heat demand timeseries
