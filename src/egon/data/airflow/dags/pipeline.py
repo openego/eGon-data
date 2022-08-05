@@ -585,5 +585,10 @@ with airflow.DAG(
                 ".hh_profiles"
                 ".houseprofiles-in-census-cells"
             ],
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".get-building-peak-loads"
+            ],
         ]
     )
