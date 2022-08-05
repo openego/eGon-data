@@ -753,9 +753,7 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
     ]
     # Group and aggregate per building for multi cell buildings
     df_demand_share = (
-        df_demand_share.groupby(["scenario", "bus_id", "id"])
-        .sum()
-        .reset_index()
+        df_demand_share.groupby(["scenario", "id"]).sum().reset_index()
     )
 
     return df_demand_share
@@ -788,11 +786,19 @@ def calc_building_profiles(
 
     if not isinstance(df_demand_share, pd.DataFrame):
         with db.session_scope() as session:
-            cells_query = session.query(EgonCtsElectricityDemandBuildingShare)
+            cells_query = session.query(
+                EgonCtsElectricityDemandBuildingShare,
+            ).filter(
+                EgonCtsElectricityDemandBuildingShare.scenario == scenario
+            )
 
         df_demand_share = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
+    else:
+        df_demand_share = df_demand_share.loc[
+            df_demand_share["scenario"] == scenario
+        ]
 
     df_cts_profiles = calc_load_curves_cts(scenario)
 
@@ -994,7 +1000,7 @@ def get_peak_load_cts_buildings():
     df_peak_load_2035 = df_building_profiles.max(axis=0).rename(
         "cts_peak_load_in_w_2035"
     )
-    df_building_profiles = calc_building_profiles(scenario="eGon2035")
+    df_building_profiles = calc_building_profiles(scenario="eGon100RE")
     df_peak_load_100RE = df_building_profiles.max(axis=0).rename(
         "cts_peak_load_in_w_100RE"
     )
