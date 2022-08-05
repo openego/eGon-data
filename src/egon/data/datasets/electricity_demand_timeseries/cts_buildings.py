@@ -994,18 +994,19 @@ def get_peak_load_cts_buildings():
 
     # TODO Check units, maybe MwH?
     df_building_profiles = calc_building_profiles(scenario="eGon2035")
-    df_peak_load_2035 = df_building_profiles.max(axis=0).rename(
-        "cts_peak_load_in_w_2035"
-    )
+    df_peak_load_2035 = df_building_profiles.max(axis=0).rename("eGon2035")
     df_building_profiles = calc_building_profiles(scenario="eGon100RE")
-    df_peak_load_100RE = df_building_profiles.max(axis=0).rename(
-        "cts_peak_load_in_w_100RE"
-    )
+    df_peak_load_100RE = df_building_profiles.max(axis=0).rename("eGon100RE")
     df_peak_load = pd.concat(
         [df_peak_load_2035, df_peak_load_100RE], axis=1
     ).reset_index()
 
     df_peak_load["type"] = "cts"
+    df_peak_load.melt(
+        id_vars=["building_id", "type"],
+        var_name="scenario",
+        value_name="peak_demand_in_w",
+    )
 
     # Delete rows with cts demand
     with db.session_scope() as session:

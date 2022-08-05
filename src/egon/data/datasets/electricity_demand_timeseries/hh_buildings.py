@@ -167,9 +167,9 @@ class BuildingPeakLoads(Base):
     __table_args__ = {"schema": "demand"}
 
     building_id = Column(String, primary_key=True)
+    scenario = Column(String, primary_key=True)
     type = Column(String, primary_key=True)
-    building_peak_load_in_w_2035 = Column(REAL)
-    building_peak_load_in_w_2050 = Column(REAL)
+    peak_load_in_w = Column(REAL)
 
 
 def match_osm_and_zensus_data(
@@ -692,8 +692,8 @@ def get_building_peak_loads():
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
                 index=[
-                    "building_peak_load_in_w_2035",
-                    "building_peak_load_in_w_2050",
+                    "eGon2035",
+                    "eGon100RE",
                 ],
             ).T
 
@@ -706,6 +706,12 @@ def get_building_peak_loads():
 
         BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
         BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+        df_building_peak_loads.melt(
+            id_vars=["building_id", "type"],
+            var_name="scenario",
+            value_name="peak_demand_in_w",
+        )
 
         # Write peak loads into db
         with db.session_scope() as session:
