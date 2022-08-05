@@ -13,6 +13,7 @@ from egon.data.datasets.electricity_demand import (
 )
 from egon.data.datasets.electricity_demand.temporal import calc_load_curves_cts
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
+    BuildingPeakLoads,
     OsmBuildingsSynthetic,
 )
 from egon.data.datasets.electricity_demand_timeseries.tools import (
@@ -47,15 +48,6 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
     profile_share = Column(Float)
-
-
-class CtsPeakLoads(Base):
-    __tablename__ = "egon_cts_peak_loads"
-    __table_args__ = {"schema": "demand"}
-
-    id = Column(String, primary_key=True)
-    cts_peak_load_in_w_2035 = Column(REAL)
-    cts_peak_load_in_w_100RE = Column(REAL)
 
 
 class CtsBuildings(Base):
@@ -1008,13 +1000,18 @@ def get_peak_load_cts_buildings():
         [df_peak_load_2035, df_peak_load_100RE], axis=1
     ).reset_index()
 
-    CtsPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-    CtsPeakLoads.__table__.create(bind=engine, checkfirst=True)
+    df_peak_load["type"] = "cts"
+
+    # Delete rows with cts demand
+    with db.session_scope() as session:
+        session.query(BuildingPeakLoads).filter(
+            BuildingPeakLoads.type == "cts"
+        ).delete()
 
     # Write peak loads into db
     with db.session_scope() as session:
         session.bulk_insert_mappings(
-            CtsPeakLoads,
+            BuildingPeakLoads,
             df_peak_load.to_dict(orient="records"),
         )
 

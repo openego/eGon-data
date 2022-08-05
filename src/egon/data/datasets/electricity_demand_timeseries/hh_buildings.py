@@ -167,6 +167,7 @@ class BuildingPeakLoads(Base):
     __table_args__ = {"schema": "demand"}
 
     building_id = Column(String, primary_key=True)
+    type = Column(String, primary_key=True)
     building_peak_load_in_w_2035 = Column(REAL)
     building_peak_load_in_w_2050 = Column(REAL)
 
@@ -701,6 +702,7 @@ def get_building_peak_loads():
             )
 
         df_building_peak_loads.reset_index(inplace=True)
+        df_building_peak_loads["type"] = "residential"
 
         BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
         BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
