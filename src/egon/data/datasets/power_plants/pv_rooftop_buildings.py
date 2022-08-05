@@ -199,6 +199,7 @@ COLS_TO_EXPORT = [
 ]
 
 INCLUDE_SYNTHETIC_BUILDINGS = False
+ONLY_BUILDINGS_WITH_DEMAND = True
 
 
 def timer_func(func):
@@ -955,6 +956,15 @@ def drop_buildings_outside_muns(
     return gdf
 
 
+def egon_building_peak_loads():
+    sql = f"""
+    SELECT building_id
+    FROM demand.egon_building_peak_loads
+    """
+
+    return db.select_dataframe(sql).building_id.astype(int)
+
+
 @timer_func
 def load_building_data():
     """
@@ -996,6 +1006,11 @@ def load_building_data():
         buildings_gdf = osm_buildings_gdf.rename(
             columns={"area": "building_area"}
         )
+
+    if ONLY_BUILDINGS_WITH_DEMAND:
+        building_ids = egon_building_peak_loads()
+
+        buildings_gdf = buildings_gdf.loc[building_ids].sort_index()
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
