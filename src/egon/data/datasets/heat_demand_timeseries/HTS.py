@@ -1910,6 +1910,7 @@ def demand_profile_generator(aggregation_level="district"):
 
         final_heat_profiles_grid = pd.DataFrame()
         for scenario in scenarios:
+
             scenario_demand = (
                 total_demands_grid[total_demands_grid.scenario == scenario]
                 .drop("scenario", axis=1)

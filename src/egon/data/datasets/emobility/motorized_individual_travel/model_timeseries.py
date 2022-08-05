@@ -684,7 +684,9 @@ def write_model_data_to_db(
                 )
 
         @db.check_db_unique_violation
-        def write_load(scenario_name: str, load_ts: list) -> None:
+        def write_load(
+            scenario_name: str, connection_bus_id: int, load_ts: list
+        ) -> None:
             # eMob MIT load
             emob_load_id = db.next_etrago_id("load")
             with db.session_scope() as session:
@@ -692,7 +694,7 @@ def write_model_data_to_db(
                     EgonPfHvLoad(
                         scn_name=scenario_name,
                         load_id=emob_load_id,
-                        bus=emob_bus_id,
+                        bus=connection_bus_id,
                         carrier="land transport EV",
                         sign=-1,
                     )
@@ -739,21 +741,21 @@ def write_model_data_to_db(
             write_link(scenario_name=scenario_name)
             write_store(scenario_name=scenario_name)
             write_load(
+                scenario_name=scenario_name,
+                connection_bus_id=emob_bus_id,
                 load_ts=(
                     hourly_load_time_series_df.driving_load_time_series.to_list()
                 ),
-                scenario_name=scenario_name,
             )
         else:
             # Get noflex scenario name
             noflex_scenario_name = DATASET_CFG["scenario"]["noflex"]["names"][
                 scenario_name
             ]
-            emob_bus_id = write_bus(scenario_name=noflex_scenario_name)
-            write_link(scenario_name=noflex_scenario_name)
             write_load(
-                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
                 scenario_name=noflex_scenario_name,
+                connection_bus_id=etrago_bus.bus_id,
+                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
             )
 
     def write_to_file():
@@ -838,7 +840,9 @@ def write_model_data_to_db(
 
     # Write to database: regular and noflex scenario
     write_to_db(write_noflex_model=False)
+    print('    Writing flex scenario...')
     if write_noflex_model is True:
+        print('    Writing noflex scenario...')
         write_to_db(write_noflex_model=True)
 
     # Export to working dir if requested
