@@ -962,7 +962,7 @@ def egon_building_peak_loads():
     FROM demand.egon_building_peak_loads
     """
 
-    return db.select_dataframe(sql).building_id.astype(int)
+    return db.select_dataframe(sql).building_id.astype(int).sort_values()
 
 
 @timer_func
@@ -1010,7 +1010,7 @@ def load_building_data():
     if ONLY_BUILDINGS_WITH_DEMAND:
         building_ids = egon_building_peak_loads()
 
-        buildings_gdf = buildings_gdf.loc[building_ids].sort_index()
+        buildings_gdf = buildings_gdf.loc[building_ids]
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
