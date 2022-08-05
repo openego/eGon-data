@@ -322,39 +322,42 @@ def buildings_with_amenities():
     )
 
     # check if lost zensus cells are already covered
-    if not (
-        df_amenities_in_buildings["zensus_population_id"]
-        .isin(df_lost_cells)
-        .any()
-    ):
-        # query geom data for cell if not
-        with db.session_scope() as session:
-            cells_query = session.query(
-                DestatisZensusPopulationPerHa.id,
-                DestatisZensusPopulationPerHa.geom,
-            ).filter(DestatisZensusPopulationPerHa.id.in_(df_lost_cells))
+    if not df_lost_cells.empty:
+        if not (
+            df_amenities_in_buildings["zensus_population_id"]
+            .isin(df_lost_cells)
+            .empty
+        ):
+            # query geom data for cell if not
+            with db.session_scope() as session:
+                cells_query = session.query(
+                    DestatisZensusPopulationPerHa.id,
+                    DestatisZensusPopulationPerHa.geom,
+                ).filter(DestatisZensusPopulationPerHa.id.in_(df_lost_cells))
 
-        df_lost_cells = gpd.read_postgis(
-            cells_query.statement,
-            cells_query.session.bind,
-            geom_col="geom",
-        )
-        # TODO maybe adapt method
-        # place random amenity in cell
-        df_lost_cells["n_amenities_inside"] = 1
-        df_lost_cells = place_buildings_with_amenities(
-            df_lost_cells, amenities=1
-        )
-        df_lost_cells.rename(
-            columns={
-                "id": "zensus_population_id",
-                "geom_point": "geom_amenity",
-            },
-            inplace=True,
-        )
-        df_lost_cells.drop(
-            columns=["building_count", "n_amenities_inside"], inplace=True
-        )
+            df_lost_cells = gpd.read_postgis(
+                cells_query.statement,
+                cells_query.session.bind,
+                geom_col="geom",
+            )
+            # TODO maybe adapt method
+            # place random amenity in cell
+            df_lost_cells["n_amenities_inside"] = 1
+            df_lost_cells = place_buildings_with_amenities(
+                df_lost_cells, amenities=1
+            )
+            df_lost_cells.rename(
+                columns={
+                    "id": "zensus_population_id",
+                    "geom_point": "geom_amenity",
+                },
+                inplace=True,
+            )
+            df_lost_cells.drop(
+                columns=["building_count", "n_amenities_inside"], inplace=True
+            )
+        else:
+            df_lost_cells = None
     else:
         df_lost_cells = None
 
