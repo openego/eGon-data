@@ -855,17 +855,6 @@ def cts_to_buildings():
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
     if df_lost_cells:
-        df_lost_cells = place_buildings_with_amenities(
-            df_lost_cells, amenities=1
-        )
-        df_lost_cells.rename(
-            columns={
-                "id": "zensus_population_id",
-                "geom_point": "geom_amenity",
-            },
-            inplace=True,
-        )
-        df_lost_cells.drop(columns="building_count", inplace=True)
         df_amenities_without_buildings = df_amenities_without_buildings.append(
             df_lost_cells, ignore_index=True
         )
