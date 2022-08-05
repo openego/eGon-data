@@ -1559,9 +1559,10 @@ def buildings_area_per_overlay_id(
 
 
 def cap_per_bus_id(
-    overlay_gdf: gpd.GeoDataFrame,
-    scenario_df: pd.DataFrame,
-    conversion: int | float = 10**3,
+    scenario: str,
+    # overlay_gdf: gpd.GeoDataFrame,
+    # scenario_df: pd.DataFrame,
+    # conversion: int | float = 10**3,
 ) -> pd.DataFrame:
     """
     Calculate total pv rooftop capacity per grid district dependent on
@@ -1580,20 +1581,31 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    overlay_gdf = overlay_gdf.assign(capacity=np.nan)
+    targets = config.datasets()["solar_rooftop"]["targets"]
 
-    for cap, nuts in scenario_df[["capacity", "nuts"]].itertuples(index=False):
-        nuts_gdf = overlay_gdf.loc[overlay_gdf.nuts == nuts]
+    sql = f"""
+    SELECT bus as bus_id, p_nom as capacity
+    FROM {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE carrier = 'solar_rooftop'
+    AND scn_name = '{scenario}'
+    """
 
-        capacity = nuts_gdf.building_area.multiply(
-            cap / nuts_gdf.building_area.sum()
-        )
+    return db.select_dataframe(sql)
 
-        overlay_gdf.loc[nuts_gdf.index] = overlay_gdf.loc[
-            nuts_gdf.index
-        ].assign(capacity=capacity.multiply(conversion).to_numpy())
-
-    return overlay_gdf[["bus_id", "capacity"]].groupby("bus_id").sum()
+    # overlay_gdf = overlay_gdf.assign(capacity=np.nan)
+    #
+    # for cap, nuts in scenario_df[["capacity", "nuts"]].itertuples(index=False):
+    #     nuts_gdf = overlay_gdf.loc[overlay_gdf.nuts == nuts]
+    #
+    #     capacity = nuts_gdf.building_area.multiply(
+    #         cap / nuts_gdf.building_area.sum()
+    #     )
+    #
+    #     overlay_gdf.loc[nuts_gdf.index] = overlay_gdf.loc[
+    #         nuts_gdf.index
+    #     ].assign(capacity=capacity.multiply(conversion).to_numpy())
+    #
+    # return overlay_gdf[["bus_id", "capacity"]].groupby("bus_id").sum()
 
 
 def determine_end_of_life_gens(
@@ -2406,29 +2418,31 @@ def allocate_scenarios(
     """
     grid_districts_gdf = grid_districts(EPSG)
 
-    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+    # federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+    #
+    # grid_federal_state_gdf = overlay_grid_districts_with_counties(
+    #     grid_districts_gdf,
+    #     federal_state_gdf,
+    # )
+    #
+    # buildings_overlay_gdf = add_overlay_id_to_buildings(
+    #     buildings_gdf,
+    #     grid_federal_state_gdf,
+    # )
 
-    grid_federal_state_gdf = overlay_grid_districts_with_counties(
-        grid_districts_gdf,
-        federal_state_gdf,
-    )
+    valid_buildings_gdf = drop_buildings_outside_grids(
+        buildings_gdf
+    )  # buildings_overlay_gdf)
 
-    buildings_overlay_gdf = add_overlay_id_to_buildings(
-        buildings_gdf,
-        grid_federal_state_gdf,
-    )
+    # buildings_area_per_overlay_gdf = buildings_area_per_overlay_id(
+    #     valid_buildings_gdf,
+    #     grid_federal_state_gdf,
+    # )
 
-    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
-
-    buildings_area_per_overlay_gdf = buildings_area_per_overlay_id(
-        valid_buildings_gdf,
-        grid_federal_state_gdf,
-    )
-
-    cap_per_bus_id_df = cap_per_bus_id(
-        buildings_area_per_overlay_gdf,
-        scenario_data(CARRIER, scenario),
-    )
+    cap_per_bus_id_df = cap_per_bus_id(scenario)
+    #     buildings_area_per_overlay_gdf,
+    #     scenario_data(CARRIER, scenario),
+    # )
 
     last_scenario_gdf = determine_end_of_life_gens(
         last_scenario_gdf,
