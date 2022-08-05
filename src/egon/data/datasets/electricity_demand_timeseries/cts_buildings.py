@@ -857,7 +857,7 @@ def cts_to_buildings():
 
     # Create synthetic buildings for amenites without buildings
     df_amenities_without_buildings = amenities_without_buildings()
-    if df_lost_cells:
+    if df_lost_cells.empty:
         df_amenities_without_buildings = df_amenities_without_buildings.append(
             df_lost_cells, ignore_index=True
         )
