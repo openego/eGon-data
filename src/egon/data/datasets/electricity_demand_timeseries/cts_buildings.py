@@ -1001,6 +1001,7 @@ def get_peak_load_cts_buildings():
         [df_peak_load_2035, df_peak_load_100RE], axis=1
     ).reset_index()
 
+    df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
     df_peak_load["type"] = "cts"
     df_peak_load.melt(
         id_vars=["building_id", "type"],
