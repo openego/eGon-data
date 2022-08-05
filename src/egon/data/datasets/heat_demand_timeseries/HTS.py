@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 import glob
 import os
 
@@ -9,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas.io.sql as sqlio
-from pathlib import Path
 import psycopg2
 import xarray as xr
 
@@ -671,14 +671,14 @@ def annual_demand_generator():
 
     house_count_MFH = db.select_dataframe(
         """
-        
-        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
         FROM demand.egon_household_electricity_profile_of_buildings
         GROUP BY (cell_id, building_id)
         ) a
-        
+
         WHERE a.count >1
         GROUP BY cell_id
         """,
@@ -687,13 +687,13 @@ def annual_demand_generator():
 
     house_count_SFH = db.select_dataframe(
         """
-        
-        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
         FROM demand.egon_household_electricity_profile_of_buildings
         GROUP BY (cell_id, building_id)
-        ) a 
+        ) a
         WHERE a.count = 1
         GROUP BY cell_id
         """,
@@ -810,13 +810,13 @@ def profile_selector():
         result_SFH["building_id"] = (
             db.select_dataframe(
                 """
-        
-            SELECT cell_id as zensus_population_id, building_id FROM 
+
+            SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
             FROM demand.egon_household_electricity_profile_of_buildings
             GROUP BY (cell_id, building_id)
-            ) a 
+            ) a
             WHERE a.count = 1
             """,
                 index_col="zensus_population_id",
@@ -840,13 +840,13 @@ def profile_selector():
         result_MFH["building_id"] = (
             db.select_dataframe(
                 """
-        
-            SELECT cell_id as zensus_population_id, building_id FROM 
+
+            SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
             FROM demand.egon_household_electricity_profile_of_buildings
             GROUP BY (cell_id, building_id)
-            ) a 
+            ) a
             WHERE a.count > 1
             """,
                 index_col="zensus_population_id",
@@ -1173,7 +1173,7 @@ def residential_demand_scale(aggregation_level):
 
         district_heating = db.select_dataframe(
             f"""
-            SELECT * FROM 
+            SELECT * FROM
             demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
             """
@@ -1183,9 +1183,10 @@ def residential_demand_scale(aggregation_level):
             values="area_id", index="zensus_population_id", columns="scenario"
         )
 
-        mv_grid_ind = mv_grid.loc[
-            mv_grid.index.difference(district_heating.index), :
+        mv_grid_ind = mv_grid[
+            ~mv_grid.zensus_population_id.isin(district_heating.index)
         ]
+
         mv_grid_ind = mv_grid_ind.reset_index()
 
         if aggregation_level == "district":
@@ -1804,9 +1805,59 @@ def demand_profile_generator(aggregation_level="district"):
         residential_demand_zensus,
     ) = residential_demand_scale(aggregation_level)
 
+    # Compare with target value
+    target = db.select_dataframe(
+        """
+        SELECT scenario, SUM(demand) as demand
+        FROM demand.egon_peta_heat
+        WHERE sector = 'residential'
+        GROUP BY (scenario)
+        """,
+        index_col="scenario",
+    )
+
+    check_residential = (
+        (
+            residential_demand_dist.groupby("scenario").sum().sum(axis=1)
+            + residential_demand_grid.groupby("scenario").sum().sum(axis=1)
+        )
+        - target.demand
+    ) / target.demand
+
+    assert (
+        check_residential.abs().max() < 0.01
+    ), f"""Unexpected deviation between target value and distributed
+        residential heat demand: {check_residential}
+        """
+
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level
     )
+
+    # Compare with target value
+    target_cts = db.select_dataframe(
+        """
+        SELECT scenario, SUM(demand) as demand
+        FROM demand.egon_peta_heat
+        WHERE sector = 'service'
+        GROUP BY (scenario)
+        """,
+        index_col="scenario",
+    )
+
+    check_cts = (
+        (
+            CTS_demand_dist.groupby("scenario").sum().sum(axis=1)
+            + CTS_demand_grid.groupby("scenario").sum().sum(axis=1)
+        )
+        - target_cts.demand
+    ) / target_cts.demand
+
+    assert (
+        check_cts.abs().max() < 0.01
+    ), f"""Unexpected deviation between target value and distributed
+        service heat demand: {check_residential}
+        """
 
     # store demand timeseries for pypsa-eur-sec on national level
     store_national_profiles(

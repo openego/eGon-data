@@ -232,44 +232,6 @@ def load_biogas_generators(scn_name):
     return biogas_generators_list
 
 
-def assign_bus_id(dataframe, scn_name, carrier):
-    """Assigns bus_ids (for H2 buses) to points (contained in a dataframe) according to location
-
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame
-        DataFrame cointaining points
-    scn_name : str
-        Name of the scenario
-    carrier : str
-        Name of the carrier
-
-    Returns
-    -------
-    res : pandas.DataFrame
-        Dataframe including bus_id
-    """
-
-    voronoi = db.select_geodataframe(
-        f"""
-        SELECT bus_id, geom FROM grid.egon_gas_voronoi
-        WHERE scn_name = '{scn_name}' AND carrier = '{carrier}';
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(dataframe, voronoi)
-    res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right"])
-
-    # Assert that all power plants have a bus_id
-    assert (
-        res.bus.notnull().all()
-    ), f"Some points are not attached to a {carrier} bus."
-
-    return res
-
-
 def import_gas_generators(scn_name="eGon2035"):
     """Insert list of gas production units in database
 
@@ -306,7 +268,9 @@ def import_gas_generators(scn_name="eGon2035"):
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     # Match to associated CH4 bus
-    CH4_generators_list = assign_bus_id(CH4_generators_list, scn_name, "CH4")
+    CH4_generators_list = db.assign_gas_bus_id(
+        CH4_generators_list, scn_name, "CH4"
+    )
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])

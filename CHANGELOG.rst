@@ -384,7 +384,12 @@ Changed
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
-
+* Move and merge the two assign_gas_bus_id functions to a central place
+  `#797 <https://github.com/openego/eGon-data/issues/797>`_
+* Add coordinates to non AC buses abroad in eGon100RE
+  `#803 <https://github.com/openego/eGon-data/issues/803>`_
+* Integrate additional industrial electricity demands for eGon100RE
+  `#817 <https://github.com/openego/eGon-data/issues/817>`_
 
 Bug Fixes
 ---------
@@ -541,19 +546,25 @@ Bug Fixes
   `#748 <https://github.com/openego/eGon-data/issues/748>`_
 * Add missing dependency to heat_etrago
   `#771 <https://github.com/openego/eGon-data/issues/771>`_
+* Fix country code of gas pipeline DE-AT
+  `#813 <https://github.com/openego/eGon-data/issues/813>`_
+* Fix distribution of resistive heaters in district heating grids
+  `#783 <https://github.com/openego/eGon-data/issues/783>`_
 * Fix missing reservoir and run_of_river power plants in eTraGo tables,
   Modify fill_etrago_gen to also group generators from eGon100RE,
   Use db.next_etrago_id in fill_etrago_gen
   `#798 <https://github.com/openego/eGon-data/issues/798>`_
   `#776 <https://github.com/openego/eGon-data/issues/776>`_
-* Fix country code of gas pipeline DE-AT
-  `#813 <https://github.com/openego/eGon-data/issues/813>`_
-* Fix distribution of resistive heaters in district heating grids
-  `#783 <https://github.com/openego/eGon-data/issues/783>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
+* Fix gas costs
+  `#830 <https://github.com/openego/eGon-data/issues/847>`_
+* Add imports that have been wrongly deleted
+  `#849 <https://github.com/openego/eGon-data/issues/849>`_
+* Fix final demand of heat demand timeseries
+  `#781 <https://github.com/openego/eGon-data/issues/781>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
