@@ -707,7 +707,7 @@ def get_building_peak_loads():
         BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
         BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
 
-        df_building_peak_loads.melt(
+        df_building_peak_loads = df_building_peak_loads.melt(
             id_vars=["building_id", "type"],
             var_name="scenario",
             value_name="peak_demand_in_w",

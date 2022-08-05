@@ -1003,7 +1003,7 @@ def get_peak_load_cts_buildings():
 
     df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
     df_peak_load["type"] = "cts"
-    df_peak_load.melt(
+    df_building_peak_loads = df_peak_load.melt(
         id_vars=["building_id", "type"],
         var_name="scenario",
         value_name="peak_demand_in_w",
