@@ -200,6 +200,7 @@ COLS_TO_EXPORT = [
 
 INCLUDE_SYNTHETIC_BUILDINGS = False
 ONLY_BUILDINGS_WITH_DEMAND = True
+ASSURE_MINIMUM_BUILDING_SIZE = True
 
 
 def timer_func(func):
@@ -1024,6 +1025,9 @@ def load_building_data():
         )
 
         buildings_gdf = buildings_gdf.loc[building_ids]
+
+    if ASSURE_MINIMUM_BUILDING_SIZE:
+        buildings_gdf = buildings_gdf.loc[buildings_gdf]
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
@@ -2149,9 +2153,11 @@ def desaggregate_pv_in_mv_grid(
 
         samples_gdf = samples_gdf.assign(
             load_factor=load_factors,
-            capacity=samples_gdf.building_area
-            * load_factors
-            * kwargs["pv_cap_per_sq_m"],
+            capacity=(
+                samples_gdf.building_area
+                * load_factors
+                * kwargs["pv_cap_per_sq_m"]
+            ).clip(lower=0.4),
         )
 
         missing_factor = pv_cap_range / samples_gdf.capacity.sum()
