@@ -1618,7 +1618,7 @@ def cap_per_bus_id(
     AND scn_name = '{scenario}'
     """
 
-    return db.select_dataframe(sql)
+    return db.select_dataframe(sql, index_col="bus_id")
 
     # overlay_gdf = overlay_gdf.assign(capacity=np.nan)
     #
