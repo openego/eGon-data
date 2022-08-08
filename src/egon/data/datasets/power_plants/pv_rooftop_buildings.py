@@ -2442,25 +2442,23 @@ def allocate_scenarios(
         geopandas.GeoDataFrame
             GeoDataFrame containing OSM buildings matched with pv generators.
         pandas.DataFrame
-            DataFrame containingpv rooftop capacity per grid id.
+            DataFrame containing pv rooftop capacity per grid id.
     """
-    # grid_districts_gdf = grid_districts(EPSG)
+    grid_districts_gdf = grid_districts(EPSG)
 
-    # federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
-    #
-    # grid_federal_state_gdf = overlay_grid_districts_with_counties(
-    #     grid_districts_gdf,
-    #     federal_state_gdf,
-    # )
-    #
-    # buildings_overlay_gdf = add_overlay_id_to_buildings(
-    #     buildings_gdf,
-    #     grid_federal_state_gdf,
-    # )
+    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
 
-    valid_buildings_gdf = drop_buildings_outside_grids(
-        buildings_gdf
-    )  # buildings_overlay_gdf)
+    grid_federal_state_gdf = overlay_grid_districts_with_counties(
+        grid_districts_gdf,
+        federal_state_gdf,
+    )
+
+    buildings_overlay_gdf = add_overlay_id_to_buildings(
+        buildings_gdf,
+        grid_federal_state_gdf,
+    )
+
+    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
 
     # buildings_area_per_overlay_gdf = buildings_area_per_overlay_id(
     #     valid_buildings_gdf,
