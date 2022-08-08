@@ -1019,7 +1019,7 @@ def load_building_data():
         end_len = len(building_ids)
 
         logger.debug(
-            f"{end_len/init_len * 100: g} %% ({end_len} / {init_len}) of IDs within OSM"
+            f"{end_len/init_len * 100: g} % ({end_len} / {init_len}) of IDs within OSM"
             f" buildings."
         )
 
@@ -2444,7 +2444,7 @@ def allocate_scenarios(
         pandas.DataFrame
             DataFrame containingpv rooftop capacity per grid id.
     """
-    grid_districts_gdf = grid_districts(EPSG)
+    # grid_districts_gdf = grid_districts(EPSG)
 
     # federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
     #
@@ -2617,9 +2617,13 @@ def pv_rooftop_to_buildings():
 
     buildings_gdf = load_building_data()
 
+    logger.debug(f"1: {buildings_gdf.head()}")
+
     desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
         mastr_gdf, buildings_gdf
     )
+
+    logger.debug(f"2: {desagg_buildings_gdf.head()}")
 
     all_buildings_gdf = (
         desagg_mastr_gdf.assign(scenario="status_quo")
