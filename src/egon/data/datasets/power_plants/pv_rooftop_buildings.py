@@ -200,7 +200,6 @@ COLS_TO_EXPORT = [
 
 INCLUDE_SYNTHETIC_BUILDINGS = False
 ONLY_BUILDINGS_WITH_DEMAND = True
-ASSURE_MINIMUM_BUILDING_SIZE = True
 
 
 def timer_func(func):
@@ -2257,8 +2256,9 @@ def desaggregate_pv(
 
         if pv_missing <= 0:
             logger.info(
-                f"In grid {bus_id} there is more PV installed in status Quo than"
-                " allocated within the scenario. No new generators are added."
+                f"In grid {bus_id} there is more PV installed ({pv_installed}) in "
+                f"status Quo than allocated within the scenario ({pv_target}). No new "
+                f"generators are added."
             )
 
             continue
