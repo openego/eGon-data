@@ -2250,15 +2250,15 @@ def desaggregate_pv(
         pv_target = cap_df.at[
             bus_id,
             "capacity",
-        ]
+        ] * 1000
 
         pv_missing = pv_target - pv_installed
 
         if pv_missing <= 0:
             logger.info(
-                f"In grid {bus_id} there is more PV installed ({pv_installed}) in "
-                f"status Quo than allocated within the scenario ({pv_target}). No new "
-                f"generators are added."
+                f"In grid {bus_id} there is more PV installed ({pv_installed: g}) in "
+                f"status Quo than allocated within the scenario ({pv_target: g}). No "
+                f"new generators are added."
             )
 
             continue
