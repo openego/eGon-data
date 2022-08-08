@@ -1010,6 +1010,19 @@ def load_building_data():
     if ONLY_BUILDINGS_WITH_DEMAND:
         building_ids = egon_building_peak_loads()
 
+        init_len = len(building_ids)
+
+        building_ids = [
+            b_id for b_id in building_ids if b_id in buildings_gdf.index
+        ]
+
+        end_len = len(building_ids)
+
+        logger.debug(
+            f"{end_len/init_len * 100: g} %% ({end_len} / {init_len}) of IDs within OSM"
+            f" buildings."
+        )
+
         buildings_gdf = buildings_gdf.loc[building_ids]
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
