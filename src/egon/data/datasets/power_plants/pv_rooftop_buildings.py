@@ -1026,9 +1026,6 @@ def load_building_data():
 
         buildings_gdf = buildings_gdf.loc[building_ids]
 
-    if ASSURE_MINIMUM_BUILDING_SIZE:
-        buildings_gdf = buildings_gdf.loc[buildings_gdf]
-
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
     logger.debug("Loaded buildings.")
