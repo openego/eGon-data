@@ -29,6 +29,7 @@ class SanityChecks(Dataset):
             tasks=(
                 sanitycheck_eGon2035_electricity,
                 sanitycheck_eGon2035_heat,
+                sanitycheck_pv_rooftop_buildings,
             ),
         )
 
@@ -509,7 +510,7 @@ def sanitycheck_pv_rooftop_buildings():
 
     scenarios = ["status_quo", "eGon2035"]
 
-    base_path = Path(egon.data.__path__[0])
+    base_path = Path(egon.data.__path__[0]).resolve()
 
     res_dir = base_path / "sanity_checks"
 
