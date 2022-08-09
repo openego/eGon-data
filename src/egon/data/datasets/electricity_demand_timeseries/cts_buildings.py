@@ -1006,7 +1006,7 @@ def get_peak_load_cts_buildings():
     df_peak_load = df_peak_load.melt(
         id_vars=["building_id", "type"],
         var_name="scenario",
-        value_name="peak_demand_in_w",
+        value_name="peak_load_in_w",
     )
 
     # Delete rows with cts demand
