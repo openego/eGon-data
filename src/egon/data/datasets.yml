@@ -939,6 +939,12 @@ storage_etrago:
     bus:
       table: 'egon_etrago_bus'
       schema: 'grid'
+    ehv-substation:
+      table: 'egon_ehv_substation'
+      schema: 'grid'
+    hv-substation:
+      table: 'egon_hvmv_substation'
+      schema: 'grid'
   targets:
     storage:
       schema: 'grid'
