@@ -24,6 +24,199 @@ from egon.data.datasets import Dataset
 import egon
 
 
+Base = declarative_base()
+
+class EgonMapZensusClimateZones(Base):
+    __tablename__ = "egon_map_zensus_climate_zones"
+    __table_args__ = {"schema": "boundaries"}
+    
+    zensus_population_id = Column(Integer, primary_key=True)
+    climate_zone = Column(Text)
+    
+class EgonDailyHeatDemandPerClimateZone(Base):
+    __tablename__ = "egon_daily_heat_demand_per_climate_zone"
+    __table_args__ = {"schema": "demand"}
+    
+    climate_zone = Column(Text, primary_key=True)
+    day_of_year = Column(Integer, primary_key=True)
+    temperature_class = Column(Integer)
+    heat_demand_share = Column(Float(53))
+    
+class EgonHeatTimeseries(Base):
+    __tablename__ = "heat_timeseries_selected_profiles"
+    __table_args__ = {"schema": "demand"}
+    zensus_population_id = Column(Integer, primary_key=True)
+    building_id = Column(Integer, primary_key=True)
+    selected_idp_profiles = Column(ARRAY(Integer))
+
+class EgonTimeseriesDistrictHeating(Base):
+    __tablename__ = "egon_timeseries_district_heating_new"
+    __table_args__ = {"schema": "demand"}
+    area_id = Column(Integer, primary_key=True)
+    scenario = Column(Text, primary_key=True)
+    dist_aggregated_mw = Column(ARRAY(Float(53)))
+    
+class EgonEtragoTimeseriesIndividualHeating(Base):
+    __tablename__ = "egon_etrago_timeseries_individual_heating"
+    __table_args__ = {"schema": "demand"}
+    bus_id = Column(Integer, primary_key=True)
+    scenario = Column(Text, primary_key=True)
+    dist_aggregated_mw = Column(ARRAY(Float(53)))
+
+
+def temperature_classes():
+    return {
+        -20: 1,
+        -19: 1,
+        -18: 1,
+        -17: 1,
+        -16: 1,
+        -15: 1,
+        -14: 2,
+        -13: 2,
+        -12: 2,
+        -11: 2,
+        -10: 2,
+        -9: 3,
+        -8: 3,
+        -7: 3,
+        -6: 3,
+        -5: 3,
+        -4: 4,
+        -3: 4,
+        -2: 4,
+        -1: 4,
+        0: 4,
+        1: 5,
+        2: 5,
+        3: 5,
+        4: 5,
+        5: 5,
+        6: 6,
+        7: 6,
+        8: 6,
+        9: 6,
+        10: 6,
+        11: 7,
+        12: 7,
+        13: 7,
+        14: 7,
+        15: 7,
+        16: 8,
+        17: 8,
+        18: 8,
+        19: 8,
+        20: 8,
+        21: 9,
+        22: 9,
+        23: 9,
+        24: 9,
+        25: 9,
+        26: 10,
+        27: 10,
+        28: 10,
+        29: 10,
+        30: 10,
+        31: 10,
+        32: 10,
+        33: 10,
+        34: 10,
+        35: 10,
+        36: 10,
+        37: 10,
+        38: 10,
+        39: 10,
+        40: 10,
+    }
+
+def map_climate_zones_to_zensus():
+    """ Geospatial join of zensus cells and climate zones
+
+    Returns
+    -------
+    None.
+
+    """
+    # Drop old table and create new one
+    engine = db.engine()
+    EgonMapZensusClimateZones.__table__.drop(bind=engine, checkfirst=True)
+    EgonMapZensusClimateZones.__table__.create(bind=engine, checkfirst=True)
+    
+    # Read in file containing climate zones
+    temperature_zones = gpd.read_file(
+        os.path.join(
+            os.getcwd(),
+            "data_bundle_egon_data",
+            "climate_zones_Germany",
+            "TRY_Climate_Zone",
+            "Climate_Zone.shp",
+        )
+    ).set_index("Station")
+    
+    # Import census cells and their centroids
+    census_cells = db.select_geodataframe(
+        f"""
+        SELECT id as zensus_population_id, geom_point as geom
+        FROM society.destatis_zensus_population_per_ha_inside_germany
+        """, index_col='zensus_population_id', epsg=4326)
+        
+    # Join climate zones and census cells
+    join = census_cells.sjoin(
+        temperature_zones).rename(
+            {'index_right':'climate_zone'}, axis='columns').climate_zone
+    
+    # Insert resulting dataframe to SQL table
+    join.to_sql(
+        EgonMapZensusClimateZones.__table__.name,
+        schema = EgonMapZensusClimateZones.__table__.schema, 
+        con = db.engine(),
+        if_exists = 'replace')
+
+    
+def daily_demand_shares_per_climate_zone():
+    """ Calculates shares of heat demand per day for each cliamte zone
+
+    Returns
+    -------
+    None.
+
+    """
+    # Drop old table and create new one
+    engine = db.engine()
+    EgonDailyHeatDemandPerClimateZone.__table__.drop(bind=engine, checkfirst=True)
+    EgonDailyHeatDemandPerClimateZone.__table__.create(bind=engine, checkfirst=True)
+    
+    # Calulate daily demand shares
+    h = h_value()
+        
+    # Normalize data to sum()=1
+    daily_demand_shares = h.resample('d').sum()/h.sum()
+    
+    # Extract temperature class for each day and climate zone
+    temperature_classes = temp_interval().resample('D').max()
+    
+    # Initilize dataframe
+    df = pd.DataFrame(columns=["climate_zone", "day_of_year", "temperature_class", "daily_demand_share"])
+    
+    # Insert data into dataframe
+    for index, row in daily_demand_shares.transpose().iterrows():
+        
+        df = df.append(pd.DataFrame(data = {
+            "climate_zone": index,
+            "day_of_year": row.index.day_of_year,
+            "daily_demand_share": row.values,
+            "temperature_class": temperature_classes[index][row.index]}))
+        
+    # Insert dataframe to SQL table
+    df.to_sql(
+        EgonDailyHeatDemandPerClimateZone.__table__.name,
+        schema = EgonDailyHeatDemandPerClimateZone.__table__.schema, 
+        con = db.engine(), 
+        if_exists = 'replace', 
+        index = False
+        )
+
+
 class IdpProfiles:
     def __init__(self, df_index, **kwargs):
         index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
@@ -68,69 +261,7 @@ class IdpProfiles:
         for i in self.df["temperature_geo"]:
             temperature_rounded.append(ceil(i))
 
-        intervals = {
-            -20: 1,
-            -19: 1,
-            -18: 1,
-            -17: 1,
-            -16: 1,
-            -15: 1,
-            -14: 2,
-            -13: 2,
-            -12: 2,
-            -11: 2,
-            -10: 2,
-            -9: 3,
-            -8: 3,
-            -7: 3,
-            -6: 3,
-            -5: 3,
-            -4: 4,
-            -3: 4,
-            -2: 4,
-            -1: 4,
-            0: 4,
-            1: 5,
-            2: 5,
-            3: 5,
-            4: 5,
-            5: 5,
-            6: 6,
-            7: 6,
-            8: 6,
-            9: 6,
-            10: 6,
-            11: 7,
-            12: 7,
-            13: 7,
-            14: 7,
-            15: 7,
-            16: 8,
-            17: 8,
-            18: 8,
-            19: 8,
-            20: 8,
-            21: 9,
-            22: 9,
-            23: 9,
-            24: 9,
-            25: 9,
-            26: 10,
-            27: 10,
-            28: 10,
-            29: 10,
-            30: 10,
-            31: 10,
-            32: 10,
-            33: 10,
-            34: 10,
-            35: 10,
-            36: 10,
-            37: 10,
-            38: 10,
-            39: 10,
-            40: 10,
-        }
+        intervals = temperature_classes()
 
         temperature_interval = []
         for i in temperature_rounded:
@@ -274,69 +405,7 @@ def idp_pool_generator():
             Each day assignd to their respective temperature class
 
         """
-        intervals = {
-            -20: 1,
-            -19: 1,
-            -18: 1,
-            -17: 1,
-            -16: 1,
-            -15: 1,
-            -14: 2,
-            -13: 2,
-            -12: 2,
-            -11: 2,
-            -10: 2,
-            -9: 3,
-            -8: 3,
-            -7: 3,
-            -6: 3,
-            -5: 3,
-            -4: 4,
-            -3: 4,
-            -2: 4,
-            -1: 4,
-            0: 4,
-            1: 5,
-            2: 5,
-            3: 5,
-            4: 5,
-            5: 5,
-            6: 6,
-            7: 6,
-            8: 6,
-            9: 6,
-            10: 6,
-            11: 7,
-            12: 7,
-            13: 7,
-            14: 7,
-            15: 7,
-            16: 8,
-            17: 8,
-            18: 8,
-            19: 8,
-            20: 8,
-            21: 9,
-            22: 9,
-            23: 9,
-            24: 9,
-            25: 9,
-            26: 10,
-            27: 10,
-            28: 10,
-            29: 10,
-            30: 10,
-            31: 10,
-            32: 10,
-            33: 10,
-            34: 10,
-            35: 10,
-            36: 10,
-            37: 10,
-            38: 10,
-            39: 10,
-            40: 10,
-        }
+        intervals = temperature_classes()
         temperature_rounded = []
         for i in temp_daily.loc[:, station]:
             temperature_rounded.append(ceil(i))
