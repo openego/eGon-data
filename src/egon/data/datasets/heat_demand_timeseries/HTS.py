@@ -669,71 +669,19 @@ def annual_demand_generator():
         respective associated Station
 
     """
-    demand_geom = db.select_geodataframe(
-        """
-        SELECT a.demand, b.geom_point as geom, a.zensus_population_id, a.scenario
+    
+    scenario = 'eGon2035'
+    demand_zone = db.select_dataframe(
+        f"""
+        SELECT a.demand, a.zensus_population_id, a.scenario, c.climate_zone
         FROM demand.egon_peta_heat a
-        JOIN society.destatis_zensus_population_per_ha b
-        ON a.zensus_population_id = b.id
+        JOIN boundaries.egon_map_zensus_climate_zones c
+        ON a.zensus_population_id = c.zensus_population_id
         WHERE a.sector = 'residential'
+        AND a.scenario = '{scenario}'
         """,
-        epsg=4326,
+        index_col="zensus_population_id"
     )
-
-    temperature_zones = gpd.read_file(
-        os.path.join(
-            os.getcwd(),
-            "data_bundle_egon_data",
-            "climate_zones_Germany",
-            "TRY_Climate_Zone",
-            "Climate_Zone.shp",
-        )
-    )
-    temperature_zones.sort_values("Zone", inplace=True)
-    temperature_zones.reset_index(inplace=True)
-    temperature_zones.drop(columns=["index", "Id"], inplace=True, axis=0)
-
-    demand_zone = gpd.sjoin(
-        demand_geom,
-        temperature_zones,
-        how="inner",
-    )
-
-    missing_cells = demand_geom[~demand_geom.index.isin(demand_zone.index)]
-
-    # start with buffer
-    buffer = 0
-
-    # increase buffer until every zensus cell is matched to a climate zone
-    while len(missing_cells) > 0:
-        buffer += 100
-        boundaries_buffer = temperature_zones.copy()
-        boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
-        join_missing = gpd.sjoin(
-            missing_cells, boundaries_buffer, how="inner", op="intersects"
-        )
-        demand_zone = demand_zone.append(join_missing)
-        missing_cells = demand_geom[~demand_geom.index.isin(demand_zone.index)]
-
-    print(f"Maximal buffer to match zensus points to climate zones: {buffer}m")
-
-    scenario_demand = pd.pivot_table(
-        data=demand_zone[
-            ["zensus_population_id", "demand", "scenario", "Zone", "Station"]
-        ],
-        values="demand",
-        index="zensus_population_id",
-        columns="scenario",
-    )
-
-    scenario_zone = pd.merge(
-        scenario_demand,
-        demand_zone[["zensus_population_id", "Zone", "Station"]],
-        left_on=scenario_demand.index,
-        right_on="zensus_population_id",
-        how="left",
-    )
-    scenario_zone.drop_duplicates("zensus_population_id", inplace=True)
 
     house_count_MFH = db.select_dataframe(
         """
@@ -765,112 +713,104 @@ def annual_demand_generator():
         """,
         index_col="zensus_population_id",
     )
+    
+    demand_zone["SFH"] = house_count_SFH.number
+    demand_zone["MFH"] = house_count_MFH.number
+    
+    demand_zone["SFH"].fillna(0, inplace=True)
+    demand_zone["MFH"].fillna(0, inplace=True)
 
-    house_count = pd.DataFrame(
-        index=house_count_SFH.index.append(house_count_MFH.index).unique(),
-        data={"SFH": 0, "MFH": 0},
-    )
-
-    house_count["SFH"] = house_count_SFH.number
-    house_count["MFH"] = house_count_MFH.number
-
-    house_count.fillna(0, inplace=True)
-
-    demand_count = pd.merge(
-        house_count,
-        scenario_zone,
-        left_on=house_count.index,
-        right_on="zensus_population_id",
-    )
-
-    demand_count.drop_duplicates(["zensus_population_id"], inplace=True)
-
-    return demand_count
-
-
+    return demand_zone
+   
+    
+    
 def profile_selector():
     """
 
-    Description: Random assignment of profiles to each day based on their temeprature class
+    Random assignment of intray-day profiles to each day based on their temeprature class
     and household stock count
 
     Returns
     -------
-    annual_demand : pandas.DataFrame
-        Annual demand of all zensus cell with MFH and SFH count and
-        respective associated Station
-
-    idp_df : pandas.DataFrame
-        All IDP pool as classified as per household stock and temperature class
-
-    selected_idp_names: pandas.DataFrame
-        Each cell of the table assigned with the column number (int) with the value
-        corresponding to the idp_df row number. This indicates the assignmnet of
-        24 hr. array to the day.
+    None.
 
     """
-    idp_df = idp_df_generator()
+    start_profile_selector = datetime.now()
+    
+    # Drop old table and re-create it
+    engine = db.engine()
+    EgonHeatTimeseries.__table__.drop(bind=engine, checkfirst=True)
+    EgonHeatTimeseries.__table__.create(bind=engine, checkfirst=True)
+    
+    # Select all intra-day-profiles
+    idp_df = db.select_dataframe(
+        """
+        SELECT index, house, temperature_class
+        FROM demand.heat_idp_pool
+        """, 
+        index_col="index")
+    
+    # Select daily heat demand shares per climate zone from table
+    temperature_classes = db.select_dataframe(
+        """
+        SELECT climate_zone, day_of_year, temperature_class
+        FROM demand.egon_daily_heat_demand_per_climate_zone
+        """)
+    
+    # Calculate annual heat demand per census cell 
     annual_demand = annual_demand_generator()
-    all_temperature_interval = temp_interval()
-    all_temperature_interval = all_temperature_interval.resample("D").max()
-    all_temperature_interval.reset_index(drop=True, inplace=True)
-
-    all_temperature_interval = all_temperature_interval.loc[
-        :, annual_demand.Station.unique()
-    ]
-
-    Temperature_interval = all_temperature_interval.transpose()
-
+    
+    # Count number of SFH and MFH per climate zone
+    houses_per_climate_zone = annual_demand.groupby('climate_zone')[['SFH', 'MFH']].sum().astype(int)
+    
+    # Set random seed to make code reproducable
     np.random.seed(
         seed=egon.data.config.settings()["egon-data"]["--random-seed"]
     )
 
-    if os.path.isfile("selected_profiles.csv"):
-        os.remove("selected_profiles.csv")
 
-    selected_idp_names = pd.DataFrame()
-    length = 0
-    for station in Temperature_interval.index:
-        result_SFH = pd.DataFrame(columns=Temperature_interval.columns)
-        result_MFH = pd.DataFrame(columns=Temperature_interval.columns)
+    for station in houses_per_climate_zone.index:
+        
+        result_SFH = pd.DataFrame(columns=range(1,366))
+        result_MFH = pd.DataFrame(columns=range(1,366))
 
-        for day in Temperature_interval.columns:
-            t_class = Temperature_interval.loc[station, day].astype(int)
+        # Randomly select individual daily demand profile for selected climate zone
+        for day in range(1,366):
+            t_class = temperature_classes.loc[
+                (temperature_classes.climate_zone==station)
+                & (temperature_classes.day_of_year == day), "temperature_class"].values[0]
 
-            array_SFH = np.array(
-                idp_df[
-                    (idp_df.temperature_class == t_class)
-                    & (idp_df.house == "SFH")
-                ].index.values
-            )
-
-            array_MFH = np.array(
-                idp_df[
-                    (idp_df.temperature_class == t_class)
-                    & (idp_df.house == "MFH")
-                ].index.values
-            )
 
             result_SFH[day] = np.random.choice(
-                array_SFH,
-                int(annual_demand[annual_demand.Station == station].SFH.sum()),
+                np.array(
+                    idp_df[
+                        (idp_df.temperature_class == t_class)
+                        & (idp_df.house == "SFH")
+                    ].index.values
+                ),
+                houses_per_climate_zone.loc[station, "SFH"],
             )
 
             result_MFH[day] = np.random.choice(
-                array_MFH,
-                int(annual_demand[annual_demand.Station == station].MFH.sum()),
+                np.array(
+                    idp_df[
+                        (idp_df.temperature_class == t_class)
+                        & (idp_df.house == "MFH")
+                    ].index.values
+                ),
+                houses_per_climate_zone.loc[station, "MFH"],
             )
 
         result_SFH["zensus_population_id"] = (
-            annual_demand[annual_demand.Station == station]
+            annual_demand[annual_demand.climate_zone == station]
             .loc[
-                annual_demand[annual_demand.Station == station].index.repeat(
-                    annual_demand[annual_demand.Station == station].SFH.astype(
+                annual_demand[annual_demand.climate_zone == station].index.repeat(
+                    annual_demand[annual_demand.climate_zone == station].SFH.astype(
                         int
                     )
                 )
             ]
-            .zensus_population_id.values
+            .index.values
         )
 
         result_SFH["building_id"] = (
@@ -892,15 +832,15 @@ def profile_selector():
         )
 
         result_MFH["zensus_population_id"] = (
-            annual_demand[annual_demand.Station == station]
+            annual_demand[annual_demand.climate_zone == station]
             .loc[
-                annual_demand[annual_demand.Station == station].index.repeat(
-                    annual_demand[annual_demand.Station == station].MFH.astype(
+                annual_demand[annual_demand.climate_zone == station].index.repeat(
+                    annual_demand[annual_demand.climate_zone == station].MFH.astype(
                         int
                     )
                 )
             ]
-            .zensus_population_id.values
+            .index.values
         )
 
         result_MFH["building_id"] = (
@@ -920,84 +860,95 @@ def profile_selector():
             .loc[result_MFH["zensus_population_id"].unique(), "building_id"]
             .values
         )
-
-        result_SFH.set_index(
-            ["zensus_population_id", "building_id"], inplace=True
-        )
-        result_MFH.set_index(
-            ["zensus_population_id", "building_id"], inplace=True
-        )
-
-        selected_idp_names = selected_idp_names.append(result_SFH)
-        selected_idp_names = selected_idp_names.append(result_MFH)
-        selected_idp_names = selected_idp_names.apply(
-            lambda x: x.astype(np.int32)
-        )
-
-        new_length = len(selected_idp_names)
-        selected_this_station = selected_idp_names.iloc[length:new_length, :]
-        selected_this_station[
-            "selected_idp_profiles"
-        ] = selected_this_station.values.tolist()
-        selected_this_station = selected_this_station.selected_idp_profiles
-        selected_this_station = selected_this_station.reset_index()
-        selected_this_station.index = range(length, new_length)
-
-        if os.path.isfile("selected_profiles.csv"):
-            selected_this_station.to_csv(
-                "selected_profiles.csv", mode="a", header=False
+        
+        df_sfh = pd.DataFrame(data={
+            "selected_idp_profiles" : result_SFH[range(1,366)].values.tolist(),
+            "zensus_population_id": (
+                annual_demand[annual_demand.climate_zone == station]
+                .loc[
+                    annual_demand[annual_demand.climate_zone == station].index.repeat(
+                        annual_demand[annual_demand.climate_zone == station].SFH.astype(
+                            int
+                        )
+                    )
+                ]
+                .index.values
+            ),
+            "building_id": (
+                db.select_dataframe(
+                    """
+            
+                SELECT cell_id as zensus_population_id, building_id FROM 
+                (
+                SELECT cell_id, COUNT(*), building_id
+                FROM demand.egon_household_electricity_profile_of_buildings
+                GROUP BY (cell_id, building_id)
+                ) a 
+                WHERE a.count = 1
+                """,
+                    index_col="zensus_population_id",
+                )
+                .loc[result_SFH["zensus_population_id"].unique(), "building_id"]
+                .values
             )
-        else:
-            selected_this_station.to_csv("selected_profiles.csv")
-
-        length = new_length
-
-    Base = declarative_base()
-
-    class EgonHeatTimeseries(Base):
-        __tablename__ = "heat_timeseries_selected_profiles"
-        __table_args__ = {"schema": "demand"}
-        ID = Column(Integer, primary_key=True)
-        zensus_population_id = Column(Integer, primary_key=True)
-        building_id = Column(Integer, primary_key=True)
-        selected_idp_profiles = Column(String)
-
-    engine = db.engine()
-    EgonHeatTimeseries.__table__.drop(bind=engine, checkfirst=True)
-    EgonHeatTimeseries.__table__.create(bind=engine, checkfirst=True)
-
-    heat_selected_profiles = {
-        "schema": "demand",
-        "table": "heat_timeseries_selected_profiles",
-    }
-
-    filename_insert = "selected_profiles.csv"
-
-    docker_db_config = db.credentials()
-
-    selected_profiles_table = (
-        f"{heat_selected_profiles['schema']}"
-        f".{heat_selected_profiles['table']}"
-    )
-
-    host = ["-h", f"{docker_db_config['HOST']}"]
-    port = ["-p", f"{docker_db_config['PORT']}"]
-    pgdb = ["-d", f"{docker_db_config['POSTGRES_DB']}"]
-    user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
-    command = [
-        "-c",
-        rf"\copy {selected_profiles_table}"
-        rf" FROM '{filename_insert}' DELIMITER ',' CSV HEADER;",
-    ]
-
-    subprocess.run(
-        ["psql"] + host + port + pgdb + user + command,
-        env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
-    )
-
-    os.remove(filename_insert)
-
-    return annual_demand, idp_df, selected_idp_names.droplevel("building_id")
+            })
+        start_sfh = datetime.now()
+        df_sfh.set_index(["zensus_population_id", "building_id"]).to_sql(
+            "heat_timeseries_selected_profiles",
+                      schema = "demand", 
+                      con=db.engine(),
+                      if_exists = "append",
+                      chunksize=5000, 
+                      method='multi')
+        print(f"SFH insertation for zone {station}:")
+        print(datetime.now() - start_sfh)
+        
+        df_mfh = pd.DataFrame(data={
+            "selected_idp_profiles" : result_MFH[range(1,366)].values.tolist(),
+            "zensus_population_id": (
+                annual_demand[annual_demand.climate_zone == station]
+                .loc[
+                    annual_demand[annual_demand.climate_zone == station].index.repeat(
+                        annual_demand[annual_demand.climate_zone == station].MFH.astype(
+                            int
+                        )
+                    )
+                ]
+                .index.values
+            ),
+            "building_id": (
+                db.select_dataframe(
+                    """
+            
+                SELECT cell_id as zensus_population_id, building_id FROM 
+                (
+                SELECT cell_id, COUNT(*), building_id
+                FROM demand.egon_household_electricity_profile_of_buildings
+                GROUP BY (cell_id, building_id)
+                ) a 
+                WHERE a.count > 1
+                """,
+                    index_col="zensus_population_id",
+                )
+                .loc[result_MFH["zensus_population_id"].unique(), "building_id"]
+                .values
+            )
+            })
+        
+        start_mfh = datetime.now()
+        df_mfh.set_index(["zensus_population_id", "building_id"]).to_sql(
+            "heat_timeseries_selected_profiles",
+                      schema = "demand", 
+                      con=db.engine(),
+                      if_exists = "append",
+                      chunksize=5000, 
+                      method='multi')
+        print(f"MFH insertation for zone {station}:")
+        print(datetime.now() - start_mfh)
+        
+        
+    print("Time for overall profile selection:")
+    print(datetime.now() - start_profile_selector)
 
 
 def h_value():
