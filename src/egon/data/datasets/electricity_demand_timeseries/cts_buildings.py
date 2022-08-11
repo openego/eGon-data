@@ -340,12 +340,18 @@ def buildings_with_amenities():
             # TODO maybe adapt method
             # place random amenity in cell
             df_lost_cells["n_amenities_inside"] = 1
+            df_lost_cells.rename(
+                columns={
+                    "id": "zensus_population_id",
+                },
+                inplace=True,
+            )
             df_lost_cells = place_buildings_with_amenities(
                 df_lost_cells, amenities=1
             )
             df_lost_cells.rename(
                 columns={
-                    "id": "zensus_population_id",
+                    # "id": "zensus_population_id",
                     "geom_point": "geom_amenity",
                 },
                 inplace=True,
