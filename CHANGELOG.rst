@@ -201,6 +201,8 @@ Added
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
 * Add motorized individual travel
   `#553 <https://github.com/openego/eGon-data/issues/553>`_
+* Add pv rooftop plants per mv grid for eGon100RE
+  `#861 <https://github.com/openego/eGon-data/issues/861>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
