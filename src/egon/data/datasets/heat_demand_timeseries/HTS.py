@@ -9,7 +9,6 @@ import pandas as pd
 import pandas.io.sql as sqlio
 
 
-
 from egon.data import db
 import egon.data.datasets.era5 as era
 
@@ -26,22 +25,25 @@ import egon
 
 Base = declarative_base()
 
+
 class EgonMapZensusClimateZones(Base):
     __tablename__ = "egon_map_zensus_climate_zones"
     __table_args__ = {"schema": "boundaries"}
-    
+
     zensus_population_id = Column(Integer, primary_key=True)
     climate_zone = Column(Text)
-    
+
+
 class EgonDailyHeatDemandPerClimateZone(Base):
     __tablename__ = "egon_daily_heat_demand_per_climate_zone"
     __table_args__ = {"schema": "demand"}
-    
+
     climate_zone = Column(Text, primary_key=True)
     day_of_year = Column(Integer, primary_key=True)
     temperature_class = Column(Integer)
     heat_demand_share = Column(Float(53))
-    
+
+
 class EgonHeatTimeseries(Base):
     __tablename__ = "heat_timeseries_selected_profiles"
     __table_args__ = {"schema": "demand"}
@@ -49,13 +51,15 @@ class EgonHeatTimeseries(Base):
     building_id = Column(Integer, primary_key=True)
     selected_idp_profiles = Column(ARRAY(Integer))
 
+
 class EgonTimeseriesDistrictHeating(Base):
     __tablename__ = "egon_timeseries_district_heating_new"
     __table_args__ = {"schema": "demand"}
     area_id = Column(Integer, primary_key=True)
     scenario = Column(Text, primary_key=True)
     dist_aggregated_mw = Column(ARRAY(Float(53)))
-    
+
+
 class EgonEtragoTimeseriesIndividualHeating(Base):
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
@@ -129,8 +133,9 @@ def temperature_classes():
         40: 10,
     }
 
+
 def map_climate_zones_to_zensus():
-    """ Geospatial join of zensus cells and climate zones
+    """Geospatial join of zensus cells and climate zones
 
     Returns
     -------
@@ -141,7 +146,7 @@ def map_climate_zones_to_zensus():
     engine = db.engine()
     EgonMapZensusClimateZones.__table__.drop(bind=engine, checkfirst=True)
     EgonMapZensusClimateZones.__table__.create(bind=engine, checkfirst=True)
-    
+
     # Read in file containing climate zones
     temperature_zones = gpd.read_file(
         os.path.join(
@@ -152,29 +157,35 @@ def map_climate_zones_to_zensus():
             "Climate_Zone.shp",
         )
     ).set_index("Station")
-    
+
     # Import census cells and their centroids
     census_cells = db.select_geodataframe(
         f"""
         SELECT id as zensus_population_id, geom_point as geom
         FROM society.destatis_zensus_population_per_ha_inside_germany
-        """, index_col='zensus_population_id', epsg=4326)
-        
+        """,
+        index_col="zensus_population_id",
+        epsg=4326,
+    )
+
     # Join climate zones and census cells
-    join = census_cells.sjoin(
-        temperature_zones).rename(
-            {'index_right':'climate_zone'}, axis='columns').climate_zone
-    
+    join = (
+        census_cells.sjoin(temperature_zones)
+        .rename({"index_right": "climate_zone"}, axis="columns")
+        .climate_zone
+    )
+
     # Insert resulting dataframe to SQL table
     join.to_sql(
         EgonMapZensusClimateZones.__table__.name,
-        schema = EgonMapZensusClimateZones.__table__.schema, 
-        con = db.engine(),
-        if_exists = 'replace')
+        schema=EgonMapZensusClimateZones.__table__.schema,
+        con=db.engine(),
+        if_exists="replace",
+    )
 
-    
+
 def daily_demand_shares_per_climate_zone():
-    """ Calculates shares of heat demand per day for each cliamte zone
+    """Calculates shares of heat demand per day for each cliamte zone
 
     Returns
     -------
@@ -183,38 +194,54 @@ def daily_demand_shares_per_climate_zone():
     """
     # Drop old table and create new one
     engine = db.engine()
-    EgonDailyHeatDemandPerClimateZone.__table__.drop(bind=engine, checkfirst=True)
-    EgonDailyHeatDemandPerClimateZone.__table__.create(bind=engine, checkfirst=True)
-    
+    EgonDailyHeatDemandPerClimateZone.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonDailyHeatDemandPerClimateZone.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
     # Calulate daily demand shares
     h = h_value()
-        
+
     # Normalize data to sum()=1
-    daily_demand_shares = h.resample('d').sum()/h.sum()
-    
+    daily_demand_shares = h.resample("d").sum() / h.sum()
+
     # Extract temperature class for each day and climate zone
-    temperature_classes = temp_interval().resample('D').max()
-    
+    temperature_classes = temp_interval().resample("D").max()
+
     # Initilize dataframe
-    df = pd.DataFrame(columns=["climate_zone", "day_of_year", "temperature_class", "daily_demand_share"])
-    
+    df = pd.DataFrame(
+        columns=[
+            "climate_zone",
+            "day_of_year",
+            "temperature_class",
+            "daily_demand_share",
+        ]
+    )
+
     # Insert data into dataframe
     for index, row in daily_demand_shares.transpose().iterrows():
-        
-        df = df.append(pd.DataFrame(data = {
-            "climate_zone": index,
-            "day_of_year": row.index.day_of_year,
-            "daily_demand_share": row.values,
-            "temperature_class": temperature_classes[index][row.index]}))
-        
+
+        df = df.append(
+            pd.DataFrame(
+                data={
+                    "climate_zone": index,
+                    "day_of_year": row.index.day_of_year,
+                    "daily_demand_share": row.values,
+                    "temperature_class": temperature_classes[index][row.index],
+                }
+            )
+        )
+
     # Insert dataframe to SQL table
     df.to_sql(
         EgonDailyHeatDemandPerClimateZone.__table__.name,
-        schema = EgonDailyHeatDemandPerClimateZone.__table__.schema, 
-        con = db.engine(), 
-        if_exists = 'replace', 
-        index = False
-        )
+        schema=EgonDailyHeatDemandPerClimateZone.__table__.schema,
+        con=db.engine(),
+        if_exists="replace",
+        index=False,
+    )
 
 
 class IdpProfiles:
@@ -283,6 +310,7 @@ def temperature_profile_extract():
     """
 
     cutout = era.import_cutout(boundary="Germany")
+
     coordinates_path = os.path.join(
         os.getcwd(),
         "data_bundle_egon_data",
@@ -669,8 +697,8 @@ def annual_demand_generator():
         respective associated Station
 
     """
-    
-    scenario = 'eGon2035'
+
+    scenario = "eGon2035"
     demand_zone = db.select_dataframe(
         f"""
         SELECT a.demand, a.zensus_population_id, a.scenario, c.climate_zone
@@ -680,7 +708,7 @@ def annual_demand_generator():
         WHERE a.sector = 'residential'
         AND a.scenario = '{scenario}'
         """,
-        index_col="zensus_population_id"
+        index_col="zensus_population_id",
     )
 
     house_count_MFH = db.select_dataframe(
@@ -713,17 +741,16 @@ def annual_demand_generator():
         """,
         index_col="zensus_population_id",
     )
-    
+
     demand_zone["SFH"] = house_count_SFH.number
     demand_zone["MFH"] = house_count_MFH.number
-    
+
     demand_zone["SFH"].fillna(0, inplace=True)
     demand_zone["MFH"].fillna(0, inplace=True)
 
     return demand_zone
-   
-    
-    
+
+
 def profile_selector():
     """
 
@@ -736,50 +763,54 @@ def profile_selector():
 
     """
     start_profile_selector = datetime.now()
-    
+
     # Drop old table and re-create it
     engine = db.engine()
     EgonHeatTimeseries.__table__.drop(bind=engine, checkfirst=True)
     EgonHeatTimeseries.__table__.create(bind=engine, checkfirst=True)
-    
+
     # Select all intra-day-profiles
     idp_df = db.select_dataframe(
         """
         SELECT index, house, temperature_class
         FROM demand.heat_idp_pool
-        """, 
-        index_col="index")
-    
+        """,
+        index_col="index",
+    )
+
     # Select daily heat demand shares per climate zone from table
     temperature_classes = db.select_dataframe(
         """
         SELECT climate_zone, day_of_year, temperature_class
         FROM demand.egon_daily_heat_demand_per_climate_zone
-        """)
-    
-    # Calculate annual heat demand per census cell 
+        """
+    )
+
+    # Calculate annual heat demand per census cell
     annual_demand = annual_demand_generator()
-    
+
     # Count number of SFH and MFH per climate zone
-    houses_per_climate_zone = annual_demand.groupby('climate_zone')[['SFH', 'MFH']].sum().astype(int)
-    
+    houses_per_climate_zone = (
+        annual_demand.groupby("climate_zone")[["SFH", "MFH"]].sum().astype(int)
+    )
+
     # Set random seed to make code reproducable
     np.random.seed(
         seed=egon.data.config.settings()["egon-data"]["--random-seed"]
     )
 
-
     for station in houses_per_climate_zone.index:
-        
-        result_SFH = pd.DataFrame(columns=range(1,366))
-        result_MFH = pd.DataFrame(columns=range(1,366))
+
+        result_SFH = pd.DataFrame(columns=range(1, 366))
+        result_MFH = pd.DataFrame(columns=range(1, 366))
 
         # Randomly select individual daily demand profile for selected climate zone
-        for day in range(1,366):
+        for day in range(1, 366):
             t_class = temperature_classes.loc[
-                (temperature_classes.climate_zone==station)
-                & (temperature_classes.day_of_year == day), "temperature_class"].values[0]
-
+                (temperature_classes.climate_zone == station)
+                & (temperature_classes.day_of_year == day),
+                "temperature_class",
+            ].values[0]
 
             result_SFH[day] = np.random.choice(
                 np.array(
@@ -804,10 +835,12 @@ def profile_selector():
         result_SFH["zensus_population_id"] = (
             annual_demand[annual_demand.climate_zone == station]
             .loc[
-                annual_demand[annual_demand.climate_zone == station].index.repeat(
-                    annual_demand[annual_demand.climate_zone == station].SFH.astype(
-                        int
-                    )
+                annual_demand[
+                    annual_demand.climate_zone == station
+                ].index.repeat(
+                    annual_demand[
+                        annual_demand.climate_zone == station
+                    ].SFH.astype(int)
                 )
             ]
             .index.values
@@ -834,10 +867,12 @@ def profile_selector():
         result_MFH["zensus_population_id"] = (
             annual_demand[annual_demand.climate_zone == station]
             .loc[
-                annual_demand[annual_demand.climate_zone == station].index.repeat(
-                    annual_demand[annual_demand.climate_zone == station].MFH.astype(
-                        int
-                    )
+                annual_demand[
+                    annual_demand.climate_zone == station
+                ].index.repeat(
+                    annual_demand[
+                        annual_demand.climate_zone == station
+                    ].MFH.astype(int)
                 )
             ]
             .index.values
@@ -860,23 +895,28 @@ def profile_selector():
             .loc[result_MFH["zensus_population_id"].unique(), "building_id"]
             .values
         )
-        
-        df_sfh = pd.DataFrame(data={
-            "selected_idp_profiles" : result_SFH[range(1,366)].values.tolist(),
-            "zensus_population_id": (
-                annual_demand[annual_demand.climate_zone == station]
-                .loc[
-                    annual_demand[annual_demand.climate_zone == station].index.repeat(
-                        annual_demand[annual_demand.climate_zone == station].SFH.astype(
-                            int
+
+        df_sfh = pd.DataFrame(
+            data={
+                "selected_idp_profiles": result_SFH[
+                    range(1, 366)
+                ].values.tolist(),
+                "zensus_population_id": (
+                    annual_demand[annual_demand.climate_zone == station]
+                    .loc[
+                        annual_demand[
+                            annual_demand.climate_zone == station
+                        ].index.repeat(
+                            annual_demand[
+                                annual_demand.climate_zone == station
+                            ].SFH.astype(int)
                         )
-                    )
-                ]
-                .index.values
-            ),
-            "building_id": (
-                db.select_dataframe(
-                    """
+                    ]
+                    .index.values
+                ),
+                "building_id": (
+                    db.select_dataframe(
+                        """
             
                 SELECT cell_id as zensus_population_id, building_id FROM 
                 (
@@ -886,39 +926,49 @@ def profile_selector():
                 ) a 
                 WHERE a.count = 1
                 """,
-                    index_col="zensus_population_id",
-                )
-                .loc[result_SFH["zensus_population_id"].unique(), "building_id"]
-                .values
-            )
-            })
+                        index_col="zensus_population_id",
+                    )
+                    .loc[
+                        result_SFH["zensus_population_id"].unique(),
+                        "building_id",
+                    ]
+                    .values
+                ),
+            }
+        )
         start_sfh = datetime.now()
         df_sfh.set_index(["zensus_population_id", "building_id"]).to_sql(
             "heat_timeseries_selected_profiles",
-                      schema = "demand", 
-                      con=db.engine(),
-                      if_exists = "append",
-                      chunksize=5000, 
-                      method='multi')
+            schema="demand",
+            con=db.engine(),
+            if_exists="append",
+            chunksize=5000,
+            method="multi",
+        )
         print(f"SFH insertation for zone {station}:")
         print(datetime.now() - start_sfh)
-        
-        df_mfh = pd.DataFrame(data={
-            "selected_idp_profiles" : result_MFH[range(1,366)].values.tolist(),
-            "zensus_population_id": (
-                annual_demand[annual_demand.climate_zone == station]
-                .loc[
-                    annual_demand[annual_demand.climate_zone == station].index.repeat(
-                        annual_demand[annual_demand.climate_zone == station].MFH.astype(
-                            int
+
+        df_mfh = pd.DataFrame(
+            data={
+                "selected_idp_profiles": result_MFH[
+                    range(1, 366)
+                ].values.tolist(),
+                "zensus_population_id": (
+                    annual_demand[annual_demand.climate_zone == station]
+                    .loc[
+                        annual_demand[
+                            annual_demand.climate_zone == station
+                        ].index.repeat(
+                            annual_demand[
+                                annual_demand.climate_zone == station
+                            ].MFH.astype(int)
                         )
-                    )
-                ]
-                .index.values
-            ),
-            "building_id": (
-                db.select_dataframe(
-                    """
+                    ]
+                    .index.values
+                ),
+                "building_id": (
+                    db.select_dataframe(
+                        """
             
                 SELECT cell_id as zensus_population_id, building_id FROM 
                 (
@@ -928,25 +978,29 @@ def profile_selector():
                 ) a 
                 WHERE a.count > 1
                 """,
-                    index_col="zensus_population_id",
-                )
-                .loc[result_MFH["zensus_population_id"].unique(), "building_id"]
-                .values
-            )
-            })
-        
+                        index_col="zensus_population_id",
+                    )
+                    .loc[
+                        result_MFH["zensus_population_id"].unique(),
+                        "building_id",
+                    ]
+                    .values
+                ),
+            }
+        )
+
         start_mfh = datetime.now()
         df_mfh.set_index(["zensus_population_id", "building_id"]).to_sql(
             "heat_timeseries_selected_profiles",
-                      schema = "demand", 
-                      con=db.engine(),
-                      if_exists = "append",
-                      chunksize=5000, 
-                      method='multi')
+            schema="demand",
+            con=db.engine(),
+            if_exists="append",
+            chunksize=5000,
+            method="multi",
+        )
         print(f"MFH insertation for zone {station}:")
         print(datetime.now() - start_mfh)
-        
-        
+
     print("Time for overall profile selection:")
     print(datetime.now() - start_profile_selector)
 
@@ -995,8 +1049,9 @@ def h_value():
 
     return h
 
+
 def create_timeseries_for_building(building_id, scenario):
-    """ Generates final heat demand timeseries for a specific building
+    """Generates final heat demand timeseries for a specific building
 
     Parameters
     ----------
@@ -1011,7 +1066,7 @@ def create_timeseries_for_building(building_id, scenario):
         Hourly heat demand timeseries in MW for the selected building
 
     """
-    
+
     return db.select_dataframe(
         f"""
         SELECT building_demand * UNNEST(idp) as demand 
@@ -1051,16 +1106,18 @@ def create_timeseries_for_building(building_id, scenario):
         ON selected_idp = b.index        
         WHERE a.building_id = {building_id}) as demand_profile
         ON demand_profile.day = daily_demand.day_of_year
-        """)
-    
+        """
+    )
+
+
 def create_district_heating_profile(scenario, area_id):
-    """ Create heat demand profile for district heating grid including demands of 
+    """Create heat demand profile for district heating grid including demands of
     households and service sector.
 
     Parameters
     ----------
     scenario : str
-        Name of the selected scenario. 
+        Name of the selected scenario.
     area_id : int
         Index of the selected district heating grid
 
@@ -1070,9 +1127,9 @@ def create_district_heating_profile(scenario, area_id):
         Hourly heat demand timeseries in MW for the selected district heating grid
 
     """
-    
+
     start_time = datetime.now()
-  
+
     df = db.select_dataframe(
         f"""
         
@@ -1140,37 +1197,41 @@ def create_district_heating_profile(scenario, area_id):
         
         GROUP BY hour_of_year
 
-        """)
-        
-    print(f"Time to create time series for district heating grid {scenario} {area_id}:")
+        """
+    )
+
+    print(
+        f"Time to create time series for district heating grid {scenario} {area_id}:"
+    )
     print(datetime.now() - start_time)
-    
+
     return df
 
-def create_district_heating_profile_python_like(
-        scenario="eGon2035"):
-    """ Creates profiles for all district heating grids in one scenario. 
-    Similar to create_district_heating_profile but faster and needs more RAM. 
-    The results are directly written into the database. 
+
+def create_district_heating_profile_python_like(scenario="eGon2035"):
+    """Creates profiles for all district heating grids in one scenario.
+    Similar to create_district_heating_profile but faster and needs more RAM.
+    The results are directly written into the database.
 
     Parameters
     ----------
     scenario : str
-        Name of the selected scenario. 
+        Name of the selected scenario.
 
     Returns
     -------
     None.
 
     """
-    
+
     start_time = datetime.now()
-    
+
     idp_df = db.select_dataframe(
         """
         SELECT index, idp FROM demand.heat_idp_pool
-        """, 
-        index_col= "index")
+        """,
+        index_col="index",
+    )
 
     annual_demand = db.select_dataframe(
         f"""
@@ -1196,16 +1257,17 @@ def create_district_heating_profile_python_like(
         WHERE a.scenario = '{scenario}'
         AND a.sector = 'residential'
         
-        """, 
-        index_col='zensus_population_id'
-        )
+        """,
+        index_col="zensus_population_id",
+    )
 
     daily_demand_shares = db.select_dataframe(
         """
         SELECT climate_zone, day_of_year as day, daily_demand_share FROM 
         demand.egon_daily_heat_demand_per_climate_zone        
-        """)
-        
+        """
+    )
+
     selected_profiles = db.select_dataframe(
         f"""
         SELECT a.zensus_population_id, building_id, c.climate_zone, 
@@ -1221,65 +1283,87 @@ def create_district_heating_profile_python_like(
         UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp 
 
         """
-        )
-
-    df = pd.merge(selected_profiles, daily_demand_shares, on=['day', 'climate_zone'])
-    
-    
-    CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
-        aggregation_level = 'district'
     )
-    
+
+    df = pd.merge(
+        selected_profiles, daily_demand_shares, on=["day", "climate_zone"]
+    )
+
+    CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
+        aggregation_level="district"
+    )
+
     # TODO: use session_scope!
     from sqlalchemy.orm import sessionmaker
+
     session = sessionmaker(bind=db.engine())()
     engine = db.engine()
     EgonTimeseriesDistrictHeating.__table__.drop(bind=engine, checkfirst=True)
-    EgonTimeseriesDistrictHeating.__table__.create(bind=engine, checkfirst=True)
-    print(f"Time to create overhead for time series for district heating scenario {scenario}")
+    EgonTimeseriesDistrictHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    print(
+        f"Time to create overhead for time series for district heating scenario {scenario}"
+    )
     print(datetime.now() - start_time)
-    
+
     start_time = datetime.now()
     for area in annual_demand.area_id.unique():
-        slice_df = pd.merge(df[df.area_id == area], idp_df, left_on='selected_idp', right_on='index')
-        
-        for hour in range(24):
-            slice_df[hour] = slice_df.idp.str[hour].mul(
-                slice_df.daily_demand_share).mul(
-                    annual_demand.loc[slice_df.zensus_population_id.values, 'per_building'].values)
+        slice_df = pd.merge(
+            df[df.area_id == area],
+            idp_df,
+            left_on="selected_idp",
+            right_on="index",
+        )
 
-        cts = CTS_demand_dist[(CTS_demand_dist.scenario==scenario)
-                              &(CTS_demand_dist.index==area)
-                              ].drop('scenario', axis='columns')
-        
-        hh = np.concatenate(slice_df.groupby('day').sum()[range(24)].values).ravel()
-        
+        for hour in range(24):
+            slice_df[hour] = (
+                slice_df.idp.str[hour]
+                .mul(slice_df.daily_demand_share)
+                .mul(
+                    annual_demand.loc[
+                        slice_df.zensus_population_id.values, "per_building"
+                    ].values
+                )
+            )
+
+        cts = CTS_demand_dist[
+            (CTS_demand_dist.scenario == scenario)
+            & (CTS_demand_dist.index == area)
+        ].drop("scenario", axis="columns")
+
+        hh = np.concatenate(
+            slice_df.groupby("day").sum()[range(24)].values
+        ).ravel()
+
         if not (slice_df[hour].empty or cts.empty):
             entry = EgonTimeseriesDistrictHeating(
-                area_id = int(area), 
-                scenario = scenario, 
-                dist_aggregated_mw = (hh+cts.values[0]).tolist()
-                )
+                area_id=int(area),
+                scenario=scenario,
+                dist_aggregated_mw=(hh + cts.values[0]).tolist(),
+            )
         elif not slice_df[hour].empty:
             entry = EgonTimeseriesDistrictHeating(
-                area_id = int(area), 
-                scenario = scenario, 
-                dist_aggregated_mw = (hh).tolist()
-                )
+                area_id=int(area),
+                scenario=scenario,
+                dist_aggregated_mw=(hh).tolist(),
+            )
         elif not cts.empty:
             entry = EgonTimeseriesDistrictHeating(
-                area_id = int(area), 
-                scenario = scenario, 
-                dist_aggregated_mw = (cts).tolist()
-                )           
-        
-        
+                area_id=int(area),
+                scenario=scenario,
+                dist_aggregated_mw=(cts).tolist(),
+            )
+
         session.add(entry)
     session.commit()
 
-    print(f"Time to create time series for district heating scenario {scenario}")
+    print(
+        f"Time to create time series for district heating scenario {scenario}"
+    )
     print(datetime.now() - start_time)
-    
+
+
 def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
     start_time = datetime.now()
     df = db.select_dataframe(
@@ -1346,24 +1430,25 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
         
         GROUP BY hour_of_year
 
-        """)
-        
-    
+        """
+    )
+
     print(f"Time to create time series for mv grid {scenario} {mv_grid_id}:")
     print(datetime.now() - start_time)
-    
-    return df 
 
-def create_individual_heating_profile_python_like(
-        scenario="eGon2035"):
-    
+    return df
+
+
+def create_individual_heating_profile_python_like(scenario="eGon2035"):
+
     start_time = datetime.now()
-    
+
     idp_df = db.select_dataframe(
         f"""
         SELECT index, idp FROM demand.heat_idp_pool
-        """, 
-        index_col= "index")
+        """,
+        index_col="index",
+    )
 
     annual_demand = db.select_dataframe(
         f"""
@@ -1393,38 +1478,47 @@ def create_individual_heating_profile_python_like(
             WHERE scenario = '{scenario}'
         )
         
-        """, 
-        index_col='zensus_population_id'
-        )
+        """,
+        index_col="zensus_population_id",
+    )
 
     daily_demand_shares = db.select_dataframe(
         f"""
         SELECT climate_zone, day_of_year as day, daily_demand_share FROM 
         demand.egon_daily_heat_demand_per_climate_zone        
-        """)
-        
-    CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
-        aggregation_level = 'district'
+        """
     )
-        
+
+    CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
+        aggregation_level="district"
+    )
+
     class EgonEtragoTimeseriesIndividualHeating(Base):
         __tablename__ = "egon_etrago_timeseries_individual_heating_new"
-        __table_args__ = {"schema": "demand", 'extend_existing':True}
+        __table_args__ = {"schema": "demand", "extend_existing": True}
         bus_id = Column(Integer, primary_key=True)
         scenario = Column(Text, primary_key=True)
         dist_aggregated_mw = Column(ARRAY(Float(53)))
+
     # TODO: use session_scope!
     from sqlalchemy.orm import sessionmaker
+
     session = sessionmaker(bind=db.engine())()
     engine = db.engine()
-    EgonEtragoTimeseriesIndividualHeating.__table__.drop(bind=engine, checkfirst=True)
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(bind=engine, checkfirst=True)
-    print(f"Time to create overhead for time series for district heating scenario {scenario}")
+    EgonEtragoTimeseriesIndividualHeating.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonEtragoTimeseriesIndividualHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    print(
+        f"Time to create overhead for time series for district heating scenario {scenario}"
+    )
     print(datetime.now() - start_time)
-    
+
     start_time = datetime.now()
     for grid in annual_demand.bus_id.unique():
-    
+
         selected_profiles = db.select_dataframe(
             f"""
             SELECT a.zensus_population_id, building_id, c.climate_zone, 
@@ -1447,147 +1541,202 @@ def create_individual_heating_profile_python_like(
             )
     
             """
-            )
-    
-        df = pd.merge(selected_profiles, daily_demand_shares, on=['day', 'climate_zone'])
-    
-    
-        slice_df = pd.merge(df, idp_df, left_on='selected_idp', right_on='index')
-        
-        for hour in range(24):
-            slice_df[hour] = slice_df.idp.str[hour].mul(
-                slice_df.daily_demand_share).mul(
-                    annual_demand.loc[slice_df.zensus_population_id.values, 'per_building'].values)
+        )
 
-        cts = CTS_demand_grid[(CTS_demand_grid.scenario==scenario)
-                              &(CTS_demand_grid.index==grid)
-                              ].drop('scenario', axis='columns')
-        
-        hh = np.concatenate(slice_df.groupby('day').sum()[range(24)].values).ravel()
-        
+        df = pd.merge(
+            selected_profiles, daily_demand_shares, on=["day", "climate_zone"]
+        )
+
+        slice_df = pd.merge(
+            df, idp_df, left_on="selected_idp", right_on="index"
+        )
+
+        for hour in range(24):
+            slice_df[hour] = (
+                slice_df.idp.str[hour]
+                .mul(slice_df.daily_demand_share)
+                .mul(
+                    annual_demand.loc[
+                        slice_df.zensus_population_id.values, "per_building"
+                    ].values
+                )
+            )
+
+        cts = CTS_demand_grid[
+            (CTS_demand_grid.scenario == scenario)
+            & (CTS_demand_grid.index == grid)
+        ].drop("scenario", axis="columns")
+
+        hh = np.concatenate(
+            slice_df.groupby("day").sum()[range(24)].values
+        ).ravel()
+
         if not (slice_df[hour].empty or cts.empty):
             entry = EgonEtragoTimeseriesIndividualHeating(
-                bus_id = int(grid), 
-                scenario = scenario, 
-                dist_aggregated_mw = (hh+cts.values[0]).tolist()
-                )
+                bus_id=int(grid),
+                scenario=scenario,
+                dist_aggregated_mw=(hh + cts.values[0]).tolist(),
+            )
         elif not slice_df[hour].empty:
             entry = EgonEtragoTimeseriesIndividualHeating(
-                bus_id = int(grid), 
-                scenario = scenario, 
-                dist_aggregated_mw = (hh).tolist()
-                )
+                bus_id=int(grid),
+                scenario=scenario,
+                dist_aggregated_mw=(hh).tolist(),
+            )
         elif not cts.empty:
             entry = EgonEtragoTimeseriesIndividualHeating(
-                bus_id = int(grid), 
-                scenario = scenario, 
-                dist_aggregated_mw = (cts).tolist()
-                )           
-        
-        
+                bus_id=int(grid),
+                scenario=scenario,
+                dist_aggregated_mw=(cts).tolist(),
+            )
+
         session.add(entry)
     session.commit()
 
-    print(f"Time to create time series for district heating scenario {scenario}")
+    print(
+        f"Time to create time series for district heating scenario {scenario}"
+    )
     print(datetime.now() - start_time)
 
-def district_heating(method='python'):
-    
-    if method == 'python':
+
+def district_heating(method="python"):
+
+    if method == "python":
         create_district_heating_profile_python_like("eGon2035")
         create_district_heating_profile_python_like("eGon100RE")
-    
+
     else:
         engine = db.engine()
-        EgonTimeseriesDistrictHeating.__table__.drop(bind=engine, checkfirst=True)
-        EgonTimeseriesDistrictHeating.__table__.create(bind=engine, checkfirst=True)
-        
-        
-        CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
-            aggregation_level = 'district'
+        EgonTimeseriesDistrictHeating.__table__.drop(
+            bind=engine, checkfirst=True
         )
-        
+        EgonTimeseriesDistrictHeating.__table__.create(
+            bind=engine, checkfirst=True
+        )
+
+        CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
+            aggregation_level="district"
+        )
+
         ids = db.select_dataframe(
             """
             SELECT area_id, scenario
             FROM demand.egon_district_heating_areas
-            """)
-            
+            """
+        )
+
         df = pd.DataFrame(
-            columns = ["area_id", "scenario", "dist_aggregated_mw"])
-            
+            columns=["area_id", "scenario", "dist_aggregated_mw"]
+        )
+
         for index, row in ids.iterrows():
-            series = create_district_heating_profile(scenario=row.scenario, area_id=row.area_id)
-            
-            cts = CTS_demand_dist[(CTS_demand_dist.scenario==row.scenario)
-                                  & (CTS_demand_dist.index == row.area_id)].drop(
-                                      "scenario", axis="columns").transpose() 
-    
+            series = create_district_heating_profile(
+                scenario=row.scenario, area_id=row.area_id
+            )
+
+            cts = (
+                CTS_demand_dist[
+                    (CTS_demand_dist.scenario == row.scenario)
+                    & (CTS_demand_dist.index == row.area_id)
+                ]
+                .drop("scenario", axis="columns")
+                .transpose()
+            )
+
             if not cts.empty:
-                data = (cts[row.area_id] + series.demand_profile).values.tolist()
+                data = (
+                    cts[row.area_id] + series.demand_profile
+                ).values.tolist()
             else:
                 data = series.demand_profile.values.tolist()
-            
-                                      
-            df = df.append(pd.Series(data = {
-                "area_id":row.area_id,
-                "scenario":row.scenario,
-                "dist_aggregated_mw": data},
-                ), ignore_index=True)
-            
-        df.to_sql("egon_timeseries_district_heating",
-                schema="demand", 
-                con = db.engine(),
-                if_exists = "append",
-                index=False)
-    
-def individual_heating_per_mv_grid(method='python'):
-    
-    if method == 'python':
+
+            df = df.append(
+                pd.Series(
+                    data={
+                        "area_id": row.area_id,
+                        "scenario": row.scenario,
+                        "dist_aggregated_mw": data,
+                    },
+                ),
+                ignore_index=True,
+            )
+
+        df.to_sql(
+            "egon_timeseries_district_heating",
+            schema="demand",
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
+
+
+def individual_heating_per_mv_grid(method="python"):
+
+    if method == "python":
         create_individual_heating_profile_python_like("eGon2035")
         create_individual_heating_profile_python_like("eGon100RE")
-    
-    else:   
-        
+
+    else:
+
         engine = db.engine()
-        EgonEtragoTimeseriesIndividualHeating.__table__.drop(bind=engine, checkfirst=True)
-        EgonEtragoTimeseriesIndividualHeating.__table__.create(bind=engine, checkfirst=True)
-        
-        CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
-            aggregation_level = 'district'
+        EgonEtragoTimeseriesIndividualHeating.__table__.drop(
+            bind=engine, checkfirst=True
         )
-        df = pd.DataFrame(
-            columns = ["bus_id", "scenario", "dist_aggregated_mw"])
-        
+        EgonEtragoTimeseriesIndividualHeating.__table__.create(
+            bind=engine, checkfirst=True
+        )
+
+        CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
+            aggregation_level="district"
+        )
+        df = pd.DataFrame(columns=["bus_id", "scenario", "dist_aggregated_mw"])
+
         ids = db.select_dataframe(
             """
             SELECT bus_id
             FROM grid.egon_mv_grid_district
-            """)
-            
+            """
+        )
+
         for index, row in ids.iterrows():
-            
+
             for scenario in ["eGon2035", "eGon100RE"]:
-                series = create_individual_heat_per_mv_grid(scenario, row.bus_id)
-                cts = CTS_demand_grid[(CTS_demand_grid.scenario==scenario)
-                                      & (CTS_demand_grid.index == row.bus_id)].drop(
-                                          "scenario", axis="columns").transpose()
+                series = create_individual_heat_per_mv_grid(
+                    scenario, row.bus_id
+                )
+                cts = (
+                    CTS_demand_grid[
+                        (CTS_demand_grid.scenario == scenario)
+                        & (CTS_demand_grid.index == row.bus_id)
+                    ]
+                    .drop("scenario", axis="columns")
+                    .transpose()
+                )
                 if not cts.empty:
-                    data = (cts[row.bus_id] + series.demand_profile).values.tolist()
+                    data = (
+                        cts[row.bus_id] + series.demand_profile
+                    ).values.tolist()
                 else:
                     data = series.demand_profile.values.tolist()
-                        
-                df = df.append(pd.Series(data = {
-                    "bus_id":row.bus_id,
-                    "scenario":scenario,
-                    "dist_aggregated_mw": data},
-                    ), ignore_index=True)
-            
-        df.to_sql("egon_etrago_timeseries_individual_heating",
-                schema="demand", 
-                con = db.engine(),
-                if_exists = "append",
-                index=False)
+
+                df = df.append(
+                    pd.Series(
+                        data={
+                            "bus_id": row.bus_id,
+                            "scenario": scenario,
+                            "dist_aggregated_mw": data,
+                        },
+                    ),
+                    ignore_index=True,
+                )
+
+        df.to_sql(
+            "egon_etrago_timeseries_individual_heating",
+            schema="demand",
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
 
 
 def cts_demand_per_aggregation_level(aggregation_level, scenario):
@@ -1640,8 +1789,8 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         WHERE a.sector = 'service'
         AND a.scenario = '{scenario}'
         ORDER BY a.zensus_population_id
-        """)
-
+        """
+    )
 
     # demand_nuts = pd.merge(
     #     demand, nuts_zensus, how="left", on="zensus_population_id"
@@ -1697,8 +1846,9 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             SELECT area_id, zensus_population_id
             FROM demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
-            """)
-        
+            """
+        )
+
         # psycop_df_AF(
         #     "demand.egon_map_zensus_district_heating_areas"
         # )
@@ -1732,8 +1882,9 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             (SELECT zensus_population_id
              FROM demand.egon_map_zensus_district_heating_areas
              WHERE scenario = '{scenario}')
-            """)
-        
+            """
+        )
+
         # mv_grid.loc[
         #     mv_grid.index.difference(district_heating.index), :
         # ]
@@ -1825,13 +1976,14 @@ def CTS_demand_scale(aggregation_level):
         CTS_per_zensus = CTS_per_zensus.transpose()
 
         demand = db.select_dataframe(
-                f"""
+            f"""
                 SELECT demand, zensus_population_id
                 FROM demand.egon_peta_heat                
                 WHERE sector = 'service'
                 AND scenario = '{scenario}'
                 ORDER BY zensus_population_id
-                """)
+                """
+        )
 
         if aggregation_level == "district":
 
@@ -1840,8 +1992,9 @@ def CTS_demand_scale(aggregation_level):
                 SELECT area_id, zensus_population_id
                 FROM demand.egon_map_zensus_district_heating_areas
                 WHERE scenario = '{scenario}'
-                """)
-                
+                """
+            )
+
             CTS_demands_district = pd.merge(
                 demand,
                 district_heating,
@@ -1885,7 +2038,8 @@ def CTS_demand_scale(aggregation_level):
                 (SELECT zensus_population_id
                  FROM demand.egon_map_zensus_district_heating_areas
                  WHERE scenario = '{scenario}')
-                """)
+                """
+            )
 
             CTS_demands_grid = pd.merge(
                 demand,
@@ -2004,8 +2158,13 @@ class HeatTimeSeries(Dataset):
             name="HeatTimeSeries",
             version="0.0.7.dev",
             dependencies=dependencies,
-            tasks=({map_climate_zones_to_zensus, daily_demand_shares_per_climate_zone, 
-                   idp_df_generator},
-                   profile_selector, {district_heating, individual_heating_per_mv_grid}
-                   ),
+            tasks=(
+                {
+                    map_climate_zones_to_zensus,
+                    daily_demand_shares_per_climate_zone,
+                    idp_df_generator,
+                },
+                profile_selector,
+                {district_heating, individual_heating_per_mv_grid},
+            ),
         )
