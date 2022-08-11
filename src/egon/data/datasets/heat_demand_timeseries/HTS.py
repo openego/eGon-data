@@ -1,23 +1,20 @@
 from datetime import datetime
-import glob
 import os
 
-from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
+from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas.io.sql as sqlio
-from pathlib import Path
-import psycopg2
-import xarray as xr
 
-from egon.data import db, subprocess
+
+
+from egon.data import db
 import egon.data.datasets.era5 as era
 
 try:
-    from disaggregator import config, data, plot, spatial, temporal
+    from disaggregator import temporal
 except ImportError as e:
     pass
 
