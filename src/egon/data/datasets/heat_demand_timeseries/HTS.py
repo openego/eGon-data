@@ -1625,27 +1625,29 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
 
     """
 
-    nuts_zensus = psycop_gdf_AF(
-        "boundaries.egon_map_zensus_vg250", geom_column="zensus_geom"
-    )
-    nuts_zensus.drop("zensus_geom", axis=1, inplace=True)
+    # nuts_zensus = psycop_gdf_AF(
+    #     "boundaries.egon_map_zensus_vg250", geom_column="zensus_geom"
+    # )
+    # nuts_zensus.drop("zensus_geom", axis=1, inplace=True)
 
-    demand = psycop_df_AF("demand.egon_peta_heat")
-    demand = demand[
-        (demand["sector"] == "service") & (demand["scenario"] == scenario)
-    ]
-    demand.drop(
-        demand.columns.difference(["demand", "zensus_population_id"]),
-        axis=1,
-        inplace=True,
-    )
-    demand.sort_values("zensus_population_id", inplace=True)
+    demand_nuts = db.select_dataframe(
+        f"""
+        SELECT demand, a.zensus_population_id, b.vg250_nuts3
+        FROM demand.egon_peta_heat a 
+        JOIN boundaries.egon_map_zensus_vg250 b 
+        ON a.zensus_population_id = b.zensus_population_id
+        
+        WHERE a.sector = 'service'
+        AND a.scenario = '{scenario}'
+        ORDER BY a.zensus_population_id
+        """)
 
-    demand_nuts = pd.merge(
-        demand, nuts_zensus, how="left", on="zensus_population_id"
-    )
 
-    mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
+    # demand_nuts = pd.merge(
+    #     demand, nuts_zensus, how="left", on="zensus_population_id"
+    # )
+
+    # mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
 
     if os.path.isfile("CTS_heat_demand_profile_nuts3.csv"):
         df_CTS_gas_2011 = pd.read_csv(
@@ -1690,16 +1692,23 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     CTS_per_zensus = CTS_per_zensus.drop("vg250_nuts3", axis=1)
 
     if aggregation_level == "district":
-        district_heating = psycop_df_AF(
-            "demand.egon_map_zensus_district_heating_areas"
-        )
-        district_heating = district_heating[
-            district_heating.scenario == scenario
-        ]
+        district_heating = db.select_dataframe(
+            f"""
+            SELECT area_id, zensus_population_id
+            FROM demand.egon_map_zensus_district_heating_areas
+            WHERE scenario = '{scenario}'
+            """)
+        
+        # psycop_df_AF(
+        #     "demand.egon_map_zensus_district_heating_areas"
+        # )
+        # district_heating = district_heating[
+        #     district_heating.scenario == scenario
+        # ]
 
         CTS_per_district = pd.merge(
             CTS_per_zensus,
-            district_heating[["area_id", "zensus_population_id"]],
+            district_heating,
             on="zensus_population_id",
             how="inner",
         )
@@ -1712,17 +1721,27 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         CTS_per_district.columns.name = "area_id"
         CTS_per_district.reset_index(drop=True, inplace=True)
 
-        mv_grid = mv_grid.set_index("zensus_population_id")
+        # mv_grid = mv_grid.set_index("zensus_population_id")
         district_heating = district_heating.set_index("zensus_population_id")
 
-        mv_grid_ind = mv_grid.loc[
-            mv_grid.index.difference(district_heating.index), :
-        ]
-        mv_grid_ind = mv_grid_ind.reset_index()
+        mv_grid_ind = db.select_dataframe(
+            f"""
+            SELECT bus_id, zensus_population_id
+            FROM boundaries.egon_map_zensus_grid_districts
+            WHERE zensus_population_id NOT IN 
+            (SELECT zensus_population_id
+             FROM demand.egon_map_zensus_district_heating_areas
+             WHERE scenario = '{scenario}')
+            """)
+        
+        # mv_grid.loc[
+        #     mv_grid.index.difference(district_heating.index), :
+        # ]
+        # mv_grid_ind = mv_grid_ind.reset_index()
 
         CTS_per_grid = pd.merge(
             CTS_per_zensus,
-            mv_grid_ind[["bus_id", "zensus_population_id"]],
+            mv_grid_ind,
             on="zensus_population_id",
             how="inner",
         )
@@ -1805,26 +1824,27 @@ def CTS_demand_scale(aggregation_level):
         CTS_per_grid = CTS_per_grid.transpose()
         CTS_per_zensus = CTS_per_zensus.transpose()
 
-        demand = all_heat_demand[
-            (all_heat_demand["sector"] == "service")
-            & (all_heat_demand["scenario"] == scenario)
-        ]
-        demand.drop(
-            demand.columns.difference(["demand", "zensus_population_id"]),
-            axis=1,
-            inplace=True,
-        )
-        demand.sort_values("zensus_population_id", inplace=True)
+        demand = db.select_dataframe(
+                f"""
+                SELECT demand, zensus_population_id
+                FROM demand.egon_peta_heat                
+                WHERE sector = 'service'
+                AND scenario = '{scenario}'
+                ORDER BY zensus_population_id
+                """)
 
         if aggregation_level == "district":
 
-            district_heating = all_district_heating[
-                all_district_heating.scenario == scenario
-            ]
-
+            district_heating = db.select_dataframe(
+                f"""
+                SELECT area_id, zensus_population_id
+                FROM demand.egon_map_zensus_district_heating_areas
+                WHERE scenario = '{scenario}'
+                """)
+                
             CTS_demands_district = pd.merge(
                 demand,
-                district_heating[["zensus_population_id", "area_id"]],
+                district_heating,
                 on="zensus_population_id",
                 how="inner",
             )
@@ -1857,15 +1877,15 @@ def CTS_demand_scale(aggregation_level):
             CTS_district = CTS_district.append(CTS_per_district)
             CTS_district = CTS_district.sort_index()
 
-            mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
-            mv_grid = mv_grid.set_index("zensus_population_id")
-            district_heating = district_heating.set_index(
-                "zensus_population_id"
-            )
-            mv_grid_ind = mv_grid.loc[
-                mv_grid.index.difference(district_heating.index), :
-            ]
-            mv_grid_ind = mv_grid_ind.reset_index()
+            mv_grid_ind = db.select_dataframe(
+                f"""
+                SELECT bus_id, zensus_population_id
+                FROM boundaries.egon_map_zensus_grid_districts
+                WHERE zensus_population_id NOT IN 
+                (SELECT zensus_population_id
+                 FROM demand.egon_map_zensus_district_heating_areas
+                 WHERE scenario = '{scenario}')
+                """)
 
             CTS_demands_grid = pd.merge(
                 demand,
