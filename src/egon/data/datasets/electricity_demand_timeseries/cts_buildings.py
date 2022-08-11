@@ -30,9 +30,6 @@ import egon.data.config
 engine = db.engine()
 Base = declarative_base()
 
-data_config = egon.data.config.datasets()
-RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
-
 # import db tables
 saio.register_schema("openstreetmap", engine=engine)
 saio.register_schema("society", engine=engine)
@@ -392,41 +389,6 @@ def buildings_with_amenities():
     )
 
     return df_buildings_with_amenities, df_lost_cells
-
-
-# TODO Remove as depricated
-def write_synthetic_buildings_to_db(df_synthetic_buildings):
-    """"""
-    if "geom_point" not in df_synthetic_buildings.columns:
-        df_synthetic_buildings["geom_point"] = df_synthetic_buildings[
-            "geom_building"
-        ].centroid
-
-    df_synthetic_buildings = df_synthetic_buildings.rename(
-        columns={
-            "zensus_population_id": "cell_id",
-            "egon_building_id": "id",
-        }
-    )
-    # Only take existing columns
-    columns = [
-        column.key for column in OsmBuildingsSynthetic.__table__.columns
-    ]
-    df_synthetic_buildings = df_synthetic_buildings.loc[:, columns]
-
-    dtypes = {
-        i: OsmBuildingsSynthetic.__table__.columns[i].type
-        for i in OsmBuildingsSynthetic.__table__.columns.keys()
-    }
-
-    # Write new buildings incl coord into db
-    df_synthetic_buildings.to_postgis(
-        name=OsmBuildingsSynthetic.__tablename__,
-        con=engine,
-        if_exists="append",
-        schema=OsmBuildingsSynthetic.__table_args__["schema"],
-        dtype=dtypes,
-    )
 
 
 def buildings_without_amenities():
@@ -868,7 +830,6 @@ def cts_to_buildings():
     )
 
     # TODO write to DB and remove renaming
-    # write_synthetic_buildings_to_db(df_synthetic_buildings_with_amenities)
     write_table_to_postgis(
         df_synthetic_buildings_with_amenities.rename(
             columns={
@@ -914,7 +875,6 @@ def cts_to_buildings():
     )
 
     # TODO write to DB and remove renaming
-    # write_synthetic_buildings_to_db(df_synthetic_buildings_without_amenities)
     write_table_to_postgis(
         df_synthetic_buildings_without_amenities.rename(
             columns={
