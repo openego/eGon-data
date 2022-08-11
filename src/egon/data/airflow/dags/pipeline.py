@@ -575,20 +575,6 @@ with airflow.DAG(
         dependencies=[
             osm_buildings_streets,
             cts_electricity_demand_annual,
-            tasks[
-                "electricity_demand_timeseries"
-                ".hh_buildings"
-                ".map-houseprofiles-to-buildings"
-            ],
-            tasks[
-                "electricity_demand_timeseries"
-                ".hh_profiles"
-                ".houseprofiles-in-census-cells"
-            ],
-            tasks[
-                "electricity_demand_timeseries"
-                ".hh_buildings"
-                ".get-building-peak-loads"
-            ],
+            hh_demand_buildings_setup
         ]
     )

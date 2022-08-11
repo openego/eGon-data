@@ -958,7 +958,7 @@ def get_peak_load_cts_buildings():
     Get peak load of all CTS buildings for both scenarios and store in DB.
     """
 
-    # TODO Check units, maybe MwH?
+
     df_building_profiles = calc_building_profiles(scenario="eGon2035")
     df_peak_load_2035 = df_building_profiles.max(axis=0).rename("eGon2035")
     df_building_profiles = calc_building_profiles(scenario="eGon100RE")
@@ -974,7 +974,9 @@ def get_peak_load_cts_buildings():
         var_name="scenario",
         value_name="peak_load_in_w",
     )
-
+    # TODO Check units, maybe MwH?
+    # Convert unit to W
+    df_peak_load["peak_load_in_w"] = df_peak_load["peak_load_in_w"] * 1e6
     # Delete rows with cts demand
     with db.session_scope() as session:
         session.query(BuildingPeakLoads).filter(
