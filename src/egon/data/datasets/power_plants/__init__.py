@@ -58,8 +58,11 @@ class PowerPlants(Dataset):
                 {
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
-                    pv_rooftop_per_mv_grid,
-                    (geocode_mastr_data, pv_rooftop_to_buildings),
+                    (
+                        pv_rooftop_per_mv_grid,
+                        geocode_mastr_data,
+                        pv_rooftop_to_buildings,
+                    ),
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,
@@ -88,6 +91,7 @@ def create_tables():
 
 def scale_prox2now(df, target, level="federal_state"):
     """Scale installed capacities linear to status quo power plants
+
     Parameters
     ----------
     df : pandas.DataFrame
@@ -96,10 +100,12 @@ def scale_prox2now(df, target, level="federal_state"):
         Target values for future sceanrio
     level : str, optional
         Scale per 'federal_state' or 'country'. The default is 'federal_state'.
+
     Returns
     -------
     df : pandas.DataFrame
         Future power plants
+
     """
 
     if level == "federal_state":
@@ -120,16 +126,19 @@ def scale_prox2now(df, target, level="federal_state"):
 
 def select_target(carrier, scenario):
     """Select installed capacity per scenario and carrier
+
     Parameters
     ----------
     carrier : str
         Name of energy carrier
     scenario : str
         Name of scenario
+
     Returns
     -------
     pandas.Series
         Target values for carrier and scenario
+
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
@@ -154,6 +163,7 @@ def select_target(carrier, scenario):
 
 def filter_mastr_geometry(mastr, federal_state=None):
     """Filter data from MaStR by geometry
+
     Parameters
     ----------
     mastr : pandas.DataFrame
@@ -161,10 +171,12 @@ def filter_mastr_geometry(mastr, federal_state=None):
     federal_state : str or None
         Name of federal state whoes power plants are returned.
         If None, data for Germany is returned
+
     Returns
     -------
     mastr_loc : pandas.DataFrame
         Power plants listed in MaStR with geometry inside German boundaries
+
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
@@ -208,13 +220,16 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
 def insert_biomass_plants(scenario):
     """Insert biomass power plants of future scenario
+
     Parameters
     ----------
     scenario : str
         Name of scenario.
+
     Returns
     -------
     None.
+
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
@@ -277,17 +292,21 @@ def insert_biomass_plants(scenario):
 
 def insert_hydro_plants(scenario):
     """Insert hydro power plants of future scenario.
+
     Hydro power plants are diveded into run_of_river and reservoir plants
     according to Marktstammdatenregister.
     Additional hydro technologies (e.g. turbines inside drinking water
     systems) are not considered.
+
     Parameters
     ----------
     scenario : str
         Name of scenario.
+
     Returns
     -------
     None.
+
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
@@ -360,17 +379,21 @@ def insert_hydro_plants(scenario):
 
 def assign_voltage_level(mastr_loc, cfg):
     """Assigns voltage level to power plants.
+
     If location data inluding voltage level is available from
     Marktstammdatenregister, this is used. Otherwise the voltage level is
     assigned according to the electrical capacity.
+
     Parameters
     ----------
     mastr_loc : pandas.DataFrame
         Power plants listed in MaStR with geometry inside German boundaries
+
     Returns
     -------
     pandas.DataFrame
         Power plants including voltage_level
+
     """
     mastr_loc["Spannungsebene"] = np.nan
     mastr_loc["voltage_level"] = np.nan
@@ -451,14 +474,17 @@ def assign_voltage_level(mastr_loc, cfg):
 
 def assign_bus_id(power_plants, cfg):
     """Assigns bus_ids to power plants according to location and voltage level
+
     Parameters
     ----------
     power_plants : pandas.DataFrame
         Power plants including voltage level
+
     Returns
     -------
     power_plants : pandas.DataFrame
         Power plants including voltage level and bus_id
+
     """
 
     mv_grid_districts = db.select_geodataframe(
@@ -513,9 +539,11 @@ def assign_bus_id(power_plants, cfg):
 
 def insert_hydro_biomass():
     """Insert hydro and biomass power plants in database
+
     Returns
     -------
     None.
+
     """
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(

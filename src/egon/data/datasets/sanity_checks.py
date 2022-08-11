@@ -3,9 +3,21 @@ This module does sanity checks for both the eGon2035 and the eGon100RE scenario 
 error is given to showcase difference in output and input values. Please note that there are missing input technologies in the supply tables.
  Authors: @ALonso, @dana
 """
+from math import isclose
+from pathlib import Path
+
+from loguru import logger
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    municipality_data,
+    osm_buildings,
+    scenario_data,
+)
+import egon.data
 
 
 class SanityChecks(Dataset):
@@ -17,6 +29,7 @@ class SanityChecks(Dataset):
             tasks=(
                 sanitycheck_eGon2035_electricity,
                 sanitycheck_eGon2035_heat,
+                sanitycheck_pv_rooftop_buildings,
             ),
         )
 
@@ -469,3 +482,71 @@ def sanitycheck_eGon2035_heat():
         * 100
     )
     print(f"'geothermal': {e_geo_thermal} %")
+
+
+def sanitycheck_pv_rooftop_buildings():
+    def egon_power_plants_pv_roof_building():
+        sql = """
+        SELECT *
+        FROM supply.egon_power_plants_pv_roof_building
+        """
+
+        return db.select_dataframe(sql, index_col="index")
+
+    pv_roof_df = egon_power_plants_pv_roof_building()
+
+    municipalities_gdf = municipality_data()
+
+    osm_buildings_gdf = osm_buildings(municipalities_gdf.crs)
+
+    merge_df = pv_roof_df.merge(
+        osm_buildings_gdf[["area"]],
+        how="left",
+        left_on="building_id",
+        right_index=True,
+    )
+
+    assert len(merge_df.loc[merge_df.area.isna()]) == 0
+
+    scenarios = ["status_quo", "eGon2035"]
+
+    base_path = Path(egon.data.__path__[0]).resolve()
+
+    res_dir = base_path / "sanity_checks"
+
+    res_dir.mkdir(parents=True, exist_ok=True)
+
+    for scenario in scenarios:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
+
+        scenario_df = merge_df.loc[merge_df.scenario == scenario]
+
+        logger.info(
+            scenario + " Capacity:\n" + str(scenario_df.capacity.describe())
+        )
+
+        small_gens_df = scenario_df.loc[scenario_df.capacity < 100]
+
+        sns.histplot(data=small_gens_df, x="capacity", ax=ax1).set_title(
+            scenario
+        )
+
+        sns.scatterplot(
+            data=small_gens_df, x="capacity", y="area", ax=ax2
+        ).set_title(scenario)
+
+        plt.tight_layout()
+
+        plt.savefig(
+            res_dir / f"{scenario}_pv_rooftop_distribution.png",
+            bbox_inches="tight",
+        )
+
+    scenarios = ["eGon2035"]  # "eGon100RE"]
+
+    for scenario in scenarios:
+        assert isclose(
+            scenario_data(scenario=scenario).capacity.sum() * 1000,
+            merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+            rel_tol=1e-02,
+        )

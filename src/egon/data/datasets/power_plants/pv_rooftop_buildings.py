@@ -199,6 +199,7 @@ COLS_TO_EXPORT = [
 ]
 
 INCLUDE_SYNTHETIC_BUILDINGS = False
+ONLY_BUILDINGS_WITH_DEMAND = True
 
 
 def timer_func(func):
@@ -955,6 +956,15 @@ def drop_buildings_outside_muns(
     return gdf
 
 
+def egon_building_peak_loads():
+    sql = f"""
+    SELECT building_id
+    FROM demand.egon_building_peak_loads
+    """
+
+    return db.select_dataframe(sql).building_id.astype(int).sort_values()
+
+
 @timer_func
 def load_building_data():
     """
@@ -996,6 +1006,24 @@ def load_building_data():
         buildings_gdf = osm_buildings_gdf.rename(
             columns={"area": "building_area"}
         )
+
+    if ONLY_BUILDINGS_WITH_DEMAND:
+        building_ids = egon_building_peak_loads()
+
+        init_len = len(building_ids)
+
+        building_ids = [
+            b_id for b_id in building_ids if b_id in buildings_gdf.index
+        ]
+
+        end_len = len(building_ids)
+
+        logger.debug(
+            f"{end_len/init_len * 100: g} % ({end_len} / {init_len}) of IDs within OSM"
+            f" buildings."
+        )
+
+        buildings_gdf = buildings_gdf.loc[building_ids]
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
@@ -1559,9 +1587,10 @@ def buildings_area_per_overlay_id(
 
 
 def cap_per_bus_id(
-    overlay_gdf: gpd.GeoDataFrame,
-    scenario_df: pd.DataFrame,
-    conversion: int | float = 10**3,
+    scenario: str,
+    # overlay_gdf: gpd.GeoDataFrame,
+    # scenario_df: pd.DataFrame,
+    # conversion: int | float = 10**3,
 ) -> pd.DataFrame:
     """
     Calculate total pv rooftop capacity per grid district dependent on
@@ -1580,20 +1609,31 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    overlay_gdf = overlay_gdf.assign(capacity=np.nan)
+    targets = config.datasets()["solar_rooftop"]["targets"]
 
-    for cap, nuts in scenario_df[["capacity", "nuts"]].itertuples(index=False):
-        nuts_gdf = overlay_gdf.loc[overlay_gdf.nuts == nuts]
+    sql = f"""
+    SELECT bus as bus_id, p_nom as capacity
+    FROM {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE carrier = 'solar_rooftop'
+    AND scn_name = '{scenario}'
+    """
 
-        capacity = nuts_gdf.building_area.multiply(
-            cap / nuts_gdf.building_area.sum()
-        )
+    return db.select_dataframe(sql, index_col="bus_id")
 
-        overlay_gdf.loc[nuts_gdf.index] = overlay_gdf.loc[
-            nuts_gdf.index
-        ].assign(capacity=capacity.multiply(conversion).to_numpy())
-
-    return overlay_gdf[["bus_id", "capacity"]].groupby("bus_id").sum()
+    # overlay_gdf = overlay_gdf.assign(capacity=np.nan)
+    #
+    # for cap, nuts in scenario_df[["capacity", "nuts"]].itertuples(index=False):
+    #     nuts_gdf = overlay_gdf.loc[overlay_gdf.nuts == nuts]
+    #
+    #     capacity = nuts_gdf.building_area.multiply(
+    #         cap / nuts_gdf.building_area.sum()
+    #     )
+    #
+    #     overlay_gdf.loc[nuts_gdf.index] = overlay_gdf.loc[
+    #         nuts_gdf.index
+    #     ].assign(capacity=capacity.multiply(conversion).to_numpy())
+    #
+    # return overlay_gdf[["bus_id", "capacity"]].groupby("bus_id").sum()
 
 
 def determine_end_of_life_gens(
@@ -2109,9 +2149,11 @@ def desaggregate_pv_in_mv_grid(
 
         samples_gdf = samples_gdf.assign(
             load_factor=load_factors,
-            capacity=samples_gdf.building_area
-            * load_factors
-            * kwargs["pv_cap_per_sq_m"],
+            capacity=(
+                samples_gdf.building_area
+                * load_factors
+                * kwargs["pv_cap_per_sq_m"]
+            ).clip(lower=0.4),
         )
 
         missing_factor = pv_cap_range / samples_gdf.capacity.sum()
@@ -2205,17 +2247,21 @@ def desaggregate_pv(
 
             continue
 
-        pv_target = cap_df.at[
-            bus_id,
-            "capacity",
-        ]
+        pv_target = (
+            cap_df.at[
+                bus_id,
+                "capacity",
+            ]
+            * 1000
+        )
 
         pv_missing = pv_target - pv_installed
 
         if pv_missing <= 0:
             logger.info(
-                f"In grid {bus_id} there is more PV installed in status Quo than"
-                " allocated within the scenario. No new generators are added."
+                f"In grid {bus_id} there is more PV installed ({pv_installed: g}) in "
+                f"status Quo than allocated within the scenario ({pv_target: g}). No "
+                f"new generators are added."
             )
 
             continue
@@ -2402,7 +2448,7 @@ def allocate_scenarios(
         geopandas.GeoDataFrame
             GeoDataFrame containing OSM buildings matched with pv generators.
         pandas.DataFrame
-            DataFrame containingpv rooftop capacity per grid id.
+            DataFrame containing pv rooftop capacity per grid id.
     """
     grid_districts_gdf = grid_districts(EPSG)
 
@@ -2420,15 +2466,15 @@ def allocate_scenarios(
 
     valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
 
-    buildings_area_per_overlay_gdf = buildings_area_per_overlay_id(
-        valid_buildings_gdf,
-        grid_federal_state_gdf,
-    )
+    # buildings_area_per_overlay_gdf = buildings_area_per_overlay_id(
+    #     valid_buildings_gdf,
+    #     grid_federal_state_gdf,
+    # )
 
-    cap_per_bus_id_df = cap_per_bus_id(
-        buildings_area_per_overlay_gdf,
-        scenario_data(CARRIER, scenario),
-    )
+    cap_per_bus_id_df = cap_per_bus_id(scenario)
+    #     buildings_area_per_overlay_gdf,
+    #     scenario_data(CARRIER, scenario),
+    # )
 
     last_scenario_gdf = determine_end_of_life_gens(
         last_scenario_gdf,

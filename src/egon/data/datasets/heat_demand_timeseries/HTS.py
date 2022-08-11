@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 import glob
 import os
 
@@ -9,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas.io.sql as sqlio
-from pathlib import Path
 import psycopg2
 import xarray as xr
 
@@ -671,14 +671,14 @@ def annual_demand_generator():
 
     house_count_MFH = db.select_dataframe(
         """
-        
-        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
         FROM demand.egon_household_electricity_profile_of_buildings
         GROUP BY (cell_id, building_id)
         ) a
-        
+
         WHERE a.count >1
         GROUP BY cell_id
         """,
@@ -687,13 +687,13 @@ def annual_demand_generator():
 
     house_count_SFH = db.select_dataframe(
         """
-        
-        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
         FROM demand.egon_household_electricity_profile_of_buildings
         GROUP BY (cell_id, building_id)
-        ) a 
+        ) a
         WHERE a.count = 1
         GROUP BY cell_id
         """,
@@ -810,13 +810,13 @@ def profile_selector():
         result_SFH["building_id"] = (
             db.select_dataframe(
                 """
-        
-            SELECT cell_id as zensus_population_id, building_id FROM 
+
+            SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
             FROM demand.egon_household_electricity_profile_of_buildings
             GROUP BY (cell_id, building_id)
-            ) a 
+            ) a
             WHERE a.count = 1
             """,
                 index_col="zensus_population_id",
@@ -840,13 +840,13 @@ def profile_selector():
         result_MFH["building_id"] = (
             db.select_dataframe(
                 """
-        
-            SELECT cell_id as zensus_population_id, building_id FROM 
+
+            SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
             FROM demand.egon_household_electricity_profile_of_buildings
             GROUP BY (cell_id, building_id)
-            ) a 
+            ) a
             WHERE a.count > 1
             """,
                 index_col="zensus_population_id",
@@ -1173,7 +1173,7 @@ def residential_demand_scale(aggregation_level):
 
         district_heating = db.select_dataframe(
             f"""
-            SELECT * FROM 
+            SELECT * FROM
             demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
             """
@@ -1866,7 +1866,6 @@ def demand_profile_generator(aggregation_level="district"):
         residential_demand_dist,
         CTS_demand_dist,
     )
-
 
     if aggregation_level == "district":
         total_demands_dist = pd.concat(
