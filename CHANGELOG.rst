@@ -394,6 +394,8 @@ Changed
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Insert stubtations into transfer buses table
+  `#856 <https://github.com/openego/eGon-data/issues/856>`_
 
 Bug Fixes
 ---------
