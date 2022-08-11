@@ -640,52 +640,6 @@ def idp_df_generator():
     return idp_df
 
 
-def psycop_df_AF(table_name):
-    """
-    Description: Read tables from database into pandas dataframe
-    Parameters
-    ----------
-    table_name : str
-        Name of the database table
-
-    Returns
-    -------
-    data : pandas.DataFrame
-        Imported database tables
-
-
-    """
-    conn = db.engine()
-    sql = "SELECT * FROM {}".format(table_name)
-    data = sqlio.read_sql_query(sql, conn)
-    conn = None
-    return data
-
-
-def psycop_gdf_AF(table_name, geom_column="geom"):
-    """
-
-    Description: Read tables from database into geopandas dataframe
-    Parameters
-    ----------
-    table_name : str
-        Name of the database table
-    geom_column : str, optional
-        Column name with geometry. The default is 'geom'.
-
-    Returns
-    -------
-    data : Tandas.DataFrame
-        Imported database tables
-
-    """
-    conn = db.engine()
-    sql = "SELECT * FROM {}".format(table_name)
-    data = gpd.read_postgis(sql, conn, geom_column)
-    conn = None
-    return data
-
-
 def annual_demand_generator():
     """
 
@@ -1767,11 +1721,6 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
 
     """
 
-    # nuts_zensus = psycop_gdf_AF(
-    #     "boundaries.egon_map_zensus_vg250", geom_column="zensus_geom"
-    # )
-    # nuts_zensus.drop("zensus_geom", axis=1, inplace=True)
-
     demand_nuts = db.select_dataframe(
         f"""
         SELECT demand, a.zensus_population_id, b.vg250_nuts3
@@ -1784,12 +1733,6 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         ORDER BY a.zensus_population_id
         """
     )
-
-    # demand_nuts = pd.merge(
-    #     demand, nuts_zensus, how="left", on="zensus_population_id"
-    # )
-
-    # mv_grid = psycop_df_AF("boundaries.egon_map_zensus_grid_districts")
 
     if os.path.isfile("CTS_heat_demand_profile_nuts3.csv"):
         df_CTS_gas_2011 = pd.read_csv(
@@ -1841,13 +1784,6 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             WHERE scenario = '{scenario}'
             """
         )
-
-        # psycop_df_AF(
-        #     "demand.egon_map_zensus_district_heating_areas"
-        # )
-        # district_heating = district_heating[
-        #     district_heating.scenario == scenario
-        # ]
 
         CTS_per_district = pd.merge(
             CTS_per_zensus,
@@ -1947,12 +1883,6 @@ def CTS_demand_scale(aggregation_level):
 
     """
     scenarios = ["eGon2035", "eGon100RE"]
-
-    all_heat_demand = psycop_df_AF("demand.egon_peta_heat")
-
-    all_district_heating = psycop_df_AF(
-        "demand.egon_map_zensus_district_heating_areas"
-    )
 
     CTS_district = pd.DataFrame()
     CTS_grid = pd.DataFrame()
