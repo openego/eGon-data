@@ -2247,10 +2247,13 @@ def desaggregate_pv(
 
             continue
 
-        pv_target = cap_df.at[
-            bus_id,
-            "capacity",
-        ] * 1000
+        pv_target = (
+            cap_df.at[
+                bus_id,
+                "capacity",
+            ]
+            * 1000
+        )
 
         pv_missing = pv_target - pv_installed
 
@@ -2618,13 +2621,9 @@ def pv_rooftop_to_buildings():
 
     buildings_gdf = load_building_data()
 
-    logger.debug(f"1: {buildings_gdf.head()}")
-
     desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
         mastr_gdf, buildings_gdf
     )
-
-    logger.debug(f"2: {desagg_buildings_gdf.head()}")
 
     all_buildings_gdf = (
         desagg_mastr_gdf.assign(scenario="status_quo")
