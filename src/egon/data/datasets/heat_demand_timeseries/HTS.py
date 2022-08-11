@@ -1493,13 +1493,6 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
         aggregation_level="district"
     )
 
-    class EgonEtragoTimeseriesIndividualHeating(Base):
-        __tablename__ = "egon_etrago_timeseries_individual_heating_new"
-        __table_args__ = {"schema": "demand", "extend_existing": True}
-        bus_id = Column(Integer, primary_key=True)
-        scenario = Column(Text, primary_key=True)
-        dist_aggregated_mw = Column(ARRAY(Float(53)))
-
     # TODO: use session_scope!
     from sqlalchemy.orm import sessionmaker
 
