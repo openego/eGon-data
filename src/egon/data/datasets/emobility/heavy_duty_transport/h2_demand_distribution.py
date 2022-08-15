@@ -13,7 +13,7 @@ from egon.data.datasets.emobility.heavy_duty_transport.data_io import get_data
 def run_egon_truck(
     scenario: str = "eGon2035",
 ):
-    germany_gdf, bast_gdf, grid_districts_gdf = get_data()
+    germany_gdf, bast_gdf, nuts3_gdf = get_data()
 
     bast_gdf_within = bast_gdf.dropna().loc[
         bast_gdf.within(germany_gdf.geometry.iat[0])
@@ -21,25 +21,27 @@ def run_egon_truck(
 
     voronoi_gdf = voronoi(bast_gdf_within, germany_gdf)
 
-    grid_districts_gdf = geo_intersect(voronoi_gdf, grid_districts_gdf)
+    nuts3_gdf = geo_intersect(voronoi_gdf, nuts3_gdf)
 
-    total_hydrogen_consumption = calculate_total_hydrogen_consumption(
-        scenario=scenario
-    )
-
-    grid_districts = grid_districts_gdf.assign(
+    nuts3_gdf = nuts3_gdf.assign(
         normalized_truck_traffic=(
-            grid_districts_gdf.truck_traffic
-            / grid_districts_gdf.truck_traffic.sum()
+            nuts3_gdf.truck_traffic / nuts3_gdf.truck_traffic.sum()
         )
     )
 
-    grid_districts = grid_districts.assign(
-        hydrogen_consumption=(
-            grid_districts.normalized_truck_traffic
-            * total_hydrogen_consumption
+    scenarios = DATASET_CFG["constants"]["scenarios"]
+
+    for scenario in scenarios:
+        total_hydrogen_consumption = calculate_total_hydrogen_consumption(
+            scenario=scenario
         )
-    )
+
+        nuts3_gdf = nuts3_gdf.assign(
+            hydrogen_consumption=(
+                nuts3_gdf.normalized_truck_traffic * total_hydrogen_consumption
+            ),
+            scenario=scenarios,
+        )
 
 
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
@@ -70,7 +72,7 @@ def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
 
 def geo_intersect(
     voronoi_gdf: gpd.GeoDataFrame,
-    grid_districts: gpd.GeoDataFrame,
+    nuts3_gdf: gpd.GeoDataFrame,
     mode: str = "intersection",
 ):
     """Calculate Intersections between two GeoDataFrames and distribute truck traffic"""
@@ -82,7 +84,7 @@ def geo_intersect(
 
     # Find Intersections between both GeoDataFrames
     intersection_gdf = gpd.overlay(
-        voronoi_gdf, grid_districts[["subst_id", "geometry"]], how=mode
+        voronoi_gdf, nuts3_gdf[["subst_id", "geometry"]], how=mode
     )
 
     # Calc Area of Intersections
@@ -91,9 +93,9 @@ def geo_intersect(
     )  # km²
 
     # Initialize results column
-    grid_districts = grid_districts.assign(truck_traffic=0)
+    nuts3_gdf = nuts3_gdf.assign(truck_traffic=0)
 
-    grid_districts.index = grid_districts.subst_id.tolist()
+    nuts3_gdf.index = nuts3_gdf.subst_id.tolist()
 
     for voronoi_id in intersection_gdf.voronoi_id.unique():
         voronoi_id_intersection_gdf = intersection_gdf.loc[
@@ -107,13 +109,11 @@ def geo_intersect(
         for idx, row in voronoi_id_intersection_gdf.iterrows():
             traffic_share = truck_traffic * row["surface_area"] / total_area
 
-            grid_districts.at[
-                row["subst_id"], "truck_traffic"
-            ] += traffic_share
+            nuts3_gdf.at[row["subst_id"], "truck_traffic"] += traffic_share
 
     logger.info("Done.")
 
-    return grid_districts
+    return nuts3_gdf
 
 
 def voronoi(

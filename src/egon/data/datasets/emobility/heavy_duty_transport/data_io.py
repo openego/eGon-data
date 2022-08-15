@@ -13,7 +13,7 @@ def get_data():
     """
     Load all necessary data.
     """
-    return germany_gdf(), bast_gdf(), grid_districts_gdf()
+    return germany_gdf(), bast_gdf(), nuts3_gdf()
 
 
 def germany_gdf():
@@ -66,14 +66,20 @@ def bast_gdf():
     return gdf
 
 
-def grid_districts_gdf():
+def nuts3_gdf():
+    """Read in NUTS3 geo shapes."""
+    srid = DATASET_CFG["tables"]["srid"]
     sql = """
-        SELECT bus_id, geom FROM grid.egon_mv_grid_district
-        ORDER BY bus_id
+        SELECT id, geometry FROM boundaries.vg250_gem
+        ORDER BY id
         """
 
-    gdf = select_geodataframe(sql, geom_col="geom", index_col="bus_id")
+    gdf = select_geodataframe(
+        sql, geom_col="geometry", index_col="bus_id"
+    ).to_crs(epsg=srid)
 
-    logger.debug("Read in MV grid districts.")
+    gdf["area"] = gdf.geometry.area
+
+    logger.debug("Read in NUTS 3 districts.")
 
     return gdf
