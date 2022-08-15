@@ -496,13 +496,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     from sqlalchemy.orm import sessionmaker
 
     session = sessionmaker(bind=db.engine())()
-    engine = db.engine()
-    EgonEtragoTimeseriesIndividualHeating.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
+
     print(
         f"Time to create overhead for time series for district heating scenario {scenario}"
     )
@@ -665,6 +659,14 @@ def district_heating(method="python"):
 def individual_heating_per_mv_grid(method="python"):
 
     if method == "python":
+        engine = db.engine()
+        EgonEtragoTimeseriesIndividualHeating.__table__.drop(
+            bind=engine, checkfirst=True
+        )
+        EgonEtragoTimeseriesIndividualHeating.__table__.create(
+            bind=engine, checkfirst=True
+        )
+        
         create_individual_heating_profile_python_like("eGon2035")
         create_individual_heating_profile_python_like("eGon100RE")
 
