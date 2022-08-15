@@ -308,7 +308,7 @@ def idp_pool_generator():
     ]
 
 
-def idp_df_generator():
+def create():
     """
     Description: Create dataframe with all temprature classes, 24hr. profiles and household stock
 
@@ -362,7 +362,7 @@ def idp_df_generator():
     return idp_df
 
 
-def create():
+def annual_demand_generator():
     """
 
     Description: Create dataframe with annual demand and household count for each zensus cell
