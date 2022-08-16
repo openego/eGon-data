@@ -10,16 +10,17 @@ scenarios eGon2035 and eGon100RE .
 
 
     
-# import logging
-# import os
+import logging
+import os
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib as mpl
 #import pandas as pd
 #import numpy as np
 #from math import sqrt, log10
-#from pyproj import Proj, transform
-# import tilemapbase
+from pyproj import Proj, transform
+#import tilemapbase
+#import tilemapbase
 #import geopandas as gpd
 #from egon.data import db
 #from egon.data.config import settings
@@ -31,11 +32,16 @@ from egon.data.datasets import Dataset
 import egon.data.config
 import geopandas as gpd
 
+#import cartopy
+#import cartopy.crs as ccrs
+#import cartopy.mpl.geoaxes
+#import requests
 
-#logger = logging.getLogger(__name__)
 
-#if 'READTHEDOCS' not in os.environ:
-    #from geoalchemy2.shape import to_shape
+logger = logging.getLogger(__name__)
+
+if 'READTHEDOCS' not in os.environ:
+    from geoalchemy2.shape import to_shape
 
 __copyright__ = ("Flensburg University of Applied Sciences, "
                  "Europa-Universität Flensburg, "
@@ -49,9 +55,12 @@ __author__ = ""
 
 
 
+
 def plot_generation(
-              carrier,scenario
+              carrier,scenario, osm=False
             ):
+    
+
    con = db.engine()
    SQLBus = "SELECT bus_id, country FROM grid.egon_etrago_bus WHERE country='DE'"
    busDE = pd.read_sql(SQLBus,con)
@@ -81,8 +90,10 @@ def plot_generation(
    gdf = gpd.GeoDataFrame(Merge , geometry='geom')
    print(Merge)
    pnom=gdf['p_nom']
-   max_pnom=pnom.quantile(0.99)
+   max_pnom=pnom.quantile(0.95)
    print(max_pnom)
+   #import cartopy.crs as ccrs 
+   #fig, ax = plt.subplots(subplot_kw={"projection":ccrs.PlateCarree()})
    fig, ax = plt.subplots(figsize=(10,10))
    ax.set_axis_off();
    plt.title(f" {carrier} installed capacity in MW , {scenario}")
