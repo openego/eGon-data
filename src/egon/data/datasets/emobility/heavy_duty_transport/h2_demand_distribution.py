@@ -6,13 +6,15 @@ from shapely.geometry.polygon import Polygon
 from shapely.ops import cascaded_union
 import geopandas as gpd
 
+from egon.data import db
 from egon.data.datasets.emobility.heavy_duty_transport import DATASET_CFG
 from egon.data.datasets.emobility.heavy_duty_transport.data_io import get_data
+from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
+    EgonHeavyDutyTransportVoronoi,
+)
 
 
-def run_egon_truck(
-    scenario: str = "eGon2035",
-):
+def run_egon_truck():
     germany_gdf, bast_gdf, nuts3_gdf = get_data()
 
     bast_gdf_within = bast_gdf.dropna().loc[
@@ -43,11 +45,19 @@ def run_egon_truck(
             scenario=scenarios,
         )
 
+        nuts3_gdf.to_postgis(
+            name=EgonHeavyDutyTransportVoronoi.__table__.name,
+            con=db.engine(),
+            schema=EgonHeavyDutyTransportVoronoi.__table__.schema,
+            if_exists="append",
+            index=False,
+        )
+
 
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
     """Calculate the total hydrogen demand for trucking in Germany"""
     constants = DATASET_CFG["constants"]
-    hgv_mileage = DATASET_CFG["    hgv_mileage"]
+    hgv_mileage = DATASET_CFG["hgv_mileage"]
 
     leakage = constants["leakage"]
     leakage_rate = constants["leakage_rate"]
