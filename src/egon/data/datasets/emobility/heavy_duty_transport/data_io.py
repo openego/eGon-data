@@ -76,9 +76,9 @@ def nuts3_gdf():
         ORDER BY id
         """
 
-    gdf = select_geodataframe(
-        sql, geom_col="geometry", index_col="bus_id"
-    ).to_crs(epsg=srid)
+    gdf = select_geodataframe(sql, geom_col="geometry", index_col="id").to_crs(
+        epsg=srid
+    )
 
     gdf["area"] = gdf.geometry.area
 
