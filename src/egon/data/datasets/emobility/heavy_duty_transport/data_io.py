@@ -1,12 +1,14 @@
+from pathlib import Path
+
 from loguru import logger
 import geopandas as gpd
 import pandas as pd
 
 from egon.data import config
-from egon.data.datasets.emobility.heavy_duty_transport import WORKING_DIR
 from egon.data.db import select_geodataframe
 
 DATASET_CFG = config.datasets()["mobility_hgv"]
+WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
 
 
 def get_data():
