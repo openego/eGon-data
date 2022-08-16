@@ -9,6 +9,9 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
+from egon.data.datasets.emobility.heavy_duty_transport.h2_demand_distribution import (
+    run_egon_truck,
+)
 
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
 DATASET_CFG = config.datasets()["mobility_hgv"]
@@ -51,7 +54,10 @@ class HeavyDutyTransport(Dataset):
             version="0.0.1.dev",
             dependencies=dependencies,
             tasks=(
-                create_tables,
-                download_hgv_data,
+                {
+                    create_tables,
+                    download_hgv_data,
+                },
+                run_egon_truck,
             ),
         )
