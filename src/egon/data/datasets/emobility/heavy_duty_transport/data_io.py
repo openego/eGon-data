@@ -44,7 +44,7 @@ def bast_gdf():
 
     df = pd.read_csv(
         path,
-        delimiter=r";",
+        delimiter=r",",
         decimal=r",",
         thousands=r".",
         encoding="ISO-8859-1",
