@@ -179,7 +179,7 @@ def voronoi(
         truck_traffic=points.loc[poly_gdf.index][truck_col]
     )
 
-    poly_gdf = poly_gdf.to_crs(epsg=srid)
+    poly_gdf = poly_gdf.set_crs(epsg=srid, inplace=True)
 
     logger.info("Done.")
 
