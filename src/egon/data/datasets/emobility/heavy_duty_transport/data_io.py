@@ -51,21 +51,17 @@ def bast_gdf():
         usecols=relevant_columns,
     )
 
-    init_srid = sources["BAST"]["file"]
+    init_srid = sources["BAST"]["srid"]
     final_srid = DATASET_CFG["tables"]["srid"]
 
-    gdf = (
-        gpd.GeoDataFrame(
-            df[relevant_columns[0]],
-            geometry=gpd.points_from_xy(
-                df[relevant_columns[1]],
-                df[relevant_columns[2]],
-                # crs=f"EPSG:{init_srid}",
-            ),
-        )
-        .set_crs(epsg=init_srid, inplace=True)
-        .to_crs(epsg=final_srid)
-    )
+    gdf = gpd.GeoDataFrame(
+        df[relevant_columns[0]],
+        geometry=gpd.points_from_xy(
+            df[relevant_columns[1]],
+            df[relevant_columns[2]],
+            crs=f"EPSG:{init_srid}",
+        ),
+    ).to_crs(epsg=final_srid)
 
     logger.debug("Read in BAST data.")
 
