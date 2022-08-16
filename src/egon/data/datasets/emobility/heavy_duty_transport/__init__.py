@@ -35,7 +35,7 @@ def download_hgv_data():
         WORKING_DIR.mkdir(parents=True)
 
     url = sources["BAST"]["url"]
-    file = sources["BAST"]["file"]
+    file = WORKING_DIR / sources["BAST"]["file"]
 
     response = requests.get(url)
 
