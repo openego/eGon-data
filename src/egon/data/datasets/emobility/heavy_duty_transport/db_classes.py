@@ -18,7 +18,7 @@ class EgonHeavyDutyTransportVoronoi(Base):
     __tablename__ = "egon_heavy_duty_transport_voronoi"
     __table_args__ = {"schema": "demand"}
 
-    nuts3_id = Column(String, index=True)
+    nuts3_id = Column(String, index=True, primary_key=True)
     nuts3_name = Column(String)
     scenario = Column(String, ForeignKey(EgonScenario.name), index=True)
     geometry = Column(Geometry(srid=DATASET_CFG["tables"]["srid"]))
