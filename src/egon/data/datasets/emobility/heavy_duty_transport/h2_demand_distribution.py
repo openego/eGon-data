@@ -6,12 +6,13 @@ from shapely.geometry.polygon import Polygon
 from shapely.ops import cascaded_union
 import geopandas as gpd
 
-from egon.data import db
-from egon.data.datasets.emobility.heavy_duty_transport import DATASET_CFG
+from egon.data import config, db
 from egon.data.datasets.emobility.heavy_duty_transport.data_io import get_data
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
+
+DATASET_CFG = config.datasets()["mobility_hgv"]
 
 
 def run_egon_truck():
