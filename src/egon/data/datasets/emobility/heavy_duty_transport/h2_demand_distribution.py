@@ -46,7 +46,7 @@ def run_egon_truck():
             scenario=scenario,
         )
 
-        logger.debug(str(nuts3_gdf.head()))
+        logger.debug(str(nuts3_gdf.columns))
 
         nuts3_gdf.to_postgis(
             name=EgonHeavyDutyTransportVoronoi.__table__.name,
