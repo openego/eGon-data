@@ -13,6 +13,9 @@ from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
 )
 
 DATASET_CFG = config.datasets()["mobility_hgv"]
+TESTMODE_OFF = (
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+)
 
 
 def run_egon_truck():
@@ -45,8 +48,6 @@ def run_egon_truck():
             ),
             scenario=scenario,
         )
-
-        logger.debug(str(nuts3_gdf.reset_index().columns))
 
         nuts3_gdf.reset_index().to_postgis(
             name=EgonHeavyDutyTransportVoronoi.__table__.name,
