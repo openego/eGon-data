@@ -61,11 +61,13 @@ def download_hgv_data():
                 fd.write(chunk)
 
         directory = WORKING_DIR / "_".join(
-            sources["BAST"]["file"].split(".")[:-1]
+            sources["NUTS"]["file"].split(".")[:-1]
         )
 
         with zipfile.ZipFile(file, "r") as zip_ref:
             zip_ref.extractall(directory)
+
+        logger.debug("Downloaded NUTS data.")
 
 
 class HeavyDutyTransport(Dataset):
