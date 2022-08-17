@@ -34,7 +34,7 @@ Base = declarative_base()
 
 
 class EgonTimeseriesDistrictHeating(Base):
-    __tablename__ = "egon_timeseries_district_heating_new"
+    __tablename__ = "egon_timeseries_district_heating"
     __table_args__ = {"schema": "demand"}
     area_id = Column(Integer, primary_key=True)
     scenario = Column(Text, primary_key=True)
