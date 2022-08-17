@@ -13,19 +13,16 @@ from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
 )
 
 DATASET_CFG = config.datasets()["mobility_hgv"]
-TESTMODE_OFF = (
-    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-)
 
 
 def run_egon_truck():
-    germany_gdf, bast_gdf, nuts3_gdf = get_data()
+    boundary_gdf, bast_gdf, nuts3_gdf = get_data()
 
     bast_gdf_within = bast_gdf.dropna().loc[
-        bast_gdf.within(germany_gdf.geometry.iat[0])
+        bast_gdf.within(boundary_gdf.geometry.iat[0])
     ]
 
-    voronoi_gdf = voronoi(bast_gdf_within, germany_gdf)
+    voronoi_gdf = voronoi(bast_gdf_within, boundary_gdf)
 
     nuts3_gdf = geo_intersect(voronoi_gdf, nuts3_gdf)
 

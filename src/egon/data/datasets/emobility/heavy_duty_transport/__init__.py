@@ -1,5 +1,6 @@
 from pathlib import Path
 import csv
+import zipfile
 
 from loguru import logger
 import requests
@@ -15,6 +16,9 @@ from egon.data.datasets.emobility.heavy_duty_transport.h2_demand_distribution im
 
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
 DATASET_CFG = config.datasets()["mobility_hgv"]
+TESTMODE_OFF = (
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+)
 
 
 def create_tables():
@@ -45,6 +49,23 @@ def download_hgv_data():
             writer.writerow(line.decode("ISO-8859-1").split(";"))
 
     logger.debug("Downloaded BAST data.")
+
+    if not TESTMODE_OFF:
+        url = sources["NUTS"]["url"]
+
+        r = requests.get(url, stream=True)
+        file = WORKING_DIR / sources["NUTS"]["file"]
+
+        with open(file, "wb") as fd:
+            for chunk in r.iter_content(chunk_size=512):
+                fd.write(chunk)
+
+        directory = WORKING_DIR / "_".join(
+            sources["BAST"]["file"].split(".")[:-1]
+        )
+
+        with zipfile.ZipFile(file, "r") as zip_ref:
+            zip_ref.extractall(directory)
 
 
 class HeavyDutyTransport(Dataset):
