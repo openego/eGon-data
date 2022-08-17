@@ -24,4 +24,6 @@ class EgonHeavyDutyTransportVoronoi(Base):
     truck_traffic = Column(Float)
     normalized_truck_traffic = Column(Float)
     hydrogen_consumption = Column(Float)
-    scenario = Column(String, ForeignKey(EgonScenario.name), index=True)
+    scenario = Column(
+        String, ForeignKey(EgonScenario.name), index=True, primary_key=True
+    )
