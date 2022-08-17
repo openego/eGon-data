@@ -720,7 +720,10 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
         .sum()
         .reset_index()
     )
-
+    if df_demand_share.duplicated("id", keep=False).any():
+        print(
+            df_demand_share.loc[df_demand_share.duplicated("id", keep=False)]
+        )
     return df_demand_share
 
 
@@ -957,7 +960,6 @@ def get_peak_load_cts_buildings():
     """
     Get peak load of all CTS buildings for both scenarios and store in DB.
     """
-
 
     df_building_profiles = calc_building_profiles(scenario="eGon2035")
     df_peak_load_2035 = df_building_profiles.max(axis=0).rename("eGon2035")
