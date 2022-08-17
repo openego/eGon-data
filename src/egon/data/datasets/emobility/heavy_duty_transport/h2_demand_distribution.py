@@ -39,6 +39,9 @@ def run_egon_truck():
             scenario=scenario
         )
 
+        logger.debug(str(nuts3_gdf.head()))
+        logger.debug(str(total_hydrogen_consumption))
+
         nuts3_gdf = nuts3_gdf.assign(
             hydrogen_consumption=(
                 nuts3_gdf.normalized_truck_traffic * total_hydrogen_consumption
