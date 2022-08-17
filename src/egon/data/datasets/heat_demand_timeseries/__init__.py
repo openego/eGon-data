@@ -588,6 +588,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
             )
 
         session.add(entry)
+
     session.commit()
 
     print(
@@ -676,7 +677,7 @@ def individual_heating_per_mv_grid(method="python"):
         EgonEtragoTimeseriesIndividualHeating.__table__.create(
             bind=engine, checkfirst=True
         )
-        
+
         create_individual_heating_profile_python_like("eGon2035")
         create_individual_heating_profile_python_like("eGon100RE")
 
