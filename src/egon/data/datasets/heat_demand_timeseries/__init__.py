@@ -232,6 +232,14 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         index_col="index",
     )
 
+    district_heating_grids = db.select_dataframe(
+        f"""
+        SELECT area_id 
+        FROM demand.egon_district_heating_areas
+        WHERE scenario = '{scenario}'
+        """
+    )
+
     annual_demand = db.select_dataframe(
         f"""
         SELECT a.zensus_population_id, demand/c.count as per_building , area_id FROM 
@@ -307,41 +315,44 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
     print(datetime.now() - start_time)
 
     start_time = datetime.now()
-    for area in annual_demand.area_id.unique():
-        slice_df = pd.merge(
-            df[df.area_id == area],
-            idp_df,
-            left_on="selected_idp",
-            right_on="index",
-        )
+    for area in district_heating_grids.area_id.unique():
 
-        for hour in range(24):
-            slice_df[hour] = (
-                slice_df.idp.str[hour]
-                .mul(slice_df.daily_demand_share)
-                .mul(
-                    annual_demand.loc[
-                        slice_df.zensus_population_id.values, "per_building"
-                    ].values
-                )
+        if area in df.area_id.values:
+            slice_df = pd.merge(
+                df[df.area_id == area],
+                idp_df,
+                left_on="selected_idp",
+                right_on="index",
             )
+
+            for hour in range(24):
+                slice_df[hour] = (
+                    slice_df.idp.str[hour]
+                    .mul(slice_df.daily_demand_share)
+                    .mul(
+                        annual_demand.loc[
+                            slice_df.zensus_population_id.values,
+                            "per_building",
+                        ].values
+                    )
+                )
+
+            hh = np.concatenate(
+                slice_df.groupby("day").sum()[range(24)].values
+            ).ravel()
 
         cts = CTS_demand_dist[
             (CTS_demand_dist.scenario == scenario)
             & (CTS_demand_dist.index == area)
         ].drop("scenario", axis="columns")
 
-        hh = np.concatenate(
-            slice_df.groupby("day").sum()[range(24)].values
-        ).ravel()
-
-        if not (slice_df[hour].empty or cts.empty):
+        if (area in df.area_id.values) and not cts.empty:
             entry = EgonTimeseriesDistrictHeating(
                 area_id=int(area),
                 scenario=scenario,
                 dist_aggregated_mw=(hh + cts.values[0]).tolist(),
             )
-        elif not slice_df[hour].empty:
+        elif (area in df.area_id.values) and cts.empty:
             entry = EgonTimeseriesDistrictHeating(
                 area_id=int(area),
                 scenario=scenario,
@@ -351,7 +362,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
             entry = EgonTimeseriesDistrictHeating(
                 area_id=int(area),
                 scenario=scenario,
-                dist_aggregated_mw=(cts).tolist(),
+                dist_aggregated_mw=(cts.values[0]).tolist(),
             )
 
         session.add(entry)
@@ -587,18 +598,17 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
 def district_heating(method="python"):
 
+    engine = db.engine()
+    EgonTimeseriesDistrictHeating.__table__.drop(bind=engine, checkfirst=True)
+    EgonTimeseriesDistrictHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
     if method == "python":
         create_district_heating_profile_python_like("eGon2035")
         create_district_heating_profile_python_like("eGon100RE")
 
     else:
-        engine = db.engine()
-        EgonTimeseriesDistrictHeating.__table__.drop(
-            bind=engine, checkfirst=True
-        )
-        EgonTimeseriesDistrictHeating.__table__.create(
-            bind=engine, checkfirst=True
-        )
 
         CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
             aggregation_level="district"
