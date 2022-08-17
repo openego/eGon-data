@@ -1122,4 +1122,4 @@ mobility_hgv:
       eGon2035: 10000000000
       # Langfristszenarien
       # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
-      egon100RE: 40000000000
+      eGon100RE: 40000000000
