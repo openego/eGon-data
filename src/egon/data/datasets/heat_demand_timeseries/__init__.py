@@ -49,6 +49,14 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
     dist_aggregated_mw = Column(ARRAY(Float(53)))
 
 
+class EgonIndividualHeatingPeakLoads(Base):
+    __tablename__ = "egon_individual_heating_peak_loads"
+    __table_args__ = {"schema": "demand"}
+    building_id = Column(Integer, primary_key=True)
+    scenario = Column(Text, primary_key=True)
+    w_th = Column(Float(53))
+
+
 def create_timeseries_for_building(building_id, scenario):
     """Generates final heat demand timeseries for a specific building
 
@@ -447,6 +455,141 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
     print(datetime.now() - start_time)
 
     return df
+
+
+def calulate_peak_load(df, scenario):
+
+    # peat load in W_th
+    data = (
+        df.groupby("building_id")
+        .max()[range(24)]
+        .max(axis=1)
+        .mul(1000000)
+        .astype(int)
+        .reset_index()
+    )
+
+    data["scenario"] = scenario
+
+    data.rename({0: "w_th"}, axis="columns", inplace=True)
+
+    data.to_sql(
+        EgonIndividualHeatingPeakLoads.__table__.name,
+        schema=EgonIndividualHeatingPeakLoads.__table__.schema,
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
+
+def create_individual_heating_peak_loads(scenario="eGon2035"):
+
+    engine = db.engine()
+
+    EgonIndividualHeatingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+
+    EgonIndividualHeatingPeakLoads.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    start_time = datetime.now()
+
+    idp_df = db.select_dataframe(
+        """
+        SELECT index, idp FROM demand.heat_idp_pool
+        """,
+        index_col="index",
+    )
+
+    annual_demand = db.select_dataframe(
+        f"""
+        SELECT a.zensus_population_id, demand/c.count as per_building, bus_id
+        FROM demand.egon_peta_heat a
+
+        
+        JOIN (SELECT COUNT(building_id), zensus_population_id
+        FROM demand.heat_timeseries_selected_profiles
+        WHERE zensus_population_id IN(
+        SELECT zensus_population_id FROM 
+        demand.heat_timeseries_selected_profiles
+        WHERE zensus_population_id IN (
+        SELECT zensus_population_id FROM 
+        boundaries.egon_map_zensus_grid_districts
+       )) 
+        GROUP BY zensus_population_id)c
+        ON a.zensus_population_id = c.zensus_population_id
+        
+        JOIN boundaries.egon_map_zensus_grid_districts d
+        ON a.zensus_population_id = d.zensus_population_id
+        
+        WHERE a.scenario = '{scenario}'
+        AND a.sector = 'residential'
+        AND a.zensus_population_id NOT IN (
+            SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
+            WHERE scenario = '{scenario}'
+        )
+        
+        """,
+        index_col="zensus_population_id",
+    )
+
+    daily_demand_shares = db.select_dataframe(
+        """
+        SELECT climate_zone, day_of_year as day, daily_demand_share FROM 
+        demand.egon_daily_heat_demand_per_climate_zone        
+        """
+    )
+
+    start_time = datetime.now()
+    for grid in annual_demand.bus_id.unique():
+
+        selected_profiles = db.select_dataframe(
+            f"""
+            SELECT a.zensus_population_id, building_id, c.climate_zone, 
+            selected_idp, ordinality as day
+            FROM demand.heat_timeseries_selected_profiles a
+            INNER JOIN boundaries.egon_map_zensus_climate_zones c
+            ON a.zensus_population_id = c.zensus_population_id
+            ,
+            
+            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp 
+            
+            WHERE a.zensus_population_id NOT IN (
+                SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
+                WHERE scenario = '{scenario}'
+            )
+            AND a.zensus_population_id IN (
+                SELECT zensus_population_id
+                FROM boundaries.egon_map_zensus_grid_districts
+                WHERE bus_id = '{grid}'
+            )
+    
+            """
+        )
+
+        df = pd.merge(
+            selected_profiles, daily_demand_shares, on=["day", "climate_zone"]
+        )
+
+        slice_df = pd.merge(
+            df, idp_df, left_on="selected_idp", right_on="index"
+        )
+
+        for hour in range(24):
+            slice_df[hour] = (
+                slice_df.idp.str[hour]
+                .mul(slice_df.daily_demand_share)
+                .mul(
+                    annual_demand.loc[
+                        slice_df.zensus_population_id.values, "per_building"
+                    ].values
+                )
+            )
+
+        calulate_peak_load(slice_df, scenario)
+
+    print(f"Time to create peak loads per building for {scenario}")
+    print(datetime.now() - start_time)
 
 
 def create_individual_heating_profile_python_like(scenario="eGon2035"):
