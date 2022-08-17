@@ -41,8 +41,11 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     __tablename__ = "egon_cts_electricity_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, primary_key=True)
-    scenario = Column(String, primary_key=True)
+    serial = Column(Integer, primary_key=True)
+    id = Column(Integer, index=True)
+    scenario = Column(String, index=True)
+    # id = Column(Integer, primary_key=True)
+    # scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
     profile_share = Column(Float)
 
@@ -52,7 +55,7 @@ class CtsBuildings(Base):
     __table_args__ = {"schema": "openstreetmap"}
 
     serial = Column(Integer, primary_key=True)
-    id = Column(Integer)
+    id = Column(Integer, index=True)
     zensus_population_id = Column(Integer, index=True)
     geom_building = Column(Geometry("Polygon", 3035))
     n_amenities_inside = Column(Integer)
@@ -714,6 +717,7 @@ def calc_building_demand_profile_share(df_cts_buildings, scenario="eGon2035"):
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
     ]
+    # TODO adapt groupby?
     # Group and aggregate per building for multi cell buildings
     df_demand_share = (
         df_demand_share.groupby(["scenario", "id", "bus_id"])
@@ -767,6 +771,9 @@ def calc_building_profiles(
         df_demand_share = df_demand_share.loc[
             df_demand_share["scenario"] == scenario
         ]
+
+    # TODO workaround
+    df_demand_share = df_demand_share.drop(columns="serial")
 
     df_cts_profiles = calc_load_curves_cts(scenario)
 
@@ -883,7 +890,7 @@ def cts_to_buildings():
         df_cells_with_cts_demand_only, points="geom_point"
     )
 
-    # TODO write to DB and remove renaming
+    # TODO write to DB and remove (backup) renaming
     write_table_to_postgis(
         df_synthetic_buildings_without_amenities.rename(
             columns={
@@ -948,6 +955,10 @@ def cts_to_buildings():
         axis=0,
         ignore_index=True,
     )
+    # TODO workaround
+    df_demand_share = df_demand_share.reset_index().rename(
+        columns={"index": "serial"}
+    )
 
     write_table_to_postgres(
         df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
@@ -969,6 +980,7 @@ def get_peak_load_cts_buildings():
         [df_peak_load_2035, df_peak_load_100RE], axis=1
     ).reset_index()
 
+    # TODO rename table column to egon_building_id
     df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
     df_peak_load["type"] = "cts"
     df_peak_load = df_peak_load.melt(
