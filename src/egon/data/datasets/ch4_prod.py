@@ -26,7 +26,7 @@ class CH4Production(Dataset):
         )
 
 
-def load_NG_generators(scn_name):
+def load_NG_generators(scn_name="eGon2035"):
     """Define the natural CH4 production units in Germany
 
     Parameters
@@ -133,6 +133,7 @@ def load_biogas_generators(scn_name):
     ----------
     scn_name : str
         Name of the scenario.
+
     Returns
     -------
     CH4_generators_list :
