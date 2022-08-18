@@ -600,6 +600,7 @@ def neighbor_reduction():
     )
 
     # Unify carrier names
+    neighbors.carrier = neighbors.carrier.str.replace(" ", "_")
     neighbors.carrier.replace(
         {
             "gas": "CH4",
