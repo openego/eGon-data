@@ -171,14 +171,21 @@ def insert():
     offshore_100RE.rename(columns={"B 2040 ": "el_capacity"},
                           inplace=True)
     
-    # Import capacity targets for wind_offshore per scenario
+    # Import capacity targets for wind_offshore per scenario 
     sql = f"""
-        SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
-        as osm_id FROM {cfg["sources"]["buses_data"]}
+        SELECT * FROM {cfg["sources"]["capacities"]} 
+        WHERE scenario_name = 'eGon100RE' AND
+        carrier = 'wind_offshore'
         """
+    capacities = pd.read_sql(sql, con)
+    cap_100RE = capacities.capacity.sum()
     
+    # Scale capacities to match  target  
+    scale_factor = cap_100RE/offshore_100RE.el_capacity.sum()
+    offshore_100RE["el_capacity"] = offshore_100RE["el_capacity"] * scale_factor
+    
+    # Join power plants from the different scenarios
     offshore = pd.concat([offshore_2035, offshore_100RE], axis= 0)
-    breakpoint()
     
     # convert column "bus_id" and "voltage_level" to integer
     offshore["bus_id"] = offshore["bus_id"].apply(int)
@@ -208,8 +215,7 @@ def insert():
         ini_id = int(max_id + 1)
 
     offshore = gpd.GeoDataFrame(offshore, geometry="geom", crs=4326)
-    breakpoint()
-    """
+
     # write_table in egon-data database:
     # Reset index
     offshore.index = pd.RangeIndex(
@@ -223,6 +229,6 @@ def insert():
         con=db.engine(),
         if_exists="append",
     )
-    """
-    return 0
+
+    return("Off shore wind farms successfully created")
     
