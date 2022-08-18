@@ -501,27 +501,27 @@ def buildings_without_amenities():
     return df_buildings_without_amenities
 
 
-def select_cts_buildings(df_buildings_wo_amenities):
+def select_cts_buildings(df_buildings_wo_amenities, max_n):
     """
-    Buildings (filtered and synthetic) in cells with
-    cts demand are selected. Only the first building
-    is taken for each cell and 1 amenities is assigned.
+    N Buildings (filtered and synthetic) in each cell with
+    cts demand are selected. Only the first n buildings
+    are taken for each cell. The buildings are sorted by surface
+    area.
 
     Returns
     -------
     df_buildings_with_cts_demand: gpd.GeoDataFrame
         Table of buildings
     """
-    # TODO Adapt method
-    # Select one building each cell
-    # take the first
-    df_buildings_with_cts_demand = df_buildings_wo_amenities.drop_duplicates(
-        # subset="cell_id", keep="first"
-        subset="zensus_population_id",
-        keep="first",
-    ).reset_index(drop=True)
-    df_buildings_with_cts_demand["n_amenities_inside"] = 1
-    df_buildings_with_cts_demand["building"] = "cts"
+
+    df_buildings_wo_amenities.sort_values(
+        "area", ascending=False, inplace=True
+    )
+    # select first n ids each census cell if available
+    df_buildings_with_cts_demand = df_buildings_wo_amenities.groupby(
+        "zensus_population_id"
+    ).nth(list(range(max_n)))
+    df_buildings_with_cts_demand.reset_index(drop=True, inplace=True)
 
     return df_buildings_with_cts_demand
 
@@ -830,17 +830,37 @@ def cts_to_buildings():
     # Buildings with amenities
     df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
 
+    # Median number of amenities per cell
+    median_n_amenities = (
+        df_buildings_with_amenities.groupby("zensus_population_id")[
+            "n_amenities_inside"
+        ]
+        .sum()
+        .median()
+    )
+
     # Remove synthetic CTS buildings if existing
     delete_synthetic_cts_buildings()
 
-    # Create synthetic buildings for amenites without buildings
+    # Amenities not assigned to buildings
     df_amenities_without_buildings = amenities_without_buildings()
+
+    # Append lost cells due to duplicated ids, to cover all demand cells
     if df_lost_cells.empty:
+
+        df_lost_cells["amenities"] = median_n_amenities
+        # create row for every amenity
+        df_lost_cells["amenities"] = (
+            df_lost_cells["amenities"].astype(int).apply(range)
+        )
+        df_lost_cells = df_lost_cells.explode("amenities")
+        df_lost_cells.drop(columns="amenities", inplace=True)
         df_amenities_without_buildings = df_amenities_without_buildings.append(
             df_lost_cells, ignore_index=True
         )
-
+    # One building per amenity
     df_amenities_without_buildings["n_amenities_inside"] = 1
+    # Create synthetic buildings for amenites without buildings
     df_synthetic_buildings_with_amenities = create_synthetic_buildings(
         df_amenities_without_buildings, points="geom_amenity"
     )
@@ -861,6 +881,7 @@ def cts_to_buildings():
     df_buildings_without_amenities = buildings_without_amenities()
 
     # TODO Fix Adhoc Bugfix duplicated buildings
+    # drop building ids which have already been used
     mask = df_buildings_without_amenities.loc[
         df_buildings_without_amenities["id"].isin(
             df_buildings_with_amenities["id"]
@@ -870,22 +891,33 @@ def cts_to_buildings():
         index=mask
     ).reset_index(drop=True)
 
+    # select median n buildings per cell
     df_buildings_without_amenities = select_cts_buildings(
-        df_buildings_without_amenities
+        df_buildings_without_amenities, max_n=median_n_amenities
     )
+    df_buildings_without_amenities["building"] = "cts"
     df_buildings_without_amenities["n_amenities_inside"] = 1
 
     # Create synthetic amenities and buildings in cells with only CTS demand
     df_cells_with_cts_demand_only = cells_with_cts_demand_only(
         df_buildings_without_amenities
     )
-    # Only 1 Amenity per cell
-    df_cells_with_cts_demand_only["n_amenities_inside"] = 1
+    # Median n Amenities per cell
+    df_cells_with_cts_demand_only["amenities"] = median_n_amenities
+    # create row for every amenity
+    df_cells_with_cts_demand_only["amenities"] = (
+        df_cells_with_cts_demand_only["amenities"].astype(int).apply(range)
+    )
+    df_cells_with_cts_demand_only = df_cells_with_cts_demand_only.explode(
+        "amenities"
+    )
+    df_cells_with_cts_demand_only.drop(columns="amenities", inplace=True)
+
     # Only 1 Amenity per Building
+    df_cells_with_cts_demand_only["n_amenities_inside"] = 1
     df_cells_with_cts_demand_only = place_buildings_with_amenities(
         df_cells_with_cts_demand_only, amenities=1
     )
-    # Leads to only 1 building per cell
     df_synthetic_buildings_without_amenities = create_synthetic_buildings(
         df_cells_with_cts_demand_only, points="geom_point"
     )
