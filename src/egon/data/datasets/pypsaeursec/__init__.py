@@ -237,7 +237,7 @@ def clean_database():
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
-            OR "bus1" IN (
+            AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
@@ -249,7 +249,7 @@ def clean_database():
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
-            OR "bus1" IN (
+            AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
