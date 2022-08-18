@@ -831,7 +831,7 @@ def cts_to_buildings():
     df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
 
     # Median number of amenities per cell
-    median_n_amenities = (
+    median_n_amenities = int(
         df_buildings_with_amenities.groupby("zensus_population_id")[
             "n_amenities_inside"
         ]
