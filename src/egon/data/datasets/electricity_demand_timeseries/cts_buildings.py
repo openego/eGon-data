@@ -520,7 +520,7 @@ def select_cts_buildings(df_buildings_wo_amenities, max_n):
     # select first n ids each census cell if available
     df_buildings_with_cts_demand = df_buildings_wo_amenities.groupby(
         "zensus_population_id"
-    ).nth(list(range(max_n)))
+    ).nth(list(range(max_n))).reset_index()
     df_buildings_with_cts_demand.reset_index(drop=True, inplace=True)
 
     return df_buildings_with_cts_demand
@@ -895,7 +895,6 @@ def cts_to_buildings():
     df_buildings_without_amenities = select_cts_buildings(
         df_buildings_without_amenities, max_n=median_n_amenities
     )
-    df_buildings_without_amenities["building"] = "cts"
     df_buildings_without_amenities["n_amenities_inside"] = 1
 
     # Create synthetic amenities and buildings in cells with only CTS demand
