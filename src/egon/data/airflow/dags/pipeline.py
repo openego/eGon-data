@@ -36,7 +36,7 @@ from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
-from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
