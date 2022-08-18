@@ -951,6 +951,6 @@ class HeatTimeSeries(Dataset):
                     create,
                 },
                 select,
-                {district_heating, individual_heating_per_mv_grid},
+                district_heating,
             ),
         )

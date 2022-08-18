@@ -1,6 +1,7 @@
 from egon.data import config, db
 from egon.data.db import next_etrago_id
 from egon.data.datasets import Dataset
+from egon.data.datasets.heat_demand_timeseries import individual_heating_per_mv_grid
 
 import pandas as pd
 import numpy as np
@@ -145,7 +146,7 @@ class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
-            tasks=(hts_to_etrago),
+            tasks=(individual_heating_per_mv_grid, hts_to_etrago),
         )
