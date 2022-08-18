@@ -126,6 +126,28 @@ def load_NG_generators(scn_name="eGon2035"):
     return NG_generators_list
 
 
+def download_biogas_data():
+    """Download the biogas production units data in Germany
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    """
+    basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+    url = (
+        "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
+        + basename
+    )
+    target_file = Path(".") / "datasets" / "gas_data" / basename
+
+    urlretrieve(url, target_file)
+
+
 def load_biogas_generators(scn_name):
     """Define the biogas production units in Germany
 
@@ -143,15 +165,8 @@ def load_biogas_generators(scn_name):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
 
-    # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-    url = (
-        "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
-        + basename
-    )
     target_file = Path(".") / "datasets" / "gas_data" / basename
-
-    urlretrieve(url, target_file)
 
     # Read-in data from csv-file
     biogas_generators_list = pd.read_excel(
@@ -233,7 +248,7 @@ def load_biogas_generators(scn_name):
     return biogas_generators_list
 
 
-def import_gas_generators(scn_name="eGon2035"):
+def import_gas_generators(scn_name):
     """Insert list of gas production units in database
 
     Parameters
