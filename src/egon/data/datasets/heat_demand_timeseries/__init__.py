@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 
+from pathlib import Path
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -887,55 +888,95 @@ def individual_heating_per_mv_grid(method="python"):
         )
 
 
-# def store_national_profiles(
-#     residential_demand_grid,
-#     CTS_demand_grid,
-#     residential_demand_dist,
-#     CTS_demand_dist,
-# ):
+def store_national_profiles():
 
-#     folder = Path(".") / "input-pypsa-eur-sec"
-#     # Create the folder, if it does not exists already
-#     if not os.path.exists(folder):
-#         os.mkdir(folder)
+    scenario = "eGon100RE"
 
-#     for scenario in CTS_demand_grid.scenario.unique():
-#         national_demand = pd.DataFrame(
-#             columns=["residential rural", "services rural", "urban central"],
-#             index=pd.date_range(
-#                 datetime(2011, 1, 1, 0), periods=8760, freq="H"
-#             ),
-#         )
+    df = db.select_dataframe(
+        f"""
+        
+        SELECT SUM(building_demand_per_hour) as "residential rural"
+        FROM 
+        
+        (
+        SELECT demand.demand  * 
+        c.daily_demand_share * hourly_demand as building_demand_per_hour,
+        ordinality + 24* (c.day_of_year-1) as hour_of_year,
+        demand_profile.building_id,
+        c.day_of_year,
+        ordinality
+        
+        FROM 
+        
+        (SELECT zensus_population_id, demand FROM 
+        demand.egon_peta_heat
+        WHERE scenario = '{scenario}'
+        AND sector = 'residential'
+       ) as demand
+        
+        JOIN boundaries.egon_map_zensus_climate_zones b 
+        ON demand.zensus_population_id = b.zensus_population_id
+        
+        JOIN demand.egon_daily_heat_demand_per_climate_zone c
+        ON c.climate_zone = b.climate_zone
+        
+        JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
+        FROM demand.heat_timeseries_selected_profiles d,
+        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
+        JOIN demand.heat_idp_pool e
+        ON selected_idp = e.index
+        )  demand_profile
+        ON (demand_profile.day = c.day_of_year AND 
+            demand_profile.zensus_population_id = b.zensus_population_id)
+        
+        JOIN (SELECT COUNT(building_id), zensus_population_id
+        FROM demand.heat_timeseries_selected_profiles
+        WHERE zensus_population_id IN(
+        SELECT zensus_population_id FROM 
+        demand.heat_timeseries_selected_profiles
+        )
+		GROUP BY zensus_population_id) building
+        ON building.zensus_population_id = b.zensus_population_id,
+        
+        UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
+        )   result
+        
+        
+        GROUP BY hour_of_year
 
-#         national_demand["residential rural"] = (
-#             residential_demand_grid[
-#                 residential_demand_grid.scenario == scenario
-#             ]
-#             .drop("scenario", axis="columns")
-#             .sum()
-#             .values
-#         )
-#         national_demand["services rural"] = (
-#             CTS_demand_grid[CTS_demand_grid.scenario == scenario]
-#             .sum(numeric_only=True)
-#             .values
-#         )
-#         national_demand["urban central"] = (
-#             residential_demand_dist[
-#                 residential_demand_dist.scenario == scenario
-#             ]
-#             .drop("scenario", axis="columns")
-#             .sum()
-#             .values
-#             + CTS_demand_dist[CTS_demand_dist.scenario == scenario]
-#             .drop("scenario", axis="columns")
-#             .sum()
-#             .values
-#         )
+        """
+    )
 
-#         national_demand.to_csv(
-#             folder / f"heat_demand_timeseries_DE_{scenario}.csv"
-#         )
+    CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
+        aggregation_level="district"
+    )
+
+    df["service rural"] = (
+        CTS_demand_dist.loc[CTS_demand_dist.scenario == scenario]
+        .drop("scenario", axis=1)
+        .sum()
+    )
+
+    df["urban central"] = db.select_dataframe(
+        f"""
+        SELECT sum(demand) as "urban central"
+
+        FROM demand.egon_timeseries_district_heating, 
+        UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
+        
+        WHERE scenario = '{scenario}'
+        
+        GROUP BY ordinality
+        
+        """
+    )
+
+    folder = Path(".") / "input-pypsa-eur-sec"
+    # Create the folder, if it does not exists already
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
+    df.to_csv(folder / f"heat_demand_timeseries_DE_{scenario}.csv")
 
 
 class HeatTimeSeries(Dataset):
@@ -952,5 +993,6 @@ class HeatTimeSeries(Dataset):
                 },
                 select,
                 district_heating,
+                store_national_profiles,
             ),
         )
