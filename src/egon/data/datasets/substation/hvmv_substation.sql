@@ -183,11 +183,11 @@ INSERT INTO grid.egon_hvmv_transfer_buses (lon, lat, point, polygon, voltage, po
 	FROM grid.egon_final_result;
 
 -- update voltage level if split by '/' instead of ';' or contains '--'
-UPDATE grid.egon_hvmv_substation
+UPDATE grid.egon_hvmv_transfer_buses
 SET voltage = (SELECT REPLACE (voltage, '/', ';'))
 WHERE voltage LIKE '%/%';
 
-UPDATE grid.egon_hvmv_substation
+UPDATE grid.egon_hvmv_transfer_buses
 SET voltage = (SELECT REPLACE (voltage, '-', ''))
 WHERE voltage LIKE '%-%';
 
