@@ -309,14 +309,31 @@ def buildings_with_amenities():
     ].transform(
         "sum"
     )
+
+    # create column to always go for bus_id with max amenities
+    df_amenities_in_buildings[
+        "max_amenities"
+    ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
+        "n_amenities_inside"
+    ].transform(
+        "sum"
+    )
+    # sort to go for
+    df_amenities_in_buildings.sort_values(
+        ["id", "max_amenities"], ascending=False, inplace=True
+    )
+
     # identify lost zensus cells
     df_lost_cells = df_amenities_in_buildings.loc[
         df_amenities_in_buildings.duplicated(
             subset=["id", "duplicate_identifier"], keep="first"
         )
-    ]["zensus_population_id"]
+    ]
+    df_lost_cells.drop_duplicates(
+        subset=["zensus_population_id"], inplace=True
+    )
 
-    # drop duplicated buildings
+    # drop buildings with multiple substation and lower max amenity
     df_amenities_in_buildings.drop_duplicates(
         subset=["id", "duplicate_identifier"], keep="first", inplace=True
     )
@@ -325,7 +342,7 @@ def buildings_with_amenities():
     if not df_lost_cells.empty:
         if not (
             df_amenities_in_buildings["zensus_population_id"]
-            .isin(df_lost_cells)
+            .isin(df_lost_cells["zensus_population_id"])
             .empty
         ):
             # query geom data for cell if not
@@ -333,7 +350,11 @@ def buildings_with_amenities():
                 cells_query = session.query(
                     DestatisZensusPopulationPerHa.id,
                     DestatisZensusPopulationPerHa.geom,
-                ).filter(DestatisZensusPopulationPerHa.id.in_(df_lost_cells))
+                ).filter(
+                    DestatisZensusPopulationPerHa.id.in_(
+                        df_lost_cells["zensus_population_id"]
+                    )
+                )
 
             df_lost_cells = gpd.read_postgis(
                 cells_query.statement,
@@ -518,9 +539,11 @@ def select_cts_buildings(df_buildings_wo_amenities, max_n):
         "area", ascending=False, inplace=True
     )
     # select first n ids each census cell if available
-    df_buildings_with_cts_demand = df_buildings_wo_amenities.groupby(
-        "zensus_population_id"
-    ).nth(list(range(max_n))).reset_index()
+    df_buildings_with_cts_demand = (
+        df_buildings_wo_amenities.groupby("zensus_population_id")
+        .nth(list(range(max_n)))
+        .reset_index()
+    )
     df_buildings_with_cts_demand.reset_index(drop=True, inplace=True)
 
     return df_buildings_with_cts_demand
