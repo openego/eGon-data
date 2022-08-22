@@ -14,9 +14,8 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.config import settings
-import egon.data.config
 from egon.data.datasets import Dataset
-
+import egon.data.config
 
 
 class ZensusPopulation(Dataset):
@@ -29,7 +28,7 @@ class ZensusPopulation(Dataset):
                 download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
-                ),
+            ),
         )
 
 
@@ -43,7 +42,7 @@ class ZensusMiscellaneous(Dataset):
                 download_zensus_misc,
                 create_zensus_misc_tables,
                 zensus_misc_to_postgres,
-                ),
+            ),
         )
 
 
@@ -124,6 +123,7 @@ def create_zensus_pop_table():
         );
         """
     )
+
 
 def create_zensus_misc_tables():
     """Create tables for zensus data in postgres database"""
@@ -482,10 +482,14 @@ def create_combined_zensus_table():
 
 
 def adjust_zensus_misc():
-    """Deletes zensus households, buildings and aparments in unpopulated cells
+    """Delete unpopulated cells in zensus-households, -buildings and -apartments
 
-    Some unpopulated zensus cells are listed in the table of households,
-    buildings and/or aparments. This can be caused by missing population
+    Some unpopulated zensus cells are listed in:
+    - egon_destatis_zensus_household_per_ha
+    - egon_destatis_zensus_building_per_ha
+    - egon_destatis_zensus_apartment_per_ha
+
+    This can be caused by missing population
     information due to privacy or other special cases (e.g. holiday homes
     are listed as buildings but are not permanently populated.)
     In the follwong tasks of egon-data, only data of populated cells is used.
