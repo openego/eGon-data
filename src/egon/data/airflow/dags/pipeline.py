@@ -172,28 +172,6 @@ with airflow.DAG(
     # Fix eHV subnetworks in Germany manually
     fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
 
-    # Run pypsa-eur-sec
-    run_pypsaeursec = PypsaEurSec(
-        dependencies=[
-            data_bundle,
-            hd_abroad,
-            osmtgmod,
-            setup_etrago,
-            weather_data,
-        ]
-    )
-
-    # Import NEP (Netzentwicklungsplan) data
-    scenario_capacities = ScenarioCapacities(
-        dependencies=[
-            data_bundle,
-            run_pypsaeursec,
-            setup,
-            vg250,
-            zensus_population,
-        ]
-    )
-
     # Retrieve MaStR (Marktstammdatenregister) data
     mastr_data = mastr_data_setup(dependencies=[setup])
 
@@ -325,9 +303,47 @@ with airflow.DAG(
         ]
     )
 
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies=[
+            data_bundle,
+            demandregio,
+            heat_demand_Germany,
+            district_heating_areas,
+            vg250,
+            zensus_mv_grid_districts,
+            hh_demand_buildings_setup,
+            weather_data,
+        ]
+    )
+
+    # run pypsa-eur-sec
+    run_pypsaeursec = PypsaEurSec(
+        dependencies=[
+            weather_data,
+            hd_abroad,
+            osmtgmod,
+            setup_etrago,
+            data_bundle,
+            electrical_load_etrago,
+            heat_time_series,
+        ]
+    )
+
     # Deal with electrical neighbours
     foreign_lines = ElectricalNeighbours(
         dependencies=[run_pypsaeursec, tyndp_data]
+    )
+
+    # Import NEP (Netzentwicklungsplan) data
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[
+            data_bundle,
+            run_pypsaeursec,
+            setup,
+            vg250,
+            zensus_population,
+        ]
     )
 
     # Import gas grid
@@ -384,7 +400,10 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=h2_infrastructure
+        dependencies=[
+            h2_infrastructure,
+            insert_power_to_h2_installations
+        ]
     )
 
     # Create gas voronoi eGon100RE
@@ -485,20 +504,6 @@ with airflow.DAG(
             scenario_parameters,
             setup,
             vg250_mv_grid_districts,
-        ]
-    )
-
-    # Heat time Series
-    heat_time_series = HeatTimeSeries(
-        dependencies=[
-            data_bundle,
-            demandregio,
-            district_heating_areas,
-            heat_demand_Germany,
-            hh_demand_buildings_setup,
-            vg250,
-            weather_data,
-            zensus_mv_grid_districts,
         ]
     )
 
