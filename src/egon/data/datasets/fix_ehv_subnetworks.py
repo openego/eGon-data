@@ -14,7 +14,7 @@ class FixEhvSubnetworks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="FixEhvSubnetworks",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=run,
         )
@@ -158,6 +158,22 @@ def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
         schema="grid",
         con=db.engine(),
         if_exists="append",
+    )
+
+
+def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
+
+    bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
+    bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_transformer
+        WHERE
+        scn_name = '{scn_name}'
+        AND bus0 = {bus0}
+        AND bus1 = {bus1}
+        """
     )
 
 
@@ -328,6 +344,8 @@ def fix_subnetworks(scn_name):
             scn_name,
         )
 
+        drop_trafo(9.988215035677026, 51.954230057487926, 110, 380, scn_name)
+
         drop_bus(9.988215035677026, 51.954230057487926, 380, scn_name)
         drop_bus(9.991477300000001, 51.939711, 380, scn_name)
         drop_bus(9.995589, 51.969716000000005, 380, scn_name)
@@ -336,6 +354,16 @@ def fix_subnetworks(scn_name):
         drop_bus(10.195144702845797, 52.079851837273964, 380, scn_name)
 
         drop_bus(10.004865, 51.999120000000005, 380, scn_name)
+
+        # Umspannwerk Vieselbach
+        # delete isolated bus and trafo
+        drop_bus(11.121774798935334, 51.00038603925895, 380, scn_name)
+        drop_trafo(11.121774798935334, 51.00038603925895, 220, 380, scn_name)
+
+        # Umspannwerk Waldlaubersheim
+        # delete isolated bus and trafo
+        drop_bus(7.815993836091339, 49.92211102637183, 380, scn_name)
+        drop_trafo(7.815993836091339, 49.92211102637183, 110, 380, scn_name)
 
 
 def run():
