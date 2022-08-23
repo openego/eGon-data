@@ -503,3 +503,46 @@ def sanitycheck_eGon100RE_electricity():
         "solar",
         "solar_rooftop",
             ]
+    for carrier in carriers_electricity:
+       
+        if carrier == "biomass":
+            sum_output = db.select_dataframe(
+                """SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
+                    FROM grid.egon_etrago_generator
+                    WHERE bus IN (
+                        SELECT bus_id FROM grid.egon_etrago_bus
+                        WHERE scn_name = 'eGon2035'
+                        AND country = 'DE')
+                    AND carrier IN ('biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
+                    GROUP BY (scn_name);
+                """,
+                warning=False,
+            )
+
+        else:
+            sum_output = db.select_dataframe(
+                f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
+                         FROM grid.egon_etrago_generator
+                         WHERE scn_name = '{scn}'
+                         AND carrier IN ('{carrier}')
+                         AND bus IN
+                             (SELECT bus_id
+                               FROM grid.egon_etrago_bus
+                               WHERE scn_name = 'eGon2035'
+                               AND country = 'DE')
+                         GROUP BY (scn_name);
+                    """,
+                warning=False,
+            )
+
+        sum_input = db.select_dataframe(
+            f"""SELECT carrier, SUM(capacity::numeric) as input_capacity_mw
+                     FROM supply.egon_scenario_capacities
+                     WHERE carrier= '{carrier}'
+                     AND scenario_name ='{scn}'
+                     GROUP BY (carrier);
+                """,
+            warning=False,
+        )
+
+
