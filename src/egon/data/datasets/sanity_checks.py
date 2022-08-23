@@ -469,3 +469,37 @@ def sanitycheck_eGon2035_heat():
         * 100
     )
     print(f"'geothermal': {e_geo_thermal} %")
+
+
+def sanitycheck_eGon100RE_electricity():
+    """Execute basic sanity checks.
+
+    Returns print statements as sanity checks for the electricity sector in
+    the eGon100RE scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    scn = "eGon100RE"
+
+    # Section to check generator capacities
+    print(f"Sanity checks for scenario {scn}")
+    print(
+        "For German electricity generators the following deviations between the inputs and outputs can be observed:"
+    )
+    carriers_electricity = [
+        "other_non_renewable",
+        "other_renewable",
+        "run_of_river",
+        "gas",
+        "wind_onshore",
+        "wind_offshore",
+        "solar",
+        "solar_rooftop",
+            ]
