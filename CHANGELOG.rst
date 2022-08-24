@@ -386,14 +386,15 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
-* Add noflex scenario for motorized individual travel
-  `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Move and merge the two assign_gas_bus_id functions to a central place
   `#797 <https://github.com/openego/eGon-data/issues/797>`_
 * Add coordinates to non AC buses abroad in eGon100RE
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Add noflex scenario for motorized individual travel
+  `#821 <https://github.com/openego/eGon-data/issues/821>`_
+
 
 Bug Fixes
 ---------
@@ -559,8 +560,6 @@ Bug Fixes
   Use db.next_etrago_id in fill_etrago_gen
   `#798 <https://github.com/openego/eGon-data/issues/798>`_
   `#776 <https://github.com/openego/eGon-data/issues/776>`_
-* Overwrite capacities for conventional power plants with data from nep list
-  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
 * Fix gas costs
