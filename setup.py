@@ -104,6 +104,7 @@ setup(
         "rasterio",
         "rioxarray",
         "rtree",
+		"saio",
         "seaborn",
         "snakemake<7",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4

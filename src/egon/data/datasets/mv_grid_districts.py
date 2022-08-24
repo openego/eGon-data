@@ -78,7 +78,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.substation import EgonHvmvSubstation
+from egon.data.datasets.osmtgmod.substation import EgonHvmvSubstation
 from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
 
@@ -564,6 +564,11 @@ def merge_polygons_to_grid_district():
     engine = db.engine()
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
     MvGridDistrictsDissolved.__table__.create(bind=engine)
+    db.execute_sql(
+        f"""
+        DROP TABLE {MvGridDistricts.__table__.schema}.{MvGridDistricts.__table__.name} CASCADE; 
+        """
+    )
     MvGridDistricts.__table__.drop(bind=engine, checkfirst=True)
     MvGridDistricts.__table__.create(bind=engine)
 
@@ -817,7 +822,7 @@ def define_mv_grid_districts():
 mv_grid_districts_setup = partial(
     Dataset,
     name="MvGridDistricts",
-    version="0.0.2",
+    version="0.0.3",
     dependencies=[],
     tasks=(define_mv_grid_districts),
 )

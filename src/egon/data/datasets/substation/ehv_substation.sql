@@ -154,7 +154,7 @@ CREATE VIEW 		grid.egon_final_result_hoes AS
 	WHERE 	grid.egon_summary_de_hoes.osm_id NOT IN ( SELECT grid.egon_substations_to_drop_hoes.osm_id FROM grid.egon_substations_to_drop_hoes);
 
 -- insert results
-INSERT INTO grid.egon_ehv_substation (lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status)
+INSERT INTO grid.egon_ehv_transfer_buses (lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status)
 	SELECT 	lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status
 	FROM 	grid.egon_final_result_hoes;
 
