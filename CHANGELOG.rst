@@ -398,6 +398,8 @@ Changed
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Insert stubtations into transfer buses table
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Set non extendable gas components from p-e-s as so for eGon100RE
+  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 
 Bug Fixes
 ---------

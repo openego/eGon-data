@@ -670,26 +670,53 @@ def neighbor_reduction():
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
 
     # prepare and write neighboring crossborder links to etrago tables
-    def links_to_etrago(neighbor_links, scn="eGon100RE"):
+    def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
         neighbor_links["scn_name"] = scn
 
-        for i in [
-            "name",
-            "geometry",
-            "tags",
-            "under_construction",
-            "underground",
-            "underwater_fraction",
-            "bus2",
-            "bus3",
-            "bus4",
-            "efficiency2",
-            "efficiency3",
-            "efficiency4",
-            "lifetime",
-            "p_nom_opt",
-        ]:
-            neighbor_links = neighbor_links.drop(i, axis=1)
+        if extendable == True:
+            for i in [
+                "name",
+                "geometry",
+                "tags",
+                "under_construction",
+                "underground",
+                "underwater_fraction",
+                "bus2",
+                "bus3",
+                "bus4",
+                "efficiency2",
+                "efficiency3",
+                "efficiency4",
+                "lifetime",
+                "p_nom_opt",
+                # "pipe_retrofit",
+            ]:
+                neighbor_links = neighbor_links.drop(i, axis=1)
+
+        elif extendable == False:
+            for i in [
+                "name",
+                "geometry",
+                "tags",
+                "under_construction",
+                "underground",
+                "underwater_fraction",
+                "bus2",
+                "bus3",
+                "bus4",
+                "efficiency2",
+                "efficiency3",
+                "efficiency4",
+                "lifetime",
+                "p_nom",
+                # "pipe_retrofit",
+                "p_nom_extendable",
+            ]:
+                neighbor_links = neighbor_links.drop(i, axis=1)
+            neighbor_links = neighbor_links.rename(
+                columns={"p_nom_opt": "p_nom"}
+            )
+            neighbor_links["p_nom_extendable"] = False
 
         # Define geometry and add to lines dataframe as 'topo'
         gdf = gpd.GeoDataFrame(index=neighbor_links.index)
@@ -714,10 +741,8 @@ def neighbor_reduction():
                 "H2_Fuel_Cell": "H2_to_power",
                 "H2_pipeline_retrofitted": "H2_retrofit",
                 "SMR": "CH4_to_H2",
-                "SMR_CC": "CH4_to_H2_CC",
                 "Sabatier": "H2_to_CH4",
                 "gas_for_industry": "CH4_for_industry",
-                "gas_for_industry_CC": "CH4_for_industry_CC",
                 "gas_pipeline": "CH4",
             },
             inplace=True,
@@ -732,7 +757,32 @@ def neighbor_reduction():
             index_label="link_id",
         )
 
-    links_to_etrago(neighbor_links, "eGon100RE")
+    non_extendable_links_carriers = [
+        "H2 pipeline retrofitted",
+        "gas pipeline",
+        "biogas to gas",
+    ]
+
+    # delete unwanted carriers for eTraGo
+    excluded_carriers = ["gas for industry CC", "SMR CC"]
+    neighbor_links = neighbor_links[
+        ~neighbor_links.carrier.isin(excluded_carriers)
+    ]
+
+    links_to_etrago(
+        neighbor_links[
+            ~neighbor_links.carrier.isin(non_extendable_links_carriers)
+        ],
+        "eGon100RE",
+    )
+    links_to_etrago(
+        neighbor_links[
+            neighbor_links.carrier.isin(non_extendable_links_carriers)
+        ],
+        "eGon100RE",
+        extendable=False,
+    )
+
     links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
 
     # prepare neighboring generators for etrago tables
@@ -979,7 +1029,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=tasks,
         )
