@@ -14,10 +14,10 @@ class SanityChecks(Dataset):
             name="SanityChecks",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(
+            tasks={
                 sanitycheck_eGon2035_electricity,
                 sanitycheck_eGon2035_heat,
-            ),
+            },
         )
 
 
