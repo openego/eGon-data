@@ -840,14 +840,68 @@ def write_model_data_to_db(
 
     # Write to database: regular and noflex scenario
     write_to_db(write_noflex_model=False)
-    print('    Writing flex scenario...')
+    print("    Writing flex scenario...")
     if write_noflex_model is True:
-        print('    Writing noflex scenario...')
+        print("    Writing noflex scenario...")
         write_to_db(write_noflex_model=True)
 
     # Export to working dir if requested
     if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
         write_to_file()
+
+
+def delete_model_data_from_db():
+    """Delete all eMob MIT data from eTraGo PF tables"""
+    with db.session_scope() as session:
+        # Buses
+        session.query(EgonPfHvBus).filter(
+            EgonPfHvBus.carrier == "Li ion"
+        ).delete(synchronize_session=False)
+
+        # Link TS
+        subquery = (
+            session.query(EgonPfHvLink.link_id)
+            .filter(EgonPfHvLink.carrier == "BEV charger")
+            .subquery()
+        )
+
+        session.query(EgonPfHvLinkTimeseries).filter(
+            EgonPfHvLinkTimeseries.link_id.in_(subquery)
+        ).delete(synchronize_session=False)
+        # Links
+        session.query(EgonPfHvLink).filter(
+            EgonPfHvLink.carrier == "BEV charger"
+        ).delete(synchronize_session=False)
+
+        # Store TS
+        subquery = (
+            session.query(EgonPfHvStore.store_id)
+            .filter(EgonPfHvStore.carrier == "battery storage")
+            .subquery()
+        )
+
+        session.query(EgonPfHvLoadTimeseries).filter(
+            EgonPfHvLoadTimeseries.store_id.in_(subquery)
+        ).delete(synchronize_session=False)
+        # Stores
+        session.query(EgonPfHvStore).filter(
+            EgonPfHvStore.carrier == "battery storage"
+        ).delete(synchronize_session=False)
+
+        # Load TS
+        subquery = (
+            session.query(EgonPfHvLoad.load_id)
+            .filter(EgonPfHvLoad.carrier == "land transport EV")
+            .subquery()
+        )
+
+        session.query(EgonPfHvLoadTimeseries).filter(
+            EgonPfHvLoadTimeseries.load_id.in_(subquery)
+        ).delete(synchronize_session=False)
+        # Loads
+        session.query(EgonPfHvLoad).filter(
+            EgonPfHvLoad.carrier == "land transport EV"
+        ).delete(synchronize_session=False)
 
 
 def load_grid_district_ids() -> pd.Series:
