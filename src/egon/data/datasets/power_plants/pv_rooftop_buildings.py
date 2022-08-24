@@ -2122,6 +2122,7 @@ def desaggregate_pv_in_mv_grid(
         assert np.isclose(
             samples_gdf.capacity.sum(),
             pv_cap_range,
+            rtol=1e-03,
         ), f"{samples_gdf.capacity.sum()} != {pv_cap_range}"
 
         results_df = pd.concat(
@@ -2134,6 +2135,7 @@ def desaggregate_pv_in_mv_grid(
     assert np.isclose(
         results_df.capacity.sum(),
         pv_cap,
+        rtol=1e-03,
     ), f"{results_df.capacity.sum()} != {pv_cap}"
 
     return gpd.GeoDataFrame(
@@ -2240,11 +2242,13 @@ def desaggregate_pv(
         )
 
         assert np.isclose(
-            pv_missing, gdf.capacity.sum()
+            pv_missing, gdf.capacity.sum(), rtol=1e-03
         ), f"{pv_missing} != {gdf.capacity.sum()}"
 
     assert np.isclose(
-        cap_df.capacity.sum() * 1000, allocated_buildings_gdf.capacity.sum()
+        cap_df.capacity.sum() * 1000,
+        allocated_buildings_gdf.capacity.sum(),
+        rtol=1e-03,
     ), f"{cap_df.capacity.sum() * 1000} != {allocated_buildings_gdf.capacity.sum()}"
 
     logger.debug("Desaggregated scenario.")
