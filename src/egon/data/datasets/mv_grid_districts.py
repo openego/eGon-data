@@ -566,10 +566,10 @@ def merge_polygons_to_grid_district():
     MvGridDistrictsDissolved.__table__.create(bind=engine)
     db.execute_sql(
         f"""
-        DROP TABLE {MvGridDistricts.__table__.schema}.{MvGridDistricts.__table__.name} CASCADE; 
+        DROP TABLE IF EXISTS {MvGridDistricts.__table__.schema}.{MvGridDistricts.__table__.name} CASCADE; 
         """
     )
-    MvGridDistricts.__table__.drop(bind=engine, checkfirst=True)
+
     MvGridDistricts.__table__.create(bind=engine)
 
     with session_scope() as session:
