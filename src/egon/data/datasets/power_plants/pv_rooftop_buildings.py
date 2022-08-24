@@ -957,7 +957,7 @@ def drop_buildings_outside_muns(
 
 
 def egon_building_peak_loads():
-    sql = f"""
+    sql = """
     SELECT building_id
     FROM demand.egon_building_peak_loads
     """
@@ -1550,60 +1550,16 @@ def drop_buildings_outside_grids(
     return gdf
 
 
-def buildings_area_per_overlay_id(
-    valid_buildings_gdf: gpd.GeoDataFrame,
-    grid_federal_state_gdf: gpd.GeoDataFrame,
-) -> pd.DataFrame:
-    """
-    Calculate total area of building per overlay ID.
-    TODO: This is very simplified at the moment. If possible add some kind
-     of weights to the area per building to differentiate between single-
-     family and multi-family houses as well as agricultural and industrial
-     buildings.
-    Parameters
-    -----------
-    valid_buildings_gdf : geopandas.GeoDataFrame
-        GeoDataFrame containing OSM buildings data with overlay ID added.
-    grid_federal_state_gdf : geopandas.GeoDataFrame
-        GeoDataFrame with intersection shapes between counties and grid districts.
-    Returns
-    -------
-    geopandas.GeoDataFrame
-        GeoDataFrame with grid data and total buildings area.
-    """
-    return grid_federal_state_gdf.merge(
-        valid_buildings_gdf[
-            [
-                "building_area",
-                "overlay_id",
-            ]
-        ]
-        .groupby("overlay_id")
-        .sum(),
-        how="left",
-        left_index=True,
-        right_index=True,
-    )
-
-
 def cap_per_bus_id(
     scenario: str,
-    # overlay_gdf: gpd.GeoDataFrame,
-    # scenario_df: pd.DataFrame,
-    # conversion: int | float = 10**3,
 ) -> pd.DataFrame:
     """
-    Calculate total pv rooftop capacity per grid district dependent on
-    available buildings area.
-    TODO: This is very simplified at the moment as it assumes an evenly
-     distribution of generators depending on the available buildings
-     area per grid district.
+    Get table with total pv rooftop capacity per grid district.
+
     Parameters
     -----------
-    overlay_gdf : geopandas.GeoDataFrame
-        GeoDataFrame with grid data and total buildings area.
-    conversion : int, float
-        Conversion factor to match units. E.g. MW -> kW
+    scenario : str
+        Scenario name.
     Returns
     -------
     pandas.DataFrame
@@ -2234,9 +2190,9 @@ def desaggregate_pv(
 
         pv_installed = pv_installed_gdf.capacity.sum()
 
-        pot_buildings_gdf = buildings_grid_gdf.loc[
-            ~buildings_grid_gdf.index.isin(pv_installed_gdf.index)
-        ]
+        pot_buildings_gdf = buildings_grid_gdf.drop(
+            index=pv_installed_gdf.index
+        )
 
         if len(pot_buildings_gdf) == 0:
             logger.error(
@@ -2247,13 +2203,7 @@ def desaggregate_pv(
 
             continue
 
-        pv_target = (
-            cap_df.at[
-                bus_id,
-                "capacity",
-            ]
-            * 1000
-        )
+        pv_target = cap_df.at[bus_id, "capacity"] * 1000
 
         pv_missing = pv_target - pv_installed
 
@@ -2289,7 +2239,19 @@ def desaggregate_pv(
             ]
         )
 
+        assert np.isclose(
+            pv_missing, gdf.capacity.sum()
+        ), f"{pv_missing} != {gdf.capacity.sum()}"
+
+    assert np.isclose(
+        cap_df.capacity.sum() * 1000, allocated_buildings_gdf.capacity.sum()
+    ), f"{cap_df.capacity.sum() * 1000} != {allocated_buildings_gdf.capacity.sum()}"
+
     logger.debug("Desaggregated scenario.")
+    logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
+    logger.debug(
+        f"Generator capacity: {allocated_buildings_gdf.capacity.sum(): g}"
+    )
 
     return gpd.GeoDataFrame(
         allocated_buildings_gdf,
@@ -2466,15 +2428,11 @@ def allocate_scenarios(
 
     valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
 
-    # buildings_area_per_overlay_gdf = buildings_area_per_overlay_id(
-    #     valid_buildings_gdf,
-    #     grid_federal_state_gdf,
-    # )
-
     cap_per_bus_id_df = cap_per_bus_id(scenario)
-    #     buildings_area_per_overlay_gdf,
-    #     scenario_data(CARRIER, scenario),
-    # )
+
+    logger.debug(
+        f"cap_per_bus_id_df total capacity: {cap_per_bus_id_df.capacity.sum()}"
+    )
 
     last_scenario_gdf = determine_end_of_life_gens(
         last_scenario_gdf,

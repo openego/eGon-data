@@ -117,7 +117,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_input.input_capacity_mw.sum() == 0
         ):
             print(
-                f"No capacity for carrier '{carrier}' needed to be distributed. Everything is fine"
+                f"No capacity for carrier '{carrier}' needed to be distributed. "
+                f"Everything is fine"
             )
 
         elif (
@@ -330,7 +331,8 @@ def sanitycheck_eGon2035_heat():
     # Sanity checks for heat supply
 
     print(
-        "For German heat supplies the following deviations between the inputs and outputs can be observed:"
+        "For German heat supplies the following deviations between the inputs and "
+        "outputs can be observed:"
     )
 
     # Comparison for central heat pumps
@@ -549,4 +551,7 @@ def sanitycheck_pv_rooftop_buildings():
             scenario_data(scenario=scenario).capacity.sum() * 1000,
             merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
             rel_tol=1e-02,
+        ), (
+            f"{scenario_data(scenario=scenario).capacity.sum() * 1000} != "
+            f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
         )
