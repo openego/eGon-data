@@ -570,6 +570,8 @@ def merge_polygons_to_grid_district():
         """
     )
 
+    MvGridDistricts.__table__.create(bind=engine)
+
     with session_scope() as session:
         # Step 1: Merge municipality parts cut by voronoi polygons according
         # to prior determined associated substation
