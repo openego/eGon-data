@@ -880,8 +880,8 @@ def delete_model_data_from_db():
             .subquery()
         )
 
-        session.query(EgonPfHvLoadTimeseries).filter(
-            EgonPfHvLoadTimeseries.store_id.in_(subquery)
+        session.query(EgonPfHvStoreTimeseries).filter(
+            EgonPfHvStoreTimeseries.store_id.in_(subquery)
         ).delete(synchronize_session=False)
         # Stores
         session.query(EgonPfHvStore).filter(
