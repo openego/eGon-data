@@ -576,7 +576,7 @@ def allocate_conventional_non_chp_power_plants():
     db.execute_sql(
         f"""
          DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
-         WHERE carrier IN ('gas', 'others', 'oil')
+         WHERE carrier IN ('gas', 'oil')
          AND scenario='eGon2035';
          """
     )
