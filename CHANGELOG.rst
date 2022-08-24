@@ -398,6 +398,9 @@ Changed
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Insert stubtations into transfer buses table
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Parallelize sanity checks
+  `#882 <https://github.com/openego/eGon-data/issues/882>`_
+
 
 Bug Fixes
 ---------
@@ -577,7 +580,6 @@ Bug Fixes
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
 * Drop isolated buses and tranformers in eHV grid
   `#874 <https://github.com/openego/eGon-data/issues/874>`_
-
 * Delete eMob MIT data from eTraGo tables on init
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
 
