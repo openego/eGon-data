@@ -565,6 +565,8 @@ Bug Fixes
   `#781 <https://github.com/openego/eGon-data/issues/781>`_
 * Add extendable batteries only to buses at substations
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
+* Delete eMob MIT data from eTraGo tables on init
+  `#878 <https://github.com/openego/eGon-data/issues/878>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
