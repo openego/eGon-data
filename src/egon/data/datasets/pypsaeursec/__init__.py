@@ -741,10 +741,8 @@ def neighbor_reduction():
                 "H2_Fuel_Cell": "H2_to_power",
                 "H2_pipeline_retrofitted": "H2_retrofit",
                 "SMR": "CH4_to_H2",
-                "SMR_CC": "CH4_to_H2_CC",
                 "Sabatier": "H2_to_CH4",
                 "gas_for_industry": "CH4_for_industry",
-                "gas_for_industry_CC": "CH4_for_industry_CC",
                 "gas_pipeline": "CH4",
             },
             inplace=True,
@@ -763,6 +761,12 @@ def neighbor_reduction():
         "H2 pipeline retrofitted",
         "gas pipeline",
         "biogas to gas",
+    ]
+
+    # delete unwanted carriers for eTraGo
+    excluded_carriers = ["gas for industry CC", "SMR CC"]
+    neighbor_links = neighbor_links[
+        ~neighbor_links.carrier.isin(excluded_carriers)
     ]
 
     links_to_etrago(
