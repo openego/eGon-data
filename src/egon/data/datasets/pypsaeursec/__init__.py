@@ -671,50 +671,83 @@ def neighbor_reduction():
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
 
-    # prepare and write neighboring crossborder links to etrago tables
     def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
+        """Prepare and write neighboring crossborder links to eTraGo table
+
+        This function prepare the neighboring crossborder links
+        generated the PyPSA-eur-sec (p-e-s) run by:
+          * Delete the useless columns
+          * If extendable is false only (non default case):
+              * Replace p_nom = 0 with the p_nom_op values (arrising
+              from the p-e-s optimisation)
+              * Setting p_nom_extendable to false
+          * Add geomtry to the links: 'geom' and 'topo' columns
+          * Change the name of the carriers to have the consistent in
+            eGon-data
+
+        The function insert then the link to the eTraGo table and has
+        no return.
+
+        Parameters
+        ----------
+        neighbor_links : pandas.DataFrame
+            Dataframe containing the neighboring crossborder links
+        scn_name : str
+            Name of the scenario
+        extendable : bool
+            Boolean expressing if the links should be extendable or not
+
+        Returns
+        -------
+        None
+
+        """
         neighbor_links["scn_name"] = scn
 
-        if extendable == True:
-            for i in [
-                "name",
-                "geometry",
-                "tags",
-                "under_construction",
-                "underground",
-                "underwater_fraction",
-                "bus2",
-                "bus3",
-                "bus4",
-                "efficiency2",
-                "efficiency3",
-                "efficiency4",
-                "lifetime",
-                "p_nom_opt",
-                # "pipe_retrofit",
-            ]:
-                neighbor_links = neighbor_links.drop(i, axis=1)
+        if extendable is True:
+            neighbor_links = neighbor_links.drop(
+                columns=[
+                    "name",
+                    "geometry",
+                    "tags",
+                    "under_construction",
+                    "underground",
+                    "underwater_fraction",
+                    "bus2",
+                    "bus3",
+                    "bus4",
+                    "efficiency2",
+                    "efficiency3",
+                    "efficiency4",
+                    "lifetime",
+                    "p_nom_opt",
+                    "pipe_retrofit",
+                ],
+                errors="ignore",
+            )
 
-        elif extendable == False:
-            for i in [
-                "name",
-                "geometry",
-                "tags",
-                "under_construction",
-                "underground",
-                "underwater_fraction",
-                "bus2",
-                "bus3",
-                "bus4",
-                "efficiency2",
-                "efficiency3",
-                "efficiency4",
-                "lifetime",
-                "p_nom",
-                # "pipe_retrofit",
-                "p_nom_extendable",
-            ]:
-                neighbor_links = neighbor_links.drop(i, axis=1)
+        elif extendable is False:
+            neighbor_links = neighbor_links.drop(
+                columns=[
+                    "name",
+                    "geometry",
+                    "tags",
+                    "under_construction",
+                    "underground",
+                    "underwater_fraction",
+                    "bus2",
+                    "bus3",
+                    "bus4",
+                    "efficiency2",
+                    "efficiency3",
+                    "efficiency4",
+                    "lifetime",
+                    "p_nom",
+                    "p_nom_extendable",
+                    "pipe_retrofit",
+                ],
+                errors="ignore",
+            )
             neighbor_links = neighbor_links.rename(
                 columns={"p_nom_opt": "p_nom"}
             )
