@@ -2253,6 +2253,8 @@ def desaggregate_pv(
             **kwargs,
         )
 
+        gdf.capacity *= pv_missing / gdf.capacity.sum()
+
         gdf_total += gdf.capacity.sum()
 
         init_len = len(allocated_buildings_gdf)
