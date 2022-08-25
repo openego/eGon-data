@@ -385,6 +385,8 @@ Changed
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Integrate new data bundle using zenodo sandbox
+  `#866 <https://github.com/openego/eGon-data/issues/866>`_
 
 Bug Fixes
 ---------
