@@ -2271,15 +2271,15 @@ def desaggregate_pv(
         ), f"{pv_missing} != {gdf.capacity.sum()}"
 
     assert np.isclose(
-        pv_target_total / 1000, cap_df.capacity.sum()
+        pv_target_total / 1000, cap_df.capacity.sum(), rtol=1e-03
     ), f"{pv_target_total / 1000} != {cap_df.capacity.sum()}"
 
     assert np.isclose(
-        pv_missing_total, gdf_total
+        pv_missing_total, gdf_total, rtol=1e-03
     ), f"{pv_missing_total} != {gdf_total}"
 
     assert np.isclose(
-        allocated_buildings_capacity, pv_installed_total
+        allocated_buildings_capacity, pv_installed_total, rtol=1e-03
     ), f"{allocated_buildings_capacity} != {pv_installed_total}"
 
     assert np.isclose(
