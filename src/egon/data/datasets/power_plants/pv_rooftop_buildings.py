@@ -2263,7 +2263,7 @@ def desaggregate_pv(
 
     assert (
         allocated_buildings_capacity == pv_installed_total
-    ), f"{allocated_buildings_gdf.capacity.sum()} != {pv_installed_total}"
+    ), f"{allocated_buildings_capacity} != {pv_installed_total}"
 
     assert np.isclose(
         cap_df.capacity.sum() * 1000,
