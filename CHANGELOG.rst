@@ -584,6 +584,8 @@ Bug Fixes
   `#874 <https://github.com/openego/eGon-data/issues/874>`_
 * Delete eMob MIT data from eTraGo tables on init
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
+* Move class definition for grid.egon_gas_voronoi out of etrago_setup
+  `#888 <https://github.com/openego/eGon-data/issues/888>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

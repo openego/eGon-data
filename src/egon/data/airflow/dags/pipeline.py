@@ -382,7 +382,7 @@ with airflow.DAG(
 
     # Create gas voronoi eGon2035
     create_gas_polygons_egon2035 = GasAreaseGon2035(
-        dependencies=[insert_hydrogen_buses, vg250]
+        dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
 
     # Insert hydrogen grid
@@ -406,15 +406,12 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            h2_infrastructure,
-            insert_power_to_h2_installations
-        ]
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
     # Create gas voronoi eGon100RE
     create_gas_polygons_egon100RE = GasAreaseGon100RE(
-        dependencies=[insert_h2_grid, vg250]
+        dependencies=[create_gas_polygons_egon2035, insert_h2_grid, vg250]
     )
 
     # Import gas production
