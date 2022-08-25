@@ -389,6 +389,8 @@ Changed
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
+* Add sanity checks for motorized individual travel
+  `#820 <https://github.com/openego/eGon-data/issues/820>`_
 
 
 Bug Fixes
