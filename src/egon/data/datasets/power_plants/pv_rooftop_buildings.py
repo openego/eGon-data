@@ -2132,6 +2132,12 @@ def desaggregate_pv_in_mv_grid(
             ],
         )
 
+    total_missing_factor = pv_cap / results_df.capacity.sum()
+
+    results_df = results_df.assign(
+        capacity=(results_df.capacity * total_missing_factor),
+    )
+
     assert np.isclose(
         results_df.capacity.sum(),
         pv_cap,
