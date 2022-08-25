@@ -2189,7 +2189,7 @@ def desaggregate_pv(
     """
     allocated_buildings_gdf = buildings_gdf.loc[~buildings_gdf.end_of_life]
 
-    assert set(buildings_gdf.bus_id.unique()) == set(cap_df.index)
+    # assert set(buildings_gdf.bus_id.unique()) == set(cap_df.index)
 
     for bus_id in buildings_gdf.bus_id.unique():
         buildings_grid_gdf = buildings_gdf.loc[buildings_gdf.bus_id == bus_id]
@@ -2265,7 +2265,7 @@ def desaggregate_pv(
         ), f"{pv_missing} != {gdf.capacity.sum()}"
 
     assert np.isclose(
-        cap_df.capacity.sum() * 1000,
+        cap_df.loc[buildings_gdf.bus_id.unique()].capacity.sum() * 1000,
         allocated_buildings_gdf.capacity.sum(),
         rtol=1e-03,
     ), f"{cap_df.capacity.sum() * 1000} != {allocated_buildings_gdf.capacity.sum()}"
