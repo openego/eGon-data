@@ -2189,12 +2189,7 @@ def desaggregate_pv(
     """
     allocated_buildings_gdf = buildings_gdf.loc[~buildings_gdf.end_of_life]
 
-    allocated_buildings_capacity = allocated_buildings_gdf.capacity.sum()
-
-    pv_installed_total = 0
-    pv_target_total = 0
-    pv_missing_total = 0
-    gdf_total = 0
+    assert set(buildings_gdf.bus_id.unique()) == set(cap_df.index)
 
     for bus_id in buildings_gdf.bus_id.unique():
         buildings_grid_gdf = buildings_gdf.loc[buildings_gdf.bus_id == bus_id]
@@ -2204,8 +2199,6 @@ def desaggregate_pv(
         ]
 
         pv_installed = pv_installed_gdf.capacity.sum()
-
-        pv_installed_total += pv_installed
 
         pot_buildings_gdf = buildings_grid_gdf.drop(
             index=pv_installed_gdf.index
@@ -2222,11 +2215,7 @@ def desaggregate_pv(
 
         pv_target = cap_df.at[bus_id, "capacity"] * 1000
 
-        pv_target_total += pv_target
-
         pv_missing = pv_target - pv_installed
-
-        pv_missing_total += pv_missing
 
         if pv_missing <= 0:
             logger.info(
@@ -2253,8 +2242,6 @@ def desaggregate_pv(
             **kwargs,
         )
 
-        gdf_total += gdf.capacity.sum()
-
         init_len = len(allocated_buildings_gdf)
 
         init_cap = allocated_buildings_gdf.capacity.sum()
@@ -2276,18 +2263,6 @@ def desaggregate_pv(
         assert np.isclose(
             pv_missing, gdf.capacity.sum(), rtol=1e-03
         ), f"{pv_missing} != {gdf.capacity.sum()}"
-
-    assert np.isclose(
-        pv_target_total / 1000, cap_df.capacity.sum(), rtol=1e-03
-    ), f"{pv_target_total / 1000} != {cap_df.capacity.sum()}"
-
-    assert np.isclose(
-        pv_missing_total, gdf_total, rtol=1e-03
-    ), f"{pv_missing_total} != {gdf_total}"
-
-    assert np.isclose(
-        allocated_buildings_capacity, pv_installed_total, rtol=1e-03
-    ), f"{allocated_buildings_capacity} != {pv_installed_total}"
 
     assert np.isclose(
         cap_df.capacity.sum() * 1000,
