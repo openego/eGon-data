@@ -38,7 +38,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 sanitycheck_eGon2035_electricity,
