@@ -2189,6 +2189,8 @@ def desaggregate_pv(
     """
     allocated_buildings_gdf = buildings_gdf.loc[~buildings_gdf.end_of_life]
 
+    allocated_buildings_capacity = allocated_buildings_gdf.capacity.sum()
+
     pv_installed_total = 0
 
     for bus_id in buildings_gdf.bus_id.unique():
@@ -2260,7 +2262,7 @@ def desaggregate_pv(
         ), f"{pv_missing} != {gdf.capacity.sum()}"
 
     assert (
-        allocated_buildings_gdf.capacity.sum() == pv_installed_total
+        allocated_buildings_capacity == pv_installed_total
     ), f"{allocated_buildings_gdf.capacity.sum()} != {pv_installed_total}"
 
     assert np.isclose(
