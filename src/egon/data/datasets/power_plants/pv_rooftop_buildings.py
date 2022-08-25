@@ -2234,12 +2234,16 @@ def desaggregate_pv(
             **kwargs,
         )
 
+        init_len = len(allocated_buildings_gdf)
+
         allocated_buildings_gdf = pd.concat(
             [
                 allocated_buildings_gdf,
                 gdf,
             ]
         )
+
+        assert len(allocated_buildings_gdf) == init_len + len(gdf)
 
         assert np.isclose(
             pv_missing, gdf.capacity.sum(), rtol=1e-03
