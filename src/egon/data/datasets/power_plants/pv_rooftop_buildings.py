@@ -2194,6 +2194,7 @@ def desaggregate_pv(
     pv_installed_total = 0
     pv_target_total = 0
     pv_missing_total = 0
+    gdf_total_0 = 0
     gdf_total = 0
 
     for bus_id in buildings_gdf.bus_id.unique():
@@ -2253,6 +2254,8 @@ def desaggregate_pv(
             **kwargs,
         )
 
+        gdf_total_0 += gdf.capacity.sum()
+
         gdf.capacity *= pv_missing / gdf.capacity.sum()
 
         gdf_total += gdf.capacity.sum()
@@ -2275,6 +2278,8 @@ def desaggregate_pv(
     assert np.isclose(
         pv_target_total / 1000, cap_df.capacity.sum(), rtol=1e-03
     ), f"{pv_target_total / 1000} != {cap_df.capacity.sum()}"
+
+    logger.debug(f"{gdf_total_0}, {gdf_total}")
 
     assert np.isclose(
         pv_missing_total, gdf_total, rtol=1e-03
