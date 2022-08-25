@@ -2268,7 +2268,10 @@ def desaggregate_pv(
         cap_df.loc[buildings_gdf.bus_id.unique()].capacity.sum() * 1000,
         allocated_buildings_gdf.capacity.sum(),
         rtol=1e-03,
-    ), f"{cap_df.capacity.sum() * 1000} != {allocated_buildings_gdf.capacity.sum()}"
+    ), (
+        f"{cap_df.loc[buildings_gdf.bus_id.unique()].capacity.sum() * 1000} != "
+        f"{allocated_buildings_gdf.capacity.sum()}"
+    )
 
     logger.debug("Desaggregated scenario.")
     logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
