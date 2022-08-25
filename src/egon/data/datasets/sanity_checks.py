@@ -501,7 +501,7 @@ def sanitycheck_eGon100RE_electricity():
         "wind_onshore",
         "wind_offshore",
         "solar",
-        "solar_rooftop",
+        #"solar_rooftop",
             ]
     for carrier in carriers_electricity:
        
@@ -544,5 +544,36 @@ def sanitycheck_eGon100RE_electricity():
                 """,
             warning=False,
         )
+        if (
+            sum_output.output_capacity_mw.sum() == 0
+            and sum_input.input_capacity_mw.sum() == 0
+        ):
+            print(
+                f"No capacity for carrier '{carrier}' needed to be distributed. Everything is fine"
+            )
 
+        elif (
+            sum_input.input_capacity_mw.sum() > 0
+            and sum_output.output_capacity_mw.sum() == 0
+        ):
+            print(
+                f"Error: Capacity for carrier '{carrier}' was not distributed at all!"
+            )
+
+        elif (
+            sum_output.output_capacity_mw.sum() > 0
+            and sum_input.input_capacity_mw.sum() == 0
+        ):
+            print(
+                f"Error: Eventhough no input capacity was provided for carrier '{carrier}' a capacity got distributed!"
+            )
+
+        else:
+            sum_input["error"] = (
+                (sum_output.output_capacity_mw - sum_input.input_capacity_mw)
+                / sum_input.input_capacity_mw
+            ) * 100
+            g = sum_input["error"].values[0]
+
+            print(f"{carrier}: " + str(round(g, 2)) + " %")
 
