@@ -660,21 +660,22 @@ def eGon100_capacities():
         "rural_gas_boiler",
         "rural_solar_thermal",
     ]:
-        df = df.append(
-            pd.DataFrame(
-                index=[merge_carrier],
-                data={
-                    "p_nom": (
-                        df.p_nom[f"residential_{merge_carrier}"]
-                        + df.p_nom[f"services_{merge_carrier}"]
-                    ),
-                    "component": df.component[f"residential_{merge_carrier}"],
-                },
+        if f"residential_{merge_carrier}" in df.index:
+            df = df.append(
+                pd.DataFrame(
+                    index=[merge_carrier],
+                    data={
+                        "p_nom": (
+                            df.p_nom[f"residential_{merge_carrier}"]
+                            + df.p_nom[f"services_{merge_carrier}"]
+                        ),
+                        "component": df.component[f"residential_{merge_carrier}"],
+                    },
+                )
             )
-        )
-        df = df.drop(
-            [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
-        )
+            df = df.drop(
+                [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
+            )
 
     # Rename carriers
     df.rename(
