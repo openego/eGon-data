@@ -1,6 +1,6 @@
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Column, Float, Integer, String, func
+from sqlalchemy import Column, Float, Integer, String, func, REAL
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
@@ -50,7 +50,7 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     # id = Column(Integer, primary_key=True)
     # scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
-    profile_share = Column(Float)
+    profile_share = Column(REAL)
 
 
 class EgonCtsHeatDemandBuildingShare(Base):
@@ -63,7 +63,7 @@ class EgonCtsHeatDemandBuildingShare(Base):
     # id = Column(Integer, primary_key=True)
     # scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
-    profile_share = Column(Float)
+    profile_share = Column(REAL)
 
 
 class CtsBuildings(Base):
