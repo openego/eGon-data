@@ -3,7 +3,7 @@ DB tables / SQLAlchemy ORM classes for heavy duty transport
 """
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, Float, ForeignKey, String
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config
@@ -18,7 +18,7 @@ class EgonHeavyDutyTransportVoronoi(Base):
     __tablename__ = "egon_heavy_duty_transport_voronoi"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, primary_key=True)
+    nuts3 = Column(String, primary_key=True)
     geometry = Column(Geometry(srid=DATASET_CFG["tables"]["srid"]))
     area = Column(Float)
     truck_traffic = Column(Float)
