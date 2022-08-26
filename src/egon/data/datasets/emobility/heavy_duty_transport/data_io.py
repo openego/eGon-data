@@ -88,8 +88,9 @@ def nuts3_gdf():
     """Read in NUTS3 geo shapes."""
     srid = DATASET_CFG["tables"]["srid"]
     sql = """
-        SELECT id, geometry FROM boundaries.vg250_gem
-        ORDER BY id
+        SELECT nuts as nuts3, geometry FROM boundaries.vg250_krs
+        WHERE gf = 4
+        ORDER BY nuts
         """
 
     gdf = select_geodataframe(sql, geom_col="geometry", index_col="id").to_crs(

@@ -95,7 +95,7 @@ def geo_intersect(
 
     # Find Intersections between both GeoDataFrames
     intersection_gdf = gpd.overlay(
-        voronoi_gdf, nuts3_gdf.reset_index()[["id", "geometry"]], how=mode
+        voronoi_gdf, nuts3_gdf.reset_index()[["nuts3", "geometry"]], how=mode
     )
 
     # Calc Area of Intersections
@@ -118,7 +118,7 @@ def geo_intersect(
         for idx, row in voronoi_id_intersection_gdf.iterrows():
             traffic_share = truck_traffic * row["surface_area"] / total_area
 
-            nuts3_gdf.at[row["id"], "truck_traffic"] += traffic_share
+            nuts3_gdf.at[row["nuts3"], "truck_traffic"] += traffic_share
 
     logger.info("Done.")
 
