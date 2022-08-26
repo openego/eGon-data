@@ -1,9 +1,10 @@
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Column, Float, Integer, String, func, REAL
+from sqlalchemy import Column, Integer, String, func, REAL
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 import saio
 
 from egon.data import db
@@ -865,11 +866,16 @@ def calc_building_profiles(
             raise KeyError(f"Bus with id {bus_id} not found")
 
     # get demand profile for all buildings for selected demand share
+    #TODO takes a few seconds per iteration
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("id", drop=True)["profile_share"]
         profile = df_cts_profiles.loc[:, bus_id]
-        building_profiles = profile.apply(lambda x: x * shares)
+        # building_profiles = profile.apply(lambda x: x * shares)
+        building_profiles = np.outer(profile, shares)
+        building_profiles = pd.DataFrame(building_profiles,
+                                         index=profile.index,
+                                         columns=shares.index)
         df_building_profiles = pd.concat(
             [df_building_profiles, building_profiles], axis=1
         )
