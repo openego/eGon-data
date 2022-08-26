@@ -22,7 +22,7 @@ class FixEhvSubnetworks(Dataset):
 
 def select_bus_id(x, y, v_nom, scn_name, carrier):
 
-    return db.select_dataframe(
+    bus_id = db.select_dataframe(
         f"""
         SELECT bus_id
         FROM grid.egon_etrago_bus
@@ -32,7 +32,12 @@ def select_bus_id(x, y, v_nom, scn_name, carrier):
         AND scn_name = '{scn_name}'
         AND carrier = '{carrier}'
         """
-    ).bus_id[0]
+    )
+
+    if bus_id.empty:
+        return None
+    else:
+        return bus_id.bus_id[0]
 
 
 def add_bus(x, y, v_nom, scn_name):
@@ -60,16 +65,17 @@ def add_bus(x, y, v_nom, scn_name):
 def drop_bus(x, y, v_nom, scn_name):
     bus = select_bus_id(x, y, v_nom, scn_name, carrier="AC")
 
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_bus
-        WHERE
-        scn_name = '{scn_name}'
-        AND bus_id = {bus}
-        AND v_nom = {v_nom}
-        AND carrier = 'AC'
-        """
-    )
+    if bus != None:
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_bus
+            WHERE
+            scn_name = '{scn_name}'
+            AND bus_id = {bus}
+            AND v_nom = {v_nom}
+            AND carrier = 'AC'
+            """
+        )
 
 
 def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
@@ -115,16 +121,17 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
     bus0 = select_bus_id(x0, y0, v_nom, scn_name, carrier="AC")
     bus1 = select_bus_id(x1, y1, v_nom, scn_name, carrier="AC")
 
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_line
-        WHERE
-        scn_name = '{scn_name}'
-        AND bus0 = {bus0}
-        AND bus1 = {bus1}
-        AND v_nom = {v_nom}
-        """
-    )
+    if (bus0 != None) and (bus1 != None):
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_line
+            WHERE
+            scn_name = '{scn_name}'
+            AND bus0 = {bus0}
+            AND bus1 = {bus1}
+            AND v_nom = {v_nom}
+            """
+        )
 
 
 def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
@@ -166,15 +173,16 @@ def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
     bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
     bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
 
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_transformer
-        WHERE
-        scn_name = '{scn_name}'
-        AND bus0 = {bus0}
-        AND bus1 = {bus1}
-        """
-    )
+    if (bus0 != None) and (bus1 != None):
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_transformer
+            WHERE
+            scn_name = '{scn_name}'
+            AND bus0 = {bus0}
+            AND bus1 = {bus1}
+            """
+        )
 
 
 def fix_subnetworks(scn_name):
