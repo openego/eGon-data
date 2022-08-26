@@ -829,7 +829,7 @@ def sanitycheck_emobility_mit():
                     ),
                     attrs["table_ts"].scn_name == scenario_name,
                 )
-                model_ts_dict[node]["ts"] = pd.read_sql(
+                attrs["ts"] = pd.read_sql(
                     query.statement,
                     query.session.bind,
                     index_col=attrs["column_id"],
@@ -839,9 +839,10 @@ def sanitycheck_emobility_mit():
         print("    Checking timeranges...")
         for node, attrs in model_ts_dict.items():
             for col in attrs["columns_ts"]:
+                ts = attrs["ts"]
                 invalid_ts = (
-                    attrs["ts"]
-                    .loc[attrs["ts"][col].apply(lambda _: len(_)) != 8760][col]
+                    ts
+                    .loc[ts[col].apply(lambda _: len(_)) != 8760][col]
                     .apply(len)
                 )
                 np.testing.assert_equal(
