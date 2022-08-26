@@ -975,44 +975,49 @@ def sanitycheck_emobility_mit():
     # Compare driving load and charging load
     print("  Loading eGon2035 model timeseries: driving load...")
     with db.session_scope() as session:
-        query = session.query(
-            EgonPfHvLoad.load_id,
-            EgonPfHvLoadTimeseries.p_set,
-        ).join(
-            EgonPfHvLoadTimeseries,
-            EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id
-        ).filter(
-            EgonPfHvLoad.carrier == "land transport EV",
-            EgonPfHvLoad.scn_name == "eGon2035",
-            EgonPfHvLoadTimeseries.scn_name == "eGon2035",
+        query = (
+            session.query(
+                EgonPfHvLoad.load_id,
+                EgonPfHvLoadTimeseries.p_set,
+            )
+            .join(
+                EgonPfHvLoadTimeseries,
+                EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+            )
+            .filter(
+                EgonPfHvLoad.carrier == "land transport EV",
+                EgonPfHvLoad.scn_name == "eGon2035",
+                EgonPfHvLoadTimeseries.scn_name == "eGon2035",
+            )
         )
     model_driving_load = pd.read_sql(
-        query.statement,
-        query.session.bind,
-        index_col=None
+        query.statement, query.session.bind, index_col=None
     )
     driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
 
     print("  Loading eGon2035_noflex model timeseries: dumb charging load...")
     with db.session_scope() as session:
-        query = session.query(
-            EgonPfHvLoad.load_id,
-            EgonPfHvLoadTimeseries.p_set,
-        ).join(
-            EgonPfHvLoadTimeseries,
-            EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id
-        ).filter(
-            EgonPfHvLoad.carrier == "land transport EV",
-            EgonPfHvLoad.scn_name == "eGon2035_noflex",
-            EgonPfHvLoadTimeseries.scn_name == "eGon2035_noflex",
+        query = (
+            session.query(
+                EgonPfHvLoad.load_id,
+                EgonPfHvLoadTimeseries.p_set,
+            )
+            .join(
+                EgonPfHvLoadTimeseries,
+                EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+            )
+            .filter(
+                EgonPfHvLoad.carrier == "land transport EV",
+                EgonPfHvLoad.scn_name == "eGon2035_noflex",
+                EgonPfHvLoadTimeseries.scn_name == "eGon2035_noflex",
+            )
         )
     model_charging_load_noflex = pd.read_sql(
-        query.statement,
-        query.session.bind,
-        index_col=None
+        query.statement, query.session.bind, index_col=None
     )
     charging_load = np.array(model_charging_load_noflex.p_set.to_list()).sum(
-        axis=0)
+        axis=0
+    )
 
     # Ratio of driving and charging load should be 0.9 due to charging
     # efficiency
@@ -1022,8 +1027,9 @@ def sanitycheck_emobility_mit():
         f"    Dumb charging load (eGon2035_noflex): "
         f"{charging_load.sum() / 1e6} TWh"
     )
-    driving_load_theoretical = float(
-        meta_run_config.eta_cp) * charging_load.sum()
+    driving_load_theoretical = (
+        float(meta_run_config.eta_cp) * charging_load.sum()
+    )
     np.testing.assert_allclose(
         driving_load.sum(),
         driving_load_theoretical,
