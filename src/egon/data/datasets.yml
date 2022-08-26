@@ -1097,6 +1097,7 @@ mobility_hgv:
           NUTS_CODE: "DEF"
     tables:
       srid: 3035
+      srid_buses: 4326
     constants:
       # leakage rate / losses - constant
       # https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery
