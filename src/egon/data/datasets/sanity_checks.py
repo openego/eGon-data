@@ -523,6 +523,7 @@ def sanitycheck_emobility_mit():
     for scenario_name in ["eGon2035", "eGon100RE"]:
         scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
 
+        print("")
         print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
 
         # Load scenario params for scenario and scenario variation
@@ -807,7 +808,7 @@ def sanitycheck_emobility_mit():
 
         with db.session_scope() as session:
             for node, attrs in model_ts_dict.items():
-                print(f"  Loading {node} timeseries...")
+                print(f"    Loading {node} timeseries...")
                 subquery = (
                     session.query(
                         getattr(attrs["table_ts"], attrs["column_id"])
@@ -835,7 +836,7 @@ def sanitycheck_emobility_mit():
                 )
 
         # Check if all timeseries have 8760 steps
-        print("  Checking timeranges...")
+        print("    Checking timeranges...")
         for node, attrs in model_ts_dict.items():
             for col in attrs["columns_ts"]:
                 invalid_ts = (
@@ -947,3 +948,24 @@ def sanitycheck_emobility_mit():
                 "from the input data provided by simBEV for current scenario."
             ),
         )
+
+        # Check SoC storage constraint: e_min_pu < e_max_pu for all timesteps
+        print("  Validating SoC constraints...")
+        stores_with_invalid_soc = []
+        for idx, row in model_ts_dict["Store"]["ts"].iterrows():
+            ts = row[["e_min_pu", "e_max_pu"]]
+            x = np.array(ts.e_min_pu) > np.array(ts.e_max_pu)
+            if x.any():
+                stores_with_invalid_soc.append(idx)
+
+        np.testing.assert_equal(
+            len(stores_with_invalid_soc),
+            0,
+            err_msg=(
+                f"The store constraint e_min_pu < e_max_pu does not apply "
+                f"for some storages in {EgonPfHvStoreTimeseries.__table__}. "
+                f"Invalid store_ids: {stores_with_invalid_soc}"
+            ),
+        )
+
+    print("=====================================================")
