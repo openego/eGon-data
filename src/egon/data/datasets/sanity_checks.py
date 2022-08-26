@@ -808,7 +808,9 @@ def sanitycheck_emobility_mit():
                 ts = attrs["ts"]
                 invalid_ts = ts.loc[ts[col].apply(lambda _: len(_)) != 8760][
                     col
-                ].apply(len)
+                ].apply(
+                    len
+                )  # pylint: disable=unsubscriptable-object, unnecessary-lambda
                 np.testing.assert_equal(
                     len(invalid_ts),
                     0,
