@@ -21,6 +21,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     municipality_data,
     osm_buildings,
     scenario_data,
+)
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
