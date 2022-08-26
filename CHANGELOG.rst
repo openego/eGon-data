@@ -402,6 +402,8 @@ Changed
   `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
+* Integrate new data bundle using zenodo sandbox
+  `#866 <https://github.com/openego/eGon-data/issues/866>`_
 
 
 Bug Fixes

@@ -594,7 +594,7 @@ def eGon100_capacities():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2022-05-04-egondata-integration"
+            / "2022-07-26-egondata-integration"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
