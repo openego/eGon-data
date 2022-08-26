@@ -502,8 +502,8 @@ def sanitycheck_eGon2035_heat():
 def sanitycheck_emobility_mit():
     """Execute sanity checks for eMobility: motorized individual travel
 
-    Checks data integrity for eGon2035 and eGon100RE scenario on three
-    different levels using assertions and prints:
+    Checks data integrity for eGon2035, eGon2035_noflex and eGon100RE scenario
+    using assertions:
       1. Allocated EV numbers and EVs allocated to grid districts
       2. Trip data (original inout data from simBEV)
       3. Model data in eTraGo PF tables (grid.egon_etrago_*)
@@ -516,33 +516,8 @@ def sanitycheck_emobility_mit():
     -------
     None
     """
-    print("=====================================================")
-    print("=== SANITY CHECKS FOR MOTORIZED INDIVIDUAL TRAVEL ===")
-    print("=====================================================")
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
-        scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
-
-        print("")
-        print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
-
-        # Load scenario params for scenario and scenario variation
-        scenario_variation_parameters = get_sector_parameters(
-            "mobility", scenario=scenario_name
-        )["motorized_individual_travel"][scenario_var_name]
-
-        # Load simBEV run config and tech data
-        meta_run_config = read_simbev_metadata_file(
-            scenario_name, "config"
-        ).loc["basic"]
-        meta_tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
-
-        ################
-        # 1. EV COUNTS #
-        ################
-        print("")
-        print("Checking EV counts...")
-
+    def check_ev_allocation():
         # Get target number for scenario
         ev_count_target = scenario_variation_parameters["ev_count"]
         print(f"  Target count: {str(ev_count_target)}")
@@ -621,13 +596,9 @@ def sanitycheck_emobility_mit():
                 "EV numbers allocated to Grid Districts seems to be flawed."
             ),
         )
+        return ev_count_alloc
 
-        ################
-        # 2. TRIP DATA #
-        ################
-        print("")
-        print("Checking trip data...")
-
+    def check_trip_data():
         # Check if trips start at timestep 0 and have a max. of 35040 steps
         # (8760h in 15min steps)
         print("  Checking timeranges...")
@@ -689,12 +660,7 @@ def sanitycheck_emobility_mit():
             ),
         )
 
-        #################
-        # 3. MODEL DATA #
-        #################
-        print("")
-        print("Checking model data...")
-
+    def check_model_data():
         # Check if model components were fully created
         print("  Check if all model components were created...")
         # Get MVGDs which got EV allocated
@@ -840,17 +806,15 @@ def sanitycheck_emobility_mit():
         for node, attrs in model_ts_dict.items():
             for col in attrs["columns_ts"]:
                 ts = attrs["ts"]
-                invalid_ts = (
-                    ts
-                    .loc[ts[col].apply(lambda _: len(_)) != 8760][col]
-                    .apply(len)
-                )
+                invalid_ts = ts.loc[ts[col].apply(lambda _: len(_)) != 8760][
+                    col
+                ].apply(len)
                 np.testing.assert_equal(
                     len(invalid_ts),
                     0,
                     err_msg=(
-                        f"{str(len(invalid_ts))} rows in timeseries have < "
-                        f"8760 timesteps. Table: "
+                        f"{str(len(invalid_ts))} rows in timeseries do not "
+                        f"have 8760 timesteps. Table: "
                         f"{attrs['table_ts'].__table__}, Column: {col}, IDs: "
                         f"{str(list(invalid_ts.index))}"
                     ),
@@ -969,78 +933,118 @@ def sanitycheck_emobility_mit():
             ),
         )
 
-    # TODO: Add eGon100RE_noflex
+    def check_model_data_noflex_eGon2035():
+        # TODO: Add eGon100RE_noflex
+        print("")
+        print("SCENARIO: eGon2035_noflex")
+
+        # Compare driving load and charging load
+        print("  Loading eGon2035 model timeseries: driving load...")
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonPfHvLoad.load_id,
+                    EgonPfHvLoadTimeseries.p_set,
+                )
+                .join(
+                    EgonPfHvLoadTimeseries,
+                    EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+                )
+                .filter(
+                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.scn_name == "eGon2035",
+                    EgonPfHvLoadTimeseries.scn_name == "eGon2035",
+                )
+            )
+        model_driving_load = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+        driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
+
+        print(
+            "  Loading eGon2035_noflex model timeseries: dumb charging "
+            "load..."
+        )
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonPfHvLoad.load_id,
+                    EgonPfHvLoadTimeseries.p_set,
+                )
+                .join(
+                    EgonPfHvLoadTimeseries,
+                    EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+                )
+                .filter(
+                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.scn_name == "eGon2035_noflex",
+                    EgonPfHvLoadTimeseries.scn_name == "eGon2035_noflex",
+                )
+            )
+        model_charging_load_noflex = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+        charging_load = np.array(
+            model_charging_load_noflex.p_set.to_list()
+        ).sum(axis=0)
+
+        # Ratio of driving and charging load should be 0.9 due to charging
+        # efficiency
+        print("  Compare cumulative loads...")
+        print(f"    Driving load (eGon2035): {driving_load.sum() / 1e6} TWh")
+        print(
+            f"    Dumb charging load (eGon2035_noflex): "
+            f"{charging_load.sum() / 1e6} TWh"
+        )
+        driving_load_theoretical = (
+            float(meta_run_config.eta_cp) * charging_load.sum()
+        )
+        np.testing.assert_allclose(
+            driving_load.sum(),
+            driving_load_theoretical,
+            rtol=0.01,
+            err_msg=(
+                f"The driving load (eGon2035) deviates by more than 1% "
+                f"from the theoretical driving load calculated from charging "
+                f"load (eGon2035_noflex) with an efficiency of "
+                f"{float(meta_run_config.eta_cp)}."
+            ),
+        )
+
+    print("=====================================================")
+    print("=== SANITY CHECKS FOR MOTORIZED INDIVIDUAL TRAVEL ===")
+    print("=====================================================")
+
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
+
+        print("")
+        print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
+
+        # Load scenario params for scenario and scenario variation
+        scenario_variation_parameters = get_sector_parameters(
+            "mobility", scenario=scenario_name
+        )["motorized_individual_travel"][scenario_var_name]
+
+        # Load simBEV run config and tech data
+        meta_run_config = read_simbev_metadata_file(
+            scenario_name, "config"
+        ).loc["basic"]
+        meta_tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
+
+        print("")
+        print("Checking EV counts...")
+        ev_count_alloc = check_ev_allocation()
+
+        print("")
+        print("Checking trip data...")
+        check_trip_data()
+
+        print("")
+        print("Checking model data...")
+        check_model_data()
+
     print("")
-    print("SCENARIO: eGon2035_noflex")
-
-    # Compare driving load and charging load
-    print("  Loading eGon2035 model timeseries: driving load...")
-    with db.session_scope() as session:
-        query = (
-            session.query(
-                EgonPfHvLoad.load_id,
-                EgonPfHvLoadTimeseries.p_set,
-            )
-            .join(
-                EgonPfHvLoadTimeseries,
-                EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
-            )
-            .filter(
-                EgonPfHvLoad.carrier == "land transport EV",
-                EgonPfHvLoad.scn_name == "eGon2035",
-                EgonPfHvLoadTimeseries.scn_name == "eGon2035",
-            )
-        )
-    model_driving_load = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
-    )
-    driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
-
-    print("  Loading eGon2035_noflex model timeseries: dumb charging load...")
-    with db.session_scope() as session:
-        query = (
-            session.query(
-                EgonPfHvLoad.load_id,
-                EgonPfHvLoadTimeseries.p_set,
-            )
-            .join(
-                EgonPfHvLoadTimeseries,
-                EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
-            )
-            .filter(
-                EgonPfHvLoad.carrier == "land transport EV",
-                EgonPfHvLoad.scn_name == "eGon2035_noflex",
-                EgonPfHvLoadTimeseries.scn_name == "eGon2035_noflex",
-            )
-        )
-    model_charging_load_noflex = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
-    )
-    charging_load = np.array(model_charging_load_noflex.p_set.to_list()).sum(
-        axis=0
-    )
-
-    # Ratio of driving and charging load should be 0.9 due to charging
-    # efficiency
-    print("  Compare cumulative loads...")
-    print(f"    Driving load (eGon2035): {driving_load.sum()/1e6} TWh")
-    print(
-        f"    Dumb charging load (eGon2035_noflex): "
-        f"{charging_load.sum() / 1e6} TWh"
-    )
-    driving_load_theoretical = (
-        float(meta_run_config.eta_cp) * charging_load.sum()
-    )
-    np.testing.assert_allclose(
-        driving_load.sum(),
-        driving_load_theoretical,
-        rtol=0.01,
-        err_msg=(
-            f"The driving load (eGon2035) deviates by more than 1% "
-            f"from the theoretical driving load calculated from charging "
-            f"load (eGon2035_noflex) with an efficiency of "
-            f"{float(meta_run_config.eta_cp)}."
-        ),
-    )
+    check_model_data_noflex_eGon2035()
 
     print("=====================================================")
