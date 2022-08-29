@@ -1,5 +1,6 @@
 from geoalchemy2.types import Geometry
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
 from egon.data import config, db
@@ -13,6 +14,90 @@ from egon.data.datasets.etrago_helpers import (
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 DATASET_CFG = config.datasets()["mobility_hgv"]
+CARRIER = DATASET_CFG["constants"]["carrier"]
+SCENARIOS = DATASET_CFG["constants"]["scenarios"]
+
+
+def insert_hgv_h2_demand():
+    """
+    Insert list of hgv H2 demand (one per NUTS3) in database
+    """
+    for scenario in SCENARIOS:
+        delete_old_entries(scenario)
+
+        hgv_gdf = assign_h2_buses(scenario=scenario)
+
+        insert_new_entries(hgv_gdf, scenario=scenario)
+
+        # TODO: time series
+
+
+def insert_new_entries(hgv_h2_demand_gdf, scenario):
+    """
+    Insert loads.
+    Parameters
+    ----------
+    hgv_h2_demand_gdf : geopandas.GeoDataFrame
+        Load data to insert.
+    scenario : str
+        Name of the scenario.
+    """
+    new_id = db.next_etrago_id("load")
+    hgv_h2_demand_df = hgv_h2_demand_gdf.copy()
+    hgv_h2_demand_df["load_id"] = range(
+        new_id, new_id + len(hgv_h2_demand_gdf)
+    )
+
+    # Add missing columns
+    c = {"sign": -1, "type": np.nan, "p_set": np.nan, "q_set": np.nan}
+    rename = {"scenario": "scn_name"}
+    drop = ["bus_id", "hydrogen_consumption", "geometry"]
+
+    hgv_h2_demand_df = pd.DataFrame(
+        hgv_h2_demand_df.assign(**c)
+        .rename(columns=rename)
+        .drop(columns=drop)
+        .reset_index(drop=True)
+    )
+
+    engine = db.engine()
+    # Insert data to db
+    hgv_h2_demand_df.to_sql(
+        "egon_etrago_load",
+        engine,
+        schema="grid",
+        index=False,
+        if_exists="append",
+    )
+
+
+def delete_old_entries(scenario):
+    """
+    Delete loads and load timeseries.
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+    """
+    # Clean tables
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_load_timeseries
+        WHERE "load_id" IN (
+            SELECT load_id FROM grid.egon_etrago_load
+            WHERE carrier = '{CARRIER}'
+            AND scn_name = '{scenario}'
+        )
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_load
+        WHERE carrier = '{CARRIER}'
+        AND scn_name = '{scenario}'
+        """
+    )
 
 
 def assign_h2_buses(scenario: str = "eGon2035"):
@@ -60,7 +145,7 @@ def assign_h2_buses(scenario: str = "eGon2035"):
 
     if num_new_connections > 0:
 
-        carrier = "H2_hgv_load"
+        carrier = CARRIER
         target = {"schema": "grid", "table": "egon_etrago_bus"}
         bus_gdf = initialise_bus_insertion(carrier, target, scenario=scenario)
 
@@ -111,7 +196,7 @@ def assign_h2_buses(scenario: str = "eGon2035"):
         hgv_h2_demand_gdf.loc[bus_gdf.index, "bus"] = bus_gdf["bus_id"]
 
     # Add carrier
-    c = {"carrier": "H2"}
+    c = {"carrier": CARRIER}
     hgv_h2_demand_gdf = hgv_h2_demand_gdf.assign(**c)
 
     # Remove useless columns

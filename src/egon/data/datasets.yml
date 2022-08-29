@@ -1112,6 +1112,7 @@ mobility_hgv:
       # within the egon project the flat guess is 100%
       fcev_share: 1.
       scenarios: ["eGon2035", "eGon100RE"]
+      carrier: "H2_hgv_load"
     hgv_mileage:
       # NEP data
       # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf
