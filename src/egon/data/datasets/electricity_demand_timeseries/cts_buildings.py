@@ -45,11 +45,8 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     __tablename__ = "egon_cts_electricity_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    serial = Column(Integer, primary_key=True)
-    id = Column(Integer, index=True)
-    scenario = Column(String, index=True)
-    # id = Column(Integer, primary_key=True)
-    # scenario = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
     profile_share = Column(REAL)
 
@@ -58,11 +55,8 @@ class EgonCtsHeatDemandBuildingShare(Base):
     __tablename__ = "egon_cts_heat_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    serial = Column(Integer, primary_key=True)
-    id = Column(Integer, index=True)
-    scenario = Column(String, index=True)
-    # id = Column(Integer, primary_key=True)
-    # scenario = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
     profile_share = Column(REAL)
 
@@ -847,9 +841,6 @@ def calc_building_profiles(
 
         # TODO cts heat substation profiles missing
 
-    # TODO workaround, remove later
-    df_demand_share = df_demand_share.drop(columns="serial")
-
     # get demand share of selected building id
     if isinstance(egon_building_id, int):
         if egon_building_id in df_demand_share["id"]:
@@ -1098,10 +1089,6 @@ def cts_electricity():
         axis=0,
         ignore_index=True,
     )
-    # TODO workaround
-    df_demand_share = df_demand_share.reset_index().rename(
-        columns={"index": "serial"}
-    )
 
     write_table_to_postgres(
         df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
@@ -1132,10 +1119,6 @@ def cts_heat():
         [df_demand_share_2035, df_demand_share_100RE],
         axis=0,
         ignore_index=True,
-    )
-    # TODO workaround
-    df_demand_share = df_demand_share.reset_index().rename(
-        columns={"index": "serial"}
     )
 
     write_table_to_postgres(
