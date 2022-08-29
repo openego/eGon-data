@@ -1,10 +1,10 @@
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Column, Integer, String, func, REAL
+from sqlalchemy import REAL, Column, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
-import pandas as pd
 import numpy as np
+import pandas as pd
 import saio
 
 from egon.data import db
@@ -697,6 +697,7 @@ def calc_census_cell_share(scenario="eGon2035", sector="electricity"):
     df_census_share.reset_index(inplace=True)
     return df_census_share
 
+
 def calc_building_demand_profile_share(
     df_cts_buildings, scenario="eGon2035", sector="electricity"
 ):
@@ -844,11 +845,10 @@ def calc_building_profiles(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
 
-        #TODO cts heat substation profiles missing
+        # TODO cts heat substation profiles missing
 
     # TODO workaround, remove later
     df_demand_share = df_demand_share.drop(columns="serial")
-
 
     # get demand share of selected building id
     if isinstance(egon_building_id, int):
@@ -861,7 +861,6 @@ def calc_building_profiles(
     # TODO maybe add list
     # elif isinstance(egon_building_id, list):
 
-
     # get demand share of all buildings for selected bus id
     if isinstance(bus_id, int):
         if bus_id in df_demand_share["bus_id"]:
@@ -872,16 +871,16 @@ def calc_building_profiles(
             raise KeyError(f"Bus with id {bus_id} not found")
 
     # get demand profile for all buildings for selected demand share
-    #TODO takes a few seconds per iteration
+    # TODO takes a few seconds per iteration
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("id", drop=True)["profile_share"]
         profile = df_cts_profiles.loc[:, bus_id]
         # building_profiles = profile.apply(lambda x: x * shares)
         building_profiles = np.outer(profile, shares)
-        building_profiles = pd.DataFrame(building_profiles,
-                                         index=profile.index,
-                                         columns=shares.index)
+        building_profiles = pd.DataFrame(
+            building_profiles, index=profile.index, columns=shares.index
+        )
         df_building_profiles = pd.concat(
             [df_building_profiles, building_profiles], axis=1
         )
@@ -935,6 +934,8 @@ def cts_buildings():
         .sum()
         .median()
     )
+    # TODO remove
+    print(f"Median amenity value: {median_n_amenities}")
 
     # Remove synthetic CTS buildings if existing
     delete_synthetic_cts_buildings()
