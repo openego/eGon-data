@@ -1072,9 +1072,17 @@ emobility_mit:
           file: "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
   scenario:
+    # used scenario variation (available scenarios see parameters.py)
     variation:
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
+    # name of no-flex scenario
+    noflex:
+      create_noflex_scenario: True
+      names:
+        eGon2035: "eGon2035_noflex"
+        eGon100RE: "eGon100RE_noflex"
+
   model_timeseries:
     reduce_memory: True
     export_results_to_csv: True
