@@ -697,7 +697,6 @@ def calc_census_cell_share(scenario="eGon2035", sector="electricity"):
     df_census_share.reset_index(inplace=True)
     return df_census_share
 
-
 def calc_building_demand_profile_share(
     df_cts_buildings, scenario="eGon2035", sector="electricity"
 ):
@@ -775,7 +774,6 @@ def calc_building_demand_profile_share(
             df_demand_share.loc[df_demand_share.duplicated("id", keep=False)]
         )
     return df_demand_share
-
 
 def calc_building_profiles(
     df_demand_share=None,

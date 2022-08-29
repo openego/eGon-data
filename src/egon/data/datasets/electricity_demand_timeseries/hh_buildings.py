@@ -166,9 +166,9 @@ class BuildingPeakLoads(Base):
     __tablename__ = "egon_building_peak_loads"
     __table_args__ = {"schema": "demand"}
 
-    building_id = Column(String, primary_key=True)
+    building_id = Column(Integer, primary_key=True)
     scenario = Column(String, primary_key=True)
-    type = Column(String, primary_key=True)
+    sector = Column(String, primary_key=True)
     peak_load_in_w = Column(REAL)
 
 
