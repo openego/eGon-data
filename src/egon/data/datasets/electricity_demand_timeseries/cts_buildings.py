@@ -1001,7 +1001,7 @@ def cts_buildings():
     df_buildings_without_amenities = df_buildings_without_amenities.drop(
         index=mask
     ).reset_index(drop=True)
-    log.info(f"{mask.sum()} duplicated ids removed!")
+    log.info(f"{len(mask)} duplicated ids removed!")
 
     # select median n buildings per cell
     df_buildings_without_amenities = select_cts_buildings(
