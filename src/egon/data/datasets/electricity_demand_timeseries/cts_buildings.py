@@ -952,7 +952,7 @@ def cts_buildings():
     log.info("Amenities without buildlings selected!")
 
     # Append lost cells due to duplicated ids, to cover all demand cells
-    if df_lost_cells.empty:
+    if not df_lost_cells.empty:
 
         df_lost_cells["amenities"] = median_n_amenities
         # create row for every amenity
