@@ -487,7 +487,7 @@ def sanitycheck_eGon100RE_electricity():
     """
 
     scn = "eGon100RE"
-
+   
     # Section to check generator capacities
     print(f"Sanity checks for scenario {scn}")
     print(
@@ -497,30 +497,17 @@ def sanitycheck_eGon100RE_electricity():
         "other_non_renewable",
         "other_renewable",
         "run_of_river",
-        "gas",
         "wind_onshore",
         "wind_offshore",
         "solar",
-        #"solar_rooftop",
+        "solar_rooftop",
+        "hydro",
             ]
+    
     for carrier in carriers_electricity:
+        
        
-        if carrier == "biomass":
-            sum_output = db.select_dataframe(
-                """SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
-                    FROM grid.egon_etrago_generator
-                    WHERE bus IN (
-                        SELECT bus_id FROM grid.egon_etrago_bus
-                        WHERE scn_name = 'eGon2035'
-                        AND country = 'DE')
-                    AND carrier IN ('biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
-                    GROUP BY (scn_name);
-                """,
-                warning=False,
-            )
-
-        else:
-            sum_output = db.select_dataframe(
+        sum_output = db.select_dataframe(
                 f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
                          FROM grid.egon_etrago_generator
                          WHERE scn_name = '{scn}'
@@ -528,13 +515,13 @@ def sanitycheck_eGon100RE_electricity():
                          AND bus IN
                              (SELECT bus_id
                                FROM grid.egon_etrago_bus
-                               WHERE scn_name = 'eGon2035'
+                               WHERE scn_name = 'eGon100RE'
                                AND country = 'DE')
                          GROUP BY (scn_name);
                     """,
                 warning=False,
             )
-
+       
         sum_input = db.select_dataframe(
             f"""SELECT carrier, SUM(capacity::numeric) as input_capacity_mw
                      FROM supply.egon_scenario_capacities
@@ -576,4 +563,125 @@ def sanitycheck_eGon100RE_electricity():
             g = sum_input["error"].values[0]
 
             print(f"{carrier}: " + str(round(g, 2)) + " %")
+            
+    # Section to check storage units
+
+    print(f"Sanity checks for scenario {scn}")
+    print(
+        "For German electrical storage units the following deviations between the inputs and outputs can be observed:"
+    )
+
+    carriers_electricity = ["pumped_hydro"]
+
+    for carrier in carriers_electricity:
+
+        sum_output = db.select_dataframe(
+            f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
+                         FROM grid.egon_etrago_storage
+                         WHERE scn_name = '{scn}'
+                         AND carrier IN ('{carrier}')
+                         AND bus IN
+                             (SELECT bus_id
+                               FROM grid.egon_etrago_bus
+                               WHERE scn_name = 'eGon100RE'
+                               AND country = 'DE')
+                         GROUP BY (scn_name);
+                    """,
+            warning=False,
+        )
+
+        sum_input = db.select_dataframe(
+            f"""SELECT carrier, SUM(capacity::numeric) as input_capacity_mw
+                     FROM supply.egon_scenario_capacities
+                     WHERE carrier= '{carrier}'
+                     AND scenario_name ='{scn}'
+                     GROUP BY (carrier);
+                """,
+            warning=False,
+        )
+
+        if (
+            sum_output.output_capacity_mw.sum() == 0
+            and sum_input.input_capacity_mw.sum() == 0
+        ):
+            print(
+                f"No capacity for carrier '{carrier}' needed to be distributed. Everything is fine"
+            )
+
+        elif (
+            sum_input.input_capacity_mw.sum() > 0
+            and sum_output.output_capacity_mw.sum() == 0
+        ):
+            print(
+                f"Error: Capacity for carrier '{carrier}' was not distributed at all!"
+            )
+
+        elif (
+            sum_output.output_capacity_mw.sum() > 0
+            and sum_input.input_capacity_mw.sum() == 0
+        ):
+            print(
+                f"Error: Eventhough no input capacity was provided for carrier '{carrier}' a capacity got distributed!"
+            )
+
+        else:
+            sum_input["error"] = (
+                (sum_output.output_capacity_mw - sum_input.input_capacity_mw)
+                / sum_input.input_capacity_mw
+            ) * 100
+            g = sum_input["error"].values[0]
+
+            print(f"{carrier}: " + str(round(g, 2)) + " %")    
+
+    # Section to check loads
+
+    print(
+        "For German electricity loads the following deviations between the input and output can be observed:"
+    )
+
+    output_demand = db.select_dataframe(
+        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
+            FROM grid.egon_etrago_load a
+            JOIN grid.egon_etrago_load_timeseries b
+            ON (a.load_id = b.load_id)
+            JOIN grid.egon_etrago_bus c
+            ON (a.bus=c.bus_id)
+            AND b.scn_name = 'eGon100RE'
+            AND a.scn_name = 'eGon100RE'
+            AND a.carrier = 'AC'
+            AND c.scn_name= 'eGon100RE'
+            AND c.country='DE'
+            GROUP BY (a.scn_name, a.carrier);
+
+    """,
+        warning=False,
+    )["load_twh"].values[0]
+
+    input_cts_ind = db.select_dataframe(
+        """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
+            FROM demand.egon_demandregio_cts_ind
+            WHERE scenario= 'eGon2035'
+            AND year IN ('2035')
+            GROUP BY (scenario);
+
+        """,
+        warning=False,
+    )["demand_mw_regio_cts_ind"].values[0]
+
+    input_hh = db.select_dataframe(
+        """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_hh
+            FROM demand.egon_demandregio_hh
+            WHERE scenario= 'eGon2035'
+            AND year IN ('2035')
+            GROUP BY (scenario);
+        """,
+        warning=False,
+    )["demand_mw_regio_hh"].values[0]
+
+    input_demand = input_hh + input_cts_ind
+
+    e = round((output_demand - input_demand) / input_demand, 2) * 100
+
+    print(f"electricity demand: {e} %")            
+            
 
