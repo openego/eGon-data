@@ -36,8 +36,6 @@ Base = declarative_base()
 
 # import db tables
 saio.register_schema("openstreetmap", engine=engine)
-saio.register_schema("society", engine=engine)
-saio.register_schema("demand", engine=engine)
 saio.register_schema("boundaries", engine=engine)
 
 
