@@ -660,7 +660,7 @@ def sanitycheck_eGon100RE_electricity():
     input_cts_ind = db.select_dataframe(
         """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
             FROM demand.egon_demandregio_cts_ind
-            WHERE scenario= 'eGon2035'
+            WHERE scenario= 'eGon100RE'
             AND year IN ('2035')
             GROUP BY (scenario);
 
@@ -671,7 +671,7 @@ def sanitycheck_eGon100RE_electricity():
     input_hh = db.select_dataframe(
         """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_hh
             FROM demand.egon_demandregio_hh
-            WHERE scenario= 'eGon2035'
+            WHERE scenario= 'eGon100RE'
             AND year IN ('2035')
             GROUP BY (scenario);
         """,
@@ -685,3 +685,144 @@ def sanitycheck_eGon100RE_electricity():
     print(f"electricity demand: {e} %")            
             
 
+def sanitycheck_eGon100RE_heat():
+    """Execute basic sanity checks.
+
+    Returns print statements as sanity checks for the heat sector in
+    the eGon2035 scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Check input and output values for the carriers "other_non_renewable",
+    # "other_renewable", "reservoir", "run_of_river" and "oil"
+
+    scn = "eGon100RE"
+
+    # Section to check generator capacities
+    print(f"Sanity checks for scenario {scn}")
+    print(
+        "For German heat demands the following deviations between the inputs and outputs can be observed:"
+    )
+
+    # Sanity checks for heat demand
+
+    output_heat_demand = db.select_dataframe(
+        """SELECT a.scn_name ,(SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+FROM grid.egon_etrago_load a
+JOIN grid.egon_etrago_load_timeseries b
+ON a.load_id = b.load_id
+JOIN grid.egon_etrago_bus c
+ON (a.bus=c.bus_id)
+WHERE b.scn_name='eGon100RE'
+AND a.scn_name='eGon100RE'
+AND c.scn_name= 'eGon100RE'
+AND c.country='DE'
+AND a.carrier IN ('residential_rural_heat','low-temperature_heat_for_industry',
+				  'residential_urban_decentral_heat','services_rural_heat',
+				 'services_urban_decentral_heat','urban_central_heat')
+GROUP BY (a.scn_name);
+        """,
+        warning=False,
+    )["load_twh"].values[0]
+#This sanity check is not finished
+
+def sanitycheck_eGon100RE_buses():
+    """Execute basic sanity checks.
+
+    Returns print statements as sanity checks for the heat sector in
+    the eGon2035 scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Check input and output values for the carriers "other_non_renewable",
+    # "other_renewable", "reservoir", "run_of_river" and "oil"
+
+    scn = "eGon100RE"
+   
+    buses = db.select_dataframe(
+        f"""SELECT scn_name, bus_id 
+        FROM grid.egon_etrago_bus
+        WHERE scn_name='{scn}'
+        ORDER BY bus_id ASC
+        
+                """,
+        warning=False,
+    )
+    
+    
+    lines = db.select_dataframe(
+        f"""SELECT scn_name, line_id, bus0, bus1
+        FROM grid.egon_etrago_line
+        WHERE scn_name='eGon100RE'
+        ORDER BY bus0 ASC 
+        
+                """,
+        warning=False,
+    )
+    
+    links = db.select_dataframe(
+        f"""SELECT scn_name, link_id, bus0, bus1
+        FROM grid.egon_etrago_link
+        WHERE scn_name='{scn}'
+        ORDER BY scn_name ASC, link_id ASC 
+
+        
+                """,
+        warning=False,
+    )
+    
+    buses_list = [
+        1,
+        2,
+        #"3",
+       # "11",
+        #"22",
+            ]
+    
+    prueba=lines.loc[:,"bus0"]
+    
+    
+    #buses_list = [ buses.to_string(columns=['bus_id'])  
+       
+         #   ]
+    
+    for buses in buses_list:
+        if 'buses' not in lines.loc[:,"bus0"] :
+               print("\nThis value not exists in Dataframe")
+        else :
+               print("\nThis value exists in Dataframe")
+   
+   
+   
+    for buses in buses_list:
+        
+        if 0 not in lines.loc[:,"bus0"] :
+            print("\nThis value not exists in Dataframe")
+        else :
+            print("\nThis value exists in Dataframe")
+        
+     
+        
+    # check_line = db.select_dataframe(
+        # """SELECT bus_id
+       #  FROM grid.egon_etrago_bus 
+       #  WHERE EXISTS
+       #  (SELECT bus1,bus0 FROM grid.egon_etrago_line WHERE bus_id='buses'); 
+       #  """,
+       #  warning=False,
+    # )
+        
