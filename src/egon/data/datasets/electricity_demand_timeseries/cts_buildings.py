@@ -1,10 +1,12 @@
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
-from sqlalchemy import Column, Float, Integer, String, func
+from sqlalchemy import REAL, Column, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import saio
+import logging
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -35,8 +37,6 @@ Base = declarative_base()
 
 # import db tables
 saio.register_schema("openstreetmap", engine=engine)
-saio.register_schema("society", engine=engine)
-saio.register_schema("demand", engine=engine)
 saio.register_schema("boundaries", engine=engine)
 
 
@@ -44,26 +44,20 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     __tablename__ = "egon_cts_electricity_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    serial = Column(Integer, primary_key=True)
-    id = Column(Integer, index=True)
-    scenario = Column(String, index=True)
-    # id = Column(Integer, primary_key=True)
-    # scenario = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
-    profile_share = Column(Float)
+    profile_share = Column(REAL)
 
 
 class EgonCtsHeatDemandBuildingShare(Base):
     __tablename__ = "egon_cts_heat_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    serial = Column(Integer, primary_key=True)
-    id = Column(Integer, index=True)
-    scenario = Column(String, index=True)
-    # id = Column(Integer, primary_key=True)
-    # scenario = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
-    profile_share = Column(Float)
+    profile_share = Column(REAL)
 
 
 class CtsBuildings(Base):
@@ -76,6 +70,19 @@ class CtsBuildings(Base):
     geom_building = Column(Geometry("Polygon", 3035))
     n_amenities_inside = Column(Integer)
     source = Column(String)
+
+
+def start_logging():
+    """Start logging into console"""
+    log = logging.getLogger()
+    log.setLevel(logging.INFO)
+    logformat = logging.Formatter(
+        "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
+    )
+    sh = logging.StreamHandler()
+    sh.setFormatter(logformat)
+    log.addHandler(sh)
+    return log
 
 
 def amenities_without_buildings():
@@ -777,7 +784,6 @@ def calc_building_demand_profile_share(
 
 
 def calc_building_profiles(
-    df_demand_share=None,
     egon_building_id=None,
     bus_id=None,
     scenario="eGon2035",
@@ -789,11 +795,12 @@ def calc_building_profiles(
 
     Parameters
     ----------
-    df_demand_share: pd.DataFrame
-        Table of demand share per building.
     egon_building_id: int
-        Id of the building for which the profile is calculated. If not
-        given, the profiles are calculated for all buildings.
+        Id of the building for which the profile is calculated.
+        If not given, the profiles are calculated for all buildings.
+    bus_id: int
+        Id of the substation for which the all profiles are calculated.
+        If not given, the profiles are calculated for all buildings.
     scenario: str
         Scenario for which the share is calculated.
     sector: str
@@ -815,6 +822,25 @@ def calc_building_profiles(
         df_demand_share = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
+
+        # TODO maybe use demand.egon_etrago_electricity_cts
+        # with db.session_scope() as session:
+        #     cells_query = (
+        #         session.query(
+        #             EgonEtragoElectricityCts
+        #         ).filter(
+        #             EgonEtragoElectricityCts.scn_name == scenario)
+        #     )
+        #
+        # df_cts_profiles = pd.read_sql(
+        #     cells_query.statement,
+        #     cells_query.session.bind,
+        # )
+        # df_cts_profiles = pd.DataFrame.from_dict(
+        #   df_cts_profiles.set_index('bus_id')['p_set'].to_dict(),
+        #   orient="index")
+        df_cts_profiles = calc_load_curves_cts(scenario)
+
     elif sector == "heat":
         with db.session_scope() as session:
             cells_query = session.query(
@@ -825,26 +851,7 @@ def calc_building_profiles(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
 
-    # TODO workaround
-    df_demand_share = df_demand_share.drop(columns="serial")
-
-    # TODO maybe use demand.egon_etrago_electricity_cts
-    # with db.session_scope() as session:
-    #     cells_query = (
-    #         session.query(
-    #             EgonEtragoElectricityCts
-    #         ).filter(
-    #             EgonEtragoElectricityCts.scn_name == scenario)
-    #     )
-    #
-    # df_cts_profiles = pd.read_sql(
-    #     cells_query.statement,
-    #     cells_query.session.bind,
-    # )
-    # df_cts_profiles = pd.DataFrame.from_dict(
-    #   df_cts_profiles.set_index('bus_id')['p_set'].to_dict(),
-    #   orient="index")
-    df_cts_profiles = calc_load_curves_cts(scenario)
+        # TODO cts heat substation profiles missing
 
     # get demand share of selected building id
     if isinstance(egon_building_id, int):
@@ -854,6 +861,8 @@ def calc_building_profiles(
             ]
         else:
             raise KeyError(f"Building with id {egon_building_id} not found")
+    # TODO maybe add list
+    # elif isinstance(egon_building_id, list):
 
     # get demand share of all buildings for selected bus id
     if isinstance(bus_id, int):
@@ -865,11 +874,16 @@ def calc_building_profiles(
             raise KeyError(f"Bus with id {bus_id} not found")
 
     # get demand profile for all buildings for selected demand share
+    # TODO takes a few seconds per iteration
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("id", drop=True)["profile_share"]
         profile = df_cts_profiles.loc[:, bus_id]
-        building_profiles = profile.apply(lambda x: x * shares)
+        # building_profiles = profile.apply(lambda x: x * shares)
+        building_profiles = np.outer(profile, shares)
+        building_profiles = pd.DataFrame(
+            building_profiles, index=profile.index, columns=shares.index
+        )
         df_building_profiles = pd.concat(
             [df_building_profiles, building_profiles], axis=1
         )
@@ -912,8 +926,11 @@ def cts_buildings():
     he demand share.
     """
 
+    log = start_logging()
+    log.info("Start logging!")
     # Buildings with amenities
     df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
+    log.info("Buildings with amenities selected!")
 
     # Median number of amenities per cell
     median_n_amenities = int(
@@ -923,15 +940,19 @@ def cts_buildings():
         .sum()
         .median()
     )
+    # TODO remove
+    print(f"Median amenity value: {median_n_amenities}")
 
     # Remove synthetic CTS buildings if existing
     delete_synthetic_cts_buildings()
+    log.info("Old synthetic cts buildings deleted!")
 
     # Amenities not assigned to buildings
     df_amenities_without_buildings = amenities_without_buildings()
+    log.info("Amenities without buildlings selected!")
 
     # Append lost cells due to duplicated ids, to cover all demand cells
-    if df_lost_cells.empty:
+    if not df_lost_cells.empty:
 
         df_lost_cells["amenities"] = median_n_amenities
         # create row for every amenity
@@ -943,12 +964,15 @@ def cts_buildings():
         df_amenities_without_buildings = df_amenities_without_buildings.append(
             df_lost_cells, ignore_index=True
         )
+        log.info("Lost cells due to substation intersection appended!")
+
     # One building per amenity
     df_amenities_without_buildings["n_amenities_inside"] = 1
     # Create synthetic buildings for amenites without buildings
     df_synthetic_buildings_with_amenities = create_synthetic_buildings(
         df_amenities_without_buildings, points="geom_amenity"
     )
+    log.info("Synthetic buildings created!")
 
     # TODO write to DB and remove renaming
     write_table_to_postgis(
@@ -961,9 +985,11 @@ def cts_buildings():
         OsmBuildingsSynthetic,
         drop=False,
     )
+    log.info("Synthetic buildings exported to DB!")
 
     # Cells without amenities but CTS demand and buildings
     df_buildings_without_amenities = buildings_without_amenities()
+    log.info("Buildings without amenities in demand cells identified!")
 
     # TODO Fix Adhoc Bugfix duplicated buildings
     # drop building ids which have already been used
@@ -975,17 +1001,21 @@ def cts_buildings():
     df_buildings_without_amenities = df_buildings_without_amenities.drop(
         index=mask
     ).reset_index(drop=True)
+    log.info(f"{len(mask)} duplicated ids removed!")
 
     # select median n buildings per cell
     df_buildings_without_amenities = select_cts_buildings(
         df_buildings_without_amenities, max_n=median_n_amenities
     )
     df_buildings_without_amenities["n_amenities_inside"] = 1
+    log.info(f"{median_n_amenities} buildings per cell selected!")
 
     # Create synthetic amenities and buildings in cells with only CTS demand
     df_cells_with_cts_demand_only = cells_with_cts_demand_only(
         df_buildings_without_amenities
     )
+    log.info("Cells with only demand identified!")
+
     # Median n Amenities per cell
     df_cells_with_cts_demand_only["amenities"] = median_n_amenities
     # create row for every amenity
@@ -1005,6 +1035,7 @@ def cts_buildings():
     df_synthetic_buildings_without_amenities = create_synthetic_buildings(
         df_cells_with_cts_demand_only, points="geom_point"
     )
+    log.info(f"{median_n_amenities} synthetic buildings per cell created")
 
     # TODO write to DB and remove (backup) renaming
     write_table_to_postgis(
@@ -1017,6 +1048,7 @@ def cts_buildings():
         OsmBuildingsSynthetic,
         drop=False,
     )
+    log.info("Synthetic buildings exported to DB")
 
     # Concat all buildings
     columns = [
@@ -1058,6 +1090,7 @@ def cts_buildings():
         CtsBuildings,
         drop=True,
     )
+    log.info("CTS buildings exported to DB!")
 
 
 def cts_electricity():
@@ -1065,34 +1098,33 @@ def cts_electricity():
     Calculate cts electricity demand share of hvmv substation profile
      for buildings.
     """
-
+    log = start_logging()
+    log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings)
 
     df_cts_buildings = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
     )
-
+    log.info("CTS buildings from DB imported!")
     df_demand_share_2035 = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon2035", sector="electricity"
     )
+    log.info("Profile share for egon2035 calculated!")
     df_demand_share_100RE = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon100RE", sector="electricity"
     )
-
+    log.info("Profile share for egon100RE calculated!")
     df_demand_share = pd.concat(
         [df_demand_share_2035, df_demand_share_100RE],
         axis=0,
         ignore_index=True,
     )
-    # TODO workaround
-    df_demand_share = df_demand_share.reset_index().rename(
-        columns={"index": "serial"}
-    )
 
     write_table_to_postgres(
         df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
     )
+    log.info("Profile share exported to DB!")
 
 
 def cts_heat():
@@ -1100,72 +1132,74 @@ def cts_heat():
     Calculate cts electricity demand share of hvmv substation profile
      for buildings.
     """
-
+    log = start_logging()
+    log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings)
 
     df_cts_buildings = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
     )
+    log.info("CTS buildings from DB imported!")
 
     df_demand_share_2035 = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon2035", sector="heat"
     )
+    log.info("Profile share for egon2035 calculated!")
     df_demand_share_100RE = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon100RE", sector="heat"
     )
-
+    log.info("Profile share for egon100RE calculated!")
     df_demand_share = pd.concat(
         [df_demand_share_2035, df_demand_share_100RE],
         axis=0,
         ignore_index=True,
     )
-    # TODO workaround
-    df_demand_share = df_demand_share.reset_index().rename(
-        columns={"index": "serial"}
-    )
 
     write_table_to_postgres(
         df_demand_share, EgonCtsHeatDemandBuildingShare, drop=True
     )
+    log.info("Profile share exported to DB!")
 
 
 def get_cts_electricity_peak_load():
     """
     Get peak load of all CTS buildings for both scenarios and store in DB.
     """
-
-    df_building_profiles = calc_building_profiles(scenario="eGon2035")
-    df_peak_load_2035 = df_building_profiles.max(axis=0).rename("eGon2035")
-    df_building_profiles = calc_building_profiles(scenario="eGon100RE")
-    df_peak_load_100RE = df_building_profiles.max(axis=0).rename("eGon100RE")
-    df_peak_load = pd.concat(
-        [df_peak_load_2035, df_peak_load_100RE], axis=1
-    ).reset_index()
-
-    # TODO rename table column to egon_building_id
-    df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
-    df_peak_load["type"] = "cts"
-    df_peak_load = df_peak_load.melt(
-        id_vars=["building_id", "type"],
-        var_name="scenario",
-        value_name="peak_load_in_w",
-    )
-    # TODO Check units, maybe MwH?
-    # Convert unit to W
-    df_peak_load["peak_load_in_w"] = df_peak_load["peak_load_in_w"] * 1e6
+    log = start_logging()
+    log.info("Start logging!")
     # Delete rows with cts demand
     with db.session_scope() as session:
         session.query(BuildingPeakLoads).filter(
-            BuildingPeakLoads.type == "cts"
+            BuildingPeakLoads.sector == "cts"
         ).delete()
+    log.info("CTS Peak load removed from DB!")
 
-    # Write peak loads into db
-    with db.session_scope() as session:
-        session.bulk_insert_mappings(
-            BuildingPeakLoads,
-            df_peak_load.to_dict(orient="records"),
+    for scenario in ["eGon2035", "eGon100RE"]:
+        df_building_profiles = calc_building_profiles(scenario=scenario)
+        log.info(f"Profiles for {scenario} calculated!")
+        df_peak_load = df_building_profiles.max(axis=0).rename(scenario)
+        log.info("Peak load determined!")
+        df_peak_load = df_peak_load.reset_index()
+
+        # TODO rename table column to egon_building_id
+        df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
+        df_peak_load["type"] = "cts"
+        df_peak_load = df_peak_load.melt(
+            id_vars=["building_id", "type"],
+            var_name="scenario",
+            value_name="peak_load_in_w",
         )
+        # Convert unit to W
+        df_peak_load["peak_load_in_w"] = df_peak_load["peak_load_in_w"] * 1e6
+
+        # Write peak loads into db
+        with db.session_scope() as session:
+            session.bulk_insert_mappings(
+                BuildingPeakLoads,
+                df_peak_load.to_dict(orient="records"),
+            )
+        log.info("Peak load exported to DB!")
 
 
 class CtsElectricityBuildings(Dataset):
