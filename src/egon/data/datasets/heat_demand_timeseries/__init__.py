@@ -1,7 +1,7 @@
 from datetime import datetime
+from pathlib import Path
 import os
 
-from pathlib import Path
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -19,17 +19,15 @@ except ImportError as e:
 from math import ceil
 
 from egon.data.datasets import Dataset
-import egon
-
+from egon.data.datasets.heat_demand_timeseries.daily import (
+    daily_demand_shares_per_climate_zone,
+    map_climate_zones_to_zensus,
+)
 from egon.data.datasets.heat_demand_timeseries.idp_pool import create, select
 from egon.data.datasets.heat_demand_timeseries.service_sector import (
     CTS_demand_scale,
 )
-from egon.data.datasets.heat_demand_timeseries.daily import (
-    map_climate_zones_to_zensus,
-    daily_demand_shares_per_climate_zone,
-)
-
+import egon
 
 Base = declarative_base()
 
@@ -58,6 +56,15 @@ class EgonIndividualHeatingPeakLoads(Base):
     w_th = Column(Float(53))
 
 
+class EgonEtragoHeatCts(Base):
+    __tablename__ = "egon_etrago_heat_cts"
+    __table_args__ = {"schema": "demand"}
+
+    bus_id = Column(Integer, primary_key=True)
+    scn_name = Column(String, primary_key=True)
+    p_set = Column(ARRAY(Float))
+
+
 def create_timeseries_for_building(building_id, scenario):
     """Generates final heat demand timeseries for a specific building
 
@@ -77,41 +84,41 @@ def create_timeseries_for_building(building_id, scenario):
 
     return db.select_dataframe(
         f"""
-        SELECT building_demand * UNNEST(idp) as demand 
-        FROM 
+        SELECT building_demand * UNNEST(idp) as demand
+        FROM
         (
         SELECT demand.demand / building.count * daily_demand.daily_demand_share as building_demand, daily_demand.day_of_year
-        FROM 
-        
-        (SELECT demand FROM 
+        FROM
+
+        (SELECT demand FROM
         demand.egon_peta_heat
         WHERE scenario = '{scenario}'
         AND sector = 'residential'
         AND zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         WHERE building_id  = {building_id})) as demand,
-        
+
         (SELECT COUNT(building_id)
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         WHERE building_id  = {building_id})) as building,
-        
-        (SELECT daily_demand_share, day_of_year FROM 
-        demand.egon_daily_heat_demand_per_climate_zone 
+
+        (SELECT daily_demand_share, day_of_year FROM
+        demand.egon_daily_heat_demand_per_climate_zone
         WHERE climate_zone = (
             SELECT climate_zone FROM boundaries.egon_map_zensus_climate_zones
-            WHERE zensus_population_id = 
+            WHERE zensus_population_id =
             (SELECT zensus_population_id FROM demand.heat_timeseries_selected_profiles
              WHERE building_id = {building_id}))) as daily_demand) as daily_demand
-        
+
         JOIN (SELECT b.idp, ordinality as day
         FROM demand.heat_timeseries_selected_profiles a,
-        UNNEST (a.selected_idp_profiles) WITH ORDINALITY as selected_idp        
+        UNNEST (a.selected_idp_profiles) WITH ORDINALITY as selected_idp
         JOIN demand.heat_idp_pool b
-        ON selected_idp = b.index        
+        ON selected_idp = b.index
         WHERE a.building_id = {building_id}) as demand_profile
         ON demand_profile.day = daily_demand.day_of_year
         """
@@ -140,69 +147,69 @@ def create_district_heating_profile(scenario, area_id):
 
     df = db.select_dataframe(
         f"""
-        
+
         SELECT SUM(building_demand_per_hour) as demand_profile, hour_of_year
-        FROM 
-        
+        FROM
+
         (
-        SELECT demand.demand  * 
+        SELECT demand.demand  *
         c.daily_demand_share * hourly_demand as building_demand_per_hour,
         ordinality + 24* (c.day_of_year-1) as hour_of_year,
         demand_profile.building_id,
         c.day_of_year,
         ordinality
-        
-        FROM 
-        
-        (SELECT zensus_population_id, demand FROM 
+
+        FROM
+
+        (SELECT zensus_population_id, demand FROM
         demand.egon_peta_heat
         WHERE scenario = '{scenario}'
         AND sector = 'residential'
         AND zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.egon_map_zensus_district_heating_areas
         WHERE scenario = '{scenario}'
         AND area_id = {area_id}
         )) as demand
-        
-        JOIN boundaries.egon_map_zensus_climate_zones b 
+
+        JOIN boundaries.egon_map_zensus_climate_zones b
         ON demand.zensus_population_id = b.zensus_population_id
-        
+
         JOIN demand.egon_daily_heat_demand_per_climate_zone c
         ON c.climate_zone = b.climate_zone
-        
+
         JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
         FROM demand.heat_timeseries_selected_profiles d,
-        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
+        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp
         JOIN demand.heat_idp_pool e
         ON selected_idp = e.index
         WHERE zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.egon_map_zensus_district_heating_areas
         WHERE scenario = '{scenario}'
         AND area_id = {area_id}
         ))  demand_profile
-        ON (demand_profile.day = c.day_of_year AND 
+        ON (demand_profile.day = c.day_of_year AND
             demand_profile.zensus_population_id = b.zensus_population_id)
-        
+
         JOIN (SELECT COUNT(building_id), zensus_population_id
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
        WHERE zensus_population_id IN (
-       SELECT zensus_population_id FROM 
+       SELECT zensus_population_id FROM
        demand.egon_map_zensus_district_heating_areas
        WHERE scenario = '{scenario}'
        AND area_id = {area_id}
        ))
 		GROUP BY zensus_population_id) building
         ON building.zensus_population_id = b.zensus_population_id,
-        
+
         UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
         )   result
-        
-        
+
+
         GROUP BY hour_of_year
 
         """
@@ -243,7 +250,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
     district_heating_grids = db.select_dataframe(
         f"""
-        SELECT area_id 
+        SELECT area_id
         FROM demand.egon_district_heating_areas
         WHERE scenario = '{scenario}'
         """
@@ -251,42 +258,42 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
     annual_demand = db.select_dataframe(
         f"""
-        SELECT a.zensus_population_id, demand/c.count as per_building , area_id FROM 
+        SELECT a.zensus_population_id, demand/c.count as per_building , area_id FROM
         demand.egon_peta_heat a
         INNER JOIN (
             SELECT * FROM demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
         ) b ON a.zensus_population_id = b.zensus_population_id
-        
+
         JOIN (SELECT COUNT(building_id), zensus_population_id
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         boundaries.egon_map_zensus_grid_districts
-       )) 
+       ))
         GROUP BY zensus_population_id)c
         ON a.zensus_population_id = c.zensus_population_id
-        
+
         WHERE a.scenario = '{scenario}'
         AND a.sector = 'residential'
-        
+
         """,
         index_col="zensus_population_id",
     )
 
     daily_demand_shares = db.select_dataframe(
         """
-        SELECT climate_zone, day_of_year as day, daily_demand_share FROM 
-        demand.egon_daily_heat_demand_per_climate_zone        
+        SELECT climate_zone, day_of_year as day, daily_demand_share FROM
+        demand.egon_daily_heat_demand_per_climate_zone
         """
     )
 
     selected_profiles = db.select_dataframe(
         f"""
-        SELECT a.zensus_population_id, building_id, c.climate_zone, 
+        SELECT a.zensus_population_id, building_id, c.climate_zone,
         selected_idp, ordinality as day, b.area_id
         FROM demand.heat_timeseries_selected_profiles a
         INNER JOIN boundaries.egon_map_zensus_climate_zones c
@@ -295,8 +302,8 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
             SELECT * FROM demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
         ) b ON a.zensus_population_id = b.zensus_population_id        ,
-        
-        UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp 
+
+        UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
 
         """
     )
@@ -387,66 +394,66 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
     start_time = datetime.now()
     df = db.select_dataframe(
         f"""
-        
+
         SELECT SUM(building_demand_per_hour) as demand_profile, hour_of_year
-        FROM 
-        
+        FROM
+
         (
-        SELECT demand.demand  * 
+        SELECT demand.demand  *
         c.daily_demand_share * hourly_demand as building_demand_per_hour,
         ordinality + 24* (c.day_of_year-1) as hour_of_year,
         demand_profile.building_id,
         c.day_of_year,
         ordinality
-        
-        FROM 
-        
-        (SELECT zensus_population_id, demand FROM 
+
+        FROM
+
+        (SELECT zensus_population_id, demand FROM
         demand.egon_peta_heat
         WHERE scenario = '{scenario}'
         AND sector = 'residential'
         AND zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         boundaries.egon_map_zensus_grid_districts
         WHERE bus_id = {mv_grid_id}
         )) as demand
-        
-        JOIN boundaries.egon_map_zensus_climate_zones b 
+
+        JOIN boundaries.egon_map_zensus_climate_zones b
         ON demand.zensus_population_id = b.zensus_population_id
-        
+
         JOIN demand.egon_daily_heat_demand_per_climate_zone c
         ON c.climate_zone = b.climate_zone
-        
+
         JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
         FROM demand.heat_timeseries_selected_profiles d,
-        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
+        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp
         JOIN demand.heat_idp_pool e
         ON selected_idp = e.index
         WHERE zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         boundaries.egon_map_zensus_grid_districts
         WHERE bus_id = {mv_grid_id}
         ))  demand_profile
-        ON (demand_profile.day = c.day_of_year AND 
+        ON (demand_profile.day = c.day_of_year AND
             demand_profile.zensus_population_id = b.zensus_population_id)
-        
+
         JOIN (SELECT COUNT(building_id), zensus_population_id
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         boundaries.egon_map_zensus_grid_districts
         WHERE bus_id = {mv_grid_id}
        ))
 		GROUP BY zensus_population_id) building
         ON building.zensus_population_id = b.zensus_population_id,
-        
+
         UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
         )   result
-        
-        
+
+
         GROUP BY hour_of_year
 
         """
@@ -507,37 +514,37 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
         SELECT a.zensus_population_id, demand/c.count as per_building, bus_id
         FROM demand.egon_peta_heat a
 
-        
+
         JOIN (SELECT COUNT(building_id), zensus_population_id
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         boundaries.egon_map_zensus_grid_districts
-       )) 
+       ))
         GROUP BY zensus_population_id)c
         ON a.zensus_population_id = c.zensus_population_id
-        
+
         JOIN boundaries.egon_map_zensus_grid_districts d
         ON a.zensus_population_id = d.zensus_population_id
-        
+
         WHERE a.scenario = '{scenario}'
         AND a.sector = 'residential'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
         )
-        
+
         """,
         index_col="zensus_population_id",
     )
 
     daily_demand_shares = db.select_dataframe(
         """
-        SELECT climate_zone, day_of_year as day, daily_demand_share FROM 
-        demand.egon_daily_heat_demand_per_climate_zone        
+        SELECT climate_zone, day_of_year as day, daily_demand_share FROM
+        demand.egon_daily_heat_demand_per_climate_zone
         """
     )
 
@@ -546,15 +553,15 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
 
         selected_profiles = db.select_dataframe(
             f"""
-            SELECT a.zensus_population_id, building_id, c.climate_zone, 
+            SELECT a.zensus_population_id, building_id, c.climate_zone,
             selected_idp, ordinality as day
             FROM demand.heat_timeseries_selected_profiles a
             INNER JOIN boundaries.egon_map_zensus_climate_zones c
             ON a.zensus_population_id = c.zensus_population_id
             ,
-            
-            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp 
-            
+
+            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
+
             WHERE a.zensus_population_id NOT IN (
                 SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
                 WHERE scenario = '{scenario}'
@@ -564,7 +571,7 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
                 FROM boundaries.egon_map_zensus_grid_districts
                 WHERE bus_id = '{grid}'
             )
-    
+
             """
         )
 
@@ -609,37 +616,37 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
         SELECT a.zensus_population_id, demand/c.count as per_building, bus_id
         FROM demand.egon_peta_heat a
 
-        
+
         JOIN (SELECT COUNT(building_id), zensus_population_id
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN (
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         boundaries.egon_map_zensus_grid_districts
-       )) 
+       ))
         GROUP BY zensus_population_id)c
         ON a.zensus_population_id = c.zensus_population_id
-        
+
         JOIN boundaries.egon_map_zensus_grid_districts d
         ON a.zensus_population_id = d.zensus_population_id
-        
+
         WHERE a.scenario = '{scenario}'
         AND a.sector = 'residential'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
             WHERE scenario = '{scenario}'
         )
-        
+
         """,
         index_col="zensus_population_id",
     )
 
     daily_demand_shares = db.select_dataframe(
         f"""
-        SELECT climate_zone, day_of_year as day, daily_demand_share FROM 
-        demand.egon_daily_heat_demand_per_climate_zone        
+        SELECT climate_zone, day_of_year as day, daily_demand_share FROM
+        demand.egon_daily_heat_demand_per_climate_zone
         """
     )
 
@@ -662,15 +669,15 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
         selected_profiles = db.select_dataframe(
             f"""
-            SELECT a.zensus_population_id, building_id, c.climate_zone, 
+            SELECT a.zensus_population_id, building_id, c.climate_zone,
             selected_idp, ordinality as day
             FROM demand.heat_timeseries_selected_profiles a
             INNER JOIN boundaries.egon_map_zensus_climate_zones c
             ON a.zensus_population_id = c.zensus_population_id
             ,
-            
-            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp 
-            
+
+            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
+
             WHERE a.zensus_population_id NOT IN (
                 SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
                 WHERE scenario = '{scenario}'
@@ -680,7 +687,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
                 FROM boundaries.egon_map_zensus_grid_districts
                 WHERE bus_id = '{grid}'
             )
-    
+
             """
         )
 
@@ -894,54 +901,54 @@ def store_national_profiles():
 
     df = db.select_dataframe(
         f"""
-        
+
         SELECT SUM(building_demand_per_hour) as "residential rural"
-        FROM 
-        
+        FROM
+
         (
-        SELECT demand.demand  * 
+        SELECT demand.demand  *
         c.daily_demand_share * hourly_demand as building_demand_per_hour,
         ordinality + 24* (c.day_of_year-1) as hour_of_year,
         demand_profile.building_id,
         c.day_of_year,
         ordinality
-        
-        FROM 
-        
-        (SELECT zensus_population_id, demand FROM 
+
+        FROM
+
+        (SELECT zensus_population_id, demand FROM
         demand.egon_peta_heat
         WHERE scenario = '{scenario}'
         AND sector = 'residential'
        ) as demand
-        
-        JOIN boundaries.egon_map_zensus_climate_zones b 
+
+        JOIN boundaries.egon_map_zensus_climate_zones b
         ON demand.zensus_population_id = b.zensus_population_id
-        
+
         JOIN demand.egon_daily_heat_demand_per_climate_zone c
         ON c.climate_zone = b.climate_zone
-        
+
         JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
         FROM demand.heat_timeseries_selected_profiles d,
-        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
+        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp
         JOIN demand.heat_idp_pool e
         ON selected_idp = e.index
         )  demand_profile
-        ON (demand_profile.day = c.day_of_year AND 
+        ON (demand_profile.day = c.day_of_year AND
             demand_profile.zensus_population_id = b.zensus_population_id)
-        
+
         JOIN (SELECT COUNT(building_id), zensus_population_id
         FROM demand.heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM 
+        SELECT zensus_population_id FROM
         demand.heat_timeseries_selected_profiles
         )
 		GROUP BY zensus_population_id) building
         ON building.zensus_population_id = b.zensus_population_id,
-        
+
         UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
         )   result
-        
-        
+
+
         GROUP BY hour_of_year
 
         """
@@ -961,13 +968,13 @@ def store_national_profiles():
         f"""
         SELECT sum(demand) as "urban central"
 
-        FROM demand.egon_timeseries_district_heating, 
+        FROM demand.egon_timeseries_district_heating,
         UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
-        
+
         WHERE scenario = '{scenario}'
-        
+
         GROUP BY ordinality
-        
+
         """
     )
 
@@ -979,6 +986,40 @@ def store_national_profiles():
     df.to_csv(folder / f"heat_demand_timeseries_DE_{scenario}.csv")
 
 
+def export_etrago_cts_heat_profiles():
+    """Export heat cts load profiles at mv substation level
+    to etrago-table in the database
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Calculate cts heat profiles at substation
+    _, CTS_grid, _ = CTS_demand_scale("district")
+
+    # Change format
+    data = CTS_grid.drop(columns="scenario")
+    df_etrago_cts_heat_profiles = pd.DataFrame(
+        index=data.index, columns=["scn_name", "p_set"]
+    )
+    df_etrago_cts_heat_profiles.p_set = data.values.tolist()
+    df_etrago_cts_heat_profiles.scn_name = CTS_grid["scenario"]
+    df_etrago_cts_heat_profiles.reset_index(inplace=True)
+
+    # Drop and recreate Table if exists
+    EgonEtragoHeatCts.__table__.drop(bind=db.engine(), checkfirst=True)
+    EgonEtragoHeatCts.__table__.create(bind=db.engine(), checkfirst=True)
+
+    # Write heat ts into db
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonEtragoHeatCts,
+            df_etrago_cts_heat_profiles.to_dict(orient="records"),
+        )
+
+
 class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
@@ -987,6 +1028,7 @@ class HeatTimeSeries(Dataset):
             dependencies=dependencies,
             tasks=(
                 {
+                    export_etrago_cts_heat_profiles,
                     map_climate_zones_to_zensus,
                     daily_demand_shares_per_climate_zone,
                     create,
