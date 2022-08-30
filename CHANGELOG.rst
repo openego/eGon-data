@@ -201,6 +201,8 @@ Added
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
 * Add motorized individual travel
   `#553 <https://github.com/openego/eGon-data/issues/553>`_
+* Add mapping zensus - weather cells
+  `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
 
