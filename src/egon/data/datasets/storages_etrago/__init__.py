@@ -4,6 +4,7 @@ eTraGo.
 """
 
 import geopandas as gpd
+import pandas as pd
 from egon.data import db, config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data.datasets import Dataset
@@ -17,7 +18,7 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
@@ -112,6 +113,17 @@ def extendable_batteries_per_scenario(scenario):
         """
     )
 
+    # Select information on allocated capacities for home batteries from database
+    home_batteries = db.select_dataframe(
+        f"""
+        SELECT el_capacity as p_nom_min, bus_id as bus FROM
+        {sources['storage']['schema']}.
+        {sources['storage']['table']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}';
+        """
+    )
+
     # Update index
     extendable_batteries[
         "storage_id"
@@ -145,6 +157,14 @@ def extendable_batteries_per_scenario(scenario):
     )["efficiency"]["battery"]["standing_loss"]
 
     extendable_batteries["carrier"] = "battery"
+
+    # Merge dataframes to fill p_nom_min column
+    extendable_batteries = extendable_batteries.merge(
+        right=home_batteries, left_on="bus", right_on="bus", how="outer"
+    )
+    extendable_batteries["p_nom_min"] = extendable_batteries[
+        "p_nom_min"
+    ].fillna(0)
 
     # Write data to db
     extendable_batteries.to_sql(
