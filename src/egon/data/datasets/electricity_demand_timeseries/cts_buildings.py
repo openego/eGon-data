@@ -1192,7 +1192,7 @@ def get_cts_electricity_peak_load():
         df_cts_profiles = calc_load_curves_cts(scenario=scenario)
 
         df_peak_load = pd.merge(
-            left=df_cts_profiles.max(axis=0).rename("max"),
+            left=df_cts_profiles.max(axis=0).astype(float).rename("max"),
             right=df_demand_share,
             left_on="bus_id",
             right_on="bus_id",
@@ -1211,9 +1211,6 @@ def get_cts_electricity_peak_load():
         df_peak_load = df_peak_load[
             ["building_id", "sector", "scenario", "peak_load_in_w"]
         ]
-
-        # Convert unit to W
-        df_peak_load["peak_load_in_w"] = df_peak_load["peak_load_in_w"] * 1e6
 
         # Write peak loads into db
         with db.session_scope() as session:
