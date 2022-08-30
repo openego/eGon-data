@@ -1,3 +1,5 @@
+import logging
+
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from sqlalchemy import REAL, Column, Integer, String, func
@@ -6,7 +8,6 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import saio
-import logging
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -1176,20 +1177,41 @@ def get_cts_electricity_peak_load():
     log.info("CTS Peak load removed from DB!")
 
     for scenario in ["eGon2035", "eGon100RE"]:
-        df_building_profiles = calc_building_profiles(scenario=scenario)
-        log.info(f"Profiles for {scenario} calculated!")
-        df_peak_load = df_building_profiles.max(axis=0).rename(scenario)
-        log.info("Peak load determined!")
-        df_peak_load = df_peak_load.reset_index()
 
-        # TODO rename table column to egon_building_id
+        with db.session_scope() as session:
+            cells_query = session.query(
+                EgonCtsElectricityDemandBuildingShare
+            ).filter(
+                EgonCtsElectricityDemandBuildingShare.scenario == scenario
+            )
+
+        df_demand_share = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col=None
+        )
+
+        df_cts_profiles = calc_load_curves_cts(scenario=scenario)
+
+        df_peak_load = pd.merge(
+            left=df_cts_profiles.max(axis=0).rename("max"),
+            right=df_demand_share,
+            left_on="bus_id",
+            right_on="bus_id",
+        )
+
+        # Convert unit from MWh to W
+        df_peak_load["max"] = df_peak_load["max"] * 1e6
+        df_peak_load["peak_load_in_w"] = (
+            df_peak_load["max"] * df_peak_load["profile_share"]
+        )
+        log.info(f"Peak load for {scenario} determined!")
+
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
         df_peak_load["sector"] = "cts"
-        df_peak_load = df_peak_load.melt(
-            id_vars=["building_id", "sector"],
-            var_name="scenario",
-            value_name="peak_load_in_w",
-        )
+
+        df_peak_load = df_peak_load[
+            ["building_id", "sector", "scenario", "peak_load_in_w"]
+        ]
+
         # Convert unit to W
         df_peak_load["peak_load_in_w"] = df_peak_load["peak_load_in_w"] * 1e6
 
@@ -1199,7 +1221,7 @@ def get_cts_electricity_peak_load():
                 BuildingPeakLoads,
                 df_peak_load.to_dict(orient="records"),
             )
-        log.info("Peak load exported to DB!")
+        log.info(f"Peak load for {scenario} exported to DB!")
 
 
 class CtsElectricityBuildings(Dataset):
