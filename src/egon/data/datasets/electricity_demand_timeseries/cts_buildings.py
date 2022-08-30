@@ -1184,9 +1184,9 @@ def get_cts_electricity_peak_load():
 
         # TODO rename table column to egon_building_id
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
-        df_peak_load["type"] = "cts"
+        df_peak_load["sector"] = "cts"
         df_peak_load = df_peak_load.melt(
-            id_vars=["building_id", "type"],
+            id_vars=["building_id", "sector"],
             var_name="scenario",
             value_name="peak_load_in_w",
         )
