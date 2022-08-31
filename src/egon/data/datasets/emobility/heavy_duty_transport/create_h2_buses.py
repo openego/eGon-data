@@ -84,7 +84,7 @@ def insert_new_entries(hgv_h2_demand_gdf, scenario):
     rename = {"scenario": "scn_name"}
     drop = ["bus_id", "hydrogen_consumption", "geometry"]
 
-    logger.debug(str(hgv_h2_demand_df.head()))
+    logger.debug(str(hgv_h2_demand_df.columns))
 
     hgv_h2_demand_df = pd.DataFrame(
         hgv_h2_demand_df.assign(**c)
