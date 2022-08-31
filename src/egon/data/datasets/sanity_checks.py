@@ -733,7 +733,44 @@ GROUP BY (a.scn_name);
     )["load_twh"].values[0]
 #This sanity check is not finished
 
-def sanitycheck_eGon100RE_buses():
+def sanitycheck_eGon2035_electric_buses():
+    """Execute basic sanity checks.
+
+    Returns print statements as sanity checks for the heat sector in
+    the eGon2035 scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Check input and output values for the carriers "other_non_renewable",
+    # "other_renewable", "reservoir", "run_of_river" and "oil"
+
+    scn = "eGon2035"
+    
+    
+   
+    electric_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus_id 
+        FROM grid.egon_etrago_bus
+        WHERE scn_name='{scn}'
+        AND bus_id NOT IN (SELECT bus0 FROM grid.egon_etrago_line WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus1 FROM grid.egon_etrago_line WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus0 FROM grid.egon_etrago_link WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus1 FROM grid.egon_etrago_link WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus0 FROM grid.egon_etrago_transformer WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus1 FROM grid.egon_etrago_transformer WHERE scn_name='{scn}')
+        
+                """,
+        warning=False,
+    )
+    
+def sanitycheck_eGon100RE_electric_buses():
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the heat sector in
@@ -752,77 +789,22 @@ def sanitycheck_eGon100RE_buses():
     # "other_renewable", "reservoir", "run_of_river" and "oil"
 
     scn = "eGon100RE"
+    
+    
    
-    buses = db.select_dataframe(
+    electric_buses = db.select_dataframe(
         f"""SELECT scn_name, bus_id 
         FROM grid.egon_etrago_bus
         WHERE scn_name='{scn}'
-        ORDER BY bus_id ASC
+        AND bus_id NOT IN (SELECT bus0 FROM grid.egon_etrago_line WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus1 FROM grid.egon_etrago_line WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus0 FROM grid.egon_etrago_link WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus1 FROM grid.egon_etrago_link WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus0 FROM grid.egon_etrago_transformer WHERE scn_name='{scn}')
+		AND bus_id NOT IN (SELECT bus1 FROM grid.egon_etrago_transformer WHERE scn_name='{scn}')
         
                 """,
         warning=False,
     )
     
     
-    lines = db.select_dataframe(
-        f"""SELECT scn_name, line_id, bus0, bus1
-        FROM grid.egon_etrago_line
-        WHERE scn_name='eGon100RE'
-        ORDER BY bus0 ASC 
-        
-                """,
-        warning=False,
-    )
-    
-    links = db.select_dataframe(
-        f"""SELECT scn_name, link_id, bus0, bus1
-        FROM grid.egon_etrago_link
-        WHERE scn_name='{scn}'
-        ORDER BY scn_name ASC, link_id ASC 
-
-        
-                """,
-        warning=False,
-    )
-    
-    buses_list = [
-        1,
-        2,
-        #"3",
-       # "11",
-        #"22",
-            ]
-    
-    prueba=lines.loc[:,"bus0"]
-    
-    
-    #buses_list = [ buses.to_string(columns=['bus_id'])  
-       
-         #   ]
-    
-    for buses in buses_list:
-        if 'buses' not in lines.loc[:,"bus0"] :
-               print("\nThis value not exists in Dataframe")
-        else :
-               print("\nThis value exists in Dataframe")
-   
-   
-   
-    for buses in buses_list:
-        
-        if 0 not in lines.loc[:,"bus0"] :
-            print("\nThis value not exists in Dataframe")
-        else :
-            print("\nThis value exists in Dataframe")
-        
-     
-        
-    # check_line = db.select_dataframe(
-        # """SELECT bus_id
-       #  FROM grid.egon_etrago_bus 
-       #  WHERE EXISTS
-       #  (SELECT bus1,bus0 FROM grid.egon_etrago_line WHERE bus_id='buses'); 
-       #  """,
-       #  warning=False,
-    # )
-        
