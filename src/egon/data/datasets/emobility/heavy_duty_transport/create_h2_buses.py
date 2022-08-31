@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from geoalchemy2.types import Geometry
+from loguru import logger
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -54,6 +55,8 @@ def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
 
     df.p_set = [[p_set] * HOURS_PER_YEAR for p_set in df.p_set]
 
+    logger.debug(str(df.columns))
+
     df = (
         df.rename(columns={"scenario": "scn_name"})
         .drop(
@@ -62,7 +65,6 @@ def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
                 "geometry",
                 "bus",
                 "carrier",
-                "bus_id",
             ]
         )
         .reset_index(drop=True)
