@@ -564,7 +564,9 @@ with airflow.DAG(
     )
 
     # eMobility: heavy duty transport
-    heavy_duty_transport = HeavyDutyTransport(dependencies=[vg250])
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago]
+    )
 
     # Sanity Checks
     sanity_checks = SanityChecks(
