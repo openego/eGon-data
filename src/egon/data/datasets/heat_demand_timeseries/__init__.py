@@ -110,7 +110,7 @@ def create_timeseries_for_building(building_id, scenario):
         JOIN (SELECT b.idp, ordinality as day
         FROM demand.heat_timeseries_selected_profiles a,
         UNNEST (a.selected_idp_profiles) WITH ORDINALITY as selected_idp        
-        JOIN demand.heat_idp_pool b
+        JOIN demand.egon_heat_idp_pool b
         ON selected_idp = b.index        
         WHERE a.building_id = {building_id}) as demand_profile
         ON demand_profile.day = daily_demand.day_of_year
@@ -174,7 +174,7 @@ def create_district_heating_profile(scenario, area_id):
         JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
         FROM demand.heat_timeseries_selected_profiles d,
         UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
-        JOIN demand.heat_idp_pool e
+        JOIN demand.egon_heat_idp_pool e
         ON selected_idp = e.index
         WHERE zensus_population_id IN (
         SELECT zensus_population_id FROM 
@@ -236,7 +236,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
     idp_df = db.select_dataframe(
         """
-        SELECT index, idp FROM demand.heat_idp_pool
+        SELECT index, idp FROM demand.egon_heat_idp_pool
         """,
         index_col="index",
     )
@@ -420,7 +420,7 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
         JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
         FROM demand.heat_timeseries_selected_profiles d,
         UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
-        JOIN demand.heat_idp_pool e
+        JOIN demand.egon_heat_idp_pool e
         ON selected_idp = e.index
         WHERE zensus_population_id IN (
         SELECT zensus_population_id FROM 
@@ -497,7 +497,7 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
 
     idp_df = db.select_dataframe(
         """
-        SELECT index, idp FROM demand.heat_idp_pool
+        SELECT index, idp FROM demand.egon_heat_idp_pool
         """,
         index_col="index",
     )
@@ -599,7 +599,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
     idp_df = db.select_dataframe(
         f"""
-        SELECT index, idp FROM demand.heat_idp_pool
+        SELECT index, idp FROM demand.egon_heat_idp_pool
         """,
         index_col="index",
     )
@@ -923,7 +923,7 @@ def store_national_profiles():
         JOIN (SELECT e.idp, ordinality as day, zensus_population_id, building_id
         FROM demand.heat_timeseries_selected_profiles d,
         UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp        
-        JOIN demand.heat_idp_pool e
+        JOIN demand.egon_heat_idp_pool e
         ON selected_idp = e.index
         )  demand_profile
         ON (demand_profile.day = c.day_of_year AND 
