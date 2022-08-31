@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from geoalchemy2.types import Geometry
 import geopandas as gpd
 import numpy as np
