@@ -7,6 +7,9 @@ import requests
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.emobility.heavy_duty_transport.create_h2_buses import (
+    insert_hgv_h2_demand,
+)
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
@@ -82,5 +85,6 @@ class HeavyDutyTransport(Dataset):
                     download_hgv_data,
                 },
                 run_egon_truck,
+                insert_hgv_h2_demand,
             ),
         )

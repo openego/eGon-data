@@ -1121,6 +1121,9 @@ mobility_hgv:
       fcev_share: 1.
       scenarios: ["eGon2035", "eGon100RE"]
       carrier: "H2_hgv_load"
+      energy_value_h2: 39.4  # kWh/kg
+      hours_per_year: 8760
+      fac: 0.001
     hgv_mileage:
       # NEP data
       # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf

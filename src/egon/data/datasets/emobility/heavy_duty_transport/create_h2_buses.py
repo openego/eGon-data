@@ -16,6 +16,9 @@ from egon.data.datasets.etrago_setup import link_geom_from_buses
 DATASET_CFG = config.datasets()["mobility_hgv"]
 CARRIER = DATASET_CFG["constants"]["carrier"]
 SCENARIOS = DATASET_CFG["constants"]["scenarios"]
+ENERGY_VALUE = DATASET_CFG["constants"]["energy_value_h2"]
+FAC = DATASET_CFG["constants"]["fac"]
+HOURS_PER_YEAR = DATASET_CFG["constants"]["hours_per_year"]
 
 
 def insert_hgv_h2_demand():
@@ -29,7 +32,32 @@ def insert_hgv_h2_demand():
 
         insert_new_entries(hgv_gdf, scenario=scenario)
 
-        # TODO: time series
+        ts_df = kg_per_year_to_mega_watt(hgv_gdf)
+
+        ts_df.to_sql(
+            "egon_etrago_load_timeseries",
+            schema="grid",
+            con=db.engine(),
+            if_exists="append",
+        )
+
+
+def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
+    df = df.assign(
+        p_set=df.hydrogen_consumption * ENERGY_VALUE * FAC / HOURS_PER_YEAR,
+        q_set=np.nan,
+        temp_id=1,
+    )
+
+    df.p_set = [[p_set] * HOURS_PER_YEAR for p_set in df.p_set]
+
+    df = (
+        df.rename(columns={"scenario": "scn_name", "bus_id": "load_id"})
+        .drop(columns=["hydrogen_consumption", "geometry", "bus", "carrier"])
+        .reset_index(drop=True)
+    )
+
+    return pd.DataFrame(df)
 
 
 def insert_new_entries(hgv_h2_demand_gdf, scenario):
