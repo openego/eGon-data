@@ -32,7 +32,7 @@ def insert_hgv_h2_demand():
 
         hgv_gdf = assign_h2_buses(scenario=scenario)
 
-        insert_new_entries(hgv_gdf, scenario=scenario)
+        hgv_gdf = insert_new_entries(hgv_gdf, scenario=scenario)
 
         ts_df = kg_per_year_to_mega_watt(hgv_gdf)
 
@@ -55,8 +55,16 @@ def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
     df.p_set = [[p_set] * HOURS_PER_YEAR for p_set in df.p_set]
 
     df = (
-        df.rename(columns={"scenario": "scn_name", "bus_id": "load_id"})
-        .drop(columns=["hydrogen_consumption", "geometry", "bus", "carrier"])
+        df.rename(columns={"scenario": "scn_name"})
+        .drop(
+            columns=[
+                "hydrogen_consumption",
+                "geometry",
+                "bus",
+                "carrier",
+                "bus_id",
+            ]
+        )
         .reset_index(drop=True)
     )
 
@@ -74,8 +82,7 @@ def insert_new_entries(hgv_h2_demand_gdf, scenario):
         Name of the scenario.
     """
     new_id = db.next_etrago_id("load")
-    hgv_h2_demand_df = hgv_h2_demand_gdf.copy()
-    hgv_h2_demand_df["load_id"] = range(
+    hgv_h2_demand_gdf["load_id"] = range(
         new_id, new_id + len(hgv_h2_demand_gdf)
     )
 
@@ -85,7 +92,7 @@ def insert_new_entries(hgv_h2_demand_gdf, scenario):
     drop = ["hydrogen_consumption", "geometry"]
 
     hgv_h2_demand_df = pd.DataFrame(
-        hgv_h2_demand_df.assign(**c)
+        hgv_h2_demand_gdf.assign(**c)
         .rename(columns=rename)
         .drop(columns=drop)
         .reset_index(drop=True)
@@ -100,6 +107,8 @@ def insert_new_entries(hgv_h2_demand_gdf, scenario):
         index=False,
         if_exists="append",
     )
+
+    return hgv_h2_demand_gdf
 
 
 def delete_old_entries(scenario):
