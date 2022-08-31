@@ -375,6 +375,7 @@ storages:
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
       nep_capacities: "NEP2035_V2021_scnC2035.xlsx"
       generators: "grid.egon_etrago_generator"
+      bus: "grid.egon_etrago_bus"
   target:
       table: 'egon_storages'
       schema: 'supply'

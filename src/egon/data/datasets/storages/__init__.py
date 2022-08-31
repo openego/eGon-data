@@ -369,7 +369,10 @@ def home_batteries_per_scenario(scenario):
         SELECT bus, p_nom, generator_id
         FROM {cfg['sources']['generators']}
         WHERE scn_name = '{scenario}'
-        AND carrier = 'solar_rooftop';
+        AND carrier = 'solar_rooftop'
+        AND bus IN
+            (SELECT bus_id FROM {cfg['sources']['bus']}
+               WHERE scn_name = '{scenario}' AND country = 'DE' );
         """
     )
 
