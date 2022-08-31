@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from geoalchemy2.types import Geometry
+from loguru import logger
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -82,6 +83,8 @@ def insert_new_entries(hgv_h2_demand_gdf, scenario):
     c = {"sign": -1, "type": np.nan, "p_set": np.nan, "q_set": np.nan}
     rename = {"scenario": "scn_name"}
     drop = ["bus_id", "hydrogen_consumption", "geometry"]
+
+    logger.debug(str(hgv_h2_demand_df.head()))
 
     hgv_h2_demand_df = pd.DataFrame(
         hgv_h2_demand_df.assign(**c)
