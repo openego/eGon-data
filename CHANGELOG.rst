@@ -208,6 +208,8 @@ Added
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
+* Integrated heavy duty transport FCEV
+  `#552 <https://github.com/openego/eGon-data/issues/552>`_
 * Add wind off shore power plants for eGon100RE
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Add distribution of CHP plants for eGon100RE

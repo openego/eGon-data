@@ -27,6 +27,9 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     CtsElectricityBuildings,
 )
+from egon.data.datasets.emobility.heavy_duty_transport import (
+    HeavyDutyTransport,
+)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -564,6 +567,11 @@ with airflow.DAG(
         ]
     )
 
+    # eMobility: heavy duty transport
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago]
+    )
+
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
@@ -577,6 +585,6 @@ with airflow.DAG(
         dependencies=[
             osm_buildings_streets,
             cts_electricity_demand_annual,
-            hh_demand_buildings_setup
+            hh_demand_buildings_setup,
         ]
     )
