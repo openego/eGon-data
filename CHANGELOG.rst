@@ -410,6 +410,8 @@ Changed
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add sanity checks for motorized individual travel
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
+* Allocate PV home batteries to mv grid districts
+  `#749 <https://github.com/openego/eGon-data/issues/749>`_
 
 
 Bug Fixes
