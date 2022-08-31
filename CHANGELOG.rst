@@ -205,6 +205,8 @@ Added
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
+* Integrated heavy duty transport FCEV
+  `#552 <https://github.com/openego/eGon-data/issues/552>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
