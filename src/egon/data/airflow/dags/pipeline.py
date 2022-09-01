@@ -204,7 +204,9 @@ with airflow.DAG(
     load_area = LoadArea(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
-    renewable_feedin = RenewableFeedin(dependencies=[vg250, weather_data])
+    renewable_feedin = RenewableFeedin(
+        dependencies=[vg250, zensus_vg250, weather_data]
+    )
 
     # Demarcate district heating areas
     district_heating_areas = DistrictHeatingAreas(
@@ -400,7 +402,10 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=h2_infrastructure
+        dependencies=[
+            h2_infrastructure,
+            insert_power_to_h2_installations
+        ]
     )
 
     # Create gas voronoi eGon100RE
