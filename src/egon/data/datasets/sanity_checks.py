@@ -736,8 +736,8 @@ GROUP BY (a.scn_name);
 def sanitycheck_eGon2035_electric_buses():
     """Execute basic sanity checks.
 
-    Returns print statements as sanity checks for the heat sector in
-    the eGon2035 scenario.
+   Returns print statements as sanity checks for the buses in lines, links
+   and transformers in the eGon2035 scenario.
 
     Parameters
     ----------
@@ -773,8 +773,8 @@ def sanitycheck_eGon2035_electric_buses():
 def sanitycheck_eGon100RE_electric_buses():
     """Execute basic sanity checks.
 
-    Returns print statements as sanity checks for the heat sector in
-    the eGon2035 scenario.
+    Returns print statements as sanity checks for the buses in lines, links
+    and transformers in the eGon100RE scenario.
 
     Parameters
     ----------
@@ -807,4 +807,112 @@ def sanitycheck_eGon100RE_electric_buses():
         warning=False,
     )
     
+def sanitycheck_eGon2035_others():
+    """Execute basic sanity checks.
+
+    Returns print statements as sanity checks for the buses in generators, demand
+    , storage and load in the eGon2035 scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Check input and output values for the carriers "other_non_renewable",
+    # "other_renewable", "reservoir", "run_of_river" and "oil"
+
+    scn = "eGon2035"
+    
+    
+   
+    generator_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus
+FROM grid.egon_etrago_generator
+        WHERE scn_name='{scn}'
+        AND bus NOT IN (SELECT bus_id FROM grid.egon_etrago_bus WHERE scn_name='{scn}')
+        
+                """,
+        warning=False,
+    )
+    
+    load_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus
+FROM grid.egon_etrago_load
+        WHERE scn_name='{scn}'
+        AND bus NOT IN (SELECT bus_id FROM grid.egon_etrago_bus WHERE scn_name='{scn}')
+		
+        
+                """,
+        warning=False,
+    )
+    
+    storage_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus
+FROM grid.egon_etrago_storage
+        WHERE scn_name='{scn}'
+        AND bus NOT IN (SELECT bus_id FROM grid.egon_etrago_bus WHERE scn_name='{scn}')
+		
+        
+                """,
+        warning=False,
+    )
+    
+def sanitycheck_eGon100RE_others():
+    """Execute basic sanity checks.
+
+    Returns print statements as sanity checks for the buses in generators, demand
+    , storage and load in the eGon2035 scenario.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Check input and output values for the carriers "other_non_renewable",
+    # "other_renewable", "reservoir", "run_of_river" and "oil"
+
+    scn = "eGon100RE"
+    
+    
+   
+    generator_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus
+FROM grid.egon_etrago_generator
+        WHERE scn_name='{scn}'
+        AND bus NOT IN (SELECT bus_id FROM grid.egon_etrago_bus WHERE scn_name='{scn}')
+        
+                """,
+        warning=False,
+    )
+    
+    load_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus
+FROM grid.egon_etrago_load
+        WHERE scn_name='{scn}'
+        AND bus NOT IN (SELECT bus_id FROM grid.egon_etrago_bus WHERE scn_name='{scn}')
+		
+        
+                """,
+        warning=False,
+    )
+    
+    storage_buses = db.select_dataframe(
+        f"""SELECT scn_name, bus
+FROM grid.egon_etrago_storage
+        WHERE scn_name='{scn}'
+        AND bus NOT IN (SELECT bus_id FROM grid.egon_etrago_bus WHERE scn_name='{scn}')
+		
+        
+                """,
+        warning=False,
+    )
+
     
