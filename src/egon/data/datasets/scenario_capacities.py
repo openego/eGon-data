@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -154,6 +154,28 @@ def insert_capacities_per_federal_state_nep():
         index_col="Unnamed: 0",
     )
 
+    # Import data on wind offshore capacities
+    df_windoff = pd.read_excel(
+        target_file,
+        sheet_name="WInd_Offshore_NEP",
+    ).dropna(subset=['Bundesland', 'Netzverknuepfungspunkt'])
+
+    # Remove trailing whitespace from column Bundesland
+    df_windoff['Bundesland']= df_windoff['Bundesland'].str.strip()
+
+    # Group and sum capacities per federal state
+    df_windoff_fs = df_windoff[['Bundesland', 'C 2035']].groupby(['Bundesland']).sum()
+
+    # List federal state with an assigned wind offshore capacity
+    index_list = list(df_windoff_fs.index.values)
+
+    # Overwrite capacities in df_windoff with more accurate values from df_windoff_fs
+
+    for state in index_list:
+
+        df.at['Wind offshore', state] = df_windoff_fs.at[state, 'C 2035']/1000
+
+
     # sort NEP-carriers:
     rename_carrier = {
         "Wind onshore": "wind_onshore",
@@ -244,7 +266,7 @@ def insert_capacities_per_federal_state_nep():
     # Filter by carrier
     updated = insert_data[insert_data["carrier"].isin(carriers)]
 
-    # Merge to replace capacities
+    # Merge to replace capacities for carriers "oil", "other_non_renewable" and "pumped_hydro"
     updated = (
         updated.merge(capacities_list, on=["carrier", "nuts"], how="left")
         .fillna(0)
