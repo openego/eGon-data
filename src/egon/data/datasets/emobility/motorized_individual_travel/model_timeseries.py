@@ -59,6 +59,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+
 # from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -269,8 +270,11 @@ def generate_load_time_series(
         # (I) Preserve SoC while driving
         if location == "driving":
             # Full band while driving
-            # soc_min_absolute[drive_start:drive_end+1] += soc_end * bat_cap * ev_count
-            # soc_max_absolute[drive_start:drive_end+1] += soc_start * bat_cap * ev_count
+            # soc_min_absolute[drive_start:drive_end+1] +=
+            # soc_end * bat_cap * ev_count
+            #
+            # soc_max_absolute[drive_start:drive_end+1] +=
+            # soc_start * bat_cap * ev_count
 
             # Real band (decrease SoC while driving)
             soc_min_absolute[drive_start : drive_end + 1] += (
@@ -518,6 +522,8 @@ def write_model_data_to_db(
         Scenario name
     run_config : pd.DataFrame
         simBEV metadata: run config
+    bat_cap : pd.DataFrame
+        Battery capacities per EV type
 
     Returns
     -------
@@ -578,11 +584,11 @@ def write_model_data_to_db(
             / initial_soc_per_ev_type.battery_capacity_sum.sum()
         )
 
-    def write_to_db() -> None:
+    def write_to_db(write_noflex_model: bool) -> None:
         """Write model data to eTraGo tables"""
 
         @db.check_db_unique_violation
-        def write_bus():
+        def write_bus(scenario_name: str) -> None:
             # eMob MIT bus
             emob_bus_id = db.next_etrago_id("bus")
             with db.session_scope() as session:
@@ -600,7 +606,7 @@ def write_model_data_to_db(
             return emob_bus_id
 
         @db.check_db_unique_violation
-        def write_link():
+        def write_link(scenario_name: str) -> None:
             # eMob MIT link [bus_el] -> [bus_ev]
             emob_link_id = db.next_etrago_id("link")
             with db.session_scope() as session:
@@ -641,7 +647,7 @@ def write_model_data_to_db(
                 )
 
         @db.check_db_unique_violation
-        def write_store():
+        def write_store(scenario_name: str) -> None:
             # eMob MIT store
             emob_store_id = db.next_etrago_id("store")
             with db.session_scope() as session:
@@ -678,7 +684,9 @@ def write_model_data_to_db(
                 )
 
         @db.check_db_unique_violation
-        def write_load():
+        def write_load(
+            scenario_name: str, connection_bus_id: int, load_ts: list
+        ) -> None:
             # eMob MIT load
             emob_load_id = db.next_etrago_id("load")
             with db.session_scope() as session:
@@ -686,7 +694,7 @@ def write_model_data_to_db(
                     EgonPfHvLoad(
                         scn_name=scenario_name,
                         load_id=emob_load_id,
-                        bus=emob_bus_id,
+                        bus=connection_bus_id,
                         carrier="land transport EV",
                         sign=-1,
                     )
@@ -697,9 +705,7 @@ def write_model_data_to_db(
                         scn_name=scenario_name,
                         load_id=emob_load_id,
                         temp_id=1,
-                        p_set=(
-                            hourly_load_time_series_df.load_time_series.to_list()
-                        ),
+                        p_set=load_ts,
                     )
                 )
 
@@ -724,11 +730,33 @@ def write_model_data_to_db(
                     f"with bus_id {bus_id} in table egon_etrago_bus!"
                 )
 
-        # Write component data
-        emob_bus_id = write_bus()
-        write_link()
-        write_store()
-        write_load()
+        # Call DB writing functions for regular or noflex scenario
+        # * use corresponding scenario name as defined in datasets.yml
+        # * no storage for noflex scenario
+        # * load timeseries:
+        #   * regular (flex): use driving load
+        #   * noflex: use dumb charging load
+        if write_noflex_model is False:
+            emob_bus_id = write_bus(scenario_name=scenario_name)
+            write_link(scenario_name=scenario_name)
+            write_store(scenario_name=scenario_name)
+            write_load(
+                scenario_name=scenario_name,
+                connection_bus_id=emob_bus_id,
+                load_ts=(
+                    hourly_load_time_series_df.driving_load_time_series.to_list()
+                ),
+            )
+        else:
+            # Get noflex scenario name
+            noflex_scenario_name = DATASET_CFG["scenario"]["noflex"]["names"][
+                scenario_name
+            ]
+            write_load(
+                scenario_name=noflex_scenario_name,
+                connection_bus_id=etrago_bus.bus_id,
+                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+            )
 
     def write_to_file():
         """Write model data to file (for debugging purposes)"""
@@ -802,11 +830,20 @@ def write_model_data_to_db(
     # Crop hourly TS if needed
     hourly_load_time_series_df = hourly_load_time_series_df[:8760]
 
-    # Get initial average SoC
+    # Create noflex scenario?
+    write_noflex_model = DATASET_CFG["scenario"]["noflex"][
+        "create_noflex_scenario"
+    ]
+
+    # Get initial average storage SoC
     initial_soc_mean = calc_initial_ev_soc(bus_id, scenario_name)
 
-    # Write to database
-    write_to_db()
+    # Write to database: regular and noflex scenario
+    write_to_db(write_noflex_model=False)
+    print('    Writing flex scenario...')
+    if write_noflex_model is True:
+        print('    Writing noflex scenario...')
+        write_to_db(write_noflex_model=True)
 
     # Export to working dir if requested
     if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
