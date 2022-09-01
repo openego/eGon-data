@@ -449,7 +449,7 @@ def select():
     idp_df = db.select_dataframe(
         """
         SELECT index, house, temperature_class
-        FROM demand.heat_idp_pool
+        FROM demand.egon_heat_idp_pool
         """,
         index_col="index",
     )
@@ -615,7 +615,7 @@ def select():
         start_sfh = datetime.now()
         df_sfh.set_index(["zensus_population_id", "building_id"]).to_sql(
             EgonHeatTimeseries.__table__.name,
-            EgonHeatTimeseries.__table__.schema,
+            schema=EgonHeatTimeseries.__table__.schema,
             con=db.engine(),
             if_exists="append",
             chunksize=5000,
@@ -668,7 +668,7 @@ def select():
         start_mfh = datetime.now()
         df_mfh.set_index(["zensus_population_id", "building_id"]).to_sql(
             EgonHeatTimeseries.__table__.name,
-            EgonHeatTimeseries.__table__.schema,
+            schema=EgonHeatTimeseries.__table__.schema,
             con=db.engine(),
             if_exists="append",
             chunksize=5000,
