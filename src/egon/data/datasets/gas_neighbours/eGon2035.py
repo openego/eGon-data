@@ -1,4 +1,4 @@
-"""The central module containing all code dealing with gas neighbours
+"""Central module containing code dealing with gas neighbours for eGon2035
 """
 
 from pathlib import Path
@@ -19,6 +19,10 @@ from egon.data.datasets.electrical_neighbours import (
     get_foreign_bus_id,
     get_map_buses,
 )
+from egon.data.datasets.gas_neighbours.gas_abroad import (
+    insert_gas_grid_capacities,
+    get_foreign_gas_bus_id
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 countries = [
@@ -37,64 +41,6 @@ countries = [
     "SE",
     "UK",
 ]
-
-
-class GasNeighbours(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="GasNeighbours",
-            version="0.0.1",
-            dependencies=dependencies,
-            tasks=({tyndp_gas_generation, tyndp_gas_demand, grid}),
-        )
-
-
-def get_foreign_gas_bus_id():
-    """Calculate the etrago bus id from gas nodes of TYNDP based on the geometry
-
-    Returns
-    -------
-    pandas.Series
-        List of mapped node_ids from TYNDP and etragos bus_id
-
-    """
-
-    sources = config.datasets()["gas_neighbours"]["sources"]
-
-    bus_id = db.select_geodataframe(
-        """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
-        FROM grid.egon_etrago_bus
-        WHERE scn_name = 'eGon2035'
-        AND carrier = 'CH4'
-        AND country != 'DE'
-        """,
-        epsg=3035,
-    )
-
-    # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
-
-    # Select buses in neighbouring countries as geodataframe
-    buses = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Nodes - Dict",
-    ).query("longitude==longitude")
-    buses = gpd.GeoDataFrame(
-        buses,
-        crs=4326,
-        geometry=gpd.points_from_xy(buses.longitude, buses.latitude),
-    ).to_crs(3035)
-
-    buses["bus_id"] = 0
-
-    # Select bus_id from etrago with shortest distance to TYNDP node
-    for i, row in buses.iterrows():
-        distance = bus_id.set_index("bus_id").geom.distance(row.geometry)
-        buses.loc[i, "bus_id"] = distance[
-            distance == distance.min()
-        ].index.values[0]
-
-    return buses.set_index("node_id").bus_id
 
 
 def read_LNG_capacities():
@@ -352,7 +298,6 @@ def calc_capacity_per_year(df, lng, year):
     )
 
     return df_year
-
 
 
 def insert_generators(gen):
@@ -1357,72 +1302,6 @@ def calculate_ch4_grid_capacities():
     return Neighbouring_pipe_capacities_list
 
 
-def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
-    """Insert CH4 grid capacities for foreign countries based on TYNDP-data
-
-    Parameters
-    ----------
-    Neighbouring_pipe_capacities_list : pandas.DataFrame
-
-    Returns
-    -------
-    None.
-
-    """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
-
-    # Insert border crossing CH4 pipelines between foreign countries
-    # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM 
-        {sources['links']['schema']}.{sources['links']['table']}
-        WHERE "bus0" IN (
-            SELECT bus_id FROM 
-            {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND carrier = 'CH4'
-                AND scn_name = 'eGon2035')
-        OR "bus1" IN (
-            SELECT bus_id FROM 
-            {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND carrier = 'CH4'
-                AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'            
-        ;
-        """
-    )
-
-    # Insert data to db
-    Neighbouring_pipe_capacities_list.to_postgis(
-        "egon_etrago_gas_link",
-        db.engine(),
-        schema="grid",
-        index=False,
-        if_exists="replace",
-        dtype={"geom": Geometry(), "topo": Geometry()},
-    )
-
-    db.execute_sql(
-        f"""
-    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
-
-    INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
-        scn_name, link_id, carrier,
-        bus0, bus1,p_nom, length, geom, topo)
-    
-    SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, length, geom, topo
-
-    FROM grid.egon_etrago_gas_link;
-
-    DROP TABLE grid.egon_etrago_gas_link;
-        """
-    )
-
-
 def tyndp_gas_generation():
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
@@ -1466,4 +1345,6 @@ def grid():
     None.
     """
     Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
-    insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list)
+    insert_gas_grid_capacities(
+        Neighbouring_pipe_capacities_list, scn_name="eGon2035"
+    )

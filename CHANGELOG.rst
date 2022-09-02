@@ -414,6 +414,8 @@ Changed
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Allocate PV home batteries to mv grid districts
   `#749 <https://github.com/openego/eGon-data/issues/749>`_
+* Insert crossboarding gas pipeline with Germany in eGon100RE
+  `#881 <https://github.com/openego/eGon-data/issues/881>`_
 
 
 Bug Fixes
