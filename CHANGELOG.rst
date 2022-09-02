@@ -398,6 +398,8 @@ Changed
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Integrate new data bundle using zenodo sandbox
+  `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Insert stubtations into transfer buses table
@@ -596,6 +598,8 @@ Bug Fixes
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
 * Move class definition for grid.egon_gas_voronoi out of etrago_setup
   `#888 <https://github.com/openego/eGon-data/issues/888>`_
+* Temporarily set upper version limit for pandas
+  `#829 <https://github.com/openego/eGon-data/issues/829>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
