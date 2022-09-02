@@ -43,67 +43,6 @@ countries = [
 ]
 
 
-<<<<<<< HEAD:src/egon/data/datasets/gas_neighbours/eGon2035.py
-=======
-class GasNeighbours(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="GasNeighbours",
-            version="0.0.1",
-            dependencies=dependencies,
-            tasks=({tyndp_gas_generation, tyndp_gas_demand, grid}),
-        )
-
-
-def get_foreign_gas_bus_id():
-    """Calculate the etrago bus id from gas nodes of TYNDP based on the geometry
-
-    Returns
-    -------
-    pandas.Series
-        List of mapped node_ids from TYNDP and etragos bus_id
-
-    """
-
-    sources = config.datasets()["gas_neighbours"]["sources"]
-
-    bus_id = db.select_geodataframe(
-        """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
-        FROM grid.egon_etrago_bus
-        WHERE scn_name = 'eGon2035'
-        AND carrier = 'CH4'
-        AND country != 'DE'
-        """,
-        epsg=3035,
-    )
-
-    # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
-
-    # Select buses in neighbouring countries as geodataframe
-    buses = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Nodes - Dict",
-    ).query("longitude==longitude")
-    buses = gpd.GeoDataFrame(
-        buses,
-        crs=4326,
-        geometry=gpd.points_from_xy(buses.longitude, buses.latitude),
-    ).to_crs(3035)
-
-    buses["bus_id"] = 0
-
-    # Select bus_id from etrago with shortest distance to TYNDP node
-    for i, row in buses.iterrows():
-        distance = bus_id.set_index("bus_id").geom.distance(row.geometry)
-        buses.loc[i, "bus_id"] = distance[
-            distance == distance.min()
-        ].index.values[0]
-
-    return buses.set_index("node_id").bus_id
-
-
->>>>>>> dev:src/egon/data/datasets/gas_neighbours.py
 def read_LNG_capacities():
     lng_file = "datasets/gas_data/data/IGGIELGN_LNGs.csv"
     IGGIELGN_LNGs = gpd.read_file(lng_file)
