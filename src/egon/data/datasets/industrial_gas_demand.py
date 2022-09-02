@@ -37,7 +37,7 @@ class IndustrialGasDemandeGon2035(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon2035",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon2035),
         )
@@ -47,7 +47,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon100RE",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon100RE),
         )
@@ -150,21 +150,28 @@ def read_industrial_demand(scn_name, carrier):
     ).set_geometry("geom", crs=4326)
 
 
-def read_industrial_CH4_demand(scn_name="eGon2035"):
-    """Download the CH4 industrial demand in Germany from the FfE open data portal
+def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None):
+    """Assign the industrial demand in Germany to buses
 
     Parameters
     ----------
     scn_name : str
         Name of the scenario
 
+    carrier : str
+        Name of the carrier, the demand should hold
+
+    grid_carrier : str
+        Carrier name of the buses, the demand should be assigned to
+
     Returns
     -------
-    CH4_industrial_demand :
-        Dataframe containing the CH4 industrial demand in Germany
+    industrial_demand :
+        Dataframe containing the industrial demand in Germany
 
     """
-    carrier = "CH4"
+    if grid_carrier is None:
+        grid_carrier = carrier
     industrial_loads_list = read_industrial_demand(scn_name, carrier)
 
     # Match to associated gas bus
@@ -174,120 +181,6 @@ def read_industrial_CH4_demand(scn_name="eGon2035"):
 
     # Add carrier
     industrial_loads_list["carrier"] = carrier
-
-    # Remove useless columns
-    industrial_loads_list = industrial_loads_list.drop(
-        columns=["geom", "NUTS0", "NUTS1", "bus_id"], errors="ignore"
-    )
-
-    return industrial_loads_list
-
-
-def read_industrial_H2_demand(scn_name="eGon2035"):
-    """Download the H2 industrial demand in Germany from the FfE open data portal
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
-
-    Returns
-    -------
-    H2_industrial_demand :
-        Dataframe containing the H2 industrial demand in Germany
-
-    """
-    industrial_loads_list = read_industrial_demand(scn_name, "H2")
-    industrial_loads_list_copy = industrial_loads_list.copy()
-    # Match to associated gas bus
-    industrial_loads_list = db.assign_gas_bus_id(
-        industrial_loads_list, scn_name, "H2_grid"
-    )
-    industrial_loads_saltcavern = db.assign_gas_bus_id(
-        industrial_loads_list_copy, scn_name, "H2_saltcavern"
-    )
-
-    saltcavern_buses = (
-        db.select_geodataframe(
-            f"""
-            SELECT * FROM grid.egon_etrago_bus WHERE carrier = 'H2_saltcavern'
-            AND scn_name = '{scn_name}'
-        """
-        )
-        .to_crs(epsg=3035)
-        .set_index("bus_id")
-    )
-
-    nearest_saltcavern_buses = saltcavern_buses.loc[
-        industrial_loads_saltcavern["bus_id"]
-    ].geometry
-
-    industrial_loads_saltcavern[
-        "distance"
-    ] = industrial_loads_saltcavern.to_crs(epsg=3035).distance(
-        nearest_saltcavern_buses, align=False
-    )
-
-    new_connections = industrial_loads_saltcavern[
-        industrial_loads_saltcavern["distance"] <= 10000
-    ]
-    num_new_connections = len(new_connections)
-
-    if num_new_connections > 0:
-
-        carrier = "H2_ind_load"
-        target = {"schema": "grid", "table": "egon_etrago_bus"}
-        bus_gdf = initialise_bus_insertion(carrier, target, scenario=scn_name)
-
-        bus_gdf["geom"] = new_connections["geom"]
-
-        bus_gdf = finalize_bus_insertion(
-            bus_gdf, carrier, target, scenario=scn_name
-        )
-
-        # Delete existing buses
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_link
-            WHERE scn_name = '{scn_name}'
-            AND carrier = '{carrier}'
-            """
-        )
-
-        # initalize dataframe for new buses
-        grid_links = pd.DataFrame(
-            columns=["scn_name", "link_id", "bus0", "bus1", "carrier"]
-        )
-
-        grid_links["bus0"] = industrial_loads_list.loc[bus_gdf.index]["bus_id"]
-        grid_links["bus1"] = bus_gdf["bus_id"]
-        grid_links["p_nom"] = 1e9
-        grid_links["carrier"] = carrier
-        grid_links["scn_name"] = scn_name
-
-        cavern_links = grid_links.copy()
-
-        cavern_links["bus0"] = new_connections["bus_id"]
-
-        engine = db.engine()
-        for table in [grid_links, cavern_links]:
-            new_id = db.next_etrago_id("link")
-            table["link_id"] = range(new_id, new_id + len(table))
-
-            link_geom_from_buses(table, scn_name).to_postgis(
-                "egon_etrago_link",
-                engine,
-                schema="grid",
-                index=False,
-                if_exists="append",
-                dtype={"topo": Geometry()},
-            )
-
-        industrial_loads_list.loc[bus_gdf.index, "bus"] = bus_gdf["bus_id"]
-
-    # Add carrier
-    c = {"carrier": "H2"}
-    industrial_loads_list = industrial_loads_list.assign(**c)
 
     # Remove useless columns
     industrial_loads_list = industrial_loads_list.drop(
@@ -393,8 +286,10 @@ def insert_industrial_gas_demand_egon2035():
 
     industrial_gas_demand = pd.concat(
         [
-            read_industrial_CH4_demand(scn_name=scn_name),
-            read_industrial_H2_demand(scn_name=scn_name),
+            read_and_process_demand(scn_name=scn_name, carrier="CH4"),
+            read_and_process_demand(
+                scn_name=scn_name, carrier="H2", grid_carrier="H2_grid"
+            ),
         ]
     )
 
@@ -424,9 +319,13 @@ def insert_industrial_gas_demand_egon100RE():
     scn_name = "eGon100RE"
     delete_old_entries(scn_name)
 
-    # concatenate loads
-    industrial_gas_demand_CH4 = read_industrial_CH4_demand(scn_name=scn_name)
-    industrial_gas_demand_H2 = read_industrial_H2_demand(scn_name=scn_name)
+    # read demands
+    industrial_gas_demand_CH4 = read_and_process_demand(
+        scn_name=scn_name, carrier="CH4"
+    )
+    industrial_gas_demand_H2 = read_and_process_demand(
+        scn_name=scn_name, carrier="H2", grid_carrier="H2_grid"
+    )
 
     # adjust H2 and CH4 total demands (values from PES)
     # CH4 demand = 0 in 100RE, therefore scale H2 ts
