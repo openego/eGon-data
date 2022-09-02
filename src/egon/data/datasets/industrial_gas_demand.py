@@ -173,10 +173,11 @@ def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None
     if grid_carrier is None:
         grid_carrier = carrier
     industrial_loads_list = read_industrial_demand(scn_name, carrier)
+    number_loads = len(industrial_loads_list)
 
     # Match to associated gas bus
     industrial_loads_list = db.assign_gas_bus_id(
-        industrial_loads_list, scn_name, carrier
+        industrial_loads_list, scn_name, grid_carrier
     )
 
     # Add carrier
@@ -186,6 +187,15 @@ def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None
     industrial_loads_list = industrial_loads_list.drop(
         columns=["geom", "NUTS0", "NUTS1", "bus_id"], errors="ignore"
     )
+
+    msg = (
+        "The number of load changed when assigning to the respective buses."
+        f"It should be {number_loads} loads, but only"
+        f"{len(industrial_loads_list)} got assigned to buses."
+        f"scn_name: {scn_name}, load carrier: {carrier}, carrier of buses to"
+        f"connect loads to: {grid_carrier}"
+        )
+    assert len(industrial_loads_list) == number_loads, msg
 
     return industrial_loads_list
 
@@ -341,6 +351,7 @@ def insert_industrial_gas_demand_egon100RE():
         )
     except KeyError:
         H2_total_PES = 42090000
+        print("Could not find data from PES-run, assigning fallback number.")
 
     try:
         CH4_total_PES = (
@@ -351,6 +362,7 @@ def insert_industrial_gas_demand_egon100RE():
         )
     except KeyError:
         CH4_total_PES = 105490000
+        print("Could not find data from PES-run, assigning fallback number.")
 
     boundary = settings()["egon-data"]["--dataset-boundary"]
     if boundary != "Everything":
