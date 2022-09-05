@@ -748,6 +748,8 @@ def calc_building_demand_profile_share(
 
     """
 
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
+
     def calc_building_amenity_share(df_cts_buildings):
         """
         Calculate the building share by the number amenities per building
@@ -786,9 +788,31 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    df_demand_share = df_demand_share[
-        ["id", "bus_id", "scenario", "profile_share"]
-    ]
+    # TODO bus_id fix
+    # df_demand_share = df_demand_share[
+    #     ["id", "bus_id", "scenario", "profile_share"]
+    # ]
+    df_demand_share = df_demand_share[["id", "scenario", "profile_share"]]
+
+    with db.session_scope() as session:
+        cells_query = session.query(
+            egon_map_zensus_buildings_filtered_all.id,
+            egon_map_zensus_buildings_filtered_all.zensus_population_id,
+            MapZensusGridDistricts.bus_id,
+        ).filter(
+            MapZensusGridDistricts.zensus_population_id
+            == egon_map_zensus_buildings_filtered_all.zensus_population_id
+        )
+
+    df_egon_map_zensus_buildings_buses = pd.read_sql(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+    )
+    df_demand_share = pd.merge(
+        left=df_demand_share, right=df_egon_map_zensus_buildings_buses, on="id"
+    )
+
     # TODO adapt groupby?
     # Group and aggregate per building for multi cell buildings
     df_demand_share = (
