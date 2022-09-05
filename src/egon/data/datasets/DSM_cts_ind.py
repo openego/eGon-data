@@ -440,12 +440,19 @@ def dsm_cts_ind_processing():
             max_id = 0
         dsm_id = max_id + 1
         bus_id = pd.Series(index=dsm_buses.index, dtype=int)
-        bus_id.iloc[0 : int((len(bus_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(dsm_buses) / 2))
-        )
-        bus_id.iloc[int((len(bus_id) / 2)) : len(bus_id)] = range(
-            dsm_id, int((dsm_id + len(dsm_buses) / 2))
-        )
+
+        # Get number of DSM buses for both scenarios
+        rows_per_scenario = dsm_buses.groupby(
+            "scn_name").count().original_bus.to_dict()
+
+        # Assignment of DSM ids
+        bus_id.iloc[0:rows_per_scenario["eGon2035"]] = range(
+            dsm_id, dsm_id + rows_per_scenario["eGon2035"])
+        bus_id.iloc[
+            rows_per_scenario["eGon2035"]:rows_per_scenario["eGon2035"] +
+            rows_per_scenario["eGon100RE"]] = range(
+            dsm_id, dsm_id + rows_per_scenario["eGon100RE"])
+
         dsm_buses["bus_id"] = bus_id
 
         # add links from "orignal" buses to DSM-buses
@@ -466,12 +473,15 @@ def dsm_cts_ind_processing():
             max_id = 0
         dsm_id = max_id + 1
         link_id = pd.Series(index=dsm_buses.index, dtype=int)
-        link_id.iloc[0 : int((len(link_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(dsm_links) / 2))
-        )
-        link_id.iloc[int((len(link_id) / 2)) : len(link_id)] = range(
-            dsm_id, int((dsm_id + len(dsm_links) / 2))
-        )
+
+        # Assignment of link ids
+        link_id.iloc[0:rows_per_scenario["eGon2035"]] = range(
+            dsm_id, dsm_id + rows_per_scenario["eGon2035"])
+        link_id.iloc[
+            rows_per_scenario["eGon2035"]:rows_per_scenario["eGon2035"] +
+            rows_per_scenario["eGon100RE"]] = range(
+            dsm_id, dsm_id + rows_per_scenario["eGon100RE"])
+
         dsm_links["link_id"] = link_id
 
         # add calculated timeseries to df to be returned
@@ -499,12 +509,15 @@ def dsm_cts_ind_processing():
             max_id = 0
         dsm_id = max_id + 1
         store_id = pd.Series(index=dsm_buses.index, dtype=int)
-        store_id.iloc[0 : int((len(store_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(dsm_stores) / 2))
-        )
-        store_id.iloc[int((len(store_id) / 2)) : len(store_id)] = range(
-            dsm_id, int((dsm_id + len(dsm_stores) / 2))
-        )
+
+        # Assignment of store ids
+        store_id.iloc[0:rows_per_scenario["eGon2035"]] = range(
+            dsm_id, dsm_id + rows_per_scenario["eGon2035"])
+        store_id.iloc[
+            rows_per_scenario["eGon2035"]:rows_per_scenario["eGon2035"] +
+            rows_per_scenario["eGon100RE"]] = range(
+            dsm_id, dsm_id + rows_per_scenario["eGon100RE"])
+
         dsm_stores["store_id"] = store_id
 
         # add calculated timeseries to df to be returned
