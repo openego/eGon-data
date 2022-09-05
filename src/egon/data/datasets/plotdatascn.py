@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# File description
 """
 Created on Tue May 24 14:42:05 2022
 Plotdatascn.py defines functions to plot to provide a better context of the different parameters part of
@@ -15,27 +16,15 @@ import os
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib as mpl
-#import pandas as pd
-#import numpy as np
-#from math import sqrt, log10
+import pandas as pd
+import numpy as np
+from math import sqrt, log10
 from pyproj import Proj, transform
-#import tilemapbase
-#import tilemapbase
-#import geopandas as gpd
-#from egon.data import db
-#from egon.data.config import settings
-#from egon.data.datasets import Dataset
-#import egon.data.config
 import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 import geopandas as gpd
-
-#import cartopy
-#import cartopy.crs as ccrs
-#import cartopy.mpl.geoaxes
-#import requests
 
 
 logger = logging.getLogger(__name__)
@@ -59,20 +48,35 @@ __author__ = ""
 def plot_generation(
               carrier,scenario, osm=False
             ):
+   """
+    Plots color maps according to the capacity of different generators
+    of the two existing scenarios (eGon2035 and eGon100RE)
+    
+
+    Parameters
+    ----------
+    carrier : generators
+    The list of generators: biomass, central_biomass_CHP, central_biomass_CHP_heat,
+    industrial_biomass_CHP, solar, solar_rooftop, wind_offshore, wind_onshore. 
+      
+    scenario: eGon2035, eGon100RE
+        
+        
+   """
     
 
    con = db.engine()
-   SQLBus = "SELECT bus_id, country FROM grid.egon_etrago_bus WHERE country='DE'"
-   busDE = pd.read_sql(SQLBus,con)
-   busDE = busDE.rename({'bus_id': 'bus'},axis=1)
-   #busDE = busDE.loc[busDE['country'] == 'DE']
-   sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
+   SQLBus = "SELECT bus_id, country FROM grid.egon_etrago_bus WHERE country='DE'" #imports buses of Germany
+   busDE = pd.read_sql(SQLBus,con) 
+   busDE = busDE.rename({'bus_id': 'bus'},axis=1) 
+
+   sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"#Imports grid districs 
    distr = gpd.GeoDataFrame.from_postgis(sql, con)
    distr = distr.rename({'bus_id': 'bus'},axis=1)
    distr = distr.set_index("bus")
-   distr = pd.merge(busDE, distr, on='bus')
+   distr = pd.merge(busDE, distr, on='bus') #merges grid districts with buses 
 
-   sqlCarrier = "SELECT carrier, p_nom, bus FROM grid.egon_etrago_generator"
+   sqlCarrier = "SELECT carrier, p_nom, bus FROM grid.egon_etrago_generator" #Imports generator
    sqlCarrier = "SELECT * FROM grid.egon_etrago_generator"
    Carriers = pd.read_sql(sqlCarrier,con)
    Carriers = Carriers.loc[Carriers['scn_name'] == scenario]
@@ -81,7 +85,7 @@ def plot_generation(
 
    CarrierGen = Carriers.loc[Carriers['carrier'] == carrier]
 
-   Merge = pd.merge(CarrierGen, distr, on ='bus', how="outer")
+   Merge = pd.merge(CarrierGen, distr, on ='bus', how="outer") #merges districts with generators 
 
     
    Merge.loc[Merge ['carrier'] != carrier, "p_nom" ] = 0
@@ -89,11 +93,9 @@ def plot_generation(
 
    gdf = gpd.GeoDataFrame(Merge , geometry='geom')
    print(Merge)
-   pnom=gdf['p_nom']
-   max_pnom=pnom.quantile(0.95)
+   pnom=gdf['p_nom']  
+   max_pnom=pnom.quantile(0.95) #0.95 quantile is used to filter values that are too high and make noise in the plots.
    print(max_pnom)
-   #import cartopy.crs as ccrs 
-   #fig, ax = plt.subplots(subplot_kw={"projection":ccrs.PlateCarree()})
    fig, ax = plt.subplots(figsize=(10,10))
    ax.set_axis_off();
    plt.title(f" {carrier} installed capacity in MW , {scenario}")
