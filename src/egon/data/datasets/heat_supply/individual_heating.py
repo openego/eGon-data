@@ -545,6 +545,7 @@ def determine_hp_capacity_per_building(scenario):
         # determine minimum required heat pump capacity per building
         building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
             scenario, mv_grid_id)
+        # TODO alternative get peak demand from db?
         heat_demand_ts = get_heat_demand_timeseries_per_building(scenario, building_ids)
         # ToDo Write peak heat demand to table?
         min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
@@ -580,3 +581,27 @@ def determine_hp_capacity_per_building(scenario):
         # ToDo Write other heat demand time series to database - gas voronoi
         #  (grid - egon_gas_voronoi mit carrier CH4)
         #  erstmal intermediate table
+
+
+def determine_hp_cap_pypsa_eur_sec():
+    """Wrapper function to determine heat pump capacities for scenario
+    pypsa-eur-sec. Only the minimum required heat pump capacity per MV grid is
+    exported to db
+    """
+    determine_hp_capacity_per_building(scenario="pypsa-eur-sec")
+
+
+def determine_hp_cap_eGon2035():
+    """Wrapper function to determine Heat Pump capacities
+    for scenario eGon2035. Only selected buildings get a heat pump capacity
+    assigned. Buildings with PV rooftop are more likely to be assigned.
+    """
+    determine_hp_capacity_per_building(scenario="eGon2035")
+
+
+def determine_hp_cap_eGon100RE():
+    """Wrapper function to determine Heat Pump capacities
+    for scenario eGon100RE. All buildings without district heating get a heat
+    pump capacity assigned.
+    """
+    determine_hp_capacity_per_building(scenario="eGon100RE")
