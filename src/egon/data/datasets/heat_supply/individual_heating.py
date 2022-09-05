@@ -503,11 +503,12 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
 
     Returns
     --------
-
+    pd.Series
+        Pandas series with heat pump capacity per building in MW.
 
     """
-    # ToDo Add warning if minimum is larger than total hp capacity
-    # distribute remaining capacity to all buildings with HP depending on installed HP capacity
+    # distribute remaining capacity to all buildings with HP depending on installed
+    # HP capacity
 
     allocated_cap = min_hp_cap_per_building.sum()
     remaining_cap = hp_cap_mv_grid - allocated_cap
@@ -522,6 +523,13 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
 
 
 def determine_hp_capacity_per_building(scenario):
+    """
+    Parameters
+    -----------
+    scenario : str
+        "pypsa-eur-sec", "eGon2035", "eGon100RE"
+
+    """
 
     # get all MV grid IDs
     mv_grid_ids = db.select_dataframe(
@@ -545,6 +553,7 @@ def determine_hp_capacity_per_building(scenario):
         # in case this function is called to create pypsa-eur-sec input, only the
         # minimum required heat pump capacity per MV grid is needed
         if scenario == "pypsa-eur-sec":
+            min_hp_cap_buildings.sum()
             # ToDo Write minimum required capacity to table for pypsa-eur-sec input
             return
 
