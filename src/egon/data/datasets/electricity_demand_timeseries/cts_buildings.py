@@ -712,7 +712,9 @@ def calc_building_demand_profile_share(
     Share of cts electricity demand profile per bus for every selected building
     is calculated. Building-amenity share is multiplied with census cell share
     to get the substation bus profile share for each building. The share is
-    grouped and aggregated per building as some cover multiple cells.
+    grouped and aggregated per building as some buildings exceed the shape of
+    census cells and have amenities assigned from multiple cells. Building
+    therefore get the amenity share of all census cells.
 
     Parameters
     ----------
@@ -730,10 +732,13 @@ def calc_building_demand_profile_share(
 
     """
 
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
+
     def calc_building_amenity_share(df_cts_buildings):
         """
         Calculate the building share by the number amenities per building
-        within a census cell.
+        within a census cell. Building ids can exist multiple time but with
+        different zensus_population_ids.
         """
         df_building_amenity_share = df_cts_buildings[
             "n_amenities_inside"
@@ -767,9 +772,32 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    df_demand_share = df_demand_share[
-        ["id", "bus_id", "scenario", "profile_share"]
-    ]
+    # TODO bus_id fix
+    # df_demand_share = df_demand_share[
+    #     ["id", "bus_id", "scenario", "profile_share"]
+    # ]
+    df_demand_share = df_demand_share[["id", "scenario", "profile_share"]]
+
+    # assign bus_id via census cell of building centroid
+    with db.session_scope() as session:
+        cells_query = session.query(
+            egon_map_zensus_buildings_filtered_all.id,
+            egon_map_zensus_buildings_filtered_all.zensus_population_id,
+            MapZensusGridDistricts.bus_id,
+        ).filter(
+            MapZensusGridDistricts.zensus_population_id
+            == egon_map_zensus_buildings_filtered_all.zensus_population_id
+        )
+
+    df_egon_map_zensus_buildings_buses = pd.read_sql(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+    )
+    df_demand_share = pd.merge(
+        left=df_demand_share, right=df_egon_map_zensus_buildings_buses, on="id"
+    )
+
     # TODO adapt groupby?
     # Group and aggregate per building for multi cell buildings
     df_demand_share = (
@@ -1075,6 +1103,8 @@ def cts_buildings():
         axis=0,
         ignore_index=True,
     )
+    df_cts_buildings = remove_double_bus_id(df_cts_buildings)
+
     # TODO maybe remove after #772
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
@@ -1092,6 +1122,27 @@ def cts_buildings():
         drop=True,
     )
     log.info("CTS buildings exported to DB!")
+
+
+def remove_double_bus_id(df_cts_buildings):
+
+    substation_per_building = df_cts_buildings.groupby("id")[
+        "bus_id"
+    ].nunique()
+    building_id = substation_per_building.loc[
+        substation_per_building > 1
+    ].index
+    df_duplicates = df_cts_buildings.loc[
+        df_cts_buildings["id"].isin(building_id)
+    ]
+    for unique_id in df_duplicates["id"].unique():
+        drop_index = df_duplicates[df_duplicates["id"] == unique_id].index[0]
+        print(
+            f"Building droped because of double substation {df_cts_buildings.loc[drop_index, 'id']}"
+        )
+        df_cts_buildings.drop(index=drop_index, inplace=True)
+
+    return df_cts_buildings
 
 
 def cts_electricity():
