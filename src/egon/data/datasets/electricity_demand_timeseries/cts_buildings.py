@@ -728,7 +728,9 @@ def calc_building_demand_profile_share(
     Share of cts electricity demand profile per bus for every selected building
     is calculated. Building-amenity share is multiplied with census cell share
     to get the substation bus profile share for each building. The share is
-    grouped and aggregated per building as some cover multiple cells.
+    grouped and aggregated per building as some buildings exceed the shape of
+    census cells and have amenities assigned from multiple cells. Building
+    therefore get the amenity share of all census cells.
 
     Parameters
     ----------
@@ -749,7 +751,8 @@ def calc_building_demand_profile_share(
     def calc_building_amenity_share(df_cts_buildings):
         """
         Calculate the building share by the number amenities per building
-        within a census cell.
+        within a census cell. Building ids can exist multiple time but with
+        different zensus_population_ids.
         """
         df_building_amenity_share = df_cts_buildings[
             "n_amenities_inside"
