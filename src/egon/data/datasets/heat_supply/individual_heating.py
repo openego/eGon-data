@@ -541,6 +541,8 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
 
     if remaining_cap < 0:
         # ToDo raise warning?
+        # TODO alternative outsource sanity check
+        #  only possible if peak_load is determined beforehand
         return
 
     fac = remaining_cap / allocated_cap
@@ -614,7 +616,27 @@ def determine_hp_capacity_per_building(scenario):
 
         # ToDo Write aggregated heat demand time series of buildings with HP to
         #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
+        # EgonEtragoTimeSeriesIndividualHeating
 
+        # # Change format
+        #     data = CTS_grid.drop(columns="scenario")
+        #     df_etrago_cts_heat_profiles = pd.DataFrame(
+        #         index=data.index, columns=["scn_name", "p_set"]
+        #     )
+        #     df_etrago_cts_heat_profiles.p_set = data.values.tolist()
+        #     df_etrago_cts_heat_profiles.scn_name = CTS_grid["scenario"]
+        #     df_etrago_cts_heat_profiles.reset_index(inplace=True)
+        #
+        #     # Drop and recreate Table if exists
+        #     EgonEtragoTimeSeriesIndividualHeating.__table__.drop(bind=db.engine(), checkfirst=True)
+        #     EgonEtragoTimeSeriesIndividualHeating.__table__.create(bind=db.engine(), checkfirst=True)
+        #
+        #     # Write heat ts into db
+        #     with db.session_scope() as session:
+        #         session.bulk_insert_mappings(
+        #             EgonEtragoTimeSeriesIndividualHeating,
+        #             df_etrago_cts_heat_profiles.to_dict(orient="records"),
+        #         )
         # ToDo Write other heat demand time series to database - gas voronoi
         #  (grid - egon_gas_voronoi mit carrier CH4)
         #  erstmal intermediate table
