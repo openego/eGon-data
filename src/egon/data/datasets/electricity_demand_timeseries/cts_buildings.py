@@ -263,10 +263,17 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
 def buildings_with_amenities():
     """
     Amenities which are assigned to buildings are determined
-    and grouped per building and zensus cell. Buildings
+    and grouped per building and census cell. Buildings
     covering multiple cells therefore exists multiple times
-    but in different zensus cells. This is necessary to cover
-    all cells with a cts demand. If buildings exist in multiple
+    but in different census cells. This is necessary to cover
+    all cells with a cts demand. The zensus_population_id therefore
+    refers to the amenities of the building. The building is assigned to a
+    substation via the census cells of its centroid. Therefore a building can
+    have demand shares of multiple cells but is assigned to only one cell and
+    substation. The buildings are aggregated afterwards during the calculation
+    of the profile_share.
+
+    If buildings exist in multiple
     substations, their amenities are summed and assigned and kept in
     one substation only. If as a result, a census cell is uncovered,
     a synthetic amenity is placed. The buildings are aggregated
@@ -280,21 +287,29 @@ def buildings_with_amenities():
         Contains synthetic amenities in lost cells. Might be empty
     """
 
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
     with db.session_scope() as session:
         cells_query = (
             session.query(
-                osm_amenities_in_buildings_filtered,
+                osm_amenities_in_buildings_filtered.id,
+                osm_amenities_in_buildings_filtered.geom_building,
+                osm_amenities_in_buildings_filtered.zensus_population_id,
+                # egon_map_zensus_buildings_filtered_all.zensus_population_id,
                 MapZensusGridDistricts.bus_id,
             )
             .filter(
+                egon_map_zensus_buildings_filtered_all.id
+                == osm_amenities_in_buildings_filtered.id
+            )
+            .filter(
                 MapZensusGridDistricts.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
+                == egon_map_zensus_buildings_filtered_all.zensus_population_id
             )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
+                == egon_map_zensus_buildings_filtered_all.zensus_population_id
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
@@ -308,114 +323,114 @@ def buildings_with_amenities():
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
     ].apply(to_shape)
-    df_amenities_in_buildings["geom_amenity"] = df_amenities_in_buildings[
-        "geom_amenity"
-    ].apply(to_shape)
+    # df_amenities_in_buildings["geom_amenity"] = df_amenities_in_buildings[
+    #     "geom_amenity"
+    # ].apply(to_shape)
 
     df_amenities_in_buildings["n_amenities_inside"] = 1
 
-    # add identifier column for buildings in multiple substations
-    df_amenities_in_buildings[
-        "duplicate_identifier"
-    ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
-        "n_amenities_inside"
-    ].transform(
-        "cumsum"
-    )
-    df_amenities_in_buildings = df_amenities_in_buildings.sort_values(
-        ["id", "duplicate_identifier"]
-    )
-    # sum amenities of buildings with multiple substations
-    df_amenities_in_buildings[
-        "n_amenities_inside"
-    ] = df_amenities_in_buildings.groupby(["id", "duplicate_identifier"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
-    )
-
-    # create column to always go for bus_id with max amenities
-    df_amenities_in_buildings[
-        "max_amenities"
-    ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
-    )
-    # sort to go for
-    df_amenities_in_buildings.sort_values(
-        ["id", "max_amenities"], ascending=False, inplace=True
-    )
-
-    # identify lost zensus cells
-    df_lost_cells = df_amenities_in_buildings.loc[
-        df_amenities_in_buildings.duplicated(
-            subset=["id", "duplicate_identifier"], keep="first"
-        )
-    ]
-    df_lost_cells.drop_duplicates(
-        subset=["zensus_population_id"], inplace=True
-    )
-
-    # drop buildings with multiple substation and lower max amenity
-    df_amenities_in_buildings.drop_duplicates(
-        subset=["id", "duplicate_identifier"], keep="first", inplace=True
-    )
-
-    # check if lost zensus cells are already covered
-    if not df_lost_cells.empty:
-        if not (
-            df_amenities_in_buildings["zensus_population_id"]
-            .isin(df_lost_cells["zensus_population_id"])
-            .empty
-        ):
-            # query geom data for cell if not
-            with db.session_scope() as session:
-                cells_query = session.query(
-                    DestatisZensusPopulationPerHa.id,
-                    DestatisZensusPopulationPerHa.geom,
-                ).filter(
-                    DestatisZensusPopulationPerHa.id.in_(
-                        df_lost_cells["zensus_population_id"]
-                    )
-                )
-
-            df_lost_cells = gpd.read_postgis(
-                cells_query.statement,
-                cells_query.session.bind,
-                geom_col="geom",
-            )
-            # TODO maybe adapt method
-            # place random amenity in cell
-            df_lost_cells["n_amenities_inside"] = 1
-            df_lost_cells.rename(
-                columns={
-                    "id": "zensus_population_id",
-                },
-                inplace=True,
-            )
-            df_lost_cells = place_buildings_with_amenities(
-                df_lost_cells, amenities=1
-            )
-            df_lost_cells.rename(
-                columns={
-                    # "id": "zensus_population_id",
-                    "geom_point": "geom_amenity",
-                },
-                inplace=True,
-            )
-            df_lost_cells.drop(
-                columns=["building_count", "n_amenities_inside"], inplace=True
-            )
-        else:
-            df_lost_cells = None
-    else:
-        df_lost_cells = None
-
-    # drop helper columns
-    df_amenities_in_buildings.drop(
-        columns=["duplicate_identifier"], inplace=True
-    )
+    # # add identifier column for buildings in multiple substations
+    # df_amenities_in_buildings[
+    #     "duplicate_identifier"
+    # ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
+    #     "n_amenities_inside"
+    # ].transform(
+    #     "cumsum"
+    # )
+    # df_amenities_in_buildings = df_amenities_in_buildings.sort_values(
+    #     ["id", "duplicate_identifier"]
+    # )
+    # # sum amenities of buildings with multiple substations
+    # df_amenities_in_buildings[
+    #     "n_amenities_inside"
+    # ] = df_amenities_in_buildings.groupby(["id", "duplicate_identifier"])[
+    #     "n_amenities_inside"
+    # ].transform(
+    #     "sum"
+    # )
+    #
+    # # create column to always go for bus_id with max amenities
+    # df_amenities_in_buildings[
+    #     "max_amenities"
+    # ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
+    #     "n_amenities_inside"
+    # ].transform(
+    #     "sum"
+    # )
+    # # sort to go for
+    # df_amenities_in_buildings.sort_values(
+    #     ["id", "max_amenities"], ascending=False, inplace=True
+    # )
+    #
+    # # identify lost zensus cells
+    # df_lost_cells = df_amenities_in_buildings.loc[
+    #     df_amenities_in_buildings.duplicated(
+    #         subset=["id", "duplicate_identifier"], keep="first"
+    #     )
+    # ]
+    # df_lost_cells.drop_duplicates(
+    #     subset=["zensus_population_id"], inplace=True
+    # )
+    #
+    # # drop buildings with multiple substation and lower max amenity
+    # df_amenities_in_buildings.drop_duplicates(
+    #     subset=["id", "duplicate_identifier"], keep="first", inplace=True
+    # )
+    #
+    # # check if lost zensus cells are already covered
+    # if not df_lost_cells.empty:
+    #     if not (
+    #         df_amenities_in_buildings["zensus_population_id"]
+    #         .isin(df_lost_cells["zensus_population_id"])
+    #         .empty
+    #     ):
+    #         # query geom data for cell if not
+    #         with db.session_scope() as session:
+    #             cells_query = session.query(
+    #                 DestatisZensusPopulationPerHa.id,
+    #                 DestatisZensusPopulationPerHa.geom,
+    #             ).filter(
+    #                 DestatisZensusPopulationPerHa.id.in_(
+    #                     df_lost_cells["zensus_population_id"]
+    #                 )
+    #             )
+    #
+    #         df_lost_cells = gpd.read_postgis(
+    #             cells_query.statement,
+    #             cells_query.session.bind,
+    #             geom_col="geom",
+    #         )
+    #         # TODO maybe adapt method
+    #         # place random amenity in cell
+    #         df_lost_cells["n_amenities_inside"] = 1
+    #         df_lost_cells.rename(
+    #             columns={
+    #                 "id": "zensus_population_id",
+    #             },
+    #             inplace=True,
+    #         )
+    #         df_lost_cells = place_buildings_with_amenities(
+    #             df_lost_cells, amenities=1
+    #         )
+    #         df_lost_cells.rename(
+    #             columns={
+    #                 # "id": "zensus_population_id",
+    #                 "geom_point": "geom_amenity",
+    #             },
+    #             inplace=True,
+    #         )
+    #         df_lost_cells.drop(
+    #             columns=["building_count", "n_amenities_inside"], inplace=True
+    #         )
+    #     else:
+    #         df_lost_cells = None
+    # else:
+    #     df_lost_cells = None
+    #
+    # # drop helper columns
+    # df_amenities_in_buildings.drop(
+    #     columns=["duplicate_identifier"], inplace=True
+    # )
 
     # sum amenities per building and cell
     df_amenities_in_buildings[
@@ -442,7 +457,8 @@ def buildings_with_amenities():
         inplace=True,
     )
 
-    return df_buildings_with_amenities, df_lost_cells
+    return df_buildings_with_amenities
+    # return df_buildings_with_amenities, df_lost_cells
 
 
 def buildings_without_amenities():
@@ -930,7 +946,8 @@ def cts_buildings():
     log = start_logging()
     log.info("Start logging!")
     # Buildings with amenities
-    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
+    # df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
+    df_buildings_with_amenities = buildings_with_amenities()
     log.info("Buildings with amenities selected!")
 
     # Median number of amenities per cell
@@ -952,20 +969,20 @@ def cts_buildings():
     df_amenities_without_buildings = amenities_without_buildings()
     log.info("Amenities without buildlings selected!")
 
-    # Append lost cells due to duplicated ids, to cover all demand cells
-    if not df_lost_cells.empty:
-
-        df_lost_cells["amenities"] = median_n_amenities
-        # create row for every amenity
-        df_lost_cells["amenities"] = (
-            df_lost_cells["amenities"].astype(int).apply(range)
-        )
-        df_lost_cells = df_lost_cells.explode("amenities")
-        df_lost_cells.drop(columns="amenities", inplace=True)
-        df_amenities_without_buildings = df_amenities_without_buildings.append(
-            df_lost_cells, ignore_index=True
-        )
-        log.info("Lost cells due to substation intersection appended!")
+    # # Append lost cells due to duplicated ids, to cover all demand cells
+    # if not df_lost_cells.empty:
+    #
+    #     df_lost_cells["amenities"] = median_n_amenities
+    #     # create row for every amenity
+    #     df_lost_cells["amenities"] = (
+    #         df_lost_cells["amenities"].astype(int).apply(range)
+    #     )
+    #     df_lost_cells = df_lost_cells.explode("amenities")
+    #     df_lost_cells.drop(columns="amenities", inplace=True)
+    #     df_amenities_without_buildings = df_amenities_without_buildings.append(
+    #         df_lost_cells, ignore_index=True
+    #     )
+    #     log.info("Lost cells due to substation intersection appended!")
 
     # One building per amenity
     df_amenities_without_buildings["n_amenities_inside"] = 1
