@@ -18,7 +18,7 @@ def cascade_per_technology(
     max_size_individual_chp=0.05,
 ):
 
-    """ Add plants for individual heat.
+    """Add plants for individual heat.
     Currently only on mv grid district level.
 
     Parameters
@@ -280,7 +280,7 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
         FROM boundaries.egon_map_zensus_grid_districts
         WHERE bus_id = {mv_grid_id}
         """,
-        index_col=None
+        index_col=None,
     ).zensus_population_id.values
 
     # convert to pd.Index (otherwise type is np.int64, which will for some reason
@@ -288,7 +288,9 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
     zensus_population_ids = pd.Index(zensus_population_ids)
 
     # get zensus cells with district heating
-    from egon.data.datasets.district_heating_areas import MapZensusDistrictHeatingAreas
+    from egon.data.datasets.district_heating_areas import (
+        MapZensusDistrictHeatingAreas,
+    )
 
     with db.session_scope() as session:
         query = session.query(
@@ -296,7 +298,8 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
         ).filter(
             MapZensusDistrictHeatingAreas.scenario == scenario,
             MapZensusDistrictHeatingAreas.zensus_population_id.in_(
-                zensus_population_ids)
+                zensus_population_ids
+            ),
         )
 
     cells_with_dh = pd.read_sql(
@@ -304,7 +307,9 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
     ).zensus_population_id.values
 
     # remove zensus cells with district heating
-    zensus_population_ids = zensus_population_ids.drop(cells_with_dh, errors="ignore")
+    zensus_population_ids = zensus_population_ids.drop(
+        cells_with_dh, errors="ignore"
+    )
 
     # get buildings with decentral heat demand
     engine = db.engine()
@@ -316,7 +321,8 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
             heat_timeseries_selected_profiles.building_id,
         ).filter(
             heat_timeseries_selected_profiles.zensus_population_id.in_(
-                zensus_population_ids)
+                zensus_population_ids
+            )
         )
 
     buildings_with_heat_demand = pd.read_sql(
@@ -349,15 +355,14 @@ def get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id):
     from egon.data.datasets.heat_supply import EgonIndividualHeatingSupply
 
     with db.session_scope() as session:
-        query = session.query(
-            EgonIndividualHeatingSupply.mv_grid_id,
-            EgonIndividualHeatingSupply.capacity,
-        ).filter(
-            EgonIndividualHeatingSupply.scenario == scenario
-        ).filter(
-            EgonIndividualHeatingSupply.carrier == "heat_pump"
-        ).filter(
-            EgonIndividualHeatingSupply.mv_grid_id == mv_grid_id
+        query = (
+            session.query(
+                EgonIndividualHeatingSupply.mv_grid_id,
+                EgonIndividualHeatingSupply.capacity,
+            )
+            .filter(EgonIndividualHeatingSupply.scenario == scenario)
+            .filter(EgonIndividualHeatingSupply.carrier == "heat_pump")
+            .filter(EgonIndividualHeatingSupply.mv_grid_id == mv_grid_id)
         )
 
     hp_cap_mv_grid = pd.read_sql(
@@ -387,7 +392,10 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
         contains the time steps and columns the building ID.
 
     """
-    from egon.data.datasets.heat_demand_timeseries import create_timeseries_for_building
+    from egon.data.datasets.heat_demand_timeseries import (
+        create_timeseries_for_building,
+    )
+
     heat_demand_ts = pd.DataFrame()
     for building_id in building_ids:
         tmp = create_timeseries_for_building(building_id, scenario)
@@ -396,7 +404,8 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
 
 
 def determine_minimum_hp_capacity_per_building(
-        peak_heat_demand, flexibility_factor=24/18, cop=1.7):
+    peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
+):
     """
     Determines minimum required heat pump capacity
 
@@ -418,7 +427,9 @@ def determine_minimum_hp_capacity_per_building(
     return peak_heat_demand * flexibility_factor / cop
 
 
-def determine_buildings_with_hp_in_mv_grid(hp_cap_mv_grid, min_hp_cap_per_building):
+def determine_buildings_with_hp_in_mv_grid(
+    hp_cap_mv_grid, min_hp_cap_per_building
+):
     """
     Distributes given total heat pump capacity to buildings based on their peak
     heat demand.
@@ -448,8 +459,7 @@ def determine_buildings_with_hp_in_mv_grid(hp_cap_mv_grid, min_hp_cap_per_buildi
         query = session.query(
             egon_power_plants_pv_roof_building.building_id
         ).filter(
-            egon_power_plants_pv_roof_building.building_id.in_(
-                building_ids)
+            egon_power_plants_pv_roof_building.building_id.in_(building_ids)
         )
 
     buildings_with_pv = pd.read_sql(
@@ -458,17 +468,14 @@ def determine_buildings_with_hp_in_mv_grid(hp_cap_mv_grid, min_hp_cap_per_buildi
 
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
-    weight_without_pv = 1.
+    weight_without_pv = 1.0
     weights = pd.concat(
         [
             pd.DataFrame(
                 {"weight": weight_without_pv},
-                index=building_ids.drop(buildings_with_pv, errors="ignore")
+                index=building_ids.drop(buildings_with_pv, errors="ignore"),
             ),
-            pd.DataFrame(
-                {"weight": weight_with_pv},
-                index=buildings_with_pv
-            ),
+            pd.DataFrame({"weight": weight_with_pv}, index=buildings_with_pv),
         ]
     )
     # normalise weights (probability needs to add up to 1)
@@ -477,7 +484,11 @@ def determine_buildings_with_hp_in_mv_grid(hp_cap_mv_grid, min_hp_cap_per_buildi
     # get random order at which buildings are chosen
     np.random.seed(db.credentials()["--random-seed"])
     buildings_with_hp_order = np.random.choice(
-        weights.index, size=len(weights), replace=False, p=weights.weight.values)
+        weights.index,
+        size=len(weights),
+        replace=False,
+        p=weights.weight.values,
+    )
 
     # select buildings until HP capacity in MV grid is reached (some rest capacity
     # will remain)
@@ -518,7 +529,9 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
         return
 
     fac = remaining_cap / allocated_cap
-    hp_cap_per_building = min_hp_cap_per_building * fac + min_hp_cap_per_building
+    hp_cap_per_building = (
+        min_hp_cap_per_building * fac + min_hp_cap_per_building
+    )
     return hp_cap_per_building
 
 
@@ -537,19 +550,23 @@ def determine_hp_capacity_per_building(scenario):
         SELECT bus_id
         FROM grid.egon_mv_grid_district
         """,
-        index_col=None
+        index_col=None,
     ).bus_id.values
 
     for mv_grid_id in mv_grid_ids:
 
         # determine minimum required heat pump capacity per building
         building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
-            scenario, mv_grid_id)
+            scenario, mv_grid_id
+        )
         # TODO alternative get peak demand from db?
-        heat_demand_ts = get_heat_demand_timeseries_per_building(scenario, building_ids)
+        heat_demand_ts = get_heat_demand_timeseries_per_building(
+            scenario, building_ids
+        )
         # ToDo Write peak heat demand to table?
         min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
-            heat_demand_ts.max())
+            heat_demand_ts.max()
+        )
 
         # in case this function is called to create pypsa-eur-sec input, only the
         # minimum required heat pump capacity per MV grid is needed
@@ -561,19 +578,24 @@ def determine_hp_capacity_per_building(scenario):
         # in case this function is called to create data for 2035 scenario, the
         # buildings with heat pumps are determined; for 2050 scenario all buildings
         # with decentral heating system get a heat pump
-        hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id)
+        hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(
+            scenario, mv_grid_id
+        )
         if scenario == "eGon2035":
             buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
-                hp_cap_grid, min_hp_cap_buildings)
+                hp_cap_grid, min_hp_cap_buildings
+            )
             min_hp_cap_buildings = min_hp_cap_buildings.loc[buildings_with_hp]
 
         # distribute total heat pump capacity to all buildings with HP
         hp_cap_per_building = desaggregate_hp_capacity(
-            min_hp_cap_buildings, hp_cap_grid)
+            min_hp_cap_buildings, hp_cap_grid
+        )
 
         # ToDo Write desaggregated HP capacity to table
         heat_timeseries_hp_buildings_mv_grid = heat_demand_ts.loc[
-                                               :, hp_cap_per_building.index].sum()
+            :, hp_cap_per_building.index
+        ].sum()
 
         # ToDo Write aggregated heat demand time series of buildings with HP to
         #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
