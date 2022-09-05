@@ -291,27 +291,6 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         """
     )
 
-    selected_profiles = db.select_dataframe(
-        f"""
-        SELECT a.zensus_population_id, building_id, c.climate_zone,
-        selected_idp, ordinality as day, b.area_id
-        FROM demand.egon_heat_timeseries_selected_profiles a
-        INNER JOIN boundaries.egon_map_zensus_climate_zones c
-        ON a.zensus_population_id = c.zensus_population_id
-        INNER JOIN (
-            SELECT * FROM demand.egon_map_zensus_district_heating_areas
-            WHERE scenario = '{scenario}'
-        ) b ON a.zensus_population_id = b.zensus_population_id        ,
-
-        UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
-
-        """
-    )
-
-    df = pd.merge(
-        selected_profiles, daily_demand_shares, on=["day", "climate_zone"]
-    )
-
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level="district"
     )
@@ -320,20 +299,37 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
     from sqlalchemy.orm import sessionmaker
 
     session = sessionmaker(bind=db.engine())()
-    engine = db.engine()
-    EgonTimeseriesDistrictHeating.__table__.drop(bind=engine, checkfirst=True)
-    EgonTimeseriesDistrictHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
-    print(
-        f"Time to create overhead for time series for district heating scenario {scenario}"
-    )
+
     print(datetime.now() - start_time)
 
     start_time = datetime.now()
     for area in district_heating_grids.area_id.unique():
+        selected_profiles = db.select_dataframe(
+            f"""
+            SELECT a.zensus_population_id, building_id, c.climate_zone,
+            selected_idp, ordinality as day, b.area_id
+            FROM demand.egon_heat_timeseries_selected_profiles a
+            INNER JOIN boundaries.egon_map_zensus_climate_zones c
+            ON a.zensus_population_id = c.zensus_population_id
+            INNER JOIN (
+                SELECT * FROM demand.egon_map_zensus_district_heating_areas
+                WHERE scenario = '{scenario}'
+                AND area_id = '{area}'
+            ) b ON a.zensus_population_id = b.zensus_population_id        ,
+    
+            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
+    
+            """
+        )
 
-        if area in df.area_id.values:
+        if not selected_profiles.empty:
+
+            df = pd.merge(
+                selected_profiles,
+                daily_demand_shares,
+                on=["day", "climate_zone"],
+            )
+
             slice_df = pd.merge(
                 df[df.area_id == area],
                 idp_df,
@@ -362,13 +358,13 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
             & (CTS_demand_dist.index == area)
         ].drop("scenario", axis="columns")
 
-        if (area in df.area_id.values) and not cts.empty:
+        if (not selected_profiles.empty) and not cts.empty:
             entry = EgonTimeseriesDistrictHeating(
                 area_id=int(area),
                 scenario=scenario,
                 dist_aggregated_mw=(hh + cts.values[0]).tolist(),
             )
-        elif (area in df.area_id.values) and cts.empty:
+        elif (not selected_profiles.empty) and cts.empty:
             entry = EgonTimeseriesDistrictHeating(
                 area_id=int(area),
                 scenario=scenario,
