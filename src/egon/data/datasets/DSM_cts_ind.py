@@ -12,7 +12,7 @@ class dsm_Potential(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DSM_potentials",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing),
         )
