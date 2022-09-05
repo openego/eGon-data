@@ -2,12 +2,27 @@
 individual heat supply.
 
 """
+from sqlalchemy import ARRAY, REAL, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import saio
 
 from egon.data import config, db
+
+engine = db.engine()
+Base = declarative_base()
+
+
+class EgonEtragoTimeSeriesIndividualHeating(Base):
+    __tablename__ = "egon_etrago_timeseries_individual_heating"
+    __table_args__ = {"schema": "demand"}
+
+    bus_id = Column(Integer, primary_key=True)
+    scn_name = Column(String, primary_key=True)
+    p_set = Column(ARRAY(REAL))
+    q_set = Column(ARRAY(REAL))
 
 
 def cascade_per_technology(
