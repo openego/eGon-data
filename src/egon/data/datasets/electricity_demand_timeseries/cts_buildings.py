@@ -297,16 +297,16 @@ def buildings_with_amenities():
                 osm_amenities_in_buildings_filtered.geom_building,
                 osm_amenities_in_buildings_filtered.zensus_population_id,
                 # egon_map_zensus_buildings_filtered_all.zensus_population_id,
-                # MapZensusGridDistricts.bus_id,
+                MapZensusGridDistricts.bus_id,
             )
             .filter(
                 egon_map_zensus_buildings_filtered_all.id
                 == osm_amenities_in_buildings_filtered.id
             )
-            # .filter(
-            #     MapZensusGridDistricts.zensus_population_id
-            #     == egon_map_zensus_buildings_filtered_all.zensus_population_id
-            # )
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == egon_map_zensus_buildings_filtered_all.zensus_population_id
+            )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id
                 == egon_map_zensus_buildings_filtered_all.zensus_population_id
