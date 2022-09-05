@@ -778,6 +778,7 @@ def calc_building_demand_profile_share(
     # ]
     df_demand_share = df_demand_share[["id", "scenario", "profile_share"]]
 
+    # assign bus_id via census cell of building centroid
     with db.session_scope() as session:
         cells_query = session.query(
             egon_map_zensus_buildings_filtered_all.id,
