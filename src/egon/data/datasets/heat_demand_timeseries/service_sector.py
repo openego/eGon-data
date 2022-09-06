@@ -133,7 +133,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
 
         # mv_grid = mv_grid.set_index("zensus_population_id")
         district_heating = district_heating.set_index("zensus_population_id")
-        print(5)
+
         mv_grid_ind = db.select_dataframe(
             f"""
                 SELECT bus_id, a.zensus_population_id
@@ -285,7 +285,7 @@ def CTS_demand_scale(aggregation_level):
             CTS_district = CTS_district.append(CTS_per_district)
             CTS_district = CTS_district.sort_index()
             
-            print("before selecting ind")
+
 
             mv_grid_ind = db.select_dataframe(
                 f"""
@@ -303,7 +303,7 @@ def CTS_demand_scale(aggregation_level):
 				AND c.sector = 'service'
                 """
             )
-            print("after selecting ind")
+
             CTS_demands_grid = pd.merge(
                 demand,
                 mv_grid_ind[["bus_id", "zensus_population_id"]],
