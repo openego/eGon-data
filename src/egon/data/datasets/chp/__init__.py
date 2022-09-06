@@ -315,8 +315,6 @@ def insert_chp_egon2035():
 
     """
 
-    create_tables()
-
     sources = config.datasets()["chp_location"]["sources"]
 
     targets = config.datasets()["chp_location"]["targets"]
