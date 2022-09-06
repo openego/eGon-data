@@ -79,16 +79,13 @@ def insert_gas_neigbours_eGon100RE(scn_name="eGon100RE"):
     """
 
     DE_pipe_capacities_list = define_DE_crossbording_pipes_geom_eGon100RE()
-    print(DE_pipe_capacities_list)
     cap_DE = read_DE_crossbordering_cap_from_pes()
-    print(cap_DE)
 
     Crossbordering_pipe_capacities_list = (
         calculate_crossbordering_gas_grid_capacities_eGon100RE(
             cap_DE, DE_pipe_capacities_list
         )
     )
-    print(Crossbordering_pipe_capacities_list)
 
     insert_gas_grid_capacities(
         Crossbordering_pipe_capacities_list, "eGon100RE"
