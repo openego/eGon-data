@@ -195,9 +195,10 @@ class CtsBuildings(Base):
     source = Column(String)
 
 
-def start_logging():
+def start_logging(name=None):
     """Start logging into console"""
-    log = logging.getLogger()
+    log = logging.getLogger(name)
+    log.propagate = False
     log.setLevel(logging.INFO)
     logformat = logging.Formatter(
         "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
@@ -1126,7 +1127,7 @@ def cts_buildings():
     he demand share.
     """
 
-    log = start_logging()
+    log = start_logging(name="CTS-buildings")
     log.info("Start logging!")
     # Buildings with amenities
     df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
@@ -1301,7 +1302,7 @@ def cts_electricity():
     Calculate cts electricity demand share of hvmv substation profile
      for buildings.
     """
-    log = start_logging()
+    log = start_logging(name="CTS-electricity")
     log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings)
@@ -1335,7 +1336,7 @@ def cts_heat():
     Calculate cts electricity demand share of hvmv substation profile
      for buildings.
     """
-    log = start_logging()
+    log = start_logging(name="CTS-heat")
     log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings)
@@ -1370,7 +1371,7 @@ def get_cts_electricity_peak_load():
     Get electricity peak load of all CTS buildings for both scenarios and
     store in DB.
     """
-    log = start_logging()
+    log = start_logging(name="CTS-electricity-peak-load")
     log.info("Start logging!")
     # Delete rows with cts demand
     with db.session_scope() as session:
@@ -1428,7 +1429,7 @@ def get_cts_heat_peak_load():
     """
     Get heat peak load of all CTS buildings for both scenarios and store in DB.
     """
-    log = start_logging()
+    log = start_logging(name="CTS-heat-peak-load")
     log.info("Start logging!")
     # Delete rows with cts demand
     with db.session_scope() as session:
