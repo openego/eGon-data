@@ -935,6 +935,54 @@ def delete_synthetic_cts_buildings():
             osm_buildings_synthetic.building == "cts"
         ).delete()
 
+def remove_double_bus_id(df_cts_buildings):
+    """"""
+    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
+
+    # assign bus_id via census cell of building centroid
+    with db.session_scope() as session:
+        cells_query = session.query(
+            # egon_map_zensus_buildings_filtered_all.id,
+            # egon_map_zensus_buildings_filtered_all.zensus_population_id,
+            MapZensusGridDistricts.zensus_population_id,
+            MapZensusGridDistricts.bus_id
+            # ).filter(
+            #     MapZensusGridDistricts.zensus_population_id
+            #     == egon_map_zensus_buildings_filtered_all.zensus_population_id
+        )
+
+    df_egon_map_zensus_buildings_buses = pd.read_sql(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+    )
+    df_cts_buildings = pd.merge(
+        left=df_cts_buildings,
+        right=df_egon_map_zensus_buildings_buses,
+        on="zensus_population_id",
+    )
+
+    substation_per_building = df_cts_buildings.groupby("id")[
+        "bus_id"
+    ].nunique()
+    building_id = substation_per_building.loc[
+        substation_per_building > 1
+    ].index
+    df_duplicates = df_cts_buildings.loc[
+        df_cts_buildings["id"].isin(building_id)
+    ]
+    for unique_id in df_duplicates["id"].unique():
+        drop_index = df_duplicates[df_duplicates["id"] == unique_id].index[0]
+        print(
+            f"Buildings {df_cts_buildings.loc[drop_index, 'id']}"
+            f" dropped because of double substation"
+        )
+        df_cts_buildings.drop(index=drop_index, inplace=True)
+
+    df_cts_buildings.drop(columns="bus_id", inplace=True)
+
+    return df_cts_buildings
+
 
 def cts_buildings():
     """
@@ -1104,6 +1152,7 @@ def cts_buildings():
         ignore_index=True,
     )
     df_cts_buildings = remove_double_bus_id(df_cts_buildings)
+    log.info("Double bus_id checked")
 
     # TODO maybe remove after #772
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
@@ -1122,55 +1171,6 @@ def cts_buildings():
         drop=True,
     )
     log.info("CTS buildings exported to DB!")
-
-
-def remove_double_bus_id(df_cts_buildings):
-    """"""
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
-    # assign bus_id via census cell of building centroid
-    with db.session_scope() as session:
-        cells_query = session.query(
-            # egon_map_zensus_buildings_filtered_all.id,
-            # egon_map_zensus_buildings_filtered_all.zensus_population_id,
-            MapZensusGridDistricts.zensus_population_id,
-            MapZensusGridDistricts.bus_id
-            # ).filter(
-            #     MapZensusGridDistricts.zensus_population_id
-            #     == egon_map_zensus_buildings_filtered_all.zensus_population_id
-        )
-
-    df_egon_map_zensus_buildings_buses = pd.read_sql(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col=None,
-    )
-    df_cts_buildings = pd.merge(
-        left=df_cts_buildings,
-        right=df_egon_map_zensus_buildings_buses,
-        on="zensus_population_id",
-    )
-
-    substation_per_building = df_cts_buildings.groupby("id")[
-        "bus_id"
-    ].nunique()
-    building_id = substation_per_building.loc[
-        substation_per_building > 1
-    ].index
-    df_duplicates = df_cts_buildings.loc[
-        df_cts_buildings["id"].isin(building_id)
-    ]
-    for unique_id in df_duplicates["id"].unique():
-        drop_index = df_duplicates[df_duplicates["id"] == unique_id].index[0]
-        print(
-            f"Buildinga {df_cts_buildings.loc[drop_index, 'id']}"
-            f" dropped because of double substation"
-        )
-        df_cts_buildings.drop(index=drop_index, inplace=True)
-
-    df_cts_buildings.drop(columns="bus_id", inplace=True)
-
-    return df_cts_buildings
 
 
 def cts_electricity():
