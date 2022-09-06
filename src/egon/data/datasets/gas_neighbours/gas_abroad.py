@@ -1,3 +1,10 @@
+"""Module containing functions to insert gas abroad
+
+In this module, functions useful to insert the gas components (H2 and
+CH4) abroad for eGon2035 and eGon100RE are defined.
+
+"""
+
 import zipfile
 
 from geoalchemy2.types import Geometry
@@ -10,12 +17,14 @@ from egon.data import config, db
 def get_foreign_gas_bus_id(carrier="CH4", scn_name="eGon2035"):
     """Calculate the etrago bus id based on the geometry
 
-    from gas nodes of TYNDP
+    Mapp node_ids from TYNDP and etragos bus_id
 
     Parameters
     ----------
     carrier : str
+        Name of the carrier
     scn_name : str
+        Name of the scenario
 
     Returns
     -------
@@ -64,16 +73,26 @@ def get_foreign_gas_bus_id(carrier="CH4", scn_name="eGon2035"):
 
 
 def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
-    """Insert CH4 grid capacities for foreign countries
+    """Insert crossbordering gas pipelines in the database
+
+    This function insert a list of crossbordering gas pipelines after
+    cleaning the database.
+    For eGon2035, all the CH4 crossbordering pipelines are inserted
+    there (no H2 grid in this scenario).
+    For eGon100RE, only the the crossbordering pipelines with Germany
+    are inserted there (the other ones are inerted in PypsaEurSec),
+    but in this scenario there are H2 and CH4 pipelines.
 
     Parameters
     ----------
     Neighbouring_pipe_capacities_list : pandas.DataFrame
+        List of the crossbordering gas pipelines
     scn_name : str
+        Name of the scenario
 
     Returns
     -------
-    None.
+    None
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
