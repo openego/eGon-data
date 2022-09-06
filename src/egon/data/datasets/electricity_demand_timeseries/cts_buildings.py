@@ -195,6 +195,16 @@ class CtsBuildings(Base):
     source = Column(String)
 
 
+class BuildingHeatPeakLoads(Base):
+    __tablename__ = "egon_building_heat_peak_loads"
+    __table_args__ = {"schema": "demand"}
+
+    building_id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
+    sector = Column(String, primary_key=True)
+    peak_load_in_w = Column(REAL)
+
+
 def start_logging(name=None):
     """Start logging into console"""
     log = logging.getLogger(name)
@@ -1431,10 +1441,13 @@ def get_cts_heat_peak_load():
     """
     log = start_logging(name="CTS-heat-peak-load")
     log.info("Start logging!")
+
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
     # Delete rows with cts demand
     with db.session_scope() as session:
-        session.query(BuildingPeakLoads).filter(
-            BuildingPeakLoads.sector == "cts"
+        session.query(BuildingHeatPeakLoads).filter(
+            BuildingHeatPeakLoads.sector == "cts"
         ).delete()
     log.info("CTS Peak load removed from DB!")
 
@@ -1449,13 +1462,18 @@ def get_cts_heat_peak_load():
             cells_query.statement, cells_query.session.bind, index_col=None
         )
 
-        df_cts_profiles = calc_load_curves_cts(scenario=scenario)
-
         with db.session_scope() as session:
-            cells_query = session.query(EgonEtragoElectricityCts)
+            cells_query = session.query(EgonEtragoElectricityCts).filter(
+                EgonEtragoElectricityCts.scn_name == scenario
+            )
 
         df_cts_profiles = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None
+            cells_query.statement,
+            cells_query.session.bind,
+        )
+        df_cts_profiles = pd.DataFrame.from_dict(
+            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+            orient="index",
         )
 
         df_peak_load = pd.merge(
@@ -1482,7 +1500,7 @@ def get_cts_heat_peak_load():
         # Write peak loads into db
         with db.session_scope() as session:
             session.bulk_insert_mappings(
-                BuildingPeakLoads,
+                BuildingHeatPeakLoads,
                 df_peak_load.to_dict(orient="records"),
             )
         log.info(f"Peak load for {scenario} exported to DB!")
