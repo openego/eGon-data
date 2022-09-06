@@ -15,13 +15,13 @@ class SanityChecks(Dataset):
             version="0.0.3",
             dependencies=dependencies,
             tasks={
-                sanitycheck_eGon2035_electricity,
-                sanitycheck_eGon2035_heat,
+                etrago_eGon2035_electricity,
+                etrago_eGon2035_heat,
             },
         )
 
 
-def sanitycheck_eGon2035_electricity():
+def etrago_eGon2035_electricity():
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the electricity sector in
@@ -253,7 +253,7 @@ def sanitycheck_eGon2035_electricity():
     print(f"electricity demand: {e} %")
 
 
-def sanitycheck_eGon2035_heat():
+def etrago_eGon2035_heat():
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the heat sector in
