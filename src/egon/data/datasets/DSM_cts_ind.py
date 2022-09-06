@@ -448,13 +448,15 @@ def dsm_cts_ind_processing():
         )
 
         # Assignment of DSM ids
-        bus_id.iloc[0 : rows_per_scenario["eGon2035"]] = range(
-            dsm_id, dsm_id + rows_per_scenario["eGon2035"]
+        bus_id.iloc[0 : rows_per_scenario.get("eGon2035", 0)] = range(
+            dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
         )
         bus_id.iloc[
-            rows_per_scenario["eGon2035"] : rows_per_scenario["eGon2035"]
-            + rows_per_scenario["eGon100RE"]
-        ] = range(dsm_id, dsm_id + rows_per_scenario["eGon100RE"])
+            rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+                "eGon2035", 0
+            )
+            + rows_per_scenario.get("eGon100RE", 0)
+        ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
 
         dsm_buses["bus_id"] = bus_id
 
@@ -478,13 +480,15 @@ def dsm_cts_ind_processing():
         link_id = pd.Series(index=dsm_buses.index, dtype=int)
 
         # Assignment of link ids
-        link_id.iloc[0 : rows_per_scenario["eGon2035"]] = range(
-            dsm_id, dsm_id + rows_per_scenario["eGon2035"]
+        link_id.iloc[0 : rows_per_scenario.get("eGon2035", 0)] = range(
+            dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
         )
         link_id.iloc[
-            rows_per_scenario["eGon2035"] : rows_per_scenario["eGon2035"]
-            + rows_per_scenario["eGon100RE"]
-        ] = range(dsm_id, dsm_id + rows_per_scenario["eGon100RE"])
+            rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+                "eGon2035", 0
+            )
+            + rows_per_scenario.get("eGon100RE", 0)
+        ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
 
         dsm_links["link_id"] = link_id
 
@@ -515,13 +519,15 @@ def dsm_cts_ind_processing():
         store_id = pd.Series(index=dsm_buses.index, dtype=int)
 
         # Assignment of store ids
-        store_id.iloc[0 : rows_per_scenario["eGon2035"]] = range(
-            dsm_id, dsm_id + rows_per_scenario["eGon2035"]
+        store_id.iloc[0 : rows_per_scenario.get("eGon2035", 0)] = range(
+            dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
         )
         store_id.iloc[
-            rows_per_scenario["eGon2035"] : rows_per_scenario["eGon2035"]
-            + rows_per_scenario["eGon100RE"]
-        ] = range(dsm_id, dsm_id + rows_per_scenario["eGon100RE"])
+            rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+                "eGon2035", 0
+            )
+            + rows_per_scenario.get("eGon100RE", 0)
+        ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
 
         dsm_stores["store_id"] = store_id
 
