@@ -602,6 +602,10 @@ Bug Fixes
   `#888 <https://github.com/openego/eGon-data/issues/888>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
+* Fix model id issues in DSM potentials for CTS and industry
+  `#901 <https://github.com/openego/eGon-data/issues/901>`_
+* Drop era5 weather cell table using cascade
+  `#909 <https://github.com/openego/eGon-data/issues/909>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
