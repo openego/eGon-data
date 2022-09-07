@@ -1438,7 +1438,7 @@ def get_cts_heat_peak_load():
 class CtsElectricityBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="CtsElectricityBuildings",
+            name="CtsBuildings",
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
