@@ -465,6 +465,28 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
     return heat_demand_ts
 
 
+def get_peak_demand_per_building(scenario, building_ids):
+    """
+    Gets peak heat demand for all given buildings.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of scenario. Can be either "eGon2035" or "eGon100RE".
+    building_ids : pd.Index(int)
+        Building IDs (as int) of buildings to get heat demand time series for.
+
+    Returns
+    --------
+    pd.Series
+        Series with peak heat demand per building in MW. Index contains the building ID.
+
+    """
+    # TODO Implement
+
+    return peak_heat_demand
+
+
 def determine_minimum_hp_capacity_per_building(
     peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
 ):
@@ -594,13 +616,10 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
     return hp_cap_per_building
 
 
-def determine_hp_capacity_per_building(scenario):
-    """
-    Parameters
-    -----------
-    scenario : str
-        "pypsa-eur-sec", "eGon2035", "eGon100RE"
-
+def determine_hp_cap_pypsa_eur_sec():
+    """Wrapper function to determine heat pump capacities for scenario
+    pypsa-eur-sec. Only the minimum required heat pump capacity per MV grid is
+    exported to db
     """
 
     # get all MV grid IDs
@@ -618,48 +637,81 @@ def determine_hp_capacity_per_building(scenario):
 
         # determine minimum required heat pump capacity per building
         building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
-            scenario, mv_grid_id
+            "eGon100RE", mv_grid_id
         )
 
-        if scenario == "eGon100RE":
-            pass
-            # TODO alternative get peak demand from db?
-            # residential and cts peak sum
-        else:
-            # iterates for residential heat over building id > slow
-            heat_demand_ts = get_heat_demand_timeseries_per_building(
-                scenario, building_ids
-            )
-            # ToDo Write peak heat demand to table?
-            min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
-                heat_demand_ts.max()
-            )
+        # get heat demand time series per building
+        # iterates for residential heat over building id > slow
+        heat_demand_ts = get_heat_demand_timeseries_per_building(
+            "eGon100RE", building_ids
+        )
 
-        # in case this function is called to create pypsa-eur-sec input, only the
-        # minimum required heat pump capacity per MV grid is needed
-        if scenario == "pypsa-eur-sec":
-            min_hp_cap_buildings.sum()
-            # ToDo Write minimum required capacity to table for pypsa-eur-sec input
+        # ToDo Write peak heat demand to table
 
-            # ToDo Write aggregated heat demand time series of buildings with HP to
-            #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
-            # TODO Clara uses this table already
-            #     but will not need it anymore for pypsa eur sec
-            # EgonEtragoTimeseriesIndividualHeating
+        # write aggregated heat time series to dataframe to write it to table later on
+        df_etrago_timeseries_heat_pumps[
+            mv_grid_id] = heat_demand_ts.sum(axis=1).values
 
-            return
+        # determine minimum required heat pump capacity per building
+        min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
+            heat_demand_ts.max()
+        )
+        # ToDo Write minimum required capacity to table for pypsa-eur-sec input
+        # min_hp_cap_buildings.sum()
 
-        # in case this function is called to create data for 2035 scenario, the
-        # buildings with heat pumps are determined; for 2050 scenario all buildings
-        # with decentral heating system get a heat pump
+    # ToDo Write aggregated heat demand time series of buildings with HP to
+    #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
+    # TODO Clara uses this table already
+    #     but will not need it anymore for pypsa eur sec
+    # EgonEtragoTimeseriesIndividualHeating
+
+    return
+
+
+def determine_hp_cap_eGon2035():
+    """Wrapper function to determine Heat Pump capacities
+    for scenario eGon2035. Only selected buildings get a heat pump capacity
+    assigned. Buildings with PV rooftop are more likely to be assigned.
+    """
+    # get all MV grid IDs
+    mv_grid_ids = db.select_dataframe(
+        f"""
+        SELECT bus_id
+        FROM grid.egon_mv_grid_district
+        """,
+        index_col=None,
+    ).bus_id.values
+
+    df_etrago_timeseries_heat_pumps = pd.DataFrame()
+
+    for mv_grid_id in mv_grid_ids:
+
+        # determine minimum required heat pump capacity per building
+        building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
+            "eGon2035", mv_grid_id
+        )
+
+        # get heat demand time series per building
+        # iterates for residential heat over building id > slow
+        heat_demand_ts = get_heat_demand_timeseries_per_building(
+            "eGon2035", building_ids
+        )
+
+        # ToDo Write peak heat demand to table
+
+        # determine minimum required heat pump capacity per building
+        min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
+            heat_demand_ts.max()
+        )
+
+        # select buildings that will have a heat pump
         hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(
-            scenario, mv_grid_id
+            "eGon2035", mv_grid_id
         )
-        if scenario == "eGon2035":
-            buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
-                hp_cap_grid, min_hp_cap_buildings
-            )
-            min_hp_cap_buildings = min_hp_cap_buildings.loc[buildings_with_hp]
+        buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
+            hp_cap_grid, min_hp_cap_buildings
+        )
+        min_hp_cap_buildings = min_hp_cap_buildings.loc[buildings_with_hp]
 
         # distribute total heat pump capacity to all buildings with HP
         hp_cap_per_building = desaggregate_hp_capacity(
@@ -667,12 +719,13 @@ def determine_hp_capacity_per_building(scenario):
         )
 
         # ToDo Write desaggregated HP capacity to table
+
+        # write aggregated heat time series to dataframe to write it to table later on
         heat_timeseries_hp_buildings_mv_grid = heat_demand_ts.loc[
-            :, hp_cap_per_building.index
-        ].sum()
-
-    df_etrago_timeseries_heat_pumps[mv_grid_id] = heat_timeseries_hp_buildings_mv_grid.values
-
+                                               :, hp_cap_per_building.index
+                                               ].sum(axis=1)
+        df_etrago_timeseries_heat_pumps[
+            mv_grid_id] = heat_timeseries_hp_buildings_mv_grid.values
 
     # ToDo Write aggregated heat demand time series of buildings with HP to
     #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
@@ -705,25 +758,42 @@ def determine_hp_capacity_per_building(scenario):
     # TODO Gas aggregiert pro MV Grid
 
 
-def determine_hp_cap_pypsa_eur_sec():
-    """Wrapper function to determine heat pump capacities for scenario
-    pypsa-eur-sec. Only the minimum required heat pump capacity per MV grid is
-    exported to db
-    """
-    determine_hp_capacity_per_building(scenario="pypsa-eur-sec")
-
-
-def determine_hp_cap_eGon2035():
-    """Wrapper function to determine Heat Pump capacities
-    for scenario eGon2035. Only selected buildings get a heat pump capacity
-    assigned. Buildings with PV rooftop are more likely to be assigned.
-    """
-    determine_hp_capacity_per_building(scenario="eGon2035")
-
-
 def determine_hp_cap_eGon100RE():
     """Wrapper function to determine Heat Pump capacities
     for scenario eGon100RE. All buildings without district heating get a heat
     pump capacity assigned.
     """
-    determine_hp_capacity_per_building(scenario="eGon100RE")
+
+    # get all MV grid IDs
+    mv_grid_ids = db.select_dataframe(
+        f"""
+        SELECT bus_id
+        FROM grid.egon_mv_grid_district
+        """,
+        index_col=None,
+    ).bus_id.values
+
+    for mv_grid_id in mv_grid_ids:
+
+        # determine minimum required heat pump capacity per building
+        building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
+            "eGon100RE", mv_grid_id
+        )
+
+        # TODO get peak demand from db
+        peak_heat_demand = get_peak_demand_per_building("eGon100RE", building_ids)
+
+        # determine minimum required heat pump capacity per building
+        min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
+            peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
+        )
+
+        # distribute total heat pump capacity to all buildings with HP
+        hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(
+            "eGon100RE", mv_grid_id
+        )
+        hp_cap_per_building = desaggregate_hp_capacity(
+            min_hp_cap_buildings, hp_cap_grid
+        )
+
+        # ToDo Write desaggregated HP capacity to table
