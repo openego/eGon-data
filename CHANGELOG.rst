@@ -414,6 +414,8 @@ Changed
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Allocate PV home batteries to mv grid districts
   `#749 <https://github.com/openego/eGon-data/issues/749>`_
+* Rename noflex to lowflex scenario for motorized individual travel
+  `#921 <https://github.com/openego/eGon-data/issues/921>`_
 
 
 Bug Fixes
