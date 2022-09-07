@@ -749,9 +749,9 @@ def write_model_data_to_db(
             )
         else:
             # Get lowflex scenario name
-            lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"]["names"][
-                scenario_name
-            ]
+            lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
+                "names"
+            ][scenario_name]
             write_load(
                 scenario_name=lowflex_scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
@@ -840,9 +840,9 @@ def write_model_data_to_db(
 
     # Write to database: regular and lowflex scenario
     write_to_db(write_lowflex_model=False)
-    print('    Writing flex scenario...')
+    print("    Writing flex scenario...")
     if write_lowflex_model is True:
-        print('    Writing lowflex scenario...')
+        print("    Writing lowflex scenario...")
         write_to_db(write_lowflex_model=True)
 
     # Export to working dir if requested
