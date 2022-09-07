@@ -787,7 +787,7 @@ def sanitycheck_emobility_mit():
                 print(f"    Loading {node} timeseries...")
                 subquery = (
                     session.query(
-                        getattr(attrs["table_ts"], attrs["column_id"])
+                        getattr(attrs["table"], attrs["column_id"])
                     )
                     .filter(attrs["table"].carrier == attrs["carrier"])
                     .filter(attrs["table"].scn_name == scenario_name)
