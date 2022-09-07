@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import codecs
 import functools
 import time
+import uuid
 
 from psycopg2.errors import DeadlockDetected, UniqueViolation
 from sqlalchemy import create_engine, text
@@ -240,23 +241,7 @@ def next_etrago_id(component):
     :func:`check_db_unique_violation` instead.
     """
 
-    if component == "transformer":
-        id_column = "trafo_id"
-    else:
-        id_column = f"{component}_id"
-
-    max_id = select_dataframe(
-        f"""
-        SELECT MAX({id_column}) FROM grid.egon_etrago_{component}
-        """
-    )["max"][0]
-
-    if max_id:
-        next_id = max_id + 1
-    else:
-        next_id = 1
-
-    return next_id
+    return int(uuid.uuid4().bytes[0:7].hex(), base=16)
 
 
 def check_db_unique_violation(func):
