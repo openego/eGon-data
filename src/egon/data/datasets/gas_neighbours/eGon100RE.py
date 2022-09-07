@@ -15,13 +15,7 @@ Resulting tables
 
 """
 
-from pathlib import Path
-import ast
-import json
-
-from geoalchemy2.types import Geometry
-from shapely.geometry import LineString, MultiLineString
-import numpy as np
+from shapely.geometry import MultiLineString
 import pandas as pd
 
 from egon.data import config, db
