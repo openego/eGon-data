@@ -1257,10 +1257,12 @@ def cts_electricity():
         df_cts_buildings, scenario="eGon2035", sector="electricity"
     )
     log.info("Profile share for egon2035 calculated!")
+
     df_demand_share_100RE = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon100RE", sector="electricity"
     )
     log.info("Profile share for egon100RE calculated!")
+
     df_demand_share = pd.concat(
         [df_demand_share_2035, df_demand_share_100RE],
         axis=0,
@@ -1313,6 +1315,9 @@ def get_cts_electricity_peak_load():
     store in DB.
     """
     log.info("Start logging!")
+
+    BuildingElectricityPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
     # Delete rows with cts demand
     with db.session_scope() as session:
         session.query(BuildingElectricityPeakLoads).filter(
