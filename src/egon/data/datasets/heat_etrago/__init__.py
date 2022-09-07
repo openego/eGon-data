@@ -325,7 +325,6 @@ def insert_central_direct_heat(scenario="eGon2035"):
     )
 
     new_id = db.next_etrago_id("generator")
-
     generator = pd.DataFrame(
         data={
             "scn_name": scenario,

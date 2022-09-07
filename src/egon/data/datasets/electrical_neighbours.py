@@ -1265,7 +1265,6 @@ def tyndp_demand():
             carrier="AC",
             bus=int(buses.bus[bus]),
         )
-
         entry_ts = etrago.EgonPfHvLoadTimeseries(
             scn_name="eGon2035",
             load_id=load_id,
