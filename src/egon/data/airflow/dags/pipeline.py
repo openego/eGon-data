@@ -24,6 +24,9 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_buildings,
     hh_profiles,
 )
+from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
+    CtsDemandBuildings,
+)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -204,7 +207,9 @@ with airflow.DAG(
     load_area = LoadArea(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
-    renewable_feedin = RenewableFeedin(dependencies=[vg250, weather_data])
+    renewable_feedin = RenewableFeedin(
+        dependencies=[vg250, zensus_vg250, weather_data]
+    )
 
     # Demarcate district heating areas
     district_heating_areas = DistrictHeatingAreas(
@@ -273,7 +278,8 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             heat_demand_Germany,
-            household_electricity_demand_annual,
+            # household_electricity_demand_annual,
+            tasks["electricity_demand.create-tables"],
             tasks["etrago_setup.create-tables"],
             zensus_mv_grid_districts,
             zensus_vg250,
@@ -400,7 +406,7 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=h2_infrastructure
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
     # Create gas voronoi eGon100RE
@@ -558,6 +564,15 @@ with airflow.DAG(
         ]
     )
 
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+        ]
+    )
+
+    # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[

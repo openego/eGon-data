@@ -12,7 +12,7 @@ CREATE TABLE openstreetmap.osm_amenities_shops_filtered AS
         pnt.osm_id,
         pnt.amenity,
         pnt.name,
-        ST_TRANSFORM(pnt.geom, 3035) AS geom,
+        ST_TRANSFORM(pnt.geom, 3035) AS geom_amenity,
         pnt.tags
     FROM openstreetmap.osm_point pnt
     where
@@ -86,7 +86,8 @@ CREATE TABLE openstreetmap.osm_amenities_shops_filtered AS
         or pnt.shop IS NOT NULL;
 
 -- add PK as some osm ids are not unique
-ALTER TABLE openstreetmap.osm_amenities_shops_filtered ADD COLUMN id SERIAL PRIMARY KEY;
+ALTER TABLE openstreetmap.osm_amenities_shops_filtered
+    ADD COLUMN egon_amenity_id SERIAL PRIMARY KEY;
 
-CREATE INDEX ON openstreetmap.osm_amenities_shops_filtered USING gist (geom);
-
+CREATE INDEX idx_osm_amenities_shops_filtered_geom
+    ON openstreetmap.osm_amenities_shops_filtered USING gist (geom_amenity);
