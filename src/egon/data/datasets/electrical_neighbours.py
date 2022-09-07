@@ -332,9 +332,8 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
         new_lines = new_lines[~new_lines.country.isnull()]
-    new_lines.line_id = range(
-        db.next_etrago_id("line"), db.next_etrago_id("line") + len(new_lines)
-    )
+    new_id = db.next_etrago_id("line")
+    new_lines.line_id = range(new_id, new_id + len(new_lines))
 
     # Set bus in center of foreogn countries as bus1
     for i, row in new_lines.iterrows():

@@ -156,9 +156,10 @@ def insert_store(scenario, carrier):
 
     water_tank_bus = dh_bus.copy()
     water_tank_bus.carrier = carrier + "_store"
+    water_tank_bus_base_id = db.next_etrago_id("bus")
     water_tank_bus.bus_id = range(
-        db.next_etrago_id("bus"),
-        db.next_etrago_id("bus") + len(water_tank_bus),
+        water_tank_bus_base_id,
+        water_tank_bus_base_id + len(water_tank_bus),
     )
 
     water_tank_bus.to_postgis(
@@ -169,6 +170,7 @@ def insert_store(scenario, carrier):
         index=False,
     )
 
+    water_tank_charger_base_id = db.next_etrago_id("link")
     water_tank_charger = pd.DataFrame(
         data={
             "scn_name": scenario,
@@ -180,8 +182,8 @@ def insert_store(scenario, carrier):
             ]["water_tank_charger"],
             "p_nom_extendable": True,
             "link_id": range(
-                db.next_etrago_id("link"),
-                db.next_etrago_id("link") + len(water_tank_bus),
+                water_tank_charger_base_id,
+                water_tank_charger_base_id + len(water_tank_bus),
             ),
         }
     )
@@ -194,6 +196,7 @@ def insert_store(scenario, carrier):
         index=False,
     )
 
+    water_tank_discharger_base_id = db.next_etrago_id("link")
     water_tank_discharger = pd.DataFrame(
         data={
             "scn_name": scenario,
@@ -205,8 +208,8 @@ def insert_store(scenario, carrier):
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
             "link_id": range(
-                db.next_etrago_id("link"),
-                db.next_etrago_id("link") + len(water_tank_bus),
+                water_tank_discharger_base_id,
+                water_tank_discharger_base_id + len(water_tank_bus),
             ),
         }
     )
@@ -219,6 +222,7 @@ def insert_store(scenario, carrier):
         index=False,
     )
 
+    water_tank_store_base_id = db.next_etrago_id("store")
     water_tank_store = pd.DataFrame(
         data={
             "scn_name": scenario,
@@ -232,8 +236,8 @@ def insert_store(scenario, carrier):
             ],
             "e_nom_extendable": True,
             "store_id": range(
-                db.next_etrago_id("store"),
-                db.next_etrago_id("store") + len(water_tank_bus),
+                water_tank_store_base_id,
+                water_tank_store_base_id + len(water_tank_bus),
             ),
         }
     )
