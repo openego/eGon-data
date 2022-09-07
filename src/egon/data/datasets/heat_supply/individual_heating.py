@@ -16,14 +16,13 @@ engine = db.engine()
 Base = declarative_base()
 
 
-class EgonEtragoTimeSeriesIndividualHeating(Base):
+class EgonEtragoTimeseriesIndividualHeating(Base):
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
-
     bus_id = Column(Integer, primary_key=True)
-    scn_name = Column(String, primary_key=True)
-    p_set = Column(ARRAY(REAL))
-    q_set = Column(ARRAY(REAL))
+    scenario = Column(Text, primary_key=True)
+    carrier = Column(String, primary_key=True)
+    dist_aggregated_mw = Column(ARRAY(Float(53)))
 
 
 class HeatPumpsEtrago(Dataset):
@@ -422,8 +421,6 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
     """
     Gets heat demand time series for all given buildings.
 
-    ToDo: CTS demand still missing!! Also maybe use other function to make it faster.
-
     Parameters
     -----------
     scenario : str
@@ -646,32 +643,38 @@ def determine_hp_capacity_per_building(scenario):
             :, hp_cap_per_building.index
         ].sum()
 
-        # ToDo Write aggregated heat demand time series of buildings with HP to
-        #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
-        # EgonEtragoTimeSeriesIndividualHeating
+    df_etrago_timeseries_heat_pumps[mv_grid_id] = heat_timeseries_hp_buildings_mv_grid.values
 
-        # # Change format
-        #     data = CTS_grid.drop(columns="scenario")
-        #     df_etrago_cts_heat_profiles = pd.DataFrame(
-        #         index=data.index, columns=["scn_name", "p_set"]
-        #     )
-        #     df_etrago_cts_heat_profiles.p_set = data.values.tolist()
-        #     df_etrago_cts_heat_profiles.scn_name = CTS_grid["scenario"]
-        #     df_etrago_cts_heat_profiles.reset_index(inplace=True)
-        #
-        #     # Drop and recreate Table if exists
-        #     EgonEtragoTimeSeriesIndividualHeating.__table__.drop(bind=db.engine(), checkfirst=True)
-        #     EgonEtragoTimeSeriesIndividualHeating.__table__.create(bind=db.engine(), checkfirst=True)
-        #
-        #     # Write heat ts into db
-        #     with db.session_scope() as session:
-        #         session.bulk_insert_mappings(
-        #             EgonEtragoTimeSeriesIndividualHeating,
-        #             df_etrago_cts_heat_profiles.to_dict(orient="records"),
-        #         )
-        # ToDo Write other heat demand time series to database - gas voronoi
-        #  (grid - egon_gas_voronoi mit carrier CH4)
-        #  erstmal intermediate table
+
+    # ToDo Write aggregated heat demand time series of buildings with HP to
+    #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
+    # TODO Clara uses this table already
+    #     but will not need it anymore for pypsa eur sec
+    # EgonEtragoTimeseriesIndividualHeating
+
+    # # Change format
+    #     data = CTS_grid.drop(columns="scenario")
+    #     df_etrago_cts_heat_profiles = pd.DataFrame(
+    #         index=data.index, columns=["scn_name", "p_set"]
+    #     )
+    #     df_etrago_cts_heat_profiles.p_set = data.values.tolist()
+    #     df_etrago_cts_heat_profiles.scn_name = CTS_grid["scenario"]
+    #     df_etrago_cts_heat_profiles.reset_index(inplace=True)
+    #
+    #     # Drop and recreate Table if exists
+    #     EgonEtragoTimeseriesIndividualHeating.__table__.drop(bind=db.engine(), checkfirst=True)
+    #     EgonEtragoTimeseriesIndividualHeating.__table__.create(bind=db.engine(), checkfirst=True)
+    #
+    #     # Write heat ts into db
+    #     with db.session_scope() as session:
+    #         session.bulk_insert_mappings(
+    #             EgonEtragoTimeseriesIndividualHeating,
+    #             df_etrago_cts_heat_profiles.to_dict(orient="records"),
+    #         )
+    # ToDo Write other heat demand time series to database - gas voronoi
+    #  (grid - egon_gas_voronoi mit carrier CH4)
+    #  erstmal intermediate table
+    # TODO Gas aggregiert pro MV Grid
 
 
 def determine_hp_cap_pypsa_eur_sec():
