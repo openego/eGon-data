@@ -574,6 +574,7 @@ with airflow.DAG(
     heavy_duty_transport = HeavyDutyTransport(
         dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
     )
+
     cts_demand_buildings = CtsDemandBuildings(
         dependencies=[
             osm_buildings_streets,
@@ -590,5 +591,6 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            emobility_mit,
         ]
     )
