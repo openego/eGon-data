@@ -946,7 +946,7 @@ def insert_generators(capacities):
     for i, row in gen.iterrows():
         entry = etrago.EgonPfHvGenerator(
             scn_name="eGon2035",
-            generator_id=int(db.next_etrago_id("generator")),
+            generator_id=db.next_etrago_id("generator"),
             bus=row.bus,
             carrier=row.carrier,
             p_nom=row.cap_2035,
@@ -1098,7 +1098,7 @@ def insert_storage(capacities):
     for i, row in store.iterrows():
         entry = etrago.EgonPfHvStorage(
             scn_name="eGon2035",
-            storage_id=int(db.next_etrago_id("storage")),
+            storage_id=db.next_etrago_id("storage"),
             bus=row.bus,
             max_hours=row.max_hours,
             efficiency_store=row.store,
@@ -1262,14 +1262,14 @@ def tyndp_demand():
 
         entry = etrago.EgonPfHvLoad(
             scn_name="eGon2035",
-            load_id=int(load_id),
+            load_id=load_id,
             carrier="AC",
             bus=int(buses.bus[bus]),
         )
 
         entry_ts = etrago.EgonPfHvLoadTimeseries(
             scn_name="eGon2035",
-            load_id=int(load_id),
+            load_id=load_id,
             temp_id=1,
             p_set=list(data_2035.values),
         )
