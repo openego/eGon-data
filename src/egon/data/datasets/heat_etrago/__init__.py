@@ -1,14 +1,15 @@
 """The central module containing all code dealing with heat sector in etrago
 """
-import pandas as pd
 import geopandas as gpd
-from egon.data import db, config
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_central_power_to_heat,
     insert_individual_power_to_heat,
 )
-from egon.data.datasets import Dataset
-from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -70,7 +71,7 @@ def insert_buses(carrier, scenario):
             FROM {sources['mv_grids']['schema']}.
             {sources['mv_grids']['table']}
             WHERE bus_id IN (
-                SELECT bus_id FROM 
+                SELECT bus_id FROM
                 demand.egon_etrago_timeseries_individual_heating
                 WHERE scenario = '{scenario}')
             """
@@ -95,7 +96,6 @@ def insert_buses(carrier, scenario):
 
 def insert_store(scenario, carrier):
 
-    sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
 
     db.execute_sql(
@@ -274,8 +274,8 @@ def insert_central_direct_heat(scenario="eGon2035"):
         {targets['heat_generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
-        AND bus IN 
-        (SELECT bus_id 
+        AND bus IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -492,14 +492,14 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         {targets['heat_links']['table']}
         WHERE carrier  = 'rural_gas_boiler'
         AND scn_name = '{scenario}'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'

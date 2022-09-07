@@ -3,16 +3,16 @@
 
 import zipfile
 
-import geopandas as gpd
-import pandas as pd
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
+import geopandas as gpd
+import pandas as pd
 
-import egon.data.datasets.etrago_setup as etrago
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.datasets.etrago_setup as etrago
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
 class ElectricalNeighbours(Dataset):
@@ -1038,7 +1038,8 @@ def insert_storage(capacities):
     # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+        DELETE FROM
+            {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE bus IN (
             SELECT bus_id FROM
             {targets['buses']['schema']}.{targets['buses']['table']}
@@ -1048,7 +1049,8 @@ def insert_storage(capacities):
         """
     )
 
-    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    # Add missing information suitable for eTraGo selected from
+    # scenario_parameter table
     parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
         "efficiency"
     ]["pumped_hydro"]
@@ -1074,9 +1076,12 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store[
-        "max_hours"
-    ] = (None, None, None, None)
+    (
+        store["dispatch"],
+        store["store"],
+        store["standing_loss"],
+        store["max_hours"],
+    ) = (None, None, None, None)
 
     # Insert carrier specific parameters
 
@@ -1129,7 +1134,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
-        "RU":   "RU00",
+        "RU": "RU00",
     }
 
 

@@ -37,6 +37,8 @@ def insert():
 
     targets = config.datasets()["chp_etrago"]["targets"]
 
+    source_schema = f"{sources['etrago_buses']['schema']}"
+    source_table = f"{sources['etrago_buses']['table']}"
     db.execute_sql(
         f"""
         DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
@@ -44,19 +46,20 @@ def insert():
         AND scn_name = 'eGon2035'
         AND bus0 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {source_schema}.{source_table}
          WHERE scn_name = 'eGon2035'
          AND country = 'DE')
         AND bus1 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {source_schema}.{source_table}
          WHERE scn_name = 'eGon2035'
          AND country = 'DE')
         """
     )
     db.execute_sql(
         f"""
-        DELETE FROM {targets['generator']['schema']}.{targets['generator']['table']}
+        DELETE FROM
+            {targets['generator']['schema']}.{targets['generator']['table']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon2035'
         """
