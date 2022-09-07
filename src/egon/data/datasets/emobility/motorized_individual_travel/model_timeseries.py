@@ -37,9 +37,6 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.emobility.motorized_individual_travel import (  # noqa: F401, E501 (Used, but only in a docstring. Also, "isort" forces the long line by moving the comment to the import line.)
-    MotorizedIndividualTravel,
-)
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501 (Can't do anything about the long module hierarchy.)
     EgonEvMvGridDistrict,
     EgonEvPool,
@@ -62,6 +59,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+import egon.data.datasets.emobility.motorized_individual_travel as emoit  # noqa: F401, E501
 
 # from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -945,7 +943,7 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         Note: `bunch` is NOT a list of grid districts but is used for slicing
         the ordered list (by bus_id) of grid districts! This is used for
         parallelization. See
-        :meth:`MotorizedIndividualTravel.generate_model_data_tasks`
+        :meth:`emoit.MotorizedIndividualTravel.generate_model_data_tasks`
     """
     # Get list of grid districts / substations for this bunch
     mvgd_bus_ids = load_grid_district_ids().iloc[bunch]
