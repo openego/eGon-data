@@ -15,13 +15,6 @@ Resulting tables
 
 """
 
-from pathlib import Path
-import ast
-import json
-
-from geoalchemy2.types import Geometry
-from shapely.geometry import LineString, MultiLineString
-import numpy as np
 import pandas as pd
 
 from egon.data import config, db
@@ -44,7 +37,7 @@ countries = [
 ]
 
 
-def insert_gas_neigbours_eGon100RE(scn_name="eGon100RE"):
+def insert_gas_neigbours_eGon100RE():
     """Insert missing gas crossbordering grid capacities for eGon100RE
 
     This function insert the crossbordering pipelines for H2 and CH4,
@@ -66,11 +59,6 @@ def insert_gas_neigbours_eGon100RE(scn_name="eGon100RE"):
       * insertion of the H2 and CH4 pipelines between Germany and its
         neighbouring countries in the database with function
         :py:func:`insert_gas_grid_capacities`
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
 
     Returns
     -------
@@ -154,7 +142,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
 
     gas_nodes_list_2035 = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_bus
+        SELECT * FROM {sources['buses']['schema']}.{sources['buses']['table']}
         WHERE scn_name = 'eGon2035'
         AND carrier = 'CH4'
         """,
