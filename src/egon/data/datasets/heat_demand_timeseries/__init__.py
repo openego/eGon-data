@@ -284,6 +284,8 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         index_col="zensus_population_id",
     )
 
+    annual_demand = annual_demand[~annual_demand.index.duplicated(keep="first")]
+
     daily_demand_shares = db.select_dataframe(
         """
         SELECT climate_zone, day_of_year as day, daily_demand_share FROM
