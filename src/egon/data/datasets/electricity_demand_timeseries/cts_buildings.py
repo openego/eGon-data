@@ -1008,19 +1008,15 @@ def delete_synthetic_cts_buildings():
 
 
 def remove_double_bus_id(df_cts_buildings):
-    """"""
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
-    # assign bus_id via census cell of building centroid
+    """This is an backup adhoc fix if there should still be a building which
+    is assigned to 2 substations. In this case one of the buildings is just
+    dropped. As this currently accounts for only one building with one amenity
+    the deviation is neglectable."""
+    # assign bus_id via census cell of amenity
     with db.session_scope() as session:
         cells_query = session.query(
-            # egon_map_zensus_buildings_filtered_all.id,
-            # egon_map_zensus_buildings_filtered_all.zensus_population_id,
             MapZensusGridDistricts.zensus_population_id,
             MapZensusGridDistricts.bus_id
-            # ).filter(
-            #     MapZensusGridDistricts.zensus_population_id
-            #     == egon_map_zensus_buildings_filtered_all.zensus_population_id
         )
 
     df_egon_map_zensus_buildings_buses = pd.read_sql(
