@@ -502,7 +502,8 @@ def etrago_eGon2035_heat():
 
 
 def residential_electricity_annual_sum(rtol=1e-5):
-    """Sanity check for dataset electricity_demand_timeseries
+    """Sanity check for dataset electricity_demand_timeseries :
+    Demand_Building_Assignment
 
     Aggregate the annual demand of all census cells at NUTS3 to compare
     with initial scaling parameters from DemandRegio.
@@ -542,7 +543,8 @@ def residential_electricity_annual_sum(rtol=1e-5):
 
 
 def residential_electricity_hh_refinement(rtol=1e-5):
-    """Sanity check for dataset electricity_demand_timeseries
+    """Sanity check for dataset electricity_demand_timeseries :
+    Household Demands
 
     Check sum of aggregated household types after refinement method
     was applied and compare it to the original census values."""
