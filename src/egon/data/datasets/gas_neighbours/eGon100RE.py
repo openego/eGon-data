@@ -15,7 +15,6 @@ Resulting tables
 
 """
 
-from shapely.geometry import MultiLineString
 import pandas as pd
 
 from egon.data import config, db

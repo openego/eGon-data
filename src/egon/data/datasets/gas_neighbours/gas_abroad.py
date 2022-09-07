@@ -5,11 +5,7 @@ CH4) abroad for eGon2035 and eGon100RE are defined.
 
 """
 
-import zipfile
-
 from geoalchemy2.types import Geometry
-import geopandas as gpd
-import pandas as pd
 
 from egon.data import config, db
 
