@@ -1241,8 +1241,6 @@ def tyndp_demand():
         if bus in map_series.values:
             nodes.extend(list(map_series[map_series == bus].index.values))
 
-        load_id = db.next_etrago_id("load")
-
         # Some etrago bus_ids represent multiple TYNDP nodes,
         # in this cases the loads are summed
         data_2030 = pd.Series(index=range(8760), data=0.0)
@@ -1260,6 +1258,7 @@ def tyndp_demand():
         # According to the NEP, data for 2030 and 2040 is linear interpolated
         data_2035 = ((data_2030 + data_2040) / 2)[:8760]
 
+        load_id = db.next_etrago_id("load")
         entry = etrago.EgonPfHvLoad(
             scn_name="eGon2035",
             load_id=load_id,

@@ -77,9 +77,6 @@ def define_gas_nodes_list():
         Dataframe containing the gas nodes (Europe)
 
     """
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
     target_file = (
         Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
     )
@@ -101,6 +98,7 @@ def define_gas_nodes_list():
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
 
+    new_id = db.next_etrago_id("bus")
     gas_nodes_list["bus_id"] = range(new_id, new_id + len(gas_nodes_list))
     gas_nodes_list = gas_nodes_list.set_index("id")
 
@@ -256,9 +254,6 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses = central_buses_egon100(sources)
     gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
 
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
     gdf_abroad_buses = gdf_abroad_buses.drop(
         columns=[
             "v_nom",
@@ -270,6 +265,8 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     )
     gdf_abroad_buses["scn_name"] = "eGon2035"
     gdf_abroad_buses["carrier"] = main_gas_carrier
+
+    new_id = db.next_etrago_id("bus")
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
     # Add central bus in Russia
@@ -346,9 +343,6 @@ def insert_gas_pipeline_list(
 
     engine = db.engine()
 
-    # Select next id value
-    new_id = db.next_etrago_id("link")
-
     classifiaction_file = (
         Path(".")
         / "data_bundle_egon_data"
@@ -388,6 +382,7 @@ def insert_gas_pipeline_list(
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
     ]
 
+    new_id = db.next_etrago_id("link")
     gas_pipelines_list["link_id"] = range(
         new_id, new_id + len(gas_pipelines_list)
     )
