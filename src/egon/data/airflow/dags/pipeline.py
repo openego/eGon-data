@@ -25,7 +25,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_profiles,
 )
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
-    CtsElectricityBuildings,
+    CtsDemandBuildings,
 )
 from egon.data.datasets.emobility.heavy_duty_transport import (
     HeavyDutyTransport,
@@ -416,7 +416,7 @@ with airflow.DAG(
             run_pypsaeursec,
             foreign_lines,
             insert_hydrogen_buses,
-            create_gas_polygons_egon100RE
+            create_gas_polygons_egon100RE,
         ]
     )
 
@@ -574,8 +574,7 @@ with airflow.DAG(
     heavy_duty_transport = HeavyDutyTransport(
         dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
     )
-
-    cts_electricity_buildings = CtsElectricityBuildings(
+    cts_demand_buildings = CtsDemandBuildings(
         dependencies=[
             osm_buildings_streets,
             cts_electricity_demand_annual,
@@ -584,13 +583,12 @@ with airflow.DAG(
         ]
     )
 
+    # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
-            emobility_mit,
-            cts_electricity_buildings,
         ]
     )
