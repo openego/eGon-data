@@ -214,6 +214,11 @@ Added
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
+* Add sanity checks for residential electricity loads
+  `#902 <https://github.com/openego/eGon-data/issues/902>`_
+* Add sanity checks for cts loads
+  `#919 <https://github.com/openego/eGon-data/issues/919>`_
+``
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
