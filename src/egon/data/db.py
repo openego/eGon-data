@@ -128,7 +128,7 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except:  # noqa: It's OK because the exception gets re-raised immediately.
         session.rollback()
         raise
     finally:
