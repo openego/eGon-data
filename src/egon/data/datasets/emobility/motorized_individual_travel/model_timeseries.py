@@ -584,7 +584,7 @@ def write_model_data_to_db(
             / initial_soc_per_ev_type.battery_capacity_sum.sum()
         )
 
-    def write_to_db(write_noflex_model: bool) -> None:
+    def write_to_db(write_lowflex_model: bool) -> None:
         """Write model data to eTraGo tables"""
 
         @db.check_db_unique_violation
@@ -730,13 +730,13 @@ def write_model_data_to_db(
                     f"with bus_id {bus_id} in table egon_etrago_bus!"
                 )
 
-        # Call DB writing functions for regular or noflex scenario
+        # Call DB writing functions for regular or lowflex scenario
         # * use corresponding scenario name as defined in datasets.yml
-        # * no storage for noflex scenario
+        # * no storage for lowflex scenario
         # * load timeseries:
         #   * regular (flex): use driving load
-        #   * noflex: use dumb charging load
-        if write_noflex_model is False:
+        #   * lowflex: use dumb charging load
+        if write_lowflex_model is False:
             emob_bus_id = write_bus(scenario_name=scenario_name)
             write_link(scenario_name=scenario_name)
             write_store(scenario_name=scenario_name)
@@ -748,12 +748,12 @@ def write_model_data_to_db(
                 ),
             )
         else:
-            # Get noflex scenario name
-            noflex_scenario_name = DATASET_CFG["scenario"]["noflex"]["names"][
+            # Get lowflex scenario name
+            lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"]["names"][
                 scenario_name
             ]
             write_load(
-                scenario_name=noflex_scenario_name,
+                scenario_name=lowflex_scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
             )
@@ -830,20 +830,20 @@ def write_model_data_to_db(
     # Crop hourly TS if needed
     hourly_load_time_series_df = hourly_load_time_series_df[:8760]
 
-    # Create noflex scenario?
-    write_noflex_model = DATASET_CFG["scenario"]["noflex"][
-        "create_noflex_scenario"
+    # Create lowflex scenario?
+    write_lowflex_model = DATASET_CFG["scenario"]["lowflex"][
+        "create_lowflex_scenario"
     ]
 
     # Get initial average storage SoC
     initial_soc_mean = calc_initial_ev_soc(bus_id, scenario_name)
 
-    # Write to database: regular and noflex scenario
-    write_to_db(write_noflex_model=False)
+    # Write to database: regular and lowflex scenario
+    write_to_db(write_lowflex_model=False)
     print('    Writing flex scenario...')
-    if write_noflex_model is True:
-        print('    Writing noflex scenario...')
-        write_to_db(write_noflex_model=True)
+    if write_lowflex_model is True:
+        print('    Writing lowflex scenario...')
+        write_to_db(write_lowflex_model=True)
 
     # Export to working dir if requested
     if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
