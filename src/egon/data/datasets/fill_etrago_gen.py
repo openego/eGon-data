@@ -81,8 +81,8 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
 
-    max_id = db.next_etrago_id("generator")
-    etrago_pp["generator_id"] = list(range(max_id, max_id + len(etrago_pp)))
+    new_id = db.next_etrago_id("generator")
+    etrago_pp["generator_id"] = list(range(new_id, new_id + len(etrago_pp)))
     etrago_pp.set_index("generator_id", inplace=True)
 
     return etrago_pp
