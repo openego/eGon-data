@@ -25,7 +25,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_profiles,
 )
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
-    CtsElectricityBuildings,
+    CtsDemandBuildings,
 )
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
@@ -406,10 +406,7 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            h2_infrastructure,
-            insert_power_to_h2_installations
-        ]
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
     # Create gas voronoi eGon100RE
@@ -576,10 +573,10 @@ with airflow.DAG(
         ]
     )
 
-    cts_electricity_buildings = CtsElectricityBuildings(
+    cts_demand_buildings = CtsDemandBuildings(
         dependencies=[
             osm_buildings_streets,
             cts_electricity_demand_annual,
-            hh_demand_buildings_setup
+            hh_demand_buildings_setup,
         ]
     )

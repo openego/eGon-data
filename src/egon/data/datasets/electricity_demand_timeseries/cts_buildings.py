@@ -1435,10 +1435,10 @@ def get_cts_heat_peak_load():
         log.info(f"Peak load for {scenario} exported to DB!")
 
 
-class CtsElectricityBuildings(Dataset):
+class CtsDemandBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="CtsBuildings",
+            name="CtsDemandBuildings",
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
