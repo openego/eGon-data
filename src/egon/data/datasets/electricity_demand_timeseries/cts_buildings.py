@@ -235,7 +235,7 @@ def amenities_without_buildings():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "eGon2035"
+                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
         )
 
@@ -829,6 +829,7 @@ def calc_building_demand_profile_share(
         Table of bus profile share per building
 
     """
+
     def calc_building_amenity_share(df_cts_buildings):
         """
         Calculate the building share by the number amenities per building
@@ -1016,7 +1017,7 @@ def remove_double_bus_id(df_cts_buildings):
     with db.session_scope() as session:
         cells_query = session.query(
             MapZensusGridDistricts.zensus_population_id,
-            MapZensusGridDistricts.bus_id
+            MapZensusGridDistricts.bus_id,
         )
 
     df_egon_map_zensus_buildings_buses = pd.read_sql(

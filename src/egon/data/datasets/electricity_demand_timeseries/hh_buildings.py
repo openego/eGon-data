@@ -704,8 +704,12 @@ def get_building_peak_loads():
         df_building_peak_loads.reset_index(inplace=True)
         df_building_peak_loads["sector"] = "residential"
 
-        BuildingElectricityPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-        BuildingElectricityPeakLoads.__table__.create(bind=engine, checkfirst=True)
+        BuildingElectricityPeakLoads.__table__.drop(
+            bind=engine, checkfirst=True
+        )
+        BuildingElectricityPeakLoads.__table__.create(
+            bind=engine, checkfirst=True
+        )
 
         df_building_peak_loads = df_building_peak_loads.melt(
             id_vars=["building_id", "sector"],
