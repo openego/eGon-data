@@ -162,8 +162,8 @@ class OsmBuildingsSynthetic(Base):
     area = Column(REAL)
 
 
-class BuildingPeakLoads(Base):
-    __tablename__ = "egon_building_peak_loads"
+class BuildingElectricityPeakLoads(Base):
+    __tablename__ = "egon_building_electricity_peak_loads"
     __table_args__ = {"schema": "demand"}
 
     building_id = Column(Integer, primary_key=True)
@@ -704,8 +704,8 @@ def get_building_peak_loads():
         df_building_peak_loads.reset_index(inplace=True)
         df_building_peak_loads["sector"] = "residential"
 
-        BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-        BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+        BuildingElectricityPeakLoads.__table__.drop(bind=engine, checkfirst=True)
+        BuildingElectricityPeakLoads.__table__.create(bind=engine, checkfirst=True)
 
         df_building_peak_loads = df_building_peak_loads.melt(
             id_vars=["building_id", "sector"],
@@ -716,7 +716,7 @@ def get_building_peak_loads():
         # Write peak loads into db
         with db.session_scope() as session:
             session.bulk_insert_mappings(
-                BuildingPeakLoads,
+                BuildingElectricityPeakLoads,
                 df_building_peak_loads.to_dict(orient="records"),
             )
 

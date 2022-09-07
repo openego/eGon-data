@@ -140,7 +140,7 @@ from egon.data.datasets.electricity_demand.temporal import (
     calc_load_curves_cts,
 )
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
-    BuildingPeakLoads,
+    BuildingElectricityPeakLoads,
     OsmBuildingsSynthetic,
 )
 from egon.data.datasets.electricity_demand_timeseries.tools import (
@@ -1365,8 +1365,8 @@ def get_cts_electricity_peak_load():
     log.info("Start logging!")
     # Delete rows with cts demand
     with db.session_scope() as session:
-        session.query(BuildingPeakLoads).filter(
-            BuildingPeakLoads.sector == "cts"
+        session.query(BuildingElectricityPeakLoads).filter(
+            BuildingElectricityPeakLoads.sector == "cts"
         ).delete()
     log.info("CTS Peak load removed from DB!")
 
@@ -1409,7 +1409,7 @@ def get_cts_electricity_peak_load():
         # Write peak loads into db
         with db.session_scope() as session:
             session.bulk_insert_mappings(
-                BuildingPeakLoads,
+                BuildingElectricityPeakLoads,
                 df_peak_load.to_dict(orient="records"),
             )
         log.info(f"Peak load for {scenario} exported to DB!")
