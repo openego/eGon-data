@@ -1249,7 +1249,7 @@ def tyndp_demand():
 
             for node in nodes:
                 data_2040 = dataset_2040[node][2011] + data_2040
-        except:
+        except KeyError:
             data_2040 = data_2030
 
         # According to the NEP, data for 2030 and 2040 is linear interpolated
