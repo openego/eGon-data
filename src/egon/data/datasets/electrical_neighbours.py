@@ -158,7 +158,7 @@ def buses(scenario, sources, targets):
 
     central_buses = central_buses_egon100(sources)
 
-    next_bus_id = db.next_etrago_id("bus") + 1
+    next_bus_id = db.next_etrago_id("bus")
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
@@ -620,7 +620,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             pd.DataFrame(
                 index=[1],
                 data={
-                    "link_id": db.next_etrago_id("link") + 1,
+                    "link_id": db.next_etrago_id("link"),
                     "bus0": converter_bentwisch,
                     "bus1": central_buses[
                         (central_buses.country == "DK")
