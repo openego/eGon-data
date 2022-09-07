@@ -498,7 +498,6 @@ def sanitycheck_eGon2035_heat():
     print(f"'geothermal': {e_geo_thermal} %")
 
 
-# def sanitycheck_eGon2035_emobility_mit():
 def sanitycheck_emobility_mit():
     """Execute sanity checks for eMobility: motorized individual travel
 
