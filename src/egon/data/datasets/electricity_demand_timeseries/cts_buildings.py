@@ -120,8 +120,6 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 
-import logging
-
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from sqlalchemy import REAL, Column, Integer, String, func
@@ -132,6 +130,7 @@ import pandas as pd
 import saio
 
 from egon.data import db
+from egon.data import logger as log
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand import (
     EgonDemandRegioZensusElectricity,
@@ -203,20 +202,6 @@ class BuildingHeatPeakLoads(Base):
     scenario = Column(String, primary_key=True)
     sector = Column(String, primary_key=True)
     peak_load_in_w = Column(REAL)
-
-
-def start_logging(name=None):
-    """Start logging into console"""
-    log = logging.getLogger(name)
-    log.propagate = False
-    log.setLevel(logging.INFO)
-    logformat = logging.Formatter(
-        "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
-    )
-    sh = logging.StreamHandler()
-    sh.setFormatter(logformat)
-    log.addHandler(sh)
-    return log
 
 
 def amenities_without_buildings():
@@ -1137,7 +1122,6 @@ def cts_buildings():
     he demand share.
     """
 
-    log = start_logging(name="CTS-buildings")
     log.info("Start logging!")
     # Buildings with amenities
     df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
@@ -1311,7 +1295,6 @@ def cts_electricity():
     Calculate cts electricity demand share of hvmv substation profile
      for buildings.
     """
-    log = start_logging(name="CTS-electricity")
     log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings)
@@ -1345,7 +1328,6 @@ def cts_heat():
     Calculate cts electricity demand share of hvmv substation profile
      for buildings.
     """
-    log = start_logging(name="CTS-heat")
     log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings)
@@ -1380,7 +1362,6 @@ def get_cts_electricity_peak_load():
     Get electricity peak load of all CTS buildings for both scenarios and
     store in DB.
     """
-    log = start_logging(name="CTS-electricity-peak-load")
     log.info("Start logging!")
     # Delete rows with cts demand
     with db.session_scope() as session:
@@ -1438,7 +1419,6 @@ def get_cts_heat_peak_load():
     """
     Get heat peak load of all CTS buildings for both scenarios and store in DB.
     """
-    log = start_logging(name="CTS-heat-peak-load")
     log.info("Start logging!")
 
     BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
