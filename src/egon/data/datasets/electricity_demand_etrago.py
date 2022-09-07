@@ -4,12 +4,13 @@ and feed this data into the corresponding etraGo tables.
 """
 from datetime import datetime
 from pathlib import Path
-
 import os
-import egon.data.config
+
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
+import egon.data.config
 
 
 def demands_per_bus(scenario):
@@ -183,7 +184,7 @@ def export_to_db():
             WHERE scn_name = '{scenario}'
             AND carrier = 'AC'
             AND bus IN (
-                SELECT bus_id FROM 
+                SELECT bus_id FROM
                 {sources['etrago_buses']['schema']}.
                 {sources['etrago_buses']['table']}
                 WHERE country = 'DE'
