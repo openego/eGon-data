@@ -38,7 +38,7 @@ countries = [
 ]
 
 
-def insert_gas_neigbours_eGon100RE(scn_name="eGon100RE"):
+def insert_gas_neigbours_eGon100RE():
     """Insert missing gas crossbordering grid capacities for eGon100RE
 
     This function insert the crossbordering pipelines for H2 and CH4,
@@ -60,11 +60,6 @@ def insert_gas_neigbours_eGon100RE(scn_name="eGon100RE"):
       * insertion of the H2 and CH4 pipelines between Germany and its
         neighbouring countries in the database with function
         :py:func:`insert_gas_grid_capacities`
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
 
     Returns
     -------
