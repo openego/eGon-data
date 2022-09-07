@@ -568,6 +568,7 @@ def insert_carriers():
                 "H2_feedin",
                 "H2_to_CH4",
                 "H2_to_power",
+                "H2_retrofit",
                 "rural_heat_pump",
                 "industrial_biomass_CHP",
                 "industrial_gas_CHP",
