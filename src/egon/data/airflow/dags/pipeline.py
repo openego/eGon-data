@@ -572,6 +572,15 @@ with airflow.DAG(
         dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
     )
 
+    cts_electricity_buildings = CtsElectricityBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            household_electricity_demand_annual,
+        ]
+    )
+
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
@@ -579,13 +588,6 @@ with airflow.DAG(
             hts_etrago_table,
             fill_etrago_generators,
             emobility_mit,
-        ]
-    )
-
-    cts_electricity_buildings = CtsElectricityBuildings(
-        dependencies=[
-            osm_buildings_streets,
-            cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
+            cts_electricity_buildings,
         ]
     )
