@@ -10,6 +10,7 @@ import pandas as pd
 import saio
 
 from egon.data import config, db
+from egon.data.datasets import Dataset
 
 engine = db.engine()
 Base = declarative_base()
@@ -23,6 +24,36 @@ class EgonEtragoTimeSeriesIndividualHeating(Base):
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(REAL))
     q_set = Column(ARRAY(REAL))
+
+
+class HeatPumpsEtrago(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HeatPumpsEtrago",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(determine_hp_cap_pypsa_eur_sec,),
+        )
+
+
+class HeatPumps2035(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HeatPumps2035",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(determine_hp_cap_eGon2035,),
+        )
+
+
+class HeatPumps2050(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="HeatPumps2050",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(determine_hp_cap_eGon100RE),
+        )
 
 
 def cascade_per_technology(

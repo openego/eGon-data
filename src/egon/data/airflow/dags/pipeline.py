@@ -43,6 +43,11 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2035,
+    HeatPumps2050,
+    HeatPumpsEtrago,
+)
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenGridEtrago,
@@ -569,6 +574,26 @@ with airflow.DAG(
             osm_buildings_streets,
             cts_electricity_demand_annual,
             hh_demand_buildings_setup,
+        ]
+    )
+
+    heat_pumps_etrago = HeatPumpsEtrago(
+        dependencies=[
+            DistrictHeatingAreas,
+        ]
+    )
+
+    heat_pumps_2050 = HeatPumps2050(
+        dependencies=[
+            DistrictHeatingAreas,
+            run_pypsaeursec,
+        ]
+    )
+
+    heat_pumps_2035 = HeatPumps2035(
+        dependencies=[
+            DistrictHeatingAreas,
+            # TODO add PV rooftop
         ]
     )
 
