@@ -11,7 +11,9 @@ import saio
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-
+from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
+    calc_building_profiles
+)
 engine = db.engine()
 Base = declarative_base()
 
@@ -439,10 +441,27 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
         create_timeseries_for_building,
     )
 
-    heat_demand_ts = pd.DataFrame()
-    for building_id in building_ids:
+    heat_demand_residential_ts = pd.DataFrame()
+    # TODO remove testmode
+    # for building_id in building_ids:
+    for building_id in building_ids[:3]:
+        # ToDo: maybe use other function to make it faster.
         tmp = create_timeseries_for_building(building_id, scenario)
-        heat_demand_ts = pd.concat([heat_demand_ts, tmp], axis=1)
+        # # TODO check what happens if tmp emtpy
+        # tmp = pd.Series() if tmp.empty else tmp
+        heat_demand_residential_ts = pd.concat([heat_demand_residential_ts, tmp], axis=1)
+
+    # TODO add cts profiles per building_id
+    #   extend calc_building_profiles for heat
+    #   extend calc_building_profiles for list of ids
+    heat_demand_cts_ts = calc_building_profiles(building_id = building_ids,
+                                                scenario=scenario,
+                                                sector="heat",
+                                                )
+
+    heat_demand_ts = pd.concat([heat_demand_residential_ts, heat_demand_cts_ts])
+    # sum residential and heat if same building id in header
+    heat_demand_ts = heat_demand_ts.groupby(axis=1, level=0).sum()
     return heat_demand_ts
 
 
