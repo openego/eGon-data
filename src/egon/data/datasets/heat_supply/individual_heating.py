@@ -468,19 +468,20 @@ def determine_buildings_with_hp_in_mv_grid(
     # a heat pump will be allocated to
     engine = db.engine()
     saio.register_schema("supply", engine)
-    from saio.supply import egon_power_plants_pv_roof_building
-
-    with db.session_scope() as session:
-        query = session.query(
-            egon_power_plants_pv_roof_building.building_id
-        ).filter(
-            egon_power_plants_pv_roof_building.building_id.in_(building_ids)
-        )
-
-    buildings_with_pv = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
-    ).building_id.values
-
+    # TODO Adhoc Pv rooftop fix
+    # from saio.supply import egon_power_plants_pv_roof_building
+    #
+    # with db.session_scope() as session:
+    #     query = session.query(
+    #         egon_power_plants_pv_roof_building.building_id
+    #     ).filter(
+    #         egon_power_plants_pv_roof_building.building_id.in_(building_ids)
+    #     )
+    #
+    # buildings_with_pv = pd.read_sql(
+    #     query.statement, query.session.bind, index_col=None
+    # ).building_id.values
+    buildings_with_pv = []
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
     weight_without_pv = 1.0
