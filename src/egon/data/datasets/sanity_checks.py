@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from egon.data import db, logger
+from egon.data import config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
@@ -48,6 +48,10 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data
+
+TESTMODE_OFF = (
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+)
 
 
 class SanityChecks(Dataset):
@@ -666,14 +670,17 @@ def sanitycheck_emobility_mit():
                     f"{str(ev_counts_dict[level])}"
                 )
 
-        # Compare with target
-        for level, count in ev_counts_dict.items():
-            np.testing.assert_allclose(
-                count,
-                ev_count_target,
-                rtol=0.0001,
-                err_msg=f"EV numbers in {level} seems to be flawed.",
-            )
+        # Compare with scenario target (only if not in testmode)
+        if TESTMODE_OFF:
+            for level, count in ev_counts_dict.items():
+                np.testing.assert_allclose(
+                    count,
+                    ev_count_target,
+                    rtol=0.0001,
+                    err_msg=f"EV numbers in {level} seems to be flawed.",
+                )
+        else:
+            print("    Testmode is on, skipping sanity check...")
 
         # Get allocated EVs in grid districts
         with db.session_scope() as session:
@@ -696,15 +703,19 @@ def sanitycheck_emobility_mit():
             f"{str(ev_count_alloc)}"
         )
 
-        # Compare with target
-        np.testing.assert_allclose(
-            ev_count_alloc,
-            ev_count_target,
-            rtol=0.0001,
-            err_msg=(
-                "EV numbers allocated to Grid Districts seems to be flawed."
-            ),
-        )
+        # Compare with scenario target (only if not in testmode)
+        if TESTMODE_OFF:
+            np.testing.assert_allclose(
+                ev_count_alloc,
+                ev_count_target,
+                rtol=0.0001,
+                err_msg=(
+                    "EV numbers allocated to Grid Districts seems to be flawed."
+                ),
+            )
+        else:
+            print("    Testmode is on, skipping sanity check...")
+
         return ev_count_alloc
 
     def check_trip_data():
@@ -885,9 +896,7 @@ def sanitycheck_emobility_mit():
             for node, attrs in model_ts_dict.items():
                 print(f"    Loading {node} timeseries...")
                 subquery = (
-                    session.query(
-                        getattr(attrs["table_ts"], attrs["column_id"])
-                    )
+                    session.query(getattr(attrs["table"], attrs["column_id"]))
                     .filter(attrs["table"].carrier == attrs["carrier"])
                     .filter(attrs["table"].scn_name == scenario_name)
                     .subquery()
