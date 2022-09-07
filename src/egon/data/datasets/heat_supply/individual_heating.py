@@ -612,26 +612,40 @@ def determine_hp_capacity_per_building(scenario):
         index_col=None,
     ).bus_id.values
 
+    df_etrago_timeseries_heat_pumps = pd.DataFrame()
+
     for mv_grid_id in mv_grid_ids:
 
         # determine minimum required heat pump capacity per building
         building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
             scenario, mv_grid_id
         )
-        # TODO alternative get peak demand from db?
-        heat_demand_ts = get_heat_demand_timeseries_per_building(
-            scenario, building_ids
-        )
-        # ToDo Write peak heat demand to table?
-        min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
-            heat_demand_ts.max()
-        )
+
+        if scenario == "eGon100RE":
+            # TODO alternative get peak demand from db?
+            # residential and cts peak sum
+        else:
+            # iterates for residential heat over building id > slow
+            heat_demand_ts = get_heat_demand_timeseries_per_building(
+                scenario, building_ids
+            )
+            # ToDo Write peak heat demand to table?
+            min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
+                heat_demand_ts.max()
+            )
 
         # in case this function is called to create pypsa-eur-sec input, only the
         # minimum required heat pump capacity per MV grid is needed
         if scenario == "pypsa-eur-sec":
             min_hp_cap_buildings.sum()
             # ToDo Write minimum required capacity to table for pypsa-eur-sec input
+
+            # ToDo Write aggregated heat demand time series of buildings with HP to
+            #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
+            # TODO Clara uses this table already
+            #     but will not need it anymore for pypsa eur sec
+            # EgonEtragoTimeseriesIndividualHeating
+
             return
 
         # in case this function is called to create data for 2035 scenario, the
