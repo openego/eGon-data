@@ -201,6 +201,8 @@ Added
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
 * Add motorized individual travel
   `#553 <https://github.com/openego/eGon-data/issues/553>`_
+* Add mapping zensus - weather cells
+  `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
 
@@ -387,10 +389,14 @@ Changed
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Integrate new data bundle using zenodo sandbox
+  `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Add sanity checks for motorized individual travel
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
+* Parallelize sanity checks
+  `#882 <https://github.com/openego/eGon-data/issues/882>`_
 
 
 Bug Fixes
@@ -567,6 +573,8 @@ Bug Fixes
   `#781 <https://github.com/openego/eGon-data/issues/781>`_
 * Add extendable batteries only to buses at substations
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
+* Temporarily set upper version limit for pandas
+  `#829 <https://github.com/openego/eGon-data/issues/829>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
