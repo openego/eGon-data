@@ -578,6 +578,7 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            emobility_mit,
         ]
     )
 
