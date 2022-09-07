@@ -622,6 +622,7 @@ def determine_hp_capacity_per_building(scenario):
         )
 
         if scenario == "eGon100RE":
+            pass
             # TODO alternative get peak demand from db?
             # residential and cts peak sum
         else:
