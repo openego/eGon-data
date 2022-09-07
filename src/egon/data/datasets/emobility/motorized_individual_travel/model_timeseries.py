@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501 (Can't do anything about the long module hierarchy.)
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
@@ -59,6 +59,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+import egon.data.datasets.emobility.motorized_individual_travel as emoit  # noqa: F401, E501
 
 # from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -93,7 +94,7 @@ def data_preprocessing(
     # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
         charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid / 10 ** 3
+            ev_data_df.charging_capacity_grid / 10**3
         ),
         minimum_charging_time=(
             ev_data_df.charging_demand
@@ -619,7 +620,11 @@ def write_model_data_to_db(
                         carrier="BEV charger",
                         efficiency=float(run_config.eta_cp),
                         p_nom=(
-                            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+                            # fmt: off
+                            load_time_series_df
+                            .simultaneous_plugged_in_charging_capacity
+                            .max()
+                            # fmt: on
                         ),
                         p_nom_extendable=False,
                         p_nom_min=0,
@@ -641,7 +646,11 @@ def write_model_data_to_db(
                         temp_id=1,
                         p_min_pu=None,
                         p_max_pu=(
-                            hourly_load_time_series_df.ev_availability.to_list()
+                            # fmt: off
+                            hourly_load_time_series_df
+                            .ev_availability
+                            .to_list()
+                            # fmt: on
                         ),
                     )
                 )
@@ -744,7 +753,11 @@ def write_model_data_to_db(
                 scenario_name=scenario_name,
                 connection_bus_id=emob_bus_id,
                 load_ts=(
-                    hourly_load_time_series_df.driving_load_time_series.to_list()
+                    # fmt: off
+                    hourly_load_time_series_df
+                    .driving_load_time_series
+                    .to_list()
+                    # fmt: on
                 ),
             )
         else:
@@ -840,9 +853,9 @@ def write_model_data_to_db(
 
     # Write to database: regular and noflex scenario
     write_to_db(write_noflex_model=False)
-    print('    Writing flex scenario...')
+    print("    Writing flex scenario...")
     if write_noflex_model is True:
-        print('    Writing noflex scenario...')
+        print("    Writing noflex scenario...")
         write_to_db(write_noflex_model=True)
 
     # Export to working dir if requested
@@ -930,7 +943,7 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         Note: `bunch` is NOT a list of grid districts but is used for slicing
         the ordered list (by bus_id) of grid districts! This is used for
         parallelization. See
-        :meth:`egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel.generate_model_data_tasks`
+        :meth:`emoit.MotorizedIndividualTravel.generate_model_data_tasks`
     """
     # Get list of grid districts / substations for this bunch
     mvgd_bus_ids = load_grid_district_ids().iloc[bunch]

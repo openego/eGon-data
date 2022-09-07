@@ -3,16 +3,16 @@
 
 import zipfile
 
-import geopandas as gpd
-import pandas as pd
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
+import geopandas as gpd
+import pandas as pd
 
-import egon.data.datasets.etrago_setup as etrago
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.datasets.etrago_setup as etrago
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
 class ElectricalNeighbours(Dataset):
@@ -158,7 +158,7 @@ def buses(scenario, sources, targets):
 
     central_buses = central_buses_egon100(sources)
 
-    next_bus_id = db.next_etrago_id("bus") + 1
+    next_bus_id = db.next_etrago_id("bus")
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
@@ -332,9 +332,8 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
         new_lines = new_lines[~new_lines.country.isnull()]
-    new_lines.line_id = range(
-        db.next_etrago_id("line"), db.next_etrago_id("line") + len(new_lines)
-    )
+    new_id = db.next_etrago_id("line")
+    new_lines.line_id = range(new_id, new_id + len(new_lines))
 
     # Set bus in center of foreogn countries as bus1
     for i, row in new_lines.iterrows():
@@ -620,7 +619,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             pd.DataFrame(
                 index=[1],
                 data={
-                    "link_id": db.next_etrago_id("link") + 1,
+                    "link_id": db.next_etrago_id("link"),
                     "bus0": converter_bentwisch,
                     "bus1": central_buses[
                         (central_buses.country == "DK")
@@ -946,7 +945,7 @@ def insert_generators(capacities):
     for i, row in gen.iterrows():
         entry = etrago.EgonPfHvGenerator(
             scn_name="eGon2035",
-            generator_id=int(db.next_etrago_id("generator")),
+            generator_id=db.next_etrago_id("generator"),
             bus=row.bus,
             carrier=row.carrier,
             p_nom=row.cap_2035,
@@ -1038,7 +1037,8 @@ def insert_storage(capacities):
     # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+        DELETE FROM
+            {targets['storage']['schema']}.{targets['storage']['table']}
         WHERE bus IN (
             SELECT bus_id FROM
             {targets['buses']['schema']}.{targets['buses']['table']}
@@ -1048,7 +1048,8 @@ def insert_storage(capacities):
         """
     )
 
-    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    # Add missing information suitable for eTraGo selected from
+    # scenario_parameter table
     parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
         "efficiency"
     ]["pumped_hydro"]
@@ -1074,9 +1075,12 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store[
-        "max_hours"
-    ] = (None, None, None, None)
+    (
+        store["dispatch"],
+        store["store"],
+        store["standing_loss"],
+        store["max_hours"],
+    ) = (None, None, None, None)
 
     # Insert carrier specific parameters
 
@@ -1093,7 +1097,7 @@ def insert_storage(capacities):
     for i, row in store.iterrows():
         entry = etrago.EgonPfHvStorage(
             scn_name="eGon2035",
-            storage_id=int(db.next_etrago_id("storage")),
+            storage_id=db.next_etrago_id("storage"),
             bus=row.bus,
             max_hours=row.max_hours,
             efficiency_store=row.store,
@@ -1129,7 +1133,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
-        "RU":   "RU00",
+        "RU": "RU00",
     }
 
 
@@ -1236,8 +1240,6 @@ def tyndp_demand():
         if bus in map_series.values:
             nodes.extend(list(map_series[map_series == bus].index.values))
 
-        load_id = db.next_etrago_id("load")
-
         # Some etrago bus_ids represent multiple TYNDP nodes,
         # in this cases the loads are summed
         data_2030 = pd.Series(index=range(8760), data=0.0)
@@ -1249,22 +1251,22 @@ def tyndp_demand():
 
             for node in nodes:
                 data_2040 = dataset_2040[node][2011] + data_2040
-        except:
+        except KeyError:
             data_2040 = data_2030
 
         # According to the NEP, data for 2030 and 2040 is linear interpolated
         data_2035 = ((data_2030 + data_2040) / 2)[:8760]
 
+        load_id = db.next_etrago_id("load")
         entry = etrago.EgonPfHvLoad(
             scn_name="eGon2035",
-            load_id=int(load_id),
+            load_id=load_id,
             carrier="AC",
             bus=int(buses.bus[bus]),
         )
-
         entry_ts = etrago.EgonPfHvLoadTimeseries(
             scn_name="eGon2035",
-            load_id=int(load_id),
+            load_id=load_id,
             temp_id=1,
             p_set=list(data_2035.values),
         )

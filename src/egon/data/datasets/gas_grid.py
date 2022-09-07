@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing all code dealing with importing data from SciGRID_gas IGGIELGN data
+The central module containing all code dealing with importing data from
+SciGRID_gas IGGIELGN data.
 """
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -55,7 +56,7 @@ def download_SciGRID_gas_data():
         "Productions",
         "Storages",
         "LNGs",
-    ]  #'Compressors'
+    ]  # 'Compressors'
     files = []
     for i in components:
         files.append("data/" + basename + "_" + i + ".csv")
@@ -76,9 +77,6 @@ def define_gas_nodes_list():
         Dataframe containing the gas nodes (Europe)
 
     """
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
     target_file = (
         Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
     )
@@ -100,6 +98,7 @@ def define_gas_nodes_list():
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
 
+    new_id = db.next_etrago_id("bus")
     gas_nodes_list["bus_id"] = range(new_id, new_id + len(gas_nodes_list))
     gas_nodes_list = gas_nodes_list.set_index("id")
 
@@ -141,7 +140,9 @@ def insert_CH4_nodes_list(gas_nodes_list):
 
     gas_nodes_list = gas_nodes_list[
         gas_nodes_list["country_code"].str.match("DE")
-    ]  # To eventually replace with a test if the nodes are in the german boundaries.
+    ]
+    # To eventually replace with a test whether the nodes are in the
+    # german boundaries.
 
     # Cut data to federal state if in testmode
     NUTS1 = []
@@ -175,7 +176,8 @@ def insert_CH4_nodes_list(gas_nodes_list):
             gas_nodes_list["NUTS1"].isin([map_states[boundary], np.nan])
         ]
 
-        # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
+        # A completer avec nodes related to pipelines which have an end
+        # in the selected area et evt deplacer ds define_gas_nodes_list
 
     # Add missing columns
     c = {"scn_name": "eGon2035", "carrier": "CH4"}
@@ -217,7 +219,10 @@ def insert_CH4_nodes_list(gas_nodes_list):
 
 
 def insert_gas_buses_abroad(scn_name="eGon2035"):
-    """Insert central gas buses in foreign countries to db, same buses than the foreign AC buses
+    """Insert central gas buses in foreign countries to db.
+
+    These are the same buses as the foreign AC buses.
+
     Parameters
     ----------
     scn_name : str
@@ -226,7 +231,8 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     Returns
     -------
     gdf_abroad_buses : dataframe
-        Dataframe containing the gas in the neighbouring countries and one in the center of Germany in test mode
+        Dataframe containing the gas in the neighbouring countries and
+        one in the center of Germany in test mode
     """
     # Select sources and targets from dataset configuration
     sources = config.datasets()["electrical_neighbours"]["sources"]
@@ -248,9 +254,6 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses = central_buses_egon100(sources)
     gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
 
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
     gdf_abroad_buses = gdf_abroad_buses.drop(
         columns=[
             "v_nom",
@@ -262,6 +265,8 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     )
     gdf_abroad_buses["scn_name"] = "eGon2035"
     gdf_abroad_buses["carrier"] = main_gas_carrier
+
+    new_id = db.next_etrago_id("bus")
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
     # Add central bus in Russia
@@ -338,9 +343,6 @@ def insert_gas_pipeline_list(
 
     engine = db.engine()
 
-    # Select next id value
-    new_id = db.next_etrago_id("link")
-
     classifiaction_file = (
         Path(".")
         / "data_bundle_egon_data"
@@ -380,6 +382,7 @@ def insert_gas_pipeline_list(
         ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
     ]
 
+    new_id = db.next_etrago_id("link")
     gas_pipelines_list["link_id"] = range(
         new_id, new_id + len(gas_pipelines_list)
     )
@@ -646,8 +649,10 @@ def insert_gas_pipeline_list(
 
     # Insert data to db
     db.execute_sql(
-        f"""DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{main_gas_carrier}' AND
-           scn_name = '{scn_name}';
+        f"""DELETE FROM
+                grid.egon_etrago_link
+            WHERE "carrier" = '{main_gas_carrier}'
+            AND scn_name = '{scn_name}';
         """
     )
 
@@ -698,11 +703,13 @@ def remove_isolated_gas_buses():
         AND scn_name = 'eGon2035'
         AND country = 'DE'
         AND "bus_id" NOT IN
-            (SELECT bus0 FROM {targets['links']['schema']}.{targets['links']['table']}
+            (SELECT bus0 FROM
+                {targets['links']['schema']}.{targets['links']['table']}
             WHERE scn_name = 'eGon2035'
             AND carrier = 'CH4')
         AND "bus_id" NOT IN
-            (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']}
+            (SELECT bus1 FROM
+                {targets['links']['schema']}.{targets['links']['table']}
             WHERE scn_name = 'eGon2035'
             AND carrier = 'CH4');
     """
@@ -738,7 +745,7 @@ def insert_gas_data_eGon100RE():
     # get CH4 pipelines and modify their nominal capacity with the
     # retrofitting factor
     gdf = db.select_geodataframe(
-        f"""
+        """
         SELECT * FROM grid.egon_etrago_link
         WHERE carrier = 'CH4' AND scn_name = 'eGon2035' AND
         bus0 IN (

@@ -37,6 +37,8 @@ def insert():
 
     targets = config.datasets()["chp_etrago"]["targets"]
 
+    source_schema = f"{sources['etrago_buses']['schema']}"
+    source_table = f"{sources['etrago_buses']['table']}"
     db.execute_sql(
         f"""
         DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
@@ -44,19 +46,20 @@ def insert():
         AND scn_name = 'eGon2035'
         AND bus0 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {source_schema}.{source_table}
          WHERE scn_name = 'eGon2035'
          AND country = 'DE')
         AND bus1 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {source_schema}.{source_table}
          WHERE scn_name = 'eGon2035'
          AND country = 'DE')
         """
     )
     db.execute_sql(
         f"""
-        DELETE FROM {targets['generator']['schema']}.{targets['generator']['table']}
+        DELETE FROM
+            {targets['generator']['schema']}.{targets['generator']['table']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon2035'
         """
@@ -105,9 +108,8 @@ def insert():
         "eGon2035",
     )
     # Set index
-    chp_el["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
-    )
+    new_id = db.next_etrago_id("link")
+    chp_el["link_id"] = range(new_id, new_id + len(chp_el))
 
     # Add marginal cost which is only VOM in case of gas chp
     chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
@@ -137,9 +139,8 @@ def insert():
         "eGon2035",
     )
 
-    chp_heat["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_heat) + db.next_etrago_id("link")
-    )
+    new_id = db.next_etrago_id("link")
+    chp_heat["link_id"] = range(new_id, new_id + len(chp_heat))
 
     chp_heat.to_postgis(
         targets["link"]["table"],
@@ -162,10 +163,8 @@ def insert():
         },
     )
 
-    chp_el_gen["generator_id"] = range(
-        db.next_etrago_id("generator"),
-        len(chp_el_gen) + db.next_etrago_id("generator"),
-    )
+    new_id = db.next_etrago_id("generator")
+    chp_el_gen["generator_id"] = range(new_id, new_id + len(chp_el_gen))
 
     # Add marginal cost
     chp_el_gen["marginal_cost"] = get_sector_parameters(
@@ -190,10 +189,8 @@ def insert():
         },
     )
 
-    chp_heat_gen["generator_id"] = range(
-        db.next_etrago_id("generator"),
-        len(chp_heat_gen) + db.next_etrago_id("generator"),
-    )
+    new_id = db.next_etrago_id("generator")
+    chp_heat_gen["generator_id"] = range(new_id, new_id + len(chp_heat_gen))
 
     chp_heat_gen.to_sql(
         targets["generator"]["table"],
@@ -235,9 +232,8 @@ def insert():
         "eGon2035",
     )
 
-    chp_el_ind["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_el_ind) + db.next_etrago_id("link")
-    )
+    new_id = db.next_etrago_id("link")
+    chp_el_ind["link_id"] = range(new_id, new_id + len(chp_el_ind))
 
     # Add marginal cost which is only VOM in case of gas chp
     chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
@@ -264,9 +260,9 @@ def insert():
         },
     )
 
+    new_id = db.next_etrago_id("generator")
     chp_el_ind_gen["generator_id"] = range(
-        db.next_etrago_id("generator"),
-        len(chp_el_ind_gen) + db.next_etrago_id("generator"),
+        new_id, new_id + len(chp_el_ind_gen)
     )
 
     # Add marginal cost
