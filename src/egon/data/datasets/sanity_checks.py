@@ -28,6 +28,8 @@ class SanityChecks(Dataset):
                 etrago_eGon2035_heat,
                 residential_electricity_annual_sum,
                 residential_electricity_hh_refinement,
+                cts_electricity_demand_share,
+                cts_heat_demand_share,
             },
         )
 
@@ -633,4 +635,3 @@ def cts_heat_demand_share(rtol=1e-5):
     )
 
     logger.info("The aggregated demand shares equal to one!.")
-
