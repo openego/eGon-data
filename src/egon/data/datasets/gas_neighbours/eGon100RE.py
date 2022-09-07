@@ -148,7 +148,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
 
     gas_nodes_list_2035 = db.select_geodataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_bus
+        SELECT * FROM {sources['buses']['schema']}.{sources['buses']['table']}
         WHERE scn_name = 'eGon2035'
         AND carrier = 'CH4'
         """,
