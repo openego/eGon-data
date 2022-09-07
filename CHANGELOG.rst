@@ -205,7 +205,9 @@ Added
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
-
+* Add sanity checks for residential electricity loads
+  `#915 <https://github.com/openego/eGon-data/pull/915>`_
+``
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
@@ -395,7 +397,7 @@ Changed
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
-
+    `
 
 Bug Fixes
 ---------

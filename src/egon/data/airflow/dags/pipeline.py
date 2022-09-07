@@ -573,6 +573,7 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            household_electricity_demand_annual,
         ]
     )
 
