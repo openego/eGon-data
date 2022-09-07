@@ -220,18 +220,8 @@ def amenities_without_buildings():
         cells_query = (
             session.query(
                 DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
-                # TODO can be used for square around amenity
-                #  (1 geom_amenity: 1 geom_building)
-                #  not unique amenity_ids yet
                 osm_amenities_not_in_buildings_filtered.geom_amenity,
                 osm_amenities_not_in_buildings_filtered.egon_amenity_id,
-                # EgonDemandRegioZensusElectricity.demand,
-                # # TODO can be used to generate n random buildings
-                # # (n amenities : 1 randombuilding)
-                # func.count(
-                #     osm_amenities_not_in_buildings_filtered.egon_amenity_id
-                # ).label("n_amenities_inside"),
-                # DestatisZensusPopulationPerHa.geom,
             )
             .filter(
                 func.st_within(
@@ -246,18 +236,9 @@ def amenities_without_buildings():
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
                 EgonDemandRegioZensusElectricity.scenario == "eGon2035"
-                #         ).group_by(
-                #             EgonDemandRegioZensusElectricity.zensus_population_id,
-                #             DestatisZensusPopulationPerHa.geom,
             )
         )
-    # # TODO can be used to generate n random buildings
-    # df_cells_with_amenities_not_in_buildings = gpd.read_postgis(
-    #     cells_query.statement, cells_query.session.bind, geom_col="geom"
-    # )
-    #
 
-    # # TODO can be used for square around amenity
     df_amenities_without_buildings = gpd.read_postgis(
         cells_query.statement,
         cells_query.session.bind,
@@ -342,14 +323,13 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     if "geom_point" not in df.columns:
         df["geom_point"] = df["geom_building"].centroid
 
-    # TODO Check CRS
     df = gpd.GeoDataFrame(
         df,
         crs=crs,
         geometry="geom_building",
     )
 
-    # TODO remove after implementation of egon_building_id
+    # TODO remove after #772 implementation of egon_building_id
     df.rename(columns={"id": "egon_building_id"}, inplace=True)
 
     # get max number of building ids from synthetic residential table
@@ -849,9 +829,6 @@ def calc_building_demand_profile_share(
         Table of bus profile share per building
 
     """
-
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
     def calc_building_amenity_share(df_cts_buildings):
         """
         Calculate the building share by the number amenities per building
@@ -894,29 +871,7 @@ def calc_building_demand_profile_share(
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
     ]
-    # df_demand_share = df_demand_share[["id", "scenario", "profile_share"]]
-    #
-    # # assign bus_id via census cell of building centroid
-    # with db.session_scope() as session:
-    #     cells_query = session.query(
-    #         egon_map_zensus_buildings_filtered_all.id,
-    #         egon_map_zensus_buildings_filtered_all.zensus_population_id,
-    #         MapZensusGridDistricts.bus_id,
-    #     ).filter(
-    #         MapZensusGridDistricts.zensus_population_id
-    #         == egon_map_zensus_buildings_filtered_all.zensus_population_id
-    #     )
-    #
-    # df_egon_map_zensus_buildings_buses = pd.read_sql(
-    #     cells_query.statement,
-    #     cells_query.session.bind,
-    #     index_col=None,
-    # )
-    # df_demand_share = pd.merge(
-    #     left=df_demand_share, right=df_egon_map_zensus_buildings_buses, on="id"
-    # )
 
-    # TODO adapt groupby?
     # Group and aggregate per building for multi cell buildings
     df_demand_share = (
         df_demand_share.groupby(["scenario", "id", "bus_id"])
@@ -1021,12 +976,10 @@ def calc_building_profiles(
             raise KeyError(f"Bus with id {bus_id} not found")
 
     # get demand profile for all buildings for selected demand share
-    # TODO takes a few seconds per iteration
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("id", drop=True)["profile_share"]
         profile = df_cts_profiles.loc[:, bus_id]
-        # building_profiles = profile.apply(lambda x: x * shares)
         building_profiles = np.outer(profile, shares)
         building_profiles = pd.DataFrame(
             building_profiles, index=profile.index, columns=shares.index
@@ -1185,7 +1138,7 @@ def cts_buildings():
     df_buildings_without_amenities = buildings_without_amenities()
     log.info("Buildings without amenities in demand cells identified!")
 
-    # TODO Fix Adhoc Bugfix duplicated buildings
+    # Backup Bugfix for duplicated buildings which occure in SQL-Querry
     # drop building ids which have already been used
     mask = df_buildings_without_amenities.loc[
         df_buildings_without_amenities["id"].isin(
@@ -1231,7 +1184,7 @@ def cts_buildings():
     )
     log.info(f"{median_n_amenities} synthetic buildings per cell created")
 
-    # TODO write to DB and remove (backup) renaming
+    # TODO remove (backup) renaming after #871
     write_table_to_postgis(
         df_synthetic_buildings_without_amenities.rename(
             columns={
@@ -1275,7 +1228,7 @@ def cts_buildings():
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
     # Write table to db for debugging
-    # TODO remove later
+    # TODO remove later? Check if cts-builings are querried in other functions
     df_cts_buildings = gpd.GeoDataFrame(
         df_cts_buildings, geometry="geom_building", crs=3035
     )
