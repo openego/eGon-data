@@ -573,6 +573,8 @@ Bug Fixes
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
+* Change industrial gas load modelling
+  `#871 <https://github.com/openego/eGon-data/issues/871>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
