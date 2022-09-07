@@ -8,7 +8,7 @@ Authors: @ALonso, @dana
 
 import numpy as np
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import Dataset
 
 
@@ -45,8 +45,8 @@ def etrago_eGon2035_electricity():
     scn = "eGon2035"
 
     # Section to check generator capacities
-    print(f"Sanity checks for scenario {scn}")
-    print(
+    logger.info(f"Sanity checks for scenario {scn}")
+    logger.info(
         "For German electricity generators the following deviations between "
         "the inputs and outputs can be observed:"
     )
@@ -112,7 +112,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() == 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"No capacity for carrier '{carrier}' needed to be"
                 f" distributed. Everything is fine"
             )
@@ -121,7 +121,7 @@ def etrago_eGon2035_electricity():
             sum_input.input_capacity_mw.sum() > 0
             and sum_output.output_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"Error: Capacity for carrier '{carrier}' was not distributed "
                 f"at all!"
             )
@@ -130,7 +130,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() > 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"Error: Eventhough no input capacity was provided for carrier"
                 f"'{carrier}' a capacity got distributed!"
             )
@@ -142,12 +142,12 @@ def etrago_eGon2035_electricity():
             ) * 100
             g = sum_input["error"].values[0]
 
-            print(f"{carrier}: " + str(round(g, 2)) + " %")
+            logger.info(f"{carrier}: " + str(round(g, 2)) + " %")
 
     # Section to check storage units
 
-    print(f"Sanity checks for scenario {scn}")
-    print(
+    logger.info(f"Sanity checks for scenario {scn}")
+    logger.info(
         "For German electrical storage units the following deviations between"
         "the inputs and outputs can be observed:"
     )
@@ -185,7 +185,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() == 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"No capacity for carrier '{carrier}' needed to be "
                 f"distributed. Everything is fine"
             )
@@ -194,7 +194,7 @@ def etrago_eGon2035_electricity():
             sum_input.input_capacity_mw.sum() > 0
             and sum_output.output_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"Error: Capacity for carrier '{carrier}' was not distributed"
                 f" at all!"
             )
@@ -203,7 +203,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() > 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"Error: Eventhough no input capacity was provided for carrier"
                 f" '{carrier}' a capacity got distributed!"
             )
@@ -215,11 +215,11 @@ def etrago_eGon2035_electricity():
             ) * 100
             g = sum_input["error"].values[0]
 
-            print(f"{carrier}: " + str(round(g, 2)) + " %")
+            logger.info(f"{carrier}: " + str(round(g, 2)) + " %")
 
     # Section to check loads
 
-    print(
+    logger.info(
         "For German electricity loads the following deviations between the"
         " input and output can be observed:"
     )
@@ -269,7 +269,7 @@ def etrago_eGon2035_electricity():
 
     e = round((output_demand - input_demand) / input_demand, 2) * 100
 
-    print(f"electricity demand: {e} %")
+    logger.info(f"electricity demand: {e} %")
 
 
 def etrago_eGon2035_heat():
@@ -293,8 +293,8 @@ def etrago_eGon2035_heat():
     scn = "eGon2035"
 
     # Section to check generator capacities
-    print(f"Sanity checks for scenario {scn}")
-    print(
+    logger.info(f"Sanity checks for scenario {scn}")
+    logger.info(
         "For German heat demands the following deviations between the inputs"
         " and outputs can be observed:"
     )
@@ -334,11 +334,11 @@ def etrago_eGon2035_heat():
         * 100
     )
 
-    print(f"heat demand: {e_demand} %")
+    logger.info(f"heat demand: {e_demand} %")
 
     # Sanity checks for heat supply
 
-    print(
+    logger.info(
         "For German heat supplies the following deviations between the inputs "
         "and outputs can be observed:"
     )
@@ -368,7 +368,7 @@ def etrago_eGon2035_heat():
         round((heat_pump_output - heat_pump_input) / heat_pump_output, 2) * 100
     )
 
-    print(f"'central_heat_pump': {e_heat_pump} % ")
+    logger.info(f"'central_heat_pump': {e_heat_pump} % ")
 
     # Comparison for residential heat pumps
 
@@ -400,7 +400,7 @@ def etrago_eGon2035_heat():
         )
         * 100
     )
-    print(f"'residential heat pumps': {e_residential_heat_pump} %")
+    logger.info(f"'residential heat pumps': {e_residential_heat_pump} %")
 
     # Comparison for resistive heater
     resistive_heater_input = db.select_dataframe(
@@ -433,7 +433,7 @@ def etrago_eGon2035_heat():
         * 100
     )
 
-    print(f"'resistive heater': {e_resistive_heater} %")
+    logger.info(f"'resistive heater': {e_resistive_heater} %")
 
     # Comparison for solar thermal collectors
 
@@ -464,7 +464,7 @@ def etrago_eGon2035_heat():
         )
         * 100
     )
-    print(f"'solar thermal collector': {e_solar_thermal} %")
+    logger.info(f"'solar thermal collector': {e_solar_thermal} %")
 
     # Comparison for geothermal
 
@@ -493,7 +493,7 @@ def etrago_eGon2035_heat():
         round((output_geo_thermal - input_geo_thermal) / input_geo_thermal, 2)
         * 100
     )
-    print(f"'geothermal': {e_geo_thermal} %")
+    logger.info(f"'geothermal': {e_geo_thermal} %")
 
 
 def residential_electricity_annual_sum(rtol=1e-5):
@@ -530,7 +530,7 @@ def residential_electricity_annual_sum(rtol=1e-5):
         verbose=False,
     )
 
-    print(
+    logger.info(
         "Aggregated annual residential electricity demand"
         " matches with DemandRegio at NUTS-3."
     )
@@ -571,4 +571,4 @@ def residential_electricity_hh_refinement(rtol=1e-5):
         verbose=False,
     )
 
-    print("All Aggregated household types match at NUTS-3.")
+    logger.info("All Aggregated household types match at NUTS-3.")
