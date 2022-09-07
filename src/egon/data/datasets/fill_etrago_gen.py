@@ -48,11 +48,11 @@ def fill_etrago_generators():
 
     etrago_pp = add_marginal_costs(etrago_pp)
 
-    etrago_gen_table = fill_etrago_gen_table(
+    fill_etrago_gen_table(
         etrago_pp2=etrago_pp, etrago_gen_orig=etrago_gen_orig, cfg=cfg, con=con
     )
 
-    etrago_gen_time_table = fill_etrago_gen_time_table(
+    fill_etrago_gen_time_table(
         etrago_pp=etrago_pp,
         power_plants=power_plants,
         renew_feedin=renew_feedin,
