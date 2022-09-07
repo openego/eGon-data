@@ -582,7 +582,8 @@ def residential_electricity_hh_refinement(rtol=1e-5):
 
 
 def cts_electricity_demand_share(rtol=1e-5):
-    """Sanity check for dataset CtsElectricityBuildings
+    """Sanity check for dataset electricity_demand_timeseries :
+    CtsBuildings
 
     Check sum of aggregated cts electricity demand share which equals to one
     for every substation as the substation profile is linearly disaggregated
@@ -605,3 +606,31 @@ def cts_electricity_demand_share(rtol=1e-5):
     )
 
     logger.info("The aggregated demand shares equal to one!.")
+
+
+def cts_heat_demand_share(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries
+    : CtsBuildings
+
+    Check sum of aggregated cts heat demand share which equals to one
+    for every substation as the substation profile is linearly disaggregated
+    to all buildings."""
+
+    with db.session_scope() as session:
+        cells_query = session.query(EgonCtsHeatDemandBuildingShare)
+
+    df_demand_share = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col=None
+    )
+
+    np.testing.assert_allclose(
+        actual=df_demand_share.groupby(["bus_id", "scenario"])[
+            "profile_share"
+        ].sum(),
+        desired=1,
+        rtol=rtol,
+        verbose=False,
+    )
+
+    logger.info("The aggregated demand shares equal to one!.")
+
