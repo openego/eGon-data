@@ -587,12 +587,6 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
     allocated_cap = min_hp_cap_per_building.sum()
     remaining_cap = hp_cap_mv_grid - allocated_cap
 
-    if remaining_cap < 0:
-        # ToDo raise warning?
-        # TODO alternative outsource sanity check
-        #  only possible if peak_load is determined beforehand
-        return
-
     fac = remaining_cap / allocated_cap
     hp_cap_per_building = (
         min_hp_cap_per_building * fac + min_hp_cap_per_building
