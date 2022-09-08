@@ -137,7 +137,6 @@ from egon.data.datasets.electricity_demand import (
 )
 from egon.data.datasets.electricity_demand.temporal import (
     EgonEtragoElectricityCts,
-    calc_load_curves_cts,
 )
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     BuildingElectricityPeakLoads,
@@ -1439,37 +1438,42 @@ def get_cts_heat_peak_load():
         session.query(BuildingHeatPeakLoads).filter(
             BuildingHeatPeakLoads.sector == "cts"
         ).delete()
-    log.info("CTS Peak load removed from DB!")
+    log.info("Cts heat peak load removed from DB!")
 
     for scenario in ["eGon2035", "eGon100RE"]:
 
         with db.session_scope() as session:
-            cells_query = session.query(EgonCtsHeatDemandBuildingShare).filter(
-                EgonCtsHeatDemandBuildingShare.scenario == scenario
+            cells_query = session.query(
+                EgonCtsElectricityDemandBuildingShare
+            ).filter(
+                EgonCtsElectricityDemandBuildingShare.scenario == scenario
             )
 
         df_demand_share = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
+        log.info(f"Retrieved demand share for scenario: {scenario}")
 
         with db.session_scope() as session:
-            cells_query = session.query(EgonEtragoElectricityCts).filter(
-                EgonEtragoElectricityCts.scn_name == scenario
+            cells_query = session.query(EgonEtragoHeatCts).filter(
+                EgonEtragoHeatCts.scn_name == scenario
             )
 
         df_cts_profiles = pd.read_sql(
             cells_query.statement,
             cells_query.session.bind,
         )
+        log.info(f"Retrieved substation profiles for scenario: {scenario}")
+
         df_cts_profiles = pd.DataFrame.from_dict(
             df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
-            orient="index",
+            orient="columns",
         )
 
         df_peak_load = pd.merge(
-            left=df_cts_profiles.max(axis=0).astype(float).rename("max"),
+            left=df_cts_profiles.max().astype(float).rename("max"),
             right=df_demand_share,
-            left_on="bus_id",
+            left_index=True,
             right_on="bus_id",
         )
 
@@ -1480,17 +1484,19 @@ def get_cts_heat_peak_load():
         )
         log.info(f"Peak load for {scenario} determined!")
 
+        # TODO remove later
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
         df_peak_load["sector"] = "cts"
 
-        df_peak_load = df_peak_load[
-            ["building_id", "sector", "scenario", "peak_load_in_w"]
-        ]
+        # # Write peak loads into db
+        # write_table_to_postgres(df_peak_load, BuildingElectricityPeakLoads,
+        #                         drop=False)
+        write_table_to_postgres(
+            df_peak_load,
+            BuildingHeatPeakLoads,
+            drop=False,
+            index=False,
+            if_exists="append",
+        )
 
-        # Write peak loads into db
-        with db.session_scope() as session:
-            session.bulk_insert_mappings(
-                BuildingHeatPeakLoads,
-                df_peak_load.to_dict(orient="records"),
-            )
         log.info(f"Peak load for {scenario} exported to DB!")
