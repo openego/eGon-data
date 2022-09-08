@@ -615,7 +615,7 @@ def sanitycheck_pv_rooftop_buildings():
 def sanitycheck_emobility_mit():
     """Execute sanity checks for eMobility: motorized individual travel
 
-    Checks data integrity for eGon2035, eGon2035_noflex and eGon100RE scenario
+    Checks data integrity for eGon2035, eGon2035_lowflex and eGon100RE scenario
     using assertions:
       1. Allocated EV numbers and EVs allocated to grid districts
       2. Trip data (original inout data from simBEV)
@@ -1051,10 +1051,10 @@ def sanitycheck_emobility_mit():
             ),
         )
 
-    def check_model_data_noflex_eGon2035():
-        # TODO: Add eGon100RE_noflex
+    def check_model_data_lowflex_eGon2035():
+        # TODO: Add eGon100RE_lowflex
         print("")
-        print("SCENARIO: eGon2035_noflex")
+        print("SCENARIO: eGon2035_lowflex")
 
         # Compare driving load and charging load
         print("  Loading eGon2035 model timeseries: driving load...")
@@ -1080,7 +1080,7 @@ def sanitycheck_emobility_mit():
         driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
 
         print(
-            "  Loading eGon2035_noflex model timeseries: dumb charging "
+            "  Loading eGon2035_lowflex model timeseries: dumb charging "
             "load..."
         )
         with db.session_scope() as session:
@@ -1095,15 +1095,15 @@ def sanitycheck_emobility_mit():
                 )
                 .filter(
                     EgonPfHvLoad.carrier == "land transport EV",
-                    EgonPfHvLoad.scn_name == "eGon2035_noflex",
-                    EgonPfHvLoadTimeseries.scn_name == "eGon2035_noflex",
+                    EgonPfHvLoad.scn_name == "eGon2035_lowflex",
+                    EgonPfHvLoadTimeseries.scn_name == "eGon2035_lowflex",
                 )
             )
-        model_charging_load_noflex = pd.read_sql(
+        model_charging_load_lowflex = pd.read_sql(
             query.statement, query.session.bind, index_col=None
         )
         charging_load = np.array(
-            model_charging_load_noflex.p_set.to_list()
+            model_charging_load_lowflex.p_set.to_list()
         ).sum(axis=0)
 
         # Ratio of driving and charging load should be 0.9 due to charging
@@ -1111,7 +1111,7 @@ def sanitycheck_emobility_mit():
         print("  Compare cumulative loads...")
         print(f"    Driving load (eGon2035): {driving_load.sum() / 1e6} TWh")
         print(
-            f"    Dumb charging load (eGon2035_noflex): "
+            f"    Dumb charging load (eGon2035_lowflex): "
             f"{charging_load.sum() / 1e6} TWh"
         )
         driving_load_theoretical = (
@@ -1124,7 +1124,7 @@ def sanitycheck_emobility_mit():
             err_msg=(
                 f"The driving load (eGon2035) deviates by more than 1% "
                 f"from the theoretical driving load calculated from charging "
-                f"load (eGon2035_noflex) with an efficiency of "
+                f"load (eGon2035_lowflex) with an efficiency of "
                 f"{float(meta_run_config.eta_cp)}."
             ),
         )
@@ -1163,7 +1163,7 @@ def sanitycheck_emobility_mit():
         check_model_data()
 
     print("")
-    check_model_data_noflex_eGon2035()
+    check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
 
