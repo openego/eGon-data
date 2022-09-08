@@ -1362,9 +1362,7 @@ def get_cts_electricity_peak_load():
 
     # Delete rows with cts demand
     with db.session_scope() as session:
-        session.query(
-            BuildingElectricityPeakLoads
-        ).filter(
+        session.query(BuildingElectricityPeakLoads).filter(
             BuildingElectricityPeakLoads.sector == "cts"
         ).delete()
     log.info("Cts electricity peak load removed from DB!")
@@ -1410,19 +1408,21 @@ def get_cts_electricity_peak_load():
         )
         log.info(f"Peak load for {scenario} determined!")
 
+        # TODO remove later
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
         df_peak_load["sector"] = "cts"
 
-        df_peak_load = df_peak_load[
-            ["building_id", "sector", "scenario", "peak_load_in_w"]
-        ]
+        # # Write peak loads into db
+        # write_table_to_postgres(df_peak_load, BuildingElectricityPeakLoads,
+        #                         drop=False)
+        write_table_to_postgres(
+            df_peak_load,
+            BuildingElectricityPeakLoads,
+            drop=False,
+            index=False,
+            if_exists="append",
+        )
 
-        # Write peak loads into db
-        with db.session_scope() as session:
-            session.bulk_insert_mappings(
-                BuildingElectricityPeakLoads,
-                df_peak_load.to_dict(orient="records"),
-            )
         log.info(f"Peak load for {scenario} exported to DB!")
 
 
