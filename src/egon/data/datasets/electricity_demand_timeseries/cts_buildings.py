@@ -205,6 +205,20 @@ class BuildingHeatPeakLoads(Base):
     peak_load_in_w = Column(REAL)
 
 
+class CtsDemandBuildings(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="CtsDemandBuildings",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                cts_buildings,
+                {cts_electricity, cts_heat},
+                get_cts_electricity_peak_load,
+            ),
+        )
+
+
 def amenities_without_buildings():
     """
     Amenities which have no buildings assigned and are in
@@ -1466,17 +1480,3 @@ def get_cts_heat_peak_load():
                 df_peak_load.to_dict(orient="records"),
             )
         log.info(f"Peak load for {scenario} exported to DB!")
-
-
-class CtsDemandBuildings(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="CtsDemandBuildings",
-            version="0.0.0",
-            dependencies=dependencies,
-            tasks=(
-                cts_buildings,
-                {cts_electricity, cts_heat},
-                get_cts_electricity_peak_load,
-            ),
-        )
