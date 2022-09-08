@@ -1362,10 +1362,12 @@ def get_cts_electricity_peak_load():
 
     # Delete rows with cts demand
     with db.session_scope() as session:
-        session.query(BuildingElectricityPeakLoads).filter(
+        session.query(
+            BuildingElectricityPeakLoads
+        ).filter(
             BuildingElectricityPeakLoads.sector == "cts"
         ).delete()
-    log.info("CTS Peak load removed from DB!")
+    log.info("Cts electricity peak load removed from DB!")
 
     for scenario in ["eGon2035", "eGon100RE"]:
 
@@ -1380,12 +1382,24 @@ def get_cts_electricity_peak_load():
             cells_query.statement, cells_query.session.bind, index_col=None
         )
 
-        df_cts_profiles = calc_load_curves_cts(scenario=scenario)
+        with db.session_scope() as session:
+            cells_query = session.query(EgonEtragoElectricityCts).filter(
+                EgonEtragoElectricityCts.scn_name == scenario
+            )
+
+        df_cts_profiles = pd.read_sql(
+            cells_query.statement,
+            cells_query.session.bind,
+        )
+        df_cts_profiles = pd.DataFrame.from_dict(
+            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+            orient="columns",
+        )
 
         df_peak_load = pd.merge(
-            left=df_cts_profiles.max(axis=0).astype(float).rename("max"),
+            left=df_cts_profiles.max().astype(float).rename("max"),
             right=df_demand_share,
-            left_on="bus_id",
+            left_index=True,
             right_on="bus_id",
         )
 
