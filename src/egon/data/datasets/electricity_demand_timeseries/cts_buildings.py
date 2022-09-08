@@ -746,7 +746,7 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
     return df_cells_only_cts_demand
 
 
-def calc_census_cell_share(scenario="eGon2035", sector="electricity"):
+def calc_census_cell_share(scenario, sector):
     """
     The profile share for each census cell is calculated by it's
     share of annual demand per substation bus. The annual demand
@@ -756,29 +756,40 @@ def calc_census_cell_share(scenario="eGon2035", sector="electricity"):
     Parameters
     ----------
     scenario: str
-        Scenario for which the share is calculated.
+        Scenario for which the share is calculated: "eGon2035" or "eGon100RE"
     sector: str
-        Scenario for which the share is calculated.
+        Scenario for which the share is calculated: "electricity" or "heat"
 
     Returns
     -------
     df_census_share: pd.DataFrame
     """
     if sector == "electricity":
-        demand_table = EgonDemandRegioZensusElectricity
-    elif sector == "heat":
-        demand_table = EgonPetaHeat
-
-    with db.session_scope() as session:
-        cells_query = (
-            session.query(demand_table, MapZensusGridDistricts.bus_id)
-            .filter(demand_table.sector == "service")
-            .filter(demand_table.scenario == scenario)
-            .filter(
-                demand_table.zensus_population_id
-                == MapZensusGridDistricts.zensus_population_id
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(
+                    EgonDemandRegioZensusElectricity,
+                    MapZensusGridDistricts.bus_id,
+                )
+                .filter(EgonDemandRegioZensusElectricity.sector == "service")
+                .filter(EgonDemandRegioZensusElectricity.scenario == scenario)
+                .filter(
+                    EgonDemandRegioZensusElectricity.zensus_population_id
+                    == MapZensusGridDistricts.zensus_population_id
+                )
             )
-        )
+
+    elif sector == "heat":
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(EgonPetaHeat, MapZensusGridDistricts.bus_id)
+                .filter(EgonPetaHeat.sector == "service")
+                .filter(EgonPetaHeat.scenario == scenario)
+                .filter(
+                    EgonPetaHeat.zensus_population_id
+                    == MapZensusGridDistricts.zensus_population_id
+                )
+            )
 
     df_demand = pd.read_sql(
         cells_query.statement,
@@ -1469,13 +1480,3 @@ class CtsDemandBuildings(Dataset):
                 get_cts_electricity_peak_load,
             ),
         )
-
-
-if __name__ == "__main__":
-    df = calc_cts_building_profiles(
-        egon_building_ids=[644, 3116],
-        bus_ids=[1368, 1361],
-        scenario="eGon2035",
-        sector="heat",
-    )
-    print(df)
