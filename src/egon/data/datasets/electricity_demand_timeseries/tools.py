@@ -1,3 +1,6 @@
+from io import StringIO
+import csv
+
 from shapely.geometry import Point
 import geopandas as gpd
 import numpy as np
@@ -91,20 +94,76 @@ def write_table_to_postgis(df, table, drop=True):
     )
 
 
-def write_table_to_postgres(df, table, drop=True):
+# def write_table_to_postgres(df, table, drop=True):
+#     """"""
+#
+#     # Only take in db table defined columns
+#     columns = [column.key for column in table.__table__.columns]
+#     df = df.loc[:, columns]
+#
+#     if drop:
+#         table.__table__.drop(bind=engine, checkfirst=True)
+#         table.__table__.create(bind=engine)
+#
+#     # Write peak loads into db
+#     with db.session_scope() as session:
+#         session.bulk_insert_mappings(
+#             table,
+#             df.to_dict(orient="records"),
+#         )
+
+
+def psql_insert_copy(table, conn, keys, data_iter):
+    """
+    Execute SQL statement inserting data
+
+    Parameters
+    ----------
+    table : pandas.io.sql.SQLTable
+    conn : sqlalchemy.engine.Engine or sqlalchemy.engine.Connection
+    keys : list of str
+        Column names
+    data_iter : Iterable that iterates the values to be inserted
+    """
+    # gets a DBAPI connection that can provide a cursor
+    dbapi_conn = conn.connection
+    with dbapi_conn.cursor() as cur:
+        s_buf = StringIO()
+        writer = csv.writer(s_buf)
+        writer.writerows(data_iter)
+        s_buf.seek(0)
+
+        columns = ", ".join('"{}"'.format(k) for k in keys)
+        if table.schema:
+            table_name = "{}.{}".format(table.schema, table.name)
+        else:
+            table_name = table.name
+
+        sql = "COPY {} ({}) FROM STDIN WITH CSV".format(table_name, columns)
+        cur.copy_expert(sql=sql, file=s_buf)
+
+
+def write_table_to_postgres(
+    df, db_table, drop=False, index=False, if_exists="append"
+):
     """"""
 
-    # Only take in db table defined columns
-    columns = [column.key for column in table.__table__.columns]
-    df = df.loc[:, columns]
+    # Only take in db table defined columns and dtypes
+    columns = {
+        column.key: column.type for column in db_table.__table__.columns
+    }
+    df = df.loc[:, columns.keys()]
 
     if drop:
-        table.__table__.drop(bind=engine, checkfirst=True)
-        table.__table__.create(bind=engine)
+        db_table.__table__.drop(bind=engine, checkfirst=True)
+        db_table.__table__.create(bind=engine)
 
-    # Write peak loads into db
-    with db.session_scope() as session:
-        session.bulk_insert_mappings(
-            table,
-            df.to_dict(orient="records"),
-        )
+    df.to_sql(
+        name=db_table.__table__.name,
+        schema=db_table.__table__.schema,
+        con=engine,
+        if_exists=if_exists,
+        index=index,
+        method=psql_insert_copy,
+        dtype=columns,
+    )
