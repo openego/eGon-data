@@ -213,7 +213,8 @@ class CtsDemandBuildings(Dataset):
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
-                get_cts_electricity_peak_load,
+                {get_cts_electricity_peak_load,
+                 get_cts_heat_peak_load},
             ),
         )
 
