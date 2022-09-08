@@ -142,6 +142,9 @@ def map_climate_zones_to_zensus():
         .climate_zone
     )
 
+    # Drop duplicates (some climate zones are overlapping)
+    join = join[~join.index.duplicated(keep="first")]
+
     # Insert resulting dataframe to SQL table
     join.to_sql(
         EgonMapZensusClimateZones.__table__.name,

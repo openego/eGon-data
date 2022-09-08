@@ -136,12 +136,18 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
 
         mv_grid_ind = db.select_dataframe(
             f"""
-            SELECT bus_id, zensus_population_id
-            FROM boundaries.egon_map_zensus_grid_districts
-            WHERE zensus_population_id NOT IN 
-            (SELECT zensus_population_id
-             FROM demand.egon_map_zensus_district_heating_areas
-             WHERE scenario = '{scenario}')
+                SELECT bus_id, a.zensus_population_id
+                FROM boundaries.egon_map_zensus_grid_districts a
+				
+				LEFT JOIN demand.egon_map_zensus_district_heating_areas b
+				ON a.zensus_population_id = b.zensus_population_id
+				
+				JOIN demand.egon_peta_heat c
+				ON a.zensus_population_id = c.zensus_population_id 
+				
+				WHERE b.scenario = '{scenario}'
+				AND c.scenario = '{scenario}'
+				AND c.sector = 'service'
             """
         )
 
@@ -278,15 +284,23 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_district = CTS_district.append(CTS_per_district)
             CTS_district = CTS_district.sort_index()
+            
+
 
             mv_grid_ind = db.select_dataframe(
                 f"""
-                SELECT bus_id, zensus_population_id
-                FROM boundaries.egon_map_zensus_grid_districts
-                WHERE zensus_population_id NOT IN 
-                (SELECT zensus_population_id
-                 FROM demand.egon_map_zensus_district_heating_areas
-                 WHERE scenario = '{scenario}')
+                SELECT bus_id, a.zensus_population_id
+                FROM boundaries.egon_map_zensus_grid_districts a
+				
+				LEFT JOIN demand.egon_map_zensus_district_heating_areas b
+				ON a.zensus_population_id = b.zensus_population_id
+				
+				JOIN demand.egon_peta_heat c
+				ON a.zensus_population_id = c.zensus_population_id 
+				
+				WHERE b.scenario = '{scenario}'
+				AND c.scenario = '{scenario}'
+				AND c.sector = 'service'
                 """
             )
 
