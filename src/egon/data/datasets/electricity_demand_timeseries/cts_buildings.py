@@ -213,8 +213,7 @@ class CtsDemandBuildings(Dataset):
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
-                {get_cts_electricity_peak_load,
-                 get_cts_heat_peak_load},
+                {get_cts_electricity_peak_load, get_cts_heat_peak_load},
             ),
         )
 
@@ -1168,6 +1167,7 @@ def cts_buildings():
             }
         ),
         OsmBuildingsSynthetic,
+        engine=engine,
         drop=False,
     )
     log.info("Synthetic buildings exported to DB!")
@@ -1231,6 +1231,7 @@ def cts_buildings():
             }
         ),
         OsmBuildingsSynthetic,
+        engine=engine,
         drop=False,
     )
     log.info("Synthetic buildings exported to DB")
@@ -1276,6 +1277,7 @@ def cts_buildings():
     write_table_to_postgis(
         df_cts_buildings,
         CtsBuildings,
+        engine=engine,
         drop=True,
     )
     log.info("CTS buildings exported to DB!")
@@ -1312,7 +1314,10 @@ def cts_electricity():
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
     write_table_to_postgres(
-        df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
+        df_demand_share,
+        EgonCtsElectricityDemandBuildingShare,
+        engine=engine,
+        drop=True,
     )
     log.info("Profile share exported to DB!")
 
@@ -1346,7 +1351,10 @@ def cts_heat():
     )
 
     write_table_to_postgres(
-        df_demand_share, EgonCtsHeatDemandBuildingShare, drop=True
+        df_demand_share,
+        EgonCtsHeatDemandBuildingShare,
+        engine=engine,
+        drop=True,
     )
     log.info("Profile share exported to DB!")
 
@@ -1416,6 +1424,7 @@ def get_cts_electricity_peak_load():
         write_table_to_postgres(
             df_peak_load,
             BuildingElectricityPeakLoads,
+            engine=engine,
             drop=False,
             index=False,
             if_exists="append",
@@ -1491,6 +1500,7 @@ def get_cts_heat_peak_load():
         write_table_to_postgres(
             df_peak_load,
             BuildingHeatPeakLoads,
+            engine=engine,
             drop=False,
             index=False,
             if_exists="append",

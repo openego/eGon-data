@@ -66,7 +66,7 @@ def random_ints_until_sum(s_sum, m_max):
     return list_r
 
 
-def write_table_to_postgis(df, table, drop=True):
+def write_table_to_postgis(df, table, engine, drop=True):
     """
     Append table
     """
@@ -144,7 +144,7 @@ def psql_insert_copy(table, conn, keys, data_iter):
 
 
 def write_table_to_postgres(
-    df, db_table, drop=False, index=False, if_exists="append"
+    df, db_table, engine, drop=False, index=False, if_exists="append"
 ):
     """"""
 
