@@ -205,11 +205,13 @@ Added
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
+* Assign CTS demands to buildings
+  `#671 <https://github.com/openego/eGon-data/issues/671>`_
 * Add sanity checks for residential electricity loads
   `#902 <https://github.com/openego/eGon-data/issues/902>`_
 * Add sanity checks for cts loads
   `#919 <https://github.com/openego/eGon-data/issues/919>`_
-``
+
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
@@ -399,7 +401,7 @@ Changed
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
-    `
+
 
 Bug Fixes
 ---------

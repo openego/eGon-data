@@ -25,7 +25,7 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_profiles,
 )
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
-    CtsElectricityBuildings,
+    CtsDemandBuildings,
 )
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
@@ -39,7 +39,7 @@ from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
-from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
@@ -406,10 +406,7 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            h2_infrastructure,
-            insert_power_to_h2_installations
-        ]
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
     # Create gas voronoi eGon100RE
@@ -567,7 +564,7 @@ with airflow.DAG(
         ]
     )
 
-    cts_electricity_buildings = CtsElectricityBuildings(
+    cts_demand_buildings = CtsDemandBuildings(
         dependencies=[
             osm_buildings_streets,
             cts_electricity_demand_annual,
@@ -575,6 +572,7 @@ with airflow.DAG(
         ]
     )
 
+    # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
@@ -582,6 +580,6 @@ with airflow.DAG(
             hts_etrago_table,
             fill_etrago_generators,
             household_electricity_demand_annual,
-            cts_electricity_buildings,
+            cts_demand_buildings,
         ]
     )

@@ -137,10 +137,9 @@ from egon.data.datasets.electricity_demand import (
 )
 from egon.data.datasets.electricity_demand.temporal import (
     EgonEtragoElectricityCts,
-    calc_load_curves_cts,
 )
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
-    BuildingPeakLoads,
+    BuildingElectricityPeakLoads,
     OsmBuildingsSynthetic,
 )
 from egon.data.datasets.electricity_demand_timeseries.tools import (
@@ -151,6 +150,7 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     write_table_to_postgres,
 )
 from egon.data.datasets.heat_demand import EgonPetaHeat
+from egon.data.datasets.heat_demand_timeseries import EgonEtragoHeatCts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 
@@ -166,7 +166,7 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     __tablename__ = "egon_cts_electricity_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, primary_key=True)
+    building_id = Column(Integer, primary_key=True)
     scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
     profile_share = Column(REAL)
@@ -176,7 +176,7 @@ class EgonCtsHeatDemandBuildingShare(Base):
     __tablename__ = "egon_cts_heat_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(Integer, primary_key=True)
+    building_id = Column(Integer, primary_key=True)
     scenario = Column(String, primary_key=True)
     bus_id = Column(Integer, index=True)
     profile_share = Column(REAL)
@@ -204,6 +204,20 @@ class BuildingHeatPeakLoads(Base):
     peak_load_in_w = Column(REAL)
 
 
+class CtsDemandBuildings(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="CtsDemandBuildings",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks=(
+                cts_buildings,
+                {cts_electricity, cts_heat},
+                {get_cts_electricity_peak_load, get_cts_heat_peak_load},
+            ),
+        )
+
+
 def amenities_without_buildings():
     """
     Amenities which have no buildings assigned and are in
@@ -220,18 +234,8 @@ def amenities_without_buildings():
         cells_query = (
             session.query(
                 DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
-                # TODO can be used for square around amenity
-                #  (1 geom_amenity: 1 geom_building)
-                #  not unique amenity_ids yet
                 osm_amenities_not_in_buildings_filtered.geom_amenity,
                 osm_amenities_not_in_buildings_filtered.egon_amenity_id,
-                # EgonDemandRegioZensusElectricity.demand,
-                # # TODO can be used to generate n random buildings
-                # # (n amenities : 1 randombuilding)
-                # func.count(
-                #     osm_amenities_not_in_buildings_filtered.egon_amenity_id
-                # ).label("n_amenities_inside"),
-                # DestatisZensusPopulationPerHa.geom,
             )
             .filter(
                 func.st_within(
@@ -245,19 +249,10 @@ def amenities_without_buildings():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "eGon2035"
-                #         ).group_by(
-                #             EgonDemandRegioZensusElectricity.zensus_population_id,
-                #             DestatisZensusPopulationPerHa.geom,
+                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
         )
-    # # TODO can be used to generate n random buildings
-    # df_cells_with_amenities_not_in_buildings = gpd.read_postgis(
-    #     cells_query.statement, cells_query.session.bind, geom_col="geom"
-    # )
-    #
 
-    # # TODO can be used for square around amenity
     df_amenities_without_buildings = gpd.read_postgis(
         cells_query.statement,
         cells_query.session.bind,
@@ -342,14 +337,13 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     if "geom_point" not in df.columns:
         df["geom_point"] = df["geom_building"].centroid
 
-    # TODO Check CRS
     df = gpd.GeoDataFrame(
         df,
         crs=crs,
         geometry="geom_building",
     )
 
-    # TODO remove after implementation of egon_building_id
+    # TODO remove after #772 implementation of egon_building_id
     df.rename(columns={"id": "egon_building_id"}, inplace=True)
 
     # get max number of building ids from synthetic residential table
@@ -765,7 +759,7 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
     return df_cells_only_cts_demand
 
 
-def calc_census_cell_share(scenario="eGon2035", sector="electricity"):
+def calc_census_cell_share(scenario, sector):
     """
     The profile share for each census cell is calculated by it's
     share of annual demand per substation bus. The annual demand
@@ -775,29 +769,40 @@ def calc_census_cell_share(scenario="eGon2035", sector="electricity"):
     Parameters
     ----------
     scenario: str
-        Scenario for which the share is calculated.
+        Scenario for which the share is calculated: "eGon2035" or "eGon100RE"
     sector: str
-        Scenario for which the share is calculated.
+        Scenario for which the share is calculated: "electricity" or "heat"
 
     Returns
     -------
     df_census_share: pd.DataFrame
     """
     if sector == "electricity":
-        demand_table = EgonDemandRegioZensusElectricity
-    elif sector == "heat":
-        demand_table = EgonPetaHeat
-
-    with db.session_scope() as session:
-        cells_query = (
-            session.query(demand_table, MapZensusGridDistricts.bus_id)
-            .filter(demand_table.sector == "service")
-            .filter(demand_table.scenario == scenario)
-            .filter(
-                demand_table.zensus_population_id
-                == MapZensusGridDistricts.zensus_population_id
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(
+                    EgonDemandRegioZensusElectricity,
+                    MapZensusGridDistricts.bus_id,
+                )
+                .filter(EgonDemandRegioZensusElectricity.sector == "service")
+                .filter(EgonDemandRegioZensusElectricity.scenario == scenario)
+                .filter(
+                    EgonDemandRegioZensusElectricity.zensus_population_id
+                    == MapZensusGridDistricts.zensus_population_id
+                )
             )
-        )
+
+    elif sector == "heat":
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(EgonPetaHeat, MapZensusGridDistricts.bus_id)
+                .filter(EgonPetaHeat.sector == "service")
+                .filter(EgonPetaHeat.scenario == scenario)
+                .filter(
+                    EgonPetaHeat.zensus_population_id
+                    == MapZensusGridDistricts.zensus_population_id
+                )
+            )
 
     df_demand = pd.read_sql(
         cells_query.statement,
@@ -850,8 +855,6 @@ def calc_building_demand_profile_share(
 
     """
 
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
     def calc_building_amenity_share(df_cts_buildings):
         """
         Calculate the building share by the number amenities per building
@@ -894,29 +897,7 @@ def calc_building_demand_profile_share(
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
     ]
-    # df_demand_share = df_demand_share[["id", "scenario", "profile_share"]]
-    #
-    # # assign bus_id via census cell of building centroid
-    # with db.session_scope() as session:
-    #     cells_query = session.query(
-    #         egon_map_zensus_buildings_filtered_all.id,
-    #         egon_map_zensus_buildings_filtered_all.zensus_population_id,
-    #         MapZensusGridDistricts.bus_id,
-    #     ).filter(
-    #         MapZensusGridDistricts.zensus_population_id
-    #         == egon_map_zensus_buildings_filtered_all.zensus_population_id
-    #     )
-    #
-    # df_egon_map_zensus_buildings_buses = pd.read_sql(
-    #     cells_query.statement,
-    #     cells_query.session.bind,
-    #     index_col=None,
-    # )
-    # df_demand_share = pd.merge(
-    #     left=df_demand_share, right=df_egon_map_zensus_buildings_buses, on="id"
-    # )
 
-    # TODO adapt groupby?
     # Group and aggregate per building for multi cell buildings
     df_demand_share = (
         df_demand_share.groupby(["scenario", "id", "bus_id"])
@@ -930,28 +911,27 @@ def calc_building_demand_profile_share(
     return df_demand_share
 
 
-def calc_building_profiles(
-    egon_building_id=None,
-    bus_id=None,
-    scenario="eGon2035",
-    sector="electricity",
+def calc_cts_building_profiles(
+    egon_building_ids,
+    bus_ids,
+    scenario,
+    sector,
 ):
     """
-    Calculate the demand profile for each building. The profile is
+    Calculate the cts demand profile for each building. The profile is
     calculated by the demand share of the building per substation bus.
 
     Parameters
     ----------
-    egon_building_id: int
-        Id of the building for which the profile is calculated.
-        If not given, the profiles are calculated for all buildings.
-    bus_id: int
-        Id of the substation for which the all profiles are calculated.
-        If not given, the profiles are calculated for all buildings.
+    egon_building_ids: list of int
+        Ids of the building for which the profile is calculated.
+    bus_ids: list of int
+        Ids of the substation for which selected building profiles are
+        calculated.
     scenario: str
-        Scenario for which the share is calculated.
+        Scenario for which the share is calculated: "eGon2035" or "eGon100RE"
     sector: str
-        Sector for which the share is calculated.
+        Sector for which the share is calculated: "electricity" or "heat"
 
     Returns
     -------
@@ -959,77 +939,91 @@ def calc_building_profiles(
         Table of demand profile per building
     """
     if sector == "electricity":
+        # Get cts building electricity demand share of selected buildings
         with db.session_scope() as session:
-            cells_query = session.query(
-                EgonCtsElectricityDemandBuildingShare,
-            ).filter(
-                EgonCtsElectricityDemandBuildingShare.scenario == scenario
+            cells_query = (
+                session.query(
+                    EgonCtsElectricityDemandBuildingShare,
+                )
+                .filter(
+                    EgonCtsElectricityDemandBuildingShare.scenario == scenario
+                )
+                .filter(
+                    EgonCtsElectricityDemandBuildingShare.building_id.in_(
+                        egon_building_ids
+                    )
+                )
             )
 
         df_demand_share = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
 
-        # TODO maybe use demand.egon_etrago_electricity_cts
-        # with db.session_scope() as session:
-        #     cells_query = (
-        #         session.query(
-        #             EgonEtragoElectricityCts
-        #         ).filter(
-        #             EgonEtragoElectricityCts.scn_name == scenario)
-        #     )
-        #
-        # df_cts_profiles = pd.read_sql(
-        #     cells_query.statement,
-        #     cells_query.session.bind,
-        # )
-        # df_cts_profiles = pd.DataFrame.from_dict(
-        #   df_cts_profiles.set_index('bus_id')['p_set'].to_dict(),
-        #   orient="index")
-        df_cts_profiles = calc_load_curves_cts(scenario)
+        # Get substation cts electricity load profiles of selected bus_ids
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(EgonEtragoElectricityCts).filter(
+                    EgonEtragoElectricityCts.scn_name == scenario
+                )
+            ).filter(EgonEtragoElectricityCts.bus_id.in_(bus_ids))
+
+        df_cts_profiles = pd.read_sql(
+            cells_query.statement,
+            cells_query.session.bind,
+        )
+        df_cts_profiles = pd.DataFrame.from_dict(
+            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+            orient="index",
+        )
+        # df_cts_profiles = calc_load_curves_cts(scenario)
 
     elif sector == "heat":
+        # Get cts building heat demand share of selected buildings
         with db.session_scope() as session:
-            cells_query = session.query(
-                EgonCtsHeatDemandBuildingShare,
-            ).filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
+            cells_query = (
+                session.query(
+                    EgonCtsHeatDemandBuildingShare,
+                )
+                .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
+                .filter(
+                    EgonCtsHeatDemandBuildingShare.building_id.in_(
+                        egon_building_ids
+                    )
+                )
+            )
 
         df_demand_share = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col=None
         )
 
-        # TODO cts heat substation profiles missing
+        # Get substation cts heat load profiles of selected bus_ids
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(EgonEtragoHeatCts).filter(
+                    EgonEtragoHeatCts.scn_name == scenario
+                )
+            ).filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
 
-    # get demand share of selected building id
-    if isinstance(egon_building_id, int):
-        if egon_building_id in df_demand_share["id"]:
-            df_demand_share = df_demand_share.loc[
-                df_demand_share["id"] == egon_building_id
-            ]
-        else:
-            raise KeyError(f"Building with id {egon_building_id} not found")
-    # TODO maybe add list
-    # elif isinstance(egon_building_id, list):
+        df_cts_profiles = pd.read_sql(
+            cells_query.statement,
+            cells_query.session.bind,
+        )
+        df_cts_profiles = pd.DataFrame.from_dict(
+            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+            orient="index",
+        )
 
-    # get demand share of all buildings for selected bus id
-    if isinstance(bus_id, int):
-        if bus_id in df_demand_share["bus_id"]:
-            df_demand_share = df_demand_share.loc[
-                df_demand_share["bus_id"] == bus_id
-            ]
-        else:
-            raise KeyError(f"Bus with id {bus_id} not found")
+    # TODO remove later
+    df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
     # get demand profile for all buildings for selected demand share
-    # TODO takes a few seconds per iteration
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
-        shares = df.set_index("id", drop=True)["profile_share"]
-        profile = df_cts_profiles.loc[:, bus_id]
-        # building_profiles = profile.apply(lambda x: x * shares)
-        building_profiles = np.outer(profile, shares)
+        shares = df.set_index("building_id", drop=True)["profile_share"]
+        profile_ts = df_cts_profiles.loc[bus_id]
+        building_profiles = np.outer(profile_ts, shares)
         building_profiles = pd.DataFrame(
-            building_profiles, index=profile.index, columns=shares.index
+            building_profiles, index=profile_ts.index, columns=shares.index
         )
         df_building_profiles = pd.concat(
             [df_building_profiles, building_profiles], axis=1
@@ -1055,19 +1049,15 @@ def delete_synthetic_cts_buildings():
 
 
 def remove_double_bus_id(df_cts_buildings):
-    """"""
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
-    # assign bus_id via census cell of building centroid
+    """This is an backup adhoc fix if there should still be a building which
+    is assigned to 2 substations. In this case one of the buildings is just
+    dropped. As this currently accounts for only one building with one amenity
+    the deviation is neglectable."""
+    # assign bus_id via census cell of amenity
     with db.session_scope() as session:
         cells_query = session.query(
-            # egon_map_zensus_buildings_filtered_all.id,
-            # egon_map_zensus_buildings_filtered_all.zensus_population_id,
             MapZensusGridDistricts.zensus_population_id,
-            MapZensusGridDistricts.bus_id
-            # ).filter(
-            #     MapZensusGridDistricts.zensus_population_id
-            #     == egon_map_zensus_buildings_filtered_all.zensus_population_id
+            MapZensusGridDistricts.bus_id,
         )
 
     df_egon_map_zensus_buildings_buses = pd.read_sql(
@@ -1177,6 +1167,7 @@ def cts_buildings():
             }
         ),
         OsmBuildingsSynthetic,
+        engine=engine,
         drop=False,
     )
     log.info("Synthetic buildings exported to DB!")
@@ -1185,7 +1176,7 @@ def cts_buildings():
     df_buildings_without_amenities = buildings_without_amenities()
     log.info("Buildings without amenities in demand cells identified!")
 
-    # TODO Fix Adhoc Bugfix duplicated buildings
+    # Backup Bugfix for duplicated buildings which occure in SQL-Querry
     # drop building ids which have already been used
     mask = df_buildings_without_amenities.loc[
         df_buildings_without_amenities["id"].isin(
@@ -1231,7 +1222,7 @@ def cts_buildings():
     )
     log.info(f"{median_n_amenities} synthetic buildings per cell created")
 
-    # TODO write to DB and remove (backup) renaming
+    # TODO remove (backup) renaming after #871
     write_table_to_postgis(
         df_synthetic_buildings_without_amenities.rename(
             columns={
@@ -1240,6 +1231,7 @@ def cts_buildings():
             }
         ),
         OsmBuildingsSynthetic,
+        engine=engine,
         drop=False,
     )
     log.info("Synthetic buildings exported to DB")
@@ -1275,7 +1267,7 @@ def cts_buildings():
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
     # Write table to db for debugging
-    # TODO remove later
+    # TODO remove later? Check if cts-builings are querried in other functions
     df_cts_buildings = gpd.GeoDataFrame(
         df_cts_buildings, geometry="geom_building", crs=3035
     )
@@ -1285,6 +1277,7 @@ def cts_buildings():
     write_table_to_postgis(
         df_cts_buildings,
         CtsBuildings,
+        engine=engine,
         drop=True,
     )
     log.info("CTS buildings exported to DB!")
@@ -1307,18 +1300,24 @@ def cts_electricity():
         df_cts_buildings, scenario="eGon2035", sector="electricity"
     )
     log.info("Profile share for egon2035 calculated!")
+
     df_demand_share_100RE = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon100RE", sector="electricity"
     )
     log.info("Profile share for egon100RE calculated!")
+
     df_demand_share = pd.concat(
         [df_demand_share_2035, df_demand_share_100RE],
         axis=0,
         ignore_index=True,
     )
+    df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
     write_table_to_postgres(
-        df_demand_share, EgonCtsElectricityDemandBuildingShare, drop=True
+        df_demand_share,
+        EgonCtsElectricityDemandBuildingShare,
+        engine=engine,
+        drop=True,
     )
     log.info("Profile share exported to DB!")
 
@@ -1352,7 +1351,10 @@ def cts_heat():
     )
 
     write_table_to_postgres(
-        df_demand_share, EgonCtsHeatDemandBuildingShare, drop=True
+        df_demand_share,
+        EgonCtsHeatDemandBuildingShare,
+        engine=engine,
+        drop=True,
     )
     log.info("Profile share exported to DB!")
 
@@ -1363,12 +1365,15 @@ def get_cts_electricity_peak_load():
     store in DB.
     """
     log.info("Start logging!")
+
+    BuildingElectricityPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
     # Delete rows with cts demand
     with db.session_scope() as session:
-        session.query(BuildingPeakLoads).filter(
-            BuildingPeakLoads.sector == "cts"
+        session.query(BuildingElectricityPeakLoads).filter(
+            BuildingElectricityPeakLoads.sector == "cts"
         ).delete()
-    log.info("CTS Peak load removed from DB!")
+    log.info("Cts electricity peak load removed from DB!")
 
     for scenario in ["eGon2035", "eGon100RE"]:
 
@@ -1377,64 +1382,6 @@ def get_cts_electricity_peak_load():
                 EgonCtsElectricityDemandBuildingShare
             ).filter(
                 EgonCtsElectricityDemandBuildingShare.scenario == scenario
-            )
-
-        df_demand_share = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None
-        )
-
-        df_cts_profiles = calc_load_curves_cts(scenario=scenario)
-
-        df_peak_load = pd.merge(
-            left=df_cts_profiles.max(axis=0).astype(float).rename("max"),
-            right=df_demand_share,
-            left_on="bus_id",
-            right_on="bus_id",
-        )
-
-        # Convert unit from MWh to W
-        df_peak_load["max"] = df_peak_load["max"] * 1e6
-        df_peak_load["peak_load_in_w"] = (
-            df_peak_load["max"] * df_peak_load["profile_share"]
-        )
-        log.info(f"Peak load for {scenario} determined!")
-
-        df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
-        df_peak_load["sector"] = "cts"
-
-        df_peak_load = df_peak_load[
-            ["building_id", "sector", "scenario", "peak_load_in_w"]
-        ]
-
-        # Write peak loads into db
-        with db.session_scope() as session:
-            session.bulk_insert_mappings(
-                BuildingPeakLoads,
-                df_peak_load.to_dict(orient="records"),
-            )
-        log.info(f"Peak load for {scenario} exported to DB!")
-
-
-def get_cts_heat_peak_load():
-    """
-    Get heat peak load of all CTS buildings for both scenarios and store in DB.
-    """
-    log.info("Start logging!")
-
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
-
-    # Delete rows with cts demand
-    with db.session_scope() as session:
-        session.query(BuildingHeatPeakLoads).filter(
-            BuildingHeatPeakLoads.sector == "cts"
-        ).delete()
-    log.info("CTS Peak load removed from DB!")
-
-    for scenario in ["eGon2035", "eGon100RE"]:
-
-        with db.session_scope() as session:
-            cells_query = session.query(EgonCtsHeatDemandBuildingShare).filter(
-                EgonCtsHeatDemandBuildingShare.scenario == scenario
             )
 
         df_demand_share = pd.read_sql(
@@ -1452,13 +1399,13 @@ def get_cts_heat_peak_load():
         )
         df_cts_profiles = pd.DataFrame.from_dict(
             df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
-            orient="index",
+            orient="columns",
         )
 
         df_peak_load = pd.merge(
-            left=df_cts_profiles.max(axis=0).astype(float).rename("max"),
+            left=df_cts_profiles.max().astype(float).rename("max"),
             right=df_demand_share,
-            left_on="bus_id",
+            left_index=True,
             right_on="bus_id",
         )
 
@@ -1469,31 +1416,94 @@ def get_cts_heat_peak_load():
         )
         log.info(f"Peak load for {scenario} determined!")
 
+        # TODO remove later
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
         df_peak_load["sector"] = "cts"
 
-        df_peak_load = df_peak_load[
-            ["building_id", "sector", "scenario", "peak_load_in_w"]
-        ]
+        # # Write peak loads into db
+        write_table_to_postgres(
+            df_peak_load,
+            BuildingElectricityPeakLoads,
+            engine=engine,
+            drop=False,
+            index=False,
+            if_exists="append",
+        )
 
-        # Write peak loads into db
-        with db.session_scope() as session:
-            session.bulk_insert_mappings(
-                BuildingHeatPeakLoads,
-                df_peak_load.to_dict(orient="records"),
-            )
         log.info(f"Peak load for {scenario} exported to DB!")
 
 
-class CtsElectricityBuildings(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="CtsElectricityBuildings",
-            version="0.0.0",
-            dependencies=dependencies,
-            tasks=(
-                cts_buildings,
-                {cts_electricity, cts_heat},
-                get_cts_electricity_peak_load,
-            ),
+def get_cts_heat_peak_load():
+    """
+    Get heat peak load of all CTS buildings for both scenarios and store in DB.
+    """
+    log.info("Start logging!")
+
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+    # Delete rows with cts demand
+    with db.session_scope() as session:
+        session.query(BuildingHeatPeakLoads).filter(
+            BuildingHeatPeakLoads.sector == "cts"
+        ).delete()
+    log.info("Cts heat peak load removed from DB!")
+
+    for scenario in ["eGon2035", "eGon100RE"]:
+
+        with db.session_scope() as session:
+            cells_query = session.query(
+                EgonCtsElectricityDemandBuildingShare
+            ).filter(
+                EgonCtsElectricityDemandBuildingShare.scenario == scenario
+            )
+
+        df_demand_share = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col=None
         )
+        log.info(f"Retrieved demand share for scenario: {scenario}")
+
+        with db.session_scope() as session:
+            cells_query = session.query(EgonEtragoHeatCts).filter(
+                EgonEtragoHeatCts.scn_name == scenario
+            )
+
+        df_cts_profiles = pd.read_sql(
+            cells_query.statement,
+            cells_query.session.bind,
+        )
+        log.info(f"Retrieved substation profiles for scenario: {scenario}")
+
+        df_cts_profiles = pd.DataFrame.from_dict(
+            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+            orient="columns",
+        )
+
+        df_peak_load = pd.merge(
+            left=df_cts_profiles.max().astype(float).rename("max"),
+            right=df_demand_share,
+            left_index=True,
+            right_on="bus_id",
+        )
+
+        # Convert unit from MWh to W
+        df_peak_load["max"] = df_peak_load["max"] * 1e6
+        df_peak_load["peak_load_in_w"] = (
+            df_peak_load["max"] * df_peak_load["profile_share"]
+        )
+        log.info(f"Peak load for {scenario} determined!")
+
+        # TODO remove later
+        df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
+        df_peak_load["sector"] = "cts"
+
+        # # Write peak loads into db
+        write_table_to_postgres(
+            df_peak_load,
+            BuildingHeatPeakLoads,
+            engine=engine,
+            drop=False,
+            index=False,
+            if_exists="append",
+        )
+
+        log.info(f"Peak load for {scenario} exported to DB!")
