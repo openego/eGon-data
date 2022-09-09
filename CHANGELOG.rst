@@ -423,6 +423,8 @@ Changed
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
+* Harmonize H2 carrier names in eGon100RE
+  `#929 <https://github.com/openego/eGon-data/issues/929>`_
 
 
 Bug Fixes
