@@ -379,13 +379,13 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
     # get buildings with decentral heat demand
     engine = db.engine()
     saio.register_schema("demand", engine)
-    from saio.demand import heat_timeseries_selected_profiles
+    from saio.demand import egon_heat_timeseries_selected_profiles
 
     with db.session_scope() as session:
         query = session.query(
-            heat_timeseries_selected_profiles.building_id,
+            egon_heat_timeseries_selected_profiles.building_id,
         ).filter(
-            heat_timeseries_selected_profiles.zensus_population_id.in_(
+            egon_heat_timeseries_selected_profiles.zensus_population_id.in_(
                 zensus_population_ids
             )
         )
@@ -437,7 +437,9 @@ def get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id):
     return hp_cap_mv_grid
 
 
-def get_heat_demand_timeseries_per_building(scenario, building_ids):
+def get_heat_demand_timeseries_per_building(
+    scenario, building_ids, mv_grid_id
+):
     """
     Gets heat demand time series for all given buildings.
 
@@ -447,6 +449,8 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
         Name of scenario. Can be either "eGon2035" or "eGon100RE".
     building_ids : pd.Index(int)
         Building IDs (as int) of buildings to get heat demand time series for.
+    mv_grid_id : int
+        MV grid of the buildings
 
     Returns
     --------
@@ -461,19 +465,25 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
 
     heat_demand_residential_ts = pd.DataFrame()
     # TODO remove testmode
-    # for building_id in building_ids:
-    for building_id in building_ids[:3]:
+    for building_id in building_ids:
+        # for building_id in building_ids[:3]:
         # ToDo: maybe use other function to make it faster.
+        # in MW
         tmp = create_timeseries_for_building(building_id, scenario)
         # # TODO check what happens if tmp emtpy
         # tmp = pd.Series() if tmp.empty else tmp
         heat_demand_residential_ts = pd.concat(
-            [heat_demand_residential_ts, tmp], axis=1
+            [
+                heat_demand_residential_ts,
+                tmp.rename(columns={"demand": building_id}),
+            ],
+            axis=1,
         )
 
     # TODO add cts profiles per building_id
     heat_demand_cts_ts = calc_cts_building_profiles(
-        building_id=building_ids,
+        egon_building_ids=building_ids,
+        bus_ids=[mv_grid_id],
         scenario=scenario,
         sector="heat",
     )
@@ -670,7 +680,9 @@ def determine_hp_cap_pypsa_eur_sec():
         # get heat demand time series per building
         # iterates for residential heat over building id > slow
         heat_demand_ts = get_heat_demand_timeseries_per_building(
-            "eGon100RE", building_ids
+            scenario="eGon100RE",
+            building_ids=building_ids,
+            mv_grid_id=mv_grid_id,
         )
 
         # ToDo Write peak heat demand to table
