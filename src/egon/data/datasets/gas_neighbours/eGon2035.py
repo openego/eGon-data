@@ -20,7 +20,9 @@ from egon.data.datasets.electrical_neighbours import (
     get_map_buses,
 )
 from egon.data.datasets.gas_neighbours.gas_abroad import (
+    get_foreign_gas_bus_id,
     insert_gas_grid_capacities,
+    insert_generators,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
