@@ -2,6 +2,7 @@
 individual heat supply.
 
 """
+from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -56,6 +57,20 @@ class HeatPumps2050(Dataset):
             dependencies=dependencies,
             tasks=(determine_hp_cap_eGon100RE),
         )
+
+
+# ========== Register np datatypes with SQLA ==========
+def adapt_numpy_float64(numpy_float64):
+    return AsIs(numpy_float64)
+
+
+def adapt_numpy_int64(numpy_int64):
+    return AsIs(numpy_int64)
+
+
+register_adapter(np.float64, adapt_numpy_float64)
+register_adapter(np.int64, adapt_numpy_int64)
+# =====================================================
 
 
 def cascade_per_technology(
