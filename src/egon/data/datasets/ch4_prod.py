@@ -214,7 +214,7 @@ def load_biogas_generators(scn_name):
         )
 
         sql = """SELECT *
-            FROM grid.egon_biogas_generator, boundaries.vg250_sta_union  as vg
+            FROM grid.egon_biogas_generator, boundaries.vg250_sta_union as vg
             WHERE ST_Transform(vg.geometry,4326) && egon_biogas_generator.geom
             AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)"""
 
