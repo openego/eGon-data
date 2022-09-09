@@ -12,7 +12,7 @@ import saio
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
-    calc_building_profiles
+    calc_cts_building_profiles
 )
 engine = db.engine()
 Base = declarative_base()
@@ -452,9 +452,7 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
         heat_demand_residential_ts = pd.concat([heat_demand_residential_ts, tmp], axis=1)
 
     # TODO add cts profiles per building_id
-    #   extend calc_building_profiles for heat
-    #   extend calc_building_profiles for list of ids
-    heat_demand_cts_ts = calc_building_profiles(building_id = building_ids,
+    heat_demand_cts_ts = calc_cts_building_profiles(building_id = building_ids,
                                                 scenario=scenario,
                                                 sector="heat",
                                                 )
