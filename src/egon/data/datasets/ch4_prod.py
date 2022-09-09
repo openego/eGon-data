@@ -13,6 +13,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -282,6 +283,7 @@ def import_gas_generators(scn_name):
 
     elif scn_name == "eGon100RE":
         CH4_generators_list = load_biogas_generators(scn_name)
+        overwrite_max_gas_generation_overtheyear(scn_name)
 
     # Add missing columns
     c = {"scn_name": scn_name, "carrier": "CH4"}
@@ -317,6 +319,45 @@ def import_gas_generators(scn_name):
         index=False,
         if_exists="append",
     )
+
+
+def overwrite_max_gas_generation_overtheyear(scn_name):
+    """Overright max_gas_generation_overtheyear in scenario parameter table
+
+    Overright max_gas_generation_overtheyear in scenario parameter
+    table if the value of this parameter has changed in the p-e-s run.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    execute_pypsa_eur_sec = True#False
+
+    # Connect to local database
+    engine = db.engine()
+
+    # Select source and target from dataset configuration
+    target = config.datasets()["gas_prod"]["target"]
+
+    if execute_pypsa_eur_sec:
+        n = read_network()
+        max_value = n.stores[n.stores["carrier"] == "biogas"].loc[
+                "DE0 0 biogas", "e_initial"
+            ]
+
+        biogas_max = {"biogas": max_value}
+
+        stat = f"""
+        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        SET gas_parameters = jsonb_set("gas_parameters"::jsonb, '{{max_gas_generation_overtheyear}}', '{biogas_max}')
+        WHERE name = '{scn_name}';
+        """
+        print(stat)
+
+        # Update data in db
+        db.execute_sql(stat)
 
 
 def insert_ch4_generators():
