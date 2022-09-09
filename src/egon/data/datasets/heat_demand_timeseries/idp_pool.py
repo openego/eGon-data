@@ -19,7 +19,7 @@ Base = declarative_base()
 
 
 class EgonHeatTimeseries(Base):
-    __tablename__ = "heat_timeseries_selected_profiles"
+    __tablename__ = "egon_heat_timeseries_selected_profiles"
     __table_args__ = {"schema": "demand"}
     zensus_population_id = Column(Integer, primary_key=True)
     building_id = Column(Integer, primary_key=True)
@@ -342,7 +342,7 @@ def create():
     idp_df = idp_df.reset_index(drop=True)
 
     idp_df.to_sql(
-        "heat_idp_pool",
+        "egon_heat_idp_pool",
         con=db.engine(),
         schema="demand",
         if_exists="replace",
@@ -449,7 +449,7 @@ def select():
     idp_df = db.select_dataframe(
         """
         SELECT index, house, temperature_class
-        FROM demand.heat_idp_pool
+        FROM demand.egon_heat_idp_pool
         """,
         index_col="index",
     )
@@ -614,8 +614,8 @@ def select():
         )
         start_sfh = datetime.now()
         df_sfh.set_index(["zensus_population_id", "building_id"]).to_sql(
-            "heat_timeseries_selected_profiles",
-            schema="demand",
+            EgonHeatTimeseries.__table__.name,
+            schema=EgonHeatTimeseries.__table__.schema,
             con=db.engine(),
             if_exists="append",
             chunksize=5000,
@@ -667,8 +667,8 @@ def select():
 
         start_mfh = datetime.now()
         df_mfh.set_index(["zensus_population_id", "building_id"]).to_sql(
-            "heat_timeseries_selected_profiles",
-            schema="demand",
+            EgonHeatTimeseries.__table__.name,
+            schema=EgonHeatTimeseries.__table__.schema,
             con=db.engine(),
             if_exists="append",
             chunksize=5000,
