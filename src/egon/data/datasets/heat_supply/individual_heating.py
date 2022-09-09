@@ -12,8 +12,9 @@ import saio
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
-    calc_cts_building_profiles
+    calc_cts_building_profiles,
 )
+
 engine = db.engine()
 Base = declarative_base()
 
@@ -22,9 +23,9 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
     bus_id = Column(Integer, primary_key=True)
-    scenario = Column(Text, primary_key=True)
+    scenario = Column(String, primary_key=True)
     carrier = Column(String, primary_key=True)
-    dist_aggregated_mw = Column(ARRAY(Float(53)))
+    dist_aggregated_mw = Column(ARRAY(REAL))
 
 
 class HeatPumpsEtrago(Dataset):
@@ -300,10 +301,11 @@ def plot_heat_supply(resulting_capacities):
 
 def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
     """
-    Returns building IDs of buildings with decentral heat demand in given MV grid.
+    Returns building IDs of buildings with decentral heat demand in given MV
+    grid.
 
-    As cells with district heating differ between scenarios, this is also depending
-    on the scenario.
+    As cells with district heating differ between scenarios, this is also
+    depending on the scenario.
 
     Parameters
     -----------
@@ -315,8 +317,9 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
     Returns
     --------
     pd.Index(int)
-        Building IDs (as int) of buildings with decentral heat demand in given MV grid.
-        Type is pandas Index to avoid errors later on when it is used in a query.
+        Building IDs (as int) of buildings with decentral heat demand in given
+         MV grid. Type is pandas Index to avoid errors later on when it is
+         used in a query.
 
     """
 
@@ -330,8 +333,8 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
         index_col=None,
     ).zensus_population_id.values
 
-    # convert to pd.Index (otherwise type is np.int64, which will for some reason
-    # throw an error when used in a query)
+    # convert to pd.Index (otherwise type is np.int64, which will for some
+    # reason throw an error when used in a query)
     zensus_population_ids = pd.Index(zensus_population_ids)
 
     # get zensus cells with district heating
@@ -376,15 +379,15 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
         query.statement, query.session.bind, index_col=None
     ).building_id.values
 
-    # convert to pd.Index (otherwise type is np.int64, which will for some reason
-    # throw an error when used in a query)
+    # convert to pd.Index (otherwise type is np.int64, which will for some
+    # reason throw an error when used in a query)
     return pd.Index(buildings_with_heat_demand)
 
 
 def get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id):
     """
-    Returns total heat pump capacity per grid that was previously defined (by NEP or
-    pypsa-eur-sec).
+    Returns total heat pump capacity per grid that was previously defined
+    (by NEP or pypsa-eur-sec).
 
     Parameters
     -----------
@@ -433,8 +436,8 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
     Returns
     --------
     pd.DataFrame
-        Dataframe with hourly heat demand in MW for entire year. Index of the dataframe
-        contains the time steps and columns the building ID.
+        Dataframe with hourly heat demand in MW for entire year. Index of the
+        dataframe contains the time steps and columns the building ID.
 
     """
     from egon.data.datasets.heat_demand_timeseries import (
@@ -449,15 +452,20 @@ def get_heat_demand_timeseries_per_building(scenario, building_ids):
         tmp = create_timeseries_for_building(building_id, scenario)
         # # TODO check what happens if tmp emtpy
         # tmp = pd.Series() if tmp.empty else tmp
-        heat_demand_residential_ts = pd.concat([heat_demand_residential_ts, tmp], axis=1)
+        heat_demand_residential_ts = pd.concat(
+            [heat_demand_residential_ts, tmp], axis=1
+        )
 
     # TODO add cts profiles per building_id
-    heat_demand_cts_ts = calc_cts_building_profiles(building_id = building_ids,
-                                                scenario=scenario,
-                                                sector="heat",
-                                                )
+    heat_demand_cts_ts = calc_cts_building_profiles(
+        building_id=building_ids,
+        scenario=scenario,
+        sector="heat",
+    )
 
-    heat_demand_ts = pd.concat([heat_demand_residential_ts, heat_demand_cts_ts])
+    heat_demand_ts = pd.concat(
+        [heat_demand_residential_ts, heat_demand_cts_ts]
+    )
     # sum residential and heat if same building id in header
     heat_demand_ts = heat_demand_ts.groupby(axis=1, level=0).sum()
     return heat_demand_ts
@@ -477,7 +485,8 @@ def get_peak_demand_per_building(scenario, building_ids):
     Returns
     --------
     pd.Series
-        Series with peak heat demand per building in MW. Index contains the building ID.
+        Series with peak heat demand per building in MW. Index contains the
+         building ID.
 
     """
     # TODO Implement
@@ -494,16 +503,18 @@ def determine_minimum_hp_capacity_per_building(
     Parameters
     ----------
     peak_heat_demand : pd.Series
-        Series with peak heat demand per building in MW. Index contains the building ID.
+        Series with peak heat demand per building in MW. Index contains the
+        building ID.
     flexibility_factor : float
-        Factor to overdimension the heat pump to allow for some flexible dispatch in
-        times of high heat demand. Per default, a factor of 24/18 is used, to take into
-        account
+        Factor to overdimension the heat pump to allow for some flexible
+        dispatch in times of high heat demand. Per default, a factor of 24/18
+        is used, to take into account
 
     Returns
     -------
     pd.Series
-        Pandas series with minimum required heat pump capacity per building in MW.
+        Pandas series with minimum required heat pump capacity per building in
+         MW.
 
     """
     return peak_heat_demand * flexibility_factor / cop
@@ -521,7 +532,8 @@ def determine_buildings_with_hp_in_mv_grid(
     hp_cap_mv_grid : float
         Total heat pump capacity in MW in given MV grid.
     min_hp_cap_per_building : pd.Series
-        Pandas series with minimum required heat pump capacity per building in MW.
+        Pandas series with minimum required heat pump capacity per building
+         in MW.
 
     Returns
     -------
@@ -531,8 +543,8 @@ def determine_buildings_with_hp_in_mv_grid(
     """
     building_ids = min_hp_cap_per_building.index
 
-    # get buildings with PV to give them a higher priority when selecting buildings
-    # a heat pump will be allocated to
+    # get buildings with PV to give them a higher priority when selecting
+    # buildings a heat pump will be allocated to
     engine = db.engine()
     saio.register_schema("supply", engine)
     # TODO Adhoc Pv rooftop fix
@@ -573,8 +585,8 @@ def determine_buildings_with_hp_in_mv_grid(
         p=weights.weight.values,
     )
 
-    # select buildings until HP capacity in MV grid is reached (some rest capacity
-    # will remain)
+    # select buildings until HP capacity in MV grid is reached (some rest
+    # capacity will remain)
     hp_cumsum = min_hp_cap_per_building.loc[buildings_with_hp_order].cumsum()
     buildings_with_hp = hp_cumsum[hp_cumsum <= hp_cap_mv_grid].index
 
@@ -585,13 +597,15 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
     """
     Desaggregates the required total heat pump capacity to buildings.
 
-    All buildings are previously assigned a minimum required heat pump capacity. If
-    the total heat pump capacity exceeds this, larger heat pumps are assigned.
+    All buildings are previously assigned a minimum required heat pump
+    capacity. If the total heat pump capacity exceeds this, larger heat pumps
+     are assigned.
 
     Parameters
     ------------
     min_hp_cap_per_building : pd.Series
-        Pandas series with minimum required heat pump capacity per building in MW.
+        Pandas series with minimum required heat pump capacity per building
+         in MW.
     hp_cap_mv_grid : float
         Total heat pump capacity in MW in given MV grid.
 
@@ -601,8 +615,8 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
         Pandas series with heat pump capacity per building in MW.
 
     """
-    # distribute remaining capacity to all buildings with HP depending on installed
-    # HP capacity
+    # distribute remaining capacity to all buildings with HP depending on
+    # installed HP capacity
 
     allocated_cap = min_hp_cap_per_building.sum()
     remaining_cap = hp_cap_mv_grid - allocated_cap
@@ -646,9 +660,11 @@ def determine_hp_cap_pypsa_eur_sec():
 
         # ToDo Write peak heat demand to table
 
-        # write aggregated heat time series to dataframe to write it to table later on
-        df_etrago_timeseries_heat_pumps[
-            mv_grid_id] = heat_demand_ts.sum(axis=1).values
+        # write aggregated heat time series to dataframe to write it to table
+        # later on
+        df_etrago_timeseries_heat_pumps[mv_grid_id] = heat_demand_ts.sum(
+            axis=1
+        ).values
 
         # determine minimum required heat pump capacity per building
         min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
@@ -718,12 +734,14 @@ def determine_hp_cap_eGon2035():
 
         # ToDo Write desaggregated HP capacity to table
 
-        # write aggregated heat time series to dataframe to write it to table later on
+        # write aggregated heat time series to dataframe to write it to table
+        # later on
         heat_timeseries_hp_buildings_mv_grid = heat_demand_ts.loc[
-                                               :, hp_cap_per_building.index
-                                               ].sum(axis=1)
+            :, hp_cap_per_building.index
+        ].sum(axis=1)
         df_etrago_timeseries_heat_pumps[
-            mv_grid_id] = heat_timeseries_hp_buildings_mv_grid.values
+            mv_grid_id
+        ] = heat_timeseries_hp_buildings_mv_grid.values
 
     # ToDo Write aggregated heat demand time series of buildings with HP to
     #  table to be used in eTraGo - egon_etrago_timeseries_individual_heating
@@ -779,7 +797,9 @@ def determine_hp_cap_eGon100RE():
         )
 
         # TODO get peak demand from db
-        peak_heat_demand = get_peak_demand_per_building("eGon100RE", building_ids)
+        peak_heat_demand = get_peak_demand_per_building(
+            "eGon100RE", building_ids
+        )
 
         # determine minimum required heat pump capacity per building
         min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
