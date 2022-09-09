@@ -257,7 +257,7 @@ def import_gas_generators(scn_name):
     scn_name : str
         Name of the scenario.
     """
-    carrier = 'CH4'
+    carrier = "CH4"
 
     # Connect to local database
     engine = db.engine()
@@ -335,7 +335,7 @@ def overwrite_max_gas_generation_overtheyear(scn_name):
         Name of the scenario
 
     """
-    execute_pypsa_eur_sec = True#False
+    execute_pypsa_eur_sec = True  # False
 
     # Connect to local database
     engine = db.engine()
@@ -346,8 +346,8 @@ def overwrite_max_gas_generation_overtheyear(scn_name):
     if execute_pypsa_eur_sec:
         n = read_network()
         max_value = n.stores[n.stores["carrier"] == "biogas"].loc[
-                "DE0 0 biogas", "e_initial"
-            ]
+            "DE0 0 biogas", "e_initial"
+        ]
 
         biogas_max = {"biogas": max_value}
 
