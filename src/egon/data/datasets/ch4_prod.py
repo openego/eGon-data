@@ -257,6 +257,8 @@ def import_gas_generators(scn_name):
     scn_name : str
         Name of the scenario.
     """
+    carrier = 'CH4'
+
     # Connect to local database
     engine = db.engine()
 
@@ -268,7 +270,7 @@ def import_gas_generators(scn_name):
     db.execute_sql(
         f"""
         DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
-        WHERE "carrier" = 'CH4' AND
+        WHERE "carrier" = '{carrier}' AND
         scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
             WHERE scn_name = '{scn_name}' AND country != 'DE'
@@ -286,12 +288,12 @@ def import_gas_generators(scn_name):
         overwrite_max_gas_generation_overtheyear(scn_name)
 
     # Add missing columns
-    c = {"scn_name": scn_name, "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     # Match to associated CH4 bus
     CH4_generators_list = db.assign_gas_bus_id(
-        CH4_generators_list, scn_name, "CH4"
+        CH4_generators_list, scn_name, carrier
     )
 
     # Remove useless columns
