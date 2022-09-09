@@ -1413,8 +1413,6 @@ def get_cts_electricity_peak_load():
         df_peak_load["sector"] = "cts"
 
         # # Write peak loads into db
-        # write_table_to_postgres(df_peak_load, BuildingElectricityPeakLoads,
-        #                         drop=False)
         write_table_to_postgres(
             df_peak_load,
             BuildingElectricityPeakLoads,
@@ -1490,8 +1488,6 @@ def get_cts_heat_peak_load():
         df_peak_load["sector"] = "cts"
 
         # # Write peak loads into db
-        # write_table_to_postgres(df_peak_load, BuildingElectricityPeakLoads,
-        #                         drop=False)
         write_table_to_postgres(
             df_peak_load,
             BuildingHeatPeakLoads,
