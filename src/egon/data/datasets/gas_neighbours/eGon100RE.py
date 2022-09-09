@@ -15,6 +15,8 @@ Dependecies (pipeline)
 Resulting tables
 ================
   * grid.egon_etrago_link is completed
+  * grid.egon_etrago_store is completed
+  * grid.egon_etrago_generator is modified
 
 """
 

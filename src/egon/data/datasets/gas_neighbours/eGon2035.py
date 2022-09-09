@@ -116,8 +116,8 @@ def calc_capacities():
 
     Returns
     -------
-    pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
+    grouped_capacities : pandas.DataFrame
+        Gas production capacities per foreign node
 
     """
 
