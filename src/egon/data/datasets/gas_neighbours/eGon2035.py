@@ -44,62 +44,6 @@ countries = [
 ]
 
 
-def get_foreign_gas_bus_id(carrier="CH4"):
-    """Calculate the etrago bus id based on the geometry
-
-    Mapp node_ids from TYNDP and etragos bus_id
-
-    Parameters
-    ----------
-    carrier : str
-        Name of the carrier
-
-    Returns
-    -------
-    pandas.Series
-        List of mapped node_ids from TYNDP and etragos bus_id
-
-    """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    scn_name = "eGon2035"
-
-    bus_id = db.select_geodataframe(
-        f"""
-        SELECT bus_id, ST_Buffer(geom, 1) as geom, country
-        FROM grid.egon_etrago_bus
-        WHERE scn_name = '{scn_name}'
-        AND carrier = '{carrier}'
-        AND country != 'DE'
-        """,
-        epsg=3035,
-    )
-
-    # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
-
-    # Select buses in neighbouring countries as geodataframe
-    buses = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Nodes - Dict",
-    ).query("longitude==longitude")
-    buses = gpd.GeoDataFrame(
-        buses,
-        crs=4326,
-        geometry=gpd.points_from_xy(buses.longitude, buses.latitude),
-    ).to_crs(3035)
-
-    buses["bus_id"] = 0
-
-    # Select bus_id from etrago with shortest distance to TYNDP node
-    for i, row in buses.iterrows():
-        distance = bus_id.set_index("bus_id").geom.distance(row.geometry)
-        buses.loc[i, "bus_id"] = distance[
-            distance == distance.min()
-        ].index.values[0]
-
-    return buses.set_index("node_id").bus_id
-
-
 def read_LNG_capacities():
     lng_file = "datasets/gas_data/data/IGGIELGN_LNGs.csv"
     IGGIELGN_LNGs = gpd.read_file(lng_file)
@@ -355,72 +299,6 @@ def calc_capacity_per_year(df, lng, year):
     )
 
     return df_year
-
-
-def insert_generators(gen):
-    """Insert gas generators for foreign countries based on TYNDP-data
-
-    Parameters
-    ----------
-    gen : pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
-
-    Returns
-    -------
-    None.
-
-    """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
-    map_buses = get_map_buses()
-    scn_params = get_sector_parameters("gas", "eGon2035")
-
-    # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['generators']['schema']}.{targets['generators']['table']}
-        WHERE bus IN (
-            SELECT bus_id FROM
-            {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'CH4';
-        """
-    )
-
-    # Set bus_id
-    gen.loc[gen[gen["index"].isin(map_buses.keys())].index, "index"] = gen.loc[
-        gen[gen["index"].isin(map_buses.keys())].index, "index"
-    ].map(map_buses)
-    gen.loc[:, "bus"] = (
-        get_foreign_gas_bus_id().loc[gen.loc[:, "index"]].values
-    )
-
-    # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
-    gen = gen.assign(**c)
-
-    new_id = db.next_etrago_id("generator")
-    gen["generator_id"] = range(new_id, new_id + len(gen))
-    gen["p_nom"] = gen["cap_2035"]
-    gen["marginal_cost"] = (
-        gen["ratioConv_2035"] * scn_params["marginal_cost"]["CH4"]
-        + (1 - gen["ratioConv_2035"]) * scn_params["marginal_cost"]["biogas"]
-    )
-
-    # Remove useless columns
-    gen = gen.drop(columns=["index", "ratioConv_2035", "cap_2035"])
-
-    # Insert data to db
-    gen.to_sql(
-        targets["generators"]["table"],
-        db.engine(),
-        schema=targets["generators"]["schema"],
-        index=False,
-        if_exists="append",
-    )
 
 
 def calc_global_ch4_demand(Norway_global_demand_1y):
