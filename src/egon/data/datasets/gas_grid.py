@@ -128,13 +128,18 @@ def ch4_nodes_number_G(gas_nodes_list):
 
 def insert_CH4_nodes_list(gas_nodes_list):
     """Insert list of CH4 nodes from SciGRID_gas IGGIELGN data
-        Parameters
+
+    Insert detailled description
+
+    Parameters
     ----------
     gas_nodes_list : dataframe
         Dataframe containing the gas nodes (Europe)
+
     Returns
     -------
     None
+
     """
     # Connect to local database
     engine = db.engine()
@@ -217,7 +222,12 @@ def insert_CH4_nodes_list(gas_nodes_list):
 
 
 def insert_gas_buses_abroad(scn_name="eGon2035"):
-    """Insert central gas buses in foreign countries to db, same buses than the foreign AC buses
+    """Insert central CH4 buses in foreign countries for eGon2035
+
+    Detailled description to be completed:
+    Insert central gas buses in foreign countries to db, same buses
+    than the foreign AC buses
+
     Parameters
     ----------
     scn_name : str
@@ -226,7 +236,8 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     Returns
     -------
     gdf_abroad_buses : dataframe
-        Dataframe containing the gas in the neighbouring countries and one in the center of Germany in test mode
+        Dataframe containing the CH4 buses in the neighbouring countries
+        and one in the center of Germany in test mode
     """
     # Select sources and targets from dataset configuration
     sources = config.datasets()["electrical_neighbours"]["sources"]
@@ -319,16 +330,22 @@ def insert_gas_pipeline_list(
     gas_nodes_list, abroad_gas_nodes_list, scn_name="eGon2035"
 ):
     """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
+
+    Insert detailled description
+
     Parameters
     ----------
     gas_nodes_list : dataframe
-        Dataframe containing the gas nodes (Europe)
+        description missing
+    abroad_gas_nodes_list: dataframe
+        description missing
     scn_name : str
         Name of the scenario
 
     Returns
     -------
-    None.
+    None
+
     """
     abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
 
@@ -466,6 +483,7 @@ def insert_gas_pipeline_list(
         c = ast.literal_eval(row["country_code"])
         country_0.append(c[0])
         country_1.append(c[1])
+
     gas_pipelines_list["country_0"] = country_0
     gas_pipelines_list["country_1"] = country_1
 
@@ -644,14 +662,16 @@ def insert_gas_pipeline_list(
         ]
     )
 
-    # Insert data to db
+    # Clean db
     db.execute_sql(
-        f"""DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{main_gas_carrier}' AND
-           scn_name = '{scn_name}';
+        f"""DELETE FROM grid.egon_etrago_link
+        WHERE "carrier" = '{main_gas_carrier}'
+        AND scn_name = '{scn_name}';
         """
     )
 
     print(gas_pipelines_list)
+    # Insert data to db
     gas_pipelines_list.to_postgis(
         "egon_etrago_gas_link",
         engine,
