@@ -338,9 +338,6 @@ def overwrite_max_gas_generation_overtheyear(scn_name):
     """
     execute_pypsa_eur_sec = True  # False
 
-    # Connect to local database
-    engine = db.engine()
-
     # Select source and target from dataset configuration
     target = config.datasets()["gas_prod"]["target"]
 
