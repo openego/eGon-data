@@ -607,6 +607,7 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
+            "H2": "H2_grid",
         },
         inplace=True,
     )
@@ -981,7 +982,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=tasks,
         )

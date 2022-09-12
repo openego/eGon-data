@@ -359,14 +359,6 @@ with airflow.DAG(
         ]
     )
 
-    # Gas abroad
-    gas_abroad_insert_data = GasNeighbours(
-        dependencies=[
-            gas_grid_insert_data,
-            foreign_lines,
-        ]
-    )
-
     # Insert hydrogen buses
     insert_hydrogen_buses = HydrogenBusEtrago(
         dependencies=[
@@ -411,6 +403,17 @@ with airflow.DAG(
     # Create gas voronoi eGon100RE
     create_gas_polygons_egon100RE = GasAreaseGon100RE(
         dependencies=[insert_h2_grid, vg250]
+    )
+
+    # Gas abroad
+    gas_abroad_insert_data = GasNeighbours(
+        dependencies=[
+            gas_grid_insert_data,
+            run_pypsaeursec,
+            foreign_lines,
+            insert_hydrogen_buses,
+            create_gas_polygons_egon100RE
+        ]
     )
 
     # Import gas production
