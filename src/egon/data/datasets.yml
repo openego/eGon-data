@@ -346,6 +346,7 @@ hotmaps_current_policy_scenario_heat_demands_buildings:
 
 power_plants:
   sources:
+      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
