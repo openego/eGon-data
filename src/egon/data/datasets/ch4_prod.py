@@ -355,14 +355,16 @@ def overwrite_max_gas_generation_overtheyear(scn_name):
             SELECT *
             FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
             WHERE name = '{scn_name}'
-            """)
+            """
+        )
 
-        gas_param = parameters.loc[0,"gas_parameters"]
+        gas_param = parameters.loc[0, "gas_parameters"]
         gas_param["max_gas_generation_overtheyear"] = {"biogas": max_value}
         gas_param = json.dumps(gas_param)
 
         # Update data in db
-        db.execute_sql(f"""
+        db.execute_sql(
+            f"""
         UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
         SET gas_parameters = '{gas_param}'
         WHERE name = '{scn_name}';
