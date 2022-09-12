@@ -166,7 +166,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
-                        AND carrier = '{carriers[c]}
+                        AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}')
                     AND "bus1" IN (SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
@@ -179,14 +179,14 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
                         WHERE country = 'DE'
                         AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}')
-                AND "bus1" IN (
+                    AND "bus1" IN (
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}'))
                 AND scn_name = '{scn_name}'
-                AND carrier = '{c.index}'            
+                AND carrier = '{c}'
                 ;
                 """
             )
