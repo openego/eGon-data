@@ -1246,7 +1246,7 @@ def tyndp_gas_generation():
     None.
     """
     capacities = calc_capacities()
-    insert_generators(capacities)
+    insert_generators(capacities, "eGon2035")
 
     ch4_storage_capacities = calc_ch4_storage_capacities()
     insert_storage(ch4_storage_capacities)

@@ -5,6 +5,7 @@ The central module containing all code dealing with importing CH4 production dat
 from pathlib import Path
 from urllib.request import urlretrieve
 import ast
+import json
 
 import geopandas as gpd
 import numpy as np
@@ -23,7 +24,7 @@ class CH4Production(Dataset):
             name="CH4Production",
             version="0.0.8",
             dependencies=dependencies,
-            tasks=(import_gas_generators),
+            tasks=(insert_ch4_generators),
         )
 
 
@@ -349,17 +350,24 @@ def overwrite_max_gas_generation_overtheyear(scn_name):
             "DE0 0 biogas", "e_initial"
         ]
 
-        biogas_max = {"biogas": max_value}
+        parameters = db.select_dataframe(
+            f"""
+            SELECT *
+            FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+            WHERE name = '{scn_name}'
+            """)
 
-        stat = f"""
-        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
-        SET gas_parameters = jsonb_set("gas_parameters"::jsonb, '{{max_gas_generation_overtheyear}}', '{biogas_max}')
-        WHERE name = '{scn_name}';
-        """
-        print(stat)
+        gas_param = parameters.loc[0,"gas_parameters"]
+        gas_param["max_gas_generation_overtheyear"] = {"biogas": max_value}
+        gas_param = json.dumps(gas_param)
 
         # Update data in db
-        db.execute_sql(stat)
+        db.execute_sql(f"""
+        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        SET gas_parameters = '{gas_param}'
+        WHERE name = '{scn_name}';
+        """
+        )
 
 
 def insert_ch4_generators():
