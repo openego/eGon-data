@@ -23,6 +23,7 @@ from egon.data.datasets.gas_neighbours.gas_abroad import (
     get_foreign_gas_bus_id,
     insert_gas_grid_capacities,
     insert_generators,
+    insert_ch4_stores,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -688,53 +689,12 @@ def calc_ch4_storage_capacities():
         .values
     )
 
-    return ch4_storage_capacities
-
-
-def insert_storage(ch4_storage_capacities):
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
-
-    carrier = "CH4"
-    scn_name = 'eGon2035'
-
-    # Clean table
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
-        WHERE "carrier" = '{carrier}'
-        AND scn_name = '{scn_name}'
-        AND bus IN (
-            SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = '{scn_name}'
-            AND country != 'DE'
-            );
-        """
-    )
-    # Add missing columns
-    c = {"scn_name": scn_name, "carrier": carrier}
-    ch4_storage_capacities = ch4_storage_capacities.assign(**c)
-
-    new_id = db.next_etrago_id("store")
-    ch4_storage_capacities["store_id"] = range(
-        new_id, new_id + len(ch4_storage_capacities)
-    )
-
     ch4_storage_capacities.drop(
         ["Country"],
         axis=1,
         inplace=True,
     )
-
-    ch4_storage_capacities = ch4_storage_capacities.reset_index(drop=True)
-    # Insert data to db
-    ch4_storage_capacities.to_sql(
-        targets["stores"]["table"],
-        db.engine(),
-        schema=targets["stores"]["schema"],
-        index=False,
-        if_exists="append",
-    )
+    return ch4_storage_capacities
 
 
 def calc_global_power_to_h2_demand():
@@ -1252,7 +1212,7 @@ def tyndp_gas_generation():
     insert_generators(capacities, "eGon2035")
 
     ch4_storage_capacities = calc_ch4_storage_capacities()
-    insert_storage(ch4_storage_capacities)
+    insert_ch4_stores(ch4_storage_capacities, "eGon2035")
 
 
 def tyndp_gas_demand():
