@@ -959,7 +959,8 @@ def drop_buildings_outside_muns(
 def egon_building_peak_loads():
     sql = """
     SELECT building_id
-    FROM demand.egon_building_peak_loads
+    FROM demand.egon_building_electricity_peak_loads
+    WHERE scenario = 'eGon2035'
     """
 
     return db.select_dataframe(sql).building_id.astype(int).sort_values()
