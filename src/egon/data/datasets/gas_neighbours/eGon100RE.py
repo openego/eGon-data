@@ -134,6 +134,16 @@ def insert_gas_neigbours_eGon100RE_pipes():
         )
     )
 
+    for i in ["link_id", "bus0", "bus1"]:
+        Crossbordering_pipe_capacities_list[i] = (
+            Crossbordering_pipe_capacities_list[i].astype(str).astype(int)
+        )
+
+    for i in ["p_nom", "length"]:
+        Crossbordering_pipe_capacities_list[i] = (
+            Crossbordering_pipe_capacities_list[i].astype(str).astype(float)
+        )
+
     insert_gas_grid_capacities(
         Crossbordering_pipe_capacities_list, "eGon100RE"
     )
