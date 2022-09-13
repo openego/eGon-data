@@ -128,10 +128,6 @@ def import_installed_ch4_storages(scn_name):
         Gas_storages_list, scn_name, "CH4"
     )
 
-    # Add missing columns
-    c = {"scn_name": scn_name, "carrier": "CH4"}
-    Gas_storages_list = Gas_storages_list.assign(**c)
-
     # Remove useless columns
     Gas_storages_list = Gas_storages_list.drop(
         columns=[
@@ -177,7 +173,7 @@ def import_ch4_grid_capacity(scn_name):
         Gas_grid_capacity / N_ch4_nodes_G
     )  # Storage capacity associated to each CH4 node of the german grid
 
-    sql_gas = f"""SELECT bus_id, scn_name, carrier, geom
+    sql_gas = f"""SELECT bus_id, geom
                 FROM {source['buses']['schema']}.{source['buses']['table']}
                 WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
                 AND country = 'DE';"""
@@ -244,10 +240,14 @@ def insert_ch4_stores(scn_name):
 
     # Aggregate ch4 stores with same properties at the same bus
     gas_storages_list = (
-        gas_storages_list.groupby(["bus", "carrier", "scn_name"])
+        gas_storages_list.groupby(["bus"])
         .agg({"e_nom": "sum"})
         .reset_index(drop=False)
     )
+
+    # Add missing columns
+    c = {"scn_name": scn_name, "carrier": "CH4", "e_cyclic": True}
+    gas_storages_list = gas_storages_list.assign(**c)
 
     new_id = db.next_etrago_id("store")
     gas_storages_list["store_id"] = range(
