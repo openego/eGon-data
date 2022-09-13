@@ -1,8 +1,11 @@
-"""Module containing code dealing with crossbording gas pipelines for eGon100RE
+"""Module containing code dealing with gas components abroad for eGon100RE
 
-In this module the crossbordering pipelines for H2 and CH4, exclusively
-between Germany and its neighbouring countries, in eGon100RE are
-defined and inserted in the database.
+In this module the missing gas components abroad for eGon100RE are
+defined and inserted in the database:
+  * missing crossbording pipelines: the missing crossbordering
+    pipelines for H2 and CH4,are exclusively between Germany and
+    its neighbouring countries
+  * biogas generators
 
 Dependecies (pipeline)
 ======================
@@ -12,6 +15,8 @@ Dependecies (pipeline)
 Resulting tables
 ================
   * grid.egon_etrago_link is completed
+  * grid.egon_etrago_store is completed
+  * grid.egon_etrago_generator is modified
 
 """
 
@@ -20,6 +25,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.gas_neighbours.gas_abroad import (
     insert_gas_grid_capacities,
+    insert_generators,
 )
 from egon.data.datasets.pypsaeursec import read_network
 
@@ -38,6 +44,59 @@ countries = [
 
 
 def insert_gas_neigbours_eGon100RE():
+    """Insert gas components abroad for eGon100RE
+
+    Insert the missing gas crossbordering grid capacities and the
+    biogas generators for eGon100RE
+
+    """
+    insert_gas_neigbours_eGon100RE_pipes()
+    insert_generators(insert_biogas_generators_abroad(), scn_name="eGon100RE")
+
+
+def insert_biogas_generators_abroad():
+    """Insert biogas generators abroad for eGon100RE
+
+    This function defines the biogas generators in the neighbouring
+    countries for the scenario eGon100RE. The capacities arrise from
+    the pypsa-eur-sec run where the biogas available is modelled as
+    stores. Therefore, the corresponding stores are deleted and the
+    capacities inserted as biogas generation potentials.
+
+    Returns
+    -------
+    gen : pandas.DataFrame
+        Gas production capacities per foreign node
+
+    """
+    sources = config.datasets()["gas_neighbours"]["sources"]
+    scn_name = "eGon100RE"
+    carrier = "biogas"
+
+    gen = db.select_dataframe(
+        f"""
+        SELECT scn_name, bus, e_initial, marginal_cost
+        FROM {sources['stores']['schema']}.{sources['stores']['table']}
+        WHERE scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
+        """
+    )
+    gen = gen.rename(columns={"e_initial": "p_nom"})
+    gen["e_nom_max"] = gen["p_nom"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {sources['stores']['schema']}.{sources['stores']['table']}
+        WHERE scn_name = '{scn_name}'
+        AND carrier = '{carrier}';
+        """
+    )
+
+    return gen
+
+
+def insert_gas_neigbours_eGon100RE_pipes():
     """Insert missing gas crossbordering grid capacities for eGon100RE
 
     This function insert the crossbordering pipelines for H2 and CH4,
