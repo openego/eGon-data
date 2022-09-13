@@ -815,21 +815,24 @@ def insert_storage(ch4_storage_capacities):
     sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
 
+    carrier = "CH4"
+    scn_name = 'eGon2035'
+
     # Clean table
     db.execute_sql(
         f"""
         DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
-        WHERE "carrier" = 'CH4'
-        AND scn_name = 'eGon2035'
+        WHERE "carrier" = '{carrier}'
+        AND scn_name = '{scn_name}'
         AND bus IN (
             SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = 'eGon2035' 
+            WHERE scn_name = '{scn_name}'
             AND country != 'DE'
             );
         """
     )
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     ch4_storage_capacities = ch4_storage_capacities.assign(**c)
 
     new_id = db.next_etrago_id("store")
