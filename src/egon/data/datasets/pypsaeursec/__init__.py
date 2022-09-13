@@ -676,24 +676,24 @@ def neighbor_reduction():
         """Prepare and write neighboring crossborder links to eTraGo table
 
         This function prepare the neighboring crossborder links
-        generated the PyPSA-eur-sec (p-e-s) run by:
+        generated with the PyPSA-eur-sec (p-e-s) run by:
           * Delete the useless columns
           * If extendable is false only (non default case):
               * Replace p_nom = 0 with the p_nom_op values (arrising
-              from the p-e-s optimisation)
+                from the p-e-s optimisation)
               * Setting p_nom_extendable to false
           * Add geomtry to the links: 'geom' and 'topo' columns
           * Change the name of the carriers to have the consistent in
             eGon-data
 
-        The function insert then the link to the eTraGo table and has
+        The function insert then the links to the eTraGo table and has
         no return.
 
         Parameters
         ----------
         neighbor_links : pandas.DataFrame
             Dataframe containing the neighboring crossborder links
-        scn_name : str
+        scn : str
             Name of the scenario
         extendable : bool
             Boolean expressing if the links should be extendable or not
