@@ -20,13 +20,13 @@ from egon.data.datasets.gas_grid import (
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-class CH4Storages(Dataset):
+class GasStores(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="CH4Storages",
-            version="0.0.2",
+            name="GasStores",
+            version="0.0.3.dev",
             dependencies=dependencies,
-            tasks=(insert_ch4_storages),
+            tasks=(insert_gas_stores_DE),
         )
 
 
@@ -145,7 +145,7 @@ def import_installed_ch4_storages(scn_name):
     return Gas_storages_list
 
 
-def import_ch4_grid_capacity(scn_name):
+def import_gas_grid_capacity(scn_name, carrier):
     """Define dataframe containing the modelling of the CH4 grid storage
     capacity. The whole storage capacity of the grid (130000 MWh, estimation of
     the Bundesnetzagentur) is split uniformly between all the german CH4 nodes
@@ -154,7 +154,9 @@ def import_ch4_grid_capacity(scn_name):
     Parameters
     ----------
     scn_name : str
-        Name of the scenario.
+        Name of the scenario
+    carrier : str
+        Name of the carrier
 
     Returns
     -------
@@ -162,6 +164,7 @@ def import_ch4_grid_capacity(scn_name):
         Dataframe containing the gas stores in Germany modelling the gas grid storage capacity
 
     """
+    scn_params = get_sector_parameters("gas", scn_name)
     # Select source from dataset configuration
     source = config.datasets()["gas_stores"]["source"]
 
@@ -175,21 +178,27 @@ def import_ch4_grid_capacity(scn_name):
 
     sql_gas = f"""SELECT bus_id, geom
                 FROM {source['buses']['schema']}.{source['buses']['table']}
-                WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+                WHERE carrier = '{carrier}' AND scn_name = '{scn_name}'
                 AND country = 'DE';"""
     Gas_storages_list = db.select_geodataframe(sql_gas, epsg=4326)
 
     # Add missing column
     Gas_storages_list["bus"] = Gas_storages_list["bus_id"]
-    if scn_name == "eGon100RE":
+
+    if scn_name == "eGon100RE" and carrier == "CH4":
         Gas_storages_list["e_nom"] = Store_capacity * (
             1
             - get_sector_parameters("gas", scn_name)[
                 "retrofitted_CH4pipeline-to-H2pipeline_share"
             ]
         )
-    else:
+    elif scn_name == "eGon2035" and carrier == "CH4":
         Gas_storages_list["e_nom"] = Store_capacity
+    elif scn_name == "eGon100RE" and carrier == "H2_grid":
+        Gas_storages_list["e_nom"] = Store_capacity * (
+            scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
+            * scn_params["retrofitted_capacity_share"]
+        )
 
     # Remove useless columns
     Gas_storages_list = Gas_storages_list.drop(columns=["bus_id", "geom"])
@@ -197,13 +206,15 @@ def import_ch4_grid_capacity(scn_name):
     return Gas_storages_list
 
 
-def insert_ch4_stores(scn_name):
+def insert_gas_stores_germany(scn_name, carrier):
     """Insert gas stores for specific scenario
 
     Parameters
     ----------
     scn_name : str
-        Name of the scenario.
+        Name of the scenario
+    carrier: str
+        Name of the carrier
 
     Returns
     -------
@@ -221,7 +232,7 @@ def insert_ch4_stores(scn_name):
     db.execute_sql(
         f"""
         DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
-        WHERE "carrier" = 'CH4'
+        WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}'
         AND bus IN (
             SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
@@ -231,12 +242,15 @@ def insert_ch4_stores(scn_name):
         """
     )
 
-    gas_storages_list = pd.concat(
-        [
-            import_installed_ch4_storages(scn_name),
-            import_ch4_grid_capacity(scn_name),
-        ]
-    )
+    if carrier == "CH4":
+        gas_storages_list = pd.concat(
+            [
+                import_installed_ch4_storages(scn_name),
+                import_gas_grid_capacity(scn_name, carrier),
+            ]
+        )
+    elif carrier == "H2":
+        gas_storages_list = import_gas_grid_capacity(scn_name, "H2_grid")
 
     # Aggregate ch4 stores with same properties at the same bus
     gas_storages_list = (
@@ -246,7 +260,7 @@ def insert_ch4_stores(scn_name):
     )
 
     # Add missing columns
-    c = {"scn_name": scn_name, "carrier": "CH4", "e_cyclic": True}
+    c = {"scn_name": scn_name, "carrier": carrier, "e_cyclic": True}
     gas_storages_list = gas_storages_list.assign(**c)
 
     new_id = db.next_etrago_id("store")
@@ -264,12 +278,13 @@ def insert_ch4_stores(scn_name):
     )
 
 
-def insert_ch4_storages():
+def insert_gas_stores_DE():
     """Overall function for importing the gas stores for both scenarios
 
     Returns
     -------
     None.
     """
-    insert_ch4_stores("eGon2035")
-    insert_ch4_stores("eGon100RE")
+    insert_gas_stores_germany("eGon2035", "CH4")
+    insert_gas_stores_germany("eGon100RE", "CH4")
+    insert_gas_stores_germany("eGon100RE", "H2")
