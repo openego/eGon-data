@@ -1015,9 +1015,9 @@ def load_building_data():
 
         init_len = len(building_ids)
 
-        building_ids = [
-            b_id for b_id in building_ids if b_id in buildings_gdf.index
-        ]
+        building_ids = sorted(
+            list(set(building_ids).intersection(set(buildings_gdf.index)))
+        )
 
         end_len = len(building_ids)
 
@@ -2192,7 +2192,10 @@ def desaggregate_pv(
     building_bus_ids = set(buildings_gdf.bus_id)
     cap_bus_ids = set(cap_df.index)
 
-    logger.debug(f"{len(building_bus_ids)}, {len(cap_bus_ids)}")
+    logger.debug(
+        f"Bus IDs from buildings: {len(building_bus_ids)}\nBus IDs from capacity: "
+        f"{len(cap_bus_ids)}"
+    )
 
     if len(building_bus_ids) > len(cap_bus_ids):
         missing = building_bus_ids - cap_bus_ids
