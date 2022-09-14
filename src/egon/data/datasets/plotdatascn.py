@@ -11,6 +11,9 @@ scenarios eGon2035 and eGon100RE .
 
 
     
+   
+   
+   
 import logging
 import os
 from matplotlib import pyplot as plt
@@ -25,6 +28,10 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 import geopandas as gpd
+import tilemapbase
+from math import sqrt, log10
+from pyproj import Proj, transform
+import tilemapbase
 
 
 logger = logging.getLogger(__name__)
@@ -45,8 +52,64 @@ __author__ = ""
 
 
 
+  
+   
+def set_epsg_network(network):
+    """
+    Change EPSG from 4326 to 3857. Needed when using osm-background.
+
+    Parameters
+    ----------
+    network : PyPSA network container
+
+    Returns
+    -------
+    """
+
+    inProj = Proj(init='epsg:4326')
+    outProj = Proj(init='epsg:3857')
+    x1, y1 = network.buses.x.values, network.buses.y.values
+    x2, y2 = transform(inProj, outProj, x1, y1)
+    network.buses.x, network.buses.y = x2, y2
+    network.epsg = 3857
+    set_epsg_network.counter = set_epsg_network.counter + 1
+    
+def plot_osm(x, y, zoom, alpha=0.4):
+    """
+    Plots openstreetmap as background of network-plots
+
+    Parameters
+    ----------
+    x : array of two floats
+        Define x-axis boundaries (lat) of osm plot
+    y : array of two floats
+        Define y-axis boundaries (long) of osm plot
+    zoom : int
+        Define zoom of osm, higher values for higher resolution
+    alpha : float
+        Sets osm-visibility, increase value if osm covers network-plot
+
+    Returns
+    -------
+    """
+
+    tilemapbase.init(create=True)
+
+    extent = tilemapbase.Extent.from_lonlat(x[0], x[1], y[0], y[1])
+    extent = extent.to_aspect(1.0)
+    extent = extent.to_project_3857()
+
+    fig, ax = plt.subplots()
+    ax.set_zorder(1)
+    plt.axis('off')
+    plotter = tilemapbase.Plotter(extent, tilemapbase.tiles.build_OSM(),
+                                  zoom=zoom)
+    plotter.plot(ax, alpha=alpha)
+    #ax.plot(x, y, "ro-")
+    return fig, ax
+
 def plot_generation(
-              carrier,scenario, osm=False
+              carrier,scenario, osm = False
             ):
    """
     Plots color maps according to the capacity of different generators
@@ -93,19 +156,42 @@ def plot_generation(
 
    gdf = gpd.GeoDataFrame(Merge , geometry='geom')
    print(Merge)
+   print(gdf.crs)
    pnom=gdf['p_nom']  
    max_pnom=pnom.quantile(0.95) #0.95 quantile is used to filter values that are too high and make noise in the plots.
    print(max_pnom)
-   fig, ax = plt.subplots(figsize=(10,10))
+   gdf = gdf.to_crs(epsg=3857)
+
+   
+   # Plot osm map in background
+   if osm != False:
+       #if network.srid == 4326:
+           #set_epsg_network(network)
+       fig, ax = plot_osm(osm['x'], osm['y'], osm['zoom'])
+
+   else:
+       fig, ax = plt.subplots(1, 1)
+   
+   
+   
    ax.set_axis_off();
    plt.title(f" {carrier} installed capacity in MW , {scenario}")
    cmap = mpl.cm.coolwarm
    norm = mpl.colors.Normalize(vmin=0, vmax=max_pnom)
    gdf.plot(column='p_nom', ax=ax, legend=True,  legend_kwds={'label': "p_nom(MW)",
 
-                       'orientation': "vertical"}, cmap=cmap, norm=norm)
-               
-       
+                       'orientation': "vertical"}, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.1,zorder=2)
+   
    return 0
-   plot_generation(carrier, scenario)   
+   plot_generation(carrier, scenario)  
+   
+   
+   
+   
+   
+   
+
+
+
+
 
