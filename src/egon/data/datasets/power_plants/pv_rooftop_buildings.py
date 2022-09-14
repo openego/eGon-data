@@ -1015,8 +1015,8 @@ def load_building_data():
 
         init_len = len(building_ids)
 
-        building_ids = sorted(
-            list(set(building_ids).intersection(set(buildings_gdf.index)))
+        building_ids = np.intersect1d(
+            building_ids, buildings_gdf.index.to_numpy()
         )
 
         end_len = len(building_ids)
