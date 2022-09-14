@@ -959,7 +959,8 @@ def drop_buildings_outside_muns(
 def egon_building_peak_loads():
     sql = """
     SELECT building_id
-    FROM demand.egon_building_peak_loads
+    FROM demand.egon_building_electricity_peak_loads
+    WHERE scenario = 'eGon2035'
     """
 
     return db.select_dataframe(sql).building_id.astype(int).sort_values()
@@ -1167,10 +1168,7 @@ def allocate_pv(
                 )
             )
 
-            # q_mastr_gdf.loc[q_gens.index] = q_mastr_gdf.loc[
-            #     q_gens.index
-            # ].assign(building_id=chosen_buildings)
-
+            q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
 
         if count % 100 == 0:
@@ -1181,11 +1179,11 @@ def allocate_pv(
 
             t0 = perf_counter()
 
-    assigned_buildings = q_buildings_gdf.loc[~q_buildings_gdf.gens_id.isna()]
-
-    q_mastr_gdf.loc[
-        assigned_buildings.gens_id, "building_id"
-    ] = assigned_buildings.index
+    # assigned_buildings = q_buildings_gdf.loc[~q_buildings_gdf.gens_id.isna()]
+    #
+    # q_mastr_gdf.loc[
+    #     assigned_buildings.gens_id, "building_id"
+    # ] = assigned_buildings.index
 
     logger.debug("Allocated status quo generators to buildings.")
 

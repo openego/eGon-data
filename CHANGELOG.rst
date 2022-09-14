@@ -203,7 +203,8 @@ Added
   `#553 <https://github.com/openego/eGon-data/issues/553>`_
 * Allocating MaStR PV rooftop power plants to OSM and synthetic buildings.
   Desaggregating PV rooftop scenarios to mv grid districts and OSM and synthetic
-  buildings. `#684 <https://github.com/openego/eGon-data/issues/684>`_
+  buildings.
+  `#684 <https://github.com/openego/eGon-data/issues/684>`_
 * Add mapping zensus - weather cells
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
