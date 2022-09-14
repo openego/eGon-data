@@ -963,7 +963,9 @@ def egon_building_peak_loads():
     WHERE scenario = 'eGon2035'
     """
 
-    return db.select_dataframe(sql).building_id.astype(int).sort_values()
+    return (
+        db.select_dataframe(sql).building_id.astype(int).sort_values().unique()
+    )
 
 
 @timer_func
