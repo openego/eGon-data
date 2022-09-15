@@ -27,7 +27,7 @@ def insert_hgv_h2_demand():
 
         hgv_gdf = assign_h2_buses(scenario=scenario)
 
-        hgv_gdf = insert_new_entries(hgv_gdf, scenario=scenario)
+        hgv_gdf = insert_new_entries(hgv_gdf)
 
         ts_df = kg_per_year_to_mega_watt(hgv_gdf)
 
