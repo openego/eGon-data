@@ -403,7 +403,8 @@ Changed
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
 * Harmonize H2 carrier names in eGon100RE
   `#929 <https://github.com/openego/eGon-data/issues/929>`_
-
+* Add missing gas stores in eGon100RE
+  `#779 <https://github.com/openego/eGon-data/issues/779>`_
 
 Bug Fixes
 ---------
