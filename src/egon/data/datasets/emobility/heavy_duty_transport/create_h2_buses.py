@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from geoalchemy2.types import Geometry
 from loguru import logger
 import geopandas as gpd
 import numpy as np
@@ -10,11 +9,6 @@ from egon.data import config, db
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
-from egon.data.datasets.etrago_helpers import (
-    finalize_bus_insertion,
-    initialise_bus_insertion,
-)
-from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 DATASET_CFG = config.datasets()["mobility_hgv"]
 CARRIER = DATASET_CFG["constants"]["carrier"]
@@ -33,7 +27,7 @@ def insert_hgv_h2_demand():
 
         hgv_gdf = assign_h2_buses(scenario=scenario)
 
-        hgv_gdf = insert_new_entries(hgv_gdf, scenario=scenario)
+        hgv_gdf = insert_new_entries(hgv_gdf)
 
         ts_df = kg_per_year_to_mega_watt(hgv_gdf)
 
@@ -73,15 +67,13 @@ def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
     return pd.DataFrame(df)
 
 
-def insert_new_entries(hgv_h2_demand_gdf, scenario):
+def insert_new_entries(hgv_h2_demand_gdf: gpd.GeoDataFrame):
     """
     Insert loads.
     Parameters
     ----------
     hgv_h2_demand_gdf : geopandas.GeoDataFrame
         Load data to insert.
-    scenario : str
-        Name of the scenario.
     """
     new_id = db.next_etrago_id("load")
     hgv_h2_demand_gdf["load_id"] = range(
@@ -113,7 +105,7 @@ def insert_new_entries(hgv_h2_demand_gdf, scenario):
     return hgv_h2_demand_gdf
 
 
-def delete_old_entries(scenario):
+def delete_old_entries(scenario: str):
     """
     Delete loads and load timeseries.
     Parameters
@@ -145,97 +137,9 @@ def delete_old_entries(scenario):
 def assign_h2_buses(scenario: str = "eGon2035"):
     hgv_h2_demand_gdf = read_hgv_h2_demand(scenario=scenario)
 
-    hgv_h2_demand_copy_gdf = hgv_h2_demand_gdf.copy()
-
     hgv_h2_demand_gdf = db.assign_gas_bus_id(
         hgv_h2_demand_gdf, scenario, "H2_grid"
     )
-
-    hgv_h2_demand_saltcavern_gdf = db.assign_gas_bus_id(
-        hgv_h2_demand_copy_gdf, scenario, "H2_saltcavern"
-    )
-
-    saltcavern_buses_sql = f"""
-                            SELECT * FROM grid.egon_etrago_bus
-                            WHERE carrier = 'H2_saltcavern'
-                            AND scn_name = '{scenario}'
-                            """
-
-    srid = DATASET_CFG["tables"]["srid"]
-
-    saltcavern_buses_gdf = db.select_geodataframe(
-        saltcavern_buses_sql,
-        index_col="bus_id",
-        epsg=srid,
-    )
-
-    nearest_saltcavern_buses = saltcavern_buses_gdf.loc[
-        hgv_h2_demand_saltcavern_gdf["bus_id"]
-    ].geometry
-
-    hgv_h2_demand_saltcavern_gdf[
-        "distance"
-    ] = hgv_h2_demand_saltcavern_gdf.to_crs(epsg=srid).distance(
-        nearest_saltcavern_buses, align=False
-    )
-
-    new_connections = hgv_h2_demand_saltcavern_gdf.loc[
-        hgv_h2_demand_saltcavern_gdf["distance"] <= 10000
-    ]
-
-    num_new_connections = len(new_connections)
-
-    if num_new_connections > 0:
-
-        carrier = CARRIER
-        target = {"schema": "grid", "table": "egon_etrago_bus"}
-        bus_gdf = initialise_bus_insertion(carrier, target, scenario=scenario)
-
-        bus_gdf["geom"] = new_connections["geometry"]
-
-        bus_gdf = finalize_bus_insertion(
-            bus_gdf, carrier, target, scenario=scenario
-        )
-
-        # Delete existing buses
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_link
-            WHERE scn_name = '{scenario}'
-            AND carrier = '{carrier}'
-            """
-        )
-
-        # initalize dataframe for new buses
-        grid_links = pd.DataFrame(
-            columns=["scn_name", "link_id", "bus0", "bus1", "carrier"]
-        )
-
-        grid_links["bus0"] = hgv_h2_demand_gdf.loc[bus_gdf.index]["bus_id"]
-        grid_links["bus1"] = bus_gdf["bus_id"]
-        grid_links["p_nom"] = 1e9
-        grid_links["carrier"] = carrier
-        grid_links["scn_name"] = scenario
-
-        cavern_links = grid_links.copy()
-
-        cavern_links["bus0"] = new_connections["bus_id"]
-
-        engine = db.engine()
-        for table in [grid_links, cavern_links]:
-            new_id = db.next_etrago_id("link")
-            table["link_id"] = range(new_id, new_id + len(table))
-
-            link_geom_from_buses(table, scenario).to_postgis(
-                "egon_etrago_link",
-                engine,
-                schema="grid",
-                index=False,
-                if_exists="append",
-                dtype={"topo": Geometry()},
-            )
-
-        hgv_h2_demand_gdf.loc[bus_gdf.index, "bus"] = bus_gdf["bus_id"]
 
     # Add carrier
     c = {"carrier": CARRIER}
