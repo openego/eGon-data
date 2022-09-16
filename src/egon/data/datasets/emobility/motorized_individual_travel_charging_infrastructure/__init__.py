@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 import zipfile
 
@@ -10,7 +12,7 @@ WORKING_DIR = Path(".", "charging_infrastructure").resolve()
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
-def create_tables():
+def create_tables() -> None:
     """
     TODO
     Returns
@@ -19,10 +21,8 @@ def create_tables():
     """
     db.engine()
 
-    return False
 
-
-def download_zip(url, target, chunk_size=128):
+def download_zip(url: str, target: Path, chunk_size: int = 128) -> None:
     r = requests.get(url, stream=True)
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -32,20 +32,18 @@ def download_zip(url, target, chunk_size=128):
             fd.write(chunk)
 
 
-def unzip_file(source, target):
+def unzip_file(source: Path, target: Path) -> None:
     with zipfile.ZipFile(source, "r") as zip_ref:
         zip_ref.extractall(target)
 
 
-def get_tracbev_data():
-    tracbev_sources = DATASET_CFG["original_data"]["sources"]["tracbev"]
-    file = WORKING_DIR / tracbev_sources["file"]
+def get_tracbev_data() -> None:
+    tracbev_cfg = DATASET_CFG["original_data"]["sources"]["tracbev"]
+    file = WORKING_DIR / tracbev_cfg["file"]
 
-    download_zip(url=tracbev_sources["url"], target=file)
+    download_zip(url=tracbev_cfg["url"], target=file)
 
-    directory = WORKING_DIR / file.split(".")[0]
-
-    unzip_file(source=file, target=directory)
+    unzip_file(source=file, target=WORKING_DIR)
 
 
 class MITChargingInfrastructure(Dataset):
