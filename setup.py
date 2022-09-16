@@ -94,6 +94,8 @@ setup(
         "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
         "matplotlib",
         "netcdf4",
+        "numpy<1.23",  # incompatibilities with shapely 1.7.
+        # See: https://stackoverflow.com/a/73354885/12460232
         "oedialect==0.0.8",
         "omi",
         "openpyxl",
