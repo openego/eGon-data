@@ -63,6 +63,7 @@ from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
+from egon.data.datasets.pypsaeursec_neighbor_reduction import PypsaEurSecNeighborReduction
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
@@ -215,8 +216,7 @@ with airflow.DAG(
         ]
     )
 
-    # TODO: What does "trans" stand for?
-    # Calculate dynamic line rating for HV (high voltage) trans lines
+    # Calculate dynamic line rating for HV (high voltage) transmission lines
     dlr = Calculate_dlr(
         dependencies=[data_bundle, osmtgmod, weather_data, fix_subnetworks]
     )
@@ -327,6 +327,14 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
+        ]
+    )
+
+    # pypsa-eur-sec
+    pypsaeursec_neighbors = PypsaEurSecNeighborReduction(
+        dependencies=[
+            run_pypsaeursec,
+
         ]
     )
 
