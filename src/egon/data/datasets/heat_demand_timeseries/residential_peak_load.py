@@ -11,11 +11,6 @@ import time
 from loguru import logger
 from psycopg2.extensions import AsIs, register_adapter
 
-# EgonDailyHeatDemandPerClimateZone heißt in der alten DB noch anders
-from saio.demand import (
-    egon_daily_heat_demand_per_climate_zone,
-    egon_heat_idp_pool,
-)
 from sqlalchemy import REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -194,6 +189,8 @@ def get_profile_ids(mvgd):
 
 # @timeit
 def get_daily_profiles(profile_ids):
+    from saio.demand import egon_heat_idp_pool
+
     with db.session_scope() as session:
         query = session.query(egon_heat_idp_pool).filter(
             egon_heat_idp_pool.index.in_(profile_ids)
@@ -211,16 +208,17 @@ def get_daily_profiles(profile_ids):
 
 # @timeit
 def get_daily_demand_share(mvgd):
+
     with db.session_scope() as session:
         query = (
             session.query(
                 MapZensusGridDistricts.zensus_population_id,
-                egon_daily_heat_demand_per_climate_zone.day_of_year,
-                egon_daily_heat_demand_per_climate_zone.daily_demand_share,
+                EgonDailyHeatDemandPerClimateZone.day_of_year,
+                EgonDailyHeatDemandPerClimateZone.daily_demand_share,
             )
             .filter(
                 EgonMapZensusClimateZones.climate_zone
-                == egon_daily_heat_demand_per_climate_zone.climate_zone
+                == EgonDailyHeatDemandPerClimateZone.climate_zone
             )
             .filter(
                 MapZensusGridDistricts.zensus_population_id
