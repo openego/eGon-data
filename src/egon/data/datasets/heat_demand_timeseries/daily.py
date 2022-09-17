@@ -9,7 +9,7 @@ import pandas as pd
 
 from egon.data import db
 import egon.data.datasets.era5 as era
-
+from egon.data.datasets.electricity_demand_timeseries.tools import write_table_to_postgres
 
 from math import ceil
 
@@ -32,7 +32,7 @@ class EgonDailyHeatDemandPerClimateZone(Base):
     climate_zone = Column(Text, primary_key=True)
     day_of_year = Column(Integer, primary_key=True)
     temperature_class = Column(Integer)
-    heat_demand_share = Column(Float(53))
+    daily_demand_share = Column(Float(53))
 
 
 def temperature_classes():
@@ -204,14 +204,7 @@ def daily_demand_shares_per_climate_zone():
             )
         )
 
-    # Insert dataframe to SQL table
-    df.to_sql(
-        EgonDailyHeatDemandPerClimateZone.__table__.name,
-        schema=EgonDailyHeatDemandPerClimateZone.__table__.schema,
-        con=db.engine(),
-        if_exists="replace",
-        index=False,
-    )
+    write_table_to_postgres(df=df, db_table=EgonDailyHeatDemandPerClimateZone, engine=db.engine())
 
 
 class IdpProfiles:
