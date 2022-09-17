@@ -29,6 +29,16 @@ from egon.data.datasets.heat_demand_timeseries.service_sector import (
 )
 import egon
 
+from egon.data.datasets.heat_demand_timeseries.residential_peak_load import (
+create_peak_load_table,
+delete_peak_loads_if_existing,
+residential_heat_peak_load_export_bulk_1,
+residential_heat_peak_load_export_bulk_2,
+residential_heat_peak_load_export_bulk_3,
+residential_heat_peak_load_export_bulk_4,
+residential_heat_peak_load_export_bulk_5
+)
+
 Base = declarative_base()
 
 
@@ -1054,5 +1064,14 @@ class HeatTimeSeries(Dataset):
                 select,
                 district_heating,
                 # store_national_profiles,
+                create_peak_load_table,
+                delete_peak_loads_if_existing,
+                {
+                    residential_heat_peak_load_export_bulk_1,
+                    residential_heat_peak_load_export_bulk_2,
+                    residential_heat_peak_load_export_bulk_3,
+                    residential_heat_peak_load_export_bulk_4,
+                    residential_heat_peak_load_export_bulk_5
+                }
             ),
         )
