@@ -91,8 +91,12 @@ def timeitlog(func):
         start_time = time.time()
         result = func(*args, **kw)
         process_time = time.time() - start_time
+        try:
+            mvgd = kw['mvgd']
+        except KeyError:
+            mvgd = "bulk"
         statement = (
-            f"MVGD={kw['mvgd']} | Processing time of {func.__qualname__} | "
+            f"MVGD={mvgd} | Processing time of {func.__qualname__} | "
             f"{time.strftime('%H h, %M min, %S s', time.gmtime(process_time))}"
         )
         logger.trace(statement)
@@ -322,7 +326,7 @@ def calc_residential_heat_profiles_per_mvgd(
 
     return df_profile_merge
 
-
+@timeitlog
 def residential_heat_peak_load_export_bulk(n, max_n=5):
     """n= [1;max_n]"""
 
