@@ -369,7 +369,7 @@ def residential_heat_peak_load_export_bulk(n, max_n=5):
         )
         df_peak_loads["sector"] = "residential"
         # From MW to W
-        df_peak_loads["df_peak_loads"] = df_peak_loads["df_peak_loads"] * 1e6
+        df_peak_loads["peak_load_in_w"] = df_peak_loads["peak_load_in_w"] * 1e6
         logger.trace(f"MVGD={mvgd} | Export to DB")
 
         write_table_to_postgres(
