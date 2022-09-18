@@ -352,7 +352,7 @@ def residential_heat_peak_load_export_bulk(n, max_n=5):
     mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
 
     mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, max_n)
-    for mvgd in mvgd_ids[n]:
+    for mvgd in mvgd_ids[n-1]:
 
         logger.trace(f"MVGD={mvgd} | Start")
         df_peak_loads = calc_residential_heat_profiles_per_mvgd(
