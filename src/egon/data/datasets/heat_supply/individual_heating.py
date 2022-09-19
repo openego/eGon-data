@@ -59,18 +59,12 @@ class HeatPumps2050(Dataset):
         )
 
 
-# ========== Register np datatypes with SQLA ==========
 def adapt_numpy_float64(numpy_float64):
     return AsIs(numpy_float64)
 
 
 def adapt_numpy_int64(numpy_int64):
     return AsIs(numpy_int64)
-
-
-register_adapter(np.float64, adapt_numpy_float64)
-register_adapter(np.int64, adapt_numpy_int64)
-# =====================================================
 
 
 def cascade_per_technology(
@@ -348,6 +342,11 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
         index_col=None,
     ).zensus_population_id.values
 
+    # TODO replace with sql adapter?
+    # ========== Register np datatypes with SQLA ==========
+    register_adapter(np.float64, adapt_numpy_float64)
+    register_adapter(np.int64, adapt_numpy_int64)
+    # =====================================================
     # convert to pd.Index (otherwise type is np.int64, which will for some
     # reason throw an error when used in a query)
     zensus_population_ids = pd.Index(zensus_population_ids)
@@ -394,9 +393,7 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
         query.statement, query.session.bind, index_col=None
     ).building_id.values
 
-    # convert to pd.Index (otherwise type is np.int64, which will for some
-    # reason throw an error when used in a query)
-    return pd.Index(buildings_with_heat_demand)
+    return buildings_with_heat_demand
 
 
 def get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id):
