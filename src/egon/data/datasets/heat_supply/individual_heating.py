@@ -15,6 +15,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     calc_cts_building_profiles,
 )
+from egon.data.datasets.electricity_demand_timeseries.tools import timeit
 
 engine = db.engine()
 Base = declarative_base()
@@ -308,6 +309,7 @@ def plot_heat_supply(resulting_capacities):
         plt.savefig(f"plots/individual_heat_supply_{c}.png", dpi=300)
 
 
+@timeit
 def get_buildings_with_decentral_heat_demand_in_mv_grid(scenario, mv_grid_id):
     """
     Returns building IDs of buildings with decentral heat demand in given MV
