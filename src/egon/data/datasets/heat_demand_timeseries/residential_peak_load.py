@@ -10,7 +10,6 @@ import time
 
 from loguru import logger
 from psycopg2.extensions import AsIs, register_adapter
-
 from sqlalchemy import REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -92,7 +91,7 @@ def timeitlog(func):
         result = func(*args, **kw)
         process_time = time.time() - start_time
         try:
-            mvgd = kw['mvgd']
+            mvgd = kw["mvgd"]
         except KeyError:
             mvgd = "bulk"
         statement = (
@@ -292,39 +291,43 @@ def calc_residential_heat_profiles_per_mvgd(
         .div(df_profile_merge["buildings"])
     )
 
-    if max_value:
-        df_max_value = pd.concat(
-            [
-                df_profile_merge.groupby("building_id")["eGon2035"].max(),
-                df_profile_merge.groupby("building_id")["eGon100RE"].max(),
-            ],
-            axis=1,
-        )
-        return df_max_value
-
-    if cum_max:
-        df_cum_max = pd.Series(
-            [
-                df_profile_merge.groupby(["day_of_year", "hour"])["eGon2035"]
-                .sum()
-                .max(),
-                df_profile_merge.groupby(["day_of_year", "hour"])["eGon100RE"]
-                .sum()
-                .max(),
-            ],
-            index=["cum_peak_2035", "cum_peak_2050"],
-        )
-        return df_cum_max
-
-    if pivot:
-        # Reformat
-        df_profile_merge = df_profile_merge.pivot(
-            index=["day_of_year", "hour"],
-            columns="building_id",
-            values=["eGon2035", "eGon100RE"],
-        )
+    # if max_value:
+    #     df_max_value = pd.concat(
+    #         [
+    #             df_profile_merge.groupby("building_id")["eGon2035"].max(),
+    #             df_profile_merge.groupby("building_id")["eGon100RE"].max(),
+    #         ],
+    #         axis=1,
+    #     )
+    #     return df_max_value
+    #
+    # # both scenarios for etrago
+    # # different district heating buildings in scenarios?
+    # # gas boiler removed from cummulated profile in 2035
+    # if cum_max:
+    #     df_cum_max = pd.Series(
+    #         [
+    #             df_profile_merge.groupby(["day_of_year", "hour"])["eGon2035"]
+    #             .sum()
+    #             .max(),
+    #             df_profile_merge.groupby(["day_of_year", "hour"])["eGon100RE"]
+    #             .sum()
+    #             .max(),
+    #         ],
+    #         index=["cum_peak_2035", "cum_peak_2050"],
+    #     )
+    #     return df_cum_max
+    #
+    # if pivot:
+    #     # Reformat
+    #     df_profile_merge = df_profile_merge.pivot(
+    #         index=["day_of_year", "hour"],
+    #         columns="building_id",
+    #         values=["eGon2035", "eGon100RE"],
+    #     )
 
     return df_profile_merge
+
 
 @timeitlog
 def residential_heat_peak_load_export_bulk(n, max_n=5):
@@ -356,12 +359,23 @@ def residential_heat_peak_load_export_bulk(n, max_n=5):
     mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
 
     mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, max_n)
-    for mvgd in mvgd_ids[n-1]:
+
+    # TODO mvgd_ids = [kleines mvgd]
+    for mvgd in mvgd_ids[n - 1]:
 
         logger.trace(f"MVGD={mvgd} | Start")
+        # TODO return timeseries without pivot
         df_peak_loads = calc_residential_heat_profiles_per_mvgd(
             mvgd=mvgd, pivot=False, max_value=True, cum_max=False
         )
+        # TODO add CTS building profiles
+        # TODO peak load all buildings both scenarios
+        # TODO export peak loads all buildings both scenarios to db
+        # TODO remove district heating buildings both scenarios maybe different
+        # TODO desagg biggi > select gas buildings 2035
+        # TODO remove gas buildings for scenario 2035
+        # TODO calc cumulated time series for buildings with heatpumps both scenarios
+        # TODO calc cumulated time series for buildings with gas boilers for 2035
 
         if df_peak_loads is None:
             continue
