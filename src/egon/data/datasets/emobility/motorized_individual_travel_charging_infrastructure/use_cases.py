@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 from loguru import logger
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
+from egon.data import config
 
-def hpc(hpc_points: gpd.GeoDataFrame, uc_dict):
+DATASET_CFG = config.datasets()["charging_infrastructure"]
+
+
+def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict):
     """
     Calculate placements and energy distribution for use case hpc.
 
@@ -75,8 +82,7 @@ def hpc(hpc_points: gpd.GeoDataFrame, uc_dict):
 def public(
     public_points: gpd.GeoDataFrame,
     public_data: gpd.GeoDataFrame,
-    uc_dict,
-    timestep=15,
+    uc_dict: dict,
 ):
     """
     Calculate placements and energy distribution for use case hpc.
@@ -125,10 +131,12 @@ def public(
     )
 
     # outputs
-    logger.debug(f"{round(energy_sum, 1)} kWh got charged in region")
+    logger.debug(
+        f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
+    )
 
 
-def distribute_by_poi(region_poi: gpd.GeoDataFrame, num_points):
+def distribute_by_poi(region_poi: gpd.GeoDataFrame, num_points: int | float):
     # sort clusters without existing points by weight, then choose highest
     region_poi = region_poi.copy()
     region_poi.sort_values("potential", inplace=True, ascending=False)
@@ -172,110 +180,141 @@ def match_existing_points(
     return region_points, region_poi
 
 
-# def home(
-#     home_data: gpd.GeoDataFrame,
-#     uc_dict,
-#     home_charge_prob,
-#     car_num,
-#     timestep=15,
-# ):
-#     """
-#     Calculate placements and energy distribution for use case hpc.
-#
-#     :param home_data: gpd.GeoDataFrame
-#         info about house types
-#     :param uc_dict: dict
-#         contains basic run info like region boundary and save directory
-#     :param home_charge_prob: float
-#         probability of privately available home charging
-#     :param car_num: pd.Series
-#         total cars per car type in scenario
-#     :param timestep: int
-#         time step of the simbev input series, default: 15 (minutes)
-#     """
-#     uc_id = "home"
-#     print("Use case: " + uc_id)
-#     if uc_dict["mode"] == "potential":
-#         num_home = 1000000
-#         energy_sum = 1
-#     else:
-#         ts_dict = uc_dict["timeseries"]
-#         load = ts_dict[uc_dict["key"]].loc[:, "sum home"]
-#         load_sum = load.sum()
-#         energy_sum = load_sum * timestep / 60
-#         if len(car_num.index) == 1:
-#             car_sum = sum(car_num.at["single_region"].values())
-#         else:
-#             car_sum = sum(car_num.at[uc_dict["key"]].values())
-#         num_home = math.ceil(car_sum * home_charge_prob)
-#
-#     if num_home > 0:
-#         # filter houses by region
-#         in_region_bool = home_data["geometry"].within(uc_dict["region"].loc[0])
-#         in_region = home_data.loc[in_region_bool].copy()
-#         in_region[["num", "num_mfh"]] = in_region[["num", "num_mfh"]].fillna(
-#             value=0
-#         )
-#         potential = uc_helpers.apportion_home(in_region, num_home, uc_dict)
-#         in_region["charge_spots"] = potential
-#         in_region = in_region.loc[in_region["charge_spots"] > 0]
-#         in_region["energy"] = energy_sum * in_region["charge_spots"] / num_home
-#         in_region = in_region.sort_values(by="energy", ascending=False)
-#         # in_region = in_region.iloc[:num_home]
-#         # in_region = in_region.assign(energy=energy_sum/num_home)
-#         # outputs
-#         print(round(energy_sum, 1), "kWh got charged in region")
-#         cols = ["geometry", "charge_spots", "energy"]
-#         utility.save(in_region, uc_id, cols, uc_dict)
-#
-#
-# def work(landuse, weights_dict, uc_dict, timestep=15):
-#     """
-#     Calculate placements and energy distribution for use case hpc.
-#
-#     :param landuse: gpd.GeoDataFrame
-#         work areas by land use
-#     :param weights_dict: dict
-#         weights for different land use types
-#     :param uc_dict: dict
-#         contains basic run info like region boundary and save directory
-#     :param timestep: int
-#         time step of the simbev input series, default: 15 (minutes)
-#     """
-#     uc_id = "work"
-#     print("Use case: " + uc_id)
-#     if uc_dict["mode"] == "potential":
-#         energy_sum = 1
-#     else:
-#         ts_dict = uc_dict["timeseries"]
-#         load = ts_dict[uc_dict["key"]].loc[:, "sum work"]
-#         load_sum = load.sum()
-#         energy_sum = load_sum * timestep / 60
-#
-#     in_region_bool = landuse.within(uc_dict["region"].loc[0])
-#     in_region = landuse[in_region_bool].copy()
-#     # calculating the area of polygons
-#     in_region["area"] = in_region["geometry"].area / 10**6
-#     groups = in_region.groupby("landuse")
-#     group_labels = ["retail", "commercial", "industrial"]
-#     result = gpd.GeoDataFrame(
-#         columns=["geometry", "landuse", "potential"], crs="EPSG:3035"
-#     )
-#     for g in group_labels:
-#         if g in groups.groups:
-#             group = groups.get_group(g)
-#             group = group.assign(
-#                 potential=group["geometry"].area * weights_dict[g]
-#             )
-#             group.to_crs(3035)
-#             result = gpd.GeoDataFrame(
-#                 pd.concat([result, group]), crs="EPSG:3035"
-#             )
-#
-#     result["energy"] = (
-#         result["potential"] * energy_sum / result["potential"].sum()
-#     )
-#     # outputs
-#     print(round(energy_sum, 1), "kWh got charged in region")
-#     cols = ["geometry", "landuse", "potential", "energy"]
-#     utility.save(result, uc_id, cols, uc_dict)
+def home(
+    home_data: gpd.GeoDataFrame,
+    uc_dict: dict,
+):
+    """
+    Calculate placements and energy distribution for use case hpc.
+
+    :param home_data: gpd.GeoDataFrame
+        info about house types
+    :param uc_dict: dict
+        contains basic run info like region boundary and save directory
+    :param home_charge_prob: float
+        probability of privately available home charging
+    :param car_num: pd.Series
+        total cars per car type in scenario
+    :param timestep: int
+        time step of the simbev input series, default: 15 (minutes)
+    """
+    uc_id = "home"
+    logger.debug(f"Use case: {uc_id}")
+
+    num_home = 1000000
+    energy_sum = 1
+
+    # filter houses by region
+    in_region_bool = home_data["geometry"].within(uc_dict["region"].iat[0])
+
+    in_region = home_data.loc[in_region_bool]
+    in_region[["num", "num_mfh"]] = in_region[["num", "num_mfh"]].fillna(
+        value=0
+    )
+
+    potential = apportion_home(in_region, num_home, uc_dict)
+
+    in_region["charge_spots"] = potential
+    in_region = in_region.loc[in_region["charge_spots"] > 0]
+    in_region["energy"] = energy_sum * in_region["charge_spots"] / num_home
+    in_region = in_region.sort_values(by="energy", ascending=False)
+
+    logger.debug(
+        f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
+    )
+
+
+def apportion_home(home_df: pd.DataFrame, num_spots: int, config: dict):
+    # use parameters to set number of possible charge spots per row
+    home_df["num_available"] = home_df[["num", "num_mfh"]].apply(
+        home_charge_spots, axis=1, raw=True, args=(config,)
+    )
+    # if too many spots need to be placed, every house gets a spot
+    if num_spots >= home_df["num_available"].sum():
+        print(
+            "All private home spots have been filled. Leftover:",
+            num_spots - home_df["num_available"].sum(),
+        )
+        return home_df.loc[:, "num_available"]
+    # distribute charge points based on houses per square
+    samples = home_df.sample(
+        num_spots, weights="num_available", random_state=1, replace=True
+    )
+    result = pd.Series([0] * len(home_df.index), index=home_df.index)
+    for i in samples.index:
+        result.at[i] += 1
+    return result
+
+
+def home_charge_spots(house_array: pd.Series | np.array, config: dict):
+    # take number of houses, random seed, average spots per house and share of houses
+    # with possible spots
+    sfh = (
+        house_array[0]
+        * config["sfh_avg_spots"]
+        * max(config["random_seed"].normal(config["sfh_available"], 0.1), 0)
+    )
+    mfh = (
+        house_array[1]
+        * config["mfh_avg_spots"]
+        * max(config["random_seed"].normal(config["mfh_available"], 0.1), 0)
+    )
+    return round(sfh + mfh)
+
+
+def work(
+    landuse: gpd.GeoDataFrame,
+    weights_dict: dict,
+    uc_dict: dict,
+    timestep: int = 15,
+):
+    """
+    Calculate placements and energy distribution for use case hpc.
+
+    :param landuse: gpd.GeoDataFrame
+        work areas by land use
+    :param weights_dict: dict
+        weights for different land use types
+    :param uc_dict: dict
+        contains basic run info like region boundary and save directory
+    :param timestep: int
+        time step of the simbev input series, default: 15 (minutes)
+    """
+    uc_id = "work"
+    logger.debug(f"Use case: {uc_id}")
+
+    energy_sum = 1
+
+    in_region_bool = landuse.within(uc_dict["region"].iat[0])
+    in_region = landuse[in_region_bool]
+
+    # calculating the area of polygons
+    in_region["area"] = in_region["geometry"].area / 10**6
+
+    groups = in_region.groupby("landuse")
+    group_labels = ["retail", "commercial", "industrial"]
+
+    srid = DATASET_CFG["original_data"]["sources"]["tracbev"]["srid"]
+
+    result = gpd.GeoDataFrame(
+        columns=["geometry", "landuse", "potential"], crs=f"EPSG:{srid}"
+    )
+
+    for g in group_labels:
+        if g in groups.groups:
+            group = groups.get_group(g)
+            group = group.assign(
+                potential=group["geometry"].area * weights_dict[g]
+            )
+            group.to_crs(srid)
+            result = gpd.GeoDataFrame(
+                pd.concat([result, group]), crs=f"EPSG:{srid}"
+            )
+
+    result["energy"] = (
+        result["potential"] * energy_sum / result["potential"].sum()
+    )
+    # outputs
+    logger.debug(
+        f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
+    )
