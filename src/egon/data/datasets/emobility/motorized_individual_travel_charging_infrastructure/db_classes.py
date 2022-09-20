@@ -12,7 +12,7 @@ Base = declarative_base()
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
-class EgonHeavyDutyTransportVoronoi(Base):
+class EgonEmobChargingInfrastructure(Base):
 
     __tablename__ = DATASET_CFG["targets"]["charging_infrastructure"]["table"]
     __table_args__ = {
