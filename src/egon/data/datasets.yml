@@ -1101,3 +1101,12 @@ charging_infrastructure:
           - "poi_cluster.gpkg"
           - "public_positions.gpkg"
         srid: 3035
+  constants:
+    work_weight_retail: 0.8
+    work_weight_commercial: 1.25
+    work_weight_industrial: 1
+    single_family_home_share: 0.6
+    single_family_home_spots: 1.5
+    multi_family_home_share: 0.4
+    multi_family_home_spots: 10
+    random_seed: 5

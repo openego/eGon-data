@@ -231,9 +231,9 @@ def apportion_home(home_df: pd.DataFrame, num_spots: int, config: dict):
     )
     # if too many spots need to be placed, every house gets a spot
     if num_spots >= home_df["num_available"].sum():
-        print(
-            "All private home spots have been filled. Leftover:",
-            num_spots - home_df["num_available"].sum(),
+        logger.debug(
+            f"All private home spots have been filled. Leftover: "
+            f"{num_spots - home_df['num_available'].sum()}"
         )
         return home_df.loc[:, "num_available"]
     # distribute charge points based on houses per square

@@ -3,12 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.use_cases import (  # noqa: E501
+    home,
     hpc,
     public,
+    work,
 )
 
 WORKING_DIR = Path(".", "charging_infrastructure").resolve()
@@ -24,8 +27,8 @@ def run_tracbev():
 def run_use_cases(data_dict):
     hpc(data_dict["hpc_positions"], data_dict)
     public(data_dict["public_positions"], data_dict["poi_cluster"], data_dict)
-    # uc.work(data_dict["landuse"], data_dict["work_dict"], data_dict)
-    # uc.home(data_dict["housing_data"], data_dict, 0, 0)
+    work(data_dict["landuse"], data_dict["work_dict"], data_dict)
+    home(data_dict["housing_data"], data_dict)
 
 
 def run_tracbev_potential(data_dict):
@@ -74,6 +77,29 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     data_dict["regions"] = pd.DataFrame(
         columns=["mv_grid_id"],
         data=data_dict["boundaries"].bus_id.unique(),
+    )
+
+    data_dict["work_dict"] = {
+        "retail": DATASET_CFG["constants"]["work_weight_retail"],
+        "commercial": DATASET_CFG["constants"]["work_weight_commercial"],
+        "industrial": DATASET_CFG["constants"]["work_weight_industrial"],
+    }
+
+    data_dict["sfh_available"] = DATASET_CFG["constants"][
+        "single_family_home_share"
+    ]
+    data_dict["sfh_avg_spots"] = DATASET_CFG["constants"][
+        "single_family_home_spots"
+    ]
+    data_dict["mfh_available"] = DATASET_CFG["constants"][
+        "multi_family_home_share"
+    ]
+    data_dict["mfh_avg_spots"] = DATASET_CFG["constants"][
+        "multi_family_home_spots"
+    ]
+
+    data_dict["random_seed"] = np.random.default_rng(
+        DATASET_CFG["constants"]["random_seed"]
     )
 
     return data_dict
