@@ -18,6 +18,32 @@ WORKING_DIR = Path(".", "charging_infrastructure").resolve()
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
+def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float):
+    if gdf.empty:
+        return
+
+    if "energy" in gdf.columns:
+        gdf = gdf.assign(weight=gdf.energy.div(gdf.energy.sum()))
+    else:
+        rng = np.random.default_rng(DATASET_CFG["constants"]["random_seed"])
+
+        gdf = gdf.assign(weight=rng.integers(low=0, high=100, size=len(gdf)))
+
+        gdf = gdf.assign(weight=gdf.weight.div(gdf.weight.sum()))
+
+    gdf = gdf.assign(mv_grid_id=mv_grid_id)
+
+    targets = DATASET_CFG["targets"]
+    cols_to_export = targets["charging_infrastructure"]["cols_to_export"]
+
+    gdf[cols_to_export].to_postgis(
+        targets["charging_infrastructure"]["table"],
+        schema=targets["charging_infrastructure"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
+
+
 def run_tracbev():
     data_dict = get_data()
 
@@ -25,10 +51,18 @@ def run_tracbev():
 
 
 def run_use_cases(data_dict):
-    hpc(data_dict["hpc_positions"], data_dict)
-    public(data_dict["public_positions"], data_dict["poi_cluster"], data_dict)
-    work(data_dict["landuse"], data_dict["work_dict"], data_dict)
-    home(data_dict["housing_data"], data_dict)
+    write_to_db(hpc(data_dict["hpc_positions"], data_dict), data_dict["key"])
+    write_to_db(
+        public(
+            data_dict["public_positions"], data_dict["poi_cluster"], data_dict
+        ),
+        data_dict["key"],
+    )
+    write_to_db(
+        work(data_dict["landuse"], data_dict["work_dict"], data_dict),
+        data_dict["key"],
+    )
+    write_to_db(home(data_dict["housing_data"], data_dict), data_dict["key"])
 
 
 def run_tracbev_potential(data_dict):

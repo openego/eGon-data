@@ -3,23 +3,27 @@ from __future__ import annotations
 from pathlib import Path
 import zipfile
 
+from loguru import logger
 import requests
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
+    EgonEmobChargingInfrastructure,
+)
 
 WORKING_DIR = Path(".", "charging_infrastructure").resolve()
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 def create_tables() -> None:
-    """
-    TODO
-    Returns
-    -------
+    engine = db.engine()
+    EgonEmobChargingInfrastructure.__table__.drop(bind=engine, checkfirst=True)
+    EgonEmobChargingInfrastructure.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
-    """
-    db.engine()
+    logger.debug("Created tables.")
 
 
 def download_zip(url: str, target: Path, chunk_size: int = 128) -> None:

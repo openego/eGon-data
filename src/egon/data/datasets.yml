@@ -1110,3 +1110,11 @@ charging_infrastructure:
     multi_family_home_share: 0.4
     multi_family_home_spots: 10
     random_seed: 5
+  targets:
+    charging_infrastructure:
+      schema: "grid"
+      table: "egon_emob_charging_infrastructure"
+      cols_to_export:
+        - "mv_grid_id"
+        - "weight"
+        - "geometry"

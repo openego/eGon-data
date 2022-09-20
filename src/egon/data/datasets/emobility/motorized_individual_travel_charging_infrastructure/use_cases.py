@@ -76,6 +76,8 @@ def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict):
             f"{round(energy_sum, 1)} kWh got fastcharged in region {uc_dict['key']}."
         )
 
+    return real_in_region
+
 
 def public(
     public_points: gpd.GeoDataFrame,
@@ -130,6 +132,8 @@ def public(
     logger.debug(
         f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
     )
+
+    return region_points
 
 
 def distribute_by_poi(region_poi: gpd.GeoDataFrame, num_points: int | float):
@@ -211,6 +215,8 @@ def home(
     logger.debug(
         f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
     )
+
+    return in_region
 
 
 def apportion_home(home_df: pd.DataFrame, num_spots: int, config: dict):
@@ -304,3 +310,5 @@ def work(
     logger.debug(
         f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
     )
+
+    return result
