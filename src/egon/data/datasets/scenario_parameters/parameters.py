@@ -300,6 +300,12 @@ def electricity(scenario):
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["lignite"],
+            "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            + read_costs(costs, "coal", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["coal"],
+            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
