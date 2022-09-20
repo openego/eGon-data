@@ -18,8 +18,6 @@ def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict):
         GeoDataFrame of possible hpc locations
     :param uc_dict: dict
         contains basic run info like region boundary and save directory
-    :param timestep: int
-        time step of the simbev input series, default: 15 (minutes)
     """
     uc_id = "hpc"
     logger.debug(f"Use case: {uc_id}")
@@ -93,8 +91,6 @@ def public(
         clustered POI
     :param uc_dict: dict
         contains basic run info like region boundary and save directory
-    :param timestep: int
-        time step of the simbev input series, default: 15 (minutes)
     """
 
     uc_id = "public"
@@ -141,18 +137,17 @@ def distribute_by_poi(region_poi: gpd.GeoDataFrame, num_points: int | float):
     region_poi = region_poi.copy()
     region_poi.sort_values("potential", inplace=True, ascending=False)
     num_points = int(min(num_points, len(region_poi.index)))
-    selected_hpc = region_poi.iloc[:num_points]
     # choose point in cluster that is closest to big street
-    return selected_hpc
+    return region_poi.iloc[:num_points]
 
 
 def match_existing_points(
     region_points: gpd.GeoDataFrame, region_poi: gpd.GeoDataFrame
 ):
 
-    region_poi["exists"] = False
+    region_poi = region_poi.assign(exists=False)
     poi_buffer = region_poi.buffer(region_poi["radius"].astype(int))
-    region_points["potential"] = 0
+    region_points = region_points.assign(potential=0)
     for i in region_points.index:
         lis_point = region_points.at[i, "geometry"]
         cluster = poi_buffer.contains(lis_point)
@@ -163,7 +158,6 @@ def match_existing_points(
             # decent average as fallback
             region_points.at[i, "potential"] = 5
         elif num_clusters == 1:
-            # region_poi.loc[cluster, "exists"] = True
             region_points.at[i, "potential"] = clusters["potential"]
             region_poi.loc[cluster, "exists"] = True
 
@@ -191,12 +185,6 @@ def home(
         info about house types
     :param uc_dict: dict
         contains basic run info like region boundary and save directory
-    :param home_charge_prob: float
-        probability of privately available home charging
-    :param car_num: pd.Series
-        total cars per car type in scenario
-    :param timestep: int
-        time step of the simbev input series, default: 15 (minutes)
     """
     uc_id = "home"
     logger.debug(f"Use case: {uc_id}")
@@ -208,8 +196,9 @@ def home(
     in_region_bool = home_data["geometry"].within(uc_dict["region"].iat[0])
 
     in_region = home_data.loc[in_region_bool]
-    in_region[["num", "num_mfh"]] = in_region[["num", "num_mfh"]].fillna(
-        value=0
+    in_region = in_region.assign(
+        num=in_region["num"].fillna(value=0),
+        num_mfh=in_region["num_mfh"].fillna(value=0),
     )
 
     potential = apportion_home(in_region, num_home, uc_dict)
@@ -266,7 +255,6 @@ def work(
     landuse: gpd.GeoDataFrame,
     weights_dict: dict,
     uc_dict: dict,
-    timestep: int = 15,
 ):
     """
     Calculate placements and energy distribution for use case hpc.
@@ -277,8 +265,6 @@ def work(
         weights for different land use types
     :param uc_dict: dict
         contains basic run info like region boundary and save directory
-    :param timestep: int
-        time step of the simbev input series, default: 15 (minutes)
     """
     uc_id = "work"
     logger.debug(f"Use case: {uc_id}")
@@ -289,7 +275,7 @@ def work(
     in_region = landuse[in_region_bool]
 
     # calculating the area of polygons
-    in_region["area"] = in_region["geometry"].area / 10**6
+    in_region = in_region.assign(area=in_region["geometry"].area / 10**6)
 
     groups = in_region.groupby("landuse")
     group_labels = ["retail", "commercial", "industrial"]
