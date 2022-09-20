@@ -94,7 +94,7 @@ def public(
     uc_id = "public"
     logger.debug(f"Use case: {uc_id}")
 
-    num_public = 1000000
+    num_public = 10**6
     energy_sum = 1
 
     # filter hpc points by region
