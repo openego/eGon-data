@@ -19,7 +19,8 @@ class EgonEmobChargingInfrastructure(Base):
         "schema": DATASET_CFG["targets"]["charging_infrastructure"]["schema"]
     }
 
-    mv_grid_id = Column(Integer, primary_key=True)
+    cp_id = Column(Integer, primary_key=True)
+    mv_grid_id = Column(Integer)
     use_case = Column(String)
     weight = Column(Float)
     geometry = Column(

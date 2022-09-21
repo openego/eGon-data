@@ -31,7 +31,17 @@ def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
 
         gdf = gdf.assign(weight=gdf.weight.div(gdf.weight.sum()))
 
-    gdf = gdf.assign(mv_grid_id=mv_grid_id, use_case=use_case)
+    max_id = db.select_dataframe(
+        """
+        SELECT MAX(cp_id) FROM grid.egon_emob_charging_infrastructure
+        """
+    )["max"][0]
+
+    gdf = gdf.assign(
+        cp_id=range(max_id, max_id + len(gdf)),
+        mv_grid_id=mv_grid_id,
+        use_case=use_case,
+    )
 
     targets = DATASET_CFG["targets"]
     cols_to_export = targets["charging_infrastructure"]["cols_to_export"]
