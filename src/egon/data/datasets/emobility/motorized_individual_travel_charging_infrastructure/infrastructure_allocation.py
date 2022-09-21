@@ -31,7 +31,7 @@ def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
 
         gdf = gdf.assign(weight=gdf.weight.div(gdf.weight.sum()))
 
-    gdf = gdf.assign(mv_grid_id=mv_grid_id)
+    gdf = gdf.assign(mv_grid_id=mv_grid_id, use_case=use_case)
 
     targets = DATASET_CFG["targets"]
     cols_to_export = targets["charging_infrastructure"]["cols_to_export"]
@@ -62,18 +62,28 @@ def run_tracbev_potential(data_dict):
 
 
 def run_use_cases(data_dict):
-    write_to_db(hpc(data_dict["hpc_positions"], data_dict), data_dict["key"])
+    write_to_db(
+        hpc(data_dict["hpc_positions"], data_dict),
+        data_dict["key"],
+        use_case="hpc",
+    )
     write_to_db(
         public(
             data_dict["public_positions"], data_dict["poi_cluster"], data_dict
         ),
         data_dict["key"],
+        use_case="public",
     )
     write_to_db(
         work(data_dict["landuse"], data_dict["work_dict"], data_dict),
         data_dict["key"],
+        use_case="work",
     )
-    write_to_db(home(data_dict["housing_data"], data_dict), data_dict["key"])
+    write_to_db(
+        home(data_dict["housing_data"], data_dict),
+        data_dict["key"],
+        use_case="home",
+    )
 
 
 def get_data() -> dict[gpd.GeoDataFrame]:

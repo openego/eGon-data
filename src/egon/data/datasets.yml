@@ -1115,5 +1115,6 @@ charging_infrastructure:
       table: "egon_emob_charging_infrastructure"
       cols_to_export:
         - "mv_grid_id"
+        - "use_case"
         - "weight"
         - "geometry"
