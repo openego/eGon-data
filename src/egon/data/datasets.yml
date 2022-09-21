@@ -1095,7 +1095,6 @@ charging_infrastructure:
         url: "https://zenodo.org/record/6466480/files/data.zip?download=1"
         file: "data.zip"
         files_to_use:
-          - "housing_data.gpkg"
           - "hpc_positions.gpkg"
           - "landuse.gpkg"
           - "poi_cluster.gpkg"

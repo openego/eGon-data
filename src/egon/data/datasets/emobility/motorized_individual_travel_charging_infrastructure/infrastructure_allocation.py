@@ -18,7 +18,7 @@ WORKING_DIR = Path(".", "charging_infrastructure").resolve()
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
-def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float):
+def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
     if gdf.empty:
         return
 
@@ -50,6 +50,17 @@ def run_tracbev():
     run_tracbev_potential(data_dict)
 
 
+def run_tracbev_potential(data_dict):
+    bounds = data_dict["boundaries"]
+
+    for mv_grid_id in data_dict["regions"].mv_grid_id:
+        region = bounds.loc[bounds.bus_id == mv_grid_id].geom
+
+        data_dict.update({"region": region, "key": mv_grid_id})
+        # Start Use Cases
+        run_use_cases(data_dict)
+
+
 def run_use_cases(data_dict):
     write_to_db(hpc(data_dict["hpc_positions"], data_dict), data_dict["key"])
     write_to_db(
@@ -63,17 +74,6 @@ def run_use_cases(data_dict):
         data_dict["key"],
     )
     write_to_db(home(data_dict["housing_data"], data_dict), data_dict["key"])
-
-
-def run_tracbev_potential(data_dict):
-    bounds = data_dict["boundaries"]
-
-    for mv_grid_id in data_dict["regions"].mv_grid_id:
-        region = bounds.loc[bounds.bus_id == mv_grid_id].geom
-
-        data_dict.update({"region": region, "key": mv_grid_id})
-        # Start Use Cases
-        run_use_cases(data_dict)
 
 
 def get_data() -> dict[gpd.GeoDataFrame]:
@@ -98,6 +98,58 @@ def get_data() -> dict[gpd.GeoDataFrame]:
             )
         else:
             data_dict[name] = data_dict[name].to_crs(epsg=srid)
+
+    # get housing data from DB
+    sql = """
+    SELECT building_id, cell_id
+    FROM demand.egon_household_electricity_profile_of_buildings
+    """
+
+    df = db.select_dataframe(sql)
+
+    count_df = (
+        df.groupby(["building_id", "cell_id"])
+        .size()
+        .reset_index()
+        .rename(columns={0: "count"})
+    )
+
+    mfh_df = (
+        count_df.loc[count_df["count"] > 1]
+        .groupby(["cell_id"])
+        .size()
+        .reset_index()
+        .rename(columns={0: "num_mfh"})
+    )
+    efh_df = (
+        count_df.loc[count_df["count"] <= 1]
+        .groupby(["cell_id"])
+        .size()
+        .reset_index()
+        .rename(columns={0: "num"})
+    )
+
+    comb_df = (
+        mfh_df.merge(
+            right=efh_df, how="outer", left_on="cell_id", right_on="cell_id"
+        )
+        .fillna(0)
+        .astype(int)
+    )
+
+    sql = """
+    SELECT zensus_population_id, geom as geometry
+    FROM society.egon_destatis_zensus_apartment_building_population_per_ha
+    """
+
+    gdf = db.select_geodataframe(sql, geom_col="geometry", epsg=srid)
+
+    data_dict["housing_data"] = gpd.GeoDataFrame(
+        gdf.merge(
+            right=comb_df, left_on="zensus_population_id", right_on="cell_id"
+        ),
+        crs=gdf.crs,
+    ).drop(columns=["cell_id"])
 
     # get boundaries aka grid districts
     sql = """
