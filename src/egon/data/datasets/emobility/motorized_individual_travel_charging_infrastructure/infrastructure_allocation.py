@@ -37,6 +37,9 @@ def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
         """
     )["max"][0]
 
+    if max_id is None:
+        max_id = 0
+
     gdf = gdf.assign(
         cp_id=range(max_id, max_id + len(gdf)),
         mv_grid_id=mv_grid_id,
