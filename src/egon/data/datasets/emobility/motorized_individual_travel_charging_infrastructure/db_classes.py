@@ -3,7 +3,7 @@ DB tables / SQLAlchemy ORM classes for charging infrastructure
 """
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Column, Float, Integer
+from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config
@@ -20,6 +20,7 @@ class EgonEmobChargingInfrastructure(Base):
     }
 
     mv_grid_id = Column(Integer, primary_key=True)
+    use_case = Column(String)
     weight = Column(Float)
     geometry = Column(
         Geometry(
