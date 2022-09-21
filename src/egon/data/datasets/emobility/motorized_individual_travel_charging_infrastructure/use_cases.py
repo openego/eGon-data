@@ -200,6 +200,9 @@ def home(
     in_region_bool = home_data["geometry"].within(uc_dict["region"].iat[0])
 
     in_region = home_data.loc[in_region_bool]
+    if in_region.empty:
+        return in_region
+
     in_region = in_region.assign(
         num=in_region["num"].fillna(value=0),
         num_mfh=in_region["num_mfh"].fillna(value=0),
