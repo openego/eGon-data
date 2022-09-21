@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from loguru import logger
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -36,7 +37,9 @@ def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
     targets = DATASET_CFG["targets"]
     cols_to_export = targets["charging_infrastructure"]["cols_to_export"]
 
-    gdf[cols_to_export].to_postgis(
+    logger.debug(str(type(gdf)))
+
+    gpd.GeoDataFrame(gdf[cols_to_export], crs=gdf.crs).to_postgis(
         targets["charging_infrastructure"]["table"],
         schema=targets["charging_infrastructure"]["schema"],
         con=db.engine(),
