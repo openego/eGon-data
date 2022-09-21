@@ -10,7 +10,7 @@ from egon.data import config
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
-def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict):
+def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict) -> gpd.GeoDataFrame:
     """
     Calculate placements and energy distribution for use case hpc.
 
@@ -76,14 +76,14 @@ def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict):
             f"{round(energy_sum, 1)} kWh got fastcharged in region {uc_dict['key']}."
         )
 
-    return real_in_region
+    return gpd.GeoDataFrame(real_in_region, crs=hpc_points.crs)
 
 
 def public(
     public_points: gpd.GeoDataFrame,
     public_data: gpd.GeoDataFrame,
     uc_dict: dict,
-):
+) -> gpd.GeoDataFrame:
     """
     Calculate placements and energy distribution for use case hpc.
 
@@ -133,7 +133,7 @@ def public(
         f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
     )
 
-    return region_points
+    return gpd.GeoDataFrame(region_points, crs=public_points.crs)
 
 
 def distribute_by_poi(region_poi: gpd.GeoDataFrame, num_points: int | float):
@@ -181,7 +181,7 @@ def match_existing_points(
 def home(
     home_data: gpd.GeoDataFrame,
     uc_dict: dict,
-):
+) -> gpd.GeoDataFrame:
     """
     Calculate placements and energy distribution for use case hpc.
 
@@ -216,7 +216,7 @@ def home(
         f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
     )
 
-    return in_region
+    return gpd.GeoDataFrame(in_region, crs=home_data.crs)
 
 
 def apportion_home(home_df: pd.DataFrame, num_spots: int, config: dict):
@@ -261,7 +261,7 @@ def work(
     landuse: gpd.GeoDataFrame,
     weights_dict: dict,
     uc_dict: dict,
-):
+) -> gpd.GeoDataFrame:
     """
     Calculate placements and energy distribution for use case hpc.
 
@@ -311,4 +311,4 @@ def work(
         f"{round(energy_sum, 1)} kWh got charged in region {uc_dict['key']}."
     )
 
-    return result
+    return gpd.GeoDataFrame(result, crs=landuse.crs)
