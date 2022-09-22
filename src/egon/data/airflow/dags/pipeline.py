@@ -204,7 +204,9 @@ with airflow.DAG(
     load_area = LoadArea(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
-    renewable_feedin = RenewableFeedin(dependencies=[vg250, weather_data])
+    renewable_feedin = RenewableFeedin(
+        dependencies=[vg250, zensus_vg250, weather_data]
+    )
 
     # Demarcate district heating areas
     district_heating_areas = DistrictHeatingAreas(
@@ -567,5 +569,6 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            emobility_mit,
         ]
     )
