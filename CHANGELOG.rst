@@ -207,7 +207,7 @@ Added
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
 * Add sanity checks for residential electricity loads
   `#915 <https://github.com/openego/eGon-data/pull/915>`_
-``
+
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
@@ -395,9 +395,13 @@ Changed
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
+* Add sanity checks for motorized individual travel
+  `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
-    `
+* Rename noflex to lowflex scenario for motorized individual travel
+  `#921 <https://github.com/openego/eGon-data/issues/921>`_
+
 
 Bug Fixes
 ---------
@@ -575,6 +579,10 @@ Bug Fixes
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
+* Delete eMob MIT data from eTraGo tables on init
+  `#878 <https://github.com/openego/eGon-data/issues/878>`_
+* Fix model id issues in DSM potentials for CTS and industry
+  `#901 <https://github.com/openego/eGon-data/issues/901>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
