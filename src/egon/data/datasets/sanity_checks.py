@@ -58,6 +58,7 @@ class SanityChecks(Dataset):
             tasks={
                 sanitycheck_eGon2035_electricity,
                 sanitycheck_eGon2035_heat,
+                sanitycheck_pv_rooftop_buildings,
                 sanitycheck_emobility_mit,
             },
         )
