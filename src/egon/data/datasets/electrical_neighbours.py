@@ -12,8 +12,8 @@ import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class ElectricalNeighbours(Dataset):
@@ -943,7 +943,7 @@ def insert_generators(capacities):
     )
 
     # Add scenario column
-    gen["scenario"] = 'eGon2035'
+    gen["scenario"] = "eGon2035"
 
     # Add marginal costs
     gen = add_marginal_costs(gen)
@@ -1016,10 +1016,7 @@ def insert_generators(capacities):
             series_egon100.generator_id == egon_2035_to_100[gen_id]
         ]["p_max_pu"].values[0]
         entry = etrago.EgonPfHvGeneratorTimeseries(
-            scn_name="eGon2035",
-            generator_id=gen_id,
-            temp_id=1,
-            p_max_pu=serie,
+            scn_name="eGon2035", generator_id=gen_id, temp_id=1, p_max_pu=serie
         )
 
         session.add(entry)
@@ -1137,7 +1134,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
-        "RU":   "RU00",
+        "RU": "RU00",
     }
 
 
