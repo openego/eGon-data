@@ -9,7 +9,7 @@ available in the respective cencus cell.
 The resulting data is stored in separate tables
 
 * `openstreetmap.osm_buildings_synthetic`:
-    Lists generated synthetic building with id, cell_id and grid_id
+    Lists generated synthetic building with id and cell_id
 * `demand.egon_household_electricity_profile_of_buildings`:
     Mapping of demand timeseries and buildings including cell_id, building
     area and peak load
@@ -114,7 +114,6 @@ from functools import partial
 import random
 
 from geoalchemy2 import Geometry
-from shapely.geometry import Point
 from sqlalchemy import REAL, Column, Integer, String, Table, func, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -127,6 +126,9 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
 )
+from egon.data.datasets.electricity_demand_timeseries.tools import (
+    random_point_in_square,
+)
 import egon.data.config
 
 engine = db.engine()
@@ -134,6 +136,7 @@ Base = declarative_base()
 
 data_config = egon.data.config.datasets()
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
+np.random.seed(RANDOM_SEED)
 
 
 class HouseholdElectricityProfilesOfBuildings(Base):
@@ -151,21 +154,22 @@ class OsmBuildingsSynthetic(Base):
     __table_args__ = {"schema": "openstreetmap"}
 
     id = Column(String, primary_key=True)
-    geom = Column(Geometry("Polygon", 3035), index=True)
+    cell_id = Column(String, index=True)
+    geom_building = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
-    grid_id = Column(String(16))
-    cell_id = Column(String)
+    n_amenities_inside = Column(Integer)
     building = Column(String(11))
     area = Column(REAL)
 
 
-class BuildingPeakLoads(Base):
-    __tablename__ = "egon_building_peak_loads"
+class BuildingElectricityPeakLoads(Base):
+    __tablename__ = "egon_building_electricity_peak_loads"
     __table_args__ = {"schema": "demand"}
 
-    building_id = Column(String, primary_key=True)
-    building_peak_load_in_w_2035 = Column(REAL)
-    building_peak_load_in_w_2050 = Column(REAL)
+    building_id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
+    sector = Column(String, primary_key=True)
+    peak_load_in_w = Column(REAL)
 
 
 def match_osm_and_zensus_data(
@@ -302,7 +306,8 @@ def match_osm_and_zensus_data(
 
 def generate_synthetic_buildings(missing_buildings, edge_length):
     """
-    Generate synthetic square buildings in census cells.
+    Generate synthetic square buildings in census cells for every entry
+    in missing_buildings.
 
     Generate random placed synthetic buildings incl geom data within the bounds
     of the cencus cell. Buildings have each a square area with edge_length^2.
@@ -310,8 +315,8 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     Parameters
     ----------
-    missing_buildings: pd.DataFrame
-        Table with cell_ids and number of missing buildings
+    missing_buildings: pd.Series or pd.DataFrame
+        Table with cell_ids and building number
     edge_length: int
         Edge length of square synthetic building in meter
 
@@ -346,9 +351,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     # add geom data of zensus cell
     missing_buildings_geom = pd.merge(
-        left=destatis_zensus_population_per_ha_inside_germany[
-            ["geom", "grid_id"]
-        ],
+        left=destatis_zensus_population_per_ha_inside_germany[["geom"]],
         right=missing_buildings,
         left_index=True,
         right_index=True,
@@ -364,31 +367,24 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         }
     )
 
-    # cell bounds - half edge_length to not build buildings on the cell border
-    xmin = missing_buildings_geom["geom"].bounds["minx"] + edge_length / 2
-    xmax = missing_buildings_geom["geom"].bounds["maxx"] - edge_length / 2
-    ymin = missing_buildings_geom["geom"].bounds["miny"] + edge_length / 2
-    ymax = missing_buildings_geom["geom"].bounds["maxy"] - edge_length / 2
+    # create random points within census cells
+    points = random_point_in_square(
+        geom=missing_buildings_geom["geom"], tol=edge_length / 2
+    )
 
-    # generate random coordinates within bounds - half edge_length
-    np.random.seed(RANDOM_SEED)
-    x = (xmax - xmin) * np.random.rand(missing_buildings_geom.shape[0]) + xmin
-    y = (ymax - ymin) * np.random.rand(missing_buildings_geom.shape[0]) + ymin
-
-    points = pd.Series([Point(cords) for cords in zip(x, y)])
-    points = gpd.GeoSeries(points, crs="epsg:3035")
-    # Buffer the points using a square cap style
-    # Note cap_style: round = 1, flat = 2, square = 3
-    buffer = points.buffer(edge_length / 2, cap_style=3)
-
-    # store center of polygon
+    # Store center of poylon
     missing_buildings_geom["geom_point"] = points
-    # replace cell geom with new building geom
-    missing_buildings_geom["geom"] = buffer
+    # Create building using a square around point
+    missing_buildings_geom["geom_building"] = points.buffer(
+        distance=edge_length / 2, cap_style=3
+    )
+    missing_buildings_geom = missing_buildings_geom.drop(columns=["geom"])
+    missing_buildings_geom = gpd.GeoDataFrame(
+        missing_buildings_geom, crs="EPSG:3035", geometry="geom_building"
+    )
 
-    # get
-    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
     # get table metadata from db by name and schema
+    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
     inspect(engine).reflecttable(buildings, None)
 
     # get max number of building ids from non-filtered building table
@@ -401,11 +397,20 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         buildings + len(missing_buildings_geom) + 1,
     )
 
-    missing_buildings_geom = missing_buildings_geom.drop(
-        columns=["building_id", "profiles"]
-    )
+    drop_columns = [
+        i
+        for i in ["building_id", "profiles"]
+        if i in missing_buildings_geom.columns
+    ]
+    if drop_columns:
+        missing_buildings_geom = missing_buildings_geom.drop(
+            columns=drop_columns
+        )
+
     missing_buildings_geom["building"] = "residential"
-    missing_buildings_geom["area"] = missing_buildings_geom["geom"].area
+    missing_buildings_geom["area"] = missing_buildings_geom[
+        "geom_building"
+    ].area
 
     return missing_buildings_geom
 
@@ -687,8 +692,8 @@ def get_building_peak_loads():
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
                 index=[
-                    "building_peak_load_in_w_2035",
-                    "building_peak_load_in_w_2050",
+                    "eGon2035",
+                    "eGon100RE",
                 ],
             ).T
 
@@ -697,14 +702,25 @@ def get_building_peak_loads():
             )
 
         df_building_peak_loads.reset_index(inplace=True)
+        df_building_peak_loads["sector"] = "residential"
 
-        BuildingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-        BuildingPeakLoads.__table__.create(bind=engine, checkfirst=True)
+        BuildingElectricityPeakLoads.__table__.drop(
+            bind=engine, checkfirst=True
+        )
+        BuildingElectricityPeakLoads.__table__.create(
+            bind=engine, checkfirst=True
+        )
+
+        df_building_peak_loads = df_building_peak_loads.melt(
+            id_vars=["building_id", "sector"],
+            var_name="scenario",
+            value_name="peak_load_in_w",
+        )
 
         # Write peak loads into db
         with db.session_scope() as session:
             session.bulk_insert_mappings(
-                BuildingPeakLoads,
+                BuildingElectricityPeakLoads,
                 df_building_peak_loads.to_dict(orient="records"),
             )
 
@@ -765,7 +781,7 @@ def map_houseprofiles_to_buildings():
     egon_map_zensus_buildings_residential_synth = pd.concat(
         [
             egon_map_zensus_buildings_residential,
-            synthetic_buildings[["id", "grid_id", "cell_id"]],
+            synthetic_buildings[["id", "cell_id"]],
         ],
         ignore_index=True,
     )
@@ -780,6 +796,9 @@ def map_houseprofiles_to_buildings():
     synthetic_buildings = reduce_synthetic_buildings(
         mapping_profiles_to_buildings, synthetic_buildings
     )
+    # TODO remove unused code
+    # synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
+    synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
@@ -792,11 +811,11 @@ def map_houseprofiles_to_buildings():
         schema="openstreetmap",
         dtype={
             "id": OsmBuildingsSynthetic.id.type,
-            "building": OsmBuildingsSynthetic.building.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
-            "grid_id": OsmBuildingsSynthetic.grid_id.type,
-            "geom": OsmBuildingsSynthetic.geom.type,
+            "geom_building": OsmBuildingsSynthetic.geom_building.type,
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
+            "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
+            "building": OsmBuildingsSynthetic.building.type,
             "area": OsmBuildingsSynthetic.area.type,
         },
     )
@@ -819,7 +838,7 @@ def map_houseprofiles_to_buildings():
 setup = partial(
     Dataset,
     name="Demand_Building_Assignment",
-    version="0.0.3",
+    version="0.0.5",
     dependencies=[],
     tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
 )
