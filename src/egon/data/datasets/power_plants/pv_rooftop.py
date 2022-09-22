@@ -4,6 +4,15 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    EPSG,
+    add_overlay_id_to_buildings,
+    drop_buildings_outside_grids,
+    federal_state_data,
+    grid_districts,
+    load_building_data,
+    overlay_grid_districts_with_counties,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -87,6 +96,26 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
          GROUP BY (b.bus_id, vg250_lan)
          """
     )
+
+    # make sure only grid districts with any buildings are used
+    buildings_gdf = load_building_data()
+    grid_districts_gdf = grid_districts(EPSG)
+    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+
+    grid_federal_state_gdf = overlay_grid_districts_with_counties(
+        grid_districts_gdf,
+        federal_state_gdf,
+    )
+
+    buildings_overlay_gdf = add_overlay_id_to_buildings(
+        buildings_gdf,
+        grid_federal_state_gdf,
+    )
+
+    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
+    bus_ids = valid_buildings_gdf.bus_id.astype(int).unique()
+
+    demand = demand.loc[demand.bus_id.isin(bus_ids)]
 
     # Distribute to mv grids per federal state or Germany
     if level == "federal_state":

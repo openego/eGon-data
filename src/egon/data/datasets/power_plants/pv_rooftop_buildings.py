@@ -209,7 +209,9 @@ def timer_func(func):
         result = func(*args, **kwargs)
         end_time = perf_counter()
         total_time = end_time - start_time
-        print(f"Function {func.__name__} took {total_time:.4f} seconds.")
+        logger.debug(
+            f"Function {func.__name__} took {total_time:.4f} seconds."
+        )
         return result
 
     return timeit_wrapper
@@ -1022,8 +1024,8 @@ def load_building_data():
         end_len = len(building_ids)
 
         logger.debug(
-            f"{end_len/init_len * 100: g} % ({end_len} / {init_len}) of IDs within OSM"
-            f" buildings."
+            f"{end_len/init_len * 100: g} % ({end_len} / {init_len}) of buildings have "
+            f"peak load."
         )
 
         buildings_gdf = buildings_gdf.loc[building_ids]
