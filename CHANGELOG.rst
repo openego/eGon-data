@@ -579,6 +579,8 @@ Bug Fixes
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
 * Delete eMob MIT data from eTraGo tables on init
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
+* Fix model id issues in DSM potentials for CTS and industry
+  `#901 <https://github.com/openego/eGon-data/issues/901>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
