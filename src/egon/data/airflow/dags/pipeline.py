@@ -406,7 +406,10 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
+        dependencies=[
+            h2_infrastructure,
+            insert_power_to_h2_installations
+        ]
     )
 
     # Create gas voronoi eGon100RE
@@ -581,5 +584,6 @@ with airflow.DAG(
             fill_etrago_generators,
             household_electricity_demand_annual,
             cts_demand_buildings,
+            emobility_mit,
         ]
     )
