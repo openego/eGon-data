@@ -2267,6 +2267,15 @@ def desaggregate_pv(
             f"Total cap in grid {bus_id}: {gdf.capacity.sum() + pv_installed}"
         )
 
+        if not np.isclose(
+            gdf.capacity.sum() + pv_installed, pv_target, rtol=1e-3
+        ):
+            logger.warning(
+                f"The desired capacity and actual capacity in grid {bus_id} differ.\n"
+                f"Desired cap: {pv_target}\nActual cap: "
+                f"{gdf.capacity.sum() + pv_installed}"
+            )
+
         allocated_buildings_gdf = pd.concat(
             [
                 allocated_buildings_gdf,
