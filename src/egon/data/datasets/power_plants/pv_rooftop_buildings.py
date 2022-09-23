@@ -2232,6 +2232,8 @@ def desaggregate_pv(
 
         pv_target = cap_df.at[bus_id, "capacity"] * 1000
 
+        logger.debug(f"pv_target: {pv_target}")
+
         pv_missing = pv_target - pv_installed
 
         if pv_missing <= 0:
@@ -2259,9 +2261,9 @@ def desaggregate_pv(
             **kwargs,
         )
 
-        # init_len = len(allocated_buildings_gdf)
-        #
-        # init_cap = allocated_buildings_gdf.capacity.sum()
+        logger.debug(f"New cap: {gdf.capacity.sum()}")
+        logger.debug(f"Installed cap: {pv_installed}")
+        logger.debug(f"Total cap: {gdf.capacity.sum() + pv_installed}")
 
         allocated_buildings_gdf = pd.concat(
             [
@@ -2269,26 +2271,6 @@ def desaggregate_pv(
                 gdf,
             ]
         )
-
-        # assert np.isclose(
-        #     init_cap + gdf.capacity.sum(),
-        #     allocated_buildings_gdf.capacity.sum(),
-        # )
-        #
-        # assert len(allocated_buildings_gdf) == init_len + len(gdf)
-        #
-        # assert np.isclose(
-        #     pv_missing, gdf.capacity.sum(), rtol=1e-03
-        # ), f"{pv_missing} != {gdf.capacity.sum()}"
-
-    # assert np.isclose(
-    #     cap_df.loc[buildings_gdf.bus_id.unique()].capacity.sum() * 1000,
-    #     allocated_buildings_gdf.capacity.sum(),
-    #     rtol=1e-03,
-    # ), (
-    #     f"{cap_df.loc[buildings_gdf.bus_id.unique()].capacity.sum() * 1000} != "
-    #     f"{allocated_buildings_gdf.capacity.sum()}"
-    # )
 
     logger.debug("Desaggregated scenario.")
     logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
