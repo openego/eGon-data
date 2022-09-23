@@ -2261,9 +2261,11 @@ def desaggregate_pv(
             **kwargs,
         )
 
-        logger.debug(f"New cap: {gdf.capacity.sum()}")
-        logger.debug(f"Installed cap: {pv_installed}")
-        logger.debug(f"Total cap: {gdf.capacity.sum() + pv_installed}")
+        logger.debug(f"New cap in grid {bus_id}: {gdf.capacity.sum()}")
+        logger.debug(f"Installed cap in grid {bus_id}: {pv_installed}")
+        logger.debug(
+            f"Total cap in grid {bus_id}: {gdf.capacity.sum() + pv_installed}"
+        )
 
         allocated_buildings_gdf = pd.concat(
             [
