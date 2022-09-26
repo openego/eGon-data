@@ -564,7 +564,7 @@ with airflow.DAG(
     )
 
     mit_charging_infrastructure = MITChargingInfrastructure(
-        dependencies=[mv_grid_districts]
+        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
     )
 
     # Sanity Checks
