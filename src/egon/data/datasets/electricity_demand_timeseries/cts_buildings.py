@@ -254,8 +254,8 @@ class CtsDemandBuildings(Dataset):
 
 def amenities_without_buildings():
     """
-    Amenities which have no buildings assigned and are in
-    a cell with cts demand are determined.
+    Amenities which have no buildings assigned and are in a cell with cts
+    demand are determined.
 
     Returns
     -------
@@ -396,7 +396,7 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     df["area"] = df["geom_building"].area
     # set building type of synthetic building
     df["building"] = "cts"
-    # TODO remove in #772
+    # TODO remove after #772
     df = df.rename(
         columns={
             # "zensus_population_id": "cell_id",
@@ -531,7 +531,7 @@ def buildings_with_amenities():
                 cells_query.session.bind,
                 geom_col="geom",
             )
-            # TODO maybe adapt method
+
             # place random amenity in cell
             df_lost_cells["n_amenities_inside"] = 1
             df_lost_cells.rename(
@@ -776,7 +776,7 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
         index_col=None,
     )
 
-    # TODO maybe remove
+    # TODO remove after #722
     df_buildings_without_amenities = df_buildings_without_amenities.rename(
         columns={"cell_id": "zensus_population_id"}
     )
@@ -927,7 +927,7 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    # TODO bus_id fix
+    # only pass selected columns
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
     ]
@@ -1047,7 +1047,7 @@ def calc_cts_building_profiles(
             orient="index",
         )
 
-    # TODO remove later
+    # TODO remove after #722
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
     # get demand profile for all buildings for selected demand share
@@ -1172,6 +1172,7 @@ def cts_buildings():
     # Append lost cells due to duplicated ids, to cover all demand cells
     if not df_lost_cells.empty:
 
+        # Number of synth amenities per cell
         df_lost_cells["amenities"] = median_n_amenities
         # create row for every amenity
         df_lost_cells["amenities"] = (
@@ -1192,7 +1193,7 @@ def cts_buildings():
     )
     log.info("Synthetic buildings created!")
 
-    # TODO write to DB and remove renaming
+    # TODO remove renaming after #722
     write_table_to_postgis(
         df_synthetic_buildings_with_amenities.rename(
             columns={
@@ -1256,7 +1257,7 @@ def cts_buildings():
     )
     log.info(f"{median_n_amenities} synthetic buildings per cell created")
 
-    # TODO remove (backup) renaming after #871
+    # TODO remove renaming after #722
     write_table_to_postgis(
         df_synthetic_buildings_without_amenities.rename(
             columns={
@@ -1297,17 +1298,16 @@ def cts_buildings():
     df_cts_buildings = remove_double_bus_id(df_cts_buildings)
     log.info("Double bus_id checked")
 
-    # TODO maybe remove after #772
+    # TODO remove dypte correction after #722
     df_cts_buildings["id"] = df_cts_buildings["id"].astype(int)
 
-    # Write table to db for debugging
-    # TODO remove later? Check if cts-builings are querried in other functions
     df_cts_buildings = gpd.GeoDataFrame(
         df_cts_buildings, geometry="geom_building", crs=3035
     )
     df_cts_buildings = df_cts_buildings.reset_index().rename(
         columns={"index": "serial"}
     )
+    # Write table to db for debugging and postprocessing
     write_table_to_postgis(
         df_cts_buildings,
         CtsBuildings,
@@ -1452,7 +1452,7 @@ def get_cts_electricity_peak_load():
         )
         log.info(f"Peak load for {scenario} determined!")
 
-        # TODO remove later
+        # TODO remove after #772
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
         df_peak_load["sector"] = "cts"
 
@@ -1528,7 +1528,7 @@ def get_cts_heat_peak_load():
         )
         log.info(f"Peak load for {scenario} determined!")
 
-        # TODO remove later
+        # TODO remove after #772
         df_peak_load.rename(columns={"id": "building_id"}, inplace=True)
         df_peak_load["sector"] = "cts"
 
