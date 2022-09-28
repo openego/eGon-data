@@ -12,4 +12,12 @@ CREATE TABLE openstreetmap.osm_amenities_not_in_buildings as
         select aib.osm_id_amenity
         from openstreetmap.osm_amenities_in_buildings_tmp aib
     );
-CREATE INDEX ON openstreetmap.osm_amenities_not_in_buildings USING gist (geom);
+
+ALTER TABLE openstreetmap.osm_amenities_not_in_buildings
+    ADD CONSTRAINT pk_osm_amenities_not_in_buildings PRIMARY KEY (egon_amenity_id);
+
+CREATE INDEX idx_osm_amenities_not_in_buildings_osm_id
+    ON openstreetmap.osm_amenities_not_in_buildings using btree (osm_id);
+
+CREATE INDEX idx_osm_amenities_not_in_buildings_geom
+    ON openstreetmap.osm_amenities_not_in_buildings USING gist (geom_amenity);

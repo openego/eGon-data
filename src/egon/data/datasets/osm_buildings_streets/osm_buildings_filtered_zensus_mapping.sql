@@ -21,3 +21,9 @@ CREATE TABLE boundaries.egon_map_zensus_buildings_filtered as
         on ST_Within(bld.geom_point, zensus.geom)
     ) bld2
     where bld2.id is not null and bld2.grid_id is not null;
+
+ALTER TABLE ONLY boundaries.egon_map_zensus_buildings_filtered
+    ADD CONSTRAINT pk_egon_map_zensus_buildings_filtered PRIMARY KEY (id);
+
+CREATE INDEX idx_egon_map_zensus_buildings_filtered_cell_id
+    ON boundaries.egon_map_zensus_buildings_filtered USING btree (cell_id);
