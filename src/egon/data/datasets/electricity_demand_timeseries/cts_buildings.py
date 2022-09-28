@@ -936,7 +936,9 @@ def calc_cts_building_profiles(
     Returns
     -------
     df_building_profiles: pd.DataFrame
-        Table of demand profile per building
+        Table of demand profile per building. Column names are building IDs and index
+        is hour of the year as int (0-8759).
+
     """
     if sector == "electricity":
         # Get cts building electricity demand share of selected buildings
