@@ -108,25 +108,6 @@ def write_table_to_postgis(gdf, table, engine=db.engine(), drop=True):
     )
 
 
-# def write_table_to_postgres(df, table, drop=True):
-#     """"""
-#
-#     # Only take in db table defined columns
-#     columns = [column.key for column in table.__table__.columns]
-#     df = df.loc[:, columns]
-#
-#     if drop:
-#         table.__table__.drop(bind=engine, checkfirst=True)
-#         table.__table__.create(bind=engine)
-#
-#     # Write peak loads into db
-#     with db.session_scope() as session:
-#         session.bulk_insert_mappings(
-#             table,
-#             df.to_dict(orient="records"),
-#         )
-
-
 def psql_insert_copy(table, conn, keys, data_iter):
     """
     Execute SQL statement inserting data
