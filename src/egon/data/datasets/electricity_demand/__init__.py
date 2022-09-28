@@ -152,6 +152,12 @@ def get_annual_household_el_demand_cells():
     # convert from Wh to MWh
     df_annual_demand["demand"] = df_annual_demand["demand"] / 1e6
 
+    # delete all cells for residentials
+    with db.session_scope() as session:
+        session.query(EgonDemandRegioZensusElectricity).filter(
+            EgonDemandRegioZensusElectricity.sector == "residential"
+        ).delete()
+
     # Insert data to target table
     df_annual_demand.to_sql(
         name=EgonDemandRegioZensusElectricity.__table__.name,
