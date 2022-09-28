@@ -32,7 +32,7 @@ class EgonDailyHeatDemandPerClimateZone(Base):
     climate_zone = Column(Text, primary_key=True)
     day_of_year = Column(Integer, primary_key=True)
     temperature_class = Column(Integer)
-    heat_demand_share = Column(Float(53))
+    daily_demand_share = Column(Float(53))
 
 
 def temperature_classes():
