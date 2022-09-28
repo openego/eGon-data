@@ -140,6 +140,11 @@ crucial to the quality of our results.
 reality, but are chosen for sake of simplicity as a measure to fill data gaps.
 * Since this dataset is a cascade after generation of synthetic residential
 buildings also check drawbacks and limitations in hh_buildings.py
+* Synthetic buildings may be placed within osm buildings which exceed multiple
+census cells. This is currently accepted but may be solved in  #953
+* Scattered high peak loads occur and might lead to single MV grid connections
+in ding0. In some cases this might not be viable. Postprocessing is needed and
+may be solved in #954
 
 
 Example Query
