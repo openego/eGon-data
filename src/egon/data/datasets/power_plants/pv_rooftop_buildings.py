@@ -198,8 +198,9 @@ COLS_TO_EXPORT = [
     "voltage_level",
 ]
 
-INCLUDE_SYNTHETIC_BUILDINGS = False
-ONLY_BUILDINGS_WITH_DEMAND = True
+INCLUDE_SYNTHETIC_BUILDINGS = True
+ONLY_BUILDINGS_WITH_DEMAND = False
+ALLOCATE_STATUS_QUO = False
 
 
 def timer_func(func):
@@ -1102,6 +1103,9 @@ def allocate_pv(
     q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
 
     ags_list = q_buildings_gdf.ags.unique()
+
+    if not ALLOCATE_STATUS_QUO:
+        ags_list = ags_list[:1000]
 
     num_ags = len(ags_list)
 
