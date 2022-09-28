@@ -17,13 +17,10 @@ scenarios eGon2035 and eGon100RE .
 import logging
 import os
 from matplotlib import pyplot as plt
-import matplotlib.patches as mpatches
 import matplotlib as mpl
 import pandas as pd
-import numpy as np
 from math import sqrt, log10
 from pyproj import Proj, transform
-import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
@@ -32,6 +29,7 @@ import tilemapbase
 from math import sqrt, log10
 from pyproj import Proj, transform
 import tilemapbase
+from matplotlib_scalebar.scalebar import ScaleBar
 
 
 logger = logging.getLogger(__name__)
@@ -45,7 +43,6 @@ __copyright__ = ("Flensburg University of Applied Sciences, "
                  "DLR-Institute for Networked Energy Systems")
 __license__ = ""
 __author__ = ""
-
 
 
 
@@ -88,6 +85,12 @@ def plot_osm(x, y, zoom, alpha=0.4):
         Define zoom of osm, higher values for higher resolution
     alpha : float
         Sets osm-visibility, increase value if osm covers network-plot
+    osm : bool or dict, e.g. {'x': [1,20], 'y': [47, 56], 'zoom' : 6}
+        If not False, osm is set as background
+        with the following settings as dict:
+                'x': array of two floats, x axis boundaries (lat)
+                'y': array of two floats, y axis boundaries (long)
+                'zoom' : resolution of osm. The default is False.
 
     Returns
     -------
@@ -99,8 +102,9 @@ def plot_osm(x, y, zoom, alpha=0.4):
     extent = extent.to_aspect(1.0)
     extent = extent.to_project_3857()
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(1,1)
     ax.set_zorder(1)
+    ax.add_artist(ScaleBar(1))
     plt.axis('off')
     plotter = tilemapbase.Plotter(extent, tilemapbase.tiles.build_OSM(),
                                   zoom=zoom)
@@ -155,11 +159,8 @@ def plot_generation(
    Merge.loc[Merge ['country'] != "DE", "p_nom" ] = 0
 
    gdf = gpd.GeoDataFrame(Merge , geometry='geom')
-   print(Merge)
-   print(gdf.crs)
    pnom=gdf['p_nom']  
    max_pnom=pnom.quantile(0.95) #0.95 quantile is used to filter values that are too high and make noise in the plots.
-   print(max_pnom)
    gdf = gdf.to_crs(epsg=3857)
 
    
@@ -177,21 +178,19 @@ def plot_generation(
    ax.set_axis_off();
    plt.title(f" {carrier} installed capacity in MW , {scenario}")
    cmap = mpl.cm.coolwarm
+   
+  
    norm = mpl.colors.Normalize(vmin=0, vmax=max_pnom)
-   gdf.plot(column='p_nom', ax=ax, legend=True,  legend_kwds={'label': "p_nom(MW)",
+   gdf.plot(column='p_nom', ax=ax, legend=False,  legend_kwds={'label': "p_nom(MW)",
 
                        'orientation': "vertical"}, cmap=cmap, norm=norm, edgecolor='black', linewidth=0.1,zorder=2)
-   
+   scatter = ax.collections[0]
+   cbar=plt.colorbar(scatter, ax=ax, extend='max')
+   cbar.set_label('p_nom(MW)', rotation=90)
    return 0
-   plot_generation(carrier, scenario)  
-   
-   
-   
-   
-   
-   
+      
 
-
-
-
-
+   
+   
+   
+ 
