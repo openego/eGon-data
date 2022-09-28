@@ -76,7 +76,7 @@ def hpc(hpc_points: gpd.GeoDataFrame, uc_dict: dict) -> gpd.GeoDataFrame:
             f"{round(energy_sum, 1)} kWh got fastcharged in region {uc_dict['key']}."
         )
 
-    return gpd.GeoDataFrame(real_in_region, crs=hpc_points.crs)
+    return gpd.GeoDataFrame(real_in_region)
 
 
 def public(
