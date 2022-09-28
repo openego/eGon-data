@@ -198,9 +198,10 @@ COLS_TO_EXPORT = [
     "voltage_level",
 ]
 
+# TODO
 INCLUDE_SYNTHETIC_BUILDINGS = True
-ONLY_BUILDINGS_WITH_DEMAND = False
-ALLOCATE_STATUS_QUO = False
+ONLY_BUILDINGS_WITH_DEMAND = True
+TEST_RUN = False
 
 
 def timer_func(func):
@@ -1104,8 +1105,8 @@ def allocate_pv(
 
     ags_list = q_buildings_gdf.ags.unique()
 
-    if not ALLOCATE_STATUS_QUO:
-        ags_list = ags_list[:1000]
+    if TEST_RUN:
+        ags_list = ags_list[:250]
 
     num_ags = len(ags_list)
 
@@ -2252,12 +2253,9 @@ def desaggregate_pv(
         if pot_buildings_gdf.max_cap.sum() < pv_missing:
             logger.error(
                 f"In grid {bus_id} there is less PV potential ("
-                f"{pot_buildings_gdf.max_cap.sum():g} kW) than allocated PV "
-                f"capacity ({pv_missing:g} kW). The grid is skipped. This message "
-                "should only appear doing test runs with few buildings."
+                f"{pot_buildings_gdf.max_cap.sum():g} kW) than allocated PV  capacity "
+                f"({pv_missing:g} kW). The average roof utilization will be very high."
             )
-
-            continue
 
         gdf = desaggregate_pv_in_mv_grid(
             buildings_gdf=pot_buildings_gdf,
