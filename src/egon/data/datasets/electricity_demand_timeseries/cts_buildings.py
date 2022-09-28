@@ -1241,6 +1241,7 @@ def cts_buildings():
     )
     log.info("Cells with only demand identified!")
 
+    # TODO implement overlay prevention #953 here
     # Median n Amenities per cell
     df_cells_with_cts_demand_only["amenities"] = median_n_amenities
     # create row for every amenity
