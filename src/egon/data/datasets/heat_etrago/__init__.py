@@ -249,7 +249,8 @@ def insert_store(scenario, carrier):
 
 def store():
     insert_store("eGon2035", "central_heat")
-    insert_store("eGon2035", "rural_heat")
+    # Temporary drop everything related to rural heat
+    # insert_store("eGon2035", "rural_heat")
 
 
 def insert_central_direct_heat(scenario="eGon2035"):
@@ -572,9 +573,9 @@ def buses():
     """
 
     insert_buses("central_heat", scenario="eGon2035")
-    insert_buses("rural_heat", scenario="eGon2035")
+    # insert_buses("rural_heat", scenario="eGon2035")
     insert_buses("central_heat", scenario="eGon100RE")
-    insert_buses("rural_heat", scenario="eGon100RE")
+    # insert_buses("rural_heat", scenario="eGon100RE")
 
 
 def supply():
@@ -591,9 +592,10 @@ def supply():
 
     insert_central_direct_heat(scenario="eGon2035")
     insert_central_power_to_heat(scenario="eGon2035")
-    insert_individual_power_to_heat(scenario="eGon2035")
+    # Temporary drop everything related to rural heat
+    # insert_individual_power_to_heat(scenario="eGon2035")
 
-    insert_rural_gas_boilers(scenario="eGon2035")
+    # insert_rural_gas_boilers(scenario="eGon2035")
     insert_central_gas_boilers(scenario="eGon2035")
 
 
@@ -601,7 +603,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )
