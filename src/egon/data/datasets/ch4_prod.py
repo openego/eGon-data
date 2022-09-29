@@ -24,7 +24,7 @@ class CH4Production(Dataset):
             name="CH4Production",
             version="0.0.8",
             dependencies=dependencies,
-            tasks=(insert_ch4_generators),
+            tasks=(download_biogas_data, insert_ch4_generators),
         )
 
 
