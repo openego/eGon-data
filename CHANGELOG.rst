@@ -581,6 +581,8 @@ Bug Fixes
   `#888 <https://github.com/openego/eGon-data/issues/888>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
+* Change industrial gas load modelling
+  `#871 <https://github.com/openego/eGon-data/issues/871>`_
 * Delete eMob MIT data from eTraGo tables on init
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
 * Fix model id issues in DSM potentials for CTS and industry
