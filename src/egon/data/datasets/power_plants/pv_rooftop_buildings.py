@@ -1021,9 +1021,9 @@ def load_building_data():
 
         init_len = len(building_ids)
 
-        logger.debug(f"Dtype building_ids: {building_ids.type}")
+        logger.debug(f"Dtype building_ids: {building_ids.dtype}")
         logger.debug(
-            f"Dtype buildings_gdf.index: {buildings_gdf.index.to_numpy().type}"
+            f"Dtype buildings_gdf.index: {buildings_gdf.index.to_numpy().dtype}"
         )
 
         building_ids = np.intersect1d(
