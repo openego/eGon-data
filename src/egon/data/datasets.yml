@@ -1082,12 +1082,12 @@ emobility_mit:
     variation:
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
-    # name of no-flex scenario
-    noflex:
-      create_noflex_scenario: True
+    # name of low-flex scenario
+    lowflex:
+      create_lowflex_scenario: True
       names:
-        eGon2035: "eGon2035_noflex"
-        eGon100RE: "eGon100RE_noflex"
+        eGon2035: "eGon2035_lowflex"
+        eGon100RE: "eGon100RE_lowflex"
 
   model_timeseries:
     reduce_memory: True
