@@ -1021,11 +1021,6 @@ def load_building_data():
 
         init_len = len(building_ids)
 
-        logger.debug(f"Dtype building_ids: {building_ids.dtype}")
-        logger.debug(
-            f"Dtype buildings_gdf.index: {buildings_gdf.index.to_numpy().dtype}"
-        )
-
         building_ids = np.intersect1d(
             list(map(int, building_ids)),
             list(map(int, buildings_gdf.index.to_numpy())),
@@ -2577,9 +2572,9 @@ def create_scenario_table(buildings_gdf):
         bind=engine, checkfirst=True
     )
 
-    buildings_gdf.rename(columns=COLS_TO_RENAME)[
-        COLS_TO_EXPORT
-    ].reset_index().to_sql(
+    buildings_gdf.rename(columns=COLS_TO_RENAME).assign(
+        capacity=buildings_gdf.capacity.div(10**3)  # kW -> MW
+    )[COLS_TO_EXPORT].reset_index().to_sql(
         name=EgonPowerPlantPvRoofBuildingScenario.__table__.name,
         schema=EgonPowerPlantPvRoofBuildingScenario.__table__.schema,
         con=db.engine(),
