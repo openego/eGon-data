@@ -418,7 +418,9 @@ with airflow.DAG(
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[create_gas_polygons_egon2035,
+        create_gas_polygons_egon100RE,
+        ]
     )
 
     # Import CH4 storages
