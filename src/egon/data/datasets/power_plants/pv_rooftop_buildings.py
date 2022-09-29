@@ -1009,6 +1009,8 @@ def load_building_data():
             crs=osm_buildings_gdf.crs,
         ).rename(columns={"area": "building_area"})
 
+        buildings_gdf.index = buildings_gdf.index.astype(int)
+
     else:
         buildings_gdf = osm_buildings_gdf.rename(
             columns={"area": "building_area"}
@@ -1019,8 +1021,14 @@ def load_building_data():
 
         init_len = len(building_ids)
 
+        logger.debug(f"Dtype building_ids: {building_ids.type}")
+        logger.debug(
+            f"Dtype buildings_gdf.index: {buildings_gdf.index.to_numpy().type}"
+        )
+
         building_ids = np.intersect1d(
-            building_ids, buildings_gdf.index.to_numpy()
+            list(map(int, building_ids)),
+            list(map(int, buildings_gdf.index.to_numpy())),
         )
 
         end_len = len(building_ids)
