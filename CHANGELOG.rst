@@ -577,6 +577,8 @@ Bug Fixes
   `#781 <https://github.com/openego/eGon-data/issues/781>`_
 * Add extendable batteries only to buses at substations
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
+* Move class definition for grid.egon_gas_voronoi out of etrago_setup
+  `#888 <https://github.com/openego/eGon-data/issues/888>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
 * Delete eMob MIT data from eTraGo tables on init
