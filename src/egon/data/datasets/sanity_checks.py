@@ -4,20 +4,51 @@ error is given to showcase difference in output and input values. Please note th
  Authors: @ALonso, @dana
 """
 
-from egon.data import db
+from sqlalchemy import Numeric
+from sqlalchemy.sql import and_, cast, func, or_
+import numpy as np
+import pandas as pd
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+    EgonEvCountMunicipality,
+    EgonEvCountMvGridDistrict,
+    EgonEvCountRegistrationDistrict,
+    EgonEvMvGridDistrict,
+    EgonEvPool,
+    EgonEvTrip,
+)
+from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    DATASET_CFG,
+    read_simbev_metadata_file,
+)
+from egon.data.datasets.etrago_setup import (
+    EgonPfHvLink,
+    EgonPfHvLinkTimeseries,
+    EgonPfHvLoad,
+    EgonPfHvLoadTimeseries,
+    EgonPfHvStore,
+    EgonPfHvStoreTimeseries,
+)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+
+TESTMODE_OFF = (
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+)
 
 
 class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
-            tasks=(
+            tasks={
                 sanitycheck_eGon2035_electricity,
                 sanitycheck_eGon2035_heat,
-            ),
+                sanitycheck_emobility_mit,
+            },
         )
 
 
@@ -469,3 +500,561 @@ def sanitycheck_eGon2035_heat():
         * 100
     )
     print(f"'geothermal': {e_geo_thermal} %")
+
+
+def sanitycheck_emobility_mit():
+    """Execute sanity checks for eMobility: motorized individual travel
+
+    Checks data integrity for eGon2035, eGon2035_lowflex and eGon100RE scenario
+    using assertions:
+      1. Allocated EV numbers and EVs allocated to grid districts
+      2. Trip data (original inout data from simBEV)
+      3. Model data in eTraGo PF tables (grid.egon_etrago_*)
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    def check_ev_allocation():
+        # Get target number for scenario
+        ev_count_target = scenario_variation_parameters["ev_count"]
+        print(f"  Target count: {str(ev_count_target)}")
+
+        # Get allocated numbers
+        ev_counts_dict = {}
+        with db.session_scope() as session:
+            for table, level in zip(
+                [
+                    EgonEvCountMvGridDistrict,
+                    EgonEvCountMunicipality,
+                    EgonEvCountRegistrationDistrict,
+                ],
+                ["Grid District", "Municipality", "Registration District"],
+            ):
+                query = session.query(
+                    func.sum(
+                        table.bev_mini
+                        + table.bev_medium
+                        + table.bev_luxury
+                        + table.phev_mini
+                        + table.phev_medium
+                        + table.phev_luxury
+                    ).label("ev_count")
+                ).filter(
+                    table.scenario == scenario_name,
+                    table.scenario_variation == scenario_var_name,
+                )
+
+                ev_counts = pd.read_sql(
+                    query.statement, query.session.bind, index_col=None
+                )
+                ev_counts_dict[level] = ev_counts.iloc[0].ev_count
+                print(
+                    f"    Count table: Total count for level {level} "
+                    f"(table: {table.__table__}): "
+                    f"{str(ev_counts_dict[level])}"
+                )
+
+        # Compare with scenario target (only if not in testmode)
+        if TESTMODE_OFF:
+            for level, count in ev_counts_dict.items():
+                np.testing.assert_allclose(
+                    count,
+                    ev_count_target,
+                    rtol=0.0001,
+                    err_msg=f"EV numbers in {level} seems to be flawed.",
+                )
+        else:
+            print("    Testmode is on, skipping sanity check...")
+
+        # Get allocated EVs in grid districts
+        with db.session_scope() as session:
+            query = session.query(
+                func.count(EgonEvMvGridDistrict.egon_ev_pool_ev_id).label(
+                    "ev_count"
+                ),
+            ).filter(
+                EgonEvMvGridDistrict.scenario == scenario_name,
+                EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
+            )
+        ev_count_alloc = (
+            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            .iloc[0]
+            .ev_count
+        )
+        print(
+            f"    EVs allocated to Grid Districts "
+            f"(table: {EgonEvMvGridDistrict.__table__}) total count: "
+            f"{str(ev_count_alloc)}"
+        )
+
+        # Compare with scenario target (only if not in testmode)
+        if TESTMODE_OFF:
+            np.testing.assert_allclose(
+                ev_count_alloc,
+                ev_count_target,
+                rtol=0.0001,
+                err_msg=(
+                    "EV numbers allocated to Grid Districts seems to be flawed."
+                ),
+            )
+        else:
+            print("    Testmode is on, skipping sanity check...")
+
+        return ev_count_alloc
+
+    def check_trip_data():
+        # Check if trips start at timestep 0 and have a max. of 35040 steps
+        # (8760h in 15min steps)
+        print("  Checking timeranges...")
+        with db.session_scope() as session:
+            query = session.query(
+                func.count(EgonEvTrip.event_id).label("cnt")
+            ).filter(
+                or_(
+                    and_(
+                        EgonEvTrip.park_start > 0,
+                        EgonEvTrip.simbev_event_id == 0,
+                    ),
+                    EgonEvTrip.park_end
+                    > (60 / int(meta_run_config.stepsize)) * 8760,
+                ),
+                EgonEvTrip.scenario == scenario_name,
+            )
+        invalid_trips = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+        np.testing.assert_equal(
+            invalid_trips.iloc[0].cnt,
+            0,
+            err_msg=(
+                f"{str(invalid_trips.iloc[0].cnt)} trips in table "
+                f"{EgonEvTrip.__table__} have invalid timesteps."
+            ),
+        )
+
+        # Check if charging demand can be covered by available charging energy
+        # while parking
+        print("  Compare charging demand with available power...")
+        with db.session_scope() as session:
+            query = session.query(
+                func.count(EgonEvTrip.event_id).label("cnt")
+            ).filter(
+                func.round(
+                    cast(
+                        (EgonEvTrip.park_end - EgonEvTrip.park_start + 1)
+                        * EgonEvTrip.charging_capacity_nominal
+                        * (int(meta_run_config.stepsize) / 60),
+                        Numeric,
+                    ),
+                    3,
+                )
+                < cast(EgonEvTrip.charging_demand, Numeric),
+                EgonEvTrip.scenario == scenario_name,
+            )
+        invalid_trips = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+        np.testing.assert_equal(
+            invalid_trips.iloc[0].cnt,
+            0,
+            err_msg=(
+                f"In {str(invalid_trips.iloc[0].cnt)} trips (table: "
+                f"{EgonEvTrip.__table__}) the charging demand cannot be "
+                f"covered by available charging power."
+            ),
+        )
+
+    def check_model_data():
+        # Check if model components were fully created
+        print("  Check if all model components were created...")
+        # Get MVGDs which got EV allocated
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonEvMvGridDistrict.bus_id,
+                )
+                .filter(
+                    EgonEvMvGridDistrict.scenario == scenario_name,
+                    EgonEvMvGridDistrict.scenario_variation
+                    == scenario_var_name,
+                )
+                .group_by(EgonEvMvGridDistrict.bus_id)
+            )
+        mvgds_with_ev = (
+            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            .bus_id.sort_values()
+            .to_list()
+        )
+
+        # Load model components
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonPfHvLink.bus0.label("mvgd_bus_id"),
+                    EgonPfHvLoad.bus.label("emob_bus_id"),
+                    EgonPfHvLoad.load_id.label("load_id"),
+                    EgonPfHvStore.store_id.label("store_id"),
+                )
+                .select_from(EgonPfHvLoad, EgonPfHvStore)
+                .join(
+                    EgonPfHvLoadTimeseries,
+                    EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+                )
+                .join(
+                    EgonPfHvStoreTimeseries,
+                    EgonPfHvStoreTimeseries.store_id == EgonPfHvStore.store_id,
+                )
+                .filter(
+                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.scn_name == scenario_name,
+                    EgonPfHvLoadTimeseries.scn_name == scenario_name,
+                    EgonPfHvStore.carrier == "battery storage",
+                    EgonPfHvStore.scn_name == scenario_name,
+                    EgonPfHvStoreTimeseries.scn_name == scenario_name,
+                    EgonPfHvLink.scn_name == scenario_name,
+                    EgonPfHvLink.bus1 == EgonPfHvLoad.bus,
+                    EgonPfHvLink.bus1 == EgonPfHvStore.bus,
+                )
+            )
+        model_components = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+
+        # Check number of buses with model components connected
+        mvgd_buses_with_ev = model_components.loc[
+            model_components.mvgd_bus_id.isin(mvgds_with_ev)
+        ]
+        np.testing.assert_equal(
+            len(mvgds_with_ev),
+            len(mvgd_buses_with_ev),
+            err_msg=(
+                f"Number of Grid Districts with connected model components "
+                f"({str(len(mvgd_buses_with_ev))} in tables egon_etrago_*) "
+                f"differ from number of Grid Districts that got EVs "
+                f"allocated ({len(mvgds_with_ev)} in table "
+                f"{EgonEvMvGridDistrict.__table__})."
+            ),
+        )
+
+        # Check if all required components exist (if no id is NaN)
+        np.testing.assert_equal(
+            model_components.drop_duplicates().isna().any().any(),
+            False,
+            err_msg=(
+                f"Some components are missing (see True values): "
+                f"{model_components.drop_duplicates().isna().any()}"
+            ),
+        )
+
+        # Get all model timeseries
+        print("  Loading model timeseries...")
+        # Get all model timeseries
+        model_ts_dict = {
+            "Load": {
+                "carrier": "land transport EV",
+                "table": EgonPfHvLoad,
+                "table_ts": EgonPfHvLoadTimeseries,
+                "column_id": "load_id",
+                "columns_ts": ["p_set"],
+                "ts": None,
+            },
+            "Link": {
+                "carrier": "BEV charger",
+                "table": EgonPfHvLink,
+                "table_ts": EgonPfHvLinkTimeseries,
+                "column_id": "link_id",
+                "columns_ts": ["p_max_pu"],
+                "ts": None,
+            },
+            "Store": {
+                "carrier": "battery storage",
+                "table": EgonPfHvStore,
+                "table_ts": EgonPfHvStoreTimeseries,
+                "column_id": "store_id",
+                "columns_ts": ["e_min_pu", "e_max_pu"],
+                "ts": None,
+            },
+        }
+
+        with db.session_scope() as session:
+            for node, attrs in model_ts_dict.items():
+                print(f"    Loading {node} timeseries...")
+                subquery = (
+                    session.query(
+                        getattr(attrs["table"], attrs["column_id"])
+                    )
+                    .filter(attrs["table"].carrier == attrs["carrier"])
+                    .filter(attrs["table"].scn_name == scenario_name)
+                    .subquery()
+                )
+
+                cols = [
+                    getattr(attrs["table_ts"], c) for c in attrs["columns_ts"]
+                ]
+                query = session.query(
+                    getattr(attrs["table_ts"], attrs["column_id"]), *cols
+                ).filter(
+                    getattr(attrs["table_ts"], attrs["column_id"]).in_(
+                        subquery
+                    ),
+                    attrs["table_ts"].scn_name == scenario_name,
+                )
+                attrs["ts"] = pd.read_sql(
+                    query.statement,
+                    query.session.bind,
+                    index_col=attrs["column_id"],
+                )
+
+        # Check if all timeseries have 8760 steps
+        print("    Checking timeranges...")
+        for node, attrs in model_ts_dict.items():
+            for col in attrs["columns_ts"]:
+                ts = attrs["ts"]
+                invalid_ts = ts.loc[ts[col].apply(lambda _: len(_)) != 8760][
+                    col
+                ].apply(len)
+                np.testing.assert_equal(
+                    len(invalid_ts),
+                    0,
+                    err_msg=(
+                        f"{str(len(invalid_ts))} rows in timeseries do not "
+                        f"have 8760 timesteps. Table: "
+                        f"{attrs['table_ts'].__table__}, Column: {col}, IDs: "
+                        f"{str(list(invalid_ts.index))}"
+                    ),
+                )
+
+        # Compare total energy demand in model with some approximate values
+        # (per EV: 14,000 km/a, 0.17 kWh/km)
+        print("  Checking energy demand in model...")
+        total_energy_model = (
+            model_ts_dict["Load"]["ts"].p_set.apply(lambda _: sum(_)).sum()
+            / 1e6
+        )
+        print(f"    Total energy amount in model: {total_energy_model} TWh")
+        total_energy_scenario_approx = ev_count_alloc * 14000 * 0.17 / 1e9
+        print(
+            f"    Total approximated energy amount in scenario: "
+            f"{total_energy_scenario_approx} TWh"
+        )
+        np.testing.assert_allclose(
+            total_energy_model,
+            total_energy_scenario_approx,
+            rtol=0.1,
+            err_msg=(
+                "The total energy amount in the model deviates heavily "
+                "from the approximated value for current scenario."
+            ),
+        )
+
+        # Compare total storage capacity
+        print("  Checking storage capacity...")
+        # Load storage capacities from model
+        with db.session_scope() as session:
+            query = session.query(
+                func.sum(EgonPfHvStore.e_nom).label("e_nom")
+            ).filter(
+                EgonPfHvStore.scn_name == scenario_name,
+                EgonPfHvStore.carrier == "battery storage",
+            )
+        storage_capacity_model = (
+            pd.read_sql(
+                query.statement, query.session.bind, index_col=None
+            ).e_nom.sum()
+            / 1e3
+        )
+        print(
+            f"    Total storage capacity ({EgonPfHvStore.__table__}): "
+            f"{round(storage_capacity_model, 1)} GWh"
+        )
+
+        # Load occurences of each EV
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonEvMvGridDistrict.bus_id,
+                    EgonEvPool.type,
+                    func.count(EgonEvMvGridDistrict.egon_ev_pool_ev_id).label(
+                        "count"
+                    ),
+                )
+                .join(
+                    EgonEvPool,
+                    EgonEvPool.ev_id
+                    == EgonEvMvGridDistrict.egon_ev_pool_ev_id,
+                )
+                .filter(
+                    EgonEvMvGridDistrict.scenario == scenario_name,
+                    EgonEvMvGridDistrict.scenario_variation
+                    == scenario_var_name,
+                    EgonEvPool.scenario == scenario_name,
+                )
+                .group_by(EgonEvMvGridDistrict.bus_id, EgonEvPool.type)
+            )
+        count_per_ev_all = pd.read_sql(
+            query.statement, query.session.bind, index_col="bus_id"
+        )
+        count_per_ev_all["bat_cap"] = count_per_ev_all.type.map(
+            meta_tech_data.battery_capacity
+        )
+        count_per_ev_all["bat_cap_total_MWh"] = (
+            count_per_ev_all["count"] * count_per_ev_all.bat_cap / 1e3
+        )
+        storage_capacity_simbev = count_per_ev_all.bat_cap_total_MWh.div(
+            1e3
+        ).sum()
+        print(
+            f"    Total storage capacity (simBEV): "
+            f"{round(storage_capacity_simbev, 1)} GWh"
+        )
+
+        np.testing.assert_allclose(
+            storage_capacity_model,
+            storage_capacity_simbev,
+            rtol=0.01,
+            err_msg=(
+                "The total storage capacity in the model deviates heavily "
+                "from the input data provided by simBEV for current scenario."
+            ),
+        )
+
+        # Check SoC storage constraint: e_min_pu < e_max_pu for all timesteps
+        print("  Validating SoC constraints...")
+        stores_with_invalid_soc = []
+        for idx, row in model_ts_dict["Store"]["ts"].iterrows():
+            ts = row[["e_min_pu", "e_max_pu"]]
+            x = np.array(ts.e_min_pu) > np.array(ts.e_max_pu)
+            if x.any():
+                stores_with_invalid_soc.append(idx)
+
+        np.testing.assert_equal(
+            len(stores_with_invalid_soc),
+            0,
+            err_msg=(
+                f"The store constraint e_min_pu < e_max_pu does not apply "
+                f"for some storages in {EgonPfHvStoreTimeseries.__table__}. "
+                f"Invalid store_ids: {stores_with_invalid_soc}"
+            ),
+        )
+
+    def check_model_data_lowflex_eGon2035():
+        # TODO: Add eGon100RE_lowflex
+        print("")
+        print("SCENARIO: eGon2035_lowflex")
+
+        # Compare driving load and charging load
+        print("  Loading eGon2035 model timeseries: driving load...")
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonPfHvLoad.load_id,
+                    EgonPfHvLoadTimeseries.p_set,
+                )
+                .join(
+                    EgonPfHvLoadTimeseries,
+                    EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+                )
+                .filter(
+                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.scn_name == "eGon2035",
+                    EgonPfHvLoadTimeseries.scn_name == "eGon2035",
+                )
+            )
+        model_driving_load = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+        driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
+
+        print(
+            "  Loading eGon2035_lowflex model timeseries: dumb charging "
+            "load..."
+        )
+        with db.session_scope() as session:
+            query = (
+                session.query(
+                    EgonPfHvLoad.load_id,
+                    EgonPfHvLoadTimeseries.p_set,
+                )
+                .join(
+                    EgonPfHvLoadTimeseries,
+                    EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
+                )
+                .filter(
+                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.scn_name == "eGon2035_lowflex",
+                    EgonPfHvLoadTimeseries.scn_name == "eGon2035_lowflex",
+                )
+            )
+        model_charging_load_lowflex = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+        charging_load = np.array(
+            model_charging_load_lowflex.p_set.to_list()
+        ).sum(axis=0)
+
+        # Ratio of driving and charging load should be 0.9 due to charging
+        # efficiency
+        print("  Compare cumulative loads...")
+        print(f"    Driving load (eGon2035): {driving_load.sum() / 1e6} TWh")
+        print(
+            f"    Dumb charging load (eGon2035_lowflex): "
+            f"{charging_load.sum() / 1e6} TWh"
+        )
+        driving_load_theoretical = (
+            float(meta_run_config.eta_cp) * charging_load.sum()
+        )
+        np.testing.assert_allclose(
+            driving_load.sum(),
+            driving_load_theoretical,
+            rtol=0.01,
+            err_msg=(
+                f"The driving load (eGon2035) deviates by more than 1% "
+                f"from the theoretical driving load calculated from charging "
+                f"load (eGon2035_lowflex) with an efficiency of "
+                f"{float(meta_run_config.eta_cp)}."
+            ),
+        )
+
+    print("=====================================================")
+    print("=== SANITY CHECKS FOR MOTORIZED INDIVIDUAL TRAVEL ===")
+    print("=====================================================")
+
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
+
+        print("")
+        print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
+
+        # Load scenario params for scenario and scenario variation
+        scenario_variation_parameters = get_sector_parameters(
+            "mobility", scenario=scenario_name
+        )["motorized_individual_travel"][scenario_var_name]
+
+        # Load simBEV run config and tech data
+        meta_run_config = read_simbev_metadata_file(
+            scenario_name, "config"
+        ).loc["basic"]
+        meta_tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
+
+        print("")
+        print("Checking EV counts...")
+        ev_count_alloc = check_ev_allocation()
+
+        print("")
+        print("Checking trip data...")
+        check_trip_data()
+
+        print("")
+        print("Checking model data...")
+        check_model_data()
+
+    print("")
+    check_model_data_lowflex_eGon2035()
+
+    print("=====================================================")
