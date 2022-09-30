@@ -401,7 +401,8 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
-
+* Update creation of heat demand timeseries
+  `#857 <https://github.com/openego/eGon-data/issues/857>`_
 
 Bug Fixes
 ---------
