@@ -403,6 +403,7 @@ Changed
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
+  `#856 <https://github.com/openego/eGon-data/issues/856>`_
 
 Bug Fixes
 ---------
