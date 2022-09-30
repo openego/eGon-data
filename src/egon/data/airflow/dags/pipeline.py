@@ -185,7 +185,7 @@ with airflow.DAG(
 
     # Create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[tasks["osmtgmod_substation"], vg250]
+        dependencies=[tasks["osmtgmod.substation.extract"], vg250]
     )
 
     # MV (medium voltage) grid districts
@@ -387,7 +387,7 @@ with airflow.DAG(
 
     # Create gas voronoi eGon2035
     create_gas_polygons_egon2035 = GasAreaseGon2035(
-        dependencies=[insert_hydrogen_buses, vg250]
+        dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
 
     # Insert hydrogen grid
@@ -416,7 +416,7 @@ with airflow.DAG(
 
     # Create gas voronoi eGon100RE
     create_gas_polygons_egon100RE = GasAreaseGon100RE(
-        dependencies=[insert_h2_grid, vg250]
+        dependencies=[create_gas_polygons_egon2035, insert_h2_grid, vg250]
     )
 
     # Import gas production
@@ -607,5 +607,8 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
         ]
     )

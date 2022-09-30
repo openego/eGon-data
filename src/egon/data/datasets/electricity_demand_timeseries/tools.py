@@ -84,14 +84,28 @@ def random_ints_until_sum(s_sum, m_max):
     return list_r
 
 
-def write_table_to_postgis(df, table, engine, drop=True):
+def write_table_to_postgis(gdf, table, engine=db.engine(), drop=True):
     """
-    Append table
+    Helper function to append df data to table in db. Only predefined columns
+    are passed. Error will raise if column is missing. Dtype of columns are
+    taken from table definition.
+
+    Parameters
+    ----------
+    gdf: gpd.DataFrame
+        Table of data
+    table: declarative_base
+        Metadata of db table to export to
+    engine:
+        connection to database db.engine()
+    drop: bool
+        Drop table before appending
+
     """
 
     # Only take in db table defined columns
     columns = [column.key for column in table.__table__.columns]
-    df = df.loc[:, columns]
+    gdf = gdf.loc[:, columns]
 
     if drop:
         table.__table__.drop(bind=engine, checkfirst=True)
@@ -103,32 +117,13 @@ def write_table_to_postgis(df, table, engine, drop=True):
     }
 
     # Write new buildings incl coord into db
-    df.to_postgis(
+    gdf.to_postgis(
         name=table.__tablename__,
         con=engine,
         if_exists="append",
         schema=table.__table_args__["schema"],
         dtype=dtypes,
     )
-
-
-# def write_table_to_postgres(df, table, drop=True):
-#     """"""
-#
-#     # Only take in db table defined columns
-#     columns = [column.key for column in table.__table__.columns]
-#     df = df.loc[:, columns]
-#
-#     if drop:
-#         table.__table__.drop(bind=engine, checkfirst=True)
-#         table.__table__.create(bind=engine)
-#
-#     # Write peak loads into db
-#     with db.session_scope() as session:
-#         session.bulk_insert_mappings(
-#             table,
-#             df.to_dict(orient="records"),
-#         )
 
 
 def psql_insert_copy(table, conn, keys, data_iter):
@@ -162,9 +157,31 @@ def psql_insert_copy(table, conn, keys, data_iter):
 
 
 def write_table_to_postgres(
-    df, db_table, engine, drop=False, index=False, if_exists="append"
+    df, db_table, engine=db.engine(), drop=False, index=False, if_exists="append"
 ):
-    """"""
+    """
+    Helper function to append df data to table in db. Fast string-copy is used.
+    Only predefined columns are passed. Error will raise if column is missing.
+    Dtype of columns are taken from table definition.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Table of data
+    db_table: declarative_base
+        Metadata of db table to export to
+    engine:
+        connection to database db.engine()
+    drop: boolean, default False
+        Drop db-table before appending
+    index: boolean, default False
+        Write DataFrame index as a column.
+    if_exists: {'fail', 'replace', 'append'}, default 'append'
+        - fail: If table exists, do nothing.
+        - replace: If table exists, drop it, recreate it, and insert data.
+        - append: If table exists, insert data. Create if does not exist.
+
+    """
 
     # Only take in db table defined columns and dtypes
     columns = {
