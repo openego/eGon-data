@@ -8,13 +8,12 @@ import os
 import shutil
 import sys
 
-from airflow.operators.postgres_operator import PostgresOperator
-import importlib_resources as resources
 import psycopg2
 
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.osmtgmod.substation import extract
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
@@ -776,20 +775,13 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
                 run,
                 {
-                    PostgresOperator(
-                        task_id="osmtgmod_substation",
-                        sql=resources.read_text(
-                            __name__, "substation_otg.sql"
-                        ),
-                        postgres_conn_id="egon_data",
-                        autocommit=True,
-                    ),
+                    extract,
                     to_pypsa,
                 },
             ),

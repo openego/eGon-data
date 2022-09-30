@@ -43,7 +43,7 @@ class GasNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNeighbours",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=({tyndp_gas_generation, tyndp_gas_demand, grid}),
         )
@@ -522,9 +522,9 @@ def import_ch4_demandTS():
         cwd
         / "data_bundle_egon_data"
         / "pypsa_eur_sec"
-        / "2022-05-04-egondata-integration"
+        / "2022-07-26-egondata-integration"
         / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
+        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
     )
 
     network = pypsa.Network(str(target_file))
@@ -573,9 +573,9 @@ def import_power_to_h2_demandTS():
         cwd
         / "data_bundle_egon_data"
         / "pypsa_eur_sec"
-        / "2022-05-04-egondata-integration"
+        / "2022-07-26-egondata-integration"
         / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
+        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
     )
 
     network = pypsa.Network(str(target_file))
