@@ -16,9 +16,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
-from egon.data import config, db
-from egon.data.datasets import Dataset
-
+)
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -222,7 +220,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() == 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            logger.info(
+            print(
                 f"No capacity for carrier '{carrier}' needed to be "
                 f"distributed. Everything is fine"
             )
@@ -231,7 +229,7 @@ def etrago_eGon2035_electricity():
             sum_input.input_capacity_mw.sum() > 0
             and sum_output.output_capacity_mw.sum() == 0
         ):
-            logger.info(
+            print(
                 f"Error: Capacity for carrier '{carrier}' was not distributed"
                 f" at all!"
             )
@@ -240,7 +238,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() > 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            logger.info(
+            print(
                 f"Error: Eventhough no input capacity was provided for carrier"
                 f" '{carrier}' a capacity got distributed!"
             )
@@ -252,11 +250,11 @@ def etrago_eGon2035_electricity():
             ) * 100
             g = sum_input["error"].values[0]
 
-            logger.info(f"{carrier}: " + str(round(g, 2)) + " %")
+            print(f"{carrier}: " + str(round(g, 2)) + " %")
 
     # Section to check loads
 
-    logger.info(
+    print(
         "For German electricity loads the following deviations between the"
         " input and output can be observed:"
     )
@@ -306,7 +304,7 @@ def etrago_eGon2035_electricity():
 
     e = round((output_demand - input_demand) / input_demand, 2) * 100
 
-    logger.info(f"electricity demand: {e} %")
+    print(f"electricity demand: {e} %")
 
 
 def etrago_eGon2035_heat():
@@ -330,8 +328,8 @@ def etrago_eGon2035_heat():
     scn = "eGon2035"
 
     # Section to check generator capacities
-    logger.info(f"Sanity checks for scenario {scn}")
-    logger.info(
+    print(f"Sanity checks for scenario {scn}")
+    print(
         "For German heat demands the following deviations between the inputs"
         " and outputs can be observed:"
     )
@@ -765,7 +763,8 @@ def sanitycheck_emobility_mit():
                 ev_count_target,
                 rtol=0.0001,
                 err_msg=(
-                    "EV numbers allocated to Grid Districts seems to be flawed."
+                    "EV numbers allocated to Grid Districts seems to be "
+                    "flawed."
                 ),
             )
         else:
@@ -951,9 +950,7 @@ def sanitycheck_emobility_mit():
             for node, attrs in model_ts_dict.items():
                 print(f"    Loading {node} timeseries...")
                 subquery = (
-                    session.query(
-                        getattr(attrs["table"], attrs["column_id"])
-                    )
+                    session.query(getattr(attrs["table"], attrs["column_id"]))
                     .filter(attrs["table"].carrier == attrs["carrier"])
                     .filter(attrs["table"].scn_name == scenario_name)
                     .subquery()

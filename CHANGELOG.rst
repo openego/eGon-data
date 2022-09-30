@@ -214,7 +214,6 @@ Added
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
 
-
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
