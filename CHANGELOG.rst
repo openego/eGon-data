@@ -211,6 +211,9 @@ Added
   `#902 <https://github.com/openego/eGon-data/issues/902>`_
 * Add sanity checks for cts loads
   `#919 <https://github.com/openego/eGon-data/issues/919>`_
+* Add distribution of CHP plants for eGon100RE
+  `#851 <https://github.com/openego/eGon-data/issues/851>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -405,7 +408,9 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
-
+* Update creation of heat demand timeseries
+  `#857 <https://github.com/openego/eGon-data/issues/857>`_
+  `#856 <https://github.com/openego/eGon-data/issues/856>`_
 
 Bug Fixes
 ---------
@@ -581,12 +586,23 @@ Bug Fixes
   `#781 <https://github.com/openego/eGon-data/issues/781>`_
 * Add extendable batteries only to buses at substations
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
+* Move class definition for grid.egon_gas_voronoi out of etrago_setup
+  `#888 <https://github.com/openego/eGon-data/issues/888>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
+* Change industrial gas load modelling
+  `#871 <https://github.com/openego/eGon-data/issues/871>`_
 * Delete eMob MIT data from eTraGo tables on init
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
 * Fix model id issues in DSM potentials for CTS and industry
   `#901 <https://github.com/openego/eGon-data/issues/901>`_
+* Drop isolated buses and tranformers in eHV grid
+  `#874 <https://github.com/openego/eGon-data/issues/874>`_
+* Model gas turbines always as links
+  `#914 <https://github.com/openego/eGon-data/issues/914>`_
+* Drop era5 weather cell table using cascade
+  `#909 <https://github.com/openego/eGon-data/issues/909>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

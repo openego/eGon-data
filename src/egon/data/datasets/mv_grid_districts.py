@@ -78,7 +78,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.substation import EgonHvmvSubstation
+from egon.data.datasets.osmtgmod.substation import EgonHvmvSubstation
 from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
 

@@ -1350,6 +1350,8 @@ def cts_heat():
         ignore_index=True,
     )
 
+    df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
+
     write_table_to_postgres(
         df_demand_share,
         EgonCtsHeatDemandBuildingShare,

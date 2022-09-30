@@ -15,10 +15,116 @@ class ChpEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ChpEtrago",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(insert),
         )
+
+
+def insert_egon100re():
+    sources = config.datasets()["chp_etrago"]["sources"]
+
+    targets = config.datasets()["chp_etrago"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
+        WHERE carrier LIKE '%%CHP%%'
+        AND scn_name = 'eGon100RE'
+        AND bus0 IN
+        (SELECT bus_id
+         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         WHERE scn_name = 'eGon100RE'
+         AND country = 'DE')
+        AND bus1 IN
+        (SELECT bus_id
+         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         WHERE scn_name = 'eGon100RE'
+         AND country = 'DE')
+        """
+    )
+
+    # Select all CHP plants used in district heating
+    chp_dh = db.select_dataframe(
+        f"""
+        SELECT electrical_bus_id, ch4_bus_id, a.carrier,
+        SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
+        c.bus_id as heat_bus_id
+        FROM {sources['chp_table']['schema']}.
+        {sources['chp_table']['table']} a
+        JOIN {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']}  b
+        ON a.district_heating_area_id = b.area_id
+        JOIN grid.egon_etrago_bus c
+        ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
+
+        WHERE a.scenario='eGon100RE'
+        AND b.scenario = 'eGon100RE'
+        AND c.scn_name = 'eGon100RE'
+        AND c.carrier = 'central_heat'
+        AND NOT district_heating_area_id IS NULL
+        GROUP BY (
+            electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
+        """
+    )
+
+    # Create geodataframes for gas CHP plants
+    chp_el = link_geom_from_buses(
+        gpd.GeoDataFrame(
+            index=chp_dh.index,
+            data={
+                "scn_name": "eGon2035",
+                "bus0": chp_dh.loc[:, "ch4_bus_id"].astype(int),
+                "bus1": chp_dh.loc[:, "electrical_bus_id"].astype(int),
+                "p_nom": chp_dh.loc[:, "el_capacity"],
+                "carrier": "central_gas_CHP",
+            },
+        ),
+        "eGon100RE",
+    )
+    # Set index
+    chp_el["link_id"] = range(
+        db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
+    )
+
+    # Add marginal cost which is only VOM in case of gas chp
+    chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon100RE")[
+        "marginal_cost"
+    ]["chp_gas"]
+
+    # Insert into database
+    chp_el.to_postgis(
+        targets["link"]["table"],
+        schema=targets["link"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
+
+    #
+    chp_heat = link_geom_from_buses(
+        gpd.GeoDataFrame(
+            index=chp_dh.index,
+            data={
+                "scn_name": "eGon100RE",
+                "bus0": chp_dh.loc[:, "ch4_bus_id"].astype(int),
+                "bus1": chp_dh.loc[:, "heat_bus_id"].astype(int),
+                "p_nom": chp_dh.loc[:, "th_capacity"],
+                "carrier": "central_gas_CHP_heat",
+            },
+        ),
+        "eGon100RE",
+    )
+
+    chp_heat["link_id"] = range(
+        db.next_etrago_id("link"), len(chp_heat) + db.next_etrago_id("link")
+    )
+
+    chp_heat.to_postgis(
+        targets["link"]["table"],
+        schema=targets["link"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+    )
 
 
 def insert():
@@ -281,3 +387,5 @@ def insert():
         if_exists="append",
         index=False,
     )
+
+    insert_egon100re()
