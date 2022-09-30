@@ -1,7 +1,9 @@
 """
-This module does sanity checks for both the eGon2035 and the eGon100RE scenario seperately where a percentage
-error is given to showcase difference in output and input values. Please note that there are missing input technologies in the supply tables.
- Authors: @ALonso, @dana
+This module does sanity checks for both the eGon2035 and the eGon100RE scenario
+separately where a percentage error is given to showcase difference in output
+and input values. Please note that there are missing input technologies in the
+supply tables.
+Authors: @ALonso, @dana
 """
 
 from sqlalchemy import Numeric
@@ -45,14 +47,16 @@ class SanityChecks(Dataset):
             version="0.0.4",
             dependencies=dependencies,
             tasks={
-                sanitycheck_eGon2035_electricity,
-                sanitycheck_eGon2035_heat,
+                etrago_eGon2035_electricity,
+                etrago_eGon2035_heat,
+                residential_electricity_annual_sum,
+                residential_electricity_hh_refinement,
                 sanitycheck_emobility_mit,
             },
         )
 
 
-def sanitycheck_eGon2035_electricity():
+def etrago_eGon2035_electricity():
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the electricity sector in
@@ -72,7 +76,8 @@ def sanitycheck_eGon2035_electricity():
     # Section to check generator capacities
     print(f"Sanity checks for scenario {scn}")
     print(
-        "For German electricity generators the following deviations between the inputs and outputs can be observed:"
+        "For German electricity generators the following deviations between "
+        "the inputs and outputs can be observed:"
     )
 
     carriers_electricity = [
@@ -98,7 +103,8 @@ def sanitycheck_eGon2035_electricity():
                         SELECT bus_id FROM grid.egon_etrago_bus
                         WHERE scn_name = 'eGon2035'
                         AND country = 'DE')
-                    AND carrier IN ('biomass', 'industrial_biomass_CHP', 'central_biomass_CHP')
+                    AND carrier IN ('biomass', 'industrial_biomass_CHP',
+                    'central_biomass_CHP')
                     GROUP BY (scn_name);
                 """,
                 warning=False,
@@ -106,7 +112,8 @@ def sanitycheck_eGon2035_electricity():
 
         else:
             sum_output = db.select_dataframe(
-                f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
+                f"""SELECT scn_name,
+                 SUM(p_nom::numeric) as output_capacity_mw
                          FROM grid.egon_etrago_generator
                          WHERE scn_name = '{scn}'
                          AND carrier IN ('{carrier}')
@@ -135,7 +142,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_input.input_capacity_mw.sum() == 0
         ):
             print(
-                f"No capacity for carrier '{carrier}' needed to be distributed. Everything is fine"
+                f"No capacity for carrier '{carrier}' needed to be"
+                f" distributed. Everything is fine"
             )
 
         elif (
@@ -143,7 +151,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_output.output_capacity_mw.sum() == 0
         ):
             print(
-                f"Error: Capacity for carrier '{carrier}' was not distributed at all!"
+                f"Error: Capacity for carrier '{carrier}' was not distributed "
+                f"at all!"
             )
 
         elif (
@@ -151,7 +160,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_input.input_capacity_mw.sum() == 0
         ):
             print(
-                f"Error: Eventhough no input capacity was provided for carrier '{carrier}' a capacity got distributed!"
+                f"Error: Eventhough no input capacity was provided for carrier"
+                f"'{carrier}' a capacity got distributed!"
             )
 
         else:
@@ -167,7 +177,8 @@ def sanitycheck_eGon2035_electricity():
 
     print(f"Sanity checks for scenario {scn}")
     print(
-        "For German electrical storage units the following deviations between the inputs and outputs can be observed:"
+        "For German electrical storage units the following deviations between"
+        "the inputs and outputs can be observed:"
     )
 
     carriers_electricity = ["pumped_hydro"]
@@ -204,7 +215,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_input.input_capacity_mw.sum() == 0
         ):
             print(
-                f"No capacity for carrier '{carrier}' needed to be distributed. Everything is fine"
+                f"No capacity for carrier '{carrier}' needed to be "
+                f"distributed. Everything is fine"
             )
 
         elif (
@@ -212,7 +224,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_output.output_capacity_mw.sum() == 0
         ):
             print(
-                f"Error: Capacity for carrier '{carrier}' was not distributed at all!"
+                f"Error: Capacity for carrier '{carrier}' was not distributed"
+                f" at all!"
             )
 
         elif (
@@ -220,7 +233,8 @@ def sanitycheck_eGon2035_electricity():
             and sum_input.input_capacity_mw.sum() == 0
         ):
             print(
-                f"Error: Eventhough no input capacity was provided for carrier '{carrier}' a capacity got distributed!"
+                f"Error: Eventhough no input capacity was provided for carrier"
+                f" '{carrier}' a capacity got distributed!"
             )
 
         else:
@@ -235,11 +249,13 @@ def sanitycheck_eGon2035_electricity():
     # Section to check loads
 
     print(
-        "For German electricity loads the following deviations between the input and output can be observed:"
+        "For German electricity loads the following deviations between the"
+        " input and output can be observed:"
     )
 
     output_demand = db.select_dataframe(
-        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
+        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p)
+        FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
             FROM grid.egon_etrago_load a
             JOIN grid.egon_etrago_load_timeseries b
             ON (a.load_id = b.load_id)
@@ -257,7 +273,8 @@ def sanitycheck_eGon2035_electricity():
     )["load_twh"].values[0]
 
     input_cts_ind = db.select_dataframe(
-        """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
+        """SELECT scenario,
+         SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
             FROM demand.egon_demandregio_cts_ind
             WHERE scenario= 'eGon2035'
             AND year IN ('2035')
@@ -284,7 +301,7 @@ def sanitycheck_eGon2035_electricity():
     print(f"electricity demand: {e} %")
 
 
-def sanitycheck_eGon2035_heat():
+def etrago_eGon2035_heat():
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the heat sector in
@@ -307,13 +324,16 @@ def sanitycheck_eGon2035_heat():
     # Section to check generator capacities
     print(f"Sanity checks for scenario {scn}")
     print(
-        "For German heat demands the following deviations between the inputs and outputs can be observed:"
+        "For German heat demands the following deviations between the inputs"
+        " and outputs can be observed:"
     )
 
     # Sanity checks for heat demand
 
     output_heat_demand = db.select_dataframe(
-        """SELECT a.scn_name,  (SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+        """SELECT a.scn_name,
+          (SUM(
+          (SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
             FROM grid.egon_etrago_load a
             JOIN grid.egon_etrago_load_timeseries b
             ON (a.load_id = b.load_id)
@@ -348,7 +368,8 @@ def sanitycheck_eGon2035_heat():
     # Sanity checks for heat supply
 
     print(
-        "For German heat supplies the following deviations between the inputs and outputs can be observed:"
+        "For German heat supplies the following deviations between the inputs "
+        "and outputs can be observed:"
     )
 
     # Comparison for central heat pumps
@@ -412,7 +433,8 @@ def sanitycheck_eGon2035_heat():
 
     # Comparison for resistive heater
     resistive_heater_input = db.select_dataframe(
-        """SELECT carrier, SUM(capacity::numeric) as Urban_central_resistive_heater_MW
+        """SELECT carrier,
+         SUM(capacity::numeric) as Urban_central_resistive_heater_MW
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'urban_central_resistive_heater'
             AND scenario_name IN ('eGon2035')
@@ -476,7 +498,8 @@ def sanitycheck_eGon2035_heat():
     # Comparison for geothermal
 
     input_geo_thermal = db.select_dataframe(
-        """SELECT carrier, SUM(capacity::numeric) as Urban_central_geo_thermal_MW
+        """SELECT carrier,
+         SUM(capacity::numeric) as Urban_central_geo_thermal_MW
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'urban_central_geo_thermal'
             AND scenario_name IN ('eGon2035')
@@ -600,7 +623,8 @@ def sanitycheck_emobility_mit():
                 ev_count_target,
                 rtol=0.0001,
                 err_msg=(
-                    "EV numbers allocated to Grid Districts seems to be flawed."
+                    "EV numbers allocated to Grid Districts seems to be "
+                    "flawed."
                 ),
             )
         else:
@@ -786,9 +810,7 @@ def sanitycheck_emobility_mit():
             for node, attrs in model_ts_dict.items():
                 print(f"    Loading {node} timeseries...")
                 subquery = (
-                    session.query(
-                        getattr(attrs["table"], attrs["column_id"])
-                    )
+                    session.query(getattr(attrs["table"], attrs["column_id"]))
                     .filter(attrs["table"].carrier == attrs["carrier"])
                     .filter(attrs["table"].scn_name == scenario_name)
                     .subquery()
@@ -1058,3 +1080,81 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
+
+
+def residential_electricity_annual_sum(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries
+
+    Aggregate the annual demand of all census cells at NUTS3 to compare
+    with initial scaling parameters from DemandRegio.
+    """
+
+    df_nuts3_annual_sum = db.select_dataframe(
+        sql="""
+        SELECT dr.nuts3, dr.scenario, dr.demand_regio_sum, profiles.profile_sum
+        FROM (
+            SELECT scenario, SUM(demand) AS profile_sum, vg250_nuts3
+            FROM demand.egon_demandregio_zensus_electricity AS egon,
+             boundaries.egon_map_zensus_vg250 AS boundaries
+            Where egon.zensus_population_id = boundaries.zensus_population_id
+            AND sector = 'residential'
+            GROUP BY vg250_nuts3, scenario
+            ) AS profiles
+        JOIN (
+            SELECT nuts3, scenario, sum(demand) AS demand_regio_sum
+            FROM demand.egon_demandregio_hh
+            GROUP BY year, scenario, nuts3
+              ) AS dr
+        ON profiles.vg250_nuts3 = dr.nuts3 and profiles.scenario  = dr.scenario
+        """
+    )
+
+    np.testing.assert_allclose(
+        actual=df_nuts3_annual_sum["profile_sum"],
+        desired=df_nuts3_annual_sum["demand_regio_sum"],
+        rtol=rtol,
+        verbose=False,
+    )
+
+    print(
+        "Aggregated annual residential electricity demand"
+        " matches with DemandRegio at NUTS-3."
+    )
+
+
+def residential_electricity_hh_refinement(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries
+
+    Check sum of aggregated household types after refinement method
+    was applied and compare it to the original census values."""
+
+    df_refinement = db.select_dataframe(
+        sql="""
+        SELECT refined.nuts3, refined.characteristics_code,
+                refined.sum_refined::int, census.sum_census::int
+        FROM(
+            SELECT nuts3, characteristics_code, SUM(hh_10types) as sum_refined
+            FROM society.egon_destatis_zensus_household_per_ha_refined
+            GROUP BY nuts3, characteristics_code)
+            AS refined
+        JOIN(
+            SELECT t.nuts3, t.characteristics_code, sum(orig) as sum_census
+            FROM(
+                SELECT nuts3, cell_id, characteristics_code,
+                        sum(DISTINCT(hh_5types))as orig
+                FROM society.egon_destatis_zensus_household_per_ha_refined
+                GROUP BY cell_id, characteristics_code, nuts3) AS t
+            GROUP BY t.nuts3, t.characteristics_code    ) AS census
+        ON refined.nuts3 = census.nuts3
+        AND refined.characteristics_code = census.characteristics_code
+    """
+    )
+
+    np.testing.assert_allclose(
+        actual=df_refinement["sum_refined"],
+        desired=df_refinement["sum_census"],
+        rtol=rtol,
+        verbose=False,
+    )
+
+    print("All Aggregated household types match at NUTS-3.")

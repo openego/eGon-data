@@ -207,6 +207,8 @@ Added
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
 * Assign CTS demands to buildings
   `#671 <https://github.com/openego/eGon-data/issues/671>`_
+* Add sanity checks for residential electricity loads
+  `#915 <https://github.com/openego/eGon-data/pull/915>`_
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
 
@@ -403,9 +405,7 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
-* Update creation of heat demand timeseries
-  `#857 <https://github.com/openego/eGon-data/issues/857>`_
-  `#856 <https://github.com/openego/eGon-data/issues/856>`_
+
 
 Bug Fixes
 ---------
@@ -581,12 +581,8 @@ Bug Fixes
   `#781 <https://github.com/openego/eGon-data/issues/781>`_
 * Add extendable batteries only to buses at substations
   `#852 <https://github.com/openego/eGon-data/issues/852>`_
-* Move class definition for grid.egon_gas_voronoi out of etrago_setup
-  `#888 <https://github.com/openego/eGon-data/issues/888>`_
 * Temporarily set upper version limit for pandas
   `#829 <https://github.com/openego/eGon-data/issues/829>`_
-* Change industrial gas load modelling
-  `#871 <https://github.com/openego/eGon-data/issues/871>`_
 * Delete eMob MIT data from eTraGo tables on init
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
 * Fix model id issues in DSM potentials for CTS and industry
