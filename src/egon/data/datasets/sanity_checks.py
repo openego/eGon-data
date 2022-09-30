@@ -3,7 +3,7 @@ This module does sanity checks for both the eGon2035 and the eGon100RE scenario
 separately where a percentage error is given to showcase difference in output
 and input values. Please note that there are missing input technologies in the
 supply tables.
-Authors: @ALonso, @dana
+Authors: @ALonso, @dana, @nailend, @nesnoj
 """
 
 from sqlalchemy import Numeric
@@ -11,8 +11,12 @@ from sqlalchemy.sql import and_, cast, func, or_
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import config, db, logger
 from egon.data.datasets import Dataset
+from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
+    EgonCtsElectricityDemandBuildingShare,
+    EgonCtsHeatDemandBuildingShare,
+)
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -44,13 +48,15 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
                 etrago_eGon2035_heat,
                 residential_electricity_annual_sum,
                 residential_electricity_hh_refinement,
+                cts_electricity_demand_share,
+                cts_heat_demand_share,
                 sanitycheck_emobility_mit,
             },
         )
@@ -74,8 +80,8 @@ def etrago_eGon2035_electricity():
     scn = "eGon2035"
 
     # Section to check generator capacities
-    print(f"Sanity checks for scenario {scn}")
-    print(
+    logger.info(f"Sanity checks for scenario {scn}")
+    logger.info(
         "For German electricity generators the following deviations between "
         "the inputs and outputs can be observed:"
     )
@@ -141,7 +147,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() == 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"No capacity for carrier '{carrier}' needed to be"
                 f" distributed. Everything is fine"
             )
@@ -150,7 +156,7 @@ def etrago_eGon2035_electricity():
             sum_input.input_capacity_mw.sum() > 0
             and sum_output.output_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"Error: Capacity for carrier '{carrier}' was not distributed "
                 f"at all!"
             )
@@ -159,7 +165,7 @@ def etrago_eGon2035_electricity():
             sum_output.output_capacity_mw.sum() > 0
             and sum_input.input_capacity_mw.sum() == 0
         ):
-            print(
+            logger.info(
                 f"Error: Eventhough no input capacity was provided for carrier"
                 f"'{carrier}' a capacity got distributed!"
             )
@@ -171,12 +177,12 @@ def etrago_eGon2035_electricity():
             ) * 100
             g = sum_input["error"].values[0]
 
-            print(f"{carrier}: " + str(round(g, 2)) + " %")
+            logger.info(f"{carrier}: " + str(round(g, 2)) + " %")
 
     # Section to check storage units
 
-    print(f"Sanity checks for scenario {scn}")
-    print(
+    logger.info(f"Sanity checks for scenario {scn}")
+    logger.info(
         "For German electrical storage units the following deviations between"
         "the inputs and outputs can be observed:"
     )
@@ -363,11 +369,11 @@ def etrago_eGon2035_heat():
         * 100
     )
 
-    print(f"heat demand: {e_demand} %")
+    logger.info(f"heat demand: {e_demand} %")
 
     # Sanity checks for heat supply
 
-    print(
+    logger.info(
         "For German heat supplies the following deviations between the inputs "
         "and outputs can be observed:"
     )
@@ -397,7 +403,7 @@ def etrago_eGon2035_heat():
         round((heat_pump_output - heat_pump_input) / heat_pump_output, 2) * 100
     )
 
-    print(f"'central_heat_pump': {e_heat_pump} % ")
+    logger.info(f"'central_heat_pump': {e_heat_pump} % ")
 
     # Comparison for residential heat pumps
 
@@ -429,7 +435,7 @@ def etrago_eGon2035_heat():
         )
         * 100
     )
-    print(f"'residential heat pumps': {e_residential_heat_pump} %")
+    logger.info(f"'residential heat pumps': {e_residential_heat_pump} %")
 
     # Comparison for resistive heater
     resistive_heater_input = db.select_dataframe(
@@ -462,7 +468,7 @@ def etrago_eGon2035_heat():
         * 100
     )
 
-    print(f"'resistive heater': {e_resistive_heater} %")
+    logger.info(f"'resistive heater': {e_resistive_heater} %")
 
     # Comparison for solar thermal collectors
 
@@ -493,7 +499,7 @@ def etrago_eGon2035_heat():
         )
         * 100
     )
-    print(f"'solar thermal collector': {e_solar_thermal} %")
+    logger.info(f"'solar thermal collector': {e_solar_thermal} %")
 
     # Comparison for geothermal
 
@@ -522,7 +528,141 @@ def etrago_eGon2035_heat():
         round((output_geo_thermal - input_geo_thermal) / input_geo_thermal, 2)
         * 100
     )
-    print(f"'geothermal': {e_geo_thermal} %")
+    logger.info(f"'geothermal': {e_geo_thermal} %")
+
+
+def residential_electricity_annual_sum(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries :
+    Demand_Building_Assignment
+
+    Aggregate the annual demand of all census cells at NUTS3 to compare
+    with initial scaling parameters from DemandRegio.
+    """
+
+    df_nuts3_annual_sum = db.select_dataframe(
+        sql="""
+        SELECT dr.nuts3, dr.scenario, dr.demand_regio_sum, profiles.profile_sum
+        FROM (
+            SELECT scenario, SUM(demand) AS profile_sum, vg250_nuts3
+            FROM demand.egon_demandregio_zensus_electricity AS egon,
+             boundaries.egon_map_zensus_vg250 AS boundaries
+            Where egon.zensus_population_id = boundaries.zensus_population_id
+            AND sector = 'residential'
+            GROUP BY vg250_nuts3, scenario
+            ) AS profiles
+        JOIN (
+            SELECT nuts3, scenario, sum(demand) AS demand_regio_sum
+            FROM demand.egon_demandregio_hh
+            GROUP BY year, scenario, nuts3
+              ) AS dr
+        ON profiles.vg250_nuts3 = dr.nuts3 and profiles.scenario  = dr.scenario
+        """
+    )
+
+    np.testing.assert_allclose(
+        actual=df_nuts3_annual_sum["profile_sum"],
+        desired=df_nuts3_annual_sum["demand_regio_sum"],
+        rtol=rtol,
+        verbose=False,
+    )
+
+    logger.info(
+        "Aggregated annual residential electricity demand"
+        " matches with DemandRegio at NUTS-3."
+    )
+
+
+def residential_electricity_hh_refinement(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries :
+    Household Demands
+
+    Check sum of aggregated household types after refinement method
+    was applied and compare it to the original census values."""
+
+    df_refinement = db.select_dataframe(
+        sql="""
+        SELECT refined.nuts3, refined.characteristics_code,
+                refined.sum_refined::int, census.sum_census::int
+        FROM(
+            SELECT nuts3, characteristics_code, SUM(hh_10types) as sum_refined
+            FROM society.egon_destatis_zensus_household_per_ha_refined
+            GROUP BY nuts3, characteristics_code)
+            AS refined
+        JOIN(
+            SELECT t.nuts3, t.characteristics_code, sum(orig) as sum_census
+            FROM(
+                SELECT nuts3, cell_id, characteristics_code,
+                        sum(DISTINCT(hh_5types))as orig
+                FROM society.egon_destatis_zensus_household_per_ha_refined
+                GROUP BY cell_id, characteristics_code, nuts3) AS t
+            GROUP BY t.nuts3, t.characteristics_code    ) AS census
+        ON refined.nuts3 = census.nuts3
+        AND refined.characteristics_code = census.characteristics_code
+    """
+    )
+
+    np.testing.assert_allclose(
+        actual=df_refinement["sum_refined"],
+        desired=df_refinement["sum_census"],
+        rtol=rtol,
+        verbose=False,
+    )
+
+    logger.info("All Aggregated household types match at NUTS-3.")
+
+
+def cts_electricity_demand_share(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries :
+    CtsBuildings
+
+    Check sum of aggregated cts electricity demand share which equals to one
+    for every substation as the substation profile is linearly disaggregated
+    to all buildings."""
+
+    with db.session_scope() as session:
+        cells_query = session.query(EgonCtsElectricityDemandBuildingShare)
+
+    df_demand_share = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col=None
+    )
+
+    np.testing.assert_allclose(
+        actual=df_demand_share.groupby(["bus_id", "scenario"])[
+            "profile_share"
+        ].sum(),
+        desired=1,
+        rtol=rtol,
+        verbose=False,
+    )
+
+    logger.info("The aggregated demand shares equal to one!.")
+
+
+def cts_heat_demand_share(rtol=1e-5):
+    """Sanity check for dataset electricity_demand_timeseries
+    : CtsBuildings
+
+    Check sum of aggregated cts heat demand share which equals to one
+    for every substation as the substation profile is linearly disaggregated
+    to all buildings."""
+
+    with db.session_scope() as session:
+        cells_query = session.query(EgonCtsHeatDemandBuildingShare)
+
+    df_demand_share = pd.read_sql(
+        cells_query.statement, cells_query.session.bind, index_col=None
+    )
+
+    np.testing.assert_allclose(
+        actual=df_demand_share.groupby(["bus_id", "scenario"])[
+            "profile_share"
+        ].sum(),
+        desired=1,
+        rtol=rtol,
+        verbose=False,
+    )
+
+    logger.info("The aggregated demand shares equal to one!.")
 
 
 def sanitycheck_emobility_mit():
@@ -1080,81 +1220,3 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
-
-
-def residential_electricity_annual_sum(rtol=1e-5):
-    """Sanity check for dataset electricity_demand_timeseries
-
-    Aggregate the annual demand of all census cells at NUTS3 to compare
-    with initial scaling parameters from DemandRegio.
-    """
-
-    df_nuts3_annual_sum = db.select_dataframe(
-        sql="""
-        SELECT dr.nuts3, dr.scenario, dr.demand_regio_sum, profiles.profile_sum
-        FROM (
-            SELECT scenario, SUM(demand) AS profile_sum, vg250_nuts3
-            FROM demand.egon_demandregio_zensus_electricity AS egon,
-             boundaries.egon_map_zensus_vg250 AS boundaries
-            Where egon.zensus_population_id = boundaries.zensus_population_id
-            AND sector = 'residential'
-            GROUP BY vg250_nuts3, scenario
-            ) AS profiles
-        JOIN (
-            SELECT nuts3, scenario, sum(demand) AS demand_regio_sum
-            FROM demand.egon_demandregio_hh
-            GROUP BY year, scenario, nuts3
-              ) AS dr
-        ON profiles.vg250_nuts3 = dr.nuts3 and profiles.scenario  = dr.scenario
-        """
-    )
-
-    np.testing.assert_allclose(
-        actual=df_nuts3_annual_sum["profile_sum"],
-        desired=df_nuts3_annual_sum["demand_regio_sum"],
-        rtol=rtol,
-        verbose=False,
-    )
-
-    print(
-        "Aggregated annual residential electricity demand"
-        " matches with DemandRegio at NUTS-3."
-    )
-
-
-def residential_electricity_hh_refinement(rtol=1e-5):
-    """Sanity check for dataset electricity_demand_timeseries
-
-    Check sum of aggregated household types after refinement method
-    was applied and compare it to the original census values."""
-
-    df_refinement = db.select_dataframe(
-        sql="""
-        SELECT refined.nuts3, refined.characteristics_code,
-                refined.sum_refined::int, census.sum_census::int
-        FROM(
-            SELECT nuts3, characteristics_code, SUM(hh_10types) as sum_refined
-            FROM society.egon_destatis_zensus_household_per_ha_refined
-            GROUP BY nuts3, characteristics_code)
-            AS refined
-        JOIN(
-            SELECT t.nuts3, t.characteristics_code, sum(orig) as sum_census
-            FROM(
-                SELECT nuts3, cell_id, characteristics_code,
-                        sum(DISTINCT(hh_5types))as orig
-                FROM society.egon_destatis_zensus_household_per_ha_refined
-                GROUP BY cell_id, characteristics_code, nuts3) AS t
-            GROUP BY t.nuts3, t.characteristics_code    ) AS census
-        ON refined.nuts3 = census.nuts3
-        AND refined.characteristics_code = census.characteristics_code
-    """
-    )
-
-    np.testing.assert_allclose(
-        actual=df_refinement["sum_refined"],
-        desired=df_refinement["sum_census"],
-        rtol=rtol,
-        verbose=False,
-    )
-
-    print("All Aggregated household types match at NUTS-3.")
