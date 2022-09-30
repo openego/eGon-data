@@ -284,7 +284,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         index_col="zensus_population_id",
     )
 
-    annual_demand = annual_demand[~annual_demand.index.duplicated(keep="first")]
+    annual_demand = annual_demand[
+        ~annual_demand.index.duplicated(keep="first")
+    ]
 
     daily_demand_shares = db.select_dataframe(
         """
@@ -816,6 +818,24 @@ def district_heating(method="python"):
         )
 
 
+def individual_heating_per_mv_grid_tables(method="python"):
+    engine = db.engine()
+    EgonEtragoTimeseriesIndividualHeating.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonEtragoTimeseriesIndividualHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+
+def individual_heating_per_mv_grid_2035(method="python"):
+    create_individual_heating_profile_python_like("eGon2035")
+
+
+def individual_heating_per_mv_grid_100(method="python"):
+    create_individual_heating_profile_python_like("eGon100RE")
+
+
 def individual_heating_per_mv_grid(method="python"):
 
     if method == "python":
@@ -1033,6 +1053,6 @@ class HeatTimeSeries(Dataset):
                 },
                 select,
                 district_heating,
-                store_national_profiles,
+                # store_national_profiles,
             ),
         )

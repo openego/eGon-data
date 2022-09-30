@@ -2,17 +2,29 @@ import datetime
 import json
 import time
 
-import egon.data.config
+from geoalchemy2 import Geometry
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Float,
+    Integer,
+    SmallInteger,
+    String,
+    func,
+    select,
+)
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
-from egon.data.metadata import (context, licenses_datenlizenz_deutschland,
-                                meta_metadata)
-from geoalchemy2 import Geometry
-from sqlalchemy import (BigInteger, Column, Float, Integer, SmallInteger,
-                        String, func, select)
-from sqlalchemy.ext.declarative import declarative_base
+from egon.data.metadata import (
+    context,
+    licenses_datenlizenz_deutschland,
+    meta_metadata,
+)
+import egon.data.config
 
 Base = declarative_base()
 
@@ -245,8 +257,10 @@ def inside_germany():
     engine_local_db = db.engine()
 
     # Create new table
-    DestatisZensusPopulationPerHaInsideGermany.__table__.drop(
-        bind=engine_local_db, checkfirst=True
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS {DestatisZensusPopulationPerHaInsideGermany.__table__.schema}.{DestatisZensusPopulationPerHaInsideGermany.__table__.name} CASCADE;
+        """
     )
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
         bind=engine_local_db, checkfirst=True

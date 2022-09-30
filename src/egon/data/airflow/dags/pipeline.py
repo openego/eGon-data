@@ -180,7 +180,7 @@ with airflow.DAG(
 
     # Create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[tasks["osmtgmod_substation"], vg250]
+        dependencies=[tasks["osmtgmod.substation.extract"], vg250]
     )
 
     # MV (medium voltage) grid districts
@@ -582,6 +582,8 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
             emobility_mit,
         ]
     )

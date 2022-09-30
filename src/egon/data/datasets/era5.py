@@ -23,7 +23,7 @@ class WeatherData(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Era5",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=({create_tables, download_era5}, insert_weather_cells),
         )
@@ -50,7 +50,11 @@ def create_tables():
 
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
     engine = db.engine()
-    EgonEra5Cells.__table__.drop(bind=engine, checkfirst=True)
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS {EgonEra5Cells.__table__.schema}.{EgonEra5Cells.__table__.name} CASCADE;
+        """
+    )
     EgonEra5Cells.__table__.create(bind=engine, checkfirst=True)
     EgonRenewableFeedIn.__table__.drop(bind=engine, checkfirst=True)
     EgonRenewableFeedIn.__table__.create(bind=engine, checkfirst=True)
