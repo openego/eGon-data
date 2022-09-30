@@ -595,6 +595,8 @@ Bug Fixes
   `#874 <https://github.com/openego/eGon-data/issues/874>`_
 * Model gas turbines always as links
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
+* Drop era5 weather cell table using cascade
+  `#909 <https://github.com/openego/eGon-data/issues/909>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
