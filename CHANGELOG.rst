@@ -589,6 +589,9 @@ Bug Fixes
   `#878 <https://github.com/openego/eGon-data/issues/878>`_
 * Fix model id issues in DSM potentials for CTS and industry
   `#901 <https://github.com/openego/eGon-data/issues/901>`_
+* Drop isolated buses and tranformers in eHV grid
+  `#874 <https://github.com/openego/eGon-data/issues/874>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
