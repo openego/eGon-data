@@ -593,6 +593,8 @@ Bug Fixes
   `#901 <https://github.com/openego/eGon-data/issues/901>`_
 * Drop isolated buses and tranformers in eHV grid
   `#874 <https://github.com/openego/eGon-data/issues/874>`_
+* Model gas turbines always as links
+  `#914 <https://github.com/openego/eGon-data/issues/914>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
