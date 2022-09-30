@@ -522,6 +522,8 @@ def write_model_data_to_db(
         Scenario name
     run_config : pd.DataFrame
         simBEV metadata: run config
+    bat_cap : pd.DataFrame
+        Battery capacities per EV type
 
     Returns
     -------
@@ -582,11 +584,11 @@ def write_model_data_to_db(
             / initial_soc_per_ev_type.battery_capacity_sum.sum()
         )
 
-    def write_to_db() -> None:
+    def write_to_db(write_lowflex_model: bool) -> None:
         """Write model data to eTraGo tables"""
 
         @db.check_db_unique_violation
-        def write_bus():
+        def write_bus(scenario_name: str) -> None:
             # eMob MIT bus
             emob_bus_id = db.next_etrago_id("bus")
             with db.session_scope() as session:
@@ -604,7 +606,7 @@ def write_model_data_to_db(
             return emob_bus_id
 
         @db.check_db_unique_violation
-        def write_link():
+        def write_link(scenario_name: str) -> None:
             # eMob MIT link [bus_el] -> [bus_ev]
             emob_link_id = db.next_etrago_id("link")
             with db.session_scope() as session:
@@ -645,7 +647,7 @@ def write_model_data_to_db(
                 )
 
         @db.check_db_unique_violation
-        def write_store():
+        def write_store(scenario_name: str) -> None:
             # eMob MIT store
             emob_store_id = db.next_etrago_id("store")
             with db.session_scope() as session:
@@ -682,7 +684,9 @@ def write_model_data_to_db(
                 )
 
         @db.check_db_unique_violation
-        def write_load():
+        def write_load(
+            scenario_name: str, connection_bus_id: int, load_ts: list
+        ) -> None:
             # eMob MIT load
             emob_load_id = db.next_etrago_id("load")
             with db.session_scope() as session:
@@ -690,7 +694,7 @@ def write_model_data_to_db(
                     EgonPfHvLoad(
                         scn_name=scenario_name,
                         load_id=emob_load_id,
-                        bus=emob_bus_id,
+                        bus=connection_bus_id,
                         carrier="land transport EV",
                         sign=-1,
                     )
@@ -701,9 +705,7 @@ def write_model_data_to_db(
                         scn_name=scenario_name,
                         load_id=emob_load_id,
                         temp_id=1,
-                        p_set=(
-                            hourly_load_time_series_df.driving_load_time_series.to_list()
-                        ),
+                        p_set=load_ts,
                     )
                 )
 
@@ -728,11 +730,33 @@ def write_model_data_to_db(
                     f"with bus_id {bus_id} in table egon_etrago_bus!"
                 )
 
-        # Write component data
-        emob_bus_id = write_bus()
-        write_link()
-        write_store()
-        write_load()
+        # Call DB writing functions for regular or lowflex scenario
+        # * use corresponding scenario name as defined in datasets.yml
+        # * no storage for lowflex scenario
+        # * load timeseries:
+        #   * regular (flex): use driving load
+        #   * lowflex: use dumb charging load
+        if write_lowflex_model is False:
+            emob_bus_id = write_bus(scenario_name=scenario_name)
+            write_link(scenario_name=scenario_name)
+            write_store(scenario_name=scenario_name)
+            write_load(
+                scenario_name=scenario_name,
+                connection_bus_id=emob_bus_id,
+                load_ts=(
+                    hourly_load_time_series_df.driving_load_time_series.to_list()
+                ),
+            )
+        else:
+            # Get lowflex scenario name
+            lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
+                "names"
+            ][scenario_name]
+            write_load(
+                scenario_name=lowflex_scenario_name,
+                connection_bus_id=etrago_bus.bus_id,
+                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+            )
 
     def write_to_file():
         """Write model data to file (for debugging purposes)"""
@@ -806,15 +830,78 @@ def write_model_data_to_db(
     # Crop hourly TS if needed
     hourly_load_time_series_df = hourly_load_time_series_df[:8760]
 
-    # Get initial average SoC
+    # Create lowflex scenario?
+    write_lowflex_model = DATASET_CFG["scenario"]["lowflex"][
+        "create_lowflex_scenario"
+    ]
+
+    # Get initial average storage SoC
     initial_soc_mean = calc_initial_ev_soc(bus_id, scenario_name)
 
-    # Write to database
-    write_to_db()
+    # Write to database: regular and lowflex scenario
+    write_to_db(write_lowflex_model=False)
+    print("    Writing flex scenario...")
+    if write_lowflex_model is True:
+        print("    Writing lowflex scenario...")
+        write_to_db(write_lowflex_model=True)
 
     # Export to working dir if requested
     if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
         write_to_file()
+
+
+def delete_model_data_from_db():
+    """Delete all eMob MIT data from eTraGo PF tables"""
+    with db.session_scope() as session:
+        # Buses
+        session.query(EgonPfHvBus).filter(
+            EgonPfHvBus.carrier == "Li ion"
+        ).delete(synchronize_session=False)
+
+        # Link TS
+        subquery = (
+            session.query(EgonPfHvLink.link_id)
+            .filter(EgonPfHvLink.carrier == "BEV charger")
+            .subquery()
+        )
+
+        session.query(EgonPfHvLinkTimeseries).filter(
+            EgonPfHvLinkTimeseries.link_id.in_(subquery)
+        ).delete(synchronize_session=False)
+        # Links
+        session.query(EgonPfHvLink).filter(
+            EgonPfHvLink.carrier == "BEV charger"
+        ).delete(synchronize_session=False)
+
+        # Store TS
+        subquery = (
+            session.query(EgonPfHvStore.store_id)
+            .filter(EgonPfHvStore.carrier == "battery storage")
+            .subquery()
+        )
+
+        session.query(EgonPfHvStoreTimeseries).filter(
+            EgonPfHvStoreTimeseries.store_id.in_(subquery)
+        ).delete(synchronize_session=False)
+        # Stores
+        session.query(EgonPfHvStore).filter(
+            EgonPfHvStore.carrier == "battery storage"
+        ).delete(synchronize_session=False)
+
+        # Load TS
+        subquery = (
+            session.query(EgonPfHvLoad.load_id)
+            .filter(EgonPfHvLoad.carrier == "land transport EV")
+            .subquery()
+        )
+
+        session.query(EgonPfHvLoadTimeseries).filter(
+            EgonPfHvLoadTimeseries.load_id.in_(subquery)
+        ).delete(synchronize_session=False)
+        # Loads
+        session.query(EgonPfHvLoad).filter(
+            EgonPfHvLoad.carrier == "land transport EV"
+        ).delete(synchronize_session=False)
 
 
 def load_grid_district_ids() -> pd.Series:

@@ -86,7 +86,7 @@ setup(
         "atlite==0.2.5",
         "cdsapi",
         "click",
-        "geopandas>=0.10.0",
+        "geopandas>=0.10.0,<0.11.0",
         "geopy",
         "geovoronoi==0.3.0",
         "importlib-resources",
@@ -104,6 +104,7 @@ setup(
         "rasterio",
         "rioxarray",
         "rtree",
+        "saio",
         "snakemake",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
         "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0

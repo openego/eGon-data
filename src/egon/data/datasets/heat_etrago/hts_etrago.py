@@ -1,6 +1,11 @@
 from egon.data import config, db
 from egon.data.db import next_etrago_id
 from egon.data.datasets import Dataset
+from egon.data.datasets.heat_demand_timeseries import (
+    individual_heating_per_mv_grid_tables,
+    individual_heating_per_mv_grid_2035,
+    individual_heating_per_mv_grid_100,
+)
 
 import pandas as pd
 import numpy as np
@@ -12,6 +17,8 @@ def hts_to_etrago():
     targets = config.datasets()["etrago_heat"]["targets"]
     scenario = "eGon2035"
     carriers = ["central_heat", "rural_heat"]
+    # Temporary drop everything related to rural heat
+    carriers = ["central_heat"]
 
     for carrier in carriers:
         if carrier == "central_heat":
@@ -145,7 +152,15 @@ class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.3",
+            version="0.0.5",
             dependencies=dependencies,
-            tasks=(hts_to_etrago),
+            tasks=(
+                # Temporary drop everything related to rural heat
+                # individual_heating_per_mv_grid_tables,
+                # {
+                #     individual_heating_per_mv_grid_2035,
+                #     individual_heating_per_mv_grid_100,
+                # },
+                hts_to_etrago,
+            ),
         )
