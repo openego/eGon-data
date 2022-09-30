@@ -12,7 +12,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -187,6 +187,7 @@ def load_tables(con, cfg):
     SELECT * FROM
     {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']}
+    WHERE carrier != 'gas'
     """
     power_plants = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", index_col="id"
