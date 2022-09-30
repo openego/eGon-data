@@ -1,15 +1,11 @@
 """The central module containing code to create substation tables
 
 """
-from airflow.operators.postgres_operator import PostgresOperator
 from geoalchemy2.types import Geometry
-from sqlalchemy import Column, Float, Integer, Sequence, Text
+from sqlalchemy import Column, Float, Integer, Text
 from sqlalchemy.ext.declarative import declarative_base
-import importlib_resources as resources
 
 from egon.data import db
-from egon.data.datasets import Dataset
-import egon.data.config
 
 Base = declarative_base()
 
