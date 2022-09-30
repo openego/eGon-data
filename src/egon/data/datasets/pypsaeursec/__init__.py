@@ -171,9 +171,9 @@ def read_network():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2022-05-04-egondata-integration"
+            / "2022-07-26-egondata-integration"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
         )
 
     return pypsa.Network(str(target_file))
@@ -266,6 +266,8 @@ def clean_database():
 def neighbor_reduction():
 
     network = read_network()
+
+    network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
     wanted_countries = [
         "DE",
