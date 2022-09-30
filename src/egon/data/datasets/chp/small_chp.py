@@ -107,6 +107,7 @@ def extension_to_areas(
     flh,
     EgonChp,
     district_heating=True,
+    scenario="eGon2035",
 ):
     """Builds new CHPs on potential industry or district heating areas.
 
@@ -237,7 +238,7 @@ def extension_to_areas(
                     voltage_level=selected_chp.voltage_level,
                     electrical_bus_id=int(selected_areas.bus_id),
                     ch4_bus_id=int(selected_areas.gas_bus_id),
-                    scenario="eGon2035",
+                    scenario=scenario,
                     geom=f"""
                             SRID=4326;
                             POINT({selected_areas.geom.values[0].x} {selected_areas.geom.values[0].y})
