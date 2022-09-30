@@ -1,18 +1,19 @@
-import egon.data.config
-from egon.data import db
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+
+from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
-from egon.data.datasets import Dataset
+import egon.data.config
 
 
 class dsm_Potential(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DSM_potentials",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing),
         )
@@ -440,12 +441,23 @@ def dsm_cts_ind_processing():
             max_id = 0
         dsm_id = max_id + 1
         bus_id = pd.Series(index=dsm_buses.index, dtype=int)
-        bus_id.iloc[0 : int((len(bus_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(dsm_buses) / 2))
+
+        # Get number of DSM buses for both scenarios
+        rows_per_scenario = (
+            dsm_buses.groupby("scn_name").count().original_bus.to_dict()
         )
-        bus_id.iloc[int((len(bus_id) / 2)) : len(bus_id)] = range(
-            dsm_id, int((dsm_id + len(dsm_buses) / 2))
+
+        # Assignment of DSM ids
+        bus_id.iloc[0 : rows_per_scenario.get("eGon2035", 0)] = range(
+            dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
         )
+        bus_id.iloc[
+            rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+                "eGon2035", 0
+            )
+            + rows_per_scenario.get("eGon100RE", 0)
+        ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+
         dsm_buses["bus_id"] = bus_id
 
         # add links from "orignal" buses to DSM-buses
@@ -466,12 +478,18 @@ def dsm_cts_ind_processing():
             max_id = 0
         dsm_id = max_id + 1
         link_id = pd.Series(index=dsm_buses.index, dtype=int)
-        link_id.iloc[0 : int((len(link_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(dsm_links) / 2))
+
+        # Assignment of link ids
+        link_id.iloc[0 : rows_per_scenario.get("eGon2035", 0)] = range(
+            dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
         )
-        link_id.iloc[int((len(link_id) / 2)) : len(link_id)] = range(
-            dsm_id, int((dsm_id + len(dsm_links) / 2))
-        )
+        link_id.iloc[
+            rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+                "eGon2035", 0
+            )
+            + rows_per_scenario.get("eGon100RE", 0)
+        ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+
         dsm_links["link_id"] = link_id
 
         # add calculated timeseries to df to be returned
@@ -499,12 +517,18 @@ def dsm_cts_ind_processing():
             max_id = 0
         dsm_id = max_id + 1
         store_id = pd.Series(index=dsm_buses.index, dtype=int)
-        store_id.iloc[0 : int((len(store_id) / 2))] = range(
-            dsm_id, int((dsm_id + len(dsm_stores) / 2))
+
+        # Assignment of store ids
+        store_id.iloc[0 : rows_per_scenario.get("eGon2035", 0)] = range(
+            dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
         )
-        store_id.iloc[int((len(store_id) / 2)) : len(store_id)] = range(
-            dsm_id, int((dsm_id + len(dsm_stores) / 2))
-        )
+        store_id.iloc[
+            rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+                "eGon2035", 0
+            )
+            + rows_per_scenario.get("eGon100RE", 0)
+        ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+
         dsm_stores["store_id"] = store_id
 
         # add calculated timeseries to df to be returned
@@ -580,20 +604,20 @@ def dsm_cts_ind_processing():
         df_dsm_stores.sort_values("scn_name", inplace=True)
 
         # select new bus_ids for aggregated buses and add to links and stores
-        bus_id = db.next_etrago_id("Bus") +  df_dsm_buses.index
+        bus_id = db.next_etrago_id("Bus") + df_dsm_buses.index
 
         df_dsm_buses["bus_id"] = bus_id
         df_dsm_links["dsm_bus"] = bus_id
         df_dsm_stores["bus"] = bus_id
 
         # select new link_ids for aggregated links
-        link_id = db.next_etrago_id("Link") +  df_dsm_links.index
+        link_id = db.next_etrago_id("Link") + df_dsm_links.index
 
         df_dsm_links["link_id"] = link_id
 
         # select new store_ids to aggregated stores
 
-        store_id = db.next_etrago_id("Store") +  df_dsm_stores.index
+        store_id = db.next_etrago_id("Store") + df_dsm_stores.index
 
         df_dsm_stores["store_id"] = store_id
 
@@ -734,7 +758,7 @@ def dsm_cts_ind_processing():
         # links
 
         sql = f"""DELETE FROM {targets["link_timeseries"]["schema"]}.{targets["link_timeseries"]["table"]} t
-        WHERE t.link_id IN 
+        WHERE t.link_id IN
                  (SELECT l.link_id FROM {targets["link"]["schema"]}.{targets["link"]["table"]} l
               WHERE l.carrier LIKE '{carrier}');"""
         db.execute_sql(sql)
@@ -745,7 +769,7 @@ def dsm_cts_ind_processing():
         # stores
 
         sql = f"""DELETE FROM {targets["store_timeseries"]["schema"]}.{targets["store_timeseries"]["table"]} t
-        WHERE t.store_id IN 
+        WHERE t.store_id IN
                  (SELECT s.store_id FROM {targets["store"]["schema"]}.{targets["store"]["table"]} s
               WHERE s.carrier LIKE '{carrier}');"""
         db.execute_sql(sql)

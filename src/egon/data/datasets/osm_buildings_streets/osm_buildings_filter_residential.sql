@@ -22,5 +22,5 @@ CREATE TABLE openstreetmap.osm_buildings_residential as
 ALTER TABLE openstreetmap.osm_buildings_residential
     ADD CONSTRAINT osm_buildings_residential_id_pkey PRIMARY KEY (id);
 
-CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom);
+CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom_building);
 CREATE INDEX ON openstreetmap.osm_buildings_residential USING gist (geom_point);
