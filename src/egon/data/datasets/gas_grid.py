@@ -97,6 +97,9 @@ def define_gas_nodes_list():
     gas_nodes_list.loc[
         gas_nodes_list["id"] == "SEQ_10608_p", "country_code"
     ] = "NL"
+    gas_nodes_list.loc[
+        gas_nodes_list["id"] == "N_88_NS_LMGN", "country_code"
+    ] = "XX"
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
 
@@ -485,6 +488,13 @@ def insert_gas_pipeline_list(
     gas_pipelines_list.loc[
         gas_pipelines_list["id"] == "LKD_PS_0_Seg_0_Seg_3", "country_0"
     ] = "NL"  # bus "SEQ_10608_p" DE -> NL
+
+    # Remove uncorrect pipelines
+    gas_pipelines_list = gas_pipelines_list[
+        (gas_pipelines_list["id"] != "PLNG_2637_Seg_0_Seg_0_Seg_0")
+        & (gas_pipelines_list["id"] != "NSG_6650_Seg_2_Seg_0")
+        & (gas_pipelines_list["id"] != "NSG_6734_Seg_2_Seg_0")
+    ]
 
     # Remove link test if length = 0
     gas_pipelines_list = gas_pipelines_list[
