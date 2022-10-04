@@ -861,6 +861,47 @@ FROM grid.egon_etrago_storage
         warning=False,
     )
     
+    
+    
+    if (
+    
+        generator_buses.empty    ):
+        print(
+            f"All generator buses have a connection in eGon2035"
+        )
+
+    if not (
+         generator_buses.empty 
+    ):
+        print(
+            f"Error: A generator bus is not connected in eGon2035" )
+        
+    if (
+    
+        load_buses.empty    ):
+        print(
+            f"All load buses have a connection in eGon2035"
+        )
+
+    if not (
+         load_buses.empty 
+    ):
+        print(
+            f"Error: A load bus is not connected in eGon2035" )
+        
+    if (
+    
+        storage_buses.empty    ):
+        print(
+            f"All storage buses have a connection in eGon2035"
+        )
+
+    if not (
+         storage_buses.empty 
+    ):
+        print(
+            f"Error: A storage bus is not connected in eGon2035" )
+        
 def sanitycheck_eGon100RE_others():
     """Execute basic sanity checks.
 
@@ -914,5 +955,41 @@ FROM grid.egon_etrago_storage
                 """,
         warning=False,
     )
-
+    if (
     
+        generator_buses.empty    ):
+        print(
+            f"All generator buses have a connection in eGon100RE"
+        )
+
+    if not (
+         generator_buses.empty 
+    ):
+        print(
+            f"Error: A generator bus is not connected in eGon100RE" )
+        
+    if (
+    
+        load_buses.empty    ):
+        print(
+            f"All load buses have a connection in eGon100RE"
+        )
+
+    if not (
+         load_buses.empty 
+    ):
+        print(
+            f"Error: A load bus is not connected in eGon100RE" )
+        
+    if (
+    
+        storage_buses.empty    ):
+        print(
+            f"All storage buses have a connection in eGon100RE"
+        )
+
+    if not (
+         storage_buses.empty 
+    ):
+        print(
+            f"Error: A storage bus is not connected in eGon100RE" )
