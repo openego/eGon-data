@@ -213,6 +213,8 @@ Added
   `#919 <https://github.com/openego/eGon-data/issues/919>`_
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
+* Add mapping table for all used buildings
+  `#962 <https://github.com/openego/eGon-data/issues/962>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
