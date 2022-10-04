@@ -226,7 +226,9 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     pv_rooftop.loc[add_pv_cap.index, "p_nom"] += add_pv_cap
     pv_rooftop = pv_rooftop.drop(columns=["max_cap", "delta"])
 
-    assert isclose(total, pv_rooftop.p_nom.sum())
+    assert isclose(
+        total, pv_rooftop.p_nom.sum()
+    ), f"{total} != {pv_rooftop.p_nom.sum()}"
 
     if loss < 0:
         logger.debug(
