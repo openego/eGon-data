@@ -1,3 +1,54 @@
+"""
+Heavy Duty Transport / Heavy Goods Vehicle (HGV)
+
+Main module for preparation of model data (static and timeseries) for
+heavy duty transport.
+
+**Contents of this module**
+* Creation of DB tables
+* Download and preprocessing of vehicle registration data from BAST
+* Calculation of hydrogen demand based on a Voronoi distribution of counted truck
+  traffic among NUTS 3 regions.
+* Write results to DB
+* Map demand to H2 buses and write to DB
+
+**Configuration**
+
+The config of this dataset can be found in *datasets.yml* in section
+*mobility_hgv*.
+
+**Scenarios and variations**
+
+Assumptions can be changed within the *datasets.yml*.
+
+In the context of the eGon project, it is assumed that e-trucks will be completely
+hydrogen-powered and in both scenarios the hydrogen consumption is assumed to be
+6.68 kgH2 per 100 km with an additional
+[supply chain leakage rate of 0.5 %](
+https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery).
+
+### Scenario NEP C 2035
+
+The ramp-up figures are taken from [Scenario C 2035 Grid Development Plan 2021-2035](
+https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/
+NEP_2035_V2021_2_Entwurf_Teil1.pdf). According to this, 100,000 e-trucks are expected
+in Germany in 2035, each covering an average of 100,000 km per year. In total this means
+10 Billion km.
+
+### Scenario eGon100RE
+
+In the case of the eGon100RE scenario it is assumed that the HGV traffic is completely
+hydrogen-powered. The total freight traffic with 40 Billion km is taken from the
+[BMWk Langfristszenarien GHG-emission free scenarios (SNF > 12 t zGG)](
+https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/
+LFS3_Langbericht_Verkehr_final.pdf#page=17).
+
+## Methodology
+
+Using a Voronoi interpolation, the censuses of the BASt data is distributed according to
+the area fractions of the Voronoi fields within each mv grid or any other geometries
+like NUTS-3.
+"""
 from pathlib import Path
 import csv
 import zipfile

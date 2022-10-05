@@ -1,3 +1,7 @@
+"""
+Calculation of hydrogen demand based on a Voronoi distribution of counted truck traffic
+among NUTS 3 regions
+"""
 from geovoronoi import points_to_coords, voronoi_regions_from_coords
 from loguru import logger
 from shapely import wkt
