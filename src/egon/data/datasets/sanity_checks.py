@@ -750,7 +750,7 @@ def sanitycheck_pv_rooftop_buildings():
         )
 
         sns.scatterplot(
-            data=small_gens_df, x="capacity", y="area", ax=ax2
+            data=small_gens_df, x="capacity", y="building_area", ax=ax2
         ).set_title(scenario)
 
         plt.tight_layout()
