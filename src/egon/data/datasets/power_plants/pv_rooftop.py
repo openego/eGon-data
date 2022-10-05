@@ -174,6 +174,18 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             """
         ).capacity[0]
 
+        dataset = config.settings()["egon-data"]["--dataset-boundary"]
+
+        if dataset == "Schleswig-Holstein":
+            # since the required data is missing for a SH run, it is implemented
+            # manually here
+            total_2035 = 84070
+            sh_2035 = 2700
+
+            share = sh_2035 / total_2035
+
+            target *= share
+
         demand["share_country"] = demand.demand / demand.demand.sum()
 
         demand.set_index("bus_id", inplace=True)
