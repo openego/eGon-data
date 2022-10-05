@@ -764,11 +764,11 @@ def sanitycheck_pv_rooftop_buildings():
 
     for scenario in scenarios:
         assert isclose(
-            scenario_data(scenario=scenario).capacity.sum() * 1000,
+            scenario_data(scenario=scenario).capacity.sum(),
             merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
             rel_tol=1e-02,
         ), (
-            f"{scenario_data(scenario=scenario).capacity.sum() * 1000} != "
+            f"{scenario_data(scenario=scenario).capacity.sum()} != "
             f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
         )
 
