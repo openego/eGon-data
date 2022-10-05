@@ -803,6 +803,8 @@ def sanitycheck_pv_rooftop_buildings():
                 f"{target} != "
                 f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
             )
+        else:
+            raise ValueError(f"Scenario {scenario} is not valid.")
 
 
 def sanitycheck_emobility_mit():
