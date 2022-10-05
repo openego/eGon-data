@@ -42,8 +42,15 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
-    municipality_data,
-    osm_buildings,
+    EPSG,
+    PV_CAP_PER_SQ_M,
+    ROOF_FACTOR,
+    add_overlay_id_to_buildings,
+    drop_buildings_outside_grids,
+    federal_state_data,
+    grid_districts,
+    load_building_data,
+    overlay_grid_districts_with_counties,
     scenario_data,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -687,18 +694,37 @@ def sanitycheck_pv_rooftop_buildings():
 
     pv_roof_df = egon_power_plants_pv_roof_building()
 
-    municipalities_gdf = municipality_data()
+    buildings_gdf = load_building_data()
+    grid_districts_gdf = grid_districts(EPSG)
+    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
 
-    osm_buildings_gdf = osm_buildings(municipalities_gdf.crs)
+    grid_federal_state_gdf = overlay_grid_districts_with_counties(
+        grid_districts_gdf,
+        federal_state_gdf,
+    )
+
+    buildings_overlay_gdf = add_overlay_id_to_buildings(
+        buildings_gdf,
+        grid_federal_state_gdf,
+    )
+
+    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
+    valid_buildings_gdf = valid_buildings_gdf.assign(
+        bus_id=valid_buildings_gdf.bus_id.astype(int),
+        overlay_id=valid_buildings_gdf.overlay_id.astype(int),
+        max_cap=valid_buildings_gdf.building_area.multiply(
+            ROOF_FACTOR * PV_CAP_PER_SQ_M
+        ),
+    )
 
     merge_df = pv_roof_df.merge(
-        osm_buildings_gdf[["area"]],
+        valid_buildings_gdf[["building_area"]],
         how="left",
         left_on="building_id",
         right_index=True,
     )
 
-    assert len(merge_df.loc[merge_df.area.isna()]) == 0
+    assert len(merge_df.loc[merge_df.building_area.isna()]) == 0
 
     scenarios = ["status_quo", "eGon2035"]
 
