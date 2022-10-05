@@ -24,6 +24,9 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_buildings,
     hh_profiles,
 )
+from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
+    CtsDemandBuildings,
+)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -36,7 +39,7 @@ from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
-from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
@@ -177,7 +180,7 @@ with airflow.DAG(
 
     # Create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[tasks["osmtgmod_substation"], vg250]
+        dependencies=[tasks["osmtgmod.substation.extract"], vg250]
     )
 
     # MV (medium voltage) grid districts
@@ -275,7 +278,8 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             heat_demand_Germany,
-            household_electricity_demand_annual,
+            # household_electricity_demand_annual,
+            tasks["electricity_demand.create-tables"],
             tasks["etrago_setup.create-tables"],
             zensus_mv_grid_districts,
             zensus_vg250,
@@ -370,7 +374,7 @@ with airflow.DAG(
 
     # Create gas voronoi eGon2035
     create_gas_polygons_egon2035 = GasAreaseGon2035(
-        dependencies=[insert_hydrogen_buses, vg250]
+        dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
 
     # Insert hydrogen grid
@@ -394,15 +398,12 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[
-            h2_infrastructure,
-            insert_power_to_h2_installations
-        ]
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
     # Create gas voronoi eGon100RE
     create_gas_polygons_egon100RE = GasAreaseGon100RE(
-        dependencies=[insert_h2_grid, vg250]
+        dependencies=[create_gas_polygons_egon2035, insert_h2_grid, vg250]
     )
 
     # Gas abroad
@@ -566,11 +567,23 @@ with airflow.DAG(
         ]
     )
 
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+        ]
+    )
+
+    # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
         ]
     )
