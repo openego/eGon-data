@@ -45,6 +45,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     EPSG,
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
+    SCENARIOS,
     add_overlay_id_to_buildings,
     drop_buildings_outside_grids,
     federal_state_data,
@@ -760,17 +761,48 @@ def sanitycheck_pv_rooftop_buildings():
             bbox_inches="tight",
         )
 
-    scenarios = ["eGon2035"]  # "eGon100RE"]
+    for scenario in SCENARIOS:
+        if scenario == "eGon2035":
+            assert isclose(
+                scenario_data(scenario=scenario).capacity.sum(),
+                merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
+            ), (
+                f"{scenario_data(scenario=scenario).capacity.sum()} != "
+                f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
+            )
+        elif scenario == "eGon100RE":
+            sources = config.datasets()["solar_rooftop"]["sources"]
 
-    for scenario in scenarios:
-        assert isclose(
-            scenario_data(scenario=scenario).capacity.sum(),
-            merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
-            rel_tol=1e-02,
-        ), (
-            f"{scenario_data(scenario=scenario).capacity.sum()} != "
-            f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
-        )
+            target = db.select_dataframe(
+                f"""
+                SELECT capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE carrier = 'solar_rooftop'
+                AND scenario_name = '{scenario}'
+                """
+            ).capacity[0]
+
+            dataset = config.settings()["egon-data"]["--dataset-boundary"]
+
+            if dataset == "Schleswig-Holstein":
+                # since the required data is missing for a SH run, it is implemented
+                # manually here
+                total_2035 = 84070
+                sh_2035 = 2700
+
+                share = sh_2035 / total_2035
+
+                target *= share
+
+            assert isclose(
+                target,
+                merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+            ), (
+                f"{target} != "
+                f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
+            )
 
 
 def sanitycheck_emobility_mit():
