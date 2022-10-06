@@ -1,3 +1,6 @@
+"""
+Functions related to the four different use cases
+"""
 from __future__ import annotations
 
 from loguru import logger

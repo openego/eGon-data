@@ -1,3 +1,29 @@
+"""
+Motorized Individual Travel (MIT) Charging Infrastructure
+
+Main module for preparation of static model data for cahrging infrastructure for
+motorized individual travel.
+
+**Contents of this module**
+* Creation of DB tables
+* Download and preprocessing of vehicle registration data from zenodo
+* Determination of all potential charging locations for the four charging use cases
+  home, work, public and hpc per mv grid district
+* Write results to DB
+
+**Configuration**
+
+The config of this dataset can be found in *datasets.yml* in section
+*charging_infrastructure*.
+
+**Charging Infrastructure**
+
+The charging infrastructure allocation is based on [TracBEV[(
+https://github.com/rl-institut/tracbev). TracBEV is a tool for the regional allocation
+of charging infrastructure. In practice this allows users to use results generated via
+[SimBEV](https://github.com/rl-institut/simbev) and place the corresponding charging
+points on a map. These are split into the four use cases home, work, public and hpc.
+"""
 from __future__ import annotations
 
 from pathlib import Path
