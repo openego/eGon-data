@@ -29,7 +29,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(create_tables, {temp_resolution, insert_carriers}),
         )

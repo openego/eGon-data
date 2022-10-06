@@ -27,7 +27,7 @@ class IndustrialGasDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemand",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(download_industrial_gas_demand),
         )
@@ -37,7 +37,7 @@ class IndustrialGasDemandeGon2035(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon2035",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon2035),
         )
@@ -47,7 +47,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon100RE",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon100RE),
         )
