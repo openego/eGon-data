@@ -105,6 +105,7 @@ setup(
         "rioxarray",
         "rtree",
         "saio",
+        "shapely",
         "snakemake",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
         "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0

@@ -27,6 +27,9 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     CtsDemandBuildings,
 )
+from egon.data.datasets.emobility.heavy_duty_transport import (
+    HeavyDutyTransport,
+)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -562,6 +565,11 @@ with airflow.DAG(
             gas_production_insert_data,
             insert_data_ch4_storages,
         ]
+    )
+
+    # eMobility: heavy duty transport
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
     )
 
     cts_demand_buildings = CtsDemandBuildings(
