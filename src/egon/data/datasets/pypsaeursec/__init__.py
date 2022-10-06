@@ -864,14 +864,17 @@ def neighbor_reduction():
             "electricity": "AC",
             "DC": "AC",
             "industry_electricity": "AC",
-            "H2_pipeline": "H2_system_boundary",
+            "H2_pipeline_retrofitted": "H2_system_boundary",
+            "gas_pipeline": "CH4_system_boundary",
             "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
 
-    for i in ["index", "p_set", "q_set"]:
-        neighbor_loads = neighbor_loads.drop(i, axis=1)
+    neighbor_loads = neighbor_loads.drop(
+        columns=["index"],
+        errors="ignore",
+    )
 
     neighbor_loads.to_sql(
         "egon_etrago_load",
