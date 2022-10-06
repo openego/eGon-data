@@ -117,7 +117,7 @@ class MITChargingInfrastructure(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="MITChargingInfrastructure",
-            version="0.0.1.dev",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 {
