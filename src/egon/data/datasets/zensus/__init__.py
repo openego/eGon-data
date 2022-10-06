@@ -14,9 +14,8 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.config import settings
-import egon.data.config
 from egon.data.datasets import Dataset
-
+import egon.data.config
 
 
 class ZensusPopulation(Dataset):
@@ -29,7 +28,7 @@ class ZensusPopulation(Dataset):
                 download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
-                ),
+            ),
         )
 
 
@@ -43,7 +42,7 @@ class ZensusMiscellaneous(Dataset):
                 download_zensus_misc,
                 create_zensus_misc_tables,
                 zensus_misc_to_postgres,
-                ),
+            ),
         )
 
 
@@ -69,6 +68,31 @@ def download_zensus_pop():
 def download_zensus_misc():
     """Download Zensus csv files on data per hectar grid cell."""
 
+    def download_and_check(target_file_misc, max_iteration=5):
+        """Download file if doesnt exist and check afterwards. If badzip
+        remove file and re-download. Repeat until file is fine or reached
+        maximum iterations."""
+        bad_file = True
+        count = 0
+        while bad_file:
+
+            if not os.path.isfile(target_file_misc):
+                urlretrieve(url, target_file_misc)
+
+            # check zipfile
+            try:
+                _ = zipfile.ZipFile(target_file_misc)
+                print(f"Zip file {target_file_misc} is good.")
+                bad_file = False
+            except zipfile.BadZipFile:
+                os.remove(target_file_misc)
+                count += 1
+                if count > max_iteration:
+                    raise zipfile.BadZipFile(
+                        f"{target_file_misc} is" f" not a zip file"
+                    )
+                pass
+
     # Get data config
     data_config = egon.data.config.datasets()
     download_directory = Path(".") / "zensus_population"
@@ -86,8 +110,7 @@ def download_zensus_misc():
     for url, path in url_path_map:
         target_file_misc = download_directory / path
 
-        if not os.path.isfile(target_file_misc):
-            urlretrieve(url, target_file_misc)
+        download_and_check(target_file_misc, max_iteration=5)
 
 
 def create_zensus_pop_table():
@@ -124,6 +147,7 @@ def create_zensus_pop_table():
         );
         """
     )
+
 
 def create_zensus_misc_tables():
     """Create tables for zensus data in postgres database"""
@@ -513,3 +537,7 @@ def adjust_zensus_misc():
                  SELECT id FROM {population_table}
                  WHERE population < 0);"""
         )
+
+
+if __name__ == "__main__":
+    download_zensus_misc()
