@@ -1007,10 +1007,7 @@ def insert_generators(capacities):
             series_egon100.generator_id == egon_2035_to_100[gen_id]
         ]["p_max_pu"].values[0]
         entry = etrago.EgonPfHvGeneratorTimeseries(
-            scn_name="eGon2035",
-            generator_id=gen_id,
-            temp_id=1,
-            p_max_pu=serie,
+            scn_name="eGon2035", generator_id=gen_id, temp_id=1, p_max_pu=serie
         )
 
         session.add(entry)
@@ -1128,7 +1125,7 @@ def get_map_buses():
         "SE01": "SE02",
         "SE03": "SE02",
         "SE04": "SE02",
-        "RU":   "RU00",
+        "RU": "RU00",
     }
 
 

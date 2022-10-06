@@ -1,14 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from geoalchemy2 import Geometry
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Float,
-    Integer,
-    Sequence,
-    String,
-)
+from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -739,7 +732,7 @@ def allocate_other_power_plants():
     )
 
     # Define scenario, carrier 'others' is only present in 'eGon2035'
-    scenario = 'eGon2035'
+    scenario = "eGon2035"
 
     # Select target values for carrier 'others'
     target = db.select_dataframe(
@@ -749,30 +742,35 @@ def allocate_other_power_plants():
             WHERE scenario_name = '{scenario}'
             AND carrier = 'others'
             GROUP BY carrier, nuts, scenario_name;
-        """)
+        """
+    )
 
     # Assign name of federal state
 
     map_states = {
-            "DE1":"BadenWuerttemberg",
-            "DEA":"NordrheinWestfalen",
-            "DE7":"Hessen",
-            "DE4":"Brandenburg",
-            "DE5":"Bremen",
-            "DEB":"RheinlandPfalz",
-            "DEE":"SachsenAnhalt",
-            "DEF":"SchleswigHolstein",
-            "DE8":"MecklenburgVorpommern",
-            "DEG":"Thueringen",
-            "DE9":"Niedersachsen",
-            "DED":"Sachsen",
-            "DE6":"Hamburg",
-            "DEC":"Saarland",
-            "DE3":"Berlin",
-            "DE2":"Bayern",
-        }
+        "DE1": "BadenWuerttemberg",
+        "DEA": "NordrheinWestfalen",
+        "DE7": "Hessen",
+        "DE4": "Brandenburg",
+        "DE5": "Bremen",
+        "DEB": "RheinlandPfalz",
+        "DEE": "SachsenAnhalt",
+        "DEF": "SchleswigHolstein",
+        "DE8": "MecklenburgVorpommern",
+        "DEG": "Thueringen",
+        "DE9": "Niedersachsen",
+        "DED": "Sachsen",
+        "DE6": "Hamburg",
+        "DEC": "Saarland",
+        "DE3": "Berlin",
+        "DE2": "Bayern",
+    }
 
-    target= target.replace({"nuts": map_states}).rename(columns={"nuts": "Bundesland"}).set_index('Bundesland')
+    target = (
+        target.replace({"nuts": map_states})
+        .rename(columns={"nuts": "Bundesland"})
+        .set_index("Bundesland")
+    )
     target = target.capacity
 
     # Select 'non chp' power plants from mastr table
@@ -834,8 +832,10 @@ def allocate_other_power_plants():
     mastr_others = mastr_sg.append(mastr_combustion).reset_index()
 
     # Delete entries outside Schleswig-Holstein for test mode
-    if boundary == 'Schleswig-Holstein':
-        mastr_others= mastr_others[mastr_others['Bundesland'] == 'SchleswigHolstein']
+    if boundary == "Schleswig-Holstein":
+        mastr_others = mastr_others[
+            mastr_others["Bundesland"] == "SchleswigHolstein"
+        ]
 
     # Scale capacities prox to now to meet target values
     mastr_prox = scale_prox2now(mastr_others, target, level="federal_state")
@@ -870,7 +870,7 @@ def allocate_other_power_plants():
             voltage_level=row.voltage_level,
             bus_id=row.bus_id,
             scenario=scenario,
-            geom= f"SRID=4326; {row.geometry}"
+            geom=f"SRID=4326; {row.geometry}",
         )
         session.add(entry)
     session.commit()
