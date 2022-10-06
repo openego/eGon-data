@@ -144,12 +144,12 @@ Q = 5
 
 # Scenario Data
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035"]  # , "eGon100RE"]
+SCENARIOS = ["eGon2035", "eGon100RE"]
 SCENARIO_TIMESTAMP = {
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
 }
-PV_ROOFTOP_LIFETIME = pd.Timedelta(30 * 365, unit="D")
+PV_ROOFTOP_LIFETIME = pd.Timedelta(20 * 365, unit="D")
 
 # Example Modul Trina Vertex S TSM-400DE09M.08 400 Wp
 # https://www.photovoltaik4all.de/media/pdf/92/64/68/Trina_Datasheet_VertexS_DE09-08_2021_A.pdf
@@ -1623,13 +1623,24 @@ def determine_end_of_life_gens(
         GeoDataFrame containing geocoded MaStR data and info if the system
         has reached its end of life.
     """
+    before = mastr_gdf.capacity.sum()
+
     mastr_gdf = mastr_gdf.assign(
         age=scenario_timestamp - mastr_gdf.start_up_date
     )
 
-    logger.debug("Determined if pv rooftop systems reached their end of life.")
+    mastr_gdf = mastr_gdf.assign(
+        end_of_life=pv_rooftop_lifetime < mastr_gdf.age
+    )
 
-    return mastr_gdf.assign(end_of_life=pv_rooftop_lifetime < mastr_gdf.age)
+    after = mastr_gdf.loc[~mastr_gdf.end_of_life].capacity.sum()
+
+    logger.debug(
+        "Determined if pv rooftop systems reached their end of life.\nTotal capacity: "
+        f"{before}\nActive capacity: {after}"
+    )
+
+    return mastr_gdf
 
 
 def calculate_max_pv_cap_per_building(
