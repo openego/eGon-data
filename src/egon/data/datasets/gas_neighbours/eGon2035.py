@@ -907,32 +907,24 @@ def calc_global_power_to_h2_demand():
     return global_power_to_h2_demand
 
 
-def insert_power_to_h2_demand(
-    global_power_to_h2_demand, normalized_power_to_h2_demandTS
-):
+def insert_power_to_h2_demand(global_power_to_h2_demand):
+    """Insert H2 demands into database for eGon2035
+
+    Detailled description
+    This function insert data in the database and has no return.
+
+    Parameters
+    ----------
+    global_power_to_h2_demand : pandas.DataFrame
+        Global H2 demand per foreign node in 1 year
+
+    """
     sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
-    # Delete existing data
-
-    db.execute_sql(
-        f"""
-        DELETE FROM 
-        {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
-        WHERE "load_id" IN (
-            SELECT load_id FROM 
-            {targets['loads']['schema']}.{targets['loads']['table']}
-            WHERE bus IN (
-                SELECT bus_id FROM
-                {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-            AND scn_name = 'eGon2035'
-            AND carrier = 'H2 for industry'            
-        );
-        """
-    )
+    scn_name = "eGon2035"
+    carrier = "H2_for_industry"
 
     db.execute_sql(
         f"""
