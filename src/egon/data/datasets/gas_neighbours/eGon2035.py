@@ -578,8 +578,10 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
-    # Delete existing data
+    scn_name = "eGon2035"
+    carrier = "CH4"
 
+    # Delete existing data
     db.execute_sql(
         f"""
         DELETE FROM 
@@ -591,9 +593,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
                 SELECT bus_id FROM
                 {sources['buses']['schema']}.{sources['buses']['table']}
                 WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-            AND scn_name = 'eGon2035'
-            AND carrier = 'CH4'            
+                AND scn_name = '{scn_name}')
+            AND scn_name = '{scn_name}'
+            AND carrier = '{carrier}'
         );
         """
     )
@@ -606,9 +608,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
             SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         """
     )
 
@@ -627,7 +629,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     global_demand = global_demand.assign(**c)
 
     new_id = db.next_etrago_id("load")
@@ -940,9 +942,9 @@ def insert_power_to_h2_demand(
             SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'H2 for industry'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         """
     )
 
@@ -967,7 +969,7 @@ def insert_power_to_h2_demand(
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "H2 for industry"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
 
     new_id = db.next_etrago_id("load")
