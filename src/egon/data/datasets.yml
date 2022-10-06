@@ -1118,3 +1118,52 @@ charging_infrastructure:
         - "use_case"
         - "weight"
         - "geometry"
+
+mobility_hgv:
+    original_data:
+      sources:
+        BAST:
+          url: "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+          file: "Jawe2020.csv"
+          relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
+          srid: 4326
+        germany:
+          url: "https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/1_deutschland/1_sehr_hoch.geo.json"
+        NUTS:
+          url: "https://daten.gdz.bkg.bund.de/produkte/vg/nuts250_1231/aktuell/nuts250_12-31.utm32s.shape.zip"
+          file: "nuts250_12-31.utm32s.shape.zip"
+          shp_file: "nuts250_12-31.utm32s.shape/nuts250_1231/250_NUTS1.shp"
+          NUTS_CODE: "DEF"
+    tables:
+      srid: 3035
+      srid_buses: 4326
+    constants:
+      # leakage rate / losses - constant
+      # https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery
+      # --> 0.5%
+      leakage: True
+      leakage_rate: 0.005
+      # Hydrogen
+      # HGV traffic hydrogen consumption in kg per 100 km
+      # Assumption: 30L Diesel / 100 km --> kgH2/100 km
+      hydrogen_consumption: 6.68
+      # share of FCEV trucks
+      # within the egon project the flat guess is 100%
+      fcev_share: 1.
+      scenarios: ["eGon2035", "eGon100RE"]
+      carrier: "H2_hgv_load"
+      energy_value_h2: 39.4  # kWh/kg
+      hours_per_year: 8760
+      fac: 0.001
+    hgv_mileage:
+      # NEP data
+      # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf
+      # total amount of HGVs  - Scenario C 2035
+      # hgv_amount = 100000
+      # HGV traffic annual mileage per vehicle
+      # hgv_mean_mileage = 100000
+      # Total mileage
+      eGon2035: 10000000000
+      # Langfristszenarien
+      # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
+      eGon100RE: 40000000000
