@@ -46,6 +46,13 @@ DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 def create_tables() -> None:
+    """
+    Create tables for charging infrastructure
+
+    Returns
+    -------
+    None
+    """
     engine = db.engine()
     EgonEmobChargingInfrastructure.__table__.drop(bind=engine, checkfirst=True)
     EgonEmobChargingInfrastructure.__table__.create(
@@ -55,7 +62,20 @@ def create_tables() -> None:
     logger.debug("Created tables.")
 
 
-def download_zip(url: str, target: Path, chunk_size: int = 128) -> None:
+def download_zip(url: str, target: Path, chunk_size: int | None = 128) -> None:
+    """
+    Download zip file from URL.
+
+    Parameters
+    ----------
+    url : str
+        URL to download the zip file from
+    target : pathlib.Path
+        Directory to save zip to
+    chunk_size: int or None
+        Size of chunks to download
+
+    """
     r = requests.get(url, stream=True)
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -66,11 +86,25 @@ def download_zip(url: str, target: Path, chunk_size: int = 128) -> None:
 
 
 def unzip_file(source: Path, target: Path) -> None:
+    """
+    Unzip zip file
+
+    Parameters
+    ----------
+    source: Path
+        Zip file path to unzip
+    target: Path
+        Directory to save unzipped content to
+
+    """
     with zipfile.ZipFile(source, "r") as zip_ref:
         zip_ref.extractall(target)
 
 
 def get_tracbev_data() -> None:
+    """
+    Wrapper function to get TracBEV data provided on Zenodo.
+    """
     tracbev_cfg = DATASET_CFG["original_data"]["sources"]["tracbev"]
     file = WORKING_DIR / tracbev_cfg["file"]
 

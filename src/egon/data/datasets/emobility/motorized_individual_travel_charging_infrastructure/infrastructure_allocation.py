@@ -25,7 +25,22 @@ WORKING_DIR = Path(".", "charging_infrastructure").resolve()
 DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
-def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
+def write_to_db(
+    gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str
+) -> None:
+    """
+    Write results to charging infrastructure DB table
+
+    Parameters
+    ----------
+    gdf: geopandas.GeoDataFrame
+        GeoDataFrame to save
+    mv_grid_id: int or float
+        MV grid ID corresponding to the data
+    use_case: str
+        Calculated use case
+
+    """
     if gdf.empty:
         return
 
@@ -65,12 +80,24 @@ def write_to_db(gdf: gpd.GeoDataFrame, mv_grid_id: int | float, use_case: str):
 
 
 def run_tracbev():
+    """
+    Wrapper function to run charging infrastructure allocation
+    """
     data_dict = get_data()
 
     run_tracbev_potential(data_dict)
 
 
-def run_tracbev_potential(data_dict):
+def run_tracbev_potential(data_dict: dict) -> None:
+    """
+    Main function to run TracBEV in potential (determination of all potential
+    charging points).
+
+    Parameters
+    ----------
+    data_dict: dict
+        Data dict containing all TracBEV run information
+    """
     bounds = data_dict["boundaries"]
 
     for mv_grid_id in data_dict["regions"].mv_grid_id:
@@ -81,7 +108,15 @@ def run_tracbev_potential(data_dict):
         run_use_cases(data_dict)
 
 
-def run_use_cases(data_dict):
+def run_use_cases(data_dict: dict) -> None:
+    """
+    Run all use cases
+
+    Parameters
+    ----------
+    data_dict: dict
+        Data dict containing all TracBEV run information
+    """
     write_to_db(
         hpc(data_dict["hpc_positions"], data_dict),
         data_dict["key"],
@@ -107,6 +142,21 @@ def run_use_cases(data_dict):
 
 
 def get_data() -> dict[gpd.GeoDataFrame]:
+    """
+    Load all data necessary for TracBEV. Data loaded:
+
+    * 'hpc_positions' - Potential hpc positions
+    * 'landuse' - Potential work related positions
+    * 'poi_cluster' - Potential public related positions
+    * 'public_positions' - Potential public related positions
+    * 'housing_data' - Potential home related positions loaded from DB
+    * 'boundaries' - MV grid boundaries
+    * miscellaneous found in *datasets.yml* in section *charging_infrastructure*
+
+    Returns
+    -------
+
+    """
     tracbev_cfg = DATASET_CFG["original_data"]["sources"]["tracbev"]
     srid = tracbev_cfg["srid"]
 
