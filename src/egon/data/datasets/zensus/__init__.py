@@ -537,7 +537,3 @@ def adjust_zensus_misc():
                  SELECT id FROM {population_table}
                  WHERE population < 0);"""
         )
-
-
-if __name__ == "__main__":
-    download_zensus_misc()
