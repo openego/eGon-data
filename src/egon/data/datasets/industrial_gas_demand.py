@@ -150,7 +150,9 @@ def read_industrial_demand(scn_name, carrier):
     ).set_geometry("geom", crs=4326)
 
 
-def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None):
+def read_and_process_demand(
+    scn_name="eGon2035", carrier=None, grid_carrier=None
+):
     """Assign the industrial demand in Germany to buses
 
     Parameters
@@ -194,7 +196,7 @@ def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None
         f"{len(industrial_loads_list)} got assigned to buses."
         f"scn_name: {scn_name}, load carrier: {carrier}, carrier of buses to"
         f"connect loads to: {grid_carrier}"
-        )
+    )
     assert len(industrial_loads_list) == number_loads, msg
 
     return industrial_loads_list
