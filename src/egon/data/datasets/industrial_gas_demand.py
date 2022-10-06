@@ -217,7 +217,7 @@ def delete_old_entries(scn_name):
         DELETE FROM grid.egon_etrago_load_timeseries
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
-            WHERE "carrier" IN ('CH4', 'H2') AND
+            WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
@@ -231,7 +231,7 @@ def delete_old_entries(scn_name):
         DELETE FROM grid.egon_etrago_load
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
-            WHERE "carrier" IN ('CH4', 'H2') AND
+            WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
@@ -298,9 +298,15 @@ def insert_industrial_gas_demand_egon2035():
 
     industrial_gas_demand = pd.concat(
         [
-            read_and_process_demand(scn_name=scn_name, carrier="CH4"),
             read_and_process_demand(
-                scn_name=scn_name, carrier="H2", grid_carrier="H2_grid"
+                scn_name=scn_name,
+                carrier="CH4_for_industry",
+                grid_carrier="CH4",
+            ),
+            read_and_process_demand(
+                scn_name=scn_name,
+                carrier="H2_for_industry",
+                grid_carrier="H2_grid",
             ),
         ]
     )
@@ -333,10 +339,10 @@ def insert_industrial_gas_demand_egon100RE():
 
     # read demands
     industrial_gas_demand_CH4 = read_and_process_demand(
-        scn_name=scn_name, carrier="CH4"
+        scn_name=scn_name, carrier="CH4_for_industry", grid_carrier="CH4"
     )
     industrial_gas_demand_H2 = read_and_process_demand(
-        scn_name=scn_name, carrier="H2", grid_carrier="H2_grid"
+        scn_name=scn_name, carrier="H2_for_industry", grid_carrier="H2_grid"
     )
 
     # adjust H2 and CH4 total demands (values from PES)
@@ -465,7 +471,7 @@ def download_industrial_gas_demand():
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
     pd.read_json(result_corr.content).to_json(target_file)
 
-    carriers = {"H2": "2,162", "CH4": "2,11"}
+    carriers = {"H2_for_industry": "2,162", "CH4_for_industry": "2,11"}
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
     for scn_name in ["eGon2035", "eGon100RE"]:
