@@ -507,10 +507,14 @@ def create_combined_zensus_table():
 
 
 def adjust_zensus_misc():
-    """Deletes zensus households, buildings and aparments in unpopulated cells
+    """Delete unpopulated cells in zensus-households, -buildings and -apartments
 
-    Some unpopulated zensus cells are listed in the table of households,
-    buildings and/or aparments. This can be caused by missing population
+    Some unpopulated zensus cells are listed in:
+    - egon_destatis_zensus_household_per_ha
+    - egon_destatis_zensus_building_per_ha
+    - egon_destatis_zensus_apartment_per_ha
+
+    This can be caused by missing population
     information due to privacy or other special cases (e.g. holiday homes
     are listed as buildings but are not permanently populated.)
     In the follwong tasks of egon-data, only data of populated cells is used.

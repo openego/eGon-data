@@ -29,7 +29,7 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
@@ -391,16 +391,6 @@ class EgonPfHvBusmap(Base):
     version = Column(Text, primary_key=True, nullable=False)
 
 
-class EgonPfHvGasVoronoi(Base):
-    __tablename__ = "egon_gas_voronoi"
-    __table_args__ = {"schema": "grid"}
-
-    scn_name = Column(Text, primary_key=True, nullable=False)
-    bus_id = Column(BigInteger, primary_key=True, nullable=False)
-    carrier = Column(Text)
-    geom = Column(Geometry("GEOMETRY", 4326))
-
-
 def create_tables():
     """Create tables for eTraGo input data.
     Returns
@@ -505,7 +495,6 @@ def create_tables():
     EgonPfHvTransformer.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvTransformerTimeseries.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvBusmap.__table__.drop(bind=engine, checkfirst=True)
-    EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)
     # Create new tables
     EgonPfHvBus.__table__.create(bind=engine, checkfirst=True)
     EgonPfHvBusTimeseries.__table__.create(bind=engine, checkfirst=True)
@@ -528,7 +517,6 @@ def create_tables():
         bind=engine, checkfirst=True
     )
     EgonPfHvBusmap.__table__.create(bind=engine, checkfirst=True)
-    EgonPfHvGasVoronoi.__table__.create(bind=engine, checkfirst=True)
 
 
 def temp_resolution():
@@ -578,9 +566,9 @@ def insert_carriers():
                 "CH4_to_H2",
                 "dsm",
                 "H2_feedin",
-                "H2_ind_load",
                 "H2_to_CH4",
                 "H2_to_power",
+                "H2_retrofit",
                 "rural_heat_pump",
                 "industrial_biomass_CHP",
                 "industrial_gas_CHP",
