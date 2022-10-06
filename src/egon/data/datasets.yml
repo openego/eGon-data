@@ -1088,6 +1088,37 @@ emobility_mit:
     export_results_to_csv: True
     parallel_tasks: 10
 
+charging_infrastructure:
+  original_data:
+    sources:
+      tracbev:
+        url: "https://zenodo.org/record/6466480/files/data.zip?download=1"
+        file: "data.zip"
+        files_to_use:
+          - "hpc_positions.gpkg"
+          - "landuse.gpkg"
+          - "poi_cluster.gpkg"
+          - "public_positions.gpkg"
+        srid: 3035
+  constants:
+    work_weight_retail: 0.8
+    work_weight_commercial: 1.25
+    work_weight_industrial: 1
+    single_family_home_share: 0.6
+    single_family_home_spots: 1.5
+    multi_family_home_share: 0.4
+    multi_family_home_spots: 10
+    random_seed: 5
+  targets:
+    charging_infrastructure:
+      schema: "grid"
+      table: "egon_emob_charging_infrastructure"
+      cols_to_export:
+        - "mv_grid_id"
+        - "use_case"
+        - "weight"
+        - "geometry"
+
 mobility_hgv:
     original_data:
       sources:
