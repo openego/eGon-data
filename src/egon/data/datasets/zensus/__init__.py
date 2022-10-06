@@ -46,6 +46,32 @@ class ZensusMiscellaneous(Dataset):
         )
 
 
+def download_and_check(url, target_file, max_iteration=5):
+    """Download file if doesnt exist and check afterwards. If badzip
+    remove file and re-download. Repeat until file is fine or reached
+    maximum iterations."""
+    bad_file = True
+    count = 0
+    while bad_file:
+
+        if not os.path.isfile(target_file):
+            urlretrieve(url, target_file)
+
+        # check zipfile
+        try:
+            _ = zipfile.ZipFile(target_file)
+            print(f"Zip file {target_file} is good.")
+            bad_file = False
+        except zipfile.BadZipFile:
+            os.remove(target_file)
+            count += 1
+            if count > max_iteration:
+                raise zipfile.BadZipFile(
+                    f"{target_file} is" f" not a zip file"
+                )
+            pass
+
+
 def download_zensus_pop():
     """Download Zensus csv file on population per hectar grid cell."""
     data_config = egon.data.config.datasets()
@@ -68,31 +94,6 @@ def download_zensus_pop():
 def download_zensus_misc():
     """Download Zensus csv files on data per hectar grid cell."""
 
-    def download_and_check(target_file_misc, max_iteration=5):
-        """Download file if doesnt exist and check afterwards. If badzip
-        remove file and re-download. Repeat until file is fine or reached
-        maximum iterations."""
-        bad_file = True
-        count = 0
-        while bad_file:
-
-            if not os.path.isfile(target_file_misc):
-                urlretrieve(url, target_file_misc)
-
-            # check zipfile
-            try:
-                _ = zipfile.ZipFile(target_file_misc)
-                print(f"Zip file {target_file_misc} is good.")
-                bad_file = False
-            except zipfile.BadZipFile:
-                os.remove(target_file_misc)
-                count += 1
-                if count > max_iteration:
-                    raise zipfile.BadZipFile(
-                        f"{target_file_misc} is" f" not a zip file"
-                    )
-                pass
-
     # Get data config
     data_config = egon.data.config.datasets()
     download_directory = Path(".") / "zensus_population"
@@ -110,7 +111,7 @@ def download_zensus_misc():
     for url, path in url_path_map:
         target_file_misc = download_directory / path
 
-        download_and_check(target_file_misc, max_iteration=5)
+        download_and_check(url, target_file_misc, max_iteration=5)
 
 
 def create_zensus_pop_table():
