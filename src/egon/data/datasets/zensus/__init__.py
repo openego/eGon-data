@@ -87,8 +87,8 @@ def download_zensus_pop():
         download_directory / zensus_population_config["target"]["file"]
     )
 
-    if not os.path.isfile(target_file):
-        urlretrieve(zensus_population_config["source"]["url"], target_file)
+    url = zensus_population_config["source"]["url"]
+    download_and_check(url, target_file, max_iteration=5)
 
 
 def download_zensus_misc():
