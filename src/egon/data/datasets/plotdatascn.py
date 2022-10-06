@@ -7,13 +7,7 @@ Plotdatascn.py defines functions to plot to provide a better context of the diff
 scenarios eGon2035 and eGon100RE .
 @author: Alonso
 
-"""
-
-
-    
-   
-   
-   
+""" 
 import logging
 import os
 from matplotlib import pyplot as plt
@@ -22,13 +16,11 @@ import pandas as pd
 from math import sqrt, log10
 from pyproj import Proj, transform
 from egon.data import db
-from egon.data.datasets import Dataset
 import egon.data.config
 import geopandas as gpd
 import tilemapbase
 from math import sqrt, log10
 from pyproj import Proj, transform
-import tilemapbase
 from matplotlib_scalebar.scalebar import ScaleBar
 
 
@@ -44,13 +36,7 @@ __copyright__ = ("Flensburg University of Applied Sciences, "
 __license__ = ""
 __author__ = ""
 
-
-
-
-
-
   
-   
 def set_epsg_network(network):
     """
     Change EPSG from 4326 to 3857. Needed when using osm-background.
@@ -133,17 +119,19 @@ def plot_generation(
     
 
    con = db.engine()
-   SQLBus = "SELECT bus_id, country FROM grid.egon_etrago_bus WHERE country='DE'" #imports buses of Germany
+   #imports buses of Germany
+   SQLBus = "SELECT bus_id, country FROM grid.egon_etrago_bus WHERE country='DE'" 
    busDE = pd.read_sql(SQLBus,con) 
    busDE = busDE.rename({'bus_id': 'bus'},axis=1) 
-
-   sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"#Imports grid districs 
+   #Imports grid districs
+   sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district" 
    distr = gpd.GeoDataFrame.from_postgis(sql, con)
    distr = distr.rename({'bus_id': 'bus'},axis=1)
    distr = distr.set_index("bus")
-   distr = pd.merge(busDE, distr, on='bus') #merges grid districts with buses 
-
-   sqlCarrier = "SELECT carrier, p_nom, bus FROM grid.egon_etrago_generator" #Imports generator
+   #merges grid districts with buses 
+   distr = pd.merge(busDE, distr, on='bus') 
+   #Imports generator
+   sqlCarrier = "SELECT carrier, p_nom, bus FROM grid.egon_etrago_generator" 
    sqlCarrier = "SELECT * FROM grid.egon_etrago_generator"
    Carriers = pd.read_sql(sqlCarrier,con)
    Carriers = Carriers.loc[Carriers['scn_name'] == scenario]
@@ -151,16 +139,17 @@ def plot_generation(
 
 
    CarrierGen = Carriers.loc[Carriers['carrier'] == carrier]
-
-   Merge = pd.merge(CarrierGen, distr, on ='bus', how="outer") #merges districts with generators 
+   #merges districts with generators 
+   Merge = pd.merge(CarrierGen, distr, on ='bus', how="outer")  
 
     
    Merge.loc[Merge ['carrier'] != carrier, "p_nom" ] = 0
    Merge.loc[Merge ['country'] != "DE", "p_nom" ] = 0
 
    gdf = gpd.GeoDataFrame(Merge , geometry='geom')
-   pnom=gdf['p_nom']  
-   max_pnom=pnom.quantile(0.95) #0.95 quantile is used to filter values that are too high and make noise in the plots.
+   pnom=gdf['p_nom']  #
+   #0.95 quantile is used to filter values that are too high and make noise in the plots.
+   max_pnom=pnom.quantile(0.95) 
    gdf = gdf.to_crs(epsg=3857)
 
    
