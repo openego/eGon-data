@@ -446,7 +446,7 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     df = (
         df.query(
             'Scenario == "Distributed Energy" & '
-            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Case == "Average" &'
             'Category == "Demand"'
         )
         .drop(
@@ -886,7 +886,7 @@ def calc_global_power_to_h2_demand():
     df = (
         df.query(
             'Scenario == "Distributed Energy" & '
-            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Case == "Average" &'
             'Parameter == "P2H2"'
         )
         .drop(
