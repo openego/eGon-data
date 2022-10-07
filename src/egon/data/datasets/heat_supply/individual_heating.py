@@ -2,6 +2,8 @@
 individual heat supply.
 
 """
+import os
+
 from loguru import logger
 import numpy as np
 import pandas as pd
@@ -11,6 +13,7 @@ import saio
 from pathlib import Path
 import time
 
+from airflow.operators.python_operator import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -52,17 +55,71 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
 
 class HeatPumpsPypsaEurSecAnd2035(Dataset):
     def __init__(self, dependencies):
+        def dyn_parallel_tasks():
+            """Dynamically generate tasks
+
+            The goal is to speed up tasks by parallelising bulks of mvgds.
+
+            The number of parallel tasks is defined via parameter
+            `parallel_tasks` in the dataset config `datasets.yml`.
+
+            Returns
+            -------
+            set of airflow.PythonOperators
+                The tasks. Each element is of
+                :func:`egon.data.datasets.heat_supply.individual_heating.
+                determine_hp_capacity_eGon2035_pypsa_eur_sec`
+            """
+            parallel_tasks = egon.data.config.datasets()["demand_timeseries_mvgd"].get(
+                "parallel_tasks", 1
+            )
+            # ========== Register np datatypes with SQLA ==========
+            register_adapter(np.float64, adapt_numpy_float64)
+            register_adapter(np.int64, adapt_numpy_int64)
+            # =====================================================
+
+            with db.session_scope() as session:
+                query = (
+                    session.query(
+                        MapZensusGridDistricts.bus_id,
+                    )
+                    .filter(
+                        MapZensusGridDistricts.zensus_population_id
+                        == EgonPetaHeat.zensus_population_id
+                    )
+                    .distinct(MapZensusGridDistricts.bus_id)
+                )
+            mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
+
+            mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
+
+            mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, parallel_tasks)
+
+
+            # mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
+            tasks = set()
+            for i, bulk in enumerate(mvgd_ids):
+                tasks.add(
+                    PythonOperator(
+                        task_id=(
+                            f"determine-hp-capacity-eGon2035-pypsa-eur-sec_"
+                            f"mvgd_{min(bulk)}-{max(bulk)}"
+                        ),
+                        python_callable=determine_hp_capacity_eGon2035_pypsa_eur_sec,
+                        op_kwargs={
+                            "mvgd_ids": bulk,
+                        },
+                    )
+                )
+            return tasks
+
         super().__init__(
             name="HeatPumpsPypsaEurSecAnd2035",
             version="0.0.0",
             dependencies=dependencies,
             tasks=(create_peak_load_table,
                    delete_peak_loads_if_existing,
-                   {determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_1,
-                    determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_2,
-                    determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_3,
-                    determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_4,
-                    determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_5,
+                   { *dyn_parallel_tasks()
                     }
                    ),
         )
@@ -1080,7 +1137,7 @@ def determine_hp_cap_buildings_eGon100RE(mv_grid_id):
 
 
 @timeitlog
-def determine_hp_capacity_eGon2035_pypsa_eur_sec(n, max_n=5):
+def determine_hp_capacity_eGon2035_pypsa_eur_sec(mvgd_ids):
     """
     Main function to determine HP capacity per building in eGon2035 scenario and
     minimum required HP capacity in MV for pypsa-eur-sec.
@@ -1090,11 +1147,8 @@ def determine_hp_capacity_eGon2035_pypsa_eur_sec(n, max_n=5):
 
     Parameters
     -----------
-    n : int
-        Number between [1;max_n].
-    max_n : int
-        Maximum number of bulks (MV grid sets run in parallel).
-
+    mvgd_ids : list(int)
+        List of MVGD ids
     """
 
     # ========== Register np datatypes with SQLA ==========
@@ -1102,31 +1156,13 @@ def determine_hp_capacity_eGon2035_pypsa_eur_sec(n, max_n=5):
     register_adapter(np.int64, adapt_numpy_int64)
     # =====================================================
 
-    log_to_file(determine_hp_capacity_eGon2035_pypsa_eur_sec.__qualname__ + f"_{n}")
-    if n == 0:
-        raise KeyError("n >= 1")
-
-    with db.session_scope() as session:
-        query = (
-            session.query(
-                MapZensusGridDistricts.bus_id,
-            )
-            .filter(
-                MapZensusGridDistricts.zensus_population_id
-                == EgonPetaHeat.zensus_population_id
-            )
-            .distinct(MapZensusGridDistricts.bus_id)
-        )
-    mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
-
-    mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
-
-    mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, max_n)
+    log_to_file(determine_hp_capacity_eGon2035_pypsa_eur_sec.__qualname__ +
+                f"_{min(mvgd_ids)}-{max(mvgd_ids)}")
 
     # TODO mvgd_ids = [kleines mvgd]
-    for mvgd in [1556]: #mvgd_ids[n - 1]:
+    for mvgd in mvgd_ids:
 
-        logger.trace(f"MVGD={mvgd} | Start")
+        logger.debug(f"MVGD={mvgd} | Start")
 
         # ############### get residential heat demand profiles ###############
         df_heat_ts = calc_residential_heat_profiles_per_mvgd(
@@ -1205,7 +1241,7 @@ def determine_hp_capacity_eGon2035_pypsa_eur_sec(n, max_n=5):
         # From MW to W
         df_peak_loads_db["peak_load_in_w"] = df_peak_loads_db["peak_load_in_w"] * 1e6
 
-        logger.trace(f"MVGD={mvgd} | Export to DB")
+        logger.debug(f"MVGD={mvgd} | Export to DB")
 
         # TODO export peak loads all buildings both scenarios to db
         # write_table_to_postgres(
@@ -1313,26 +1349,6 @@ def determine_hp_capacity_eGon2035_pypsa_eur_sec(n, max_n=5):
         #  database - in gleiche Tabelle wie Zeitreihen für WP Gebäude, falls Clara
         #  nichts anderes sagt; wird später weiter aggregiert nach gas voronoi
         #  (grid.egon_gas_voronoi mit carrier CH4) von Clara oder Amélia
-
-
-def determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_1():
-    determine_hp_capacity_eGon2035_pypsa_eur_sec(1, max_n=5)
-
-
-def determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_2():
-    determine_hp_capacity_eGon2035_pypsa_eur_sec(2, max_n=5)
-
-
-def determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_3():
-    determine_hp_capacity_eGon2035_pypsa_eur_sec(3, max_n=5)
-
-
-def determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_4():
-    determine_hp_capacity_eGon2035_pypsa_eur_sec(4, max_n=5)
-
-
-def determine_hp_capacity_eGon2035_pypsa_eur_sec_bulk_5():
-    determine_hp_capacity_eGon2035_pypsa_eur_sec(5, max_n=5)
 
 
 def create_peak_load_table():
