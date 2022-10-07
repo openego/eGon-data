@@ -47,39 +47,43 @@ class ZensusMiscellaneous(Dataset):
 
 
 def download_and_check(url, target_file, max_iteration=5):
-    """Download file if doesnt exist and check afterwards. If badzip
-    remove file and re-download. Repeat until file is fine or reached
-    maximum iterations."""
+    """Download file from url (http) if it doesn't exist and check afterwards.
+    If bad zip remove file and re-download. Repeat until file is fine or
+    reached maximum iterations."""
     bad_file = True
     count = 0
     while bad_file:
 
+        # download file if it doesn't exist
         if not os.path.isfile(target_file):
-            urlretrieve(url, target_file)
+            # check if url
+            if url.lower().startswith("http"):
+                urlretrieve(url, target_file)
+            else:
+                raise ValueError("No http url")
 
         # check zipfile
         try:
-            _ = zipfile.ZipFile(target_file)
-            print(f"Zip file {target_file} is good.")
+            with zipfile.ZipFile(target_file):
+                print(f"Zip file {target_file} is good.")
             bad_file = False
-        except zipfile.BadZipFile:
+        except zipfile.BadZipFile as ex:
             os.remove(target_file)
             count += 1
             if count > max_iteration:
-                raise zipfile.BadZipFile(
-                    f"{target_file} is" f" not a zip file"
-                )
-            pass
+                raise StopIteration(
+                    f"Max iteration of {max_iteration} is exceeded"
+                ) from ex
 
 
 def download_zensus_pop():
-    """Download Zensus csv file on population per hectar grid cell."""
+    """Download Zensus csv file on population per hectare grid cell."""
     data_config = egon.data.config.datasets()
     zensus_population_config = data_config["zensus_population"][
         "original_data"
     ]
     download_directory = Path(".") / "zensus_population"
-    # Create the folder, if it does not exists already
+    # Create the folder, if it does not exist already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
@@ -92,12 +96,12 @@ def download_zensus_pop():
 
 
 def download_zensus_misc():
-    """Download Zensus csv files on data per hectar grid cell."""
+    """Download Zensus csv files on data per hectare grid cell."""
 
     # Get data config
     data_config = egon.data.config.datasets()
     download_directory = Path(".") / "zensus_population"
-    # Create the folder, if it does not exists already
+    # Create the folder, if it does not exist already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
     # Download remaining zensus data set on households, buildings, apartments
@@ -517,7 +521,7 @@ def adjust_zensus_misc():
     This can be caused by missing population
     information due to privacy or other special cases (e.g. holiday homes
     are listed as buildings but are not permanently populated.)
-    In the follwong tasks of egon-data, only data of populated cells is used.
+    In the following tasks of egon-data, only data of populated cells is used.
 
     Returns
     -------
