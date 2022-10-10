@@ -134,5 +134,6 @@ CREATE TABLE openstreetmap.osm_buildings_filtered as
 ALTER TABLE openstreetmap.osm_buildings_filtered
     ADD CONSTRAINT osm_buildings_filtered_id_pkey PRIMARY KEY (id);
 
-CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom);
+CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_building);
+
 CREATE INDEX ON openstreetmap.osm_buildings_filtered USING gist (geom_point);
