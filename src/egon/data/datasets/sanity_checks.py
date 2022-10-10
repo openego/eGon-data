@@ -48,7 +48,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
@@ -58,6 +58,8 @@ class SanityChecks(Dataset):
                 cts_electricity_demand_share,
                 cts_heat_demand_share,
                 sanitycheck_emobility_mit,
+                etrago_eGon100RE_gas,
+                etrago_eGon2035_gas,
             },
         )
 
@@ -1220,3 +1222,108 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
+
+def sanity_check_gas_buses(scn):
+    """
+    Execute sanity checks for the gas buses
+
+    Check number of CH4 and H2_grid buses in Germany and verify that
+    they correpond to the original Scigrid_gas number of gas buses and
+    the number of associated voronois areas.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    logger.info(f"BUSES")
+    
+    for carrier in ["CH4", "H2_grid"]:
+        logger.info(f"{carrier} buses")
+
+        # Get buses number
+
+
+def etrago_eGon2035_gas():
+    """Execute basic sanity checks for the gas sector in eGon2035
+
+    Returns print statements as sanity checks for the gas sector in
+    the eGon2035 scenario.
+
+    """
+    scn = "eGon2035"
+    logger.info(f"Gas sanity checks for scenario {scn}")
+
+    # Buses
+    sanity_check_gas_buses(scn)
+
+    # Loads
+    logger.info(f"LOADS")
+    
+    path = "datasets/gas_data/demand/"
+    df_corr = pd.read_json(path + "region_corr.json")
+    df_corr = df_corr.loc[:, ["id_region", "name_short"]]
+    df_corr.set_index("id_region", inplace=True)
+
+    for carrier in ["CH4_for_industry", "H2_for_industry"]:
+
+        output_gas_demand = db.select_dataframe(
+            f"""SELECT (SUM(
+                (SELECT SUM(p) 
+                FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+                FROM grid.egon_etrago_load a
+                JOIN grid.egon_etrago_load_timeseries b
+                ON (a.load_id = b.load_id)
+                JOIN grid.egon_etrago_bus c
+                ON (a.bus=c.bus_id)
+                AND b.scn_name = '{scn}'
+                AND a.scn_name = '{scn}'
+                AND c.scn_name= '{scn}'
+                AND c.country='DE'
+                AND a.carrier IN '{carrier}';
+            """,
+            warning=False,
+        )["load_twh"].values[0]
+        print(output_gas_demand)
+
+        input_gas_demand = pd.read_json(path + carrier + '_eGon2035.json')
+        input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
+        input_gas_demand.set_index("id_region", inplace=True)
+        input_gas_demand = pd.concat(
+            [input_gas_demand, df_corr], axis=1, join="inner")
+        input_gas_demand["NUTS0"] = (input_gas_demand["name_short"].str)[0:2]
+        input_gas_demand = input_gas_demand[
+            input_gas_demand["NUTS0"].str.match("DE")
+        ]
+        input_gas_demand = sum(input_gas_demand.value.to_list())
+        print(input_gas_demand)
+
+        e_demand = (
+            round((output_gas_demand - input_gas_demand) / input_gas_demand, 2)
+            * 100
+        )
+        logger.info(f"Deviation {carrier}: {e_demand} %")
+    
+    # Generators
+    # Stores
+    # Links
+
+
+def etrago_eGon100RE_gas():
+    """Execute basic sanity checks for the gas sector in eGon100RE
+
+    Returns print statements as sanity checks for the gas sector in
+    the eGon100RE scenario.
+
+    """
+    scn = "eGon100RE"
+    logger.info(f"Gas sanity checks for scenario {scn}")
+
+    # Buses
+    sanity_check_gas_buses(scn)
+
+    # Loads
+    # Generators
+    # Stores
+    # Links
