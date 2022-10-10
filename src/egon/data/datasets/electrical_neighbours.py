@@ -725,15 +725,15 @@ def map_carriers_tyndp():
         "Nuclear": "nuclear",
         "Offshore Wind": "wind_offshore",
         "Onshore Wind": "wind_onshore",
-        "Other non-RES": "other_non_renewable",
-        "Other RES": "other_renewable",
+        "Other non-RES": "others",
+        "Other RES": "others",
         "P2G": "power_to_gas",
         "PS Closed": "pumped_hydro",
         "PS Open": "reservoir",
         "Reservoir": "reservoir",
         "Run-of-River": "run_of_river",
         "Solar PV": "solar",
-        "Solar Thermal": "other_renewable",
+        "Solar Thermal": "others",
         "Waste": "Other RES",
     }
 
@@ -914,11 +914,10 @@ def insert_generators(capacities):
     gen = capacities[
         capacities.carrier.isin(
             [
-                "other_non_renewable",
+                "others",
                 "wind_offshore",
                 "wind_onshore",
                 "solar",
-                "other_renewable",
                 "reservoir",
                 "run_of_river",
                 "lignite",

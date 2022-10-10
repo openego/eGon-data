@@ -418,6 +418,8 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Introduce carrier name 'others'
+  `#819 <https://github.com/openego/eGon-data/issues/819>`_
 
 Bug Fixes
 ---------
