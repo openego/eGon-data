@@ -337,8 +337,8 @@ with airflow.DAG(
             osmtgmod,
             setup_etrago,
             data_bundle,
-            # electrical_load_etrago,
-            # heat_time_series,
+            electrical_load_etrago,
+            heat_time_series,
         ]
     )
 
