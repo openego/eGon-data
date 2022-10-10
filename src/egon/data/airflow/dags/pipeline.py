@@ -44,9 +44,8 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2035,
+    HeatPumpsPypsaEurSecAnd2035,
     HeatPumps2050,
-    HeatPumpsEtrago,
 )
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
@@ -592,7 +591,7 @@ with airflow.DAG(
     #     ]
     # )
 
-    heat_pumps_2035 = HeatPumps2035(
+    heat_pumps_2035 = HeatPumpsPypsaEurSecAnd2035(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
