@@ -24,8 +24,17 @@ from egon.data.datasets.electricity_demand_timeseries import (
     hh_buildings,
     hh_profiles,
 )
+from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
+    CtsDemandBuildings,
+)
+from egon.data.datasets.emobility.heavy_duty_transport import (
+    HeavyDutyTransport,
+)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
+)
+from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure import (  # noqa: E501
+    MITChargingInfrastructure,
 )
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
@@ -36,7 +45,7 @@ from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
-from egon.data.datasets.heat_demand_timeseries.HTS import HeatTimeSeries
+from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
@@ -172,34 +181,12 @@ with airflow.DAG(
     # Fix eHV subnetworks in Germany manually
     fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
 
-    # Run pypsa-eur-sec
-    run_pypsaeursec = PypsaEurSec(
-        dependencies=[
-            data_bundle,
-            hd_abroad,
-            osmtgmod,
-            setup_etrago,
-            weather_data,
-        ]
-    )
-
-    # Import NEP (Netzentwicklungsplan) data
-    scenario_capacities = ScenarioCapacities(
-        dependencies=[
-            data_bundle,
-            run_pypsaeursec,
-            setup,
-            vg250,
-            zensus_population,
-        ]
-    )
-
     # Retrieve MaStR (Marktstammdatenregister) data
     mastr_data = mastr_data_setup(dependencies=[setup])
 
     # Create Voronoi polygons
     substation_voronoi = SubstationVoronoi(
-        dependencies=[tasks["osmtgmod_substation"], vg250]
+        dependencies=[tasks["osmtgmod.substation.extract"], vg250]
     )
 
     # MV (medium voltage) grid districts
@@ -226,7 +213,9 @@ with airflow.DAG(
     load_area = LoadArea(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
-    renewable_feedin = RenewableFeedin(dependencies=[vg250, weather_data])
+    renewable_feedin = RenewableFeedin(
+        dependencies=[vg250, zensus_vg250, weather_data]
+    )
 
     # Demarcate district heating areas
     district_heating_areas = DistrictHeatingAreas(
@@ -295,7 +284,8 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             heat_demand_Germany,
-            household_electricity_demand_annual,
+            # household_electricity_demand_annual,
+            tasks["electricity_demand.create-tables"],
             tasks["etrago_setup.create-tables"],
             zensus_mv_grid_districts,
             zensus_vg250,
@@ -325,9 +315,47 @@ with airflow.DAG(
         ]
     )
 
+    # Heat time Series
+    heat_time_series = HeatTimeSeries(
+        dependencies=[
+            data_bundle,
+            demandregio,
+            heat_demand_Germany,
+            district_heating_areas,
+            vg250,
+            zensus_mv_grid_districts,
+            hh_demand_buildings_setup,
+            weather_data,
+        ]
+    )
+
+    # run pypsa-eur-sec
+    run_pypsaeursec = PypsaEurSec(
+        dependencies=[
+            weather_data,
+            hd_abroad,
+            osmtgmod,
+            setup_etrago,
+            data_bundle,
+            electrical_load_etrago,
+            heat_time_series,
+        ]
+    )
+
     # Deal with electrical neighbours
     foreign_lines = ElectricalNeighbours(
         dependencies=[run_pypsaeursec, tyndp_data]
+    )
+
+    # Import NEP (Netzentwicklungsplan) data
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[
+            data_bundle,
+            run_pypsaeursec,
+            setup,
+            vg250,
+            zensus_population,
+        ]
     )
 
     # Import gas grid
@@ -360,7 +388,7 @@ with airflow.DAG(
 
     # Create gas voronoi eGon2035
     create_gas_polygons_egon2035 = GasAreaseGon2035(
-        dependencies=[insert_hydrogen_buses, vg250]
+        dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
 
     # Insert hydrogen grid
@@ -384,12 +412,12 @@ with airflow.DAG(
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=h2_infrastructure
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
     # Create gas voronoi eGon100RE
     create_gas_polygons_egon100RE = GasAreaseGon100RE(
-        dependencies=[insert_h2_grid, vg250]
+        dependencies=[create_gas_polygons_egon2035, insert_h2_grid, vg250]
     )
 
     # Import gas production
@@ -488,20 +516,6 @@ with airflow.DAG(
         ]
     )
 
-    # Heat time Series
-    heat_time_series = HeatTimeSeries(
-        dependencies=[
-            data_bundle,
-            demandregio,
-            district_heating_areas,
-            heat_demand_Germany,
-            hh_demand_buildings_setup,
-            vg250,
-            weather_data,
-            zensus_mv_grid_districts,
-        ]
-    )
-
     # Heat to eTraGo
     heat_etrago = HeatEtrago(
         dependencies=[
@@ -556,11 +570,33 @@ with airflow.DAG(
         ]
     )
 
+    mit_charging_infrastructure = MITChargingInfrastructure(
+        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
+    )
+
+    # eMobility: heavy duty transport
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
+    )
+
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
+        ]
+    )
+
+    # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
         dependencies=[
             storage_etrago,
             hts_etrago_table,
             fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
         ]
     )

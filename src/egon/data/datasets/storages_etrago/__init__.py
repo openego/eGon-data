@@ -17,7 +17,7 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
@@ -104,10 +104,11 @@ def extendable_batteries_per_scenario(scenario):
         {sources['bus']['table']}
         WHERE carrier = 'AC'
         AND scn_name = '{scenario}'
-        AND bus_id IN (SELECT bus_id
-                       FROM {sources['bus']['schema']}.{sources['bus']['table']}
-                       WHERE scn_name = '{scenario}'
-                       AND country = 'DE')
+        AND (bus_id IN (SELECT bus_id
+                       FROM {sources['ehv-substation']['schema']}.{sources['ehv-substation']['table']})
+        OR bus_id IN (SELECT bus_id
+                       FROM {sources['hv-substation']['schema']}.{sources['hv-substation']['table']}
+        ))
         """
     )
 

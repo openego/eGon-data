@@ -3,7 +3,7 @@ import codecs
 import functools
 import time
 
-from psycopg2.errors import UniqueViolation, DeadlockDetected
+from psycopg2.errors import DeadlockDetected, UniqueViolation
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import sessionmaker
@@ -163,7 +163,7 @@ def session_scoped(function):
 
 
 def select_dataframe(sql, index_col=None, warning=True):
-    """ Select data from local database as pandas.DataFrame
+    """Select data from local database as pandas.DataFrame
 
     Parameters
     ----------
@@ -351,3 +351,41 @@ def check_db_unique_violation(func):
         return ret
 
     return commit
+
+
+def assign_gas_bus_id(dataframe, scn_name, carrier):
+    """Assigns bus_ids to points (contained in a dataframe) according to location
+
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+        DataFrame cointaining points
+    scn_name : str
+        Name of the scenario
+    carrier : str
+        Name of the carrier
+
+    Returns
+    -------
+    res : pandas.DataFrame
+        Dataframe including bus_id
+    """
+
+    voronoi = select_geodataframe(
+        f"""
+        SELECT bus_id, geom FROM grid.egon_gas_voronoi
+        WHERE scn_name = '{scn_name}' AND carrier = '{carrier}';
+        """,
+        epsg=4326,
+    )
+
+    res = gpd.sjoin(dataframe, voronoi)
+    res["bus"] = res["bus_id"]
+    res = res.drop(columns=["index_right"])
+
+    # Assert that all power plants have a bus_id
+    assert (
+        res.bus.notnull().all()
+    ), f"Some points are not attached to a {carrier} bus."
+
+    return res

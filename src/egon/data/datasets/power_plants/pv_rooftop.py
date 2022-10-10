@@ -7,7 +7,23 @@ from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
+def pv_rooftop_per_mv_grid():
+    """Execute pv rooftop distribution method per scenario
+
+    Returns
+    -------
+    None.
+
+    """
+
+    pv_rooftop_per_mv_grid_and_scenario(
+        scenario="eGon2035", level="federal_state"
+    )
+
+    pv_rooftop_per_mv_grid_and_scenario(scenario="eGon100RE", level="national")
+
+
+def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     """Intergate solar rooftop per mv grid district
 
     The target capacity is distributed to the mv grid districts linear to
@@ -16,9 +32,9 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
     Parameters
     ----------
     scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+        Name of the scenario
     level : str, optional
-        Choose level of target values. The default is 'federal_state'.
+        Choose level of target values.
 
     Returns
     -------
@@ -67,7 +83,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
          JOIN {sources['map_grid_boundaries']['schema']}.
          {sources['map_grid_boundaries']['table']} c
          ON c.bus_id = b.bus_id
-         WHERE scenario = 'eGon2035'
+         WHERE scenario = '{scenario}'
          GROUP BY (b.bus_id, vg250_lan)
          """
     )
@@ -83,6 +99,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
             {sources['federal_states']['table']} b
             ON a.nuts = b.nuts
             WHERE carrier = 'solar_rooftop'
+            AND scenario_name = '{scenario}'
             """,
             index_col="gen",
         )
@@ -101,20 +118,22 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
             demand["target_federal_state"]
         )
     else:
+
         target = db.select_dataframe(
             f"""
             SELECT capacity
             FROM {sources['scenario_capacities']['schema']}.
             {sources['scenario_capacities']['table']} a
             WHERE carrier = 'solar_rooftop'
+            AND scenario_name = '{scenario}'
             """
         ).capacity[0]
 
         demand["share_country"] = demand.demand / demand.demand.sum()
 
-        capacities = demand["share_country"].mul(target)
-
         demand.set_index("bus_id", inplace=True)
+
+        capacities = demand["share_country"].mul(target)
 
     # Select next id value
     new_id = db.next_etrago_id("generator")
@@ -177,7 +196,7 @@ def pv_rooftop_per_mv_grid(scenario="eGon2035", level="federal_state"):
 
     pv_rooftop = pv_rooftop.set_index("generator_id")
     pv_rooftop["marginal_cost"] = get_sector_parameters(
-        "electricity", "eGon2035"
+        "electricity", scenario
     )["marginal_cost"]["solar"]
 
     # Insert data to database

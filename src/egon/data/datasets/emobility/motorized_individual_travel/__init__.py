@@ -106,6 +106,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     WORKING_DIR,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
+    delete_model_data_from_db,
     generate_model_data_bunch,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
@@ -413,7 +414,7 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.1",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -422,6 +423,7 @@ class MotorizedIndividualTravel(Dataset):
                     (extract_trip_file, write_evs_trips_to_db),
                 },
                 allocate_evs_to_grid_districts,
+                delete_model_data_from_db,
                 {
                     *generate_model_data_tasks(scenario_name="eGon2035"),
                     *generate_model_data_tasks(scenario_name="eGon100RE"),

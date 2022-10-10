@@ -8,7 +8,6 @@ import numpy as np
 from egon.data import config, db
 from egon.data.datasets.power_plants import (
     assign_bus_id,
-    assign_gas_bus_id,
     filter_mastr_geometry,
     select_target,
 )
@@ -87,7 +86,9 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
         # Assign gas bus_id
         mastr_chp_c = mastr_chp.copy()
-        mastr_chp["gas_bus_id"] = assign_gas_bus_id(mastr_chp_c).gas_bus_id
+        mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
+            mastr_chp_c, "eGon2035", "CH4"
+        ).bus
 
         # Assign bus_id
         mastr_chp["bus_id"] = assign_bus_id(
@@ -106,6 +107,7 @@ def extension_to_areas(
     flh,
     EgonChp,
     district_heating=True,
+    scenario="eGon2035",
 ):
     """Builds new CHPs on potential industry or district heating areas.
 
@@ -175,9 +177,9 @@ def extension_to_areas(
 
             selected_areas = selected_areas.to_crs(4326)
             # Assign gas bus_id
-            selected_areas["gas_bus_id"] = assign_gas_bus_id(
-                selected_areas.copy()
-            ).gas_bus_id
+            selected_areas["gas_bus_id"] = db.assign_gas_bus_id(
+                selected_areas.copy(), "eGon2035", "CH4"
+            ).bus
 
             # Select randomly one area from the list of possible areas
             # weighted by the share of demand
@@ -236,7 +238,7 @@ def extension_to_areas(
                     voltage_level=selected_chp.voltage_level,
                     electrical_bus_id=int(selected_areas.bus_id),
                     ch4_bus_id=int(selected_areas.gas_bus_id),
-                    scenario="eGon2035",
+                    scenario=scenario,
                     geom=f"""
                             SRID=4326;
                             POINT({selected_areas.geom.values[0].x} {selected_areas.geom.values[0].y})

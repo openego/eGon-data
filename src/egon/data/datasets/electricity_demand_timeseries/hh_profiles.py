@@ -1000,7 +1000,7 @@ def get_census_households_grid():
     # Merge household type and size data with considered (populated) census
     # cells how='right' is used as ids of unpopulated areas are removed
     # by df_grid_id or ancestors. See here:
-    # https://github.com/openego/eGon-data/blob/59195926e41c8bd6d1ca8426957b97f33ef27bcc/src/egon/data/importing/zensus/__init__.py#L418-L449
+    # https://github.com/openego/eGon-data/blob/add4944456f22b8873504c5f579b61dca286e357/src/egon/data/datasets/zensus_vg250.py#L269
     df_census_households_grid = pd.merge(
         df_census_households_grid,
         df_grid_id,

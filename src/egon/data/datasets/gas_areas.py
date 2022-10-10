@@ -2,6 +2,8 @@
 
 """
 from geoalchemy2.types import Geometry
+from sqlalchemy import BigInteger, Column, Text
+from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -12,9 +14,9 @@ class GasAreaseGon2035(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasAreaseGon2035",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
-            tasks=(voronoi_egon2035),
+            tasks=(create_gas_voronoi_table, voronoi_egon2035),
         )
 
 
@@ -26,6 +28,25 @@ class GasAreaseGon100RE(Dataset):
             dependencies=dependencies,
             tasks=(voronoi_egon100RE),
         )
+
+
+Base = declarative_base()
+
+
+class EgonPfHvGasVoronoi(Base):
+    __tablename__ = "egon_gas_voronoi"
+    __table_args__ = {"schema": "grid"}
+
+    scn_name = Column(Text, primary_key=True, nullable=False)
+    bus_id = Column(BigInteger, primary_key=True, nullable=False)
+    carrier = Column(Text)
+    geom = Column(Geometry("GEOMETRY", 4326))
+
+
+def create_gas_voronoi_table():
+    engine = db.engine()
+    EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGasVoronoi.__table__.create(bind=engine, checkfirst=True)
 
 
 def voronoi_egon2035():

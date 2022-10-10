@@ -136,6 +136,10 @@ demandregio_cts_ind_demand:
       schema: 'boundaries'
       table: 'vg250_krs'
     new_consumers_2035: 'new_largescale_consumers_nep.csv'
+    new_consumers_2050:
+      "pes-demand-today": "industrial_energy_demand_per_country_today.csv"
+      "pes-production-tomorrow": "industrial_production_per_country_tomorrow_2050.csv"
+      "pes-sector-ratios": "industry_sector_ratios.csv"
     wz_definitions:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
@@ -207,10 +211,10 @@ substation_extraction:
   targets:
     hvmv_substation:
       schema: 'grid'
-      table: 'egon_hvmv_substation'
+      table: 'egon_hvmv_transfer_buses'
     ehv_substation:
       schema: 'grid'
-      table: 'egon_ehv_substation'
+      table: 'egon_ehv_transfer_buses'
     transfer_busses:
       table: 'transfer_busses_complete'
 
@@ -511,7 +515,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 6630616
+      deposit_id: 1095882
   targets:
     file:
       'data_bundle_egon_data.zip'
@@ -935,6 +939,12 @@ storage_etrago:
     bus:
       table: 'egon_etrago_bus'
       schema: 'grid'
+    ehv-substation:
+      table: 'egon_ehv_substation'
+      schema: 'grid'
+    hv-substation:
+      table: 'egon_hvmv_substation'
+      schema: 'grid'
   targets:
     storage:
       schema: 'grid'
@@ -1062,10 +1072,98 @@ emobility_mit:
           file: "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
   scenario:
+    # used scenario variation (available scenarios see parameters.py)
     variation:
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
+    # name of low-flex scenario
+    lowflex:
+      create_lowflex_scenario: True
+      names:
+        eGon2035: "eGon2035_lowflex"
+        eGon100RE: "eGon100RE_lowflex"
+
   model_timeseries:
     reduce_memory: True
     export_results_to_csv: True
     parallel_tasks: 10
+
+charging_infrastructure:
+  original_data:
+    sources:
+      tracbev:
+        url: "https://zenodo.org/record/6466480/files/data.zip?download=1"
+        file: "data.zip"
+        files_to_use:
+          - "hpc_positions.gpkg"
+          - "landuse.gpkg"
+          - "poi_cluster.gpkg"
+          - "public_positions.gpkg"
+        srid: 3035
+  constants:
+    work_weight_retail: 0.8
+    work_weight_commercial: 1.25
+    work_weight_industrial: 1
+    single_family_home_share: 0.6
+    single_family_home_spots: 1.5
+    multi_family_home_share: 0.4
+    multi_family_home_spots: 10
+    random_seed: 5
+  targets:
+    charging_infrastructure:
+      schema: "grid"
+      table: "egon_emob_charging_infrastructure"
+      cols_to_export:
+        - "mv_grid_id"
+        - "use_case"
+        - "weight"
+        - "geometry"
+
+mobility_hgv:
+    original_data:
+      sources:
+        BAST:
+          url: "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+          file: "Jawe2020.csv"
+          relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
+          srid: 4326
+        germany:
+          url: "https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/1_deutschland/1_sehr_hoch.geo.json"
+        NUTS:
+          url: "https://daten.gdz.bkg.bund.de/produkte/vg/nuts250_1231/aktuell/nuts250_12-31.utm32s.shape.zip"
+          file: "nuts250_12-31.utm32s.shape.zip"
+          shp_file: "nuts250_12-31.utm32s.shape/nuts250_1231/250_NUTS1.shp"
+          NUTS_CODE: "DEF"
+    tables:
+      srid: 3035
+      srid_buses: 4326
+    constants:
+      # leakage rate / losses - constant
+      # https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery
+      # --> 0.5%
+      leakage: True
+      leakage_rate: 0.005
+      # Hydrogen
+      # HGV traffic hydrogen consumption in kg per 100 km
+      # Assumption: 30L Diesel / 100 km --> kgH2/100 km
+      hydrogen_consumption: 6.68
+      # share of FCEV trucks
+      # within the egon project the flat guess is 100%
+      fcev_share: 1.
+      scenarios: ["eGon2035", "eGon100RE"]
+      carrier: "H2_hgv_load"
+      energy_value_h2: 39.4  # kWh/kg
+      hours_per_year: 8760
+      fac: 0.001
+    hgv_mileage:
+      # NEP data
+      # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf
+      # total amount of HGVs  - Scenario C 2035
+      # hgv_amount = 100000
+      # HGV traffic annual mileage per vehicle
+      # hgv_mean_mileage = 100000
+      # Total mileage
+      eGon2035: 10000000000
+      # Langfristszenarien
+      # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
+      eGon100RE: 40000000000

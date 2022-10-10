@@ -5,7 +5,6 @@ from shapely.geometry import MultiLineString
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets.ch4_prod import assign_bus_id
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -74,7 +73,7 @@ def insert_h2_pipelines():
     new_pipelines.set_crs(epsg=4326, inplace=True)
 
     # find bus in H2_grid voronoi
-    new_pipelines = assign_bus_id(new_pipelines, "eGon2035", "H2_grid")
+    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon2035", "H2_grid")
     new_pipelines = new_pipelines.rename(columns={"bus_id": "bus1"}).drop(
         columns=["bus"]
     )

@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.10",
+            version="0.0.11",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -616,7 +616,7 @@ def eGon100_capacities():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2022-05-04-egondata-integration"
+            / "2022-07-26-egondata-integration"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
@@ -682,21 +682,22 @@ def eGon100_capacities():
         "rural_gas_boiler",
         "rural_solar_thermal",
     ]:
-        df = df.append(
-            pd.DataFrame(
-                index=[merge_carrier],
-                data={
-                    "p_nom": (
-                        df.p_nom[f"residential_{merge_carrier}"]
-                        + df.p_nom[f"services_{merge_carrier}"]
-                    ),
-                    "component": df.component[f"residential_{merge_carrier}"],
-                },
+        if f"residential_{merge_carrier}" in df.index:
+            df = df.append(
+                pd.DataFrame(
+                    index=[merge_carrier],
+                    data={
+                        "p_nom": (
+                            df.p_nom[f"residential_{merge_carrier}"]
+                            + df.p_nom[f"services_{merge_carrier}"]
+                        ),
+                        "component": df.component[f"residential_{merge_carrier}"],
+                    },
+                )
             )
-        )
-        df = df.drop(
-            [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
-        )
+            df = df.drop(
+                [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
+            )
 
     # Rename carriers
     df.rename(
