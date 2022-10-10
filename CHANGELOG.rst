@@ -413,11 +413,15 @@ Changed
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
+* Insert crossboarding gas pipeline with Germany in eGon100RE
+  `#881 <https://github.com/openego/eGon-data/issues/881>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Adjust H2 industry profiles abroad for eGon2035
+  `#940 <https://github.com/openego/eGon-data/issues/940>`_
 
 Bug Fixes
 ---------
@@ -609,6 +613,8 @@ Bug Fixes
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
 * Drop era5 weather cell table using cascade
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
+* Remove drop of p_set and q_set for loads without timeserie
+  `#971 <https://github.com/openego/eGon-data/issues/971>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692

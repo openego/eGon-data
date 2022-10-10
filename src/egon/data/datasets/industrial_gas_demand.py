@@ -27,7 +27,7 @@ class IndustrialGasDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemand",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(download_industrial_gas_demand),
         )
@@ -37,7 +37,7 @@ class IndustrialGasDemandeGon2035(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon2035",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon2035),
         )
@@ -47,7 +47,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="IndustrialGasDemandeGon100RE",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon100RE),
         )
@@ -150,7 +150,9 @@ def read_industrial_demand(scn_name, carrier):
     ).set_geometry("geom", crs=4326)
 
 
-def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None):
+def read_and_process_demand(
+    scn_name="eGon2035", carrier=None, grid_carrier=None
+):
     """Assign the industrial demand in Germany to buses
 
     Parameters
@@ -194,7 +196,7 @@ def read_and_process_demand(scn_name="eGon2035", carrier=None, grid_carrier=None
         f"{len(industrial_loads_list)} got assigned to buses."
         f"scn_name: {scn_name}, load carrier: {carrier}, carrier of buses to"
         f"connect loads to: {grid_carrier}"
-        )
+    )
     assert len(industrial_loads_list) == number_loads, msg
 
     return industrial_loads_list
@@ -215,7 +217,7 @@ def delete_old_entries(scn_name):
         DELETE FROM grid.egon_etrago_load_timeseries
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
-            WHERE "carrier" IN ('CH4', 'H2') AND
+            WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
@@ -229,7 +231,7 @@ def delete_old_entries(scn_name):
         DELETE FROM grid.egon_etrago_load
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
-            WHERE "carrier" IN ('CH4', 'H2') AND
+            WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
@@ -296,9 +298,15 @@ def insert_industrial_gas_demand_egon2035():
 
     industrial_gas_demand = pd.concat(
         [
-            read_and_process_demand(scn_name=scn_name, carrier="CH4"),
             read_and_process_demand(
-                scn_name=scn_name, carrier="H2", grid_carrier="H2_grid"
+                scn_name=scn_name,
+                carrier="CH4_for_industry",
+                grid_carrier="CH4",
+            ),
+            read_and_process_demand(
+                scn_name=scn_name,
+                carrier="H2_for_industry",
+                grid_carrier="H2_grid",
             ),
         ]
     )
@@ -331,10 +339,10 @@ def insert_industrial_gas_demand_egon100RE():
 
     # read demands
     industrial_gas_demand_CH4 = read_and_process_demand(
-        scn_name=scn_name, carrier="CH4"
+        scn_name=scn_name, carrier="CH4_for_industry", grid_carrier="CH4"
     )
     industrial_gas_demand_H2 = read_and_process_demand(
-        scn_name=scn_name, carrier="H2", grid_carrier="H2_grid"
+        scn_name=scn_name, carrier="H2_for_industry", grid_carrier="H2_grid"
     )
 
     # adjust H2 and CH4 total demands (values from PES)
@@ -463,7 +471,7 @@ def download_industrial_gas_demand():
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
     pd.read_json(result_corr.content).to_json(target_file)
 
-    carriers = {"H2": "2,162", "CH4": "2,11"}
+    carriers = {"H2_for_industry": "2,162", "CH4_for_industry": "2,11"}
     url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
 
     for scn_name in ["eGon2035", "eGon100RE"]:
