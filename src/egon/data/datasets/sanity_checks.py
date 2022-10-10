@@ -37,6 +37,7 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
+from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 TESTMODE_OFF = (
@@ -1223,6 +1224,7 @@ def sanitycheck_emobility_mit():
 
     print("=====================================================")
 
+
 def sanity_check_gas_buses(scn):
     """
     Execute sanity checks for the gas buses
@@ -1238,7 +1240,7 @@ def sanity_check_gas_buses(scn):
 
     """
     logger.info(f"BUSES")
-    
+
     for carrier in ["CH4", "H2_grid"]:
         logger.info(f"{carrier} buses")
 
@@ -1253,61 +1255,107 @@ def etrago_eGon2035_gas():
 
     """
     scn = "eGon2035"
-    logger.info(f"Gas sanity checks for scenario {scn}")
 
-    # Buses
-    sanity_check_gas_buses(scn)
+    if TESTMODE_OFF:
+        logger.info(f"Gas sanity checks for scenario {scn}")
 
-    # Loads
-    logger.info(f"LOADS")
-    
-    path = "datasets/gas_data/demand/"
-    df_corr = pd.read_json(path + "region_corr.json")
-    df_corr = df_corr.loc[:, ["id_region", "name_short"]]
-    df_corr.set_index("id_region", inplace=True)
+        # Buses
+        # sanity_check_gas_buses(scn)
 
-    for carrier in ["CH4_for_industry", "H2_for_industry"]:
+        # Loads
+        logger.info(f"LOADS")
 
-        output_gas_demand = db.select_dataframe(
-            f"""SELECT (SUM(
-                (SELECT SUM(p) 
-                FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
-                FROM grid.egon_etrago_load a
-                JOIN grid.egon_etrago_load_timeseries b
-                ON (a.load_id = b.load_id)
-                JOIN grid.egon_etrago_bus c
-                ON (a.bus=c.bus_id)
-                AND b.scn_name = '{scn}'
-                AND a.scn_name = '{scn}'
-                AND c.scn_name= '{scn}'
-                AND c.country='DE'
-                AND a.carrier IN '{carrier}';
-            """,
+        path = "datasets/gas_data/demand/"
+        df_corr = pd.read_json(path + "region_corr.json")
+        df_corr = df_corr.loc[:, ["id_region", "name_short"]]
+        df_corr.set_index("id_region", inplace=True)
+
+        for carrier in ["CH4_for_industry", "H2_for_industry"]:
+
+            output_gas_demand = db.select_dataframe(
+                f"""SELECT (SUM(
+                    (SELECT SUM(p)
+                    FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+                    FROM grid.egon_etrago_load a
+                    JOIN grid.egon_etrago_load_timeseries b
+                    ON (a.load_id = b.load_id)
+                    JOIN grid.egon_etrago_bus c
+                    ON (a.bus=c.bus_id)
+                    AND b.scn_name = '{scn}'
+                    AND a.scn_name = '{scn}'
+                    AND c.scn_name = '{scn}'
+                    AND c.country = 'DE'
+                    AND a.carrier = '{carrier}';
+                """,
+                warning=False,
+            )["load_twh"].values[0]
+
+            input_gas_demand = pd.read_json(path + carrier + "_eGon2035.json")
+            input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
+            input_gas_demand.set_index("id_region", inplace=True)
+            input_gas_demand = pd.concat(
+                [input_gas_demand, df_corr], axis=1, join="inner"
+            )
+            input_gas_demand["NUTS0"] = (input_gas_demand["name_short"].str)[
+                0:2
+            ]
+            input_gas_demand = input_gas_demand[
+                input_gas_demand["NUTS0"].str.match("DE")
+            ]
+            input_gas_demand = sum(input_gas_demand.value.to_list()) / 1000000
+
+            e_demand = (
+                round(
+                    (output_gas_demand - input_gas_demand) / input_gas_demand,
+                    2,
+                )
+                * 100
+            )
+            logger.info(f"Deviation {carrier}: {e_demand} %")
+
+        # Generators
+        logger.info(f"GENERATORS")
+        carrier_generator = "CH4"
+
+        output_gas_generation = db.select_dataframe(
+            f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_Germany
+                    FROM grid.egon_etrago_generator
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{carrier_generator}'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country = 'DE'
+                        AND carrier = '{carrier_generator}');
+                    """,
             warning=False,
-        )["load_twh"].values[0]
-        print(output_gas_demand)
+        )["e_nom_max_Germany"].values[0]
+        print(output_gas_generation)
 
-        input_gas_demand = pd.read_json(path + carrier + '_eGon2035.json')
-        input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
-        input_gas_demand.set_index("id_region", inplace=True)
-        input_gas_demand = pd.concat(
-            [input_gas_demand, df_corr], axis=1, join="inner")
-        input_gas_demand["NUTS0"] = (input_gas_demand["name_short"].str)[0:2]
-        input_gas_demand = input_gas_demand[
-            input_gas_demand["NUTS0"].str.match("DE")
-        ]
-        input_gas_demand = sum(input_gas_demand.value.to_list())
-        print(input_gas_demand)
+        scn_params = get_sector_parameters("gas", scn)
+        input_gas_generation = (
+            scn_params["max_gas_generation_overtheyear"]["CH4"]
+            + scn_params["max_gas_generation_overtheyear"]["biogas"]
+        )
 
-        e_demand = (
-            round((output_gas_demand - input_gas_demand) / input_gas_demand, 2)
+        e_generation = (
+            round(
+                (output_gas_generation - input_gas_generation)
+                / input_gas_generation,
+                2,
+            )
             * 100
         )
-        logger.info(f"Deviation {carrier}: {e_demand} %")
-    
-    # Generators
-    # Stores
-    # Links
+        logger.info(
+            f"Deviation {carrier_generator} generation: {e_generation} %"
+        )
+
+        # Stores
+        # Links
+
+    else:
+        print("Testmode is on, skipping sanity check.")
 
 
 def etrago_eGon100RE_gas():
@@ -1318,12 +1366,57 @@ def etrago_eGon100RE_gas():
 
     """
     scn = "eGon100RE"
-    logger.info(f"Gas sanity checks for scenario {scn}")
 
-    # Buses
-    sanity_check_gas_buses(scn)
+    if TESTMODE_OFF:
+        logger.info(f"Gas sanity checks for scenario {scn}")
 
-    # Loads
-    # Generators
-    # Stores
-    # Links
+        # Buses
+        # sanity_check_gas_buses(scn)
+
+        # Loads
+        logger.info(f"LOADS")
+
+        for carrier in ["CH4_for_industry", "H2_for_industry"]:
+
+            output_gas_demand = db.select_dataframe(
+                f"""SELECT (SUM(
+                    (SELECT SUM(p) 
+                    FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+                    FROM grid.egon_etrago_load a
+                    JOIN grid.egon_etrago_load_timeseries b
+                    ON (a.load_id = b.load_id)
+                    JOIN grid.egon_etrago_bus c
+                    ON (a.bus=c.bus_id)
+                    AND b.scn_name = '{scn}'
+                    AND a.scn_name = '{scn}'
+                    AND c.scn_name = '{scn}'
+                    AND c.country = 'DE'
+                    AND a.carrier = '{carrier}';
+                """,
+                warning=False,
+            )["load_twh"].values[0]
+
+            n = read_network()
+            node_pes = {
+                "CH4_for_industry": "DE0 0 gas for industry",
+                "H2_for_industry": "DE0 0 H2 for industry",
+            }
+            input_gas_demand = (
+                n.loads.loc[node_pes[carrier], "p_set"] * 8760 / 1000000
+            )
+
+            e_demand = (
+                round(
+                    (output_gas_demand - input_gas_demand) / input_gas_demand,
+                    2,
+                )
+                * 100
+            )
+            logger.info(f"Deviation {carrier}: {e_demand} %")
+
+        # Generators
+        # Stores
+        # Links
+
+    else:
+        print("Testmode is on, skipping sanity check.")
