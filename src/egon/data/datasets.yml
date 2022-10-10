@@ -907,6 +907,9 @@ gas_prod:
     stores:
       schema: 'grid'
       table: 'egon_etrago_generator'
+    scenario_parameters:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
 
 weather_BusID:
   sources:
@@ -1033,6 +1036,9 @@ gas_neighbours:
     links:
       schema: 'grid'
       table: 'egon_etrago_link'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
   targets:
     generators:
       schema: 'grid'

@@ -639,6 +639,11 @@ def gas(scenario):
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
+        # Insert max gas production (generator) over the year
+        parameters["max_gas_generation_overtheyear"] = {
+            "biogas": 14450103,  # [MWh] Value from reference p-e-s run
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
