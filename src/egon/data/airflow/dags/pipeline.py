@@ -584,13 +584,13 @@ with airflow.DAG(
         ]
     )
 
-    heat_pumps_2050 = HeatPumps2050(
-        dependencies=[
-            cts_demand_buildings,
-            DistrictHeatingAreas,
-            run_pypsaeursec,
-        ]
-    )
+    # heat_pumps_2050 = HeatPumps2050(
+    #     dependencies=[
+    #         cts_demand_buildings,
+    #         DistrictHeatingAreas,
+    #         run_pypsaeursec,
+    #     ]
+    # )
 
     heat_pumps_2035 = HeatPumps2035(
         dependencies=[
