@@ -300,6 +300,12 @@ def electricity(scenario):
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["lignite"],
+            "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            + read_costs(costs, "coal", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["coal"],
+            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
@@ -496,6 +502,7 @@ def gas(scenario):
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             #  what about H2 compressors?
+            "H2_feedin": 0,
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
             ),
@@ -521,6 +528,7 @@ def gas(scenario):
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
             "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
+            "H2_feedin": read_costs(costs, "CH4 (g) pipeline", "lifetime"),
         }
 
         # Insert annualized capital costs
@@ -569,17 +577,16 @@ def gas(scenario):
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
-            "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
-        # Insert costs
-        parameters["capital_cost"] = {
+        # Insert overnight investment costs
+        parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
-            "H2_feedin": 0,
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
+            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
             ),
@@ -593,11 +600,43 @@ def gas(scenario):
                 costs, "H2 (g) pipeline repurposed", "investment"
             ),  # [EUR/MW/km]
         }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            #  what about H2 compressors?
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "lifetime"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "lifetime"
+            ),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
+            "H2_pipeline_retrofit": read_costs(
+                costs, "H2 (g) pipeline repurposed", "lifetime"
+            ),
+        }
+
+        # Insert costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
         parameters["marginal_cost"] = {
-            "CH4": global_settings(scenario)["fuel_costs"]["gas"]
-            + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["gas"],
+            # "CH4": global_settings(scenario)["fuel_costs"]["gas"]
+            # + global_settings(scenario)["co2_costs"]
+            # * global_settings(scenario)["co2_emissions"]["gas"],
             "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
     else:
