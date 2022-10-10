@@ -424,6 +424,8 @@ Changed
   `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Add sanity checks for gas sector
   `#864 <https://github.com/openego/eGon-data/issues/864>`_
+* Introduce carrier name 'others'
+  `#819 <https://github.com/openego/eGon-data/issues/819>`_
 
 Bug Fixes
 ---------
@@ -617,7 +619,8 @@ Bug Fixes
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
 * Remove drop of p_set and q_set for loads without timeserie
   `#971 <https://github.com/openego/eGon-data/issues/971>`_
-
+* Overwrite capacities for conventional power plants with data from nep list
+  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

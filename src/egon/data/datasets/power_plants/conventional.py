@@ -1,6 +1,6 @@
 """
 The module containing all code allocating power plants of different conventional
-technologies (oil, gas, other_non_renewable) based on
+technologies (oil, gas, others) based on
 data from MaStR and NEP.
 """
 
@@ -12,7 +12,7 @@ import egon.data.config
 
 
 def select_nep_power_plants(carrier):
-    """ Select waste power plants with location from NEP's list of power plants
+    """ Select power plants with location from NEP's list of power plants
 
     Parameters
     ----------
