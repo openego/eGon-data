@@ -576,13 +576,6 @@ with airflow.DAG(
         ]
     )
 
-    heat_pumps_etrago = HeatPumpsEtrago(
-        dependencies=[
-            cts_demand_buildings,
-            DistrictHeatingAreas,
-        ]
-    )
-
     # heat_pumps_2050 = HeatPumps2050(
     #     dependencies=[
     #         cts_demand_buildings,
@@ -595,6 +588,8 @@ with airflow.DAG(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
             # TODO add PV rooftop
         ]
     )
