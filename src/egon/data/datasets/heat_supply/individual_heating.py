@@ -81,7 +81,7 @@ class HeatPumpsPypsaEurSecAnd2035(Dataset):
                 :func:`egon.data.datasets.heat_supply.individual_heating.
                 determine_hp_capacity_eGon2035_pypsa_eur_sec`
             """
-            parallel_tasks = egon.data.config.datasets()[
+            parallel_tasks = config.datasets()[
                 "demand_timeseries_mvgd"
             ].get("parallel_tasks", 1)
             # ========== Register np datatypes with SQLA ==========
