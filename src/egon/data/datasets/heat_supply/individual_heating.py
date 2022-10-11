@@ -135,6 +135,7 @@ class HeatPumpsPypsaEurSecAnd2035(Dataset):
             tasks=(
                 create_peak_load_table,
                 create_hp_capacity_table,
+                create_egon_etrago_timeseries_individual_heating,
                 # delete_peak_loads_if_existing,
                 {*dyn_parallel_tasks()},
             ),
@@ -147,7 +148,7 @@ class HeatPumps2050(Dataset):
             name="HeatPumps2050",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(determine_hp_cap_buildings_eGon100RE,),
+            tasks=(determine_hp_cap_buildings_eGon100RE),
         )
 
 
@@ -1180,7 +1181,9 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
     return hp_cap_per_building
 
 
-def determine_min_hp_cap_pypsa_eur_sec(peak_heat_demand, building_ids):
+def determine_min_hp_cap_buildings_pypsa_eur_sec(
+    peak_heat_demand, building_ids
+):
     """
     Determines minimum required HP capacity in MV grid in MW as input for
     pypsa-eur-sec.
@@ -1211,7 +1214,7 @@ def determine_min_hp_cap_pypsa_eur_sec(peak_heat_demand, building_ids):
         return 0.0
 
 
-def determine_hp_cap_buildings_eGon2035(
+def determine_hp_cap_buildings_eGon2035_per_mvgd(
     mv_grid_id, peak_heat_demand, building_ids
 ):
     """
@@ -1259,7 +1262,7 @@ def determine_hp_cap_buildings_eGon2035(
         return pd.Series().rename("hp_capacity")
 
 
-def determine_hp_cap_buildings_eGon100RE(mv_grid_id):
+def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
     """
     Main function to determine HP capacity per building in eGon100RE scenario.
 
@@ -1291,10 +1294,46 @@ def determine_hp_cap_buildings_eGon100RE(mv_grid_id):
         min_hp_cap_buildings, hp_cap_grid
     )
 
-    # ToDo Julian Write desaggregated HP capacity to table (same as for
-    #  2035 scenario) check columns
+    return hp_cap_per_building.rename("hp_capacity")
+
+
+def determine_hp_cap_buildings_eGon100RE():
+    """"""
+
+    with db.session_scope() as session:
+        query = (
+            session.query(
+                MapZensusGridDistricts.bus_id,
+            )
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == EgonPetaHeat.zensus_population_id
+            )
+            .distinct(MapZensusGridDistricts.bus_id)
+        )
+    mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
+    mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
+
+    df_hp_cap_per_building_100RE_db = pd.DataFrame()
+
+    for mvgd_id in mvgd_ids:
+
+        hp_cap_per_building_100RE = (
+            determine_hp_cap_buildings_eGon100RE_per_mvgd(mvgd_id)
+        )
+
+        df_hp_cap_per_building_100RE_db = pd.concat(
+            [
+                df_hp_cap_per_building_100RE_db,
+                hp_cap_per_building_100RE.reset_index(),
+            ],
+            axis=0,
+        )
+
+    df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
+
     write_table_to_postgres(
-        hp_cap_per_building,
+        df_hp_cap_per_building_100RE_db,
         EgonHpCapacityBuildings,
         engine=engine,
         drop=False,
@@ -1358,29 +1397,6 @@ def aggregate_residential_and_cts_profiles(mvgd):
     return df_heat_ts_2035, df_heat_ts_100RE
 
 
-def determine_hp_capacity(mvgd, df_peak_loads, buildings_decentral_heating):
-    """"""
-
-    # determine HP capacity per building for NEP2035 scenario
-    hp_cap_per_building_2035 = determine_hp_cap_buildings_eGon2035(
-        mvgd,
-        df_peak_loads["eGon2035"],
-        buildings_decentral_heating["eGon2035"],
-    )
-
-    # determine minimum HP capacity per building for pypsa-eur-sec
-    hp_min_cap_mv_grid_pypsa_eur_sec = determine_min_hp_cap_pypsa_eur_sec(
-        df_peak_loads["eGon100RE"],
-        buildings_decentral_heating["eGon100RE"]
-        # TODO 100RE?
-    )
-
-    return (
-        hp_cap_per_building_2035.rename("hp_capacity"),
-        hp_min_cap_mv_grid_pypsa_eur_sec,
-    )
-
-
 def aggregate_heat_profiles(
     mvgd,
     df_heat_ts_2035,
@@ -1403,10 +1419,8 @@ def aggregate_heat_profiles(
         # buildings_decentral_heating["eGon2035"]].sum(
         # hp_cap_per_building_2035.index,
         buildings_decentral_heating["eGon2035"].drop(buildings_gas_2035),
-    ].sum(
-        axis=1
-    )  # TODO davor? buildings_hp_2035 = hp_cap_per_building_2035.index
-    #  TODO nur hp oder auch gas?
+    ].sum(axis=1)
+
     df_mvgd_ts_100RE_hp = df_heat_ts_100RE.loc[
         :, buildings_decentral_heating["eGon100RE"]
     ].sum(axis=1)
@@ -1452,11 +1466,7 @@ def export_to_db(
     )
 
     df_hp_cap_per_building_2035["scenario"] = "eGon2035"
-    df_hp_cap_per_building_2035 = (
-        df_hp_cap_per_building_2035.reset_index().rename(
-            columns={"index": "building_id"}
-        )
-    )
+
     write_table_to_postgres(
         df_hp_cap_per_building_2035,
         EgonHpCapacityBuildings,
@@ -1521,12 +1531,11 @@ def determine_hp_cap_peak_load_mvgd_ts(mvgd_ids):
         + f"_{min(mvgd_ids)}-{max(mvgd_ids)}"
     )
 
-    # TODO mvgd_ids = [kleines mvgd]
     df_peak_loads_db = pd.DataFrame()
     df_hp_cap_per_building_2035_db = pd.DataFrame()
     df_heat_mvgd_ts_db = pd.DataFrame()
 
-    for mvgd in mvgd_ids:  # [1556]: #mvgd_ids[n - 1]:
+    for mvgd in mvgd_ids:  # [1556]
 
         logger.trace(f"MVGD={mvgd} | Start")
 
@@ -1555,17 +1564,20 @@ def determine_hp_cap_peak_load_mvgd_ts(mvgd_ids):
         )
 
         # determine HP capacity per building for NEP2035 scenario
-        hp_cap_per_building_2035 = determine_hp_cap_buildings_eGon2035(
-            mvgd,
-            df_peak_loads["eGon2035"],
-            buildings_decentral_heating["eGon2035"],
+        hp_cap_per_building_2035 = (
+            determine_hp_cap_buildings_eGon2035_per_mvgd(
+                mvgd,
+                df_peak_loads["eGon2035"],
+                buildings_decentral_heating["eGon2035"],
+            )
         )
 
         # determine minimum HP capacity per building for pypsa-eur-sec
-        hp_min_cap_mv_grid_pypsa_eur_sec = determine_min_hp_cap_pypsa_eur_sec(
-            df_peak_loads["eGon100RE"],
-            buildings_decentral_heating["eGon100RE"]
-            # TODO 100RE?
+        hp_min_cap_mv_grid_pypsa_eur_sec = (
+            determine_min_hp_cap_buildings_pypsa_eur_sec(
+                df_peak_loads["eGon100RE"],
+                buildings_decentral_heating["eGon100RE"],
+            )
         )
 
         buildings_gas_2035 = pd.Index(
@@ -1635,7 +1647,6 @@ def create_egon_etrago_timeseries_individual_heating():
 def delete_peak_loads_if_existing():
     """Remove all entries"""
 
-    # TODO check synchronize_session?
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
