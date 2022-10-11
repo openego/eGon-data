@@ -220,7 +220,6 @@ def import_gas_grid_capacity(scn_name, carrier):
     elif scn_name == "eGon100RE" and carrier == "H2_grid":
         Gas_storages_list["e_nom"] = Store_capacity * (
             scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
-            * scn_params["retrofitted_capacity_share"]
         )
 
     # Remove useless columns
