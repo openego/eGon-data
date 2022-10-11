@@ -432,6 +432,8 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Adjust H2 industry profiles abroad for eGon2035
+  `#940 <https://github.com/openego/eGon-data/issues/940>`_
 
 Bug Fixes
 ---------
@@ -627,6 +629,8 @@ Bug Fixes
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Delete gas bus with wrong country code
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
+* Remove drop of p_set and q_set for loads without timeserie
+  `#971 <https://github.com/openego/eGon-data/issues/971>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
