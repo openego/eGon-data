@@ -16,7 +16,7 @@ import pandas as pd
 import pypsa
 import yaml
 
-from egon.data import __path__, db, logger
+from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -1174,6 +1174,47 @@ def overwrite_H2_pipeline_share():
     )
 
 
+def overwrite_max_gas_generation_overtheyear():
+    """Overwrite max_gas_generation_overtheyear in scenario parameter table
+
+    Overwrite max_gas_generation_overtheyear in scenario parameter
+    table if p-e-s is run.
+    This function write in the database and has no return.
+
+    """
+    scn_name = "eGon100RE"
+
+    # Select source and target from dataset configuration
+    target = config.datasets()["gas_prod"]["target"]
+
+    if execute_pypsa_eur_sec:
+        n = read_network()
+        max_value = n.stores[n.stores["carrier"] == "biogas"].loc[
+            "DE0 0 biogas", "e_initial"
+        ]
+
+        parameters = db.select_dataframe(
+            f"""
+            SELECT *
+            FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+            WHERE name = '{scn_name}'
+            """
+        )
+
+        gas_param = parameters.loc[0, "gas_parameters"]
+        gas_param["max_gas_generation_overtheyear"] = {"biogas": max_value}
+        gas_param = json.dumps(gas_param)
+
+        # Update data in db
+        db.execute_sql(
+            f"""
+        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        SET gas_parameters = '{gas_param}'
+        WHERE name = '{scn_name}';
+        """
+        )
+
+
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
 execute_pypsa_eur_sec = False
 
@@ -1183,12 +1224,12 @@ if execute_pypsa_eur_sec:
         clean_database,
         neighbor_reduction,
         overwrite_H2_pipeline_share,
+        overwrite_max_gas_generation_overtheyear,
     )
 else:
     tasks = (
         clean_database,
         neighbor_reduction,
-        overwrite_H2_pipeline_share,  # to be tested in CI - should be remove afterward
     )
 
 
@@ -1196,7 +1237,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=tasks,
         )
