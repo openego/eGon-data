@@ -1439,7 +1439,7 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db):
     )
 
 
-def export_to_csv(df_hp_cap_per_building_2035):
+def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
 
     df_hp_min_cap_mv_grid_pypsa_eur_sec.index.name = "mvgd_id"
     df_hp_min_cap_mv_grid_pypsa_eur_sec = (
@@ -1455,10 +1455,10 @@ def export_to_csv(df_hp_cap_per_building_2035):
         os.mkdir(folder)
     # TODO check append
     if not file.is_file():
-        df_hp_cap_per_building_2035.to_csv(file)
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file)
         # TODO outsource into separate task incl delete file if clearing
     else:
-        df_hp_cap_per_building_2035.to_csv(file, mode="a", header=False)
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file, mode="a", header=False)
 
 
 def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
@@ -1480,7 +1480,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     register_adapter(np.float64, adapt_numpy_float64)
     register_adapter(np.int64, adapt_numpy_int64)
     # =====================================================
-
 
     df_peak_loads_db = pd.DataFrame()
     df_hp_cap_per_building_2035_db = pd.DataFrame()
@@ -1630,7 +1629,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db)
     logger.debug(" Write pypsa-eur-sec min HP capacities to csv.")
 
-    export_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
+    export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
 
 
 def create_peak_load_table():
