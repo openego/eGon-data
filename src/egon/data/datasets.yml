@@ -352,6 +352,7 @@ power_plants:
       mastr_location: "location_elec_generation_raw.csv"
       mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
       mastr_storage: "bnetza_mastr_storage_cleaned.csv"
+      mastr_gsgk: "bnetza_mastr_gsgk_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"

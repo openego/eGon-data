@@ -106,8 +106,7 @@ def etrago_eGon2035_electricity():
     )
 
     carriers_electricity = [
-        "other_non_renewable",
-        "other_renewable",
+        "others",
         "reservoir",
         "run_of_river",
         "oil",
@@ -341,8 +340,8 @@ def etrago_eGon2035_heat():
     None
     """
 
-    # Check input and output values for the carriers "other_non_renewable",
-    # "other_renewable", "reservoir", "run_of_river" and "oil"
+    # Check input and output values for the carriers "others",
+    # "reservoir", "run_of_river" and "oil"
 
     scn = "eGon2035"
 

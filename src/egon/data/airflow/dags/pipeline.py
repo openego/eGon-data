@@ -584,6 +584,7 @@ with airflow.DAG(
             osm_buildings_streets,
             cts_electricity_demand_annual,
             hh_demand_buildings_setup,
+            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
         ]
     )
 
