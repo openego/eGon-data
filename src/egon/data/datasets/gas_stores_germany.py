@@ -168,11 +168,11 @@ def import_gas_grid_capacity(scn_name, carrier):
     Define dataframe containing the modelling of the grid storage
     capacity. The whole storage capacity of the grid (130000 MWh,
     estimation of the Bundesnetzagentur) is split uniformly between
-    all the german gas nodes of the grid.
-    In eGon100RE, the storage capacity of the grid is slip between H2
+    all the german gas nodes of the grid (without consideration of the
+    capacities of the pipes).
+    In eGon100RE, the storage capacity of the grid is split between H2
     and CH4 stores, with the same share than the pipes capacity (value
     calculated in the p-e-s run).
-    The capacities of the pipes are not considerated.
 
     Parameters
     ----------
@@ -220,7 +220,6 @@ def import_gas_grid_capacity(scn_name, carrier):
     elif scn_name == "eGon100RE" and carrier == "H2_grid":
         Gas_storages_list["e_nom"] = Store_capacity * (
             scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
-            * scn_params["retrofitted_capacity_share"]
         )
 
     # Remove useless columns
