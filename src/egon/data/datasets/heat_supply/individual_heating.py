@@ -117,10 +117,10 @@ class HeatPumpsPypsaEurSec(Dataset):
                 tasks.add(
                     PythonOperator(
                         task_id=(
-                            f"determine-hp-capacity-eGon2035-pypsa-eur-sec_"
+                            f"determine-hp-capacity-pypsa-eur-sec_"
                             f"mvgd_{min(bulk)}-{max(bulk)}"
                         ),
-                        python_callable=determine_hp_cap_peak_load_mvgd_ts,
+                        python_callable=determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,
                         op_kwargs={
                             "mvgd_ids": bulk,
                         },
@@ -192,10 +192,10 @@ class HeatPumps2035(Dataset):
                 tasks.add(
                     PythonOperator(
                         task_id=(
-                            f"determine-hp-capacity-eGon2035-pypsa-eur-sec_"
+                            f"determine-hp-capacity-eGon2035_"
                             f"mvgd_{min(bulk)}-{max(bulk)}"
                         ),
-                        python_callable=determine_hp_cap_peak_load_mvgd_ts,
+                        python_callable=determine_hp_cap_peak_load_mvgd_ts_2035,
                         op_kwargs={
                             "mvgd_ids": bulk,
                         },
@@ -1675,7 +1675,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     )
 
 
-def determine_pypsa_eur_sec_min_hp_cap(mvgd_ids):
+def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     """"""
     for mvgd in mvgd_ids:  # [1556]
 
