@@ -51,7 +51,8 @@ from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.heat_supply.individual_heating import (
     HeatPumps2050,
-    HeatPumpsPypsaEurSecAnd2035,
+    HeatPumpsPypsaEurSec,
+    HeatPumps2035,
 )
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
@@ -343,6 +344,7 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
+            heat_pumps_2035,
         ]
     )
 
@@ -591,22 +593,31 @@ with airflow.DAG(
             tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
         ]
     )
-
-    # heat_pumps_2050 = HeatPumps2050(
-    #     dependencies=[
-    #         cts_demand_buildings,
-    #         DistrictHeatingAreas,
-    #         run_pypsaeursec,
-    #     ]
-    # )
-
-    heat_pumps_2035 = HeatPumpsPypsaEurSecAnd2035(
+    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
             heat_supply,
             heat_time_series,
             # TODO add PV rooftop
+        ]
+    )
+
+    heat_pumps_2035 = HeatPumps2035(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            heat_pumps_pypsa_eur_sec
+            # TODO add PV rooftop
+        ]
+    )
+
+    heat_pumps_2050 = HeatPumps2050(
+        dependencies=[
+            run_pypsaeursec,
+            heat_pumps_2035,
         ]
     )
 
