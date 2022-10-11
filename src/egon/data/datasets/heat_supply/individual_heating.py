@@ -47,7 +47,6 @@ engine = db.engine()
 Base = declarative_base()
 
 
-# TODO check column names>
 class EgonEtragoTimeseriesIndividualHeating(Base):
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
@@ -243,22 +242,6 @@ def adapt_numpy_int64(numpy_int64):
     return AsIs(numpy_int64)
 
 
-def log_to_file(name):
-    """Simple only file logger"""
-    file = os.path.basename(__file__).rstrip(".py")
-    file_path = Path(f"./{file}_logs")
-    os.makedirs(file_path, exist_ok=True)
-    logger.remove()
-    logger.add(
-        file_path / Path(f"{name}.log"),
-        format="{time} {level} {message}",
-        # filter="my_module",
-        level="DEBUG",
-    )
-    logger.trace(f"Start logging of: {name}")
-    return logger
-
-
 def timeit(func):
     """
     Decorator for measuring function's running time.
@@ -271,31 +254,6 @@ def timeit(func):
             "Processing time of %s(): %.2f seconds."
             % (func.__qualname__, time.time() - start_time)
         )
-        return result
-
-    return measure_time
-
-
-def timeitlog(func):
-    """
-    Decorator for measuring running time of residential heat peak load and
-    logging it.
-    """
-
-    def measure_time(*args, **kw):
-        start_time = time.time()
-        result = func(*args, **kw)
-        process_time = time.time() - start_time
-        try:
-            mvgd = kw["mvgd"]
-        except KeyError:
-            mvgd = "bulk"
-        statement = (
-            f"MVGD={mvgd} | Processing time of {func.__qualname__} | "
-            f"{time.strftime('%H h, %M min, %S s', time.gmtime(process_time))}"
-        )
-        logger.debug(statement)
-        print(statement)
         return result
 
     return measure_time
@@ -509,7 +467,6 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     )
 
 
-# @timeitlog
 def get_peta_demand(mvgd, scenario):
     """
     Retrieve annual peta heat demand for residential buildings and for either
@@ -557,7 +514,6 @@ def get_peta_demand(mvgd, scenario):
     return df_peta_demand
 
 
-# @timeitlog
 def get_residential_heat_profile_ids(mvgd):
     """
     Retrieve 365 daily heat profiles ids per residential building and selected
@@ -609,7 +565,6 @@ def get_residential_heat_profile_ids(mvgd):
     return df_profiles_ids
 
 
-# @timeitlog
 def get_daily_profiles(profile_ids):
     """
     Parameters
@@ -642,7 +597,6 @@ def get_daily_profiles(profile_ids):
     return df_profiles
 
 
-# @timeitlog
 def get_daily_demand_share(mvgd):
     """per census cell
     Parameters
@@ -675,7 +629,6 @@ def get_daily_demand_share(mvgd):
     return df_daily_demand_share
 
 
-@timeitlog
 def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
     """
     Gets residential heat profiles per building in MV grid for either eGon2035
@@ -814,7 +767,6 @@ def plot_heat_supply(resulting_capacities):
         plt.savefig(f"plots/individual_heat_supply_{c}.png", dpi=300)
 
 
-@timeitlog
 def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
     scenario, mv_grid_id
 ):
@@ -877,7 +829,6 @@ def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
     return pd.Index(zensus_population_ids)
 
 
-@timeitlog
 def get_residential_buildings_with_decentral_heat_demand_in_mv_grid(
     scenario, mv_grid_id
 ):
@@ -930,7 +881,6 @@ def get_residential_buildings_with_decentral_heat_demand_in_mv_grid(
     return pd.Index(buildings_with_heat_demand)
 
 
-@timeitlog
 def get_cts_buildings_with_decentral_heat_demand_in_mv_grid(
     scenario, mv_grid_id
 ):
@@ -1553,7 +1503,6 @@ def export_to_csv(df_hp_cap_per_building_2035):
         df_hp_cap_per_building_2035.to_csv(file, mode="a", header=False)
 
 
-@timeitlog
 def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     """
     Main function to determine HP capacity per building in eGon2035 scenario
