@@ -1280,7 +1280,7 @@ def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
 
     # determine minimum required heat pump capacity per building
     building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
-        mv_grid_id, "eGon100RE"
+        mv_grid_id, scenario="eGon100RE"
     )
 
     # TODO get peak demand from db
@@ -1491,7 +1491,9 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
         # ############# aggregate residential and CTS demand profiles #####
 
-        df_heat_ts = aggregate_residential_and_cts_profiles(mvgd, scenario)
+        df_heat_ts = aggregate_residential_and_cts_profiles(
+            mvgd, scenario="eGon2035"
+        )
 
         # ##################### determine peak loads ###################
         logger.debug(f"MVGD={mvgd} | Determine peak loads.")
@@ -1503,7 +1505,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
-                mvgd, "eGon2035"
+                mvgd, scenario="eGon2035"
             )
         )
 
@@ -1581,13 +1583,15 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     """"""
     for mvgd in mvgd_ids:  # [1556]
 
-        df_heat_ts = aggregate_residential_and_cts_profiles(mvgd, scenario)
+        df_heat_ts = aggregate_residential_and_cts_profiles(
+            mvgd, scenario="eGon100RE"
+        )
 
         peak_load_100RE = df_heat_ts_100RE.max().rename("eGon100RE")
 
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
-                mvgd, "eGon100RE"
+                mvgd, scenario="eGon100RE"
             )
         )
 
