@@ -625,6 +625,9 @@ Bug Fixes
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Delete gas bus with wrong country code
+  `#958 <https://github.com/openego/eGon-data/issues/958>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
