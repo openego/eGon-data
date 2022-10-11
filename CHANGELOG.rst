@@ -205,6 +205,8 @@ Added
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
+* Integrated heavy duty transport FCEV
+  `#552 <https://github.com/openego/eGon-data/issues/552>`_
 * Assign CTS demands to buildings
   `#671 <https://github.com/openego/eGon-data/issues/671>`_
 * Add sanity checks for residential electricity loads
@@ -213,6 +215,10 @@ Added
   `#919 <https://github.com/openego/eGon-data/issues/919>`_
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
+* Add charging infrastructure for e-mobility
+  `#937 <https://github.com/openego/eGon-data/issues/937>`_
+* Add marginal costs for generators abroad and for carriers nuclear and coal
+  `#907 <https://github.com/openego/eGon-data/issues/907>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -420,6 +426,8 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Introduce carrier name 'others'
+  `#819 <https://github.com/openego/eGon-data/issues/819>`_
 
 Bug Fixes
 ---------
@@ -611,7 +619,8 @@ Bug Fixes
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
 * Drop era5 weather cell table using cascade
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
-
+* Overwrite capacities for conventional power plants with data from nep list
+  `#403 <https://github.com/openego/eGon-data/issues/403>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
