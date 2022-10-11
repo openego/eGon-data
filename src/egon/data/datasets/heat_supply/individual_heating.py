@@ -1068,19 +1068,18 @@ def determine_buildings_with_hp_in_mv_grid(
     # get buildings with PV to give them a higher priority when selecting
     # buildings a heat pump will be allocated to
     saio.register_schema("supply", engine)
-    # TODO Adhoc Pv rooftop fix
-    # from saio.supply import egon_power_plants_pv_roof_building
-    #
-    # with db.session_scope() as session:
-    #     query = session.query(
-    #         egon_power_plants_pv_roof_building.building_id
-    #     ).filter(
-    #         egon_power_plants_pv_roof_building.building_id.in_(building_ids)
-    #     )
-    #
-    # buildings_with_pv = pd.read_sql(
-    #     query.statement, query.session.bind, index_col=None
-    # ).building_id.values
+    from saio.supply import egon_power_plants_pv_roof_building
+
+    with db.session_scope() as session:
+        query = session.query(
+            egon_power_plants_pv_roof_building.building_id
+        ).filter(
+            egon_power_plants_pv_roof_building.building_id.in_(building_ids)
+        )
+
+    buildings_with_pv = pd.read_sql(
+        query.statement, query.session.bind, index_col=None
+    ).building_id.values
     buildings_with_pv = []
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
@@ -1416,8 +1415,6 @@ def aggregate_heat_profiles(
 
     df_mvgd_ts_2035_hp = df_heat_ts_2035.loc[
         :,
-        # buildings_decentral_heating["eGon2035"]].sum(
-        # hp_cap_per_building_2035.index,
         buildings_decentral_heating["eGon2035"].drop(buildings_gas_2035),
     ].sum(axis=1)
 
