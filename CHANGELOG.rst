@@ -417,6 +417,8 @@ Changed
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
+* Insert crossboarding gas pipeline with Germany in eGon100RE
+  `#881 <https://github.com/openego/eGon-data/issues/881>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
