@@ -7,6 +7,7 @@ import os
 import random
 import time
 
+from airflow.operators.python_operator import PythonOperator
 from loguru import logger
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
@@ -81,9 +82,9 @@ class HeatPumpsPypsaEurSecAnd2035(Dataset):
                 :func:`egon.data.datasets.heat_supply.individual_heating.
                 determine_hp_capacity_eGon2035_pypsa_eur_sec`
             """
-            parallel_tasks = config.datasets()[
-                "demand_timeseries_mvgd"
-            ].get("parallel_tasks", 1)
+            parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
+                "parallel_tasks", 1
+            )
             # ========== Register np datatypes with SQLA ==========
             register_adapter(np.float64, adapt_numpy_float64)
             register_adapter(np.int64, adapt_numpy_int64)
