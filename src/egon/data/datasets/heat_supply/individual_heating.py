@@ -1484,13 +1484,12 @@ def determine_mvgd_ts(
         :, buildings_decentral_heating["eGon100RE"]
     ].sum(axis=1)
 
-    df_mvgd_ts_2035_gas = df_heat_ts_2035.drop(
-        columns=hp_cap_per_building_2035.index
-    ).sum(axis=1)
+    buildings_gas_2035 = buildings_decentral_heating["eGon2035"].drop(
+        hp_cap_per_building_2035.index)
     # heat demand time series for buildings with gas boilers (only 2035 scenario)
-    # df_heat_ts_100RE_gas = df_heat_ts_2035.loc[:, buildings_gas_2035].sum(
-    #     axis=1
-    # )
+    df_mvgd_ts_2035_gas = df_heat_ts_2035.loc[:, buildings_gas_2035].sum(
+        axis=1
+    )
 
     df_mvgd_ts_hp = pd.DataFrame(
         data={
