@@ -419,6 +419,8 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Insert crossboarding gas pipeline with Germany in eGon100RE
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
+* Harmonize H2 carrier names in eGon100RE
+  `#929 <https://github.com/openego/eGon-data/issues/929>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries

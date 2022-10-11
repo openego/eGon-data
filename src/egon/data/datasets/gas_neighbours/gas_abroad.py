@@ -63,10 +63,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
             """
         )
 
-    carriers = {
-        "CH4": {"bus_inDE": "CH4", "bus_abroad": "CH4"},
-        "H2_retrofit": {"bus_inDE": "H2_grid", "bus_abroad": "H2"},
-    }
+    carriers = {"CH4": "CH4", "H2_retrofit": "H2_grid"}
 
     if scn_name == "eGon100RE":
         for c in carriers:
@@ -78,27 +75,27 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
-                        AND carrier = '{carriers[c]["bus_abroad"]}'
+                        AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}')
                     AND "bus1" IN (SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
-                        AND carrier = '{carriers[c]["bus_inDE"]}' 
+                        AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}'))
                 OR ("bus0" IN (
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
-                        AND carrier = '{carriers[c]["bus_inDE"]}'
+                        AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}')
-                AND "bus1" IN (
+                    AND "bus1" IN (
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
-                        AND carrier = '{carriers[c]["bus_abroad"]}' 
+                        AND carrier = '{carriers[c]}'
                         AND scn_name = '{scn_name}'))
                 AND scn_name = '{scn_name}'
-                AND carrier = '{c.index}'            
+                AND carrier = '{c}'
                 ;
                 """
             )
