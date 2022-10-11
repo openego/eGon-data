@@ -203,15 +203,17 @@ def import_ch4_grid_capacity(scn_name):
 
 def insert_ch4_stores(scn_name):
     """Insert gas stores for specific scenario
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario.
 
     Returns
-    ----
-    None"""
+    -------
+    None
 
+    """
     # Connect to local database
     engine = db.engine()
 
