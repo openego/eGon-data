@@ -43,14 +43,8 @@ def insert_h2_pipelines():
     scn_params = get_sector_parameters("gas", "eGon100RE")
 
     pipelines["carrier"] = "H2_retrofit"
-    # the volumetric energy density of pure H2 at 50 bar vs. pure CH4 at
-    # 50 bar is at about 30 %, however due to less friction volumetric flow can
-    # be increased for pure H2 leading to higher capacities. Data for both
-    # the retriffiting share and the capacity factor are obtained from the
-    # scenario parameters
     pipelines["p_nom"] *= (
         scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
-        * scn_params["retrofitted_capacity_share"]
     )
     # map pipeline buses
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
