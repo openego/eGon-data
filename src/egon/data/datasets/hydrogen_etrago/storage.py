@@ -33,6 +33,7 @@ def insert_H2_overground_storage(scn_name="eGon2035"):
     # Does e_nom_extenable = True render e_nom useless?
     storages["e_nom"] = 0
     storages["e_nom_extendable"] = True
+    storages["e_cyclic"] = True
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
@@ -122,6 +123,7 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
     storages["carrier"] = carrier
     storages["e_nom"] = 0
     storages["e_nom_extendable"] = True
+    storages["e_cyclic"] = True
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)

@@ -409,10 +409,10 @@ Changed
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
-* Set non extendable gas components from p-e-s as so for eGon100RE
-  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Integrate new data bundle using zenodo sandbox
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
+* Set non extendable gas links from p-e-s as so for eGon100RE
+  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Add sanity checks for motorized individual travel
@@ -423,6 +423,8 @@ Changed
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
 * Harmonize H2 carrier names in eGon100RE
   `#929 <https://github.com/openego/eGon-data/issues/929>`_
+* Add missing gas stores in eGon100RE
+  `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries

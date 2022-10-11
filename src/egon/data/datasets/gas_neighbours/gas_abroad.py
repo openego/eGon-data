@@ -101,6 +101,65 @@ def insert_generators(gen, scn_name):
     )
 
 
+def insert_ch4_stores(ch4_storage_capacities, scn_name):
+    """Insert CH4 stores for foreign countries in database
+
+    This function inserts the CH4 stores for foreign countries
+    with the following steps:
+      * Receive as argument the CH4 store capacities per foreign node
+      * Clean the database
+      * Add missing columns (scn_name, carrier and store_id)
+      * Insert the table into the database
+
+    Parameters
+    ----------
+    ch4_storage_capacities : pandas.DataFrame
+        CH4 store capacities per foreign node
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    None
+
+    """
+    carrier = "CH4"
+    sources = config.datasets()["gas_neighbours"]["sources"]
+    targets = config.datasets()["gas_neighbours"]["targets"]
+
+    # Clean table
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
+        WHERE "carrier" = '{carrier}'
+        AND scn_name = '{scn_name}'
+        AND bus IN (
+            SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+            WHERE scn_name = '{scn_name}'
+            AND country != 'DE'
+            );
+        """
+    )
+    # Add missing columns
+    c = {"scn_name": scn_name, "carrier": carrier, "e_cyclic": True}
+    ch4_storage_capacities = ch4_storage_capacities.assign(**c)
+
+    new_id = db.next_etrago_id("store")
+    ch4_storage_capacities["store_id"] = range(
+        new_id, new_id + len(ch4_storage_capacities)
+    )
+
+    ch4_storage_capacities = ch4_storage_capacities.reset_index(drop=True)
+    # Insert data to db
+    ch4_storage_capacities.to_sql(
+        targets["stores"]["table"],
+        db.engine(),
+        schema=targets["stores"]["schema"],
+        index=False,
+        if_exists="append",
+    )
+
+
 def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
     """Insert crossbordering gas pipelines in the database
 

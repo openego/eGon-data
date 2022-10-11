@@ -676,24 +676,24 @@ def neighbor_reduction():
         """Prepare and write neighboring crossborder links to eTraGo table
 
         This function prepare the neighboring crossborder links
-        generated the PyPSA-eur-sec (p-e-s) run by:
+        generated with the PyPSA-eur-sec (p-e-s) run by:
           * Delete the useless columns
           * If extendable is false only (non default case):
               * Replace p_nom = 0 with the p_nom_op values (arrising
-              from the p-e-s optimisation)
+                from the p-e-s optimisation)
               * Setting p_nom_extendable to false
           * Add geomtry to the links: 'geom' and 'topo' columns
           * Change the name of the carriers to have the consistent in
             eGon-data
 
-        The function insert then the link to the eTraGo table and has
+        The function insert then the links to the eTraGo table and has
         no return.
 
         Parameters
         ----------
         neighbor_links : pandas.DataFrame
             Dataframe containing the neighboring crossborder links
-        scn_name : str
+        scn : str
             Name of the scenario
         extendable : bool
             Boolean expressing if the links should be extendable or not
@@ -884,43 +884,110 @@ def neighbor_reduction():
     )
 
     # prepare neighboring stores for etrago tables
-    neighbor_stores["scn_name"] = "eGon100RE"
+    def stores_to_etrago(neighbor_stores, scn="eGon100RE", extendable=True):
+        """Prepare and write neighboring stores to eTraGo table
 
-    # Unify carrier names
-    neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
+        This function prepare the neighboring stores generated with
+        the PyPSA-eur-sec (p-e-s) run by:
+          * Delete the useless columns
+          * If extendable is false only (non default case):
+              * Replace p_nom = 0 with the p_nom_op values (arrising
+                from the p-e-s optimisation)
+              * Setting p_nom_extendable to false
+          * Change the name of the carriers to have the consistent in
+            eGon-data
 
-    neighbor_stores.carrier.replace(
-        {
-            "Li_ion": "battery",
-            "gas": "CH4",
-        },
-        inplace=True,
+        The function insert then the stores to the eTraGo table and has
+        no return.
+
+        Parameters
+        ----------
+        neighbor_stores : pandas.DataFrame
+            Dataframe containing the neighboring stores
+        scn : str
+            Name of the scenario
+        extendable : bool
+            Boolean expressing if the stores should be extendable or not
+
+        Returns
+        -------
+        None
+
+        """
+        neighbor_stores["scn_name"] = scn
+
+        if extendable is True:
+            neighbor_stores = neighbor_stores.drop(
+                columns=[
+                    "name",
+                    "p_set",
+                    "q_set",
+                    "e_nom_opt",
+                    "lifetime",
+                ],
+                errors="ignore",
+            )
+
+        elif extendable is False:
+            neighbor_stores = neighbor_stores.drop(
+                columns=[
+                    "name",
+                    "p_set",
+                    "q_set",
+                    "e_nom",
+                    "lifetime",
+                    "e_nom_extendable",
+                ],
+                errors="ignore",
+            )
+            neighbor_stores = neighbor_stores.rename(
+                columns={"e_nom_opt": "e_nom"}
+            )
+            neighbor_stores["e_nom_extendable"] = False
+
+        # Unify carrier names
+        neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
+
+        neighbor_stores.carrier.replace(
+            {
+                "Li_ion": "battery",
+                "gas": "CH4",
+            },
+            inplace=True,
+        )
+        neighbor_stores.loc[
+            (
+                (neighbor_stores.e_nom_max <= 1e9)
+                & (neighbor_stores.carrier == "H2")
+            ),
+            "carrier",
+        ] = "H2_underground"
+        neighbor_stores.loc[
+            (
+                (neighbor_stores.e_nom_max > 1e9)
+                & (neighbor_stores.carrier == "H2")
+            ),
+            "carrier",
+        ] = "H2_overground"
+
+        neighbor_stores.to_sql(
+            "egon_etrago_store",
+            engine,
+            schema="grid",
+            if_exists="append",
+            index=True,
+            index_label="store_id",
+        )
+
+    stores_to_etrago(
+        neighbor_stores[neighbor_stores.carrier != "gas"],
+        "eGon100RE",
+        extendable=True,
     )
-    neighbor_stores.loc[
-        (
-            (neighbor_stores.e_nom_max <= 1e9)
-            & (neighbor_stores.carrier == "H2")
-        ),
-        "carrier",
-    ] = "H2_underground"
-    neighbor_stores.loc[
-        (
-            (neighbor_stores.e_nom_max > 1e9)
-            & (neighbor_stores.carrier == "H2")
-        ),
-        "carrier",
-    ] = "H2_overground"
-
-    for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
-        neighbor_stores = neighbor_stores.drop(i, axis=1)
-
-    neighbor_stores.to_sql(
-        "egon_etrago_store",
-        engine,
-        schema="grid",
-        if_exists="append",
-        index=True,
-        index_label="store_id",
+    stores_to_etrago(
+        neighbor_stores[neighbor_stores.carrier == "gas"],
+        "eGon100RE",
+        extendable=False,
     )
 
     # prepare neighboring storage_units for etrago tables
@@ -1065,7 +1132,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=tasks,
         )
