@@ -1641,11 +1641,3 @@ def delete_peak_loads_if_existing():
         session.query(BuildingHeatPeakLoads).filter(
             BuildingHeatPeakLoads.sector == "residential+cts"
         ).delete(synchronize_session=False)
-
-
-if __name__ == "__main__":
-    create_peak_load_table()
-    create_hp_capacity_table()
-    create_egon_etrago_timeseries_individual_heating()
-    delete_peak_loads_if_existing()
-    determine_hp_cap_peak_load_mvgd_ts([1556])
