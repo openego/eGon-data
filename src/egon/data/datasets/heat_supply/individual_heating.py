@@ -1534,9 +1534,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
         # heat demand time series for buildings with gas boiler
         # (only 2035 scenario)
-        df_mvgd_ts_2035_gas = df_heat_ts.loc[:, buildings_gas_2035].sum(
-            axis=1
-        )
+        df_mvgd_ts_2035_gas = df_heat_ts.loc[:, buildings_gas_2035].sum(axis=1)
 
         df_heat_mvgd_ts = pd.DataFrame(
             data={
@@ -1586,6 +1584,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
 
     df_peak_loads_db = pd.DataFrame()
     df_heat_mvgd_ts_db = pd.DataFrame()
+    df_hp_min_cap_mv_grid_pypsa_eur_sec = pd.Series()
     for mvgd in mvgd_ids:  # [1556]
 
         df_heat_ts = aggregate_residential_and_cts_profiles(
@@ -1621,6 +1620,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
                 buildings_decentral_heating,
             )
         )
+
         df_hp_min_cap_mv_grid_pypsa_eur_sec[
             mvgd
         ] = hp_min_cap_mv_grid_pypsa_eur_sec
