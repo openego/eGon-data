@@ -5,6 +5,8 @@ and input values. Please note that there are missing input technologies in the
 supply tables.
 Authors: @ALonso, @dana, @nailend, @nesnoj
 """
+from pathlib import Path
+import ast
 
 from sqlalchemy import Numeric
 from sqlalchemy.sql import and_, cast, func, or_
@@ -1264,8 +1266,9 @@ def etrago_eGon2035_gas():
         # Loads
         logger.info(f"LOADS")
 
-        path = "datasets/gas_data/demand/"
-        df_corr = pd.read_json(path + "region_corr.json")
+        path = Path(".") / "datasets" / "gas_data" / "demand"
+        corr_file = path / "region_corr.json"
+        df_corr = pd.read_json(corr_file)
         df_corr = df_corr.loc[:, ["id_region", "name_short"]]
         df_corr.set_index("id_region", inplace=True)
 
@@ -1289,7 +1292,9 @@ def etrago_eGon2035_gas():
                 warning=False,
             )["load_twh"].values[0]
 
-            input_gas_demand = pd.read_json(path + carrier + "_eGon2035.json")
+            input_gas_demand = pd.read_json(
+                path / (carrier + "_eGon2035.json")
+            )
             input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
             input_gas_demand.set_index("id_region", inplace=True)
             input_gas_demand = pd.concat(
@@ -1317,7 +1322,7 @@ def etrago_eGon2035_gas():
         carrier_generator = "CH4"
 
         output_gas_generation = db.select_dataframe(
-            f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_Germany
+            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
                     FROM grid.egon_etrago_generator
                     WHERE scn_name = '{scn}'
                     AND carrier = '{carrier_generator}'
@@ -1329,15 +1334,47 @@ def etrago_eGon2035_gas():
                         AND carrier = '{carrier_generator}');
                     """,
             warning=False,
-        )["e_nom_max_Germany"].values[0]
-        print(output_gas_generation)
+        )["p_nom_germany"].values[0]
 
-        scn_params = get_sector_parameters("gas", scn)
-        input_gas_generation = (
-            scn_params["max_gas_generation_overtheyear"]["CH4"]
-            + scn_params["max_gas_generation_overtheyear"]["biogas"]
+        target_file = (
+            Path(".")
+            / "datasets"
+            / "gas_data"
+            / "data"
+            / "IGGIELGN_Productions.csv"
         )
 
+        NG_generators_list = pd.read_csv(
+            target_file,
+            delimiter=";",
+            decimal=".",
+            usecols=["country_code", "param"],
+        )
+
+        NG_generators_list = NG_generators_list[
+            NG_generators_list["country_code"].str.match("DE")
+        ]
+
+        p_NG = 0
+        for index, row in NG_generators_list.iterrows():
+            param = ast.literal_eval(row["param"])
+            p_NG = p_NG + param["max_supply_M_m3_per_d"]
+        conversion_factor = 437.5  # MCM/day to MWh/h
+        p_NG = p_NG * conversion_factor
+
+        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+        target_file = Path(".") / "datasets" / "gas_data" / basename
+
+        conversion_factor_b = 0.01083  # m^3/h to MWh/h
+        p_biogas = (
+            pd.read_excel(
+                target_file,
+                usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
+            )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
+            * conversion_factor_b
+        )
+
+        input_gas_generation = p_NG + p_biogas
         e_generation = (
             round(
                 (output_gas_generation - input_gas_generation)
@@ -1414,6 +1451,46 @@ def etrago_eGon100RE_gas():
             logger.info(f"Deviation {carrier}: {e_demand} %")
 
         # Generators
+        logger.info(f"GENERATORS")
+        carrier_generator = "CH4"
+
+        output_biogas_generation = db.select_dataframe(
+            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
+                    FROM grid.egon_etrago_generator
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{carrier_generator}'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country = 'DE'
+                        AND carrier = '{carrier_generator}');
+                    """,
+            warning=False,
+        )["p_nom_germany"].values[0]
+
+        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+        target_file = Path(".") / "datasets" / "gas_data" / basename
+
+        conversion_factor_b = 0.01083  # m^3/h to MWh/h
+        input_biogas_generation = (
+            pd.read_excel(
+                target_file,
+                usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
+            )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
+            * conversion_factor_b
+        )
+
+        e_biogas_generation = (
+            round(
+                (output_biogas_generation - input_biogas_generation)
+                / input_biogas_generation,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation biogas generation: {e_biogas_generation} %")
+
         # Stores
         # Links
 
