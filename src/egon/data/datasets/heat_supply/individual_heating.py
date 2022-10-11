@@ -1458,7 +1458,9 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file)
         # TODO outsource into separate task incl delete file if clearing
     else:
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file, mode="a", header=False)
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
+            file, mode="a", header=False
+        )
 
 
 def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
@@ -1532,7 +1534,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
         # heat demand time series for buildings with gas boiler
         # (only 2035 scenario)
-        df_mvgd_ts_2035_gas = df_heat_ts_2035.loc[:, buildings_gas_2035].sum(
+        df_mvgd_ts_2035_gas = df_heat_ts.loc[:, buildings_gas_2035].sum(
             axis=1
         )
 
@@ -1569,10 +1571,10 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     # ################ export to db
     logger.debug(" Write data to db.")
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db)
-    df_hp_cap_per_building_2035["scenario"] = "eGon2035"
+    df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
 
     write_table_to_postgres(
-        df_hp_cap_per_building_2035,
+        df_hp_cap_per_building_2035_db,
         EgonHpCapacityBuildings,
         engine=engine,
         drop=False,
@@ -1581,13 +1583,16 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
 def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     """"""
+
+    df_peak_loads_db = pd.DataFrame()
+    df_heat_mvgd_ts_db = pd.DataFrame()
     for mvgd in mvgd_ids:  # [1556]
 
         df_heat_ts = aggregate_residential_and_cts_profiles(
             mvgd, scenario="eGon100RE"
         )
 
-        peak_load_100RE = df_heat_ts_100RE.max().rename("eGon100RE")
+        peak_load_100RE = df_heat_ts.max().rename("eGon100RE")
 
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
@@ -1597,7 +1602,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
 
         df_mvgd_ts_hp = df_heat_ts.loc[
             :,
-            buildings_decentral_heating.drop(buildings_gas_2035),
+            hp_cap_per_building_2035.index,
         ].sum(axis=1)
 
         df_heat_mvgd_ts = pd.DataFrame(
