@@ -8,7 +8,6 @@ import random
 import time
 
 from airflow.operators.python_operator import PythonOperator
-from loguru import logger
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -17,7 +16,7 @@ import numpy as np
 import pandas as pd
 import saio
 
-from egon.data import config, db
+from egon.data import config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.district_heating_areas import (
     MapZensusDistrictHeatingAreas,
@@ -1482,10 +1481,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     register_adapter(np.int64, adapt_numpy_int64)
     # =====================================================
 
-    log_to_file(
-        determine_hp_cap_peak_load_mvgd_ts.__qualname__
-        + f"_{min(mvgd_ids)}-{max(mvgd_ids)}"
-    )
 
     df_peak_loads_db = pd.DataFrame()
     df_hp_cap_per_building_2035_db = pd.DataFrame()
@@ -1493,7 +1488,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     for mvgd in mvgd_ids:  # [1556]
 
-        logger.trace(f"MVGD={mvgd} | Start")
+        logger.debug(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
 
