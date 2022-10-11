@@ -1599,6 +1599,16 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
             )
         )
 
+        # TODO birgit: wo bekommen wir die Gebäude mit hp her?
+        #  hp_cap_per_building_2035 nochmal berechnen? reproducable?
+        # hp_cap_per_building_2035 = (
+        #     determine_hp_cap_buildings_eGon2035_per_mvgd(
+        #         mvgd,
+        #         peak_load,
+        #         buildings_decentral_heating,
+        #     )
+        # )
+
         df_mvgd_ts_hp = df_heat_ts.loc[
             :,
             hp_cap_per_building_2035.index,
