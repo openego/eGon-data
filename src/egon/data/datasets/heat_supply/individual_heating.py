@@ -1406,47 +1406,6 @@ def aggregate_residential_and_cts_profiles(mvgd, scenario):
     return df_heat_ts
 
 
-def aggregate_heat_profiles(
-    mvgd,
-    df_heat_ts,
-    buildings_hp,
-):
-    """"""
-
-    # heat demand time series for buildings with heat pumps
-    # ToDo Julian Write aggregated heat demand time series of buildings with
-    #  HP to table to be used in eTraGo -
-    #  egon_etrago_timeseries_individual_heating
-    # TODO Clara uses this table already
-    #     but will not need it anymore for eTraGo
-    # EgonEtragoTimeseriesIndividualHeating
-
-    df_mvgd_ts_hp = df_heat_ts.loc[
-        :,
-        buildings_decentral_heating.drop(buildings_gas_2035),
-    ].sum(axis=1)
-
-    # heat demand time series for buildings with gas boiler
-    # (only 2035 scenario)
-    df_mvgd_ts_2035_gas = df_heat_ts_2035.loc[:, buildings_gas_2035].sum(
-        axis=1
-    )
-
-    df_heat_mvgd_ts = pd.DataFrame(
-        data={
-            "carrier": ["heat_pump", "heat_pump", "CH4"],
-            "bus_id": mvgd,
-            "scenario": ["eGon2035", "eGon100RE", "eGon2035"],
-            "dist_aggregated_mw": [
-                df_mvgd_ts_2035_hp.to_list(),
-                df_mvgd_ts_100RE_hp.to_list(),
-                df_mvgd_ts_2035_gas.to_list(),
-            ],
-        }
-    )
-    return df_heat_mvgd_ts
-
-
 def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db):
     """"""
 
