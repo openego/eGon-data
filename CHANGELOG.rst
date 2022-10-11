@@ -205,6 +205,8 @@ Added
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
   `#861 <https://github.com/openego/eGon-data/issues/861>`_
+* Integrated heavy duty transport FCEV
+  `#552 <https://github.com/openego/eGon-data/issues/552>`_
 * Assign CTS demands to buildings
   `#671 <https://github.com/openego/eGon-data/issues/671>`_
 * Add sanity checks for residential electricity loads
@@ -215,6 +217,10 @@ Added
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
 * Add mapping table for all used buildings
   `#962 <https://github.com/openego/eGon-data/issues/962>`_
+* Add charging infrastructure for e-mobility
+  `#937 <https://github.com/openego/eGon-data/issues/937>`_
+* Add marginal costs for generators abroad and for carriers nuclear and coal
+  `#907 <https://github.com/openego/eGon-data/issues/907>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
