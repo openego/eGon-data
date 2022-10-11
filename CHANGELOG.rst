@@ -227,6 +227,8 @@ Added
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Add zipfile check
   `#969 <https://github.com/openego/eGon-data/issues/969>`_
+* Add mapping table for all used buildings
+  `#962 <https://github.com/openego/eGon-data/issues/962>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
