@@ -176,8 +176,7 @@ class HeatSupply(Dataset):
                 create_tables,
                 {
                     district_heating,
-                    # Temporary drop everything related to rural heat
-                    # individual_heating,
+                    individual_heating,
                     potential_germany,
                 },
             ),
