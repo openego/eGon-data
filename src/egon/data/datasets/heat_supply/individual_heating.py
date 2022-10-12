@@ -67,7 +67,6 @@ class HeatPumpsPypsaEurSec(Dataset):
     def __init__(self, dependencies):
         def dyn_parallel_tasks():
             """Dynamically generate tasks
-
             The goal is to speed up tasks by parallelising bulks of mvgds.
 
             The number of parallel tasks is defined via parameter
@@ -78,49 +77,25 @@ class HeatPumpsPypsaEurSec(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_capacity_eGon2035_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
             )
-            # ========== Register np datatypes with SQLA ==========
-            register_adapter(np.float64, adapt_numpy_float64)
-            register_adapter(np.int64, adapt_numpy_int64)
-            # =====================================================
 
-            with db.session_scope() as session:
-                query = (
-                    session.query(
-                        MapZensusGridDistricts.bus_id,
-                    )
-                    .filter(
-                        MapZensusGridDistricts.zensus_population_id
-                        == EgonPetaHeat.zensus_population_id
-                    )
-                    .distinct(MapZensusGridDistricts.bus_id)
-                )
-            mvgd_ids = pd.read_sql(
-                query.statement, query.session.bind, index_col=None
-            )
-
-            mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
-
-            mvgd_ids = np.array_split(
-                mvgd_ids["bus_id"].values, parallel_tasks
-            )
-
-            # mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
             tasks = set()
-            for i, bulk in enumerate(mvgd_ids):
+            for i in range(parallel_tasks):
                 tasks.add(
                     PythonOperator(
                         task_id=(
                             f"determine-hp-capacity-pypsa-eur-sec_"
-                            f"mvgd_{min(bulk)}-{max(bulk)}"
+                            f"mvgd_bulk{i}"
                         ),
-                        python_callable=determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,
+                        python_callable=split_mvgds_into_bulks,
                         op_kwargs={
-                            "mvgd_ids": bulk,
+                            "n": i,
+                            "max_n": parallel_tasks,
+                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,
                         },
                     )
                 )
@@ -153,49 +128,24 @@ class HeatPumps2035(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_capacity_eGon2035_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_2035`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
             )
-            # ========== Register np datatypes with SQLA ==========
-            register_adapter(np.float64, adapt_numpy_float64)
-            register_adapter(np.int64, adapt_numpy_int64)
-            # =====================================================
-
-            with db.session_scope() as session:
-                query = (
-                    session.query(
-                        MapZensusGridDistricts.bus_id,
-                    )
-                    .filter(
-                        MapZensusGridDistricts.zensus_population_id
-                        == EgonPetaHeat.zensus_population_id
-                    )
-                    .distinct(MapZensusGridDistricts.bus_id)
-                )
-            mvgd_ids = pd.read_sql(
-                query.statement, query.session.bind, index_col=None
-            )
-
-            mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
-
-            mvgd_ids = np.array_split(
-                mvgd_ids["bus_id"].values, parallel_tasks
-            )
-
-            # mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
             tasks = set()
-            for i, bulk in enumerate(mvgd_ids):
+            for i in range(parallel_tasks):
                 tasks.add(
                     PythonOperator(
                         task_id=(
-                            f"determine-hp-capacity-eGon2035_"
-                            f"mvgd_{min(bulk)}-{max(bulk)}"
+                            f"determine-hp-capacity-pypsa-eur-sec_"
+                            f"mvgd_bulk{i}"
                         ),
-                        python_callable=determine_hp_cap_peak_load_mvgd_ts_2035,
+                        python_callable=split_mvgds_into_bulks,
                         op_kwargs={
-                            "mvgd_ids": bulk,
+                            "n": i,
+                            "max_n": parallel_tasks,
+                            "func": determine_hp_cap_peak_load_mvgd_ts_2035,
                         },
                     )
                 )
@@ -1679,6 +1629,28 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
 
     logger.debug("Write pypsa-eur-sec min HP capacities to csv.")
     export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
+
+
+def split_mvgds_into_bulks(n, max_n, func):
+    """"""
+
+    with db.session_scope() as session:
+        query = (
+            session.query(
+                MapZensusGridDistricts.bus_id,
+            )
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == EgonPetaHeat.zensus_population_id
+            )
+            .distinct(MapZensusGridDistricts.bus_id)
+        )
+    mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
+
+    mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
+
+    mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, parallel_tasks)
+    func(mvgd_ids)
 
 
 def create_peak_load_table():
