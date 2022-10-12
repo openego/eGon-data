@@ -50,9 +50,9 @@ from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
 from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2035,
     HeatPumps2050,
     HeatPumpsPypsaEurSec,
-    HeatPumps2035,
 )
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
@@ -611,7 +611,7 @@ with airflow.DAG(
             heat_supply,
             heat_time_series,
             heat_pumps_pypsa_eur_sec,
-            tasks["power_plants.pv-rooftop-to-buildings"]
+            tasks["power_plants.pv_rooftop.pv-rooftop-to-buildings"],
         ]
     )
 

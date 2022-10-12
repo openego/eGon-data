@@ -67,7 +67,6 @@ class HeatPumpsPypsaEurSec(Dataset):
     def __init__(self, dependencies):
         def dyn_parallel_tasks():
             """Dynamically generate tasks
-
             The goal is to speed up tasks by parallelising bulks of mvgds.
 
             The number of parallel tasks is defined via parameter
@@ -78,49 +77,25 @@ class HeatPumpsPypsaEurSec(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_capacity_eGon2035_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
             )
-            # ========== Register np datatypes with SQLA ==========
-            register_adapter(np.float64, adapt_numpy_float64)
-            register_adapter(np.int64, adapt_numpy_int64)
-            # =====================================================
 
-            with db.session_scope() as session:
-                query = (
-                    session.query(
-                        MapZensusGridDistricts.bus_id,
-                    )
-                    .filter(
-                        MapZensusGridDistricts.zensus_population_id
-                        == EgonPetaHeat.zensus_population_id
-                    )
-                    .distinct(MapZensusGridDistricts.bus_id)
-                )
-            mvgd_ids = pd.read_sql(
-                query.statement, query.session.bind, index_col=None
-            )
-
-            mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
-
-            mvgd_ids = np.array_split(
-                mvgd_ids["bus_id"].values, parallel_tasks
-            )
-
-            # mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
             tasks = set()
-            for i, bulk in enumerate(mvgd_ids):
+            for i in range(parallel_tasks):
                 tasks.add(
                     PythonOperator(
                         task_id=(
                             f"determine-hp-capacity-pypsa-eur-sec_"
-                            f"mvgd_{min(bulk)}-{max(bulk)}"
+                            f"mvgd_bulk{i}"
                         ),
-                        python_callable=determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,
+                        python_callable=split_mvgds_into_bulks,
                         op_kwargs={
-                            "mvgd_ids": bulk,
+                            "n": i,
+                            "max_n": parallel_tasks,
+                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,  # noqa: E501
                         },
                     )
                 )
@@ -153,49 +128,24 @@ class HeatPumps2035(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_capacity_eGon2035_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_2035`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
             )
-            # ========== Register np datatypes with SQLA ==========
-            register_adapter(np.float64, adapt_numpy_float64)
-            register_adapter(np.int64, adapt_numpy_int64)
-            # =====================================================
-
-            with db.session_scope() as session:
-                query = (
-                    session.query(
-                        MapZensusGridDistricts.bus_id,
-                    )
-                    .filter(
-                        MapZensusGridDistricts.zensus_population_id
-                        == EgonPetaHeat.zensus_population_id
-                    )
-                    .distinct(MapZensusGridDistricts.bus_id)
-                )
-            mvgd_ids = pd.read_sql(
-                query.statement, query.session.bind, index_col=None
-            )
-
-            mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
-
-            mvgd_ids = np.array_split(
-                mvgd_ids["bus_id"].values, parallel_tasks
-            )
-
-            # mvgd_bunch_size = divmod(MVGD_MIN_COUNT, parallel_tasks)[0]
             tasks = set()
-            for i, bulk in enumerate(mvgd_ids):
+            for i in range(parallel_tasks):
                 tasks.add(
                     PythonOperator(
                         task_id=(
-                            f"determine-hp-capacity-eGon2035_"
-                            f"mvgd_{min(bulk)}-{max(bulk)}"
+                            f"determine-hp-capacity-pypsa-eur-sec_"
+                            f"mvgd_bulk{i}"
                         ),
-                        python_callable=determine_hp_cap_peak_load_mvgd_ts_2035,
+                        python_callable=split_mvgds_into_bulks,
                         op_kwargs={
-                            "mvgd_ids": bulk,
+                            "n": i,
+                            "max_n": parallel_tasks,
+                            "func": determine_hp_cap_peak_load_mvgd_ts_2035,
                         },
                     )
                 )
@@ -481,8 +431,8 @@ def get_peta_demand(mvgd, scenario):
     Returns
     -------
     df_peta_demand : pd.DataFrame
-        Annual residential heat demand per building and scenario. Columns of the
-        dataframe are zensus_population_id and demand.
+        Annual residential heat demand per building and scenario. Columns of
+        the dataframe are zensus_population_id and demand.
 
     """
 
@@ -523,9 +473,9 @@ def get_residential_heat_profile_ids(mvgd):
     Returns
     -------
     df_profiles_ids : pd.DataFrame
-        Residential daily heat profile ID's per building. Columns of the dataframe
-        are zensus_population_id, building_id, selected_idp_profiles, buildings
-        and day_of_year.
+        Residential daily heat profile ID's per building. Columns of the
+        dataframe are zensus_population_id, building_id,
+        selected_idp_profiles, buildings and day_of_year.
 
     """
     with db.session_scope() as session:
@@ -574,8 +524,8 @@ def get_daily_profiles(profile_ids):
     Returns
     -------
     df_profiles : pd.DataFrame
-        Residential daily heat profiles. Columns of the dataframe are idp, house,
-        temperature_class and hour.
+        Residential daily heat profiles. Columns of the dataframe are idp,
+        house, temperature_class and hour.
 
     """
     saio.register_schema("demand", db.engine())
@@ -934,8 +884,8 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
     Returns
     --------
     pd.Index(int)
-        Building IDs (as int) of buildings with decentral heating system in given
-        MV grid. Type is pandas Index to avoid errors later on when it is
+        Building IDs (as int) of buildings with decentral heating system in
+        given MV grid. Type is pandas Index to avoid errors later on when it is
         used in a query.
 
     """
@@ -1007,8 +957,8 @@ def get_heat_peak_demand_per_building(scenario, building_ids):
             session.query(
                 BuildingHeatPeakLoads.building_id,
                 BuildingHeatPeakLoads.peak_load_in_w,
-            ).filter(BuildingHeatPeakLoads.scenario == scenario)
-            # .filter(BuildingHeatPeakLoads.sector == "both")
+            )
+            .filter(BuildingHeatPeakLoads.scenario == scenario)
             .filter(BuildingHeatPeakLoads.building_id.in_(building_ids))
         )
 
@@ -1298,16 +1248,18 @@ def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
             mv_grid_id, scenario="eGon100RE"
         )
 
-        # TODO get peak demand from db
+        logger.info(f"MVGD={mv_grid_id} | Get peak loads from DB")
         df_peak_heat_demand = get_heat_peak_demand_per_building(
             "eGon100RE", building_ids
         )
 
+        logger.info(f"MVGD={mv_grid_id} | Determine HP capacities.")
         # determine minimum required heat pump capacity per building
         min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
             df_peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
         )
 
+        logger.info(f"MVGD={mv_grid_id} | Desaggregate HP capacities.")
         # distribute total heat pump capacity to all buildings with HP
         hp_cap_per_building = desaggregate_hp_capacity(
             min_hp_cap_buildings, hp_cap_grid
@@ -1342,12 +1294,15 @@ def determine_hp_cap_buildings_eGon100RE():
         )
     mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
     mvgd_ids = mvgd_ids.sort_values("bus_id")
+    mvgd_ids = mvgd_ids["bus_id"].values
 
     df_hp_cap_per_building_100RE_db = pd.DataFrame(
         columns=["building_id", "hp_capacity"]
     )
 
-    for mvgd_id in mvgd_ids["bus_id"].values:
+    for mvgd_id in mvgd_ids:
+
+        logger.info(f"MVGD={mvgd_id} | Start")
 
         hp_cap_per_building_100RE = (
             determine_hp_cap_buildings_eGon100RE_per_mvgd(mvgd_id)
@@ -1362,6 +1317,7 @@ def determine_hp_cap_buildings_eGon100RE():
                 axis=0,
             )
 
+    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
 
     write_table_to_postgres(
@@ -1374,7 +1330,8 @@ def determine_hp_cap_buildings_eGon100RE():
 
 def aggregate_residential_and_cts_profiles(mvgd, scenario):
     """
-    Gets residential and CTS heat demand profiles per building and aggregates them.
+    Gets residential and CTS heat demand profiles per building and aggregates
+    them.
 
     Parameters
     ----------
@@ -1386,8 +1343,8 @@ def aggregate_residential_and_cts_profiles(mvgd, scenario):
     Returns
     --------
     pd.DataFrame
-        Table of demand profile per building. Column names are building IDs and index
-        is hour of the year as int (0-8759).
+        Table of demand profile per building. Column names are building IDs and
+        index is hour of the year as int (0-8759).
 
     """
     # ############### get residential heat demand profiles ###############
@@ -1500,7 +1457,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     for mvgd in mvgd_ids:
 
-        logger.debug(f"MVGD={mvgd} | Start")
+        logger.info(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
 
@@ -1509,12 +1466,12 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
         # ##################### determine peak loads ###################
-        logger.debug(f"MVGD={mvgd} | Determine peak loads.")
+        logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
         peak_load = df_heat_ts.max().rename("eGon2035")
 
         # ######## determine HP capacity per building #########
-        logger.debug(f"MVGD={mvgd} | Determine HP capacities.")
+        logger.info(f"MVGD={mvgd} | Determine HP capacities.")
 
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
@@ -1533,7 +1490,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
         # ################ aggregated heat profiles ###################
-        logger.debug(f"MVGD={mvgd} | Aggregate heat profiles.")
+        logger.info(f"MVGD={mvgd} | Aggregate heat profiles.")
 
         df_mvgd_ts_2035_hp = df_heat_ts.loc[
             :,
@@ -1556,7 +1513,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
         # ################ collect results ##################
-        logger.debug(f"MVGD={mvgd} | Collect results.")
+        logger.info(f"MVGD={mvgd} | Collect results.")
 
         df_peak_loads_db = pd.concat(
             [df_peak_loads_db, peak_load.reset_index()],
@@ -1577,7 +1534,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
     # ################ export to db #######################
-    logger.debug(" Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db)
 
     df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
@@ -1591,9 +1548,9 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
 def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     """
-    Main function to determine minimum required HP capacity in MV for pypsa-eur-sec.
-    Further, creates heat demand time series for all buildings with heat pumps in MV
-    grid in eGon100RE scenario, used in eTraGo.
+    Main function to determine minimum required HP capacity in MV for
+    pypsa-eur-sec. Further, creates heat demand time series for all buildings
+    with heat pumps in MV grid in eGon100RE scenario, used in eTraGo.
 
     Parameters
     -----------
@@ -1613,7 +1570,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
 
     for mvgd in mvgd_ids:
 
-        logger.debug(f"MVGD={mvgd} | Start")
+        logger.info(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
 
@@ -1622,7 +1579,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         )
 
         # ##################### determine peak loads ###################
-        logger.debug(f"MVGD={mvgd} | Determine peak loads.")
+        logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
         peak_load_100RE = df_heat_ts.max().rename("eGon100RE")
 
@@ -1640,7 +1597,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         )
 
         # ################ aggregated heat profiles ###################
-        logger.debug(f"MVGD={mvgd} | Aggregate heat profiles.")
+        logger.info(f"MVGD={mvgd} | Aggregate heat profiles.")
 
         df_mvgd_ts_hp = df_heat_ts.loc[
             :,
@@ -1657,7 +1614,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         )
 
         # ################ collect results ##################
-        logger.debug(f"MVGD={mvgd} | Collect results.")
+        logger.info(f"MVGD={mvgd} | Collect results.")
 
         df_peak_loads_db = pd.concat(
             [df_peak_loads_db, peak_load_100RE.reset_index()],
@@ -1674,11 +1631,41 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         ] = hp_min_cap_mv_grid_pypsa_eur_sec
 
     # ################ export to db and csv ######################
-    logger.debug(" Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db)
 
-    logger.debug("Write pypsa-eur-sec min HP capacities to csv.")
+    logger.info(
+        f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write "
+        f"pypsa-eur-sec min "
+        f"HP capacities to csv."
+    )
     export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
+
+
+def split_mvgds_into_bulks(n, max_n, func):
+    """"""
+
+    with db.session_scope() as session:
+        query = (
+            session.query(
+                MapZensusGridDistricts.bus_id,
+            )
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == EgonPetaHeat.zensus_population_id
+            )
+            .distinct(MapZensusGridDistricts.bus_id)
+        )
+    mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
+
+    mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
+
+    mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, max_n)
+    # Only take split n
+    mvgd_ids = mvgd_ids[n]
+
+    logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} - {max(mvgd_ids)}")
+    func(mvgd_ids)
 
 
 def create_peak_load_table():
