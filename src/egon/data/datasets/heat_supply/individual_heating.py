@@ -1707,16 +1707,3 @@ def delete_peak_loads_if_existing():
         session.query(BuildingHeatPeakLoads).filter(
             BuildingHeatPeakLoads.scenario == "eGon2035"
         ).delete(synchronize_session=False)
-
-
-if __name__ == "__main__":
-
-    determine_hp_cap_buildings_eGon100RE()
-
-    create_peak_load_table()
-    create_egon_etrago_timeseries_individual_heating()
-    determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec([1556])
-
-    create_hp_capacity_table()
-    delete_peak_loads_if_existing()
-    determine_hp_cap_peak_load_mvgd_ts_2035([1556])
