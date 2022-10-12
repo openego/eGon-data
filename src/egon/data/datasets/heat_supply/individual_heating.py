@@ -88,10 +88,10 @@ class HeatPumpsPypsaEurSec(Dataset):
                 tasks.add(
                     PythonOperator(
                         task_id=(
-                            f"determine-hp-capacity-pypsa-eur-sec_"
-                            f"mvgd_bulk{i}"
+                            f"determine-hp-capacity-pypsa-eur-sec-"
+                            f"mvgd-bulk{i}"
                         ),
-                        python_callable=split_mvgds_into_bulks,
+                        python_callable=split_mvgds_into_bulks_pypsa_eur_sec,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
@@ -141,7 +141,7 @@ class HeatPumps2035(Dataset):
                             f"determine-hp-capacity-pypsa-eur-sec_"
                             f"mvgd_bulk{i}"
                         ),
-                        python_callable=split_mvgds_into_bulks,
+                        python_callable=split_mvgds_into_bulks_2035,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
@@ -1642,7 +1642,32 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
 
 
-def split_mvgds_into_bulks(n, max_n, func):
+def split_mvgds_into_bulks_2035(n, max_n, func):
+    """"""
+
+    with db.session_scope() as session:
+        query = (
+            session.query(
+                MapZensusGridDistricts.bus_id,
+            )
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == EgonPetaHeat.zensus_population_id
+            )
+            .distinct(MapZensusGridDistricts.bus_id)
+        )
+    mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
+
+    mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
+
+    mvgd_ids = np.array_split(mvgd_ids["bus_id"].values, max_n)
+    # Only take split n
+    mvgd_ids = mvgd_ids[n]
+
+    logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} - {max(mvgd_ids)}")
+    func(mvgd_ids)
+
+def split_mvgds_into_bulks_pypsa_eur_sec(n, max_n, func):
     """"""
 
     with db.session_scope() as session:
