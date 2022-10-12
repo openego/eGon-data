@@ -65,7 +65,7 @@ class EgonHpCapacityBuildings(Base):
 
 class HeatPumpsPypsaEurSec(Dataset):
     def __init__(self, dependencies):
-        def dyn_parallel_tasks():
+        def dyn_parallel_tasks_pypsa_eur_sec():
             """Dynamically generate tasks
             The goal is to speed up tasks by parallelising bulks of mvgds.
 
@@ -108,14 +108,14 @@ class HeatPumpsPypsaEurSec(Dataset):
             tasks=(
                 create_peak_load_table,
                 create_egon_etrago_timeseries_individual_heating,
-                {*dyn_parallel_tasks()},
+                {*dyn_parallel_tasks_pypsa_eur_sec()},
             ),
         )
 
 
 class HeatPumps2035(Dataset):
     def __init__(self, dependencies):
-        def dyn_parallel_tasks():
+        def dyn_parallel_tasks_2035():
             """Dynamically generate tasks
 
             The goal is to speed up tasks by parallelising bulks of mvgds.
@@ -158,7 +158,7 @@ class HeatPumps2035(Dataset):
             tasks=(
                 create_hp_capacity_table,
                 delete_peak_loads_if_existing,
-                {*dyn_parallel_tasks()},
+                {*dyn_parallel_tasks_2035()},
             ),
         )
 
