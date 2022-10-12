@@ -1021,8 +1021,10 @@ def get_heat_peak_demand_per_building(scenario, building_ids):
         raise ValueError("Duplicate building_id")
 
     # convert to series and from W to MW
-    df_heat_peak_demand = df_heat_peak_demand.set_index("building_id").loc[
-                          :, "peak_load_in_w"] * 1e6
+    df_heat_peak_demand = (
+        df_heat_peak_demand.set_index("building_id").loc[:, "peak_load_in_w"]
+        * 1e6
+    )
     return df_heat_peak_demand
 
 
@@ -1327,7 +1329,6 @@ def determine_hp_cap_buildings_eGon100RE():
     register_adapter(np.int64, adapt_numpy_int64)
     # =====================================================
 
-
     with db.session_scope() as session:
         query = (
             session.query(
@@ -1342,7 +1343,9 @@ def determine_hp_cap_buildings_eGon100RE():
     mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
     mvgd_ids = mvgd_ids.sort_values("bus_id")
 
-    df_hp_cap_per_building_100RE_db = pd.DataFrame(columns=["building_id", "hp_capacity"])
+    df_hp_cap_per_building_100RE_db = pd.DataFrame(
+        columns=["building_id", "hp_capacity"]
+    )
 
     for mvgd_id in mvgd_ids["bus_id"].values:
 
