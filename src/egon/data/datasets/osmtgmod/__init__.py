@@ -513,8 +513,7 @@ def to_pypsa():
     db.execute_sql(
         """
             -- CLEAN UP OF TABLES
-            DELETE FROM grid.egon_etrago_bus
-            WHERE carrier = 'AC';
+            DELETE FROM grid.egon_etrago_bus;
             DELETE FROM grid.egon_etrago_line;
             DELETE FROM grid.egon_etrago_transformer;
             """
