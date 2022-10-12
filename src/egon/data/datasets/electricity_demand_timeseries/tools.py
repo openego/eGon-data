@@ -1,5 +1,6 @@
 from io import StringIO
 import csv
+import time
 
 from shapely.geometry import Point
 import geopandas as gpd
@@ -9,6 +10,23 @@ import pandas as pd
 from egon.data import db
 
 engine = db.engine()
+
+
+def timeit(func):
+    """
+    Decorator for measuring function's running time.
+    """
+
+    def measure_time(*args, **kw):
+        start_time = time.time()
+        result = func(*args, **kw)
+        print(
+            "Processing time of %s(): %.2f seconds."
+            % (func.__qualname__, time.time() - start_time)
+        )
+        return result
+
+    return measure_time
 
 
 def random_point_in_square(geom, tol):
@@ -174,6 +192,8 @@ def write_table_to_postgres(
     if drop:
         db_table.__table__.drop(bind=engine, checkfirst=True)
         db_table.__table__.create(bind=engine)
+    else:
+        db_table.__table__.create(bind=engine, checkfirst=True)
 
     df.to_sql(
         name=db_table.__table__.name,

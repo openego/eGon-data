@@ -955,7 +955,6 @@ def calc_building_demand_profile_share(
 
 
 def calc_cts_building_profiles(
-    egon_building_ids,
     bus_ids,
     scenario,
     sector,
@@ -966,8 +965,6 @@ def calc_cts_building_profiles(
 
     Parameters
     ----------
-    egon_building_ids: list of int
-        Ids of the building for which the profile is calculated.
     bus_ids: list of int
         Ids of the substation for which selected building profiles are
         calculated.
@@ -979,7 +976,9 @@ def calc_cts_building_profiles(
     Returns
     -------
     df_building_profiles: pd.DataFrame
-        Table of demand profile per building
+        Table of demand profile per building. Column names are building IDs and index
+        is hour of the year as int (0-8759).
+
     """
     if sector == "electricity":
         # Get cts building electricity demand share of selected buildings
@@ -992,8 +991,8 @@ def calc_cts_building_profiles(
                     EgonCtsElectricityDemandBuildingShare.scenario == scenario
                 )
                 .filter(
-                    EgonCtsElectricityDemandBuildingShare.building_id.in_(
-                        egon_building_ids
+                    EgonCtsElectricityDemandBuildingShare.bus_id.in_(
+                        bus_ids
                     )
                 )
             )
@@ -1029,8 +1028,8 @@ def calc_cts_building_profiles(
                 )
                 .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
                 .filter(
-                    EgonCtsHeatDemandBuildingShare.building_id.in_(
-                        egon_building_ids
+                    EgonCtsHeatDemandBuildingShare.bus_id.in_(
+                        bus_ids
                     )
                 )
             )
