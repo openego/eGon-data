@@ -1268,7 +1268,7 @@ def determine_hp_cap_buildings_eGon2035_per_mvgd(
         return hp_cap_per_building.rename("hp_capacity")
 
     else:
-        return pd.Series().rename("hp_capacity")
+        return pd.Series(dtype="float64").rename("hp_capacity")
 
 
 def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
@@ -1313,7 +1313,7 @@ def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
 
         return hp_cap_per_building.rename("hp_capacity")
     else:
-        return pd.Series().rename("hp_capacity")
+        return pd.Series(dtype="float64").rename("hp_capacity")
 
 
 def determine_hp_cap_buildings_eGon100RE():
@@ -1321,6 +1321,12 @@ def determine_hp_cap_buildings_eGon100RE():
     Main function to determine HP capacity per building in eGon100RE scenario.
 
     """
+
+    # ========== Register np datatypes with SQLA ==========
+    register_adapter(np.float64, adapt_numpy_float64)
+    register_adapter(np.int64, adapt_numpy_int64)
+    # =====================================================
+
 
     with db.session_scope() as session:
         query = (
@@ -1334,11 +1340,11 @@ def determine_hp_cap_buildings_eGon100RE():
             .distinct(MapZensusGridDistricts.bus_id)
         )
     mvgd_ids = pd.read_sql(query.statement, query.session.bind, index_col=None)
-    mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
+    mvgd_ids = mvgd_ids.sort_values("bus_id")
 
-    df_hp_cap_per_building_100RE_db = pd.DataFrame()
+    df_hp_cap_per_building_100RE_db = pd.DataFrame(columns=["building_id", "hp_capacity"])
 
-    for mvgd_id in mvgd_ids:
+    for mvgd_id in mvgd_ids["bus_id"].values:
 
         hp_cap_per_building_100RE = (
             determine_hp_cap_buildings_eGon100RE_per_mvgd(mvgd_id)
@@ -1354,6 +1360,7 @@ def determine_hp_cap_buildings_eGon100RE():
             )
 
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
+
     write_table_to_postgres(
         df_hp_cap_per_building_100RE_db,
         EgonHpCapacityBuildings,
@@ -1599,7 +1606,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
 
     df_peak_loads_db = pd.DataFrame()
     df_heat_mvgd_ts_db = pd.DataFrame()
-    df_hp_min_cap_mv_grid_pypsa_eur_sec = pd.Series()
+    df_hp_min_cap_mv_grid_pypsa_eur_sec = pd.Series(dtype="float64")
 
     for mvgd in mvgd_ids:
 
