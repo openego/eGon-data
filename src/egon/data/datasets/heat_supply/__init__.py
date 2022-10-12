@@ -127,12 +127,13 @@ def district_heating():
 
     backup_rh = backup_resistive_heaters("eGon2035")
 
-    backup_rh.to_postgis(
-        targets["district_heating_supply"]["table"],
-        schema=targets["district_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
+    if not backup_rh.empty:
+        backup_rh.to_postgis(
+            targets["district_heating_supply"]["table"],
+            schema=targets["district_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
 
 
 def individual_heating():
