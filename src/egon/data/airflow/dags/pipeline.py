@@ -611,7 +611,7 @@ with airflow.DAG(
             heat_supply,
             heat_time_series,
             heat_pumps_pypsa_eur_sec,
-            tasks["power_plants.pv_rooftop.pv-rooftop-to-buildings"],
+            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
         ]
     )
 
