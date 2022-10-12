@@ -334,6 +334,24 @@ with airflow.DAG(
         ]
     )
 
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
+        ]
+    )
+
+    # Minimum heat pump capacity for pypsa-eur-sec
+    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_time_series,
+        ]
+    )
+
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -344,7 +362,7 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
-            heat_pumps_2035,
+            heat_pumps_pypsa_eur_sec,
         ]
     )
 
@@ -585,39 +603,23 @@ with airflow.DAG(
         dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
     )
 
-    cts_demand_buildings = CtsDemandBuildings(
-        dependencies=[
-            osm_buildings_streets,
-            cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
-            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
-        ]
-    )
-    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
-        dependencies=[
-            cts_demand_buildings,
-            DistrictHeatingAreas,
-            heat_supply,
-            heat_time_series,
-            # TODO add PV rooftop
-        ]
-    )
-
+    # Heat pump disaggregation for eGon2035
     heat_pumps_2035 = HeatPumps2035(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
             heat_supply,
             heat_time_series,
-            heat_pumps_pypsa_eur_sec
+            heat_pumps_pypsa_eur_sec,
             # TODO add PV rooftop
         ]
     )
 
+    # Heat pump disaggregation for eGon100RE
     heat_pumps_2050 = HeatPumps2050(
         dependencies=[
             run_pypsaeursec,
-            heat_pumps_2035,
+            heat_pumps_pypsa_eur_sec,
         ]
     )
 
