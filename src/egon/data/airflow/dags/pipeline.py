@@ -611,7 +611,7 @@ with airflow.DAG(
             heat_supply,
             heat_time_series,
             heat_pumps_pypsa_eur_sec,
-            # TODO add PV rooftop
+            tasks["power_plants.pv-rooftop-to-buildings"]
         ]
     )
 
