@@ -689,7 +689,7 @@ def sanitycheck_eGon100RE_heat():
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the heat sector in
-    the eGon2035 scenario.
+    the eGon100RE scenario.
 
     Parameters
     ----------
@@ -715,19 +715,19 @@ def sanitycheck_eGon100RE_heat():
 
     output_heat_demand = db.select_dataframe(
         """SELECT a.scn_name ,(SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
-FROM grid.egon_etrago_load a
-JOIN grid.egon_etrago_load_timeseries b
-ON a.load_id = b.load_id
-JOIN grid.egon_etrago_bus c
-ON (a.bus=c.bus_id)
-WHERE b.scn_name='eGon100RE'
-AND a.scn_name='eGon100RE'
-AND c.scn_name= 'eGon100RE'
-AND c.country='DE'
-AND a.carrier IN ('residential_rural_heat','low-temperature_heat_for_industry',
+        FROM grid.egon_etrago_load a
+        JOIN grid.egon_etrago_load_timeseries b
+        ON a.load_id = b.load_id
+        JOIN grid.egon_etrago_bus c
+        ON (a.bus=c.bus_id)
+        WHERE b.scn_name='eGon100RE'
+        AND a.scn_name='eGon100RE'
+        AND c.scn_name= 'eGon100RE'
+        AND c.country='DE'
+        AND a.carrier IN ('residential_rural_heat','low-temperature_heat_for_industry',
 				  'residential_urban_decentral_heat','services_rural_heat',
 				 'services_urban_decentral_heat','urban_central_heat')
-GROUP BY (a.scn_name);
+        GROUP BY (a.scn_name);
         """,
         warning=False,
     )["load_twh"].values[0]
