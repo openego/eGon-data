@@ -1051,6 +1051,9 @@ def calc_cts_building_profiles(
             orient="index",
         )
 
+    else:
+        raise KeyError("Sector needs to be either 'electricity' or 'heat'")
+
     # TODO remove after #722
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
