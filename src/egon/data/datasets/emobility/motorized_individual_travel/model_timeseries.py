@@ -38,6 +38,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+    EgonEvMetadata,
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
@@ -93,7 +94,7 @@ def data_preprocessing(
     # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
         charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid / 10 ** 3
+            ev_data_df.charging_capacity_grid / 10**3
         ),
         minimum_charging_time=(
             ev_data_df.charging_demand
@@ -1059,6 +1060,31 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             run_config=meta_run_config,
             bat_cap=meta_tech_data.battery_capacity,
         )
+
+    dtypes = {
+        "scenario": str,
+        "eta_cp": float,
+        "stepsize": int,
+        "start_date": np.datetime64,
+        "end_date": np.datetime64,
+        "soc_min": float,
+        "grid_timeseries": bool,
+        "grid_timeseries_by_usecase": bool,
+    }
+
+    meta_run_config = (
+        meta_run_config.to_frame()
+        .T.assign(scenario=scenario_name)[dtypes.keys()]
+        .astype(dtypes)
+    )
+
+    meta_run_config.to_sql(
+        name=EgonEvMetadata.__table__.name,
+        schema=EgonEvMetadata.__table__.schema,
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
 
 
 def generate_model_data_eGon2035_remaining():

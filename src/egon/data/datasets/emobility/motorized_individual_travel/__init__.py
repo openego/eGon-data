@@ -88,6 +88,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
+    EgonEvMetadata,
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
@@ -152,6 +153,8 @@ def create_tables():
     EgonEvTrip.__table__.create(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
+    EgonEvMetadata.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvMetadata.__table__.create(bind=engine, checkfirst=True)
 
     # Create dir for results, if it does not exist
     result_dir = WORKING_DIR / Path("results")
