@@ -1584,6 +1584,8 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         peak_load_100RE = df_heat_ts.max().rename("eGon100RE")
 
         # ######## determine minimum HP capacity pypsa-eur-sec ###########
+        logger.info(f"MVGD={mvgd} | Determine minimum HP capacity.")
+
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
                 mvgd, scenario="eGon100RE"
