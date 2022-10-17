@@ -1458,7 +1458,7 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
         diff = buildings_decentral_heating.difference(peak_load.index)
         logger.warning(
             f"Dropped {len(diff)} building ids due to missing peak "
-            f"loads. {len(buildings_decentral_heating.index)} left."
+            f"loads. {len(buildings_decentral_heating)} left."
         )
         logger.info(f"Dropped buildings: {diff}")
         buildings_decentral_heating.drop(diff, inplace=True)
