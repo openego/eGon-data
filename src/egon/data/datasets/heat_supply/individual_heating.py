@@ -1433,6 +1433,39 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
         )
 
 
+def catch_missing_buidings(buildings_decentral_heating, peak_load):
+    """
+    Check for missing buildings and reduce the list of buildings with
+    decentral heating if no peak loads available. This should only happen
+    in case of cutout SH
+
+    Parameters
+    -----------
+    buildings_decentral_heating : list(int)
+        Array or list of buildings with decentral heating
+
+    peak_load : pd.Series
+        Peak loads of all building within the mvgd
+
+    """
+    # Catch missing buildings key error
+    # should only happen within cutout SH
+    if (
+        not all(buildings_decentral_heating.isin(peak_load.index))
+        and config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        diff = buildings_decentral_heating.difference(peak_load.index)
+        logger.warning(
+            f"Dropped {len(diff)} building ids due to missing peak "
+            f"loads. {len(buildings_decentral_heating.index)} left."
+        )
+        logger.info(f"Dropped buildings: {diff}")
+        buildings_decentral_heating.drop(diff, inplace=True)
+
+    return buildings_decentral_heating
+
+
 def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     """
     Main function to determine HP capacity per building in eGon2035 scenario.
@@ -1468,7 +1501,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         # ##################### determine peak loads ###################
         logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
-        peak_load = df_heat_ts.max().rename("eGon2035")
+        peak_load_2035 = df_heat_ts.max().rename("eGon2035")
 
         # ######## determine HP capacity per building #########
         logger.info(f"MVGD={mvgd} | Determine HP capacities.")
@@ -1478,10 +1511,17 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
                 mvgd, scenario="eGon2035"
             )
         )
+
+        # Reduce list of decentral heating if no Peak load available
+        # TODO maybe remove after succesfull DE run
+        buildings_decentral_heating = catch_missing_buidings(
+            buildings_decentral_heating, peak_load_2035
+        )
+
         hp_cap_per_building_2035 = (
             determine_hp_cap_buildings_eGon2035_per_mvgd(
                 mvgd,
-                peak_load,
+                peak_load_2035,
                 buildings_decentral_heating,
             )
         )
@@ -1516,7 +1556,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         logger.info(f"MVGD={mvgd} | Collect results.")
 
         df_peak_loads_db = pd.concat(
-            [df_peak_loads_db, peak_load.reset_index()],
+            [df_peak_loads_db, peak_load_2035.reset_index()],
             axis=0,
             ignore_index=True,
         )
@@ -1584,11 +1624,20 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         peak_load_100RE = df_heat_ts.max().rename("eGon100RE")
 
         # ######## determine minimum HP capacity pypsa-eur-sec ###########
+        logger.info(f"MVGD={mvgd} | Determine minimum HP capacity.")
+
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
                 mvgd, scenario="eGon100RE"
             )
         )
+
+        # Reduce list of decentral heating if no Peak load available
+        # TODO maybe remove after succesfull DE run
+        buildings_decentral_heating = catch_missing_buidings(
+            buildings_decentral_heating, peak_load_100RE
+        )
+
         hp_min_cap_mv_grid_pypsa_eur_sec = (
             determine_min_hp_cap_buildings_pypsa_eur_sec(
                 peak_load_100RE,
@@ -1666,6 +1715,7 @@ def split_mvgds_into_bulks_2035(n, max_n, func):
 
     logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} - {max(mvgd_ids)}")
     func(mvgd_ids)
+
 
 def split_mvgds_into_bulks_pypsa_eur_sec(n, max_n, func):
     """"""
