@@ -106,8 +106,6 @@ class HeatPumpsPypsaEurSec(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
-                create_peak_load_table,
-                create_egon_etrago_timeseries_individual_heating,
                 {*dyn_parallel_tasks_pypsa_eur_sec()},
             ),
         )
@@ -156,8 +154,7 @@ class HeatPumps2035(Dataset):
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
-                create_hp_capacity_table,
-                delete_peak_loads_if_existing,
+                delete_heat_peak_loads_eGon2035,
                 {*dyn_parallel_tasks_2035()},
             ),
         )
@@ -1322,6 +1319,9 @@ def determine_hp_cap_buildings_eGon100RE():
     logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
 
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    delete_hp_capacity(scenario="eGon100RE")
+
     write_table_to_postgres(
         df_hp_cap_per_building_100RE_db,
         EgonHpCapacityBuildings,
@@ -1377,8 +1377,20 @@ def aggregate_residential_and_cts_profiles(mvgd, scenario):
     return df_heat_ts
 
 
-def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db):
-    """"""
+def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
+    """
+    Function to export the collected results of all MVGDs per bulk to DB.
+
+        Parameters
+    ----------
+    df_peak_loads_db : pd.DataFrame
+        Table of building peak loads of all MVGDs per bulk
+    df_heat_mvgd_ts_db : pd.DataFrame
+        Table of all aggregated MVGD profiles per bulk
+    drop : boolean
+        Drop and recreate table if True
+
+    """
 
     df_peak_loads_db = df_peak_loads_db.melt(
         id_vars="building_id",
@@ -1394,27 +1406,39 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db):
         df_peak_loads_db["peak_load_in_w"] * 1e6
     )
     write_table_to_postgres(
-        df_peak_loads_db, BuildingHeatPeakLoads, engine=engine
+        df_peak_loads_db, BuildingHeatPeakLoads, engine=engine, drop=drop
     )
 
-    columns = {
+    dtypes = {
         column.key: column.type
         for column in EgonEtragoTimeseriesIndividualHeating.__table__.columns
     }
     df_heat_mvgd_ts_db = df_heat_mvgd_ts_db.loc[:, columns.keys()]
 
-    df_heat_mvgd_ts_db.to_sql(
-        name=EgonEtragoTimeseriesIndividualHeating.__table__.name,
-        schema=EgonEtragoTimeseriesIndividualHeating.__table__.schema,
-        con=engine,
-        if_exists="append",
-        method="multi",
-        index=False,
-        dtype=columns,
-    )
+    if drop:
+        logger.info(f"Drop and recreate table "
+                    f"{EgonEtragoTimeseriesIndividualHeating.__table__.name}.")
+        EgonEtragoTimeseriesIndividualHeating.__table__.drop(
+            bind=engine, checkfirst=True
+        )
+        EgonEtragoTimeseriesIndividualHeating.__table__.create(
+            bind=engine, checkfirst=True
+        )
+
+    with db.session_scope() as session:
+        df_heat_mvgd_ts_db.to_sql(
+            name=EgonEtragoTimeseriesIndividualHeating.__table__.name,
+            schema=EgonEtragoTimeseriesIndividualHeating.__table__.schema,
+            con=session.connection(),
+            if_exists="append",
+            method="multi",
+            index=False,
+            dtype=dtypes,
+        )
 
 
 def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
+    """Export minimum capacity of heat pumps for pypsa eur sec to csv"""
 
     df_hp_min_cap_mv_grid_pypsa_eur_sec.index.name = "mvgd_id"
     df_hp_min_cap_mv_grid_pypsa_eur_sec = (
@@ -1431,11 +1455,11 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
     # TODO check append
     if not file.is_file():
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file)
-        # TODO outsource into separate task incl delete file if clearing
     else:
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
         )
+        # TODO delete file if task is cleared?!
 
 
 def catch_missing_buidings(buildings_decentral_heating, peak_load):
@@ -1580,9 +1604,13 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     # ################ export to db #######################
     logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
-    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db)
+    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
     df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
+
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    delete_hp_capacity(scenario="eGon2035")
+
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
         EgonHpCapacityBuildings,
@@ -1686,7 +1714,8 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
 
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
-    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db)
+
+    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=True)
 
     logger.info(
         f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write "
@@ -1752,12 +1781,6 @@ def split_mvgds_into_bulks_pypsa_eur_sec(n, max_n, func):
     func(mvgd_ids)
 
 
-def create_peak_load_table():
-
-    BuildingHeatPeakLoads.__table__.drop(bind=engine, checkfirst=True)
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
-
-
 def create_hp_capacity_table():
 
     EgonHpCapacityBuildings.__table__.drop(bind=engine, checkfirst=True)
@@ -1774,8 +1797,27 @@ def create_egon_etrago_timeseries_individual_heating():
     )
 
 
-def delete_peak_loads_if_existing():
-    """Remove all entries"""
+def delete_hp_capacity(scenario):
+    """Remove all hp capacities for the selected scenario
+
+    Parameters
+    -----------
+    scenario : string
+        Either eGon2035 or eGon100RE
+
+    """
+
+    with db.session_scope() as session:
+        # Buses
+        session.query(BuildingHeatPeakLoads).filter(
+            BuildingHeatPeakLoads.scenario == scenario
+        ).delete(synchronize_session=False)
+
+def delete_heat_peak_loads_eGon2035():
+    """Remove all heat peak loads for eGon2035.
+
+    This is not necessary for eGon100RE as these peak loads are calculated in
+    HeatPumpsPypsaEurSec and tables are recreated during this dataset."""
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
