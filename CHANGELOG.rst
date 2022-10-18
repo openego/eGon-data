@@ -229,6 +229,10 @@ Added
   `#969 <https://github.com/openego/eGon-data/issues/969>`_
 * Add mapping table for all used buildings
   `#962 <https://github.com/openego/eGon-data/issues/962>`_
+*  Add voltage level for electricity building loads
+  `#955 <https://github.com/openego/eGon-data/issues/955>`_
+
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
