@@ -6,8 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
-from egon.data import logger
+from egon.data import db, logger
 
 engine = db.engine()
 
@@ -140,12 +139,13 @@ def psql_insert_copy(table, conn, keys, data_iter):
 
 
 def write_table_to_postgres(
-    df, db_table, engine=db.engine(), drop=False, index=False, if_exists="append"
+    df, db_table, drop=False, index=False, if_exists="append"
 ):
     """
     Helper function to append df data to table in db. Fast string-copy is used.
-    Only predefined columns are passed. Error will raise if column is missing.
-    Dtype of columns are taken from table definition.
+    Only predefined columns are passed. If column is missing in dataframe a
+    warning is logged. Dtypes of columns are taken from table definition. The
+    writing process happens in a scoped session.
 
     Parameters
     ----------
@@ -153,8 +153,6 @@ def write_table_to_postgres(
         Table of data
     db_table: declarative_base
         Metadata of db table to export to
-    engine:
-        connection to database db.engine()
     drop: boolean, default False
         Drop db-table before appending
     index: boolean, default False
@@ -165,12 +163,21 @@ def write_table_to_postgres(
         - append: If table exists, insert data. Create if does not exist.
 
     """
-
+    logger.info("Write table to db")
     # Only take in db table defined columns and dtypes
     columns = {
         column.key: column.type for column in db_table.__table__.columns
     }
-    df = df.loc[:, columns.keys()]
+
+    # Take only the columns defined in class
+    # pandas raises an error if column is missing
+    try:
+        df = df.loc[:, columns.keys()]
+    except KeyError:
+        same = df.columns.intersection(columns.keys())
+        missing = same.symmetric_difference(df.columns)
+        logger.warning(f"Columns: {missing.values} missing!")
+        df = df.loc[:, same]
 
     if drop:
         db_table.__table__.drop(bind=engine, checkfirst=True)

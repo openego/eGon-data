@@ -1606,7 +1606,6 @@ def assign_voltage_level_to_buildings():
     write_table_to_postgres(
         df_peak_load,
         BuildingElectricityPeakLoads,
-        engine=engine,
         drop=True,
         index=False,
         if_exists="append",
