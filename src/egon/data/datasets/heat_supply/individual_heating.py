@@ -1385,6 +1385,9 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db):
         var_name="scenario",
         value_name="peak_load_in_w",
     )
+    df_peak_loads_db["building_id"] = df_peak_loads_db["building_id"].astype(
+        int
+    )
     df_peak_loads_db["sector"] = "residential+cts"
     # From MW to W
     df_peak_loads_db["peak_load_in_w"] = (
