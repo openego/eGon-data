@@ -106,9 +106,7 @@ class HeatPumpsPypsaEurSec(Dataset):
             name="HeatPumpsPypsaEurSec",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                {*dyn_parallel_tasks_pypsa_eur_sec()},
-            ),
+            tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
         )
 
 
@@ -168,8 +166,7 @@ class HeatPumps2050(Dataset):
             name="HeatPumps2050",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                determine_hp_cap_buildings_eGon100RE),
+            tasks=(determine_hp_cap_buildings_eGon100RE),
         )
 
 
@@ -1420,8 +1417,10 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
     df_heat_mvgd_ts_db = df_heat_mvgd_ts_db.loc[:, columns.keys()]
 
     if drop:
-        logger.info(f"Drop and recreate table "
-                    f"{EgonEtragoTimeseriesIndividualHeating.__table__.name}.")
+        logger.info(
+            f"Drop and recreate table "
+            f"{EgonEtragoTimeseriesIndividualHeating.__table__.name}."
+        )
         EgonEtragoTimeseriesIndividualHeating.__table__.drop(
             bind=engine, checkfirst=True
         )
@@ -1801,6 +1800,7 @@ def delete_hp_capacity(scenario):
         session.query(BuildingHeatPeakLoads).filter(
             BuildingHeatPeakLoads.scenario == scenario
         ).delete(synchronize_session=False)
+
 
 def delete_heat_peak_loads_eGon2035():
     """Remove all heat peak loads for eGon2035.
