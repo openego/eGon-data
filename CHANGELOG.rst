@@ -639,7 +639,8 @@ Bug Fixes
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Remove drop of p_set and q_set for loads without timeserie
   `#971 <https://github.com/openego/eGon-data/issues/971>`_
-
+* Adjust p_nom and marginal cost for OCGT in eGon2035
+  `#863 <https://github.com/openego/eGon-data/issues/863>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
