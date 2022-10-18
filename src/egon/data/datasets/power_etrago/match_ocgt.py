@@ -54,7 +54,13 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
     gdf["efficiency"] = scn_params["efficiency"][carrier]
-    gdf["marginal_cost"] = scn_params["marginal_cost"][carrier]
+    gdf["marginal_cost"] = (
+        scn_params["marginal_cost"][carrier]
+        / scn_params["efficiency"][carrier]
+    )
+
+    # Adjust p_nom
+    gdf["p_nom"] = gdf["p_nom"] / scn_params["efficiency"][carrier]
 
     # Select next id value
     new_id = db.next_etrago_id("link")
