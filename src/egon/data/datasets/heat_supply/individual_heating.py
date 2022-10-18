@@ -1775,16 +1775,6 @@ def create_hp_capacity_table():
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
 
 
-def create_egon_etrago_timeseries_individual_heating():
-
-    EgonEtragoTimeseriesIndividualHeating.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
-
-
 def delete_hp_capacity(scenario):
     """Remove all hp capacities for the selected scenario
 
