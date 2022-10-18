@@ -252,7 +252,7 @@ class CtsDemandBuildings(Dataset):
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
-                {get_cts_electricity_peak_load, get_cts_heat_peak_load},
+                get_cts_electricity_peak_load,
             ),
         )
 
@@ -987,9 +987,7 @@ def calc_cts_building_profiles(
                     EgonCtsElectricityDemandBuildingShare.scenario == scenario
                 )
                 .filter(
-                    EgonCtsElectricityDemandBuildingShare.bus_id.in_(
-                        bus_ids
-                    )
+                    EgonCtsElectricityDemandBuildingShare.bus_id.in_(bus_ids)
                 )
             )
 
@@ -1023,11 +1021,7 @@ def calc_cts_building_profiles(
                     EgonCtsHeatDemandBuildingShare,
                 )
                 .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
-                .filter(
-                    EgonCtsHeatDemandBuildingShare.bus_id.in_(
-                        bus_ids
-                    )
-                )
+                .filter(EgonCtsHeatDemandBuildingShare.bus_id.in_(bus_ids))
             )
 
         df_demand_share = pd.read_sql(
@@ -1065,8 +1059,10 @@ def calc_cts_building_profiles(
             profile_ts = df_cts_substation_profiles.loc[bus_id]
         except KeyError:
             # This should only happen within the SH cutout
-            log.info(f"No CTS profile found for substation with bus_id:"
-                     f" {bus_id}")
+            log.info(
+                f"No CTS profile found for substation with bus_id:"
+                f" {bus_id}"
+            )
             continue
 
         building_profiles = np.outer(profile_ts, shares)
