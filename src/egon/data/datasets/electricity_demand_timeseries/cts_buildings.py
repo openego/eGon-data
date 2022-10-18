@@ -181,9 +181,6 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     BuildingElectricityPeakLoads,
     OsmBuildingsSynthetic,
 )
-from egon.data.datasets.electricity_demand_timeseries.mapping import (
-    map_all_used_buildings,
-)
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_ints_until_sum,
     random_point_in_square,
@@ -250,13 +247,12 @@ class CtsDemandBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsDemandBuildings",
-            version="0.0.1",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
                 {get_cts_electricity_peak_load, get_cts_heat_peak_load},
-                map_all_used_buildings,
             ),
         )
 
