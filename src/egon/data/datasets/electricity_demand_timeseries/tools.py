@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data import logger
 
 engine = db.engine()
 
@@ -175,12 +176,13 @@ def write_table_to_postgres(
         db_table.__table__.drop(bind=engine, checkfirst=True)
         db_table.__table__.create(bind=engine)
 
-    df.to_sql(
-        name=db_table.__table__.name,
-        schema=db_table.__table__.schema,
-        con=engine,
-        if_exists=if_exists,
-        index=index,
-        method=psql_insert_copy,
-        dtype=columns,
-    )
+    with db.session_scope() as session:
+        df.to_sql(
+            name=db_table.__table__.name,
+            schema=db_table.__table__.schema,
+            con=session.connection(),
+            if_exists=if_exists,
+            index=index,
+            method=psql_insert_copy,
+            dtype=columns,
+        )
