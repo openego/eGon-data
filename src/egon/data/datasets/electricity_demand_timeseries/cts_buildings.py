@@ -1356,7 +1356,6 @@ def cts_electricity():
     write_table_to_postgres(
         df_demand_share,
         EgonCtsElectricityDemandBuildingShare,
-        engine=engine,
         drop=True,
     )
     log.info("Profile share exported to DB!")
@@ -1395,7 +1394,6 @@ def cts_heat():
     write_table_to_postgres(
         df_demand_share,
         EgonCtsHeatDemandBuildingShare,
-        engine=engine,
         drop=True,
     )
     log.info("Profile share exported to DB!")
@@ -1466,7 +1464,6 @@ def get_cts_electricity_peak_load():
         write_table_to_postgres(
             df_peak_load,
             BuildingElectricityPeakLoads,
-            engine=engine,
             drop=False,
             index=False,
             if_exists="append",
@@ -1542,7 +1539,6 @@ def get_cts_heat_peak_load():
         write_table_to_postgres(
             df_peak_load,
             BuildingHeatPeakLoads,
-            engine=engine,
             drop=False,
             index=False,
             if_exists="append",
