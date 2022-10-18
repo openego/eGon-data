@@ -106,7 +106,8 @@ class HeatPumpsPypsaEurSec(Dataset):
             name="HeatPumpsPypsaEurSec",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
+            # tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
+            tasks=(*dyn_parallel_tasks_pypsa_eur_sec(),),
         )
 
 
@@ -155,7 +156,8 @@ class HeatPumps2035(Dataset):
             dependencies=dependencies,
             tasks=(
                 delete_heat_peak_loads_eGon2035,
-                {*dyn_parallel_tasks_2035()},
+                # {*dyn_parallel_tasks_2035()},
+                *dyn_parallel_tasks_2035(),
             ),
         )
 
