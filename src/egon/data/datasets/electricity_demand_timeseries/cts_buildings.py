@@ -253,6 +253,7 @@ class CtsDemandBuildings(Dataset):
                 cts_buildings,
                 {cts_electricity, cts_heat},
                 {get_cts_electricity_peak_load, get_cts_heat_peak_load},
+                assign_voltage_level_to_buildings,
             ),
         )
 
