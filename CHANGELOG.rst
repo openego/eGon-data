@@ -447,6 +447,9 @@ Changed
   `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
   `#933 <https://github.com/openego/eGon-data/issues/933>`_
+* Allocate PV home batteries to mv grid districts
+  `#749 <https://github.com/openego/eGon-data/issues/749>`_
+
 
 Bug Fixes
 ---------
