@@ -601,8 +601,7 @@ def supply():
 
     insert_central_direct_heat(scenario="eGon2035")
     insert_central_power_to_heat(scenario="eGon2035")
-    # Temporary drop everything related to rural heat
-    # insert_individual_power_to_heat(scenario="eGon2035")
+    insert_individual_power_to_heat(scenario="eGon2035")
 
     # insert_rural_gas_boilers(scenario="eGon2035")
     insert_central_gas_boilers(scenario="eGon2035")
