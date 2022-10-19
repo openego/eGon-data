@@ -161,6 +161,7 @@ docs attribute of the respective dataset class.
 
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
+from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import REAL, Column, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -1158,8 +1159,18 @@ def cts_buildings():
     Cells with CTS demand, amenities and buildings do not change within
     the scenarios, only the demand itself. Therefore scenario eGon2035
     can be used universally to determine the cts buildings but not for
-    he demand share.
+    the demand share.
     """
+    # ========== Register np datatypes with SQLA ==========
+    def adapt_numpy_float64(numpy_float64):
+        return AsIs(numpy_float64)
+
+    def adapt_numpy_int64(numpy_int64):
+        return AsIs(numpy_int64)
+
+    register_adapter(np.float64, adapt_numpy_float64)
+    register_adapter(np.int64, adapt_numpy_int64)
+    # =====================================================
 
     log.info("Start logging!")
     # Buildings with amenities
@@ -1323,6 +1334,31 @@ def cts_buildings():
     df_cts_buildings = df_cts_buildings.reset_index().rename(
         columns={"index": "serial"}
     )
+
+    # Fix #989
+    # Mismatched zensus population id
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
+
+    with db.session_scope() as session:
+        query = session.query(
+            egon_map_zensus_buildings_filtered_all.id,
+            egon_map_zensus_buildings_filtered_all.zensus_population_id,
+        ).filter(
+            egon_map_zensus_buildings_filtered_all.id.in_(
+                df_cts_buildings.id.values
+            )
+        )
+
+        df_map_zensus_population_id = pd.read_sql(
+            query.statement, session.connection(), index_col=None
+        )
+
+    df_cts_buildings = pd.merge(
+        left=df_cts_buildings.drop(columns="zensus_population_id"),
+        right=df_map_zensus_population_id,
+        on="id",
+    )
+
     # Write table to db for debugging and postprocessing
     write_table_to_postgis(
         df_cts_buildings,
