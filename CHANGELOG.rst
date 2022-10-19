@@ -422,6 +422,8 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Add rural heat pumps per medium voltage grid district
+  `#987 <https://github.com/openego/eGon-data/issues/987>`_
 
 Bug Fixes
 ---------
