@@ -1328,7 +1328,6 @@ def determine_hp_cap_buildings_eGon100RE():
     write_table_to_postgres(
         df_hp_cap_per_building_100RE_db,
         EgonHpCapacityBuildings,
-        engine=engine,
         drop=False,
     )
 
@@ -1408,9 +1407,7 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
     df_peak_loads_db["peak_load_in_w"] = (
         df_peak_loads_db["peak_load_in_w"] * 1e6
     )
-    write_table_to_postgres(
-        df_peak_loads_db, BuildingHeatPeakLoads, engine=engine, drop=drop
-    )
+    write_table_to_postgres(df_peak_loads_db, BuildingHeatPeakLoads, drop=drop)
 
     dtypes = {
         column.key: column.type
@@ -1619,7 +1616,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
         EgonHpCapacityBuildings,
-        engine=engine,
         drop=False,
     )
 
