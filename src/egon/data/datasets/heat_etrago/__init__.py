@@ -69,10 +69,18 @@ def insert_buses(carrier, scenario):
             SELECT ST_Centroid(geom) AS geom
             FROM {sources['mv_grids']['schema']}.
             {sources['mv_grids']['table']}
-            WHERE bus_id IN (
-                SELECT bus_id FROM 
-                demand.egon_etrago_timeseries_individual_heating
-                WHERE scenario = '{scenario}')
+            WHERE bus_id IN 
+                (SELECT DISTINCT bus_id 
+                FROM boundaries.egon_map_zensus_grid_districts a
+                JOIN demand.egon_peta_heat b 
+                ON a.zensus_population_id = b.zensus_population_id
+                WHERE b.scenario = '{scenario}'
+                AND b.zensus_population_id NOT IN (
+                SELECT zensus_population_id FROM 
+                	demand.egon_map_zensus_district_heating_areas
+                	WHERE scenario = '{scenario}'
+                )
+            )
             """
         )
         heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
@@ -582,9 +590,9 @@ def buses():
     """
 
     insert_buses("central_heat", scenario="eGon2035")
-    # insert_buses("rural_heat", scenario="eGon2035")
+    insert_buses("rural_heat", scenario="eGon2035")
     insert_buses("central_heat", scenario="eGon100RE")
-    # insert_buses("rural_heat", scenario="eGon100RE")
+    insert_buses("rural_heat", scenario="eGon100RE")
 
 
 def supply():
@@ -601,8 +609,7 @@ def supply():
 
     insert_central_direct_heat(scenario="eGon2035")
     insert_central_power_to_heat(scenario="eGon2035")
-    # Temporary drop everything related to rural heat
-    # insert_individual_power_to_heat(scenario="eGon2035")
+    insert_individual_power_to_heat(scenario="eGon2035")
 
     # insert_rural_gas_boilers(scenario="eGon2035")
     insert_central_gas_boilers(scenario="eGon2035")
