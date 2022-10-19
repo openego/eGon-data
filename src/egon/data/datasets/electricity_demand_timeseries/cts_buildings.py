@@ -161,6 +161,7 @@ docs attribute of the respective dataset class.
 
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
+from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import REAL, Column, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -192,7 +193,6 @@ from egon.data.datasets.heat_demand import EgonPetaHeat
 from egon.data.datasets.heat_demand_timeseries import EgonEtragoHeatCts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
-from psycopg2.extensions import AsIs, register_adapter
 
 engine = db.engine()
 Base = declarative_base()
@@ -1332,18 +1332,22 @@ def cts_buildings():
     with db.session_scope() as session:
         query = session.query(
             egon_map_zensus_buildings_filtered_all.id,
-            egon_map_zensus_buildings_filtered_all.zensus_population_id
-        ).filter(egon_map_zensus_buildings_filtered_all.id.in_(
-            df_cts_buildings.id.values))
+            egon_map_zensus_buildings_filtered_all.zensus_population_id,
+        ).filter(
+            egon_map_zensus_buildings_filtered_all.id.in_(
+                df_cts_buildings.id.values
+            )
+        )
 
         df_map_zensus_population_id = pd.read_sql(
             query.statement, session.connection(), index_col=None
         )
 
-    df_cts_buildings = pd.merge(left=df_cts_buildings.drop(
-        columns="zensus_population_id"),
+    df_cts_buildings = pd.merge(
+        left=df_cts_buildings.drop(columns="zensus_population_id"),
         right=df_map_zensus_population_id,
-        on="id")
+        on="id",
+    )
 
     # Write table to db for debugging and postprocessing
     write_table_to_postgis(
