@@ -85,7 +85,6 @@ def insert_buses(carrier, scenario):
         )
         heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
 
-
     # Insert values into dataframe
     heat_buses.scn_name = scenario
     heat_buses.carrier = carrier
