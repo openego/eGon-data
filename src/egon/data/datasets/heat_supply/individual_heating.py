@@ -1414,7 +1414,7 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
         column.key: column.type
         for column in EgonEtragoTimeseriesIndividualHeating.__table__.columns
     }
-    df_heat_mvgd_ts_db = df_heat_mvgd_ts_db.loc[:, columns.keys()]
+    df_heat_mvgd_ts_db = df_heat_mvgd_ts_db.loc[:, dtypes.keys()]
 
     if drop:
         logger.info(
