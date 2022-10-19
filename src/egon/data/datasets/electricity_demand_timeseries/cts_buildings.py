@@ -252,7 +252,7 @@ class CtsDemandBuildings(Dataset):
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
-                {get_cts_electricity_peak_load, get_cts_heat_peak_load},
+                get_cts_electricity_peak_load,
             ),
         )
 
@@ -951,7 +951,6 @@ def calc_building_demand_profile_share(
 
 
 def calc_cts_building_profiles(
-    egon_building_ids,
     bus_ids,
     scenario,
     sector,
@@ -962,8 +961,6 @@ def calc_cts_building_profiles(
 
     Parameters
     ----------
-    egon_building_ids: list of int
-        Ids of the building for which the profile is calculated.
     bus_ids: list of int
         Ids of the substation for which selected building profiles are
         calculated.
@@ -975,7 +972,9 @@ def calc_cts_building_profiles(
     Returns
     -------
     df_building_profiles: pd.DataFrame
-        Table of demand profile per building
+        Table of demand profile per building. Column names are building IDs and index
+        is hour of the year as int (0-8759).
+
     """
     if sector == "electricity":
         # Get cts building electricity demand share of selected buildings
@@ -988,9 +987,7 @@ def calc_cts_building_profiles(
                     EgonCtsElectricityDemandBuildingShare.scenario == scenario
                 )
                 .filter(
-                    EgonCtsElectricityDemandBuildingShare.building_id.in_(
-                        egon_building_ids
-                    )
+                    EgonCtsElectricityDemandBuildingShare.bus_id.in_(bus_ids)
                 )
             )
 
@@ -1006,12 +1003,12 @@ def calc_cts_building_profiles(
                 )
             ).filter(EgonEtragoElectricityCts.bus_id.in_(bus_ids))
 
-        df_cts_profiles = pd.read_sql(
+        df_cts_substation_profiles = pd.read_sql(
             cells_query.statement,
             cells_query.session.bind,
         )
-        df_cts_profiles = pd.DataFrame.from_dict(
-            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+        df_cts_substation_profiles = pd.DataFrame.from_dict(
+            df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
         )
         # df_cts_profiles = calc_load_curves_cts(scenario)
@@ -1024,11 +1021,7 @@ def calc_cts_building_profiles(
                     EgonCtsHeatDemandBuildingShare,
                 )
                 .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
-                .filter(
-                    EgonCtsHeatDemandBuildingShare.building_id.in_(
-                        egon_building_ids
-                    )
-                )
+                .filter(EgonCtsHeatDemandBuildingShare.bus_id.in_(bus_ids))
             )
 
         df_demand_share = pd.read_sql(
@@ -1043,14 +1036,17 @@ def calc_cts_building_profiles(
                 )
             ).filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
 
-        df_cts_profiles = pd.read_sql(
+        df_cts_substation_profiles = pd.read_sql(
             cells_query.statement,
             cells_query.session.bind,
         )
-        df_cts_profiles = pd.DataFrame.from_dict(
-            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+        df_cts_substation_profiles = pd.DataFrame.from_dict(
+            df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
         )
+
+    else:
+        raise KeyError("Sector needs to be either 'electricity' or 'heat'")
 
     # TODO remove after #722
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
@@ -1059,7 +1055,16 @@ def calc_cts_building_profiles(
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("building_id", drop=True)["profile_share"]
-        profile_ts = df_cts_profiles.loc[bus_id]
+        try:
+            profile_ts = df_cts_substation_profiles.loc[bus_id]
+        except KeyError:
+            # This should only happen within the SH cutout
+            log.info(
+                f"No CTS profile found for substation with bus_id:"
+                f" {bus_id}"
+            )
+            continue
+
         building_profiles = np.outer(profile_ts, shares)
         building_profiles = pd.DataFrame(
             building_profiles, index=profile_ts.index, columns=shares.index
