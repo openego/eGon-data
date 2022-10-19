@@ -652,6 +652,9 @@ Bug Fixes
   `#971 <https://github.com/openego/eGon-data/issues/971>`_
 * Adjust p_nom and marginal cost for OCGT in eGon2035
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
+* Mismatch of building bus_ids from cts_heat_demand_building_share
+  and mapping table
+  `#989 <https://github.com/openego/eGon-data/issues/989>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
