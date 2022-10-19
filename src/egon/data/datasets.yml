@@ -1091,7 +1091,7 @@ emobility_mit:
     parallel_tasks: 10
 
 demand_timeseries_mvgd:
-  parallel_tasks: 1
+  parallel_tasks: 10
 
 charging_infrastructure:
   original_data:
