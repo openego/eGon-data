@@ -870,11 +870,13 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
     given MV grid.
 
     As cells with district heating differ between scenarios, this is also
-    depending on the scenario.
+    depending on the scenario. CTS and residential have to be retrieved
+    seperatly as some residential buildings only have electricity but no
+    heat demand. This does not occure in CTS.
 
     Parameters
     -----------
-    mv_grid_id : int
+    mvgd : int
         ID of MV grid.
     scenario : str
         Name of scenario. Can be either "eGon2035" or "eGon100RE".
@@ -1326,7 +1328,6 @@ def determine_hp_cap_buildings_eGon100RE():
     write_table_to_postgres(
         df_hp_cap_per_building_100RE_db,
         EgonHpCapacityBuildings,
-        engine=engine,
         drop=False,
     )
 
@@ -1406,9 +1407,7 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
     df_peak_loads_db["peak_load_in_w"] = (
         df_peak_loads_db["peak_load_in_w"] * 1e6
     )
-    write_table_to_postgres(
-        df_peak_loads_db, BuildingHeatPeakLoads, engine=engine, drop=drop
-    )
+    write_table_to_postgres(df_peak_loads_db, BuildingHeatPeakLoads, drop=drop)
 
     dtypes = {
         column.key: column.type
@@ -1546,6 +1545,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
         # Reduce list of decentral heating if no Peak load available
         # TODO maybe remove after succesfull DE run
+        # Might be fixed in #990
         buildings_decentral_heating = catch_missing_buidings(
             buildings_decentral_heating, peak_load_2035
         )
@@ -1617,7 +1617,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
         EgonHpCapacityBuildings,
-        engine=engine,
         drop=False,
     )
 
@@ -1787,8 +1786,8 @@ def delete_hp_capacity(scenario):
 
     with db.session_scope() as session:
         # Buses
-        session.query(BuildingHeatPeakLoads).filter(
-            BuildingHeatPeakLoads.scenario == scenario
+        session.query(EgonHpCapacityBuildings).filter(
+            EgonHpCapacityBuildings.scenario == scenario
         ).delete(synchronize_session=False)
 
 
