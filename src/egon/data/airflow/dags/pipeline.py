@@ -631,6 +631,7 @@ with airflow.DAG(
         dependencies=[
             run_pypsaeursec,
             heat_pumps_pypsa_eur_sec,
+            heat_supply,
         ]
     )
 
