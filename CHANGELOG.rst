@@ -219,6 +219,8 @@ Added
   `#937 <https://github.com/openego/eGon-data/issues/937>`_
 * Add marginal costs for generators abroad and for carriers nuclear and coal
   `#907 <https://github.com/openego/eGon-data/issues/907>`_
+* Add wind off shore power plants for eGon100RE
+  `#868 <https://github.com/openego/eGon-data/issues/868>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
