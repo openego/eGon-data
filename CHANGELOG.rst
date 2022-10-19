@@ -451,7 +451,8 @@ Changed
   `#749 <https://github.com/openego/eGon-data/issues/749>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
-
+* Add sanity checks for gas sector
+  `#864 <https://github.com/openego/eGon-data/issues/864>`_
 
 Bug Fixes
 ---------

@@ -7,6 +7,7 @@ Authors: @ALonso, @dana, @nailend, @nesnoj, @khelfen
 """
 from math import isclose
 from pathlib import Path
+import ast
 
 from sqlalchemy import Numeric
 from sqlalchemy.sql import and_, cast, func, or_
@@ -66,7 +67,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
@@ -77,6 +78,8 @@ class SanityChecks(Dataset):
                 cts_heat_demand_share,
                 sanitycheck_emobility_mit,
                 sanitycheck_pv_rooftop_buildings,
+                etrago_eGon100RE_gas,
+                etrago_eGon2035_gas,
             },
         )
 
@@ -1361,3 +1364,363 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
+
+
+def sanity_check_gas_buses(scn):
+    """Execute sanity checks for the gas buses
+
+    Check number of CH4 and H2_grid buses in Germany and verify that
+    they correpond to the original Scigrid_gas number of gas buses and
+    the number of associated voronois areas.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    logger.info(f"BUSES")
+
+    for carrier in ["CH4", "H2_grid"]:
+        logger.info(f"{carrier} buses")
+
+        # Get buses number
+
+
+def sanity_check_CH4_stores(scn):
+    """Execute sanity checks for the CH4 stores
+
+    Insert detailled description
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    logger.info(f"STORES CH4")
+
+    output_CH4_stores = db.select_dataframe(
+        f"""SELECT SUM(e_nom::numeric) as e_nom_germany
+                FROM grid.egon_etrago_store
+                WHERE scn_name = '{scn}'
+                AND carrier = 'CH4'
+                AND bus IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'CH4');
+                """,
+        warning=False,
+    )["e_nom_germany"].values[0]
+
+    target_file = (
+        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Storages.csv"
+    )
+
+    CH4_storages_list = pd.read_csv(
+        target_file,
+        delimiter=";",
+        decimal=".",
+        usecols=["country_code", "param"],
+    )
+
+    CH4_storages_list = CH4_storages_list[
+        CH4_storages_list["country_code"].str.match("DE")
+    ]
+
+    max_workingGas_M_m3 = []
+    end_year = []
+    for index, row in CH4_storages_list.iterrows():
+        param = ast.literal_eval(row["param"])
+        end_year.append(param["end_year"])
+        max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
+    CH4_storages_list["max_workingGas_M_m3"] = max_workingGas_M_m3
+    CH4_storages_list["end_year"] = [
+        float("inf") if x == None else x for x in end_year
+    ]
+
+    # Remove unused storage units
+    CH4_storages_list = CH4_storages_list[
+        CH4_storages_list["end_year"]
+        >= get_sector_parameters("global", scn)["population_year"]
+    ]
+
+    if scn == "eGon2035":
+        grid_cap = 130000
+    elif scn == "eGon100RE":
+        grid_cap = 13000 * (
+            1
+            - get_sector_parameters("gas", "eGon100RE")[
+                "retrofitted_CH4pipeline-to-H2pipeline_share"
+            ]
+        )
+    conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
+    input_CH4_stores = (
+        conv_factor * sum(CH4_storages_list["max_workingGas_M_m3"].to_list())
+        + grid_cap
+    )
+
+    e_CH4_stores = (
+        round(
+            (output_CH4_stores - input_CH4_stores) / input_CH4_stores,
+            2,
+        )
+        * 100
+    )
+    logger.info(f"Deviation CH4 stores: {e_CH4_stores} %")
+
+
+def etrago_eGon2035_gas():
+    """Execute basic sanity checks for the gas sector in eGon2035
+
+    Returns print statements as sanity checks for the gas sector in
+    the eGon2035 scenario.
+
+    """
+    scn = "eGon2035"
+
+    if TESTMODE_OFF:
+        logger.info(f"Gas sanity checks for scenario {scn}")
+
+        # Buses
+        # sanity_check_gas_buses(scn)
+
+        # Loads
+        logger.info(f"LOADS")
+
+        path = Path(".") / "datasets" / "gas_data" / "demand"
+        corr_file = path / "region_corr.json"
+        df_corr = pd.read_json(corr_file)
+        df_corr = df_corr.loc[:, ["id_region", "name_short"]]
+        df_corr.set_index("id_region", inplace=True)
+
+        for carrier in ["CH4_for_industry", "H2_for_industry"]:
+
+            output_gas_demand = db.select_dataframe(
+                f"""SELECT (SUM(
+                    (SELECT SUM(p)
+                    FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+                    FROM grid.egon_etrago_load a
+                    JOIN grid.egon_etrago_load_timeseries b
+                    ON (a.load_id = b.load_id)
+                    JOIN grid.egon_etrago_bus c
+                    ON (a.bus=c.bus_id)
+                    AND b.scn_name = '{scn}'
+                    AND a.scn_name = '{scn}'
+                    AND c.scn_name = '{scn}'
+                    AND c.country = 'DE'
+                    AND a.carrier = '{carrier}';
+                """,
+                warning=False,
+            )["load_twh"].values[0]
+
+            input_gas_demand = pd.read_json(
+                path / (carrier + "_eGon2035.json")
+            )
+            input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
+            input_gas_demand.set_index("id_region", inplace=True)
+            input_gas_demand = pd.concat(
+                [input_gas_demand, df_corr], axis=1, join="inner"
+            )
+            input_gas_demand["NUTS0"] = (input_gas_demand["name_short"].str)[
+                0:2
+            ]
+            input_gas_demand = input_gas_demand[
+                input_gas_demand["NUTS0"].str.match("DE")
+            ]
+            input_gas_demand = sum(input_gas_demand.value.to_list()) / 1000000
+
+            e_demand = (
+                round(
+                    (output_gas_demand - input_gas_demand) / input_gas_demand,
+                    2,
+                )
+                * 100
+            )
+            logger.info(f"Deviation {carrier}: {e_demand} %")
+
+        # Generators
+        logger.info(f"GENERATORS")
+        carrier_generator = "CH4"
+
+        output_gas_generation = db.select_dataframe(
+            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
+                    FROM grid.egon_etrago_generator
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{carrier_generator}'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country = 'DE'
+                        AND carrier = '{carrier_generator}');
+                    """,
+            warning=False,
+        )["p_nom_germany"].values[0]
+
+        target_file = (
+            Path(".")
+            / "datasets"
+            / "gas_data"
+            / "data"
+            / "IGGIELGN_Productions.csv"
+        )
+
+        NG_generators_list = pd.read_csv(
+            target_file,
+            delimiter=";",
+            decimal=".",
+            usecols=["country_code", "param"],
+        )
+
+        NG_generators_list = NG_generators_list[
+            NG_generators_list["country_code"].str.match("DE")
+        ]
+
+        p_NG = 0
+        for index, row in NG_generators_list.iterrows():
+            param = ast.literal_eval(row["param"])
+            p_NG = p_NG + param["max_supply_M_m3_per_d"]
+        conversion_factor = 437.5  # MCM/day to MWh/h
+        p_NG = p_NG * conversion_factor
+
+        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+        target_file = Path(".") / "datasets" / "gas_data" / basename
+
+        conversion_factor_b = 0.01083  # m^3/h to MWh/h
+        p_biogas = (
+            pd.read_excel(
+                target_file,
+                usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
+            )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
+            * conversion_factor_b
+        )
+
+        input_gas_generation = p_NG + p_biogas
+        e_generation = (
+            round(
+                (output_gas_generation - input_gas_generation)
+                / input_gas_generation,
+                2,
+            )
+            * 100
+        )
+        logger.info(
+            f"Deviation {carrier_generator} generation: {e_generation} %"
+        )
+
+        # Stores
+        sanity_check_CH4_stores(scn)
+
+        # Links
+
+    else:
+        print("Testmode is on, skipping sanity check.")
+
+
+def etrago_eGon100RE_gas():
+    """Execute basic sanity checks for the gas sector in eGon100RE
+
+    Returns print statements as sanity checks for the gas sector in
+    the eGon100RE scenario.
+
+    """
+    scn = "eGon100RE"
+
+    if TESTMODE_OFF:
+        logger.info(f"Gas sanity checks for scenario {scn}")
+
+        # Buses
+        # sanity_check_gas_buses(scn)
+
+        # Loads
+        logger.info(f"LOADS")
+
+        for carrier in ["CH4_for_industry", "H2_for_industry"]:
+
+            output_gas_demand = db.select_dataframe(
+                f"""SELECT (SUM(
+                    (SELECT SUM(p) 
+                    FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+                    FROM grid.egon_etrago_load a
+                    JOIN grid.egon_etrago_load_timeseries b
+                    ON (a.load_id = b.load_id)
+                    JOIN grid.egon_etrago_bus c
+                    ON (a.bus=c.bus_id)
+                    AND b.scn_name = '{scn}'
+                    AND a.scn_name = '{scn}'
+                    AND c.scn_name = '{scn}'
+                    AND c.country = 'DE'
+                    AND a.carrier = '{carrier}';
+                """,
+                warning=False,
+            )["load_twh"].values[0]
+
+            n = read_network()
+            node_pes = {
+                "CH4_for_industry": "DE0 0 gas for industry",
+                "H2_for_industry": "DE0 0 H2 for industry",
+            }
+            input_gas_demand = (
+                n.loads.loc[node_pes[carrier], "p_set"] * 8760 / 1000000
+            )
+
+            e_demand = (
+                round(
+                    (output_gas_demand - input_gas_demand) / input_gas_demand,
+                    2,
+                )
+                * 100
+            )
+            logger.info(f"Deviation {carrier}: {e_demand} %")
+
+        # Generators
+        logger.info(f"GENERATORS")
+        carrier_generator = "CH4"
+
+        output_biogas_generation = db.select_dataframe(
+            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
+                    FROM grid.egon_etrago_generator
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{carrier_generator}'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country = 'DE'
+                        AND carrier = '{carrier_generator}');
+                    """,
+            warning=False,
+        )["p_nom_germany"].values[0]
+
+        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+        target_file = Path(".") / "datasets" / "gas_data" / basename
+
+        conversion_factor_b = 0.01083  # m^3/h to MWh/h
+        input_biogas_generation = (
+            pd.read_excel(
+                target_file,
+                usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
+            )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
+            * conversion_factor_b
+        )
+
+        e_biogas_generation = (
+            round(
+                (output_biogas_generation - input_biogas_generation)
+                / input_biogas_generation,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation biogas generation: {e_biogas_generation} %")
+
+        # Stores
+        sanity_check_CH4_stores(scn)
+
+        # Links
+
+    else:
+        print("Testmode is on, skipping sanity check.")
