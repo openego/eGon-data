@@ -1785,8 +1785,8 @@ def delete_hp_capacity(scenario):
 
     with db.session_scope() as session:
         # Buses
-        session.query(BuildingHeatPeakLoads).filter(
-            BuildingHeatPeakLoads.scenario == scenario
+        session.query(EgonHpCapacityBuildings).filter(
+            EgonHpCapacityBuildings.scenario == scenario
         ).delete(synchronize_session=False)
 
 
