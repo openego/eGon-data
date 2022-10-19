@@ -426,6 +426,9 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Allocate PV home batteries to mv grid districts
+  `#749 <https://github.com/openego/eGon-data/issues/749>`_
+
 
 Bug Fixes
 ---------
