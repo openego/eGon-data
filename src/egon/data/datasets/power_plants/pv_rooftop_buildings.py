@@ -1037,9 +1037,25 @@ def load_building_data():
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
+    buildings_ags_gdf = drop_buildings_outside_muns(buildings_ags_gdf)
+
+    grid_districts_gdf = grid_districts(EPSG)
+
+    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+
+    grid_federal_state_gdf = overlay_grid_districts_with_counties(
+        grid_districts_gdf,
+        federal_state_gdf,
+    )
+
+    buildings_overlay_gdf = add_overlay_id_to_buildings(
+        buildings_ags_gdf,
+        grid_federal_state_gdf,
+    )
+
     logger.debug("Loaded buildings.")
 
-    return drop_buildings_outside_muns(buildings_ags_gdf)
+    return drop_buildings_outside_grids(buildings_overlay_gdf)
 
 
 @timer_func
@@ -2439,7 +2455,7 @@ def add_start_up_date(
 @timer_func
 def allocate_scenarios(
     mastr_gdf: gpd.GeoDataFrame,
-    buildings_gdf: gpd.GeoDataFrame,
+    valid_buildings_gdf: gpd.GeoDataFrame,
     last_scenario_gdf: gpd.GeoDataFrame,
     scenario: str,
 ):
@@ -2449,7 +2465,7 @@ def allocate_scenarios(
     ----------
     mastr_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing geocoded MaStR data.
-    buildings_gdf : geopandas.GeoDataFrame
+    valid_buildings_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data.
     last_scenario_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings matched with pv generators from temporal
@@ -2464,22 +2480,6 @@ def allocate_scenarios(
         pandas.DataFrame
             DataFrame containing pv rooftop capacity per grid id.
     """
-    grid_districts_gdf = grid_districts(EPSG)
-
-    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
-
-    grid_federal_state_gdf = overlay_grid_districts_with_counties(
-        grid_districts_gdf,
-        federal_state_gdf,
-    )
-
-    buildings_overlay_gdf = add_overlay_id_to_buildings(
-        buildings_gdf,
-        grid_federal_state_gdf,
-    )
-
-    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
-
     cap_per_bus_id_df = cap_per_bus_id(scenario)
 
     logger.debug(
