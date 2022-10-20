@@ -39,6 +39,10 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
+
+from egon.data.datasets.hydrogen_etrago.storage import (
+    calculate_and_map_saltcavern_storage_potential,
+)
 from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -1258,8 +1262,6 @@ def sanity_check_CH4_stores(scn):
         Name of the scenario
 
     """
-    logger.info(f"STORES CH4")
-
     output_CH4_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom::numeric) as e_nom_germany
                 FROM grid.egon_etrago_store
@@ -1330,6 +1332,49 @@ def sanity_check_CH4_stores(scn):
         * 100
     )
     logger.info(f"Deviation CH4 stores: {e_CH4_stores} %")
+
+
+def sanity_check_H2_saltcavern_stores(scn):
+    """Execute sanity checks for the H2 saltcavern stores
+
+    Insert better description
+    This test functions also in test mode.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    output_H2_stores = db.select_dataframe(
+        f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_germany
+                FROM grid.egon_etrago_store
+                WHERE scn_name = '{scn}'
+                AND carrier = 'H2_underground'
+                AND bus IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'H2_saltcavern');
+                """,
+        warning=False,
+    )["e_nom_max_germany"].values[0]
+
+    storage_potentials = calculate_and_map_saltcavern_storage_potential()
+    storage_potentials["storage_potential"] = (
+        storage_potentials["area_fraction"] * storage_potentials["potential"]
+    )
+    input_H2_stores = sum(storage_potentials["storage_potential"].to_list())
+
+    e_H2_stores = (
+        round(
+            (output_H2_stores - input_H2_stores) / input_H2_stores,
+            2,
+        )
+        * 100
+    )
+    logger.info(f"Deviation H2 saltcavern stores: {e_H2_stores} %")
 
 
 def etrago_eGon2035_gas():
@@ -1472,7 +1517,9 @@ def etrago_eGon2035_gas():
         )
 
         # Stores
+        logger.info(f"STORES")
         sanity_check_CH4_stores(scn)
+        sanity_check_H2_saltcavern_stores(scn)
 
         # Links
 
@@ -1578,7 +1625,42 @@ def etrago_eGon100RE_gas():
         logger.info(f"Deviation biogas generation: {e_biogas_generation} %")
 
         # Stores
+        logger.info(f"STORES")
         sanity_check_CH4_stores(scn)
+        sanity_check_H2_saltcavern_stores(scn)
+
+        output_H2_grid_cap_store = db.select_dataframe(
+            f"""SELECT SUM(e_nom::numeric) as e_nom_germany
+                FROM grid.egon_etrago_store
+                WHERE scn_name = '{scn}'
+                AND carrier = 'H2'
+                AND bus IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'H2_grid');
+                """,
+            warning=False,
+        )["e_nom_germany"].values[0]
+
+        input_H2_grid_cap_store = 13000 * (
+            get_sector_parameters("gas", "eGon100RE")[
+                "retrofitted_CH4pipeline-to-H2pipeline_share"
+            ]
+        )
+
+        e_H2_grid_cap_store = (
+            round(
+                (output_H2_grid_cap_store - input_H2_grid_cap_store)
+                / input_H2_grid_cap_store,
+                2,
+            )
+            * 100
+        )
+        logger.info(
+            f"Deviation H2 grid capacity stores: {e_H2_grid_cap_store} %"
+        )
 
         # Links
 
