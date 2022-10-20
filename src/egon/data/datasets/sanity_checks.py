@@ -724,7 +724,9 @@ def sanitycheck_pv_rooftop_buildings():
         right_index=True,
     )
 
-    assert len(merge_df.loc[merge_df.building_area.isna()]) == 0
+    assert (
+        len(merge_df.loc[merge_df.building_area.isna()]) == 0
+    ), f"{len(merge_df.loc[merge_df.building_area.isna()])} != 0"
 
     scenarios = ["status_quo", "eGon2035"]
 
