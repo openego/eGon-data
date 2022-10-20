@@ -1037,9 +1037,25 @@ def load_building_data():
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
+    buildings_ags_gdf = drop_buildings_outside_muns(buildings_ags_gdf)
+
+    grid_districts_gdf = grid_districts(EPSG)
+
+    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+
+    grid_federal_state_gdf = overlay_grid_districts_with_counties(
+        grid_districts_gdf,
+        federal_state_gdf,
+    )
+
+    buildings_overlay_gdf = add_overlay_id_to_buildings(
+        buildings_ags_gdf,
+        grid_federal_state_gdf,
+    )
+
     logger.debug("Loaded buildings.")
 
-    return drop_buildings_outside_muns(buildings_ags_gdf)
+    return drop_buildings_outside_grids(buildings_overlay_gdf)
 
 
 @timer_func
@@ -2614,22 +2630,6 @@ def pv_rooftop_to_buildings():
     mastr_gdf = load_mastr_data()
 
     buildings_gdf = load_building_data()
-
-    grid_districts_gdf = grid_districts(EPSG)
-
-    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
-
-    grid_federal_state_gdf = overlay_grid_districts_with_counties(
-        grid_districts_gdf,
-        federal_state_gdf,
-    )
-
-    buildings_overlay_gdf = add_overlay_id_to_buildings(
-        buildings_gdf,
-        grid_federal_state_gdf,
-    )
-
-    buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
 
     desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
         mastr_gdf, buildings_gdf
