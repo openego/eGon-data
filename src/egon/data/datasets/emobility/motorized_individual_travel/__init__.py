@@ -84,15 +84,16 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
+    EgonEvMetadata,
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
+from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
     allocate_evs_to_grid_districts,
 )
@@ -105,7 +106,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
+from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
     delete_model_data_from_db,
     generate_model_data_bunch,
     generate_model_data_eGon100RE_remaining,
@@ -152,6 +153,8 @@ def create_tables():
     EgonEvTrip.__table__.create(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
+    EgonEvMetadata.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvMetadata.__table__.create(bind=engine, checkfirst=True)
 
     # Create dir for results, if it does not exist
     result_dir = WORKING_DIR / Path("results")
@@ -414,7 +417,7 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_tables,
