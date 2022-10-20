@@ -1078,13 +1078,16 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         .astype(dtypes)
     )
 
-    meta_run_config.to_sql(
-        name=EgonEvMetadata.__table__.name,
-        schema=EgonEvMetadata.__table__.schema,
-        con=db.engine(),
-        if_exists="append",
-        index=False,
-    )
+    try:
+        meta_run_config.to_sql(
+            name=EgonEvMetadata.__table__.name,
+            schema=EgonEvMetadata.__table__.schema,
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
+    except Exception:
+        pass
 
 
 def generate_model_data_eGon2035_remaining():
