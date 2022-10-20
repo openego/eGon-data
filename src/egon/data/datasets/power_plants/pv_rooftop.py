@@ -7,15 +7,9 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
-    EPSG,
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
-    add_overlay_id_to_buildings,
-    drop_buildings_outside_grids,
-    federal_state_data,
-    grid_districts,
     load_building_data,
-    overlay_grid_districts_with_counties,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -107,21 +101,8 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     )
 
     # make sure only grid districts with any buildings are used
-    buildings_gdf = load_building_data()
-    grid_districts_gdf = grid_districts(EPSG)
-    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+    valid_buildings_gdf = load_building_data()
 
-    grid_federal_state_gdf = overlay_grid_districts_with_counties(
-        grid_districts_gdf,
-        federal_state_gdf,
-    )
-
-    buildings_overlay_gdf = add_overlay_id_to_buildings(
-        buildings_gdf,
-        grid_federal_state_gdf,
-    )
-
-    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
     valid_buildings_gdf = valid_buildings_gdf.assign(
         bus_id=valid_buildings_gdf.bus_id.astype(int),
         overlay_id=valid_buildings_gdf.overlay_id.astype(int),
