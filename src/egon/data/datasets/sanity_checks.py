@@ -694,21 +694,8 @@ def sanitycheck_pv_rooftop_buildings():
 
     pv_roof_df = egon_power_plants_pv_roof_building()
 
-    buildings_gdf = load_building_data()
-    grid_districts_gdf = grid_districts(EPSG)
-    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+    valid_buildings_gdf = load_building_data()
 
-    grid_federal_state_gdf = overlay_grid_districts_with_counties(
-        grid_districts_gdf,
-        federal_state_gdf,
-    )
-
-    buildings_overlay_gdf = add_overlay_id_to_buildings(
-        buildings_gdf,
-        grid_federal_state_gdf,
-    )
-
-    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
     valid_buildings_gdf = valid_buildings_gdf.assign(
         bus_id=valid_buildings_gdf.bus_id.astype(int),
         overlay_id=valid_buildings_gdf.overlay_id.astype(int),
