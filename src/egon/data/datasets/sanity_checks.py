@@ -42,16 +42,10 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
-    EPSG,
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
     SCENARIOS,
-    add_overlay_id_to_buildings,
-    drop_buildings_outside_grids,
-    federal_state_data,
-    grid_districts,
     load_building_data,
-    overlay_grid_districts_with_counties,
     scenario_data,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
