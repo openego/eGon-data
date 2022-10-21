@@ -490,7 +490,7 @@ def gas(scenario):
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
-            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
@@ -499,9 +499,8 @@ def gas(scenario):
         parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
-            "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
-            #  what about H2 compressors?
             "H2_feedin": 0,
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
@@ -518,9 +517,8 @@ def gas(scenario):
         parameters["lifetime"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
-            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
-            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "lifetime"
             ),
@@ -576,7 +574,7 @@ def gas(scenario):
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
-            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
@@ -584,9 +582,8 @@ def gas(scenario):
         parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
-            "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
-            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
             ),
@@ -605,9 +602,8 @@ def gas(scenario):
         parameters["lifetime"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
-            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
-            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "lifetime"
             ),
