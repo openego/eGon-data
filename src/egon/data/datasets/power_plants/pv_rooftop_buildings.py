@@ -1037,9 +1037,47 @@ def load_building_data():
 
     buildings_ags_gdf = add_ags_to_buildings(buildings_gdf, municipalities_gdf)
 
+    buildings_ags_gdf = drop_buildings_outside_muns(buildings_ags_gdf)
+
+    grid_districts_gdf = grid_districts(EPSG)
+
+    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
+
+    grid_federal_state_gdf = overlay_grid_districts_with_counties(
+        grid_districts_gdf,
+        federal_state_gdf,
+    )
+
+    buildings_overlay_gdf = add_overlay_id_to_buildings(
+        buildings_ags_gdf,
+        grid_federal_state_gdf,
+    )
+
     logger.debug("Loaded buildings.")
 
-    return drop_buildings_outside_muns(buildings_ags_gdf)
+    buildings_overlay_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
+
+    # overwrite bus_id with data from new table
+    sql = "SELECT building_id, bus_id FROM boundaries.egon_map_zensus_mvgd_buildings"
+    map_building_bus_df = db.select_dataframe(sql)
+
+    building_ids = np.intersect1d(
+        list(map(int, map_building_bus_df.building_id.unique())),
+        list(map(int, buildings_overlay_gdf.index.to_numpy())),
+    )
+
+    buildings_within_gdf = buildings_overlay_gdf.loc[building_ids]
+
+    return (
+        buildings_within_gdf.drop(columns=["bus_id"])
+        .merge(
+            how="left",
+            right=map_building_bus_df,
+            left_index=True,
+            right_on="building_id",
+        )
+        .drop(columns=["building_id"])
+    )
 
 
 @timer_func
@@ -1456,9 +1494,9 @@ def federal_state_data(to_crs: CRS) -> gpd.GeoDataFrame:
             Vg250Lan.id, Vg250Lan.nuts, Vg250Lan.geometry.label("geom")
         )
 
-    gdf = gpd.read_postgis(
-        query.statement, query.session.bind, index_col="id"
-    ).to_crs(to_crs)
+        gdf = gpd.read_postgis(
+            query.statement, session.connection(), index_col="id"
+        ).to_crs(to_crs)
 
     logger.debug("Federal State data loaded.")
 
@@ -2439,7 +2477,7 @@ def add_start_up_date(
 @timer_func
 def allocate_scenarios(
     mastr_gdf: gpd.GeoDataFrame,
-    buildings_gdf: gpd.GeoDataFrame,
+    valid_buildings_gdf: gpd.GeoDataFrame,
     last_scenario_gdf: gpd.GeoDataFrame,
     scenario: str,
 ):
@@ -2449,7 +2487,7 @@ def allocate_scenarios(
     ----------
     mastr_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing geocoded MaStR data.
-    buildings_gdf : geopandas.GeoDataFrame
+    valid_buildings_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data.
     last_scenario_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings matched with pv generators from temporal
@@ -2464,22 +2502,6 @@ def allocate_scenarios(
         pandas.DataFrame
             DataFrame containing pv rooftop capacity per grid id.
     """
-    grid_districts_gdf = grid_districts(EPSG)
-
-    federal_state_gdf = federal_state_data(grid_districts_gdf.crs)
-
-    grid_federal_state_gdf = overlay_grid_districts_with_counties(
-        grid_districts_gdf,
-        federal_state_gdf,
-    )
-
-    buildings_overlay_gdf = add_overlay_id_to_buildings(
-        buildings_gdf,
-        grid_federal_state_gdf,
-    )
-
-    valid_buildings_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
-
     cap_per_bus_id_df = cap_per_bus_id(scenario)
 
     logger.debug(
