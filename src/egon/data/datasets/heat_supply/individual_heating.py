@@ -1456,14 +1456,18 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
     # Create the folder, if it does not exist already
     if not os.path.exists(folder):
         os.mkdir(folder)
-    # TODO check append
     if not file.is_file():
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file)
+        logger.info(f"Create {file}")
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
+            file, mode="w", header=False
+        )
     else:
+        logger.info(f"Remove {file}")
+        os.remove(file)
+        logger.info(f"Create {file}")
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
         )
-        # TODO delete file if task is cleared?!
 
 
 def catch_missing_buidings(buildings_decentral_heating, peak_load):
