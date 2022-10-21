@@ -1321,7 +1321,7 @@ def determine_hp_cap_buildings_eGon100RE():
                 axis=0,
             )
 
-    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
 
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
@@ -1608,7 +1608,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
     # ################ export to db #######################
-    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
     df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
@@ -1717,12 +1717,12 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         ] = hp_min_cap_mv_grid_pypsa_eur_sec
 
     # ################ export to db and csv ######################
-    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
 
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=True)
 
     logger.info(
-        f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write "
+        f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write "
         f"pypsa-eur-sec min "
         f"HP capacities to csv."
     )
@@ -1766,7 +1766,7 @@ def split_mvgds_into_bulks(n, max_n, func):
     # Only take split n
     mvgd_ids = mvgd_ids[n]
 
-    logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} - {max(mvgd_ids)}")
+    logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} : {max(mvgd_ids)}")
     func(mvgd_ids)
 
 
