@@ -39,7 +39,6 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
-
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
 )
