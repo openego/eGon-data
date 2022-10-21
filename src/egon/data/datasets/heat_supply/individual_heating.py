@@ -104,7 +104,7 @@ class HeatPumpsPypsaEurSec(Dataset):
 
         super().__init__(
             name="HeatPumpsPypsaEurSec",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             # tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
             tasks=(*dyn_parallel_tasks_pypsa_eur_sec(),),
@@ -152,7 +152,7 @@ class HeatPumps2035(Dataset):
 
         super().__init__(
             name="HeatPumps2035",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 delete_heat_peak_loads_eGon2035,
@@ -166,7 +166,7 @@ class HeatPumps2050(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatPumps2050",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(determine_hp_cap_buildings_eGon100RE),
         )
