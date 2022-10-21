@@ -1230,11 +1230,12 @@ def sanitycheck_emobility_mit():
 
 
 def sanity_check_gas_buses(scn):
-    """Execute sanity checks for the gas buses
+    """Execute sanity checks for the gas buses in Germany
 
-    Check number of CH4 and H2_grid buses in Germany and verify that
-    they correpond to the original Scigrid_gas number of gas buses and
-    the number of associated voronois areas.
+    Returns print statements as sanity checks for the CH4 and
+    H2_grid grid buses in Germany. The deviation is calculated between
+    the number gas grid buses in the database and the original
+    Scigrid_gas number of gas buses.
 
     Parameters
     ----------
@@ -1244,16 +1245,59 @@ def sanity_check_gas_buses(scn):
     """
     logger.info(f"BUSES")
 
-    for carrier in ["CH4", "H2_grid"]:
-        logger.info(f"{carrier} buses")
+    target_file = (
+        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
+    )
 
-        # Get buses number
+    Grid_buses_list = pd.read_csv(
+        target_file,
+        delimiter=";",
+        decimal=".",
+        usecols=["country_code"],
+    )
+
+    Grid_buses_list = Grid_buses_list[
+        Grid_buses_list["country_code"].str.match("DE")
+    ]
+    input_grid_buses = len(Grid_buses_list.index)
+
+    for carrier in ["CH4", "H2_grid"]:
+
+        output_grid_buses_df = db.select_dataframe(
+            f"""
+            SELECT bus_id
+            FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn}'
+            AND country = 'DE'
+            AND carrier = '{carrier}';
+            """,
+            warning=False,
+        )
+        output_grid_buses = len(output_grid_buses_df.index)
+
+        e_grid_buses = (
+            round(
+                (output_grid_buses - input_grid_buses) / input_grid_buses,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation {carrier} buses: {e_grid_buses} %")
 
 
 def sanity_check_CH4_stores(scn):
-    """Execute sanity checks for the CH4 stores
+    """Execute sanity checks for the CH4 stores in Germany
 
-    Insert detailled description
+    Returns print statements as sanity checks for the CH4 stores
+    capacity in Germany. The deviation is calculated between:
+      * the sum of the capacities of the stores with carrier 'CH4'
+        in the database (for one scenario) and
+      * the sum of:
+          * the capacity the gas grid allocated to CH4 (total capacity
+            in eGon2035 and capacity reduced the share of the grid
+            allocated to H2 in eGon100RE) and
+          * the sum of the capacities of the stores in the source
+            document (Storages from the SciGRID_gas data)
 
     Parameters
     ----------
@@ -1380,16 +1424,31 @@ def etrago_eGon2035_gas():
     """Execute basic sanity checks for the gas sector in eGon2035
 
     Returns print statements as sanity checks for the gas sector in
-    the eGon2035 scenario.
+    the eGon2035 scenario for the following components in Germany:
+      * Buses: with the function :py:func:`sanity_check_gas_buses`
+      * Loads: for the carriers 'CH4_for_industry' and 'H2_for_industry'
+        the deviation is calculated between the sum of the loads in the
+        database and the sum the loads in the sources document
+        (opendata.ffe database)
+      * Generators: the deviation is calculated between the sums of the
+        nominal powers of the gas generators in the database and of
+        the ones in the sources document (Biogaspartner Einspeiseatlas
+        Deutschland from the dena and Productions from the SciGRID_gas
+        data)
+      * Stores: deviations for stores with following carriers are
+        calculated:
+          * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
+          * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
+      * Links
 
     """
     scn = "eGon2035"
-
+    # TESTMODE_OFF = True
     if TESTMODE_OFF:
         logger.info(f"Gas sanity checks for scenario {scn}")
 
         # Buses
-        # sanity_check_gas_buses(scn)
+        sanity_check_gas_buses(scn)
 
         # Loads
         logger.info(f"LOADS")
@@ -1530,16 +1589,35 @@ def etrago_eGon100RE_gas():
     """Execute basic sanity checks for the gas sector in eGon100RE
 
     Returns print statements as sanity checks for the gas sector in
-    the eGon100RE scenario.
+    the eGon100RE scenario for the following components in Germany:
+      * Buses: with the function :py:func:`sanity_check_gas_buses`
+      * Loads: for the carriers 'CH4_for_industry' and 'H2_for_industry'
+        the deviation is calculated between the sum of the loads in the
+        database and the value calculated by PyPSA-eur-sec for Germany
+        (that as been spatial distributed)
+      * Generators: the deviation is calculated between the sums of the
+        nominal powers of the biogas generators in the database and of
+        the ones in the source document (Biogaspartner Einspeiseatlas
+        Deutschland from the dena)
+      * Stores: deviations for stores with following carriers are
+        calculated:
+          * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
+          * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
+          * 'H2': the deviation is calculated between the store
+            capacity the gas grid allocated to H2 (total capacity
+            multiplied by the share of the grid associated to H2) and
+            the sum of the capacities of the storages with carrier 'H2'
+            in the database.
+      * Links
 
     """
     scn = "eGon100RE"
-
+    # TESTMODE_OFF = True
     if TESTMODE_OFF:
         logger.info(f"Gas sanity checks for scenario {scn}")
 
         # Buses
-        # sanity_check_gas_buses(scn)
+        sanity_check_gas_buses(scn)
 
         # Loads
         logger.info(f"LOADS")
