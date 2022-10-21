@@ -572,7 +572,7 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers.remove("AC")
+    carriers.remove("AC", "biogas")
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
@@ -799,7 +799,7 @@ def neighbor_reduction():
     ]
 
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC"]
+    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
