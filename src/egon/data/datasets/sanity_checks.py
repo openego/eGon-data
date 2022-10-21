@@ -1378,10 +1378,19 @@ def sanity_check_CH4_stores(scn):
 
 
 def sanity_check_H2_saltcavern_stores(scn):
-    """Execute sanity checks for the H2 saltcavern stores
+    """Execute sanity checks for the H2 saltcavern stores in Germany
 
-    Insert better description
-    This test functions also in test mode.
+    Returns print as sanity checks for the H2 saltcavern potential
+    storage capacity in Germany. The deviation is calculated between:
+      * the sum of the of the H2 saltcavern potential storage capacity
+        (e_nom_max) in the database and
+      * the sum of the H2 saltcavern potential storage capacity
+        assumed to be the ratio of the areas of 500 m radius around
+        substations in each german federal state and the estimated
+        total hydrogen storage potential of the corresponding federal
+        state (data from InSpEE-DS report).
+
+    This test works also in test mode.
 
     Parameters
     ----------
