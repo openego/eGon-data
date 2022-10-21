@@ -1620,6 +1620,14 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario="eGon2035")
 
+    # TODO debug duplicated building_ids
+    duplicates = df_hp_cap_per_building_2035_db.loc[
+        df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)]
+
+    logger.info(f"Dropped duplicated buildings: {duplicates.building_id}")
+
+    df_hp_cap_per_building_2035_db.drop_dupliactes("building_id", inplace=True)
+
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
         EgonHpCapacityBuildings,
