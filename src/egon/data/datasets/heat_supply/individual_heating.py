@@ -1545,12 +1545,12 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
             )
         )
 
-        # Reduce list of decentral heating if no Peak load available
-        # TODO maybe remove after succesfull DE run
-        # Might be fixed in #990
-        buildings_decentral_heating = catch_missing_buidings(
-            buildings_decentral_heating, peak_load_2035
-        )
+        # # Reduce list of decentral heating if no Peak load available
+        # # TODO commmented after successfull fix in #987 #990
+        # # Might be fixed in #990
+        # buildings_decentral_heating = catch_missing_buidings(
+        #     buildings_decentral_heating, peak_load_2035
+        # )
 
         hp_cap_per_building_2035 = (
             determine_hp_cap_buildings_eGon2035_per_mvgd(
@@ -1669,11 +1669,11 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
             )
         )
 
-        # Reduce list of decentral heating if no Peak load available
-        # TODO maybe remove after succesfull DE run
-        buildings_decentral_heating = catch_missing_buidings(
-            buildings_decentral_heating, peak_load_100RE
-        )
+        # # Reduce list of decentral heating if no Peak load available
+        # # TODO commmented after successfull fix in #987 #990
+        # buildings_decentral_heating = catch_missing_buidings(
+        #     buildings_decentral_heating, peak_load_100RE
+        # )
 
         hp_min_cap_mv_grid_pypsa_eur_sec = (
             determine_min_hp_cap_buildings_pypsa_eur_sec(
