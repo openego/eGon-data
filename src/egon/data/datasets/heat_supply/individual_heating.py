@@ -1036,7 +1036,8 @@ def determine_buildings_with_hp_in_mv_grid(
         query = session.query(
             egon_power_plants_pv_roof_building.building_id
         ).filter(
-            egon_power_plants_pv_roof_building.building_id.in_(building_ids)
+            egon_power_plants_pv_roof_building.building_id.in_(building_ids),
+            egon_power_plants_pv_roof_building.scenario == "eGon2035",
         )
 
         buildings_with_pv = pd.read_sql(
@@ -1319,7 +1320,7 @@ def determine_hp_cap_buildings_eGon100RE():
                 axis=0,
             )
 
-    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
 
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
@@ -1454,14 +1455,18 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
     # Create the folder, if it does not exist already
     if not os.path.exists(folder):
         os.mkdir(folder)
-    # TODO check append
     if not file.is_file():
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file)
+        logger.info(f"Create {file}")
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
+            file, mode="w", header=False
+        )
     else:
+        logger.info(f"Remove {file}")
+        os.remove(file)
+        logger.info(f"Create {file}")
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
         )
-        # TODO delete file if task is cleared?!
 
 
 def catch_missing_buidings(buildings_decentral_heating, peak_load):
@@ -1543,12 +1548,12 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
             )
         )
 
-        # Reduce list of decentral heating if no Peak load available
-        # TODO maybe remove after succesfull DE run
-        # Might be fixed in #990
-        buildings_decentral_heating = catch_missing_buidings(
-            buildings_decentral_heating, peak_load_2035
-        )
+        # # Reduce list of decentral heating if no Peak load available
+        # # TODO commmented after successfull fix in #987 #990
+        # # Might be fixed in #990
+        # buildings_decentral_heating = catch_missing_buidings(
+        #     buildings_decentral_heating, peak_load_2035
+        # )
 
         hp_cap_per_building_2035 = (
             determine_hp_cap_buildings_eGon2035_per_mvgd(
@@ -1606,13 +1611,25 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
     # ################ export to db #######################
-    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
     df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
 
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario="eGon2035")
+
+    # TODO debug duplicated building_ids
+    duplicates = df_hp_cap_per_building_2035_db.loc[
+        df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)
+    ]
+
+    logger.info(
+        f"Dropped duplicated buildings: "
+        f"{duplicates.loc['building_id', 'hp_capacity']}"
+    )
+
+    df_hp_cap_per_building_2035_db.drop_dupliactes("building_id", inplace=True)
 
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
@@ -1667,11 +1684,11 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
             )
         )
 
-        # Reduce list of decentral heating if no Peak load available
-        # TODO maybe remove after succesfull DE run
-        buildings_decentral_heating = catch_missing_buidings(
-            buildings_decentral_heating, peak_load_100RE
-        )
+        # # Reduce list of decentral heating if no Peak load available
+        # # TODO commmented after successfull fix in #987 #990
+        # buildings_decentral_heating = catch_missing_buidings(
+        #     buildings_decentral_heating, peak_load_100RE
+        # )
 
         hp_min_cap_mv_grid_pypsa_eur_sec = (
             determine_min_hp_cap_buildings_pypsa_eur_sec(
@@ -1715,12 +1732,12 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
         ] = hp_min_cap_mv_grid_pypsa_eur_sec
 
     # ################ export to db and csv ######################
-    logger.info(f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write data to db.")
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
 
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=True)
 
     logger.info(
-        f"MVGD={min(mvgd_ids)} - {max(mvgd_ids)} | Write "
+        f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write "
         f"pypsa-eur-sec min "
         f"HP capacities to csv."
     )
@@ -1764,7 +1781,7 @@ def split_mvgds_into_bulks(n, max_n, func):
     # Only take split n
     mvgd_ids = mvgd_ids[n]
 
-    logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} - {max(mvgd_ids)}")
+    logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} : {max(mvgd_ids)}")
     func(mvgd_ids)
 
 
