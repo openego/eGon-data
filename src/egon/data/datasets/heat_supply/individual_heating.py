@@ -1038,7 +1038,8 @@ def determine_buildings_with_hp_in_mv_grid(
         query = session.query(
             egon_power_plants_pv_roof_building.building_id
         ).filter(
-            egon_power_plants_pv_roof_building.building_id.in_(building_ids)
+            egon_power_plants_pv_roof_building.building_id.in_(building_ids),
+            egon_power_plants_pv_roof_building.scenario == "eGon2035",
         )
 
         buildings_with_pv = pd.read_sql(
@@ -1622,10 +1623,13 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2035_db.loc[
-        df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)]
+        df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)
+    ]
 
-    logger.info(f"Dropped duplicated buildings: "
-                f"{duplicates.loc['building_id', 'hp_capacity']}")
+    logger.info(
+        f"Dropped duplicated buildings: "
+        f"{duplicates.loc['building_id', 'hp_capacity']}"
+    )
 
     df_hp_cap_per_building_2035_db.drop_dupliactes("building_id", inplace=True)
 
