@@ -579,6 +579,25 @@ def gas(scenario):
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
+
+        # Insert FOM in %
+        parameters["FOM"] = {
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "FOM"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "FOM"
+            ),
+            "power_to_H2": read_costs(costs, "electrolysis", "FOM"),
+            "H2_to_power": read_costs(costs, "fuel cell", "FOM"),
+            "CH4_to_H2": read_costs(costs, "SMR", "FOM"),
+            "H2_to_CH4": read_costs(costs, "methanation", "FOM"),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "FOM"),
+            "H2_pipeline_retrofit": read_costs(
+                costs, "H2 (g) pipeline repurposed", "FOM"
+            ),
+        }
+
         # Insert overnight investment costs
         parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
@@ -621,11 +640,26 @@ def gas(scenario):
         parameters["capital_cost"] = {}
 
         for comp in parameters["overnight_cost"].keys():
-            parameters["capital_cost"][comp] = annualize_capital_costs(
-                parameters["overnight_cost"][comp],
-                parameters["lifetime"][comp],
-                global_settings("eGon2035")["interest_rate"],
+            parameters["capital_cost"][comp] = (
+                annualize_capital_costs(
+                    parameters["overnight_cost"][comp],
+                    parameters["lifetime"][comp],
+                    interest_rate,
+                )
+                + parameters["overnight_cost"][comp]
+                * (parameters["FOM"][comp] / 100)
             )
+
+        for comp in ["H2_to_power", "H2_to_CH4"]:
+            parameters["capital_cost"][comp] = (
+                annualize_capital_costs(
+                    parameters["overnight_cost"][comp],
+                    parameters["lifetime"][comp],
+                    interest_rate,
+                )
+                + parameters["overnight_cost"][comp]
+                * (parameters["FOM"][comp] / 100)
+            ) * parameters["efficiency"][comp]
 
         parameters["marginal_cost"] = {
             "OCGT": read_costs(costs, "OCGT", "VOM"),
