@@ -615,6 +615,8 @@ Bug Fixes
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Correct gas technology costs for eGon100RE
+  `#984 <https://github.com/openego/eGon-data/issues/984>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
