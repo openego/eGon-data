@@ -907,32 +907,32 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    # Fix #989
-    # Mismatched bus_id
-    # May result in failing sanity checks
-    from saio.boundaries import egon_map_zensus_buildings_filtered_all
-
-    with db.session_scope() as session:
-        query = session.query(
-            egon_map_zensus_buildings_filtered_all.id,
-            MapZensusGridDistricts.bus_id,
-        ).filter(
-            egon_map_zensus_buildings_filtered_all.id.in_(
-                df_cts_buildings.id.values
-            ),
-            MapZensusGridDistricts.zensus_population_id
-            == egon_map_zensus_buildings_filtered_all.zensus_population_id,
-        )
-
-        df_map_bus_id = pd.read_sql(
-            query.statement, session.connection(), index_col=None
-        )
-
-    df_demand_share = pd.merge(
-        left=df_demand_share.drop(columns="bus_id"),
-        right=df_map_bus_id,
-        on="id",
-    )
+    # # Fix #989
+    # # Mismatched bus_id
+    # # May result in failing sanity checks
+    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
+    #
+    # with db.session_scope() as session:
+    #     query = session.query(
+    #         egon_map_zensus_buildings_filtered_all.id,
+    #         MapZensusGridDistricts.bus_id,
+    #     ).filter(
+    #         egon_map_zensus_buildings_filtered_all.id.in_(
+    #             df_cts_buildings.id.values
+    #         ),
+    #         MapZensusGridDistricts.zensus_population_id
+    #         == egon_map_zensus_buildings_filtered_all.zensus_population_id,
+    #     )
+    #
+    #     df_map_bus_id = pd.read_sql(
+    #         query.statement, session.connection(), index_col=None
+    #     )
+    #
+    # df_demand_share = pd.merge(
+    #     left=df_demand_share.drop(columns="bus_id"),
+    #     right=df_map_bus_id,
+    #     on="id",
+    # )
 
     # only pass selected columns
     df_demand_share = df_demand_share[
