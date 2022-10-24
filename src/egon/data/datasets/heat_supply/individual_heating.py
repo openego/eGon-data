@@ -1453,7 +1453,7 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
     )
 
     folder = Path(".") / "input-pypsa-eur-sec"
-    file = folder / "minimum_hp_capacity_mv_grid_2035.csv"
+    file = folder / "minimum_hp_capacity_mv_grid_100RE.csv"
     # Create the folder, if it does not exist already
     if not os.path.exists(folder):
         os.mkdir(folder)
