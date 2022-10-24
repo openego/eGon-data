@@ -572,7 +572,7 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers.remove("AC", "biogas")
+    carriers = [e for e in carriers if e not in ("AC", "biogas")]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
