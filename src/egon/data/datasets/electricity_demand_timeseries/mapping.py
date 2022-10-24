@@ -43,7 +43,7 @@ def map_all_used_buildings():
                 FROM openstreetmap.osm_buildings_filtered
             ) AS bld,
                 demand.egon_building_electricity_peak_loads AS peak,
-                society.destatis_zensus_population_per_ha_inside_germany
+                society.destatis_zensus_population_per_ha
                 AS zensus,
                 boundaries.egon_map_zensus_grid_districts AS mvgd
             WHERE bld.id = peak.building_id
