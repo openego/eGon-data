@@ -557,6 +557,7 @@ def gas(scenario):
     elif scenario == "eGon100RE":
 
         costs = read_csv(2050)
+        interest_rate = 0.07  # [p.u.]
 
         parameters = {
             "main_gas_carrier": "H2",
