@@ -104,7 +104,7 @@ class HeatPumpsPypsaEurSec(Dataset):
 
         super().__init__(
             name="HeatPumpsPypsaEurSec",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             # tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
             tasks=(*dyn_parallel_tasks_pypsa_eur_sec(),),
@@ -152,7 +152,7 @@ class HeatPumps2035(Dataset):
 
         super().__init__(
             name="HeatPumps2035",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 delete_heat_peak_loads_eGon2035,
@@ -166,7 +166,7 @@ class HeatPumps2050(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatPumps2050",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(determine_hp_cap_buildings_eGon100RE),
         )
@@ -1453,7 +1453,7 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
     )
 
     folder = Path(".") / "input-pypsa-eur-sec"
-    file = folder / "minimum_hp_capacity_mv_grid_2035.csv"
+    file = folder / "minimum_hp_capacity_mv_grid_100RE.csv"
     # Create the folder, if it does not exist already
     if not os.path.exists(folder):
         os.mkdir(folder)
