@@ -1705,12 +1705,8 @@ def calculate_max_pv_cap_per_building(
         GeoDataFrame containing OSM buildings data with estimated maximum PV
         capacity.
     """
-    logger.debug(f"{buildings_gdf.reset_index().columns}")
-    logger.debug(
-        f"{mastr_gdf[['capacity', 'end_of_life', 'building_id', 'EinheitlicheAusrichtungUndNeigungswinkel', 'Hauptausrichtung', 'HauptausrichtungNeigungswinkel']].columns}"
-    )
     gdf = (
-        buildings_gdf.reset_index()
+        buildings_gdf.reset_index().rename(columns={"index": "id"})
         .merge(
             mastr_gdf[
                 [
