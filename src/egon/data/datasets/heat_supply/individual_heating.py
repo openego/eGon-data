@@ -1626,7 +1626,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     logger.info(
         f"Dropped duplicated buildings: "
-        f"{duplicates.loc['building_id', 'hp_capacity']}"
+        f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
     )
 
     df_hp_cap_per_building_2035_db.drop_dupliactes("building_id", inplace=True)
