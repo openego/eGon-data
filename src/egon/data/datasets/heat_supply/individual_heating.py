@@ -155,6 +155,7 @@ class HeatPumps2035(Dataset):
             dependencies=dependencies,
             tasks=(
                 delete_heat_peak_loads_eGon2035,
+                delete_hp_capacity_2035,
                 {*dyn_parallel_tasks_2035()},
             ),
         )
@@ -166,7 +167,10 @@ class HeatPumps2050(Dataset):
             name="HeatPumps2050",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(determine_hp_cap_buildings_eGon100RE),
+            tasks=(
+                delete_hp_capacity_100RE,
+                determine_hp_cap_buildings_eGon100RE,
+            ),
         )
 
 
@@ -1324,7 +1328,6 @@ def determine_hp_cap_buildings_eGon100RE():
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
 
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-    delete_hp_capacity(scenario="eGon100RE")
 
     write_table_to_postgres(
         df_hp_cap_per_building_100RE_db,
@@ -1616,9 +1619,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
 
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-    delete_hp_capacity(scenario="eGon2035")
-
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2035_db.loc[
         df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)
@@ -1626,7 +1626,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     logger.info(
         f"Dropped duplicated buildings: "
-        f"{duplicates.loc['building_id', 'hp_capacity']}"
+        f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
     )
 
     df_hp_cap_per_building_2035_db.drop_dupliactes("building_id", inplace=True)
@@ -1785,12 +1785,6 @@ def split_mvgds_into_bulks(n, max_n, func):
     func(mvgd_ids)
 
 
-def create_hp_capacity_table():
-
-    EgonHpCapacityBuildings.__table__.drop(bind=engine, checkfirst=True)
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-
-
 def delete_hp_capacity(scenario):
     """Remove all hp capacities for the selected scenario
 
@@ -1806,6 +1800,18 @@ def delete_hp_capacity(scenario):
         session.query(EgonHpCapacityBuildings).filter(
             EgonHpCapacityBuildings.scenario == scenario
         ).delete(synchronize_session=False)
+
+
+def delete_hp_capacity_100RE():
+    """Remove all hp capacities for the selected eGon100RE"""
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    delete_hp_capacity(scenario="eGon100RE")
+
+
+def delete_hp_capacity_2035():
+    """Remove all hp capacities for the selected eGon2035"""
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    delete_hp_capacity(scenario="eGon2035")
 
 
 def delete_heat_peak_loads_eGon2035():
