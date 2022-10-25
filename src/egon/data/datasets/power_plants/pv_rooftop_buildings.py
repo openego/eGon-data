@@ -1055,7 +1055,29 @@ def load_building_data():
 
     logger.debug("Loaded buildings.")
 
-    return drop_buildings_outside_grids(buildings_overlay_gdf)
+    buildings_overlay_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
+
+    # overwrite bus_id with data from new table
+    sql = "SELECT building_id, bus_id FROM boundaries.egon_map_zensus_mvgd_buildings"
+    map_building_bus_df = db.select_dataframe(sql)
+
+    building_ids = np.intersect1d(
+        list(map(int, map_building_bus_df.building_id.unique())),
+        list(map(int, buildings_overlay_gdf.index.to_numpy())),
+    )
+
+    buildings_within_gdf = buildings_overlay_gdf.loc[building_ids]
+
+    return (
+        buildings_within_gdf.drop(columns=["bus_id"])
+        .merge(
+            how="left",
+            right=map_building_bus_df,
+            left_index=True,
+            right_on="building_id",
+        )
+        .drop(columns=["building_id"])
+    )
 
 
 @timer_func
@@ -1472,9 +1494,9 @@ def federal_state_data(to_crs: CRS) -> gpd.GeoDataFrame:
             Vg250Lan.id, Vg250Lan.nuts, Vg250Lan.geometry.label("geom")
         )
 
-    gdf = gpd.read_postgis(
-        query.statement, query.session.bind, index_col="id"
-    ).to_crs(to_crs)
+        gdf = gpd.read_postgis(
+            query.statement, session.connection(), index_col="id"
+        ).to_crs(to_crs)
 
     logger.debug("Federal State data loaded.")
 
@@ -1684,7 +1706,7 @@ def calculate_max_pv_cap_per_building(
         capacity.
     """
     gdf = (
-        buildings_gdf.reset_index()
+        buildings_gdf.reset_index().rename(columns={"index": "id"})
         .merge(
             mastr_gdf[
                 [
