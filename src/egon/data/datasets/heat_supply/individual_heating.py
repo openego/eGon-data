@@ -106,10 +106,7 @@ class HeatPumpsPypsaEurSec(Dataset):
             name="HeatPumpsPypsaEurSec",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(
-                delete_hp_capacity_100RE,
-                {*dyn_parallel_tasks_pypsa_eur_sec()},
-            ),
+            tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
         )
 
 
@@ -170,7 +167,10 @@ class HeatPumps2050(Dataset):
             name="HeatPumps2050",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(determine_hp_cap_buildings_eGon100RE),
+            tasks=(
+                delete_hp_capacity_100RE,
+                determine_hp_cap_buildings_eGon100RE,
+            ),
         )
 
 
@@ -1618,8 +1618,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
     df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
-
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
 
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2035_db.loc[
