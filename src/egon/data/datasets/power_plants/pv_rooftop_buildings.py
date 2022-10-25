@@ -1706,7 +1706,7 @@ def calculate_max_pv_cap_per_building(
         capacity.
     """
     gdf = (
-        buildings_gdf.reset_index()
+        buildings_gdf.reset_index().rename(columns={"index": "id"})
         .merge(
             mastr_gdf[
                 [
