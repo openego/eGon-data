@@ -106,8 +106,10 @@ class HeatPumpsPypsaEurSec(Dataset):
             name="HeatPumpsPypsaEurSec",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(delete_hp_capacity_100RE,
-                {*dyn_parallel_tasks_pypsa_eur_sec()},),
+            tasks=(
+                delete_hp_capacity_100RE,
+                {*dyn_parallel_tasks_pypsa_eur_sec()},
+            ),
         )
 
 
@@ -1785,12 +1787,6 @@ def split_mvgds_into_bulks(n, max_n, func):
     func(mvgd_ids)
 
 
-def create_hp_capacity_table():
-
-    EgonHpCapacityBuildings.__table__.drop(bind=engine, checkfirst=True)
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-
-
 def delete_hp_capacity(scenario):
     """Remove all hp capacities for the selected scenario
 
@@ -1807,13 +1803,18 @@ def delete_hp_capacity(scenario):
             EgonHpCapacityBuildings.scenario == scenario
         ).delete(synchronize_session=False)
 
+
 def delete_hp_capacity_100RE():
     """Remove all hp capacities for the selected eGon100RE"""
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario="eGon100RE")
+
 
 def delete_hp_capacity_2035():
     """Remove all hp capacities for the selected eGon2035"""
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario="eGon2035")
+
 
 def delete_heat_peak_loads_eGon2035():
     """Remove all heat peak loads for eGon2035.
