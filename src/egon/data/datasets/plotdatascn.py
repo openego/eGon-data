@@ -23,6 +23,12 @@ from math import sqrt, log10
 from pyproj import Proj, transform
 from matplotlib_scalebar.scalebar import ScaleBar
 
+"""
+Tilemapbase library could be necessary
+to generate the figures
+        
+        
+"""
 
 logger = logging.getLogger(__name__)
 
