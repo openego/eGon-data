@@ -1,9 +1,13 @@
 from loguru import logger
 from numpy.random import RandomState
+from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.storages import EgonHomeBatteries
+
+Base = declarative_base()
 
 
 def get_cbat_pbat_ratio():
@@ -29,8 +33,11 @@ def get_cbat_pbat_ratio():
     return int(db.select_dataframe(sql).iat[0, 0])
 
 
-def allocate_home_batteries():
-
+def allocate_home_batteries_to_buildings():
+    """
+    Allocate home battery storage systems to buildings with pv rooftop systems
+    """
+    # get constants
     constants = config.datasets()["home_batteries"]["constants"]
     scenarios = constants["scenarios"]
     cbat_ppv_ratio = constants["cbat_ppv_ratio"]
@@ -43,6 +50,7 @@ def allocate_home_batteries():
     df_list = []
 
     for scenario in scenarios:
+        # get home battery capacity per mv grid id
         sql = f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
         {sources["storage"]["schema"]}
@@ -94,7 +102,7 @@ def allocate_home_batteries():
                 ):
                     sample_df = pv_df.sample(n=n, random_state=random_state)
 
-                    if abs(best_df.capacity.sum() - bat_cap) >= abs(
+                    if abs(best_df.capacity.sum() - bat_cap) > abs(
                         sample_df.capacity.sum() - bat_cap
                     ):
                         best_df = sample_df.copy()
@@ -129,4 +137,20 @@ def allocate_home_batteries():
 
             df_list.append(bat_df)
 
-    return pd.concat(df_list, ignore_index=True)
+    create_table(pd.concat(df_list, ignore_index=True))
+
+
+def create_table(df):
+    """Create mapping table home battery <-> building id"""
+    engine = db.engine()
+
+    EgonHomeBatteries.__table__.drop(bind=engine, checkfirst=True)
+    EgonHomeBatteries.__table__.create(bind=engine, checkfirst=True)
+
+    df.reset_index().to_sql(
+        name=EgonHomeBatteries.__table__.name,
+        schema=EgonHomeBatteries.__table__.schema,
+        con=engine,
+        if_exists="append",
+        index=False,
+    )
