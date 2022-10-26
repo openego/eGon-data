@@ -1629,7 +1629,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
     )
 
-    df_hp_cap_per_building_2035_db.drop_dupliactes("building_id", inplace=True)
+    df_hp_cap_per_building_2035_db.drop_duplicates("building_id", inplace=True)
 
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
