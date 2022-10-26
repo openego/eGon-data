@@ -2589,7 +2589,7 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
 
     index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)
-    bus_id = Column(Integer)
+    bus_id = Column(Integer, nullable=True)
     building_id = Column(Integer)
     gens_id = Column(String, nullable=True)
     capacity = Column(Float)
