@@ -1,11 +1,11 @@
 from loguru import logger
 from numpy.random import RandomState
+from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.storages import EgonHomeBatteries
 
 Base = declarative_base()
 
@@ -138,6 +138,18 @@ def allocate_home_batteries_to_buildings():
             df_list.append(bat_df)
 
     create_table(pd.concat(df_list, ignore_index=True))
+
+
+class EgonHomeBatteries(Base):
+    __tablename__ = "egon_home_batteries"
+    __table_args__ = {"schema": "supply"}
+
+    index = Column(Integer, primary_key=True, index=True)
+    scenario = Column(String)
+    bus_id = Column(Integer)
+    building_id = Column(Integer)
+    p_nom = Column(Float)
+    capacity = Column(Float)
 
 
 def create_table(df):

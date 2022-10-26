@@ -27,18 +27,6 @@ from egon.data.datasets.storages.pumped_hydro import (
 Base = declarative_base()
 
 
-class EgonHomeBatteries(Base):
-    __tablename__ = "egon_home_batteries"
-    __table_args__ = {"schema": "supply"}
-
-    index = Column(Integer, primary_key=True, index=True)
-    scenario = Column(String)
-    bus_id = Column(Integer)
-    building_id = Column(Integer)
-    p_nom = Column(Float)
-    capacity = Column(Float)
-
-
 class EgonStorages(Base):
     __tablename__ = "egon_storages"
     __table_args__ = {"schema": "supply"}
