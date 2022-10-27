@@ -25,8 +25,9 @@ from matplotlib_scalebar.scalebar import ScaleBar
 
 """
 Tilemapbase library could be necessary
-to generate the figures
-        
+to generate the figures.
+Matplotlib_scalebar.scalebar library could be necessary
+to generate the figures.        
         
 """
 
@@ -104,7 +105,7 @@ def plot_osm(x, y, zoom, alpha=0.4):
     #ax.plot(x, y, "ro-")
     return fig, ax
 
-def plot_generation(
+def plot_installedcapacity(
               carrier,scenario, osm = False
             ):
    """
@@ -123,7 +124,8 @@ def plot_generation(
         
    """
     
-
+   #This function must be called while in the folder 
+   #that contains the file egon-data.configuration.yaml.
    con = db.engine()
    #imports buses of Germany
    SQLBus = "SELECT bus_id, country FROM grid.egon_etrago_bus WHERE country='DE'" 
