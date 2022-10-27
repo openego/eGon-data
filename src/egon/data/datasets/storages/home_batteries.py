@@ -141,8 +141,10 @@ def allocate_home_batteries_to_buildings():
 
 
 class EgonHomeBatteries(Base):
-    __tablename__ = "egon_home_batteries"
-    __table_args__ = {"schema": "supply"}
+    targets = config.datasets()["home_batteries"]["targets"]
+
+    __tablename__ = targets["home_batteries"]["table"]
+    __table_args__ = {"schema": targets["home_batteries"]["schema"]}
 
     index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)

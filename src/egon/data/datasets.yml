@@ -1191,3 +1191,7 @@ home_batteries:
     storage:
       schema: 'supply'
       table: 'egon_storages'
+  targets:
+    home_batteries:
+      schema: 'supply'
+      table: 'egon_home_batteries'
