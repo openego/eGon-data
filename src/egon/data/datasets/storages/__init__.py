@@ -351,8 +351,9 @@ def home_batteries_per_scenario(scenario):
             sheet_name="1.Entwurf_NEP2035_V2021",
             index_col="Unnamed: 0",
         )
-
-        target = capacities_nep.Summe["PV-Batteriespeicher"]
+        
+    # Select target value in MW
+        target = capacities_nep.Summe["PV-Batteriespeicher"]*1000
 
     else:
         target = db.select_dataframe(
