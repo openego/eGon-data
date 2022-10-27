@@ -1572,7 +1572,7 @@ def assign_voltage_level_to_buildings():
 
     # Identify voltage_level by thresholds defined in the eGon project
     df_peak_load_buildings.loc[
-        df_peak_load_buildings["peak_load_in_w"] < 0.1 * 1e6, "voltage_level"
+        df_peak_load_buildings["peak_load_in_w"] <= 0.1 * 1e6, "voltage_level"
     ] = 7
     df_peak_load_buildings.loc[
         df_peak_load_buildings["peak_load_in_w"] > 0.1 * 1e6, "voltage_level"
