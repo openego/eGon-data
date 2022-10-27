@@ -106,7 +106,9 @@ class HeatPumpsPypsaEurSec(Dataset):
             name="HeatPumpsPypsaEurSec",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=({*dyn_parallel_tasks_pypsa_eur_sec()},),
+            tasks=(delete_mvgd_ts_100RE,
+                   delete_heat_peak_loads_100RE,
+                {*dyn_parallel_tasks_pypsa_eur_sec()},),
         )
 
 
@@ -154,7 +156,7 @@ class HeatPumps2035(Dataset):
             version="0.0.2",
             dependencies=dependencies,
             tasks=(
-                delete_heat_peak_loads_eGon2035,
+                delete_heat_peak_loads_2035,
                 delete_hp_capacity_2035,
                 delete_mvgd_ts_2035,
                 {*dyn_parallel_tasks_2035()},
@@ -1736,7 +1738,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
 
-    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=True)
+    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
     logger.info(
         f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write "
@@ -1841,13 +1843,26 @@ def delete_mvgd_ts_2035():
     delete_mvgd_ts(scenario="eGon2035")
 
 
-def delete_heat_peak_loads_eGon2035():
-    """Remove all heat peak loads for eGon2035.
+def delete_mvgd_ts_100RE():
+    """Remove all mvgd ts for the selected eGon100RE"""
+    EgonEtragoTimeseriesIndividualHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    delete_mvgd_ts(scenario="eGon100RE")
 
-    This is not necessary for eGon100RE as these peak loads are calculated in
-    HeatPumpsPypsaEurSec and tables are recreated during this dataset."""
+
+def delete_heat_peak_loads_2035():
+    """Remove all heat peak loads for eGon2035."""
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
             BuildingHeatPeakLoads.scenario == "eGon2035"
+        ).delete(synchronize_session=False)
+
+def delete_heat_peak_loads_100RE():
+    """Remove all heat peak loads for eGon100RE."""
+    with db.session_scope() as session:
+        # Buses
+        session.query(BuildingHeatPeakLoads).filter(
+            BuildingHeatPeakLoads.scenario == "eGon100RE"
         ).delete(synchronize_session=False)
