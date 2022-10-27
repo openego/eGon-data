@@ -1170,7 +1170,9 @@ mobility_hgv:
       # share of FCEV trucks
       # within the egon project the flat guess is 100%
       fcev_share: 1.
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios:
+        - "eGon2035"
+        - "eGon100RE"
       carrier: "H2_hgv_load"
       energy_value_h2: 39.4  # kWh/kg
       hours_per_year: 8760
@@ -1187,3 +1189,24 @@ mobility_hgv:
       # Langfristszenarien
       # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
       eGon100RE: 40000000000
+
+home_batteries:
+  constants:
+    scenarios:
+      - "eGon2035"
+      - "eGon100RE"
+    # Mean ratio between the storage capacity and the power of the pv rooftop system
+    cbat_ppv_ratio: 1
+    rtol: 0.05
+    max_it: 100
+  sources:
+    etrago_storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+    storage:
+      schema: 'supply'
+      table: 'egon_storages'
+  targets:
+    home_batteries:
+      schema: 'supply'
+      table: 'egon_home_batteries'

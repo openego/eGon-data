@@ -189,6 +189,7 @@ COLS_TO_RENAME = {
 
 COLS_TO_EXPORT = [
     "scenario",
+    "bus_id",
     "building_id",
     "gens_id",
     "capacity",
@@ -1706,7 +1707,8 @@ def calculate_max_pv_cap_per_building(
         capacity.
     """
     gdf = (
-        buildings_gdf.reset_index().rename(columns={"index": "id"})
+        buildings_gdf.reset_index()
+        .rename(columns={"index": "id"})
         .merge(
             mastr_gdf[
                 [
@@ -2587,6 +2589,7 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
 
     index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)
+    bus_id = Column(Integer, nullable=True)
     building_id = Column(Integer)
     gens_id = Column(String, nullable=True)
     capacity = Column(Float)

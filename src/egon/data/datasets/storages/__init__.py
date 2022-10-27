@@ -1,25 +1,28 @@
 """The central module containing all code dealing with power plant data.
 """
-from geoalchemy2 import Geometry
 from pathlib import Path
+
+from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from egon.data.datasets.storages.pumped_hydro import (
-    select_mastr_pumped_hydro,
-    select_nep_pumped_hydro,
-    match_storage_units,
-    get_location,
-    apply_voltage_level_thresholds,
-)
-from egon.data.datasets.power_plants import assign_voltage_level
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets import Dataset
-
+from egon.data.datasets.power_plants import assign_voltage_level
+from egon.data.datasets.storages.home_batteries import (
+    allocate_home_batteries_to_buildings,
+)
+from egon.data.datasets.storages.pumped_hydro import (
+    apply_voltage_level_thresholds,
+    get_location,
+    match_storage_units,
+    select_mastr_pumped_hydro,
+    select_nep_pumped_hydro,
+)
 
 Base = declarative_base()
 
@@ -38,17 +41,18 @@ class EgonStorages(Base):
     geom = Column(Geometry("POINT", 4326))
 
 
-class PumpedHydro(Dataset):
+class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 allocate_pumped_hydro_eGon2035,
                 allocate_pumped_hydro_eGon100RE,
-                allocate_pv_home_batteries,
+                allocate_pv_home_batteries_to_grids,
+                allocate_home_batteries_to_buildings,
             ),
         )
 
@@ -292,8 +296,8 @@ def allocate_pumped_hydro_eGon100RE():
     else:
         raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
 
-    # Get allocation of pumped_hydro plants in eGon2035 scenario as the reference
-    # for the distribution in eGon100RE scenario
+    # Get allocation of pumped_hydro plants in eGon2035 scenario as the
+    # reference for the distribution in eGon100RE scenario
     allocation = allocate_pumped_hydro_eGon2035(export=False)
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()
@@ -411,7 +415,7 @@ def home_batteries_per_scenario(scenario):
     session.commit()
 
 
-def allocate_pv_home_batteries():
+def allocate_pv_home_batteries_to_grids():
 
     home_batteries_per_scenario("eGon2035")
     home_batteries_per_scenario("eGon100RE")
