@@ -613,6 +613,8 @@ Bug Fixes
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
 * Drop era5 weather cell table using cascade
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
+* Delete gas bus with wrong country code
+  `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
 
