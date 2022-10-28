@@ -2265,7 +2265,7 @@ def desaggregate_pv(
 
     logger.debug(str(missing))
 
-    bus_ids = np.intersect1d(buildings_gdf.bus_id.unique(), cap_df.index.unique())
+    bus_ids = np.intersect1d(list(building_bus_ids), list(cap_bus_ids))
 
     # assert set(buildings_gdf.bus_id.unique()) == set(cap_df.index)
 
