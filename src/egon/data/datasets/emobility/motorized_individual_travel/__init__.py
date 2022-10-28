@@ -458,7 +458,11 @@ class MotorizedIndividualTravel(Dataset):
             tasks=(
                 create_tables,
                 {
-                    (download_and_preprocess, allocate_evs_numbers),
+                    (
+                        download_and_preprocess,
+                        allocate_evs_numbers,
+                        write_metadata_to_db,
+                    ),
                     (extract_trip_file, write_evs_trips_to_db),
                 },
                 write_metadata_to_db,
