@@ -365,21 +365,21 @@ def write_metadata_to_db():
     """
     Write used SimBEV metadata per scenario to database.
     """
+    dtypes = {
+        "scenario": str,
+        "eta_cp": float,
+        "stepsize": int,
+        "start_date": np.datetime64,
+        "end_date": np.datetime64,
+        "soc_min": float,
+        "grid_timeseries": bool,
+        "grid_timeseries_by_usecase": bool,
+    }
+
     for scenario_name in ["eGon2035", "eGon100RE"]:
         meta_run_config = read_simbev_metadata_file(
             scenario_name, "config"
         ).loc["basic"]
-
-        dtypes = {
-            "scenario": str,
-            "eta_cp": float,
-            "stepsize": int,
-            "start_date": np.datetime64,
-            "end_date": np.datetime64,
-            "soc_min": float,
-            "grid_timeseries": bool,
-            "grid_timeseries_by_usecase": bool,
-        }
 
         meta_run_config = (
             meta_run_config.to_frame()
