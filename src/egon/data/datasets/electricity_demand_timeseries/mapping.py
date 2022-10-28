@@ -16,6 +16,8 @@ class EgonMapZensusMvgdBuildings(Base):
     zensus_population_id = Column(Integer, index=True)
     bus_id = Column(Integer, index=True)
     osm = Column(Boolean, index=True)
+    electricity = Column(Boolean, index=True, default="True")
+    heat = Column(Boolean, index=True)
 
 
 def map_all_used_buildings():
@@ -47,19 +49,41 @@ def map_all_used_buildings():
                 AS zensus,
                 boundaries.egon_map_zensus_grid_districts AS mvgd
             WHERE bld.id = peak.building_id
+-- Buildings do not change in the scenarios
                 AND peak.scenario = 'eGon2035'
                 AND ST_Within(bld.geom_point, zensus.geom)
                 AND mvgd.zensus_population_id = zensus.id;
 
-            UPDATE boundaries.egon_map_zensus_mvgd_buildings
-            SET     "osm" = TRUE;
+        UPDATE boundaries.egon_map_zensus_mvgd_buildings
+        SET     "osm" = TRUE;
 
-            UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
-            SET     "osm" = FALSE
-            FROM (
-                SELECT "id"::integer
-                FROM openstreetmap.osm_buildings_synthetic
-                ) as synth
-            WHERE bld.building_id = synth.id;
+        UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
+        SET     "osm" = FALSE
+        FROM (
+            SELECT "id"::integer
+            FROM openstreetmap.osm_buildings_synthetic
+            ) as synth
+        WHERE bld.building_id = synth.id;
+
+        UPDATE boundaries.egon_map_zensus_mvgd_buildings
+        SET     "heat" = FALSE;
+
+-- Only residentials
+        UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
+        SET     "heat" = TRUE
+        FROM (
+            SELECT distinct(building_id)
+            FROM demand.egon_heat_timeseries_selected_profiles
+            ) as heat
+        WHERE bld.building_id = heat.building_id
+         AND bld.sector = 'residential';
+
+-- All electricity cts also are heat cts also
+        UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
+        SET     "heat" = TRUE
+        WHERE bld.sector = 'cts' AND electricity = TRUE;
+
+
+
         """
     )
