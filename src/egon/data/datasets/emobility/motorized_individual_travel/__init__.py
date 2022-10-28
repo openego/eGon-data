@@ -453,7 +453,7 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.6",
+            version="0.0.5dev",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -461,12 +461,12 @@ class MotorizedIndividualTravel(Dataset):
                     (download_and_preprocess, allocate_evs_numbers),
                     (extract_trip_file, write_evs_trips_to_db),
                 },
+                write_metadata_to_db,
                 allocate_evs_to_grid_districts,
                 delete_model_data_from_db,
                 {
                     *generate_model_data_tasks(scenario_name="eGon2035"),
                     *generate_model_data_tasks(scenario_name="eGon100RE"),
                 },
-                write_metadata_to_db,
             ),
         )
