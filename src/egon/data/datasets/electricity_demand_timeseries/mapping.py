@@ -16,7 +16,7 @@ class EgonMapZensusMvgdBuildings(Base):
     zensus_population_id = Column(Integer, index=True)
     bus_id = Column(Integer, index=True)
     osm = Column(Boolean, index=True)
-    electricity = Column(Boolean, index=True, default="True")
+    electricity = Column(Boolean, index=True)
     heat = Column(Boolean, index=True)
 
 
@@ -64,6 +64,9 @@ def map_all_used_buildings():
             FROM openstreetmap.osm_buildings_synthetic
             ) as synth
         WHERE bld.building_id = synth.id;
+
+        UPDATE boundaries.egon_map_zensus_mvgd_buildings
+        SET     "electricity" = TRUE;
 
         UPDATE boundaries.egon_map_zensus_mvgd_buildings
         SET     "heat" = FALSE;
