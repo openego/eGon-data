@@ -2265,9 +2265,11 @@ def desaggregate_pv(
 
     logger.debug(str(missing))
 
+    bus_ids = np.intersect1d(building_bus_ids, cap_bus_ids)
+
     # assert set(buildings_gdf.bus_id.unique()) == set(cap_df.index)
 
-    for bus_id in buildings_gdf.bus_id.unique():
+    for bus_id in bus_ids:
         buildings_grid_gdf = buildings_gdf.loc[buildings_gdf.bus_id == bus_id]
 
         pv_installed_gdf = buildings_grid_gdf.loc[
