@@ -465,7 +465,6 @@ class MotorizedIndividualTravel(Dataset):
                     ),
                     (extract_trip_file, write_evs_trips_to_db),
                 },
-                write_metadata_to_db,
                 allocate_evs_to_grid_districts,
                 delete_model_data_from_db,
                 {
