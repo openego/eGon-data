@@ -223,6 +223,8 @@ Added
   `#962 <https://github.com/openego/eGon-data/issues/962>`_
 * Add charging infrastructure for e-mobility
   `#937 <https://github.com/openego/eGon-data/issues/937>`_
+* Add zipfile check
+  `#969 <https://github.com/openego/eGon-data/issues/969>`_
 * Add marginal costs for generators abroad and for carriers nuclear and coal
   `#907 <https://github.com/openego/eGon-data/issues/907>`_
 * Add wind off shore power plants for eGon100RE
