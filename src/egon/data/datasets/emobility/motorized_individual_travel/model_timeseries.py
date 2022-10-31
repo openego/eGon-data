@@ -37,8 +37,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
-    EgonEvMetadata,
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
@@ -60,8 +59,6 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
-
-# from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def data_preprocessing(
@@ -620,7 +617,7 @@ def write_model_data_to_db(
                         carrier="BEV charger",
                         efficiency=float(run_config.eta_cp),
                         p_nom=(
-                            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+                            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()  # noqa: E501
                         ),
                         p_nom_extendable=False,
                         p_nom_min=0,
@@ -642,7 +639,7 @@ def write_model_data_to_db(
                         temp_id=1,
                         p_min_pu=None,
                         p_max_pu=(
-                            hourly_load_time_series_df.ev_availability.to_list()
+                            hourly_load_time_series_df.ev_availability.to_list()  # noqa: E501
                         ),
                     )
                 )
@@ -745,7 +742,7 @@ def write_model_data_to_db(
                 scenario_name=scenario_name,
                 connection_bus_id=emob_bus_id,
                 load_ts=(
-                    hourly_load_time_series_df.driving_load_time_series.to_list()
+                    hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
                 ),
             )
         else:
@@ -1060,34 +1057,6 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             run_config=meta_run_config,
             bat_cap=meta_tech_data.battery_capacity,
         )
-
-    dtypes = {
-        "scenario": str,
-        "eta_cp": float,
-        "stepsize": int,
-        "start_date": np.datetime64,
-        "end_date": np.datetime64,
-        "soc_min": float,
-        "grid_timeseries": bool,
-        "grid_timeseries_by_usecase": bool,
-    }
-
-    meta_run_config = (
-        meta_run_config.to_frame()
-        .T.assign(scenario=scenario_name)[dtypes.keys()]
-        .astype(dtypes)
-    )
-
-    try:
-        meta_run_config.to_sql(
-            name=EgonEvMetadata.__table__.name,
-            schema=EgonEvMetadata.__table__.schema,
-            con=db.engine(),
-            if_exists="append",
-            index=False,
-        )
-    except Exception:
-        pass
 
 
 def generate_model_data_eGon2035_remaining():
