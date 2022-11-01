@@ -85,7 +85,7 @@ def identify_bus(load_curves, demand_area):
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
         load_curves.T,
-        peak_bus[["bus_id", "id"]],
+        peak_bus[["bus_id", "id", "geom"]],
         left_index=True,
         right_on="id",
     )
@@ -173,7 +173,17 @@ def calc_load_curves_ind_osm(scenario):
 
     # Insert time series data to df as an array
     load_ts_df.p_set = curves_bus.values.tolist()
-    return load_ts_df
+
+    # Create Dataframe to store time series individually
+    curves_individual_interim = (
+        curves_da.drop(["bus_id", "geom"], axis=1).fillna(0)
+    ).set_index("id")
+    curves_individual = curves_da[["id", "bus_id"]]
+    curves_individual["p_set"] = curves_individual_interim.values.tolist()
+    curves_individual["scn_name"]= scenario
+    curves_individual = curves_individual.rename(columns={"id": "osm_id"}).set_index(['osm_id', 'scn_name'])
+
+    return load_ts_df, curves_individual
 
 
 def insert_osm_ind_load():
@@ -201,7 +211,7 @@ def insert_osm_ind_load():
         )
 
         # Calculate cts load curves per mv substation (hvmv bus)
-        data = calc_load_curves_ind_osm(scenario)
+        data, curves_individual = calc_load_curves_ind_osm(scenario)
         data.index = data.index.rename("bus")
         data["scn_name"] = scenario
 
@@ -214,6 +224,16 @@ def insert_osm_ind_load():
             con=db.engine(),
             if_exists="append",
         )
+
+
+        curves_individual.to_sql(
+            targets["osm_load_individual"]["table"],
+            schema=targets["osm_load_individual"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+
 
 
 def calc_load_curves_ind_sites(scenario):
