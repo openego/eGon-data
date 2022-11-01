@@ -120,6 +120,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
+                        AND country != 'RU'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon2035')
                     AND "bus1" IN (SELECT bus_id FROM 
@@ -137,6 +138,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
+                        AND country != 'RU'
                         AND carrier = 'CH4' 
                         AND scn_name = 'eGon2035'))
         AND scn_name = 'eGon2035'
