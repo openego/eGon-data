@@ -59,6 +59,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 )
 from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
 import egon.data
 
 TESTMODE_OFF = (
@@ -86,6 +87,7 @@ class SanityChecks(Dataset):
                 cts_heat_demand_share,
                 sanitycheck_emobility_mit,
                 sanitycheck_pv_rooftop_buildings,
+                sanitycheck_home_batteries,
                 etrago_eGon100RE_gas,
                 etrago_eGon2035_gas,
             },
@@ -786,8 +788,8 @@ def sanitycheck_pv_rooftop_buildings():
             dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
             if dataset == "Schleswig-Holstein":
-                # since the required data is missing for a SH run, it is implemented
-                # manually here
+                # since the required data is missing for a SH run, it is
+                # implemented manually here
                 total_2035 = 84070
                 sh_2035 = 2700
 
@@ -1361,6 +1363,51 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
+
+
+def sanitycheck_home_batteries():
+    # get constants
+    constants = config.datasets()["home_batteries"]["constants"]
+    scenarios = constants["scenarios"]
+    cbat_pbat_ratio = get_cbat_pbat_ratio()
+
+    sources = config.datasets()["home_batteries"]["sources"]
+    targets = config.datasets()["home_batteries"]["targets"]
+
+    for scenario in scenarios:
+        # get home battery capacity per mv grid id
+        sql = f"""
+        SELECT el_capacity as p_nom, bus_id FROM
+        {sources["storage"]["schema"]}
+        .{sources["storage"]["table"]}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        """
+
+        home_batteries_df = db.select_dataframe(sql, index_col="bus_id")
+
+        home_batteries_df = home_batteries_df.assign(
+            capacity=home_batteries_df.p_nom * cbat_pbat_ratio
+        )
+
+        sql = f"""
+        SELECT * FROM
+        {targets["home_batteries"]["schema"]}
+        .{targets["home_batteries"]["table"]}
+        WHERE scenario = '{scenario}'
+        """
+
+        home_batteries_buildings_df = db.select_dataframe(
+            sql, index_col="index"
+        )
+
+        df = (
+            home_batteries_buildings_df[["bus_id", "p_nom", "capacity"]]
+            .groupby("bus_id")
+            .sum()
+        )
+
+        assert (home_batteries_df.round(6) == df.round(6)).all().all()
 
 
 def sanity_check_gas_buses(scn):
