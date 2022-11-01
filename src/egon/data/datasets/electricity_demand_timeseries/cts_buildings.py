@@ -82,7 +82,7 @@ The OSM, DemandRegio and Peta5 dataset differ from each other. The OSM dataset
 is a community based dataset which is extended throughout and does not claim to
 be complete. Therefore, not all census cells which have a demand assigned by
 DemandRegio or Peta5 methodology also have buildings with respective tags or
-sometime even any building at all. Furthermore, the substation load areas are
+sometimes even any building at all. Furthermore, the substation load areas are
 determined dynamically in a previous dataset. Merging these datasets different
 scopes (census cell shapes, building shapes) and their inconsistencies need to
 be addressed. For example: not yet tagged buildings or amenities in OSM, or
@@ -92,7 +92,7 @@ building shapes exceeding census cells.
 **How are these datasets combined?**
 
 
-The methodology for heat and electricity is the same and only differ in the
+The methodology for heat and electricity is the same and only differs in the
 annual demand and MV/HV Substation profile. In a previous dataset
 (openstreetmap), we filter all OSM buildings and amenities for tags, we relate
 to the cts sector. Amenities are mapped to intersecting buildings and then
@@ -103,7 +103,8 @@ the median value of amenities/census cell for n and all filtered buildings +
 synthetic residential buildings. If no building data is available a synthetic
 buildings is randomly generated. This also happens for amenities which couldn't
 be assigned to any osm building. All census cells with an annual demand are
-covered this way, and we obtain four different categories of amenities:
+covered this way, and we obtain four different categories of buildings with
+amenities:
 
 * Buildings with amenities
 * Synthetic buildings with amenities
@@ -133,22 +134,23 @@ https://github.com/openego/eGon-data/issues/671#issuecomment-1260740258
 
 **Drawbacks and limitations of the data**
 
-* Shape of profiles for each building is similar within one substation load
-area and only scaled differently.
-* Load areas are generated dynamically. In case of buildings with amenities
-exceeding borders, the number of amenities are transferred randomly to either
-of two load areas.
+* Shape of profiles for each building is similar within a MVGD and only scaled
+with a different factor.
+* MVGDs are generated dynamically. In case of buildings with amenities
+exceeding MVGD borders, amenities which are assigned to a different MVGD than
+the assigned building centroid, the amenities are dropped for sake of
+simplicity. One building should not have a connection to two MVGDs.
 * The completeness of the OSM data depends on community contribution and is
 crucial to the quality of our results.
 * Randomly selected buildings and generated amenities may inadequately reflect
 reality, but are chosen for sake of simplicity as a measure to fill data gaps.
 * Since this dataset is a cascade after generation of synthetic residential
-buildings also check drawbacks and limitations in hh_buildings.py
+buildings also check drawbacks and limitations in hh_buildings.py.
 * Synthetic buildings may be placed within osm buildings which exceed multiple
 census cells. This is currently accepted but may be solved in  #953
 * Scattered high peak loads occur and might lead to single MV grid connections
 in ding0. In some cases this might not be viable. Postprocessing is needed and
-may be solved in #954
+may be solved in #954.
 
 
 Example Query
@@ -165,6 +167,7 @@ docs attribute of the respective dataset class.
 
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
+from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import REAL, Column, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -254,7 +257,7 @@ class CtsDemandBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsDemandBuildings",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 cts_buildings,
@@ -421,15 +424,14 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
 
 def buildings_with_amenities():
     """
-    Amenities which are assigned to buildings are determined
-    and grouped per building and zensus cell. Buildings
-    covering multiple cells therefore exists multiple times
-    but in different zensus cells. This is necessary to cover
-    all cells with a cts demand. If buildings exist in multiple
-    substations, their amenities are summed and assigned and kept in
-    one substation only. If as a result, a census cell is uncovered,
-    a synthetic amenity is placed. The buildings are aggregated
-    afterwards during the calculation of the profile_share.
+    Amenities which are assigned to buildings are determined and grouped per
+    building and zensus cell. Buildings covering multiple cells therefore
+    exists multiple times but in different zensus cells. This is necessary to
+    cover as many cells with a cts demand as possible. If buildings exist in
+    multiple mvgds (bus_id) , only the amenities within the same as the
+    building centroid are kept. If as a result, a census cell is uncovered
+    by any buildings, a synthetic amenity is placed. The buildings are
+    aggregated afterwards during the calculation of the profile_share.
 
     Returns
     -------
@@ -439,6 +441,7 @@ def buildings_with_amenities():
         Contains synthetic amenities in lost cells. Might be empty
     """
 
+    from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
     with db.session_scope() as session:
@@ -460,9 +463,9 @@ def buildings_with_amenities():
                 EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
         )
-    df_amenities_in_buildings = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
-    )
+        df_amenities_in_buildings = pd.read_sql(
+            cells_query.statement, con=session.connection(), index_col=None
+        )
 
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
@@ -471,73 +474,49 @@ def buildings_with_amenities():
         "geom_amenity"
     ].apply(to_shape)
 
-    df_amenities_in_buildings["n_amenities_inside"] = 1
+    # retrieve building centroid bus_id
+    with db.session_scope() as session:
 
-    # add identifier column for buildings in multiple substations
-    df_amenities_in_buildings[
-        "duplicate_identifier"
-    ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
-        "n_amenities_inside"
-    ].transform(
-        "cumsum"
-    )
-    df_amenities_in_buildings = df_amenities_in_buildings.sort_values(
-        ["id", "duplicate_identifier"]
-    )
-    # sum amenities of buildings with multiple substations
-    df_amenities_in_buildings[
-        "n_amenities_inside"
-    ] = df_amenities_in_buildings.groupby(["id", "duplicate_identifier"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
-    )
-
-    # create column to always go for bus_id with max amenities
-    df_amenities_in_buildings[
-        "max_amenities"
-    ] = df_amenities_in_buildings.groupby(["id", "bus_id"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
-    )
-    # sort to go for
-    df_amenities_in_buildings.sort_values(
-        ["id", "max_amenities"], ascending=False, inplace=True
-    )
-
-    # identify lost zensus cells
-    df_lost_cells = df_amenities_in_buildings.loc[
-        df_amenities_in_buildings.duplicated(
-            subset=["id", "duplicate_identifier"], keep="first"
+        cells_query = session.query(
+            egon_map_zensus_buildings_filtered_all.id,
+            MapZensusGridDistricts.bus_id.label("building_bus_id"),
+        ).filter(
+            egon_map_zensus_buildings_filtered_all.zensus_population_id
+            == MapZensusGridDistricts.zensus_population_id
         )
-    ]
-    df_lost_cells.drop_duplicates(
-        subset=["zensus_population_id"], inplace=True
+
+        df_building_bus_id = pd.read_sql(
+            cells_query.statement, con=session.connection(), index_col=None
+        )
+
+    df_amenities_in_buildings = pd.merge(
+        left=df_amenities_in_buildings, right=df_building_bus_id, on="id"
     )
 
-    # drop buildings with multiple substation and lower max amenity
-    df_amenities_in_buildings.drop_duplicates(
-        subset=["id", "duplicate_identifier"], keep="first", inplace=True
-    )
+    # identify amenities with differing bus_id as building
+    identified_amenities = df_amenities_in_buildings.loc[
+        df_amenities_in_buildings["bus_id"]
+        != df_amenities_in_buildings["building_bus_id"]
+    ].index
+
+    lost_cells = df_amenities_in_buildings.loc[
+        identified_amenities, "zensus_population_id"
+    ].unique()
 
     # check if lost zensus cells are already covered
-    if not df_lost_cells.empty:
-        if not (
-            df_amenities_in_buildings["zensus_population_id"]
-            .isin(df_lost_cells["zensus_population_id"])
-            .empty
-        ):
-            # query geom data for cell if not
-            with db.session_scope() as session:
-                cells_query = session.query(
-                    DestatisZensusPopulationPerHa.id,
-                    DestatisZensusPopulationPerHa.geom,
-                ).filter(
-                    DestatisZensusPopulationPerHa.id.in_(
-                        df_lost_cells["zensus_population_id"]
-                    )
-                )
+    if not (
+        df_amenities_in_buildings["zensus_population_id"]
+        .isin(lost_cells)
+        .empty
+    ):
+        # query geom data for cell if not
+        with db.session_scope() as session:
+            cells_query = session.query(
+                DestatisZensusPopulationPerHa.id,
+                DestatisZensusPopulationPerHa.geom,
+            ).filter(
+                DestatisZensusPopulationPerHa.id.in_(pd.Index(lost_cells))
+            )
 
             df_lost_cells = gpd.read_postgis(
                 cells_query.statement,
@@ -545,36 +524,34 @@ def buildings_with_amenities():
                 geom_col="geom",
             )
 
-            # place random amenity in cell
-            df_lost_cells["n_amenities_inside"] = 1
-            df_lost_cells.rename(
-                columns={
-                    "id": "zensus_population_id",
-                },
-                inplace=True,
-            )
-            df_lost_cells = place_buildings_with_amenities(
-                df_lost_cells, amenities=1
-            )
-            df_lost_cells.rename(
-                columns={
-                    # "id": "zensus_population_id",
-                    "geom_point": "geom_amenity",
-                },
-                inplace=True,
-            )
-            df_lost_cells.drop(
-                columns=["building_count", "n_amenities_inside"], inplace=True
-            )
-        else:
-            df_lost_cells = None
+        # place random amenity in cell
+        df_lost_cells["n_amenities_inside"] = 1
+        df_lost_cells.rename(
+            columns={
+                "id": "zensus_population_id",
+            },
+            inplace=True,
+        )
+        df_lost_cells = place_buildings_with_amenities(
+            df_lost_cells, amenities=1
+        )
+        df_lost_cells.rename(
+            columns={
+                # "id": "zensus_population_id",
+                "geom_point": "geom_amenity",
+            },
+            inplace=True,
+        )
+        df_lost_cells.drop(
+            columns=["building_count", "n_amenities_inside"], inplace=True
+        )
     else:
         df_lost_cells = None
 
-    # drop helper columns
-    df_amenities_in_buildings.drop(
-        columns=["duplicate_identifier"], inplace=True
-    )
+    df_amenities_in_buildings.drop(identified_amenities, inplace=True)
+    df_amenities_in_buildings.drop(columns="building_bus_id", inplace=True)
+
+    df_amenities_in_buildings["n_amenities_inside"] = 1
 
     # sum amenities per building and cell
     df_amenities_in_buildings[
@@ -940,6 +917,33 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
+    # # Fix #989
+    # # Mismatched bus_id
+    # # May result in failing sanity checks
+    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
+    #
+    # with db.session_scope() as session:
+    #     query = session.query(
+    #         egon_map_zensus_buildings_filtered_all.id,
+    #         MapZensusGridDistricts.bus_id,
+    #     ).filter(
+    #         egon_map_zensus_buildings_filtered_all.id.in_(
+    #             df_cts_buildings.id.values
+    #         ),
+    #         MapZensusGridDistricts.zensus_population_id
+    #         == egon_map_zensus_buildings_filtered_all.zensus_population_id,
+    #     )
+    #
+    #     df_map_bus_id = pd.read_sql(
+    #         query.statement, session.connection(), index_col=None
+    #     )
+    #
+    # df_demand_share = pd.merge(
+    #     left=df_demand_share.drop(columns="bus_id"),
+    #     right=df_map_bus_id,
+    #     on="id",
+    # )
+
     # only pass selected columns
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
@@ -1156,8 +1160,18 @@ def cts_buildings():
     Cells with CTS demand, amenities and buildings do not change within
     the scenarios, only the demand itself. Therefore scenario eGon2035
     can be used universally to determine the cts buildings but not for
-    he demand share.
+    the demand share.
     """
+    # ========== Register np datatypes with SQLA ==========
+    def adapt_numpy_float64(numpy_float64):
+        return AsIs(numpy_float64)
+
+    def adapt_numpy_int64(numpy_int64):
+        return AsIs(numpy_int64)
+
+    register_adapter(np.float64, adapt_numpy_float64)
+    register_adapter(np.int64, adapt_numpy_int64)
+    # =====================================================
 
     log.info("Start logging!")
     # Buildings with amenities
@@ -1196,7 +1210,10 @@ def cts_buildings():
         df_amenities_without_buildings = df_amenities_without_buildings.append(
             df_lost_cells, ignore_index=True
         )
-        log.info("Lost cells due to substation intersection appended!")
+        log.info(
+            f"{df_lost_cells.shape[0]} lost cells due to substation "
+            f"intersection appended!"
+        )
 
     # One building per amenity
     df_amenities_without_buildings["n_amenities_inside"] = 1
@@ -1321,6 +1338,31 @@ def cts_buildings():
     df_cts_buildings = df_cts_buildings.reset_index().rename(
         columns={"index": "serial"}
     )
+
+    # # Fix #989
+    # # Mismatched zensus population id
+    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
+    #
+    # with db.session_scope() as session:
+    #     query = session.query(
+    #         egon_map_zensus_buildings_filtered_all.id,
+    #         egon_map_zensus_buildings_filtered_all.zensus_population_id,
+    #     ).filter(
+    #         egon_map_zensus_buildings_filtered_all.id.in_(
+    #             df_cts_buildings.id.values
+    #         )
+    #     )
+    #
+    #     df_map_zensus_population_id = pd.read_sql(
+    #         query.statement, session.connection(), index_col=None
+    #     )
+    #
+    # df_cts_buildings = pd.merge(
+    #     left=df_cts_buildings.drop(columns="zensus_population_id"),
+    #     right=df_map_zensus_population_id,
+    #     on="id",
+    # )
+
     # Write table to db for debugging and postprocessing
     write_table_to_postgis(
         df_cts_buildings,
