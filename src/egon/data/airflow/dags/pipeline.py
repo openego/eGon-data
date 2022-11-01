@@ -63,7 +63,7 @@ from egon.data.datasets.industrial_gas_demand import (
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
-from egon.data.datasets.loadarea import OsmLanduse
+from egon.data.datasets.loadarea import LoadArea, OsmLanduse
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
@@ -241,6 +241,9 @@ with airflow.DAG(
     vg250_mv_grid_districts = Vg250MvGridDistricts(
         dependencies=[mv_grid_districts, vg250]
     )
+
+    # Create load areas
+    load_areas = LoadArea(dependencies=[osm_landuse])
 
     # Create household demand profiles on zensus level
     hh_demand_profiles_setup = hh_profiles.HouseholdDemands(
