@@ -217,10 +217,14 @@ Added
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
 * Add charging infrastructure for e-mobility
   `#937 <https://github.com/openego/eGon-data/issues/937>`_
+* Add zipfile check
+  `#969 <https://github.com/openego/eGon-data/issues/969>`_
 * Add marginal costs for generators abroad and for carriers nuclear and coal
   `#907 <https://github.com/openego/eGon-data/issues/907>`_
 * Add wind off shore power plants for eGon100RE
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
+* Write simBEV metadata to DB table
+  `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -413,6 +417,8 @@ Changed
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
+* Allocate PV home batteries to mv grid districts
+  `#749 <https://github.com/openego/eGon-data/issues/749>`_
 * Add sanity checks for motorized individual travel
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Parallelize sanity checks
@@ -430,6 +436,9 @@ Changed
   `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Add rural heat pumps per medium voltage grid district
+  `#987 <https://github.com/openego/eGon-data/issues/987>`_
+
 
 Bug Fixes
 ---------
@@ -623,6 +632,8 @@ Bug Fixes
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
 * Remove drop of p_set and q_set for loads without timeserie
   `#971 <https://github.com/openego/eGon-data/issues/971>`_
+* Delete gas bus with wrong country code
+  `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
 
