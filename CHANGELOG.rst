@@ -423,10 +423,14 @@ Changed
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
+* Allocate PV home batteries to mv grid districts
+  `#749 <https://github.com/openego/eGon-data/issues/749>`_
 * Add sanity checks for motorized individual travel
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Parallelize sanity checks
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
+* Insert crossboarding gas pipeline with Germany in eGon100RE
+  `#881 <https://github.com/openego/eGon-data/issues/881>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
@@ -434,8 +438,8 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
-* Allocate PV home batteries to mv grid districts
-  `#749 <https://github.com/openego/eGon-data/issues/749>`_
+* Add rural heat pumps per medium voltage grid district
+  `#987 <https://github.com/openego/eGon-data/issues/987>`_
 
 
 Bug Fixes
