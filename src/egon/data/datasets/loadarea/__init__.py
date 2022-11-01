@@ -64,7 +64,7 @@ class LoadArea(Dataset):
                 census_cells_melt,
                 osm_landuse_census_cells_melt,
                 loadareas_create,
-                loadareas_load_data,
+                loadareas_add_demand,
                 drop_temp_tables,
             ),
         )
@@ -142,10 +142,10 @@ def loadareas_create():
     execute_sql_script("loadareas_create.sql")
 
 
-def loadareas_load_data():
+def loadareas_add_demand():
     """Adds consumption and peak load per sector to load areas"""
     print("Add consumption and peak loads to load areas...")
-    execute_sql_script("loadareas_load_data.sql")
+    execute_sql_script("loadareas_add_demand.sql")
 
 
 def drop_temp_tables():
