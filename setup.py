@@ -5,8 +5,7 @@ from __future__ import absolute_import, print_function
 from glob import glob
 from os.path import basename, dirname, join, splitext
 import io
-import re
-
+import re 
 from setuptools import find_packages, setup
 
 
