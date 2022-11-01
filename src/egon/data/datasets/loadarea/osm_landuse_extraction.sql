@@ -10,7 +10,7 @@ Divide into 4 landuse sectors:
 __copyright__   = "Reiner Lemoine Institut"
 __license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
 __url__         = "https://github.com/openego/data_processing/blob/master/LICENSE"
-__author__      = "Ludee, IlkaCu"
+__author__      = "Ludee, IlkaCu, nesnoj"
 */
 
 
@@ -18,9 +18,9 @@ __author__      = "Ludee, IlkaCu"
 -- Filter OSM Urban Landuse
 ---------- ---------- ----------
 
--- Polygons with tags related to settlements are extracted from the original OSM data set and stored in table 'openstreetmap.osm_landuse. 
+-- Polygons with tags related to settlements are extracted from the original OSM data set and stored in table 'openstreetmap.osm_landuse.
 
-DELETE FROM openstreetmap.osm_landuse; 
+DELETE FROM openstreetmap.osm_landuse;
 
 -- filter urban
 
@@ -29,30 +29,30 @@ INSERT INTO            openstreetmap.osm_landuse
             osm.osm_id ::integer AS osm_id,
             osm.name ::text AS name,
             '0' ::integer AS sector,
-            'undefined'::text AS sector_name, 
+            'undefined'::text AS sector_name,
             ST_AREA(ST_TRANSFORM(osm.geom,3035))/10000 ::double precision AS area_ha,
             osm.tags ::hstore AS tags,
             'outside' ::text AS vg250,
             ST_MULTI(ST_TRANSFORM(osm.geom,3035)) ::geometry(MultiPolygon,3035) AS geom
     FROM    openstreetmap.osm_polygon AS osm
     WHERE
-        tags @> '"landuse"=>"residential"'::hstore OR 
-        tags @> '"landuse"=>"commercial"'::hstore OR 
-        tags @> '"landuse"=>"retail"'::hstore OR 
-        tags @> '"landuse"=>"industrial;retail"'::hstore OR 
-        tags @> '"landuse"=>"industrial"'::hstore OR 
-        tags @> '"landuse"=>"port"'::hstore OR 
+        tags @> '"landuse"=>"residential"'::hstore OR
+        tags @> '"landuse"=>"commercial"'::hstore OR
+        tags @> '"landuse"=>"retail"'::hstore OR
+        tags @> '"landuse"=>"industrial;retail"'::hstore OR
+        tags @> '"landuse"=>"industrial"'::hstore OR
+        tags @> '"landuse"=>"port"'::hstore OR
         tags @> '"man_made"=>"wastewater_plant"'::hstore OR
-        tags @> '"aeroway"=>"terminal"'::hstore OR 
-        tags @> '"aeroway"=>"gate"'::hstore OR 
-        tags @> '"man_made"=>"works"'::hstore OR 
-        tags @> '"landuse"=>"farmyard"'::hstore OR 
-        tags @> '"landuse"=>"greenhouse_horticulture"'::hstore 
+        tags @> '"aeroway"=>"terminal"'::hstore OR
+        tags @> '"aeroway"=>"gate"'::hstore OR
+        tags @> '"man_made"=>"works"'::hstore OR
+        tags @> '"landuse"=>"farmyard"'::hstore OR
+        tags @> '"landuse"=>"greenhouse_horticulture"'::hstore
     ORDER BY    osm.id;
-    
+
 -- Create index using GIST (geom)
 
-DROP INDEX IF EXISTS openstreetmap.osm_landuse_geom_idx; 
+DROP INDEX IF EXISTS openstreetmap.osm_landuse_geom_idx;
 
 CREATE INDEX osm_landuse_geom_idx
     ON openstreetmap.osm_landuse USING GIST (geom);
@@ -74,7 +74,7 @@ UPDATE 	openstreetmap.osm_landuse AS t1
 		) AS t2
 	WHERE  	t1.id = t2.id;
 
--- Identify polygons which are spatially overlapping with the defined boundaries 
+-- Identify polygons which are spatially overlapping with the defined boundaries
 UPDATE 	openstreetmap.osm_landuse AS t1
 	SET  	vg250 = t2.vg250
 	FROM    (
@@ -110,7 +110,7 @@ DROP SEQUENCE IF EXISTS 	openstreetmap.osm_landuse_vg250_cut_id CASCADE;
 CREATE SEQUENCE 		openstreetmap.osm_landuse_vg250_cut_id;
 
 
--- Create materialized views to identify and store intersecting parts of polygons overlapping the external borders 
+-- Create materialized views to identify and store intersecting parts of polygons overlapping the external borders
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_cut;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_cut AS
 	SELECT	nextval('openstreetmap.osm_landuse_vg250_cut_id') ::integer AS cut_id,
@@ -172,7 +172,7 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_clean_cut AS
 		cut.osm_id ::integer AS osm_id,
 		cut.name ::text AS name,
 		cut.sector ::integer AS sector,
-		cut.sector_name::text AS sector_name, 
+		cut.sector_name::text AS sector_name,
 		cut.area_ha ::double precision AS area_ha,
 		cut.tags ::hstore AS tags,
 		cut.vg250 ::text AS vg250,
@@ -183,9 +183,9 @@ CREATE MATERIALIZED VIEW		openstreetmap.osm_landuse_vg250_clean_cut AS
 -- index (id)
 CREATE UNIQUE INDEX  	osm_landuse_vg250_clean_cut_id_idx
 		ON	openstreetmap.osm_landuse_vg250_clean_cut (id);
-		
+
 ----------------------------------------------------------------------------
--- Remove all faulty entries from table openstreetmap.osm_landuse 
+-- Remove all faulty entries from table openstreetmap.osm_landuse
 -- and insert those parts of the polygons lying within the (German) borders
 ----------------------------------------------------------------------------
 
@@ -211,47 +211,46 @@ INSERT INTO	openstreetmap.osm_landuse
 
 
 ---------- ---------- ----------
--- Update Sector Information 
+-- Update Sector Information
 ---------- ---------- ----------
 
 -- Sector 1. Residential
 -- update sector
 UPDATE 	openstreetmap.osm_landuse
-SET  	sector = '1', 
+SET  	sector = '1',
 	sector_name = 'residential'
 WHERE	tags @> '"landuse"=>"residential"'::hstore;
 
 -- Sector 2. Retail
 -- update sector
 UPDATE 	openstreetmap.osm_landuse
-SET  	sector = '2', 
+SET  	sector = '2',
 	sector_name = 'retail'
-WHERE	tags @> '"landuse"=>"commercial"'::hstore OR 
-		tags @> '"landuse"=>"retail"'::hstore OR 
+WHERE	tags @> '"landuse"=>"commercial"'::hstore OR
+		tags @> '"landuse"=>"retail"'::hstore OR
 		tags @> '"landuse"=>"industrial;retail"'::hstore;
-	
+
 -- Sector 3. Industrial
 -- update sector
 UPDATE 	openstreetmap.osm_landuse
-SET  	sector = '3', 
+SET  	sector = '3',
 	sector_name = 'industrial'
-WHERE	tags @> '"landuse"=>"industrial"'::hstore OR 
-		tags @> '"landuse"=>"port"'::hstore OR 
+WHERE	tags @> '"landuse"=>"industrial"'::hstore OR
+		tags @> '"landuse"=>"port"'::hstore OR
 		tags @> '"man_made"=>"wastewater_plant"'::hstore OR
-		tags @> '"aeroway"=>"terminal"'::hstore OR 
-		tags @> '"aeroway"=>"gate"'::hstore OR 
+		tags @> '"aeroway"=>"terminal"'::hstore OR
+		tags @> '"aeroway"=>"gate"'::hstore OR
 		tags @> '"man_made"=>"works"'::hstore;
-	
+
 -- Sector 4. Agricultural
 -- update sector
 UPDATE 	openstreetmap.osm_landuse
-	SET  	sector = '4', 
+	SET  	sector = '4',
 		sector_name = 'agricultural'
-	WHERE	tags @> '"landuse"=>"farmyard"'::hstore OR 
+	WHERE	tags @> '"landuse"=>"farmyard"'::hstore OR
 		tags @> '"landuse"=>"greenhouse_horticulture"'::hstore;
 
--- Drop MViews which are not of special interest for downstream tasks 	
+-- Drop MViews which are not of special interest for downstream tasks
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_error_geom_vg250 CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_clean_cut_multi CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_landuse_vg250_cut CASCADE;
-
