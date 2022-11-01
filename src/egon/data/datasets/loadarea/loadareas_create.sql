@@ -50,7 +50,6 @@ CREATE TABLE            demand.egon_loadarea (
     sector_consumption_industrial_2035 double precision,
     sector_consumption_industrial_2050 double precision,
     --sector_consumption_agricultural double precision,
-    sector_consumption_sum double precision,
     sector_peakload_retail double precision,
     sector_peakload_retail_2035 double precision,
     sector_peakload_retail_2050 double precision,
