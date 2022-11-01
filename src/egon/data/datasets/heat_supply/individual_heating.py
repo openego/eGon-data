@@ -1853,6 +1853,7 @@ def delete_mvgd_ts_100RE():
 
 def delete_heat_peak_loads_2035():
     """Remove all heat peak loads for eGon2035."""
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
@@ -1861,6 +1862,7 @@ def delete_heat_peak_loads_2035():
 
 def delete_heat_peak_loads_100RE():
     """Remove all heat peak loads for eGon100RE."""
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
