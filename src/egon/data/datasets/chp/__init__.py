@@ -528,7 +528,7 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
