@@ -415,6 +415,8 @@ Changed
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
+* Allocate PV home batteries to mv grid districts
+  `#749 <https://github.com/openego/eGon-data/issues/749>`_
 * Add sanity checks for motorized individual travel
   `#820 <https://github.com/openego/eGon-data/issues/820>`_
 * Parallelize sanity checks
@@ -426,6 +428,7 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+
 
 Bug Fixes
 ---------
