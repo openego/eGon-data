@@ -78,7 +78,7 @@ The OSM, DemandRegio and Peta5 dataset differ from each other. The OSM dataset
 is a community based dataset which is extended throughout and does not claim to
 be complete. Therefore, not all census cells which have a demand assigned by
 DemandRegio or Peta5 methodology also have buildings with respective tags or
-sometime even any building at all. Furthermore, the substation load areas are
+sometimes even any building at all. Furthermore, the substation load areas are
 determined dynamically in a previous dataset. Merging these datasets different
 scopes (census cell shapes, building shapes) and their inconsistencies need to
 be addressed. For example: not yet tagged buildings or amenities in OSM, or
@@ -88,7 +88,7 @@ building shapes exceeding census cells.
 **How are these datasets combined?**
 
 
-The methodology for heat and electricity is the same and only differ in the
+The methodology for heat and electricity is the same and only differs in the
 annual demand and MV/HV Substation profile. In a previous dataset
 (openstreetmap), we filter all OSM buildings and amenities for tags, we relate
 to the cts sector. Amenities are mapped to intersecting buildings and then
@@ -99,7 +99,8 @@ the median value of amenities/census cell for n and all filtered buildings +
 synthetic residential buildings. If no building data is available a synthetic
 buildings is randomly generated. This also happens for amenities which couldn't
 be assigned to any osm building. All census cells with an annual demand are
-covered this way, and we obtain four different categories of amenities:
+covered this way, and we obtain four different categories of buildings with
+amenities:
 
 * Buildings with amenities
 * Synthetic buildings with amenities
@@ -129,22 +130,23 @@ https://github.com/openego/eGon-data/issues/671#issuecomment-1260740258
 
 **Drawbacks and limitations of the data**
 
-* Shape of profiles for each building is similar within one substation load
-area and only scaled differently.
-* Load areas are generated dynamically. In case of buildings with amenities
-exceeding borders, the number of amenities are transferred randomly to either
-of two load areas.
+* Shape of profiles for each building is similar within a MVGD and only scaled
+with a different factor.
+* MVGDs are generated dynamically. In case of buildings with amenities
+exceeding MVGD borders, amenities which are assigned to a different MVGD than
+the assigned building centroid, the amenities are dropped for sake of
+simplicity. One building should not have a connection to two MVGDs.
 * The completeness of the OSM data depends on community contribution and is
 crucial to the quality of our results.
 * Randomly selected buildings and generated amenities may inadequately reflect
 reality, but are chosen for sake of simplicity as a measure to fill data gaps.
 * Since this dataset is a cascade after generation of synthetic residential
-buildings also check drawbacks and limitations in hh_buildings.py
+buildings also check drawbacks and limitations in hh_buildings.py.
 * Synthetic buildings may be placed within osm buildings which exceed multiple
 census cells. This is currently accepted but may be solved in  #953
 * Scattered high peak loads occur and might lead to single MV grid connections
 in ding0. In some cases this might not be viable. Postprocessing is needed and
-may be solved in #954
+may be solved in #954.
 
 
 Example Query
