@@ -127,12 +127,13 @@ def district_heating():
 
     backup_rh = backup_resistive_heaters("eGon2035")
 
-    backup_rh.to_postgis(
-        targets["district_heating_supply"]["table"],
-        schema=targets["district_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
+    if not backup_rh.empty:
+        backup_rh.to_postgis(
+            targets["district_heating_supply"]["table"],
+            schema=targets["district_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
 
 
 def individual_heating():
@@ -170,14 +171,13 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 {
                     district_heating,
-                    # Temporary drop everything related to rural heat
-                    # individual_heating,
+                    individual_heating,
                     potential_germany,
                 },
             ),
