@@ -225,8 +225,6 @@ Added
   `#955 <https://github.com/openego/eGon-data/issues/955>`_
 
 
- Add voltage level for building loads #955
-
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
