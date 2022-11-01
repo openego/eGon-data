@@ -30,6 +30,10 @@ The resulting data is stored in separate tables
     Mapping of demand time series and buildings including cell_id, building
     area and peak load. This table is already created within
     :func:`hh_buildings.get_building_peak_loads()`
+* `boundaries.egon_map_zensus_mvgd_buildings`:
+    A final mapping table including all buildings used for residential and
+    cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
+    building type (osm or synthetic)
 
 **The following datasets from the database are mainly used for creation:**
 
