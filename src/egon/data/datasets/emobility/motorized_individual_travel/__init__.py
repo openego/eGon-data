@@ -111,6 +111,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries i
     generate_model_data_bunch,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
+    read_simbev_metadata_file,
 )
 
 
@@ -360,6 +361,41 @@ def write_evs_trips_to_db():
         os.remove(trip_file)
 
 
+def write_metadata_to_db():
+    """
+    Write used SimBEV metadata per scenario to database.
+    """
+    dtypes = {
+        "scenario": str,
+        "eta_cp": float,
+        "stepsize": int,
+        "start_date": np.datetime64,
+        "end_date": np.datetime64,
+        "soc_min": float,
+        "grid_timeseries": bool,
+        "grid_timeseries_by_usecase": bool,
+    }
+
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        meta_run_config = read_simbev_metadata_file(
+            scenario_name, "config"
+        ).loc["basic"]
+
+        meta_run_config = (
+            meta_run_config.to_frame()
+            .T.assign(scenario=scenario_name)[dtypes.keys()]
+            .astype(dtypes)
+        )
+
+        meta_run_config.to_sql(
+            name=EgonEvMetadata.__table__.name,
+            schema=EgonEvMetadata.__table__.schema,
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
+
+
 class MotorizedIndividualTravel(Dataset):
     def __init__(self, dependencies):
         def generate_model_data_tasks(scenario_name):
@@ -417,13 +453,20 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 {
-                    (download_and_preprocess, allocate_evs_numbers),
-                    (extract_trip_file, write_evs_trips_to_db),
+                    (
+                        download_and_preprocess,
+                        allocate_evs_numbers,
+                    ),
+                    (
+                        extract_trip_file,
+                        write_metadata_to_db,
+                        write_evs_trips_to_db,
+                    ),
                 },
                 allocate_evs_to_grid_districts,
                 delete_model_data_from_db,
