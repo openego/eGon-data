@@ -654,6 +654,8 @@ Bug Fixes
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Create unique ids on generated tasks to avoid circular flows in pipeline
+  `#986 <https://github.com/openego/eGon-data/issues/986>`_
 * Adjust p_nom and marginal cost for OCGT in eGon2035
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
 * Correct gas technology costs for eGon100RE
