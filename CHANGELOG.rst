@@ -409,16 +409,18 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
+* Add biogas generators ton eGon100RE
+  `#402 <https://github.com/openego/eGon-data/issues/844>`_
 * Move and merge the two assign_gas_bus_id functions to a central place
   `#797 <https://github.com/openego/eGon-data/issues/797>`_
 * Add coordinates to non AC buses abroad in eGon100RE
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
-* Set non extendable gas components from p-e-s as so for eGon100RE
-  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Integrate new data bundle using zenodo sandbox
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
+* Set non extendable gas links from p-e-s as so for eGon100RE
+  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Allocate PV home batteries to mv grid districts
@@ -429,13 +431,25 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Insert crossboarding gas pipeline with Germany in eGon100RE
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
+* Harmonize H2 carrier names in eGon100RE
+  `#929 <https://github.com/openego/eGon-data/issues/929>`_
+* Add missing gas stores in eGon100RE
+  `#779 <https://github.com/openego/eGon-data/issues/779>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Adjust H2 industry profiles abroad for eGon2035
+  `#940 <https://github.com/openego/eGon-data/issues/940>`_
+* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
+  `#933 <https://github.com/openego/eGon-data/issues/933>`_
+* Add sanity checks for gas sector
+  `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
+  `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
 
@@ -630,10 +644,16 @@ Bug Fixes
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
 * Drop era5 weather cell table using cascade
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
+* Remove drop of p_set and q_set for loads without timeserie
+  `#971 <https://github.com/openego/eGon-data/issues/971>`_
 * Delete gas bus with wrong country code
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Adjust p_nom and marginal cost for OCGT in eGon2035
+  `#863 <https://github.com/openego/eGon-data/issues/863>`_
+* Correct gas technology costs for eGon100RE
+  `#984 <https://github.com/openego/eGon-data/issues/984>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

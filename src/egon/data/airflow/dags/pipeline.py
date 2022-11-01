@@ -7,7 +7,6 @@ from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_prod import CH4Production
-from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
@@ -43,6 +42,7 @@ from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
 from egon.data.datasets.gas_grid import GasNodesandPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
+from egon.data.datasets.gas_stores_germany import GasStores
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
@@ -389,6 +389,7 @@ with airflow.DAG(
             create_gas_polygons_egon2035,
             gas_grid_insert_data,
             insert_hydrogen_buses,
+            run_pypsaeursec,
         ]
     )
 
@@ -419,18 +420,25 @@ with airflow.DAG(
             run_pypsaeursec,
             foreign_lines,
             insert_hydrogen_buses,
-            create_gas_polygons_egon100RE
+            create_gas_polygons_egon100RE,
         ]
     )
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[
+            create_gas_polygons_egon2035,
+            create_gas_polygons_egon100RE,
+        ]
     )
 
-    # Import CH4 storages
-    insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons_egon2035]
+    # Import non extendable gas storages
+    insert_data_gas_stores = GasStores(
+        dependencies=[
+            create_gas_polygons_egon2035,
+            insert_hydrogen_buses,
+            create_gas_polygons_egon100RE,
+        ]
     )
 
     # Assign industrial gas demand eGon2035
@@ -569,7 +577,7 @@ with airflow.DAG(
             insert_h2_to_ch4_grid_links,
             create_gas_polygons_egon100RE,
             gas_production_insert_data,
-            insert_data_ch4_storages,
+            insert_data_gas_stores,
         ]
     )
 

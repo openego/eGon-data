@@ -4,17 +4,19 @@ the pysa-eur-sec scenario parameter creation
 
 from pathlib import Path
 from urllib.request import urlretrieve
+import json
 import os
 import tarfile
 
 from shapely.geometry import LineString
 import geopandas as gpd
 import importlib_resources as resources
+import numpy as np
 import pandas as pd
 import pypsa
 import yaml
 
-from egon.data import __path__, db
+from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -572,7 +574,7 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers.remove("AC")
+    carriers = [e for e in carriers if e not in ("AC", "biogas")]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
@@ -607,6 +609,7 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
+            "H2": "H2_grid",
         },
         inplace=True,
     )
@@ -675,24 +678,24 @@ def neighbor_reduction():
         """Prepare and write neighboring crossborder links to eTraGo table
 
         This function prepare the neighboring crossborder links
-        generated the PyPSA-eur-sec (p-e-s) run by:
+        generated with the PyPSA-eur-sec (p-e-s) run by:
           * Delete the useless columns
           * If extendable is false only (non default case):
               * Replace p_nom = 0 with the p_nom_op values (arrising
-              from the p-e-s optimisation)
+                from the p-e-s optimisation)
               * Setting p_nom_extendable to false
           * Add geomtry to the links: 'geom' and 'topo' columns
           * Change the name of the carriers to have the consistent in
             eGon-data
 
-        The function insert then the link to the eTraGo table and has
+        The function insert then the links to the eTraGo table and has
         no return.
 
         Parameters
         ----------
         neighbor_links : pandas.DataFrame
             Dataframe containing the neighboring crossborder links
-        scn_name : str
+        scn : str
             Name of the scenario
         extendable : bool
             Boolean expressing if the links should be extendable or not
@@ -799,7 +802,7 @@ def neighbor_reduction():
     ]
 
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC"]
+    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
@@ -864,14 +867,17 @@ def neighbor_reduction():
             "electricity": "AC",
             "DC": "AC",
             "industry_electricity": "AC",
-            "H2_pipeline": "H2_system_boundary",
+            "H2_pipeline_retrofitted": "H2_system_boundary",
+            "gas_pipeline": "CH4_system_boundary",
             "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
 
-    for i in ["index", "p_set", "q_set"]:
-        neighbor_loads = neighbor_loads.drop(i, axis=1)
+    neighbor_loads = neighbor_loads.drop(
+        columns=["index"],
+        errors="ignore",
+    )
 
     neighbor_loads.to_sql(
         "egon_etrago_load",
@@ -883,43 +889,110 @@ def neighbor_reduction():
     )
 
     # prepare neighboring stores for etrago tables
-    neighbor_stores["scn_name"] = "eGon100RE"
+    def stores_to_etrago(neighbor_stores, scn="eGon100RE", extendable=True):
+        """Prepare and write neighboring stores to eTraGo table
 
-    # Unify carrier names
-    neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
+        This function prepare the neighboring stores generated with
+        the PyPSA-eur-sec (p-e-s) run by:
+          * Delete the useless columns
+          * If extendable is false only (non default case):
+              * Replace p_nom = 0 with the p_nom_op values (arrising
+                from the p-e-s optimisation)
+              * Setting p_nom_extendable to false
+          * Change the name of the carriers to have the consistent in
+            eGon-data
 
-    neighbor_stores.carrier.replace(
-        {
-            "Li_ion": "battery",
-            "gas": "CH4",
-        },
-        inplace=True,
+        The function insert then the stores to the eTraGo table and has
+        no return.
+
+        Parameters
+        ----------
+        neighbor_stores : pandas.DataFrame
+            Dataframe containing the neighboring stores
+        scn : str
+            Name of the scenario
+        extendable : bool
+            Boolean expressing if the stores should be extendable or not
+
+        Returns
+        -------
+        None
+
+        """
+        neighbor_stores["scn_name"] = scn
+
+        if extendable is True:
+            neighbor_stores = neighbor_stores.drop(
+                columns=[
+                    "name",
+                    "p_set",
+                    "q_set",
+                    "e_nom_opt",
+                    "lifetime",
+                ],
+                errors="ignore",
+            )
+
+        elif extendable is False:
+            neighbor_stores = neighbor_stores.drop(
+                columns=[
+                    "name",
+                    "p_set",
+                    "q_set",
+                    "e_nom",
+                    "lifetime",
+                    "e_nom_extendable",
+                ],
+                errors="ignore",
+            )
+            neighbor_stores = neighbor_stores.rename(
+                columns={"e_nom_opt": "e_nom"}
+            )
+            neighbor_stores["e_nom_extendable"] = False
+
+        # Unify carrier names
+        neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
+
+        neighbor_stores.carrier.replace(
+            {
+                "Li_ion": "battery",
+                "gas": "CH4",
+            },
+            inplace=True,
+        )
+        neighbor_stores.loc[
+            (
+                (neighbor_stores.e_nom_max <= 1e9)
+                & (neighbor_stores.carrier == "H2")
+            ),
+            "carrier",
+        ] = "H2_underground"
+        neighbor_stores.loc[
+            (
+                (neighbor_stores.e_nom_max > 1e9)
+                & (neighbor_stores.carrier == "H2")
+            ),
+            "carrier",
+        ] = "H2_overground"
+
+        neighbor_stores.to_sql(
+            "egon_etrago_store",
+            engine,
+            schema="grid",
+            if_exists="append",
+            index=True,
+            index_label="store_id",
+        )
+
+    stores_to_etrago(
+        neighbor_stores[neighbor_stores.carrier != "gas"],
+        "eGon100RE",
+        extendable=True,
     )
-    neighbor_stores.loc[
-        (
-            (neighbor_stores.e_nom_max <= 1e9)
-            & (neighbor_stores.carrier == "H2")
-        ),
-        "carrier",
-    ] = "H2_underground"
-    neighbor_stores.loc[
-        (
-            (neighbor_stores.e_nom_max > 1e9)
-            & (neighbor_stores.carrier == "H2")
-        ),
-        "carrier",
-    ] = "H2_overground"
-
-    for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
-        neighbor_stores = neighbor_stores.drop(i, axis=1)
-
-    neighbor_stores.to_sql(
-        "egon_etrago_store",
-        engine,
-        schema="grid",
-        if_exists="append",
-        index=True,
-        index_label="store_id",
+    stores_to_etrago(
+        neighbor_stores[neighbor_stores.carrier == "gas"],
+        "eGon100RE",
+        extendable=False,
     )
 
     # prepare neighboring storage_units for etrago tables
@@ -1051,20 +1124,120 @@ def neighbor_reduction():
         )
 
 
+def overwrite_H2_pipeline_share():
+    """Overwrite retrofitted_CH4pipeline-to-H2pipeline_share value
+
+    Overwrite retrofitted_CH4pipeline-to-H2pipeline_share in the
+    scenario parameter table if p-e-s is run.
+    This function write in the database and has no return.
+
+    """
+    scn_name = "eGon100RE"
+    # Select source and target from dataset configuration
+    target = egon.data.config.datasets()["pypsa-eur-sec"]["target"]
+
+    n = read_network()
+
+    H2_pipelines = n.links[n.links["carrier"] == "H2 pipeline retrofitted"]
+    CH4_pipelines = n.links[n.links["carrier"] == "gas pipeline"]
+    H2_pipes_share = np.mean(
+        [
+            (i / j)
+            for i, j in zip(
+                H2_pipelines.p_nom_opt.to_list(), CH4_pipelines.p_nom.to_list()
+            )
+        ]
+    )
+    logger.info(
+        "retrofitted_CH4pipeline-to-H2pipeline_share = " + str(H2_pipes_share)
+    )
+
+    parameters = db.select_dataframe(
+        f"""
+        SELECT *
+        FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        WHERE name = '{scn_name}'
+        """
+    )
+
+    gas_param = parameters.loc[0, "gas_parameters"]
+    gas_param["retrofitted_CH4pipeline-to-H2pipeline_share"] = H2_pipes_share
+    gas_param = json.dumps(gas_param)
+
+    # Update data in db
+    db.execute_sql(
+        f"""
+    UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+    SET gas_parameters = '{gas_param}'
+    WHERE name = '{scn_name}';
+    """
+    )
+
+
+def overwrite_max_gas_generation_overtheyear():
+    """Overwrite max_gas_generation_overtheyear in scenario parameter table
+
+    Overwrite max_gas_generation_overtheyear in scenario parameter
+    table if p-e-s is run.
+    This function write in the database and has no return.
+
+    """
+    scn_name = "eGon100RE"
+
+    # Select source and target from dataset configuration
+    target = config.datasets()["gas_prod"]["target"]
+
+    if execute_pypsa_eur_sec:
+        n = read_network()
+        max_value = n.stores[n.stores["carrier"] == "biogas"].loc[
+            "DE0 0 biogas", "e_initial"
+        ]
+
+        parameters = db.select_dataframe(
+            f"""
+            SELECT *
+            FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+            WHERE name = '{scn_name}'
+            """
+        )
+
+        gas_param = parameters.loc[0, "gas_parameters"]
+        gas_param["max_gas_generation_overtheyear"] = {"biogas": max_value}
+        gas_param = json.dumps(gas_param)
+
+        # Update data in db
+        db.execute_sql(
+            f"""
+        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        SET gas_parameters = '{gas_param}'
+        WHERE name = '{scn_name}';
+        """
+        )
+
+
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
 execute_pypsa_eur_sec = False
 
 if execute_pypsa_eur_sec:
-    tasks = (run_pypsa_eur_sec, clean_database, neighbor_reduction)
+    tasks = (
+        run_pypsa_eur_sec,
+        clean_database,
+        neighbor_reduction,
+        overwrite_H2_pipeline_share,
+        overwrite_max_gas_generation_overtheyear,
+    )
 else:
-    tasks = (clean_database, neighbor_reduction)
+    tasks = (
+        clean_database,
+        neighbor_reduction,
+    )
 
 
 class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.8",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=tasks,
         )

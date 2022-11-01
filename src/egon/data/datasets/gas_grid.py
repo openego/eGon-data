@@ -317,7 +317,6 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     ).set_geometry("geom", crs=4326)
 
     # Insert to db
-    print(gdf_abroad_buses)
     gdf_abroad_buses.to_postgis(
         "egon_etrago_bus",
         engine,
@@ -329,10 +328,10 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     return gdf_abroad_buses
 
 
-def insert_gas_pipeline_list(
+def define_gas_pipeline_list(
     gas_nodes_list, abroad_gas_nodes_list, scn_name="eGon2035"
 ):
-    """Insert list of gas pipelines from SciGRID_gas IGGIELGN data
+    """Define gas pipelines in Germany from SciGRID_gas IGGIELGN data
 
     Insert detailled description
 
@@ -347,7 +346,8 @@ def insert_gas_pipeline_list(
 
     Returns
     -------
-    None
+    gas_pipelines_list : pandas.DataFrame
+        Dataframe containing the gas pipelines in Germany
 
     """
     abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
@@ -355,8 +355,6 @@ def insert_gas_pipeline_list(
     main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
         "main_gas_carrier"
     ]
-
-    engine = db.engine()
 
     # Select next id value
     new_id = db.next_etrago_id("link")
@@ -660,8 +658,6 @@ def insert_gas_pipeline_list(
             "NUTS1_0",
             "NUTS1_1",
             "country_code",
-            "country_0",
-            "country_1",
             "diameter",
             "pipe_class",
             "classification",
@@ -669,6 +665,33 @@ def insert_gas_pipeline_list(
             "lat",
             "long",
             "length_km",
+        ]
+    )
+
+    return gas_pipelines_list
+
+
+def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
+    """Insert list of gas pipelines in the database
+
+    Insert detailled description
+
+    Parameters
+    ----------
+    gas_pipelines_list : pandas.DataFrame
+        Dataframe containing the gas pipelines in Germany
+    scn_name : str
+        Name of the scenario
+
+    """
+    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
+        "main_gas_carrier"
+    ]
+    engine = db.engine()
+    gas_pipelines_list = gas_pipelines_list.drop(
+        columns=[
+            "country_0",
+            "country_1",
         ]
     )
 
@@ -752,7 +775,10 @@ def insert_gas_data():
     insert_CH4_nodes_list(gas_nodes_list)
     abroad_gas_nodes_list = insert_gas_buses_abroad()
 
-    insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
+    gas_pipeline_list = define_gas_pipeline_list(
+        gas_nodes_list, abroad_gas_nodes_list
+    )
+    insert_gas_pipeline_list(gas_pipeline_list)
     remove_isolated_gas_buses()
 
 
