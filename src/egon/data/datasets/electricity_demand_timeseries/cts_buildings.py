@@ -264,6 +264,7 @@ class CtsDemandBuildings(Dataset):
                 {cts_electricity, cts_heat},
                 {get_cts_electricity_peak_load, get_cts_heat_peak_load},
                 map_all_used_buildings,
+                assign_voltage_level_to_buildings,
             ),
         )
 
@@ -1406,7 +1407,6 @@ def cts_electricity():
     write_table_to_postgres(
         df_demand_share,
         EgonCtsElectricityDemandBuildingShare,
-        engine=engine,
         drop=True,
     )
     log.info("Profile share exported to DB!")
@@ -1445,7 +1445,6 @@ def cts_heat():
     write_table_to_postgres(
         df_demand_share,
         EgonCtsHeatDemandBuildingShare,
-        engine=engine,
         drop=True,
     )
     log.info("Profile share exported to DB!")
@@ -1516,7 +1515,6 @@ def get_cts_electricity_peak_load():
         write_table_to_postgres(
             df_peak_load,
             BuildingElectricityPeakLoads,
-            engine=engine,
             drop=False,
             index=False,
             if_exists="append",
@@ -1592,10 +1590,70 @@ def get_cts_heat_peak_load():
         write_table_to_postgres(
             df_peak_load,
             BuildingHeatPeakLoads,
-            engine=engine,
             drop=False,
             index=False,
             if_exists="append",
         )
 
         log.info(f"Peak load for {scenario} exported to DB!")
+
+
+def assign_voltage_level_to_buildings():
+    """
+    Add voltage level to all buildings by summed peak demand.
+
+    All entries with same building id get the voltage level corresponding
+    to their summed residential and cts peak demand.
+    """
+
+    with db.session_scope() as session:
+        cells_query = session.query(BuildingElectricityPeakLoads)
+
+        df_peak_loads = pd.read_sql(
+            cells_query.statement,
+            cells_query.session.bind,
+        )
+
+    df_peak_load_buildings = df_peak_loads.groupby("building_id")[
+        "peak_load_in_w"
+    ].sum()
+    df_peak_load_buildings = df_peak_load_buildings.to_frame()
+    df_peak_load_buildings.loc[:, "voltage_level"] = 0
+
+    # Identify voltage_level by thresholds defined in the eGon project
+    df_peak_load_buildings.loc[
+        df_peak_load_buildings["peak_load_in_w"] <= 0.1 * 1e6, "voltage_level"
+    ] = 7
+    df_peak_load_buildings.loc[
+        df_peak_load_buildings["peak_load_in_w"] > 0.1 * 1e6, "voltage_level"
+    ] = 6
+    df_peak_load_buildings.loc[
+        df_peak_load_buildings["peak_load_in_w"] > 0.2 * 1e6, "voltage_level"
+    ] = 5
+    df_peak_load_buildings.loc[
+        df_peak_load_buildings["peak_load_in_w"] > 5.5 * 1e6, "voltage_level"
+    ] = 4
+    df_peak_load_buildings.loc[
+        df_peak_load_buildings["peak_load_in_w"] > 20 * 1e6, "voltage_level"
+    ] = 3
+    df_peak_load_buildings.loc[
+        df_peak_load_buildings["peak_load_in_w"] > 120 * 1e6, "voltage_level"
+    ] = 1
+
+    df_peak_load = pd.merge(
+        left=df_peak_loads.drop(columns="voltage_level"),
+        right=df_peak_load_buildings["voltage_level"],
+        how="left",
+        left_on="building_id",
+        right_index=True,
+    )
+
+    # Write peak loads into db
+    # remove table and replace by new
+    write_table_to_postgres(
+        df_peak_load,
+        BuildingElectricityPeakLoads,
+        drop=True,
+        index=False,
+        if_exists="append",
+    )

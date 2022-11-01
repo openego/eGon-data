@@ -233,6 +233,8 @@ Added
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
 * Add desaggregation of pv home batteries onto buildings
   `#988 <https://github.com/openego/eGon-data/issues/988>`_
+*  Add voltage level for electricity building loads
+  `#955 <https://github.com/openego/eGon-data/issues/955>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -664,4 +666,3 @@ Bug Fixes
 .. _#343: https://github.com/openego/eGon-data/issues/343
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
-.. _#669: https://github.com/openego/eGon-data/issues/669
