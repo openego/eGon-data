@@ -85,7 +85,7 @@ def insert_h2_pipelines():
     new_pipelines["p_nom_extendable"] = True
     new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
-    # ToDo: insert capital cost data
+    # Insert capital cost data
     new_pipelines["capital_cost"] = (
         scn_params["capital_cost"]["H2_pipeline"]
         * new_pipelines["length"]
@@ -137,12 +137,12 @@ def insert_h2_pipelines():
         """
     select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
 
-    INSERT INTO grid.egon_etrago_link (scn_name,
+    INSERT INTO grid.egon_etrago_link (scn_name, capital_cost,
                                               link_id, carrier,
                                               bus0, bus1,
                                               p_nom_extendable, length,
                                               geom, topo)
-    SELECT scn_name,
+    SELECT scn_name, capital_cost,
                 link_id, carrier,
                 bus0, bus1,
                 p_nom_extendable, length,
