@@ -31,10 +31,10 @@ class OsmPolygonUrban(Base):
     geom = Column(Geometry("MultiPolygon", 3035))
 
 
-class LoadArea(Dataset):
+class OsmLanduse(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="LoadArea",
+            name="OsmLanduse",
             version="0.0.0",
             dependencies=dependencies,
             tasks=(
