@@ -84,15 +84,16 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
+    EgonEvMetadata,
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (
+from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
     allocate_evs_to_grid_districts,
 )
@@ -105,10 +106,12 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (
+from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
+    delete_model_data_from_db,
     generate_model_data_bunch,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
+    read_simbev_metadata_file,
 )
 
 
@@ -151,6 +154,8 @@ def create_tables():
     EgonEvTrip.__table__.create(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.drop(bind=engine, checkfirst=True)
     EgonEvMvGridDistrict.__table__.create(bind=engine, checkfirst=True)
+    EgonEvMetadata.__table__.drop(bind=engine, checkfirst=True)
+    EgonEvMetadata.__table__.create(bind=engine, checkfirst=True)
 
     # Create dir for results, if it does not exist
     result_dir = WORKING_DIR / Path("results")
@@ -356,6 +361,41 @@ def write_evs_trips_to_db():
         os.remove(trip_file)
 
 
+def write_metadata_to_db():
+    """
+    Write used SimBEV metadata per scenario to database.
+    """
+    dtypes = {
+        "scenario": str,
+        "eta_cp": float,
+        "stepsize": int,
+        "start_date": np.datetime64,
+        "end_date": np.datetime64,
+        "soc_min": float,
+        "grid_timeseries": bool,
+        "grid_timeseries_by_usecase": bool,
+    }
+
+    for scenario_name in ["eGon2035", "eGon100RE"]:
+        meta_run_config = read_simbev_metadata_file(
+            scenario_name, "config"
+        ).loc["basic"]
+
+        meta_run_config = (
+            meta_run_config.to_frame()
+            .T.assign(scenario=scenario_name)[dtypes.keys()]
+            .astype(dtypes)
+        )
+
+        meta_run_config.to_sql(
+            name=EgonEvMetadata.__table__.name,
+            schema=EgonEvMetadata.__table__.schema,
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
+
+
 class MotorizedIndividualTravel(Dataset):
     def __init__(self, dependencies):
         def generate_model_data_tasks(scenario_name):
@@ -413,15 +453,23 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.3",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 {
-                    (download_and_preprocess, allocate_evs_numbers),
-                    (extract_trip_file, write_evs_trips_to_db),
+                    (
+                        download_and_preprocess,
+                        allocate_evs_numbers,
+                    ),
+                    (
+                        extract_trip_file,
+                        write_metadata_to_db,
+                        write_evs_trips_to_db,
+                    ),
                 },
                 allocate_evs_to_grid_districts,
+                delete_model_data_from_db,
                 {
                     *generate_model_data_tasks(scenario_name="eGon2035"),
                     *generate_model_data_tasks(scenario_name="eGon100RE"),
