@@ -389,6 +389,7 @@ with airflow.DAG(
             create_gas_polygons_egon2035,
             gas_grid_insert_data,
             insert_hydrogen_buses,
+            run_pypsaeursec,
         ]
     )
 
@@ -419,13 +420,16 @@ with airflow.DAG(
             run_pypsaeursec,
             foreign_lines,
             insert_hydrogen_buses,
-            create_gas_polygons_egon100RE
+            create_gas_polygons_egon100RE,
         ]
     )
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[
+            create_gas_polygons_egon2035,
+            create_gas_polygons_egon100RE,
+        ]
     )
 
     # Import CH4 storages

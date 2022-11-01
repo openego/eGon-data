@@ -403,6 +403,8 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
+* Add biogas generators ton eGon100RE
+  `#402 <https://github.com/openego/eGon-data/issues/844>`_
 * Move and merge the two assign_gas_bus_id functions to a central place
   `#797 <https://github.com/openego/eGon-data/issues/797>`_
 * Add coordinates to non AC buses abroad in eGon100RE
@@ -432,9 +434,10 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
+  `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
-
 
 Bug Fixes
 ---------

@@ -4,17 +4,19 @@ the pysa-eur-sec scenario parameter creation
 
 from pathlib import Path
 from urllib.request import urlretrieve
+import json
 import os
 import tarfile
 
 from shapely.geometry import LineString
 import geopandas as gpd
 import importlib_resources as resources
+import numpy as np
 import pandas as pd
 import pypsa
 import yaml
 
-from egon.data import __path__, db
+from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -1052,20 +1054,120 @@ def neighbor_reduction():
         )
 
 
+def overwrite_H2_pipeline_share():
+    """Overwrite retrofitted_CH4pipeline-to-H2pipeline_share value
+
+    Overwrite retrofitted_CH4pipeline-to-H2pipeline_share in the
+    scenario parameter table if p-e-s is run.
+    This function write in the database and has no return.
+
+    """
+    scn_name = "eGon100RE"
+    # Select source and target from dataset configuration
+    target = egon.data.config.datasets()["pypsa-eur-sec"]["target"]
+
+    n = read_network()
+
+    H2_pipelines = n.links[n.links["carrier"] == "H2 pipeline retrofitted"]
+    CH4_pipelines = n.links[n.links["carrier"] == "gas pipeline"]
+    H2_pipes_share = np.mean(
+        [
+            (i / j)
+            for i, j in zip(
+                H2_pipelines.p_nom_opt.to_list(), CH4_pipelines.p_nom.to_list()
+            )
+        ]
+    )
+    logger.info(
+        "retrofitted_CH4pipeline-to-H2pipeline_share = " + str(H2_pipes_share)
+    )
+
+    parameters = db.select_dataframe(
+        f"""
+        SELECT *
+        FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        WHERE name = '{scn_name}'
+        """
+    )
+
+    gas_param = parameters.loc[0, "gas_parameters"]
+    gas_param["retrofitted_CH4pipeline-to-H2pipeline_share"] = H2_pipes_share
+    gas_param = json.dumps(gas_param)
+
+    # Update data in db
+    db.execute_sql(
+        f"""
+    UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+    SET gas_parameters = '{gas_param}'
+    WHERE name = '{scn_name}';
+    """
+    )
+
+
+def overwrite_max_gas_generation_overtheyear():
+    """Overwrite max_gas_generation_overtheyear in scenario parameter table
+
+    Overwrite max_gas_generation_overtheyear in scenario parameter
+    table if p-e-s is run.
+    This function write in the database and has no return.
+
+    """
+    scn_name = "eGon100RE"
+
+    # Select source and target from dataset configuration
+    target = config.datasets()["gas_prod"]["target"]
+
+    if execute_pypsa_eur_sec:
+        n = read_network()
+        max_value = n.stores[n.stores["carrier"] == "biogas"].loc[
+            "DE0 0 biogas", "e_initial"
+        ]
+
+        parameters = db.select_dataframe(
+            f"""
+            SELECT *
+            FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+            WHERE name = '{scn_name}'
+            """
+        )
+
+        gas_param = parameters.loc[0, "gas_parameters"]
+        gas_param["max_gas_generation_overtheyear"] = {"biogas": max_value}
+        gas_param = json.dumps(gas_param)
+
+        # Update data in db
+        db.execute_sql(
+            f"""
+        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        SET gas_parameters = '{gas_param}'
+        WHERE name = '{scn_name}';
+        """
+        )
+
+
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
 execute_pypsa_eur_sec = False
 
 if execute_pypsa_eur_sec:
-    tasks = (run_pypsa_eur_sec, clean_database, neighbor_reduction)
+    tasks = (
+        run_pypsa_eur_sec,
+        clean_database,
+        neighbor_reduction,
+        overwrite_H2_pipeline_share,
+        overwrite_max_gas_generation_overtheyear,
+    )
 else:
-    tasks = (clean_database, neighbor_reduction)
+    tasks = (
+        clean_database,
+        neighbor_reduction,
+    )
 
 
 class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.8",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=tasks,
         )
