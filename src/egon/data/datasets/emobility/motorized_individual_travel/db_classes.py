@@ -2,8 +2,11 @@
 DB tables / SQLAlchemy ORM classes for motorized individual travel
 """
 
-from sqlalchemy import (  # ForeignKeyConstraint,
+from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
+    Float,
     ForeignKey,
     Integer,
     SmallInteger,
@@ -232,3 +235,19 @@ class EgonEvMvGridDistrict(Base):
     egon_ev_pool_ev_id = Column(Integer, nullable=False)
 
     # ev = relationship("EgonEvPool", back_populates="mvgds")
+
+
+class EgonEvMetadata(Base):
+    """List of EV Pool Metadata"""
+
+    __tablename__ = "egon_ev_metadata"
+    __table_args__ = {"schema": "demand"}
+
+    scenario = Column(String, primary_key=True)
+    eta_cp = Column(Float)
+    stepsize = Column(Integer)
+    start_date = Column(DateTime)
+    end_date = Column(DateTime)
+    soc_min = Column(Float)
+    grid_timeseries = Column(Boolean)
+    grid_timeseries_by_usecase = Column(Boolean)
