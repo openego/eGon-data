@@ -436,6 +436,8 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Adjust H2 industry profiles abroad for eGon2035
   `#940 <https://github.com/openego/eGon-data/issues/940>`_
+* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
+  `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
 * Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
