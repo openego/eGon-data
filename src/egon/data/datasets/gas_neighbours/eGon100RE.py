@@ -134,6 +134,16 @@ def insert_gas_neigbours_eGon100RE_pipes():
         )
     )
 
+    for i in ["link_id", "bus0", "bus1"]:
+        Crossbordering_pipe_capacities_list[i] = (
+            Crossbordering_pipe_capacities_list[i].astype(str).astype(int)
+        )
+
+    for i in ["p_nom", "length"]:
+        Crossbordering_pipe_capacities_list[i] = (
+            Crossbordering_pipe_capacities_list[i].astype(str).astype(float)
+        )
+
     insert_gas_grid_capacities(
         Crossbordering_pipe_capacities_list, "eGon100RE"
     )
@@ -169,6 +179,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
+                        AND country != 'RU'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon2035')
                     AND "bus1" IN (SELECT bus_id FROM 
@@ -186,6 +197,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
+                        AND country != 'RU'
                         AND carrier = 'CH4' 
                         AND scn_name = 'eGon2035'))
         AND scn_name = 'eGon2035'
