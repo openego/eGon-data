@@ -56,6 +56,7 @@ def insert_h2_pipelines():
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
     pipelines["bus1"] = CH4_H2_busmap.loc[pipelines["bus1"], "bus_H2"].values
     pipelines["scn_name"] = "eGon100RE"
+    pipelines["p_min_pu"] = -1.0
     pipelines["capital_cost"] = (
         scn_params["capital_cost"]["H2_pipeline_retrofit"]
         * pipelines["length"]
@@ -88,6 +89,7 @@ def insert_h2_pipelines():
     new_pipelines = new_pipelines.set_geometry("geom", crs=4326)
     new_pipelines["carrier"] = "H2_gridextension"
     new_pipelines["scn_name"] = "eGon100RE"
+    new_pipelines["p_min_pu"] = -1.0
     new_pipelines["p_nom_extendable"] = True
     new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
@@ -145,12 +147,12 @@ def insert_h2_pipelines():
 
     INSERT INTO grid.egon_etrago_link (scn_name,
                                               link_id, carrier,
-                                              bus0, bus1,
+                                              bus0, bus1, p_min_pu,
                                               p_nom_extendable, length,
                                               geom, topo)
     SELECT scn_name,
                 link_id, carrier,
-                bus0, bus1,
+                bus0, bus1, p_min_pu,
                 p_nom_extendable, length,
                 geom, topo
 

@@ -1345,7 +1345,7 @@ def calculate_ch4_grid_capacities():
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": "eGon2035", "carrier": "CH4", "p_min_pu": -1.0}
     Neighbouring_pipe_capacities_list = (
         Neighbouring_pipe_capacities_list.assign(**c)
     )
