@@ -195,6 +195,8 @@ Added
   again.
 * Add electric scenario parameters for eGon100RE
   `#699 <https://github.com/openego/eGon-data/issues/699>`_
+* Add plotting function for installed capacities
+  `#763 <https://github.com/openego/eGon-data/issues/763>`_  
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
