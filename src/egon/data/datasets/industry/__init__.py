@@ -60,6 +60,9 @@ class DemandCurvesOsmIndustryIndividual(Base):
     bus_id = Column(Integer)
     scn_name = Column(String, primary_key= True)
     p_set = Column(ARRAY(Float))
+    peak_load = Column(Float)
+    demand = Column(Float)
+    voltage_level = Column(Integer)
 
 
 
@@ -78,11 +81,12 @@ class DemandCurvesSitesIndustryIndividual(Base):
     __table_args__ = {"schema": "demand"}
 
     site_id = Column(Integer, primary_key = True)
-    bus = Column(Integer)
+    bus_id = Column(Integer)
     scn_name = Column(String, primary_key=True)
-    wz = Column(Integer)
     p_set = Column(ARRAY(Float))
-    geom= Column(Geometry("POINT", 4326))
+    peak_load = Column(Float)
+    demand = Column(Float)
+    voltage_level = Column(Integer)
 
 
 def create_tables():
@@ -135,6 +139,12 @@ def create_tables():
             {targets_temporal['sites_load']['table']} CASCADE;"""
     )
 
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {targets_temporal['sites_load_individual']['schema']}.
+            {targets_temporal['sites_load_individual']['table']} CASCADE;"""
+    )
+
     engine = db.engine()
 
     EgonDemandRegioSitesIndElectricity.__table__.create(
@@ -152,6 +162,10 @@ def create_tables():
     )
 
     DemandCurvesSitesIndustry.__table__.create(bind=engine, checkfirst=True)
+
+    DemandCurvesSitesIndustryIndividual.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
 
 def industrial_demand_distr():
@@ -386,7 +400,7 @@ class IndustrialDemandCurves(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Industrial_demand_curves",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_tables,
