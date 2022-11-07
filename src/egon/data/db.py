@@ -354,7 +354,11 @@ def check_db_unique_violation(func):
 
 
 def assign_gas_bus_id(dataframe, scn_name, carrier):
-    """Assigns bus_ids to points (contained in a dataframe) according to location
+    """Assign `bus_id`s to points according to location.
+
+    The points are taken from the given `dataframe` and the geometries by
+    which the `bus_id`s are assigned to them are taken from the
+    `grid.egon_gas_voronoi` table.
 
     Parameters
     ----------
