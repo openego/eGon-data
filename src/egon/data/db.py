@@ -128,7 +128,7 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except:  # noqa: E722 (This is OK, because of the immediate re-raise.)
         session.rollback()
         raise
     finally:
