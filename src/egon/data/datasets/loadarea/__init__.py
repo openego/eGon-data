@@ -149,5 +149,5 @@ def loadareas_add_demand():
 
 
 def drop_temp_tables():
-    print("Dropping temp tables...")
+    print("Dropping temp tables, views and sequences...")
     execute_sql_script("drop_temp_tables.sql")
