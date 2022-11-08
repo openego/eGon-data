@@ -242,7 +242,8 @@ def select_dataframe(sql, index_col=None, warning=True):
 
     """
 
-    df = pd.read_sql(sql, engine(), index_col=index_col)
+    with access() as database:
+        df = pd.read_sql(sql, database.connection, index_col=index_col)
 
     if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
@@ -271,9 +272,10 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
 
     """
 
-    gdf = gpd.read_postgis(
-        sql, engine(), index_col=index_col, geom_col=geom_col
-    )
+    with access() as database:
+        gdf = gpd.read_postgis(
+            sql, database.connection, index_col=index_col, geom_col=geom_col
+        )
 
     if gdf.size == 0:
         print(f"WARNING: No data returned by statement: \n {sql}")
