@@ -61,6 +61,3 @@ INSERT INTO     openstreetmap.osm_landuse_melted(area_ha,geom)
 -- index GIST (geom)
 CREATE INDEX  	osm_landuse_melted_geom_idx
 	ON    	openstreetmap.osm_landuse_melted USING GIST (geom);
-
-
-DROP MATERIALIZED VIEW IF EXISTS openstreetmap.osm_landuse_buffer100_mview CASCADE;

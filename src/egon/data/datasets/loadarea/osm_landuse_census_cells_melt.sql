@@ -158,13 +158,3 @@ CREATE UNIQUE INDEX egon_loadarea_load_melt_error_2_geom_mview_id_idx
 -- index GIST (geom)
 CREATE INDEX egon_loadarea_load_melt_error_2_geom_mview_geom_idx
     ON demand.egon_loadarea_load_melt_error_2_geom_mview USING GIST (geom);
-
-
-/* -- drop temp
-DROP TABLE IF EXISTS                demand.egon_loadarea_load_collect CASCADE;
-DROP TABLE IF EXISTS                demand.egon_loadarea_load_collect_buffer100 CASCADE;
-DROP TABLE IF EXISTS                demand.egon_loadarea_load_melt CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS    demand.egon_loadarea_load_melt_error_geom_mview CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS    demand.egon_loadarea_load_melt_error_geom_fix_mview CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS    demand.egon_loadarea_load_melt_error_2_geom_mview CASCADE;
- */
