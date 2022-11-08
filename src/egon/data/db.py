@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from types import SimpleNamespace
 import codecs
 import functools
 import os
@@ -62,6 +63,13 @@ def asdict(row, conversions=None):
         "Don't know how to convert `row` argument to dict because it has"
         " neither an `_asdict`, nor a `__table__` attribute."
     )
+
+
+@contextmanager
+def access():
+    """Provide a context with a session and an associated connection."""
+    with session_scope() as session, session.connection() as c, c.begin():
+        yield SimpleNamespace(session=session, connection=c)
 
 
 def credentials():
