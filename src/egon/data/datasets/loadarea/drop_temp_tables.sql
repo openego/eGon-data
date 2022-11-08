@@ -28,7 +28,7 @@ DROP MATERIALIZED VIEW IF EXISTS demand.egon_loadarea_load_melt_error_2_geom_mvi
 -- From script: loadareas_create.sql
 DROP MATERIALIZED VIEW IF EXISTS demand.egon_loadarea_smaller100m2_mview CASCADE;
 DROP TABLE IF EXISTS openstreetmap.egon_osm_sector_per_griddistrict_1_residential CASCADE;
-DROP TABLE IF EXISTS openstreetmap.egon_osm_sector_per_griddistrict_2_retail CASCADE;
+DROP TABLE IF EXISTS openstreetmap.egon_osm_sector_per_griddistrict_2_cts CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS openstreetmap.osm_polygon_urban_sector_3_industrial_nolargescale_mview CASCADE;
 DROP TABLE IF EXISTS openstreetmap.egon_osm_sector_per_griddistrict_3_industrial CASCADE;
 DROP TABLE IF EXISTS openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural CASCADE;

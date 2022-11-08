@@ -26,33 +26,33 @@ CREATE TABLE            demand.egon_loadarea (
     zensus_count integer,
     zensus_density numeric,
     sector_area_residential numeric,
-    sector_area_retail numeric,
+    sector_area_cts numeric,
     sector_area_industrial numeric,
     sector_area_agricultural numeric,
     sector_area_sum numeric,
     sector_share_residential numeric,
-    sector_share_retail numeric,
+    sector_share_cts numeric,
     sector_share_industrial numeric,
     sector_share_agricultural numeric,
     sector_share_sum numeric,
     sector_count_residential integer,
-    sector_count_retail integer,
+    sector_count_cts integer,
     sector_count_industrial integer,
     sector_count_agricultural integer,
     sector_count_sum integer,
     sector_consumption_residential double precision,
     sector_consumption_residential_2035 double precision,
     sector_consumption_residential_2050 double precision,
-    sector_consumption_retail double precision,
-    sector_consumption_retail_2035 double precision,
-    sector_consumption_retail_2050 double precision,
+    sector_consumption_cts double precision,
+    sector_consumption_cts_2035 double precision,
+    sector_consumption_cts_2050 double precision,
     sector_consumption_industrial double precision,
     sector_consumption_industrial_2035 double precision,
     sector_consumption_industrial_2050 double precision,
     --sector_consumption_agricultural double precision,
-    sector_peakload_retail double precision,
-    sector_peakload_retail_2035 double precision,
-    sector_peakload_retail_2050 double precision,
+    sector_peakload_cts double precision,
+    sector_peakload_cts_2035 double precision,
+    sector_peakload_cts_2050 double precision,
     sector_peakload_residential double precision,
     sector_peakload_residential_2035 double precision,
     sector_peakload_residential_2050 double precision,
@@ -234,38 +234,38 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 -- 2. Retail sector
-DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_2_retail CASCADE;
-CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_2_retail (
+DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_2_cts CASCADE;
+CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_2_cts (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
-    CONSTRAINT urban_sector_per_grid_district_2_retail_pkey PRIMARY KEY (id));
+    CONSTRAINT urban_sector_per_grid_district_2_cts_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
-INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_2_retail (geom)
+INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_2_cts (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
-        FROM    openstreetmap.osm_polygon_urban_sector_2_retail_mview AS loads,
+        FROM    openstreetmap.osm_polygon_urban_sector_2_cts_mview AS loads,
                 grid.egon_mv_grid_district AS dis
         WHERE   loads.geom && dis.geom
         ) AS loads
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
 -- index GIST (geom)
-CREATE INDEX    urban_sector_per_grid_district_2_retail_geom_idx
-    ON          openstreetmap.egon_osm_sector_per_griddistrict_2_retail USING GIST (geom);
+CREATE INDEX    urban_sector_per_grid_district_2_cts_geom_idx
+    ON          openstreetmap.egon_osm_sector_per_griddistrict_2_cts USING GIST (geom);
 
 -- sector stats
 UPDATE demand.egon_loadarea AS t1
-    SET sector_area_retail = t2.sector_area,
-        sector_count_retail = t2.sector_count,
-        sector_share_retail = t2.sector_area / t2.area_ha
+    SET sector_area_cts = t2.sector_area,
+        sector_count_cts = t2.sector_count,
+        sector_share_cts = t2.sector_area / t2.area_ha
     FROM (
         SELECT  loads.id AS id,
                 SUM(ST_AREA(sector.geom)/10000) AS sector_area,
                 COUNT(sector.geom) AS sector_count,
                 loads.area_ha AS area_ha
-        FROM    openstreetmap.egon_osm_sector_per_griddistrict_2_retail AS sector,
+        FROM    openstreetmap.egon_osm_sector_per_griddistrict_2_cts AS sector,
                 demand.egon_loadarea AS loads
         WHERE   loads.geom && sector.geom AND
                 ST_INTERSECTS(loads.geom,ST_BUFFER(sector.geom,-1))
@@ -393,15 +393,15 @@ UPDATE demand.egon_loadarea AS t1
     FROM (
         SELECT  id,
                 coalesce(load.sector_area_residential,0) +
-                    coalesce(load.sector_area_retail,0) +
+                    coalesce(load.sector_area_cts,0) +
                     coalesce(load.sector_area_industrial,0) +
                     coalesce(load.sector_area_agricultural,0) AS sector_area_sum,
                 coalesce(load.sector_share_residential,0) +
-                    coalesce(load.sector_share_retail,0) +
+                    coalesce(load.sector_share_cts,0) +
                     coalesce(load.sector_share_industrial,0) +
                     coalesce(load.sector_share_agricultural,0) AS sector_share_sum,
                 coalesce(load.sector_count_residential,0) +
-                    coalesce(load.sector_count_retail,0) +
+                    coalesce(load.sector_count_cts,0) +
                     coalesce(load.sector_count_industrial,0) +
                     coalesce(load.sector_count_agricultural,0) AS sector_count_sum
         FROM    demand.egon_loadarea AS load

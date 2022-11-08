@@ -38,7 +38,7 @@ UPDATE demand.egon_loadarea AS t1
 
 -- Add CTS consumption
 UPDATE demand.egon_loadarea AS t1
-    SET sector_consumption_retail_2035 = t2.demand
+    SET sector_consumption_cts_2035 = t2.demand
     FROM (
         SELECT  a.id AS id,
                 SUM(b.demand)::float AS demand
@@ -119,7 +119,7 @@ UPDATE demand.egon_loadarea AS t1
 
 -- Add CTS peak load
 UPDATE demand.egon_loadarea AS t1
-    SET sector_peakload_retail_2035 = t2.peak_load_in_mw
+    SET sector_peakload_cts_2035 = t2.peak_load_in_mw
     FROM (
         SELECT  a.id AS id,
                 SUM(b.peak_load_in_w)/1000000::float AS peak_load_in_mw
@@ -182,7 +182,7 @@ UPDATE demand.egon_loadarea AS t1
 
 -- Add CTS consumption
 UPDATE demand.egon_loadarea AS t1
-    SET sector_consumption_retail_2050 = t2.demand
+    SET sector_consumption_cts_2050 = t2.demand
     FROM (
         SELECT  a.id AS id,
                 SUM(b.demand)::float AS demand
@@ -263,7 +263,7 @@ UPDATE demand.egon_loadarea AS t1
 
 -- Add CTS peak load
 UPDATE demand.egon_loadarea AS t1
-    SET sector_peakload_retail_2050 = t2.peak_load_in_mw
+    SET sector_peakload_cts_2050 = t2.peak_load_in_mw
     FROM (
         SELECT  a.id AS id,
                 SUM(b.peak_load_in_w)/1000000::float AS peak_load_in_mw
