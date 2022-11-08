@@ -242,9 +242,6 @@ with airflow.DAG(
         dependencies=[mv_grid_districts, vg250]
     )
 
-    # Create load areas
-    load_areas = LoadArea(dependencies=[osm_landuse])
-
     # Create household demand profiles on zensus level
     hh_demand_profiles_setup = hh_profiles.HouseholdDemands(
         dependencies=[
@@ -422,7 +419,7 @@ with airflow.DAG(
             run_pypsaeursec,
             foreign_lines,
             insert_hydrogen_buses,
-            create_gas_polygons_egon100RE
+            create_gas_polygons_egon100RE,
         ]
     )
 
@@ -591,6 +588,18 @@ with airflow.DAG(
             cts_electricity_demand_annual,
             hh_demand_buildings_setup,
             tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
+        ]
+    )
+
+    # Create load areas
+    load_areas = LoadArea(
+        dependencies=[
+            osm_landuse,
+            zensus_vg250,
+            household_electricity_demand_annual,
+            tasks["hh_buildings.get-building-peak-loads"],
+            cts_demand_buildings,
+            demand_curves_industry,
         ]
     )
 
