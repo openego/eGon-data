@@ -1070,7 +1070,7 @@ def load_building_data():
 
     buildings_within_gdf = buildings_overlay_gdf.loc[building_ids]
 
-    return (
+    gdf = (
         buildings_within_gdf.reset_index()
         .drop(columns=["bus_id"])
         .merge(
@@ -1083,6 +1083,8 @@ def load_building_data():
         .set_index("id")
         .sort_index()
     )
+
+    return gdf[~gdf.index.duplicated(keep="first")]
 
 
 @timer_func
@@ -1223,7 +1225,7 @@ def allocate_pv(
                 )
             )
 
-            # q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
+            q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
 
         if count % 100 == 0:
@@ -1760,13 +1762,13 @@ def calculate_building_load_factor(
         GeoDataFrame containing geocoded MaStR data with calculated load factor.
     """
     gdf = mastr_gdf.merge(
-        buildings_gdf[["max_cap", "building_area"]].loc[
-            ~buildings_gdf["max_cap"].isna()
-        ],
+        buildings_gdf[["max_cap", "building_area"]]
+        .loc[~buildings_gdf["max_cap"].isna()]
+        .reset_index(),
         how="left",
         left_on="building_id",
-        right_index=True,
-    )
+        right_on="id",
+    ).set_index("id")
 
     return gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
 
@@ -2662,13 +2664,15 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_mvgd_buildings
     """
 
-    buildings_gdf = gpd.GeoDataFrame(
-        buildings_gdf.merge(
+    buildings_gdf = (
+        buildings_gdf.reset_index()
+        .merge(
             right=db.select_dataframe(sql),
             how="left",
-            on="building_id",
-        ),
-        crs=buildings_gdf.crs,
+            left_on="id",
+            right_on="building_id",
+        )
+        .set_index("id")
     )
 
     sql = """
@@ -2676,19 +2680,16 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_weather_cell
     """
 
-    buildings_gdf = gpd.GeoDataFrame(
-        buildings_gdf.merge(
-            right=db.select_dataframe(sql),
-            how="left",
-            on="zensus_population_id",
-        ),
-        crs=buildings_gdf.crs,
+    buildings_gdf = buildings_gdf.merge(
+        right=db.select_dataframe(sql),
+        how="left",
+        on="zensus_population_id",
     )
 
     if buildings_gdf.weather_cell_id.isna().any():
         raise ValueError(
             f"Following buildings don't have a weather cell id: "
-            f"{buildings_gdf.loc[buildings_gdf.weather_cell_id.isna()].building_id}"
+            f"{buildings_gdf.loc[buildings_gdf.weather_cell_id.isna()].building_id.tolist()}"
         )
 
     return buildings_gdf
