@@ -249,12 +249,11 @@ def match_osm_and_zensus_data(
         cells_query = session.query(
             egon_destatis_building_count.c.zensus_population_id,
             egon_destatis_building_count.c.building_count,
-        )
+        ).all()
 
-    egon_destatis_building_count = pd.read_sql(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col="zensus_population_id",
+    egon_destatis_building_count = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query],
+        index="zensus_population_id",
     )
     egon_destatis_building_count = egon_destatis_building_count.dropna()
 
@@ -649,10 +648,11 @@ def get_building_peak_loads():
                 == HouseholdElectricityProfilesInCensusCells.cell_id
             )
             .order_by(HouseholdElectricityProfilesOfBuildings.id)
+            .all()
         )
 
-        df_buildings_and_profiles = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col="id"
+        df_buildings_and_profiles = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query], index="id"
         )
 
         # Read demand profiles from egon-data-bundle
@@ -756,15 +756,17 @@ def map_houseprofiles_to_buildings():
 
     with db.session_scope() as session:
         cells_query = session.query(egon_map_zensus_buildings_residential)
-    egon_map_zensus_buildings_residential = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+        cells_query = cells_query.all()
+    egon_map_zensus_buildings_residential = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
 
     with db.session_scope() as session:
         cells_query = session.query(HouseholdElectricityProfilesInCensusCells)
-    egon_hh_profile_in_zensus_cell = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
-    )  # index_col="cell_id")
+        cells_query = cells_query.all()
+    egon_hh_profile_in_zensus_cell = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]  # , index="cell_id")
+    )
 
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(

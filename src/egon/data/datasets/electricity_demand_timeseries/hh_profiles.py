@@ -1587,8 +1587,8 @@ def get_houseprofiles_in_census_cells():
     with db.session_scope() as session:
         q = session.query(HouseholdElectricityProfilesInCensusCells)
 
-        census_profile_mapping = pd.read_sql(
-            q.statement, q.session.bind, index_col="cell_id"
+        census_profile_mapping = pd.DataFrame.from_records(
+            [db.asdict(row) for row in q.all()], index="cell_id"
         )
 
     return census_profile_mapping
@@ -1668,9 +1668,10 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
                     list_of_identifiers
                 )
             )
+        cells_query = cells_query.all()
 
-    cell_demand_metadata = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col="cell_id"
+    cell_demand_metadata = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query], index="cell_id"
     )
     return cell_demand_metadata
 
@@ -1699,9 +1700,10 @@ def get_hh_profiles_from_db(profile_ids):
         cells_query = session.query(
             IeeHouseholdLoadProfiles.load_in_wh, IeeHouseholdLoadProfiles.type
         ).filter(IeeHouseholdLoadProfiles.type.in_(profile_ids))
+        cells_query = cells_query.all()
 
-    df_profile_loads = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col="type"
+    df_profile_loads = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query], index="type"
     )
 
     # convert array to Dataframe
@@ -1754,9 +1756,10 @@ def mv_grid_district_HH_electricity_load(
             HouseholdElectricityProfilesInCensusCells.cell_id
             == MapZensusGridDistricts.zensus_population_id,
         )
+        cells_query = cells_query.all()
 
-    cells = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col="cell_id"
+    cells = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query], index="cell_id"
     )
 
     # convert profile ids to tuple (type, id) format

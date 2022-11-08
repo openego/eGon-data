@@ -290,12 +290,17 @@ def amenities_without_buildings():
                 EgonDemandRegioZensusElectricity.sector == "service",
                 EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
+            .all()
         )
 
-    df_amenities_without_buildings = gpd.read_postgis(
-        cells_query.statement,
-        cells_query.session.bind,
-        geom_col="geom_amenity",
+    df_amenities_without_buildings = gpd.GeoDataFrame(
+        pd.DataFrame.from_records(
+            [
+                db.asdict(row, conversions={"geom_amenity": to_shape})
+                for row in cells_query
+            ]
+        ),
+        geometry="geom_amenity",
     )
     return df_amenities_without_buildings
 
@@ -451,9 +456,9 @@ def buildings_with_amenities():
                 EgonDemandRegioZensusElectricity.sector == "service",
                 EgonDemandRegioZensusElectricity.scenario == "eGon2035",
             )
-        )
-    df_amenities_in_buildings = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+        ).all()
+    df_amenities_in_buildings = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
 
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
@@ -530,11 +535,16 @@ def buildings_with_amenities():
                         df_lost_cells["zensus_population_id"]
                     )
                 )
+                cells_query = cells_query.all()
 
-            df_lost_cells = gpd.read_postgis(
-                cells_query.statement,
-                cells_query.session.bind,
-                geom_col="geom",
+            df_lost_cells = gpd.GeoDataFrame(
+                pd.DataFrame.from_records(
+                    [
+                        db.asdict(row, conversions={"geom": to_shape})
+                        for row in cells_query
+                    ]
+                ),
+                geometry="geom",
             )
 
             # place random amenity in cell
@@ -678,13 +688,18 @@ def buildings_without_amenities():
                 q_cts_without_amenities
             )
         )
+        cells_query = cells_query.all()
 
     # df_buildings_without_amenities = pd.read_sql(
     #     cells_query.statement, cells_query.session.bind, index_col=None)
-    df_buildings_without_amenities = gpd.read_postgis(
-        cells_query.statement,
-        cells_query.session.bind,
-        geom_col="geom_building",
+    df_buildings_without_amenities = gpd.GeoDataFrame(
+        pd.DataFrame.from_records(
+            [
+                db.asdict(row, conversions={"geom_building": to_shape})
+                for row in cells_query
+            ]
+        ),
+        geometry="geom_building",
     )
 
     df_buildings_without_amenities = df_buildings_without_amenities.rename(
@@ -772,13 +787,17 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
                 EgonDemandRegioZensusElectricity.zensus_population_id
                 == DestatisZensusPopulationPerHa.id
             )
+            .all()
         )
 
-    df_cts_cell_without_amenities = gpd.read_postgis(
-        cells_query.statement,
-        cells_query.session.bind,
-        geom_col="geom",
-        index_col=None,
+    df_cts_cell_without_amenities = gpd.GeoDataFrame(
+        pd.DataFrame.from_records(
+            [
+                db.asdict(row, conversions={"geom": to_shape})
+                for row in cells_query
+            ]
+        ),
+        geometry="geom",
     )
 
     # TODO remove after #722
@@ -829,6 +848,7 @@ def calc_census_cell_share(scenario, sector):
                     EgonDemandRegioZensusElectricity.zensus_population_id
                     == MapZensusGridDistricts.zensus_population_id
                 )
+                .all()
             )
 
     elif sector == "heat":
@@ -841,12 +861,12 @@ def calc_census_cell_share(scenario, sector):
                     EgonPetaHeat.zensus_population_id
                     == MapZensusGridDistricts.zensus_population_id
                 )
+                .all()
             )
 
-    df_demand = pd.read_sql(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col="zensus_population_id",
+    df_demand = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query],
+        index="zensus_population_id",
     )
 
     # get demand share of cell per bus
@@ -992,23 +1012,24 @@ def calc_cts_building_profiles(
                         egon_building_ids
                     )
                 )
+                .all()
             )
 
-        df_demand_share = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None
+        df_demand_share = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
 
         # Get substation cts electricity load profiles of selected bus_ids
         with db.session_scope() as session:
             cells_query = (
-                session.query(EgonEtragoElectricityCts).filter(
-                    EgonEtragoElectricityCts.scn_name == scenario
-                )
-            ).filter(EgonEtragoElectricityCts.bus_id.in_(bus_ids))
+                session.query(EgonEtragoElectricityCts)
+                .filter(EgonEtragoElectricityCts.scn_name == scenario)
+                .filter(EgonEtragoElectricityCts.bus_id.in_(bus_ids))
+                .all()
+            )
 
-        df_cts_profiles = pd.read_sql(
-            cells_query.statement,
-            cells_query.session.bind,
+        df_cts_profiles = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
         df_cts_profiles = pd.DataFrame.from_dict(
             df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
@@ -1029,23 +1050,24 @@ def calc_cts_building_profiles(
                         egon_building_ids
                     )
                 )
+                .all()
             )
 
-        df_demand_share = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None
+        df_demand_share = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
 
         # Get substation cts heat load profiles of selected bus_ids
         with db.session_scope() as session:
             cells_query = (
-                session.query(EgonEtragoHeatCts).filter(
-                    EgonEtragoHeatCts.scn_name == scenario
-                )
-            ).filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
+                session.query(EgonEtragoHeatCts)
+                .filter(EgonEtragoHeatCts.scn_name == scenario)
+                .filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
+                .all()
+            )
 
-        df_cts_profiles = pd.read_sql(
-            cells_query.statement,
-            cells_query.session.bind,
+        df_cts_profiles = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
         df_cts_profiles = pd.DataFrame.from_dict(
             df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
@@ -1097,12 +1119,10 @@ def remove_double_bus_id(df_cts_buildings):
         cells_query = session.query(
             MapZensusGridDistricts.zensus_population_id,
             MapZensusGridDistricts.bus_id,
-        )
+        ).all()
 
-    df_egon_map_zensus_buildings_buses = pd.read_sql(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col=None,
+    df_egon_map_zensus_buildings_buses = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
     df_cts_buildings = pd.merge(
         left=df_cts_buildings,
@@ -1330,10 +1350,10 @@ def cts_electricity():
     """
     log.info("Start logging!")
     with db.session_scope() as session:
-        cells_query = session.query(CtsBuildings)
+        cells_query = session.query(CtsBuildings).all()
 
-    df_cts_buildings = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+    df_cts_buildings = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
     log.info("CTS buildings from DB imported!")
     df_demand_share_2035 = calc_building_demand_profile_share(
@@ -1369,10 +1389,10 @@ def cts_heat():
     """
     log.info("Start logging!")
     with db.session_scope() as session:
-        cells_query = session.query(CtsBuildings)
+        cells_query = session.query(CtsBuildings).all()
 
-    df_cts_buildings = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+    df_cts_buildings = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
     log.info("CTS buildings from DB imported!")
 
@@ -1425,19 +1445,20 @@ def get_cts_electricity_peak_load():
             ).filter(
                 EgonCtsElectricityDemandBuildingShare.scenario == scenario
             )
+            cells_query = cells_query.all()
 
-        df_demand_share = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None
+        df_demand_share = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
 
         with db.session_scope() as session:
             cells_query = session.query(EgonEtragoElectricityCts).filter(
                 EgonEtragoElectricityCts.scn_name == scenario
             )
+            cells_query = cells_query.all()
 
-        df_cts_profiles = pd.read_sql(
-            cells_query.statement,
-            cells_query.session.bind,
+        df_cts_profiles = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
         df_cts_profiles = pd.DataFrame.from_dict(
             df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
@@ -1498,9 +1519,10 @@ def get_cts_heat_peak_load():
             ).filter(
                 EgonCtsElectricityDemandBuildingShare.scenario == scenario
             )
+            cells_query = cells_query.all()
 
-        df_demand_share = pd.read_sql(
-            cells_query.statement, cells_query.session.bind, index_col=None
+        df_demand_share = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
         log.info(f"Retrieved demand share for scenario: {scenario}")
 
@@ -1508,10 +1530,10 @@ def get_cts_heat_peak_load():
             cells_query = session.query(EgonEtragoHeatCts).filter(
                 EgonEtragoHeatCts.scn_name == scenario
             )
+            cells_query = cells_query.all()
 
-        df_cts_profiles = pd.read_sql(
-            cells_query.statement,
-            cells_query.session.bind,
+        df_cts_profiles = pd.DataFrame.from_records(
+            [db.asdict(row) for row in cells_query]
         )
         log.info(f"Retrieved substation profiles for scenario: {scenario}")
 

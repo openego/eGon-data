@@ -100,10 +100,11 @@ def get_annual_household_el_demand_cells():
                 == HouseholdElectricityProfilesInCensusCells.cell_id
             )
             .order_by(HouseholdElectricityProfilesOfBuildings.id)
+            .all()
         )
 
-    df_buildings_and_profiles = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col="id"
+    df_buildings_and_profiles = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query], index="id"
     )
 
     # Read demand profiles from egon-data-bundle
