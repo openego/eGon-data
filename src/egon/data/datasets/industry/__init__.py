@@ -16,6 +16,7 @@ from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
 )
+from geoalchemy2 import Geometry
 from sqlalchemy import Column, String, Float, Integer, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -51,6 +52,20 @@ class DemandCurvesOsmIndustry(Base):
     p_set = Column(ARRAY(Float))
 
 
+class DemandCurvesOsmIndustryIndividual(Base):
+    __tablename__ = "egon_osm_ind_load_curves_individual"
+    __table_args__ = {"schema": "demand"}
+
+    osm_id = Column(Integer, primary_key= True)
+    bus_id = Column(Integer)
+    scn_name = Column(String, primary_key= True)
+    p_set = Column(ARRAY(Float))
+    peak_load = Column(Float)
+    demand = Column(Float)
+    voltage_level = Column(Integer)
+
+
+
 class DemandCurvesSitesIndustry(Base):
     __tablename__ = "egon_sites_ind_load_curves"
     __table_args__ = {"schema": "demand"}
@@ -59,6 +74,19 @@ class DemandCurvesSitesIndustry(Base):
     scn_name = Column(String, primary_key=True)
     wz = Column(Integer, primary_key=True)
     p_set = Column(ARRAY(Float))
+
+
+class DemandCurvesSitesIndustryIndividual(Base):
+    __tablename__ = "egon_sites_ind_load_curves_individual"
+    __table_args__ = {"schema": "demand"}
+
+    site_id = Column(Integer, primary_key = True)
+    bus_id = Column(Integer)
+    scn_name = Column(String, primary_key=True)
+    p_set = Column(ARRAY(Float))
+    peak_load = Column(Float)
+    demand = Column(Float)
+    voltage_level = Column(Integer)
 
 
 def create_tables():
@@ -95,12 +123,26 @@ def create_tables():
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_temporal['osm_load']['schema']}.{targets_temporal['osm_load']['table']} CASCADE;"""
+            {targets_temporal['osm_load']['schema']}.
+            {targets_temporal['osm_load']['table']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_temporal['sites_load']['schema']}.{targets_temporal['sites_load']['table']} CASCADE;"""
+            {targets_temporal['osm_load_individual']['schema']}.
+            {targets_temporal['osm_load_individual']['table']} CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {targets_temporal['sites_load']['schema']}.
+            {targets_temporal['sites_load']['table']} CASCADE;"""
+    )
+
+    db.execute_sql(
+        f"""DROP TABLE IF EXISTS
+            {targets_temporal['sites_load_individual']['schema']}.
+            {targets_temporal['sites_load_individual']['table']} CASCADE;"""
     )
 
     engine = db.engine()
@@ -115,7 +157,15 @@ def create_tables():
 
     DemandCurvesOsmIndustry.__table__.create(bind=engine, checkfirst=True)
 
+    DemandCurvesOsmIndustryIndividual.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
     DemandCurvesSitesIndustry.__table__.create(bind=engine, checkfirst=True)
+
+    DemandCurvesSitesIndustryIndividual.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
 
 def industrial_demand_distr():
@@ -350,7 +400,7 @@ class IndustrialDemandCurves(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Industrial_demand_curves",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_tables,
