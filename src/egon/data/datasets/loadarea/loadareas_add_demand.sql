@@ -62,7 +62,29 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 -- Add industrial consumption
--- TBD!
+UPDATE demand.egon_loadarea AS t1
+    SET sector_consumption_industrial_2035 = t2.demand
+    FROM (
+        SELECT  a.id AS id,
+                SUM(b.demand)::float AS demand
+        FROM    demand.egon_loadarea AS a,
+                (
+                    SELECT
+                        sum(dem.demand) as demand,
+					    ST_PointOnSurface(osm.geom) AS geom_surfacepoint
+                    FROM
+                        openstreetmap.osm_landuse as osm,
+                        demand.egon_demandregio_osm_ind_electricity as dem
+                    WHERE
+                        dem.scenario = 'eGon2035' AND
+                        dem.osm_id = osm.id
+                    GROUP BY osm.id
+                ) AS b
+        WHERE   a.geom && b.geom_surfacepoint AND
+                ST_CONTAINS(a.geom, b.geom_surfacepoint)
+        GROUP BY a.id
+        ) AS t2
+    WHERE   t1.id = t2.id;
 
 -- Add residential peak load
 UPDATE demand.egon_loadarea AS t1
@@ -184,7 +206,29 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 -- Add industrial consumption
--- TBD!
+UPDATE demand.egon_loadarea AS t1
+    SET sector_consumption_industrial_2050 = t2.demand
+    FROM (
+        SELECT  a.id AS id,
+                SUM(b.demand)::float AS demand
+        FROM    demand.egon_loadarea AS a,
+                (
+                    SELECT
+                        sum(dem.demand) as demand,
+					    ST_PointOnSurface(osm.geom) AS geom_surfacepoint
+                    FROM
+                        openstreetmap.osm_landuse as osm,
+                        demand.egon_demandregio_osm_ind_electricity as dem
+                    WHERE
+                        dem.scenario = 'eGon100RE' AND
+                        dem.osm_id = osm.id
+                    GROUP BY osm.id
+                ) AS b
+        WHERE   a.geom && b.geom_surfacepoint AND
+                ST_CONTAINS(a.geom, b.geom_surfacepoint)
+        GROUP BY a.id
+        ) AS t2
+    WHERE   t1.id = t2.id;
 
 -- Add residential peak load
 UPDATE demand.egon_loadarea AS t1
