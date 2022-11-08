@@ -126,10 +126,8 @@ def execute_sql(sql_string):
         SQL expression
 
     """
-    engine_local = engine()
-
-    with engine_local.connect().execution_options(autocommit=True) as con:
-        con.execute(text(sql_string))
+    with access() as database:
+        database.connection.execute(text(sql_string))
 
 
 def submit_comment(json, schema, table):
