@@ -1761,11 +1761,10 @@ def calculate_building_load_factor(
     geopandas.GeoDataFrame
         GeoDataFrame containing geocoded MaStR data with calculated load factor.
     """
-    logger.debug(f"{buildings_gdf.index.name}. Find me.")
     gdf = mastr_gdf.merge(
         buildings_gdf[["max_cap", "building_area"]]
-        .reset_index()
-        .loc[~buildings_gdf["max_cap"].isna()],
+        .loc[~buildings_gdf["max_cap"].isna()]
+        .reset_index(),
         how="left",
         left_on="building_id",
         right_on="id",
