@@ -213,15 +213,7 @@ class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
-            tasks=(
-                # Temporary drop everything related to rural heat
-                # individual_heating_per_mv_grid_tables,
-                # {
-                #     individual_heating_per_mv_grid_2035,
-                #     individual_heating_per_mv_grid_100,
-                # },
-                hts_to_etrago,
-            ),
+            tasks=(hts_to_etrago,),
         )
