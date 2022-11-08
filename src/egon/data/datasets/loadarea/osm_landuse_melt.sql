@@ -11,8 +11,10 @@ __author__      = "Ludee, nesnoj"
 */
 
 
--- 28.10.22: CHECK IF NECESSARY!!!
--- exclude large scale consumer
+-- From open_eGo: exclude large scale consumers, not required in eGo^n
+-- NOTE: This invalidates the columns
+--       sector_area_*, sector_share_* and sector_count_* in table demand.egon_loadarea
+--
 --DELETE FROM openstreetmap.osm_landuse
 --	WHERE gid IN (SELECT polygon_id FROM model_draft.egon_demand_hv_largescaleconsumer);
 
