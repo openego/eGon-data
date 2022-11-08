@@ -2664,12 +2664,16 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_mvgd_buildings
     """
 
-    buildings_gdf = buildings_gdf.reset_index().merge(
-        right=db.select_dataframe(sql),
-        how="left",
-        left_on="id",
-        right_on="building_id",
-    ).set_index("id")
+    buildings_gdf = (
+        buildings_gdf.reset_index()
+        .merge(
+            right=db.select_dataframe(sql),
+            how="left",
+            left_on="id",
+            right_on="building_id",
+        )
+        .set_index("id")
+    )
 
     sql = """
     SELECT zensus_population_id, w_id as weather_cell_id
