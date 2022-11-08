@@ -14,7 +14,7 @@ import pandas as pd
 from egon.data import config
 
 
-def asdict(row):
+def asdict(row, conversions=None):
     """Convert a result row of an SQLAlchemy query to a dictionary.
 
     This helper unifies the conversion of two types of query result rows,
@@ -31,18 +31,32 @@ def asdict(row):
     Parameters
     ----------
     row : SQLAlchemy query result row
+    conversions : dict
+        Dictionary mapping column names to functions applied to the values of
+        that column. The default ist `None` which means no conversion is
+        applied.
 
     Returns
     -------
     dict
-        The argument converted to a dictionary with column names as keys.
+        The argument converted to a dictionary with column names as keys and
+        column values potentially converted by calling
+        `conversions[column_name](column_value)`.
     """
+    result = None
     if hasattr(row, "_asdict"):
-        return row._asdict()
+        result = row._asdict()
     if hasattr(row, "__table__"):
-        return {
+        result = {
             column.name: getattr(row, column.name)
             for column in row.__table__.columns
+        }
+    if (result is not None) and (conversions is None):
+        return result
+    if (result is not None) and (conversions is not None):
+        return {
+            k: conversions[k](v) if k in conversions else v
+            for k, v in result.items()
         }
     raise TypeError(
         "Don't know how to convert `row` argument to dict because it has"
