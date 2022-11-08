@@ -12,9 +12,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.era5 import EgonEra5Cells, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets.zensus_vg250 import (
-    DestatisZensusPopulationPerHaInsideGermany,
-)
+from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 import egon.data.config
 
 
@@ -45,7 +43,7 @@ class MapZensusWeatherCell(Base):
 
     zensus_population_id = Column(
         Integer,
-        ForeignKey(DestatisZensusPopulationPerHaInsideGermany.id),
+        ForeignKey(DestatisZensusPopulationPerHa.id),
         primary_key=True,
         index=True,
     )
@@ -577,10 +575,10 @@ def mapping_zensus_weather():
 
     with db.session_scope() as session:
         cells_query = session.query(
-            DestatisZensusPopulationPerHaInsideGermany.id.label(
+            DestatisZensusPopulationPerHa.id.label(
                 "zensus_population_id"
             ),
-            DestatisZensusPopulationPerHaInsideGermany.geom_point,
+            DestatisZensusPopulationPerHa.geom_point,
         )
 
     gdf_zensus_population = gpd.read_postgis(
