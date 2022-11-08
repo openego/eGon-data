@@ -205,9 +205,9 @@ INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_1_residential (ge
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
-        FROM    openstreetmap.osm_polygon_urban_sector_1_residential_mview AS loads,
+        FROM    openstreetmap.osm_landuse AS loads,
                 grid.egon_mv_grid_district AS dis
-        WHERE   loads.geom && dis.geom
+        WHERE   loads.sector = '1' AND loads.geom && dis.geom
         ) AS loads
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
@@ -245,9 +245,9 @@ INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_2_cts (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
-        FROM    openstreetmap.osm_polygon_urban_sector_2_cts_mview AS loads,
+        FROM    openstreetmap.osm_landuse AS loads,
                 grid.egon_mv_grid_district AS dis
-        WHERE   loads.geom && dis.geom
+        WHERE   loads.sector = '2' AND loads.geom && dis.geom
         ) AS loads
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
@@ -274,6 +274,7 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 -- filter Industrial without largescale
+/*
 DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_sector_3_industrial_nolargescale_mview CASCADE;
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_sector_3_industrial_nolargescale_mview AS
 	SELECT	osm.*
@@ -288,22 +289,7 @@ CREATE UNIQUE INDEX osm_polygon_urban_sector_3_industrial_nolargescale_mview_gid
 -- index GIST (geom)
 CREATE INDEX    osm_polygon_urban_sector_3_industrial_nolargescale_mview_geom_idx
     ON openstreetmap.osm_polygon_urban_sector_3_industrial_nolargescale_mview USING GIST (geom);
-
-
-/* -- check
-SELECT  'industrial' AS name,
-        count(ind.*) AS cnt
-FROM    openstreetmap.osm_deu_polygon_urban_sector_3_industrial_mview ind
-UNION ALL
-SELECT  'largescale' AS name,
-        count(ls.*) AS cnt
-FROM    model_draft.egon_demand_hv_largescaleconsumer ls
-UNION ALL
-SELECT  'nolargescale' AS name,
-        count(nols.*) AS cnt
-FROM    openstreetmap.osm_deu_polygon_urban_sector_3_industrial_nolargescale_mview nols;
 */
-
 
 -- 3. industrial sector
 DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_3_industrial CASCADE;
@@ -317,9 +303,9 @@ INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_3_industrial (geo
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
-        FROM    openstreetmap.osm_polygon_urban_sector_3_industrial_nolargescale_mview AS loads,
+        FROM    openstreetmap.osm_landuse AS loads,
                 grid.egon_mv_grid_district AS dis
-        WHERE   loads.geom && dis.geom
+        WHERE   loads.sector = '3' AND loads.geom && dis.geom
         ) AS loads
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
@@ -357,9 +343,9 @@ INSERT INTO openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
-        FROM    openstreetmap.osm_polygon_urban_sector_4_agricultural_mview AS loads,
+        FROM    openstreetmap.osm_landuse AS loads,
                 grid.egon_mv_grid_district AS dis
-        WHERE   loads.geom && dis.geom
+        WHERE   loads.sector = '4' AND loads.geom && dis.geom
         ) AS loads
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
