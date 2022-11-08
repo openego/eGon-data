@@ -1071,14 +1071,17 @@ def load_building_data():
     buildings_within_gdf = buildings_overlay_gdf.loc[building_ids]
 
     return (
-        buildings_within_gdf.drop(columns=["bus_id"])
+        buildings_within_gdf.reset_index()
+        .drop(columns=["bus_id"])
         .merge(
             how="left",
             right=map_building_bus_df,
-            left_index=True,
+            left_on="id",
             right_on="building_id",
         )
         .drop(columns=["building_id"])
+        .set_index("id")
+        .sort_index()
     )
 
 
@@ -2654,7 +2657,10 @@ def geocode_mastr_data():
 
 
 def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    sql = "SELECT building_id, zensus_population_id FROM boundaries.egon_map_zensus_mvgd_buildings"
+    sql = """
+    SELECT building_id, zensus_population_id
+    FROM boundaries.egon_map_zensus_mvgd_buildings
+    """
 
     buildings_gdf = gpd.GeoDataFrame(
         buildings_gdf.merge(
