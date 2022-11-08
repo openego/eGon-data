@@ -37,7 +37,7 @@ def identify_voltage_level(df):
     df['voltage_level']= np.nan
 
     # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
-    df.loc[df["peak_load"] < 0.1, "voltage_level"] = 7
+    df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
     df.loc[df["peak_load"] > 0.1, "voltage_level"] = 6
     df.loc[df["peak_load"] > 0.2, "voltage_level"] = 5
     df.loc[df["peak_load"] > 5.5, "voltage_level"] = 4
