@@ -1219,7 +1219,7 @@ def allocate_pv(
                 )
             )
 
-            # q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
+            q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
 
         if count % 100 == 0:
