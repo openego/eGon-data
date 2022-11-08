@@ -3,7 +3,7 @@ Add consumption and peak loads to load areas
 
 __copyright__   = "Reiner Lemoine Institut"
 __license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
-__url__         = "https://github.com/openego/data_processing/blob/master/LICENSE"
+__url__         = "https://github.com/openego/eGon-data/blob/main/LICENSE"
 __author__      = "nesnoj"
 */
 
