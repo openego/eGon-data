@@ -14,6 +14,42 @@ import pandas as pd
 from egon.data import config
 
 
+def asdict(row):
+    """Convert a result row of an SQLAlchemy query to a dictionary.
+
+    This helper unifies the conversion of two types of query result rows,
+    namely instances of mapped classes and keyed tuples, to dictionaries.
+    That way it's suitable for massaging query results into a format which
+    can easily be converted to a `pandas` `DataFrame` like this:
+
+        ```python
+        df = pandas.DataFrame.from_records(
+            [asdict(row) for row in session.query(*columns).all()]
+        )
+        ```
+
+    Parameters
+    ----------
+    row : SQLAlchemy query result row
+
+    Returns
+    -------
+    dict
+        The argument converted to a dictionary with column names as keys.
+    """
+    if hasattr(row, "_asdict"):
+        return row._asdict()
+    if hasattr(row, "__table__"):
+        return {
+            column.name: getattr(row, column.name)
+            for column in row.__table__.columns
+        }
+    raise TypeError(
+        "Don't know how to convert `row` argument to dict because it has"
+        " neither an `_asdict`, nor a `__table__` attribute."
+    )
+
+
 def credentials():
     """Return local database connection parameters.
 
