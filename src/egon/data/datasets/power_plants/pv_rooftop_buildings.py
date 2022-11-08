@@ -1070,7 +1070,7 @@ def load_building_data():
 
     buildings_within_gdf = buildings_overlay_gdf.loc[building_ids]
 
-    return (
+    gdf = (
         buildings_within_gdf.reset_index()
         .drop(columns=["bus_id"])
         .merge(
@@ -1083,6 +1083,8 @@ def load_building_data():
         .set_index("id")
         .sort_index()
     )
+
+    return gdf[~gdf.index.duplicated(keep='first')]
 
 
 @timer_func
