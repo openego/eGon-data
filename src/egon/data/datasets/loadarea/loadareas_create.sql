@@ -198,7 +198,7 @@ DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_1_residen
 CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_1_residential (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
-    CONSTRAINT urban_sector_per_grid_district_1_residential_pkey PRIMARY KEY (id));
+    CONSTRAINT egon_osm_sector_per_griddistrict_1_residential_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
 INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_1_residential (geom)
@@ -212,7 +212,7 @@ INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_1_residential (ge
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
 -- index GIST (geom)
-CREATE INDEX urban_sector_per_grid_district_1_residential_geom_idx
+CREATE INDEX egon_osm_sector_per_griddistrict_1_residential_geom_idx
     ON openstreetmap.egon_osm_sector_per_griddistrict_1_residential USING GIST (geom);
 
 -- sector stats
@@ -238,7 +238,7 @@ DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_2_cts CAS
 CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_2_cts (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
-    CONSTRAINT urban_sector_per_grid_district_2_cts_pkey PRIMARY KEY (id));
+    CONSTRAINT egon_osm_sector_per_griddistrict_2_cts_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
 INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_2_cts (geom)
@@ -252,7 +252,7 @@ INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_2_cts (geom)
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
 -- index GIST (geom)
-CREATE INDEX    urban_sector_per_grid_district_2_cts_geom_idx
+CREATE INDEX    egon_osm_sector_per_griddistrict_2_cts_geom_idx
     ON          openstreetmap.egon_osm_sector_per_griddistrict_2_cts USING GIST (geom);
 
 -- sector stats
@@ -296,7 +296,7 @@ DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_3_industr
 CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_3_industrial	 (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
-    CONSTRAINT urban_sector_per_grid_district_3_industrial_pkey PRIMARY KEY (id));
+    CONSTRAINT egon_osm_sector_per_griddistrict_3_industrial_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
 INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_3_industrial (geom)
@@ -310,7 +310,7 @@ INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_3_industrial (geo
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
 -- index GIST (geom)
-CREATE INDEX    urban_sector_per_grid_district_3_industrial_geom_idx
+CREATE INDEX    egon_osm_sector_per_griddistrict_3_industrial_geom_idx
     ON openstreetmap.egon_osm_sector_per_griddistrict_3_industrial USING GIST (geom);
 
 -- sector stats
@@ -336,7 +336,7 @@ DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_4_agricul
 CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural	 (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
-    CONSTRAINT 	urban_sector_per_grid_district_4_agricultural_pkey PRIMARY KEY (id));
+    CONSTRAINT 	egon_osm_sector_per_griddistrict_4_agricultural_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
 INSERT INTO openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural (geom)
@@ -350,7 +350,7 @@ INSERT INTO openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural (geom)
     WHERE   ST_GeometryType(loads.geom) = 'ST_Polygon';
 
 -- index GIST (geom)
-CREATE INDEX urban_sector_per_grid_district_4_agricultural_geom_idx
+CREATE INDEX egon_osm_sector_per_griddistrict_4_agricultural_geom_idx
     ON openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural USING GIST (geom);
 
 -- sector stats
