@@ -197,6 +197,7 @@ COLS_TO_EXPORT = [
     "hauptausrichtung",
     "hauptausrichtung_neigungswinkel",
     "voltage_level",
+    "weather_cell_id",
 ]
 
 # TODO
@@ -2599,6 +2600,7 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     hauptausrichtung = Column(String)
     hauptausrichtung_neigungswinkel = Column(String)
     voltage_level = Column(Integer)
+    weather_cell_id = Column(Integer)
 
 
 def create_scenario_table(buildings_gdf):
@@ -2667,7 +2669,10 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         .rename(columns={"building_id_x": "building_id"})
     )
 
-    sql = "SELECT * FROM boundaries.egon_map_zensus_weather_cell"
+    sql = """
+    SELECT zensus_population_id, w_id as weather_cell_id
+    FROM boundaries.egon_map_zensus_weather_cell
+    """
 
     buildings_gdf = (
         gpd.GeoDataFrame(
