@@ -53,12 +53,13 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.8",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 insert_hydro_biomass,
                 allocate_conventional_non_chp_power_plants,
+                allocate_other_power_plants,
                 {
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
@@ -97,7 +98,7 @@ def scale_prox2now(df, target, level="federal_state"):
     df : pandas.DataFrame
         Status Quo power plants
     target : pandas.Series
-        Target values for future sceanrio
+        Target values for future scenario
     level : str, optional
         Scale per 'federal_state' or 'country'. The default is 'federal_state'.
 
@@ -450,6 +451,13 @@ def assign_voltage_level(mastr_loc, cfg):
     # If no voltage level is available from mastr, choose level according
     # to threshold values
 
+    mastr_loc.voltage_level = assign_voltage_level_by_capacity(mastr_loc)
+
+    return mastr_loc.voltage_level
+
+
+def assign_voltage_level_by_capacity(mastr_loc):
+
     for i, row in mastr_loc[mastr_loc.voltage_level.isnull()].iterrows():
 
         if row.Nettonennleistung > 120:
@@ -537,39 +545,6 @@ def assign_bus_id(power_plants, cfg):
     return power_plants
 
 
-def assign_gas_bus_id(power_plants):
-    """Assigns gas_bus_ids to power plants according to location
-
-    Parameters
-    ----------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level)
-
-    Returns
-    -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and gas_bus_id
-
-    """
-
-    gas_voronoi = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_gas_voronoi WHERE scn_name = 'eGon2035' AND
-        carrier = 'CH4'
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(power_plants, gas_voronoi)
-    res["gas_bus_id"] = res["bus_id"]
-
-    # Assert that all power plants have a gas_bus_id
-    assert res.gas_bus_id.notnull().all(), f"""Some power plants are
-    not attached to a gas bus: {res[res.gas_bus_id.isnull()]}"""
-
-    return res
-
-
 def insert_hydro_biomass():
     """Insert hydro and biomass power plants in database
 
@@ -593,15 +568,15 @@ def insert_hydro_biomass():
 
 def allocate_conventional_non_chp_power_plants():
 
-    carrier = ["oil", "gas", "other_non_renewable"]
+    carrier = ["oil", "gas"]
 
     cfg = egon.data.config.datasets()["power_plants"]
 
-    # Delete existing CHP in the target table
+    # Delete existing plants in the target table
     db.execute_sql(
         f"""
          DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
-         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
+         WHERE carrier IN ('gas', 'oil')
          AND scenario='eGon2035';
          """
     )
@@ -748,3 +723,161 @@ def allocate_conventional_non_chp_power_plants():
                 )
                 session.add(entry)
             session.commit()
+
+
+def allocate_other_power_plants():
+
+    # Get configuration
+    cfg = egon.data.config.datasets()["power_plants"]
+    boundary = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+        WHERE carrier ='others'
+        """
+    )
+
+    # Define scenario, carrier 'others' is only present in 'eGon2035'
+    scenario = "eGon2035"
+
+    # Select target values for carrier 'others'
+    target = db.select_dataframe(
+        f"""
+        SELECT sum(capacity) as capacity, carrier, scenario_name, nuts
+            FROM {cfg['sources']['capacities']}
+            WHERE scenario_name = '{scenario}'
+            AND carrier = 'others'
+            GROUP BY carrier, nuts, scenario_name;
+        """
+    )
+
+    # Assign name of federal state
+
+    map_states = {
+        "DE1": "BadenWuerttemberg",
+        "DEA": "NordrheinWestfalen",
+        "DE7": "Hessen",
+        "DE4": "Brandenburg",
+        "DE5": "Bremen",
+        "DEB": "RheinlandPfalz",
+        "DEE": "SachsenAnhalt",
+        "DEF": "SchleswigHolstein",
+        "DE8": "MecklenburgVorpommern",
+        "DEG": "Thueringen",
+        "DE9": "Niedersachsen",
+        "DED": "Sachsen",
+        "DE6": "Hamburg",
+        "DEC": "Saarland",
+        "DE3": "Berlin",
+        "DE2": "Bayern",
+    }
+
+    target = (
+        target.replace({"nuts": map_states})
+        .rename(columns={"nuts": "Bundesland"})
+        .set_index("Bundesland")
+    )
+    target = target.capacity
+
+    # Select 'non chp' power plants from mastr table
+    mastr_combustion = select_no_chp_combustion_mastr("others")
+
+    # Rename columns
+    mastr_combustion = mastr_combustion.rename(
+        columns={
+            "carrier": "Energietraeger",
+            "plz": "Postleitzahl",
+            "city": "Ort",
+            "federal_state": "Bundesland",
+            "el_capacity": "Nettonennleistung",
+        }
+    )
+
+    # Select power plants representing carrier 'others' from MaStR files
+    mastr_sludge = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
+        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""
+    )
+    mastr_geothermal = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
+        """EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' and Technologie == 'ORCOrganicRankineCycleAnlage'"""
+    )
+
+    mastr_sg = mastr_sludge.append(mastr_geothermal)
+
+    # Insert geometry column
+    mastr_sg = mastr_sg[~(mastr_sg["Laengengrad"].isnull())]
+    mastr_sg = gpd.GeoDataFrame(
+        mastr_sg,
+        geometry=gpd.points_from_xy(
+            mastr_sg["Laengengrad"], mastr_sg["Breitengrad"], crs=4326
+        ),
+    )
+
+    # Exclude columns which are not essential
+    mastr_sg = mastr_sg.filter(
+        [
+            "EinheitMastrNummer",
+            "Nettonennleistung",
+            "geometry",
+            "Energietraeger",
+            "Postleitzahl",
+            "Ort",
+            "Bundesland",
+        ],
+        axis=1,
+    )
+    # Rename carrier
+    mastr_sg.Energietraeger = "others"
+
+    # Change data type
+    mastr_sg["Postleitzahl"] = mastr_sg["Postleitzahl"].astype(int)
+
+    # Capacity in MW
+    mastr_sg.loc[:, "Nettonennleistung"] *= 1e-3
+
+    # Merge different sources to one df
+    mastr_others = mastr_sg.append(mastr_combustion).reset_index()
+
+    # Delete entries outside Schleswig-Holstein for test mode
+    if boundary == "Schleswig-Holstein":
+        mastr_others = mastr_others[
+            mastr_others["Bundesland"] == "SchleswigHolstein"
+        ]
+
+    # Scale capacities prox to now to meet target values
+    mastr_prox = scale_prox2now(mastr_others, target, level="federal_state")
+
+    # Assign voltage_level based on scaled capacity
+    mastr_prox["voltage_level"] = np.nan
+    mastr_prox["voltage_level"] = assign_voltage_level_by_capacity(mastr_prox)
+
+    # Rename columns
+    mastr_prox = mastr_prox.rename(
+        columns={
+            "Energietraeger": "carrier",
+            "Postleitzahl": "plz",
+            "Ort": "city",
+            "Bundesland": "federal_state",
+            "Nettonennleistung": "el_capacity",
+        }
+    )
+
+    # Assign bus_id
+    mastr_prox = assign_bus_id(mastr_prox, cfg)
+    mastr_prox = mastr_prox.set_crs(4326, allow_override=True)
+
+    # Insert into target table
+    session = sessionmaker(bind=db.engine())()
+    for i, row in mastr_prox.iterrows():
+        entry = EgonPowerPlants(
+            sources=row.el_capacity,
+            source_id={"MastrNummer": row.EinheitMastrNummer},
+            carrier=row.carrier,
+            el_capacity=row.el_capacity,
+            voltage_level=row.voltage_level,
+            bus_id=row.bus_id,
+            scenario=scenario,
+            geom=f"SRID=4326; {row.geometry}",
+        )
+        session.add(entry)
+    session.commit()

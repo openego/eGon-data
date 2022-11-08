@@ -20,7 +20,7 @@ class CH4Production(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CH4Production",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(import_gas_generators),
         )
@@ -232,44 +232,6 @@ def load_biogas_generators(scn_name):
     return biogas_generators_list
 
 
-def assign_bus_id(dataframe, scn_name, carrier):
-    """Assigns bus_ids (for H2 buses) to points (contained in a dataframe) according to location
-
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame
-        DataFrame cointaining points
-    scn_name : str
-        Name of the scenario
-    carrier : str
-        Name of the carrier
-
-    Returns
-    -------
-    res : pandas.DataFrame
-        Dataframe including bus_id
-    """
-
-    voronoi = db.select_geodataframe(
-        f"""
-        SELECT bus_id, geom FROM grid.egon_gas_voronoi
-        WHERE scn_name = '{scn_name}' AND carrier = '{carrier}';
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(dataframe, voronoi)
-    res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right"])
-
-    # Assert that all power plants have a bus_id
-    assert (
-        res.bus.notnull().all()
-    ), f"Some points are not attached to a {carrier} bus."
-
-    return res
-
-
 def import_gas_generators(scn_name="eGon2035"):
     """Insert list of gas production units in database
 
@@ -297,27 +259,35 @@ def import_gas_generators(scn_name="eGon2035"):
         """
     )
 
-    # Select next id value
-    new_id = db.next_etrago_id("generator")
-
     CH4_generators_list = pd.concat(
         [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
-    )
-    CH4_generators_list["generator_id"] = range(
-        new_id, new_id + len(CH4_generators_list)
     )
 
     # Add missing columns
     c = {"scn_name": scn_name, "carrier": "CH4"}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
-    CH4_generators_list = CH4_generators_list.reset_index(drop=True)
-
     # Match to associated CH4 bus
-    CH4_generators_list = assign_bus_id(CH4_generators_list, scn_name, "CH4")
+    CH4_generators_list = db.assign_gas_bus_id(
+        CH4_generators_list, scn_name, "CH4"
+    )
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])
+
+    # Aggregate ch4 productions with same properties at the same bus
+    CH4_generators_list = (
+        CH4_generators_list.groupby(
+            ["bus", "carrier", "scn_name", "marginal_cost"]
+        )
+        .agg({"p_nom": "sum"})
+        .reset_index(drop=False)
+    )
+
+    new_id = db.next_etrago_id("generator")
+    CH4_generators_list["generator_id"] = range(
+        new_id, new_id + len(CH4_generators_list)
+    )
 
     # Insert data to db
     CH4_generators_list.to_sql(

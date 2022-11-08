@@ -300,6 +300,12 @@ def electricity(scenario):
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["lignite"],
+            "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            + read_costs(costs, "coal", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["coal"],
+            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
@@ -476,7 +482,10 @@ def gas(scenario):
 
         costs = read_csv(2035)
 
-        parameters = {"main_gas_carrier": "CH4"}
+        parameters = {
+            "main_gas_carrier": "CH4",
+            "H2_feedin_volumetric_fraction": 0.15,
+        }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
@@ -493,6 +502,7 @@ def gas(scenario):
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             #  what about H2 compressors?
+            "H2_feedin": 0,
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
             ),
@@ -518,6 +528,7 @@ def gas(scenario):
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
             "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
+            "H2_feedin": read_costs(costs, "CH4 (g) pipeline", "lifetime"),
         }
 
         # Insert annualized capital costs
@@ -549,23 +560,33 @@ def gas(scenario):
 
         costs = read_csv(2050)
 
-        parameters = {"main_gas_carrier": "H2"}
+        parameters = {
+            "main_gas_carrier": "H2",
+            "retrofitted_CH4pipeline-to-H2pipeline_share": 0.75,
+            # The H2 network will be based on 75% of converted natural gas pipelines.
+            # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf
+            # This value is used temporary, later on we will use the result of p-e-s
+            "retrofitted_capacity_share": 0.8,
+            # The volumetric energy density of pure H2 at 50 bar vs. pure CH4 at
+            # 50 bar is at about 30 %, however due to less friction volumetric flow can
+            # be increased for pure H2 leading to higher capacities
+            # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf p.10
+        }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
-            "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
-        # Insert costs
-        parameters["capital_cost"] = {
+        # Insert overnight investment costs
+        parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
-            "H2_feedin": 0,
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
+            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
             ),
@@ -579,11 +600,43 @@ def gas(scenario):
                 costs, "H2 (g) pipeline repurposed", "investment"
             ),  # [EUR/MW/km]
         }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            #  what about H2 compressors?
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "lifetime"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "lifetime"
+            ),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
+            "H2_pipeline_retrofit": read_costs(
+                costs, "H2 (g) pipeline repurposed", "lifetime"
+            ),
+        }
+
+        # Insert costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
         parameters["marginal_cost"] = {
-            "CH4": global_settings(scenario)["fuel_costs"]["gas"]
-            + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["gas"],
+            # "CH4": global_settings(scenario)["fuel_costs"]["gas"]
+            # + global_settings(scenario)["co2_costs"]
+            # * global_settings(scenario)["co2_emissions"]["gas"],
             "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
     else:
@@ -593,7 +646,7 @@ def gas(scenario):
 
 
 def mobility(scenario):
-    """Returns paramaters of the mobility sector for the selected scenario.
+    """Returns parameters of the mobility sector for the selected scenario.
 
     Parameters
     ----------
@@ -605,25 +658,71 @@ def mobility(scenario):
     parameters : dict
         List of parameters of mobility sector
 
+    Notes
+    -----
+    For a detailed description of the parameters see module
+    :mod:`egon.data.datasets.emobility.motorized_individual_travel`.
     """
 
     if scenario == "eGon2035":
-        parameters = {}
-
-        # Investment costs can be annualzied based on overnight investment
-        # costs and life time using the following function:
-        # for comp in parameters["overnight_cost"].keys():
-        #     parameters["capital_cost"][comp] = annualize_capital_costs(
-        #         parameters["overnight_cost"][comp],
-        #         parameters["lifetime"][comp],
-        #         global_settings(scenario)["interest_rate"],
-        #     )
+        parameters = {
+            "motorized_individual_travel": {
+                "NEP C 2035": {
+                    "ev_count": 15100000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                }
+            }
+        }
 
     elif scenario == "eGon100RE":
-        parameters = {}
+        # eGon100RE has 3 Scenario variations
+        #   * allocation will always be done for all scenarios
+        #   * model data will be written to tables `egon_etrago_*` only
+        #     for the variation as speciefied in `datasets.yml`
+        parameters = {
+            "motorized_individual_travel": {
+                "Reference 2050": {
+                    "ev_count": 25065000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                },
+                "Mobility Transition 2050": {
+                    "ev_count": 37745000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                },
+                "Electrification 2050": {
+                    "ev_count": 47700000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                },
+            }
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
+        parameters = dict()
 
     return parameters
 

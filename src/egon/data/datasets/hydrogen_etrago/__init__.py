@@ -67,7 +67,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenMethaneLinkEtrago",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(insert_h2_to_ch4_to_h2, insert_h2_to_ch4_eGon100RE),
         )
@@ -77,7 +77,7 @@ class HydrogenGridEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenGridEtrago",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(insert_h2_pipelines,),
         )

@@ -16,9 +16,9 @@ import yaml
 
 from egon.data import __path__, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def run_pypsa_eur_sec():
@@ -28,6 +28,7 @@ def run_pypsa_eur_sec():
     filepath.mkdir(parents=True, exist_ok=True)
 
     pypsa_eur_repos = filepath / "pypsa-eur"
+    pypsa_eur_repos_data = pypsa_eur_repos / "data"
     technology_data_repos = filepath / "technology-data"
     pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
     pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data"
@@ -38,16 +39,16 @@ def run_pypsa_eur_sec():
                 "git",
                 "clone",
                 "--branch",
-                "master",
+                "v0.4.0",
                 "https://github.com/PyPSA/pypsa-eur.git",
                 pypsa_eur_repos,
             ]
         )
 
-        subproc.run(
-            ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
-            cwd=pypsa_eur_repos,
-        )
+        # subproc.run(
+        #     ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
+        #     cwd=pypsa_eur_repos,
+        # )
 
         file_to_copy = os.path.join(
             __path__[0], "datasets", "pypsaeursec", "pypsaeur", "Snakefile"
@@ -68,13 +69,22 @@ def run_pypsa_eur_sec():
                 env, outfile, default_flow_style=False, allow_unicode=True
             )
 
+        datafile = "pypsa-eur-data-bundle.tar.xz"
+        datapath = pypsa_eur_repos / datafile
+        if not datapath.exists():
+            urlretrieve(
+                f"https://zenodo.org/record/3517935/files/{datafile}", datapath
+            )
+            tar = tarfile.open(datapath)
+            tar.extractall(pypsa_eur_repos_data)
+
     if not technology_data_repos.exists():
         subproc.run(
             [
                 "git",
                 "clone",
                 "--branch",
-                "v0.2.0",
+                "v0.3.0",
                 "https://github.com/PyPSA/technology-data.git",
                 technology_data_repos,
             ]
@@ -90,10 +100,12 @@ def run_pypsa_eur_sec():
             ]
         )
 
-    datafile = "pypsa-eur-sec-data-bundle-210418.tar.gz"
+    datafile = "pypsa-eur-sec-data-bundle.tar.gz"
     datapath = pypsa_eur_sec_repos_data / datafile
     if not datapath.exists():
-        urlretrieve(f"https://nworbmot.org/{datafile}", datapath)
+        urlretrieve(
+            f"https://zenodo.org/record/5824485/files/{datafile}", datapath
+        )
         tar = tarfile.open(datapath)
         tar.extractall(pypsa_eur_sec_repos_data)
 
@@ -117,7 +129,7 @@ def run_pypsa_eur_sec():
     )
 
 
-def neighbor_reduction():
+def read_network():
 
     # Set execute_pypsa_eur_sec to False until optional task is implemented
     execute_pypsa_eur_sec = False
@@ -159,12 +171,103 @@ def neighbor_reduction():
             cwd
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
-            / "2022-05-04-egondata-integration"
+            / "2022-07-26-egondata-integration"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-3H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
         )
 
-    network = pypsa.Network(str(target_file))
+    return pypsa.Network(str(target_file))
+
+
+def clean_database():
+    """Remove all components abroad for eGon100RE of the database
+
+    Remove all components abroad and their associated time series of
+    the datase for the scenario 'eGon100RE'.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    """
+    scn_name = "eGon100RE"
+
+    comp_one_port = ["load", "generator", "store", "storage"]
+
+    # delete existing components and associated timeseries
+    for comp in comp_one_port:
+        db.execute_sql(
+            f"""
+            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
+            WHERE {comp + "_id"} IN (
+                SELECT {comp + "_id"} FROM {"grid.egon_etrago_" + comp}
+                WHERE bus IN (
+                    SELECT bus_id FROM grid.egon_etrago_bus
+                    WHERE country != 'DE'
+                    AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+            );
+
+            DELETE FROM {"grid.egon_etrago_" + comp}
+            WHERE bus IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            AND scn_name = '{scn_name}';"""
+        )
+
+    comp_2_ports = [
+        "line",
+        "transformer",
+        "link",
+    ]
+
+    for comp, id in zip(comp_2_ports, ["line_id", "trafo_id", "link_id"]):
+        db.execute_sql(
+            f"""
+            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
+            WHERE scn_name = '{scn_name}'
+            AND {id} IN (
+                SELECT {id} FROM {"grid.egon_etrago_" + comp}
+            WHERE "bus0" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            AND "bus1" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            );
+
+            DELETE FROM {"grid.egon_etrago_" + comp}
+            WHERE scn_name = '{scn_name}'
+            AND "bus0" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            AND "bus1" IN (
+            SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+            ;"""
+        )
+
+    db.execute_sql(
+        "DELETE FROM grid.egon_etrago_bus "
+        "WHERE scn_name = '{scn_name}' "
+        "AND country <> 'DE'"
+    )
+
+
+def neighbor_reduction():
+
+    network = read_network()
+
+    network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
     wanted_countries = [
         "DE",
@@ -387,8 +490,11 @@ def neighbor_reduction():
     neighbor_gens = network.generators[
         network.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][neighbor_gens[neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)].index]
-
+    neighbor_gens_t = network.generators_t["p_max_pu"][
+        neighbor_gens[
+            neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)
+        ].index
+    ]
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
@@ -461,24 +567,48 @@ def neighbor_reduction():
     # Connect to local database
     engine = db.engine()
 
-    # db.execute_sql("DELETE FROM grid.egon_etrago_bus "
-    #               "WHERE scn_name = 'eGon100RE' "
-    #               "AND country <> 'DE'")
-
     neighbors["scn_name"] = "eGon100RE"
     neighbors.index = neighbors["new_index"]
+
+    # Correct geometry for non AC buses
+    carriers = set(neighbors.carrier.to_list())
+    carriers.remove("AC")
+    non_AC_neighbors = pd.DataFrame()
+    for c in carriers:
+        c_neighbors = neighbors[neighbors.carrier == c].set_index(
+            "location", drop=False
+        )
+        for i in ["x", "y"]:
+            c_neighbors = c_neighbors.drop(i, axis=1)
+        coordinates = neighbors[neighbors.carrier == "AC"][
+            ["location", "x", "y"]
+        ].set_index("location")
+        c_neighbors = pd.concat([coordinates, c_neighbors], axis=1).set_index(
+            "new_index", drop=False
+        )
+        non_AC_neighbors = non_AC_neighbors.append(c_neighbors)
+    neighbors = neighbors[neighbors.carrier == "AC"].append(non_AC_neighbors)
 
     for i in ["new_index", "control", "generator", "location", "sub_network"]:
         neighbors = neighbors.drop(i, axis=1)
 
     # Add geometry column
-
     neighbors = (
         gpd.GeoDataFrame(
             neighbors, geometry=gpd.points_from_xy(neighbors.x, neighbors.y)
         )
         .rename_geometry("geom")
         .set_crs(4326)
+    )
+
+    # Unify carrier names
+    neighbors.carrier = neighbors.carrier.str.replace(" ", "_")
+    neighbors.carrier.replace(
+        {
+            "gas": "CH4",
+            "gas_for_industry": "CH4_for_industry",
+        },
+        inplace=True,
     )
 
     neighbors.to_postgis(
@@ -541,27 +671,87 @@ def neighbor_reduction():
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
     lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
 
-    # prepare and write neighboring crossborder links to etrago tables
-    def links_to_etrago(neighbor_links, scn="eGon100RE"):
+    def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
+        """Prepare and write neighboring crossborder links to eTraGo table
+
+        This function prepare the neighboring crossborder links
+        generated the PyPSA-eur-sec (p-e-s) run by:
+          * Delete the useless columns
+          * If extendable is false only (non default case):
+              * Replace p_nom = 0 with the p_nom_op values (arrising
+              from the p-e-s optimisation)
+              * Setting p_nom_extendable to false
+          * Add geomtry to the links: 'geom' and 'topo' columns
+          * Change the name of the carriers to have the consistent in
+            eGon-data
+
+        The function insert then the link to the eTraGo table and has
+        no return.
+
+        Parameters
+        ----------
+        neighbor_links : pandas.DataFrame
+            Dataframe containing the neighboring crossborder links
+        scn_name : str
+            Name of the scenario
+        extendable : bool
+            Boolean expressing if the links should be extendable or not
+
+        Returns
+        -------
+        None
+
+        """
         neighbor_links["scn_name"] = scn
 
-        for i in [
-            "name",
-            "geometry",
-            "tags",
-            "under_construction",
-            "underground",
-            "underwater_fraction",
-            "bus2",
-            "bus3",
-            "bus4",
-            "efficiency2",
-            "efficiency3",
-            "efficiency4",
-            "lifetime",
-            "p_nom_opt",
-        ]:
-            neighbor_links = neighbor_links.drop(i, axis=1)
+        if extendable is True:
+            neighbor_links = neighbor_links.drop(
+                columns=[
+                    "name",
+                    "geometry",
+                    "tags",
+                    "under_construction",
+                    "underground",
+                    "underwater_fraction",
+                    "bus2",
+                    "bus3",
+                    "bus4",
+                    "efficiency2",
+                    "efficiency3",
+                    "efficiency4",
+                    "lifetime",
+                    "p_nom_opt",
+                    "pipe_retrofit",
+                ],
+                errors="ignore",
+            )
+
+        elif extendable is False:
+            neighbor_links = neighbor_links.drop(
+                columns=[
+                    "name",
+                    "geometry",
+                    "tags",
+                    "under_construction",
+                    "underground",
+                    "underwater_fraction",
+                    "bus2",
+                    "bus3",
+                    "bus4",
+                    "efficiency2",
+                    "efficiency3",
+                    "efficiency4",
+                    "lifetime",
+                    "p_nom",
+                    "p_nom_extendable",
+                    "pipe_retrofit",
+                ],
+                errors="ignore",
+            )
+            neighbor_links = neighbor_links.rename(
+                columns={"p_nom_opt": "p_nom"}
+            )
+            neighbor_links["p_nom_extendable"] = False
 
         # Define geometry and add to lines dataframe as 'topo'
         gdf = gpd.GeoDataFrame(index=neighbor_links.index)
@@ -580,6 +770,19 @@ def neighbor_reduction():
         # Unify carrier names
         neighbor_links.carrier = neighbor_links.carrier.str.replace(" ", "_")
 
+        neighbor_links.carrier.replace(
+            {
+                "H2_Electrolysis": "power_to_H2",
+                "H2_Fuel_Cell": "H2_to_power",
+                "H2_pipeline_retrofitted": "H2_retrofit",
+                "SMR": "CH4_to_H2",
+                "Sabatier": "H2_to_CH4",
+                "gas_for_industry": "CH4_for_industry",
+                "gas_pipeline": "CH4",
+            },
+            inplace=True,
+        )
+
         neighbor_links.to_postgis(
             "egon_etrago_link",
             engine,
@@ -589,7 +792,32 @@ def neighbor_reduction():
             index_label="link_id",
         )
 
-    links_to_etrago(neighbor_links, "eGon100RE")
+    non_extendable_links_carriers = [
+        "H2 pipeline retrofitted",
+        "gas pipeline",
+        "biogas to gas",
+    ]
+
+    # delete unwanted carriers for eTraGo
+    excluded_carriers = ["gas for industry CC", "SMR CC"]
+    neighbor_links = neighbor_links[
+        ~neighbor_links.carrier.isin(excluded_carriers)
+    ]
+
+    links_to_etrago(
+        neighbor_links[
+            ~neighbor_links.carrier.isin(non_extendable_links_carriers)
+        ],
+        "eGon100RE",
+    )
+    links_to_etrago(
+        neighbor_links[
+            neighbor_links.carrier.isin(non_extendable_links_carriers)
+        ],
+        "eGon100RE",
+        extendable=False,
+    )
+
     links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
 
     # prepare neighboring generators for etrago tables
@@ -598,7 +826,6 @@ def neighbor_reduction():
     neighbor_gens["p_nom_extendable"] = False
 
     # Unify carrier names
-
     neighbor_gens.carrier = neighbor_gens.carrier.str.replace(" ", "_")
 
     neighbor_gens.carrier.replace(
@@ -638,6 +865,7 @@ def neighbor_reduction():
             "DC": "AC",
             "industry_electricity": "AC",
             "H2_pipeline": "H2_system_boundary",
+            "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
@@ -658,10 +886,29 @@ def neighbor_reduction():
     neighbor_stores["scn_name"] = "eGon100RE"
 
     # Unify carrier names
-
     neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
 
-    neighbor_stores.carrier.replace({"Li_ion": "battery"}, inplace=True)
+    neighbor_stores.carrier.replace(
+        {
+            "Li_ion": "battery",
+            "gas": "CH4",
+        },
+        inplace=True,
+    )
+    neighbor_stores.loc[
+        (
+            (neighbor_stores.e_nom_max <= 1e9)
+            & (neighbor_stores.carrier == "H2")
+        ),
+        "carrier",
+    ] = "H2_underground"
+    neighbor_stores.loc[
+        (
+            (neighbor_stores.e_nom_max > 1e9)
+            & (neighbor_stores.carrier == "H2")
+        ),
+        "carrier",
+    ] = "H2_overground"
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
@@ -808,16 +1055,16 @@ def neighbor_reduction():
 execute_pypsa_eur_sec = False
 
 if execute_pypsa_eur_sec:
-    tasks = (run_pypsa_eur_sec, neighbor_reduction)
+    tasks = (run_pypsa_eur_sec, clean_database, neighbor_reduction)
 else:
-    tasks = neighbor_reduction
+    tasks = (clean_database, neighbor_reduction)
 
 
 class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.4",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=tasks,
         )

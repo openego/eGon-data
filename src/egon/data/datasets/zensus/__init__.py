@@ -14,22 +14,21 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.config import settings
-import egon.data.config
 from egon.data.datasets import Dataset
-
+import egon.data.config
 
 
 class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
-                ),
+            ),
         )
 
 
@@ -37,24 +36,54 @@ class ZensusMiscellaneous(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 download_zensus_misc,
                 create_zensus_misc_tables,
                 zensus_misc_to_postgres,
-                ),
+            ),
         )
 
 
+def download_and_check(url, target_file, max_iteration=5):
+    """Download file from url (http) if it doesn't exist and check afterwards.
+    If bad zip remove file and re-download. Repeat until file is fine or
+    reached maximum iterations."""
+    bad_file = True
+    count = 0
+    while bad_file:
+
+        # download file if it doesn't exist
+        if not os.path.isfile(target_file):
+            # check if url
+            if url.lower().startswith("http"):
+                urlretrieve(url, target_file)
+            else:
+                raise ValueError("No http url")
+
+        # check zipfile
+        try:
+            with zipfile.ZipFile(target_file):
+                print(f"Zip file {target_file} is good.")
+            bad_file = False
+        except zipfile.BadZipFile as ex:
+            os.remove(target_file)
+            count += 1
+            if count > max_iteration:
+                raise StopIteration(
+                    f"Max iteration of {max_iteration} is exceeded"
+                ) from ex
+
+
 def download_zensus_pop():
-    """Download Zensus csv file on population per hectar grid cell."""
+    """Download Zensus csv file on population per hectare grid cell."""
     data_config = egon.data.config.datasets()
     zensus_population_config = data_config["zensus_population"][
         "original_data"
     ]
     download_directory = Path(".") / "zensus_population"
-    # Create the folder, if it does not exists already
+    # Create the folder, if it does not exist already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
@@ -62,17 +91,17 @@ def download_zensus_pop():
         download_directory / zensus_population_config["target"]["file"]
     )
 
-    if not os.path.isfile(target_file):
-        urlretrieve(zensus_population_config["source"]["url"], target_file)
+    url = zensus_population_config["source"]["url"]
+    download_and_check(url, target_file, max_iteration=5)
 
 
 def download_zensus_misc():
-    """Download Zensus csv files on data per hectar grid cell."""
+    """Download Zensus csv files on data per hectare grid cell."""
 
     # Get data config
     data_config = egon.data.config.datasets()
     download_directory = Path(".") / "zensus_population"
-    # Create the folder, if it does not exists already
+    # Create the folder, if it does not exist already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
     # Download remaining zensus data set on households, buildings, apartments
@@ -86,8 +115,7 @@ def download_zensus_misc():
     for url, path in url_path_map:
         target_file_misc = download_directory / path
 
-        if not os.path.isfile(target_file_misc):
-            urlretrieve(url, target_file_misc)
+        download_and_check(url, target_file_misc, max_iteration=5)
 
 
 def create_zensus_pop_table():
@@ -124,6 +152,7 @@ def create_zensus_pop_table():
         );
         """
     )
+
 
 def create_zensus_misc_tables():
     """Create tables for zensus data in postgres database"""
@@ -482,13 +511,17 @@ def create_combined_zensus_table():
 
 
 def adjust_zensus_misc():
-    """Deletes zensus households, buildings and aparments in unpopulated cells
+    """Delete unpopulated cells in zensus-households, -buildings and -apartments
 
-    Some unpopulated zensus cells are listed in the table of households,
-    buildings and/or aparments. This can be caused by missing population
+    Some unpopulated zensus cells are listed in:
+    - egon_destatis_zensus_household_per_ha
+    - egon_destatis_zensus_building_per_ha
+    - egon_destatis_zensus_apartment_per_ha
+
+    This can be caused by missing population
     information due to privacy or other special cases (e.g. holiday homes
     are listed as buildings but are not permanently populated.)
-    In the follwong tasks of egon-data, only data of populated cells is used.
+    In the following tasks of egon-data, only data of populated cells is used.
 
     Returns
     -------

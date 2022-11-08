@@ -1,12 +1,16 @@
+from contextlib import contextmanager
 import codecs
 import functools
-from contextlib import contextmanager
+import time
 
+from psycopg2.errors import DeadlockDetected, UniqueViolation
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+
 from egon.data import config
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
 
 def credentials():
@@ -82,8 +86,10 @@ def submit_comment(json, schema, table):
     """
     prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
 
-    check_json_str = "SELECT obj_description('{0}.{1}'::regclass)::json".format(
-        schema, table
+    check_json_str = (
+        "SELECT obj_description('{0}.{1}'::regclass)::json".format(
+            schema, table
+        )
     )
 
     execute_sql(prefix_str + json + ";")
@@ -156,8 +162,8 @@ def session_scoped(function):
     return wrapped
 
 
-def select_dataframe(sql, index_col=None):
-    """ Select data from local database as pandas.DataFrame
+def select_dataframe(sql, index_col=None, warning=True):
+    """Select data from local database as pandas.DataFrame
 
     Parameters
     ----------
@@ -175,14 +181,14 @@ def select_dataframe(sql, index_col=None):
 
     df = pd.read_sql(sql, engine(), index_col=index_col)
 
-    if df.size == 0:
+    if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
 
     return df
 
 
 def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
-    """ Select data from local database as geopandas.GeoDataFrame
+    """Select data from local database as geopandas.GeoDataFrame
 
     Parameters
     ----------
@@ -216,24 +222,28 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
 
 
 def next_etrago_id(component):
-    """ Select next id value for components in etrago tables
+    """Select next id value for components in etrago tables
 
     Parameters
     ----------
     component : str
-        Name of componenet
+        Name of component
 
     Returns
     -------
     next_id : int
         Next index value
 
+    Notes
+    -----
+    To catch concurrent DB commits, consider to use
+    :func:`check_db_unique_violation` instead.
     """
 
-    if component=='transformer':
-        id_column = 'trafo_id'
+    if component == "transformer":
+        id_column = "trafo_id"
     else:
-        id_column = f'{component}_id'
+        id_column = f"{component}_id"
 
     max_id = select_dataframe(
         f"""
@@ -247,3 +257,135 @@ def next_etrago_id(component):
         next_id = 1
 
     return next_id
+
+
+def check_db_unique_violation(func):
+    """Wrapper to catch psycopg's UniqueViolation errors during concurrent DB
+    commits.
+
+    Preferrably used with :func:`next_etrago_id`. Retries DB operation 10
+    times before raising original exception.
+
+    Can be used as a decorator like this:
+
+    >>> @check_db_unique_violation
+    ... def commit_something_to_database():
+    ...     # commit something here
+    ...    return
+    ...
+    >>> commit_something_to_database()  # doctest: +SKIP
+
+    Examples
+    --------
+    Add new bus to eTraGo's bus table:
+
+    >>> from egon.data import db
+    >>> from egon.data.datasets.etrago_setup import EgonPfHvBus
+    ...
+    >>> @check_db_unique_violation
+    ... def add_etrago_bus():
+    ...     bus_id = db.next_etrago_id("bus")
+    ...     with db.session_scope() as session:
+    ...         emob_bus_id = db.next_etrago_id("bus")
+    ...         session.add(
+    ...             EgonPfHvBus(
+    ...                 scn_name="eGon2035",
+    ...                 bus_id=bus_id,
+    ...                 v_nom=1,
+    ...                 carrier="whatever",
+    ...                 x=52,
+    ...                 y=13,
+    ...                 geom="<some_geom>"
+    ...             )
+    ...         )
+    ...         session.commit()
+    ...
+    >>> add_etrago_bus()  # doctest: +SKIP
+
+    Parameters
+    ----------
+
+    func: func
+        Function to wrap
+
+    Notes
+    -----
+    Background: using :func:`next_etrago_id` may cause trouble if tasks are
+    executed simultaneously, cf.
+    https://github.com/openego/eGon-data/issues/514
+
+    Important: your function requires a way to escape the violation as the
+    loop will not terminate until the error is resolved! In case of eTraGo
+    tables you can use :func:`next_etrago_id`, see example above.
+    """
+
+    def commit(*args, **kwargs):
+        unique_violation = True
+        ret = None
+        ctr = 0
+        while unique_violation:
+            try:
+                ret = func(*args, **kwargs)
+            except IntegrityError as e:
+                if isinstance(e.orig, UniqueViolation):
+                    print("Entry is not unique, retrying...")
+                    ctr += 1
+                    time.sleep(3)
+                    if ctr > 10:
+                        print("No success after 10 retries, exiting...")
+                        raise e
+                else:
+                    raise e
+            # ===== TESTING ON DEADLOCKS START =====
+            except OperationalError as e:
+                if isinstance(e.orig, DeadlockDetected):
+                    print("Deadlock detected, retrying...")
+                    ctr += 1
+                    time.sleep(3)
+                    if ctr > 10:
+                        print("No success after 10 retries, exiting...")
+                        raise e
+            # ===== TESTING ON DEADLOCKS END =======
+            else:
+                unique_violation = False
+        return ret
+
+    return commit
+
+
+def assign_gas_bus_id(dataframe, scn_name, carrier):
+    """Assigns bus_ids to points (contained in a dataframe) according to location
+
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+        DataFrame cointaining points
+    scn_name : str
+        Name of the scenario
+    carrier : str
+        Name of the carrier
+
+    Returns
+    -------
+    res : pandas.DataFrame
+        Dataframe including bus_id
+    """
+
+    voronoi = select_geodataframe(
+        f"""
+        SELECT bus_id, geom FROM grid.egon_gas_voronoi
+        WHERE scn_name = '{scn_name}' AND carrier = '{carrier}';
+        """,
+        epsg=4326,
+    )
+
+    res = gpd.sjoin(dataframe, voronoi)
+    res["bus"] = res["bus_id"]
+    res = res.drop(columns=["index_right"])
+
+    # Assert that all power plants have a bus_id
+    assert (
+        res.bus.notnull().all()
+    ), f"Some points are not attached to a {carrier} bus."
+
+    return res

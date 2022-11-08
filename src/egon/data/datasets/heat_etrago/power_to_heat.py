@@ -213,10 +213,13 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     # Select heat pumps in district heating
     central_resistive_heater = db.select_geodataframe(
         f"""
-        SELECT * FROM {sources['district_heating_supply']['schema']}.
+        SELECT district_heating_id, carrier, category, SUM(capacity) as capacity, 
+               geometry, scenario
+        FROM {sources['district_heating_supply']['schema']}.
             {sources['district_heating_supply']['table']}
         WHERE scenario = '{scenario}'
         AND carrier = 'resistive_heater'
+        GROUP BY (district_heating_id, carrier, category, geometry, scenario)
         """,
         geom_col="geometry",
         epsg=4326,
