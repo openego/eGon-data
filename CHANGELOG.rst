@@ -634,6 +634,9 @@ Bug Fixes
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Fix zensus weather cells mapping
+  `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
