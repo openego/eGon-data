@@ -2689,7 +2689,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     if buildings_gdf.weather_cell_id.isna().any():
         raise ValueError(
             f"Following buildings don't have a weather cell id: "
-            f"{buildings_gdf.loc[buildings_gdf.weather_cell_id.isna()].building_id}"
+            f"{buildings_gdf.loc[buildings_gdf.weather_cell_id.isna()].building_id.tolist()}"
         )
 
     return buildings_gdf
