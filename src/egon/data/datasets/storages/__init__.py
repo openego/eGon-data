@@ -1,25 +1,25 @@
 """The central module containing all code dealing with power plant data.
 """
-from geoalchemy2 import Geometry
 from pathlib import Path
+
+from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from egon.data.datasets.storages.pumped_hydro import (
-    select_mastr_pumped_hydro,
-    select_nep_pumped_hydro,
-    match_storage_units,
-    get_location,
-    apply_voltage_level_thresholds,
-)
-from egon.data.datasets.power_plants import assign_voltage_level
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets import Dataset
-
+from egon.data.datasets.power_plants import assign_voltage_level
+from egon.data.datasets.storages.pumped_hydro import (
+    apply_voltage_level_thresholds,
+    get_location,
+    match_storage_units,
+    select_mastr_pumped_hydro,
+    select_nep_pumped_hydro,
+)
 
 Base = declarative_base()
 
@@ -353,9 +353,9 @@ def home_batteries_per_scenario(scenario):
             sheet_name="1.Entwurf_NEP2035_V2021",
             index_col="Unnamed: 0",
         )
-        
-    # Select target value in MW
-        target = capacities_nep.Summe["PV-Batteriespeicher"]*1000
+
+        # Select target value in MW
+        target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
 
     else:
         target = db.select_dataframe(

@@ -84,7 +84,6 @@ def create_table():
 
 
 def nuts_mapping():
-
     nuts_mapping = {
         "BW": "DE1",
         "NW": "DEA",
@@ -157,13 +156,15 @@ def insert_capacities_per_federal_state_nep():
     df_windoff = pd.read_excel(
         target_file,
         sheet_name="WInd_Offshore_NEP",
-    ).dropna(subset=['Bundesland', 'Netzverknuepfungspunkt'])
+    ).dropna(subset=["Bundesland", "Netzverknuepfungspunkt"])
 
     # Remove trailing whitespace from column Bundesland
-    df_windoff['Bundesland']= df_windoff['Bundesland'].str.strip()
+    df_windoff["Bundesland"] = df_windoff["Bundesland"].str.strip()
 
     # Group and sum capacities per federal state
-    df_windoff_fs = df_windoff[['Bundesland', 'C 2035']].groupby(['Bundesland']).sum()
+    df_windoff_fs = (
+        df_windoff[["Bundesland", "C 2035"]].groupby(["Bundesland"]).sum()
+    )
 
     # List federal state with an assigned wind offshore capacity
     index_list = list(df_windoff_fs.index.values)
@@ -172,9 +173,9 @@ def insert_capacities_per_federal_state_nep():
     # df_windoff_fs
 
     for state in index_list:
-
-        df.at['Wind offshore', state] = df_windoff_fs.at[state, 'C 2035']/1000
-
+        df.at["Wind offshore", state] = (
+            df_windoff_fs.at[state, "C 2035"] / 1000
+        )
 
     # sort NEP-carriers:
     rename_carrier = {
@@ -216,7 +217,6 @@ def insert_capacities_per_federal_state_nep():
     ]
 
     for bl in map_nuts.index:
-
         data = pd.DataFrame(df[bl])
 
         # if distribution to federal states is not provided,
@@ -687,7 +687,9 @@ def eGon100_capacities():
                             df.p_nom[f"residential_{merge_carrier}"]
                             + df.p_nom[f"services_{merge_carrier}"]
                         ),
-                        "component": df.component[f"residential_{merge_carrier}"],
+                        "component": df.component[
+                            f"residential_{merge_carrier}"
+                        ],
                     },
                 )
             )

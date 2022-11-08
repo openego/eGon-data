@@ -3,6 +3,8 @@ The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
 
+from pathlib import Path
+
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
 from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
@@ -10,6 +12,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
+import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
@@ -18,6 +21,7 @@ from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
     extension_per_federal_state,
+    extension_to_areas,
     select_target,
 )
 from egon.data.datasets.power_plants import (
@@ -26,9 +30,6 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
-import pypsa
-from egon.data.datasets.chp.small_chp import extension_to_areas
-from pathlib import Path
 
 Base = declarative_base()
 

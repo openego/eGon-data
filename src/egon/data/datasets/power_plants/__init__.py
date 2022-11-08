@@ -1,14 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from geoalchemy2 import Geometry
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Float,
-    Integer,
-    Sequence,
-    String,
-)
+from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker

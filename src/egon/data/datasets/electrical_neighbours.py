@@ -3,17 +3,17 @@
 
 import zipfile
 
-import geopandas as gpd
-import pandas as pd
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
+import geopandas as gpd
+import pandas as pd
 
-import egon.data.datasets.etrago_setup as etrago
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.datasets.etrago_setup as etrago
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
 class ElectricalNeighbours(Dataset):
@@ -1082,9 +1082,12 @@ def insert_storage(capacities, session=None):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store[
-        "max_hours"
-    ] = (None, None, None, None)
+    (
+        store["dispatch"],
+        store["store"],
+        store["standing_loss"],
+        store["max_hours"],
+    ) = (None, None, None, None)
 
     # Insert carrier specific parameters
 

@@ -783,7 +783,6 @@ def dsm_cts_ind_processing():
         ind_cool_vent_share=0.039,
         ind_vent_share=0.017,
     ):
-
         """
         Execute methodology to create and implement components for DSM considering
         a) CTS per osm-area: combined potentials of cooling, ventilation and air conditioning
