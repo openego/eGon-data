@@ -1763,13 +1763,13 @@ def calculate_building_load_factor(
     """
     logger.debug(f"{buildings_gdf.index.name}. Find me.")
     gdf = mastr_gdf.merge(
-        buildings_gdf[["max_cap", "building_area"]].loc[
+        buildings_gdf[["max_cap", "building_area"]].reset_index().loc[
             ~buildings_gdf["max_cap"].isna()
         ],
         how="left",
         left_on="building_id",
-        right_index=True,
-    )
+        right_on="id",
+    ).set_index("id")
 
     return gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
 
