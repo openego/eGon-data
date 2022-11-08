@@ -14,7 +14,7 @@ __author__      = "Ludee, nesnoj"
 -- 28.10.22: CHECK IF NECESSARY!!!
 -- exclude large scale consumer
 --DELETE FROM openstreetmap.osm_landuse
---	WHERE gid IN (SELECT polygon_id FROM model_draft.ego_demand_hv_largescaleconsumer);
+--	WHERE gid IN (SELECT polygon_id FROM model_draft.egon_demand_hv_largescaleconsumer);
 
 
 -- sequence

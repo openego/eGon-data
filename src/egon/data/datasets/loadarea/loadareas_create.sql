@@ -194,14 +194,14 @@ UPDATE demand.egon_loadarea AS t1
 
 -- Cut all 4 OSM sectors with MV Griddistricts
 -- 1. Residential sector
-DROP TABLE IF EXISTS    openstreetmap.ego_osm_sector_per_griddistrict_1_residential CASCADE;
-CREATE TABLE            openstreetmap.ego_osm_sector_per_griddistrict_1_residential (
+DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_1_residential CASCADE;
+CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_1_residential (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
     CONSTRAINT urban_sector_per_grid_district_1_residential_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
-INSERT INTO     openstreetmap.ego_osm_sector_per_griddistrict_1_residential (geom)
+INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_1_residential (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
@@ -213,7 +213,7 @@ INSERT INTO     openstreetmap.ego_osm_sector_per_griddistrict_1_residential (geo
 
 -- index GIST (geom)
 CREATE INDEX urban_sector_per_grid_district_1_residential_geom_idx
-    ON openstreetmap.ego_osm_sector_per_griddistrict_1_residential USING GIST (geom);
+    ON openstreetmap.egon_osm_sector_per_griddistrict_1_residential USING GIST (geom);
 
 -- sector stats
 UPDATE demand.egon_loadarea AS t1
@@ -225,7 +225,7 @@ UPDATE demand.egon_loadarea AS t1
                 SUM(ST_AREA(sector.geom)/10000) AS sector_area,
                 COUNT(sector.geom) AS sector_count,
                 loads.area_ha AS area_ha
-        FROM    openstreetmap.ego_osm_sector_per_griddistrict_1_residential AS sector,
+        FROM    openstreetmap.egon_osm_sector_per_griddistrict_1_residential AS sector,
                 demand.egon_loadarea AS loads
         WHERE   loads.geom && sector.geom AND
                 ST_INTERSECTS(loads.geom,ST_BUFFER(sector.geom,-1))
@@ -234,14 +234,14 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 -- 2. Retail sector
-DROP TABLE IF EXISTS    openstreetmap.ego_osm_sector_per_griddistrict_2_retail CASCADE;
-CREATE TABLE            openstreetmap.ego_osm_sector_per_griddistrict_2_retail (
+DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_2_retail CASCADE;
+CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_2_retail (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
     CONSTRAINT urban_sector_per_grid_district_2_retail_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
-INSERT INTO     openstreetmap.ego_osm_sector_per_griddistrict_2_retail (geom)
+INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_2_retail (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
@@ -253,7 +253,7 @@ INSERT INTO     openstreetmap.ego_osm_sector_per_griddistrict_2_retail (geom)
 
 -- index GIST (geom)
 CREATE INDEX    urban_sector_per_grid_district_2_retail_geom_idx
-    ON          openstreetmap.ego_osm_sector_per_griddistrict_2_retail USING GIST (geom);
+    ON          openstreetmap.egon_osm_sector_per_griddistrict_2_retail USING GIST (geom);
 
 -- sector stats
 UPDATE demand.egon_loadarea AS t1
@@ -265,7 +265,7 @@ UPDATE demand.egon_loadarea AS t1
                 SUM(ST_AREA(sector.geom)/10000) AS sector_area,
                 COUNT(sector.geom) AS sector_count,
                 loads.area_ha AS area_ha
-        FROM    openstreetmap.ego_osm_sector_per_griddistrict_2_retail AS sector,
+        FROM    openstreetmap.egon_osm_sector_per_griddistrict_2_retail AS sector,
                 demand.egon_loadarea AS loads
         WHERE   loads.geom && sector.geom AND
                 ST_INTERSECTS(loads.geom,ST_BUFFER(sector.geom,-1))
@@ -278,7 +278,7 @@ DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.osm_polygon_urban_sector_3_indust
 CREATE MATERIALIZED VIEW		openstreetmap.osm_polygon_urban_sector_3_industrial_nolargescale_mview AS
 	SELECT	osm.*
 	FROM	openstreetmap.osm_polygon_urban AS osm
-	WHERE	sector = '3' --AND gid NOT IN (SELECT polygon_id FROM model_draft.ego_demand_hv_largescaleconsumer) -- 31.10.22: COMMENTED OUT! CHECK IF NECESSARY!!!
+	WHERE	sector = '3' --AND gid NOT IN (SELECT polygon_id FROM model_draft.egon_demand_hv_largescaleconsumer) -- 31.10.22: COMMENTED OUT! CHECK IF NECESSARY!!!
 ORDER BY	osm.id;
 
 -- index (id)
@@ -297,7 +297,7 @@ FROM    openstreetmap.osm_deu_polygon_urban_sector_3_industrial_mview ind
 UNION ALL
 SELECT  'largescale' AS name,
         count(ls.*) AS cnt
-FROM    model_draft.ego_demand_hv_largescaleconsumer ls
+FROM    model_draft.egon_demand_hv_largescaleconsumer ls
 UNION ALL
 SELECT  'nolargescale' AS name,
         count(nols.*) AS cnt
@@ -306,14 +306,14 @@ FROM    openstreetmap.osm_deu_polygon_urban_sector_3_industrial_nolargescale_mvi
 
 
 -- 3. industrial sector
-DROP TABLE IF EXISTS    openstreetmap.ego_osm_sector_per_griddistrict_3_industrial CASCADE;
-CREATE TABLE            openstreetmap.ego_osm_sector_per_griddistrict_3_industrial	 (
+DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_3_industrial CASCADE;
+CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_3_industrial	 (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
     CONSTRAINT urban_sector_per_grid_district_3_industrial_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
-INSERT INTO     openstreetmap.ego_osm_sector_per_griddistrict_3_industrial (geom)
+INSERT INTO     openstreetmap.egon_osm_sector_per_griddistrict_3_industrial (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
@@ -325,7 +325,7 @@ INSERT INTO     openstreetmap.ego_osm_sector_per_griddistrict_3_industrial (geom
 
 -- index GIST (geom)
 CREATE INDEX    urban_sector_per_grid_district_3_industrial_geom_idx
-    ON openstreetmap.ego_osm_sector_per_griddistrict_3_industrial USING GIST (geom);
+    ON openstreetmap.egon_osm_sector_per_griddistrict_3_industrial USING GIST (geom);
 
 -- sector stats
 UPDATE demand.egon_loadarea AS t1
@@ -337,7 +337,7 @@ UPDATE demand.egon_loadarea AS t1
                 SUM(ST_AREA(sector.geom)/10000) AS sector_area,
                 COUNT(sector.geom) AS sector_count,
                 loads.area_ha AS area_ha
-        FROM    openstreetmap.ego_osm_sector_per_griddistrict_3_industrial AS sector,
+        FROM    openstreetmap.egon_osm_sector_per_griddistrict_3_industrial AS sector,
                 demand.egon_loadarea AS loads
         WHERE   loads.geom && sector.geom AND
                 ST_INTERSECTS(loads.geom,ST_BUFFER(sector.geom,-1))
@@ -346,14 +346,14 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 -- 4. agricultural sector
-DROP TABLE IF EXISTS    openstreetmap.ego_osm_sector_per_griddistrict_4_agricultural CASCADE;
-CREATE TABLE            openstreetmap.ego_osm_sector_per_griddistrict_4_agricultural	 (
+DROP TABLE IF EXISTS    openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural CASCADE;
+CREATE TABLE            openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural	 (
     id SERIAL NOT NULL,
     geom geometry(Polygon,3035),
     CONSTRAINT 	urban_sector_per_grid_district_4_agricultural_pkey PRIMARY KEY (id));
 
 -- intersect sector with mv-griddistrict
-INSERT INTO openstreetmap.ego_osm_sector_per_griddistrict_4_agricultural (geom)
+INSERT INTO openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural (geom)
     SELECT  loads.geom ::geometry(Polygon,3035)
     FROM (
         SELECT (ST_DUMP(ST_INTERSECTION(loads.geom,dis.geom))).geom AS geom
@@ -365,7 +365,7 @@ INSERT INTO openstreetmap.ego_osm_sector_per_griddistrict_4_agricultural (geom)
 
 -- index GIST (geom)
 CREATE INDEX urban_sector_per_grid_district_4_agricultural_geom_idx
-    ON openstreetmap.ego_osm_sector_per_griddistrict_4_agricultural USING GIST (geom);
+    ON openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural USING GIST (geom);
 
 -- sector stats
 UPDATE demand.egon_loadarea AS t1
@@ -377,7 +377,7 @@ UPDATE demand.egon_loadarea AS t1
                 SUM(ST_AREA(sector.geom)/10000) AS sector_area,
                 COUNT(sector.geom) AS sector_count,
                 loads.area_ha AS area_ha
-        FROM    openstreetmap.ego_osm_sector_per_griddistrict_4_agricultural AS sector,
+        FROM    openstreetmap.egon_osm_sector_per_griddistrict_4_agricultural AS sector,
                 demand.egon_loadarea AS loads
         WHERE   loads.geom && sector.geom AND
                 ST_INTERSECTS(loads.geom,ST_BUFFER(sector.geom,-1))

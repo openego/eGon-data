@@ -136,8 +136,8 @@ UPDATE society.egon_destatis_zensus_cells_melted_cluster AS t1
 
 
 -- zensus stats
-DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.ego_society_zensus_per_la_mview CASCADE;
-CREATE MATERIALIZED VIEW         	openstreetmap.ego_society_zensus_per_la_mview AS
+DROP MATERIALIZED VIEW IF EXISTS	openstreetmap.egon_society_zensus_per_la_mview CASCADE;
+CREATE MATERIALIZED VIEW         	openstreetmap.egon_society_zensus_per_la_mview AS
 -- 	SELECT 	'destatis_zensus_population_per_ha_mview' AS name,
 -- 		sum(population),
 -- 		count(geom) AS census_count
