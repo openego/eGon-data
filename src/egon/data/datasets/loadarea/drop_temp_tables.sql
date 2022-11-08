@@ -1,4 +1,11 @@
--- Drop temp tables, views and sequences
+/*
+Drop temp tables, views and sequences
+
+__copyright__   = "Reiner Lemoine Institut"
+__license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+__url__         = "https://github.com/openego/eGon-data/blob/main/LICENSE"
+__author__      = "nesnoj"
+*/
 
 -- From script: osm_landuse_melt.sql
 DROP SEQUENCE IF EXISTS openstreetmap.osm_landuse_buffer100_mview_id CASCADE;
