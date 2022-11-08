@@ -36,56 +36,6 @@ UPDATE demand.egon_loadarea AS t1
         ) AS t2
     WHERE   t1.id = t2.id;
 
--- Add CTS consumption
-UPDATE demand.egon_loadarea AS t1
-    SET sector_consumption_cts_2035 = t2.demand
-    FROM (
-        SELECT  a.id AS id,
-                SUM(b.demand)::float AS demand
-        FROM    demand.egon_loadarea AS a,
-                (
-                    SELECT
-                        dem.demand AS demand,
-                        census.geom_point AS geom_point
-                    FROM
-                        demand.egon_demandregio_zensus_electricity as dem,
-                        society.destatis_zensus_population_per_ha AS census
-                    WHERE
-                        dem.scenario = 'eGon2035' AND
-                        dem.sector = 'service' AND
-                        dem.zensus_population_id = census.id
-                ) AS b
-        WHERE   a.geom && b.geom_point AND
-                ST_CONTAINS(a.geom, b.geom_point)
-        GROUP BY a.id
-        ) AS t2
-    WHERE   t1.id = t2.id;
-
--- Add industrial consumption
-UPDATE demand.egon_loadarea AS t1
-    SET sector_consumption_industrial_2035 = t2.demand
-    FROM (
-        SELECT  a.id AS id,
-                SUM(b.demand)::float AS demand
-        FROM    demand.egon_loadarea AS a,
-                (
-                    SELECT
-                        sum(dem.demand) as demand,
-					    ST_PointOnSurface(osm.geom) AS geom_surfacepoint
-                    FROM
-                        openstreetmap.osm_landuse as osm,
-                        demand.egon_demandregio_osm_ind_electricity as dem
-                    WHERE
-                        dem.scenario = 'eGon2035' AND
-                        dem.osm_id = osm.id
-                    GROUP BY osm.id
-                ) AS b
-        WHERE   a.geom && b.geom_surfacepoint AND
-                ST_CONTAINS(a.geom, b.geom_surfacepoint)
-        GROUP BY a.id
-        ) AS t2
-    WHERE   t1.id = t2.id;
-
 -- Add residential peak load
 UPDATE demand.egon_loadarea AS t1
     SET sector_peakload_residential_2035 = t2.peak_load_in_mw
@@ -110,6 +60,31 @@ UPDATE demand.egon_loadarea AS t1
                         peak.scenario = 'eGon2035' AND
                         peak.sector = 'residential' AND
                         peak.building_id = bld.id
+                ) AS b
+        WHERE   a.geom && b.geom_point AND
+                ST_CONTAINS(a.geom, b.geom_point)
+        GROUP BY a.id
+        ) AS t2
+    WHERE   t1.id = t2.id;
+
+-- Add CTS consumption
+UPDATE demand.egon_loadarea AS t1
+    SET sector_consumption_cts_2035 = t2.demand
+    FROM (
+        SELECT  a.id AS id,
+                SUM(b.demand)::float AS demand
+        FROM    demand.egon_loadarea AS a,
+                (
+                    SELECT
+                        dem.demand AS demand,
+                        census.geom_point AS geom_point
+                    FROM
+                        demand.egon_demandregio_zensus_electricity as dem,
+                        society.destatis_zensus_population_per_ha AS census
+                    WHERE
+                        dem.scenario = 'eGon2035' AND
+                        dem.sector = 'service' AND
+                        dem.zensus_population_id = census.id
                 ) AS b
         WHERE   a.geom && b.geom_point AND
                 ST_CONTAINS(a.geom, b.geom_point)
@@ -148,6 +123,32 @@ UPDATE demand.egon_loadarea AS t1
         ) AS t2
     WHERE   t1.id = t2.id;
 
+-- Add industrial consumption
+UPDATE demand.egon_loadarea AS t1
+    SET sector_consumption_industrial_2035 = t2.demand
+    FROM (
+        SELECT  a.id AS id,
+                SUM(b.demand)::float AS demand
+        FROM    demand.egon_loadarea AS a,
+                (
+                    SELECT
+                        sum(dem.demand) as demand,
+					    ST_PointOnSurface(osm.geom) AS geom_surfacepoint
+                    FROM
+                        openstreetmap.osm_landuse as osm,
+                        demand.egon_demandregio_osm_ind_electricity as dem
+                    WHERE
+                        dem.scenario = 'eGon2035' AND
+                        dem.osm_id = osm.id
+                    GROUP BY osm.id
+                ) AS b
+        WHERE   a.geom && b.geom_surfacepoint AND
+                ST_CONTAINS(a.geom, b.geom_surfacepoint)
+        GROUP BY a.id
+        ) AS t2
+    WHERE   t1.id = t2.id;
+
+
 -- Add industrial peak load
 -- TBD!
 
@@ -176,56 +177,6 @@ UPDATE demand.egon_loadarea AS t1
                 ) AS b
         WHERE   a.geom && b.geom_point AND
                 ST_CONTAINS(a.geom, b.geom_point)
-        GROUP BY a.id
-        ) AS t2
-    WHERE   t1.id = t2.id;
-
--- Add CTS consumption
-UPDATE demand.egon_loadarea AS t1
-    SET sector_consumption_cts_2050 = t2.demand
-    FROM (
-        SELECT  a.id AS id,
-                SUM(b.demand)::float AS demand
-        FROM    demand.egon_loadarea AS a,
-                (
-                    SELECT
-                        dem.demand AS demand,
-                        census.geom_point AS geom_point
-                    FROM
-                        demand.egon_demandregio_zensus_electricity as dem,
-                        society.destatis_zensus_population_per_ha AS census
-                    WHERE
-                        dem.scenario = 'eGon100RE' AND
-                        dem.sector = 'service' AND
-                        dem.zensus_population_id = census.id
-                ) AS b
-        WHERE   a.geom && b.geom_point AND
-                ST_CONTAINS(a.geom, b.geom_point)
-        GROUP BY a.id
-        ) AS t2
-    WHERE   t1.id = t2.id;
-
--- Add industrial consumption
-UPDATE demand.egon_loadarea AS t1
-    SET sector_consumption_industrial_2050 = t2.demand
-    FROM (
-        SELECT  a.id AS id,
-                SUM(b.demand)::float AS demand
-        FROM    demand.egon_loadarea AS a,
-                (
-                    SELECT
-                        sum(dem.demand) as demand,
-					    ST_PointOnSurface(osm.geom) AS geom_surfacepoint
-                    FROM
-                        openstreetmap.osm_landuse as osm,
-                        demand.egon_demandregio_osm_ind_electricity as dem
-                    WHERE
-                        dem.scenario = 'eGon100RE' AND
-                        dem.osm_id = osm.id
-                    GROUP BY osm.id
-                ) AS b
-        WHERE   a.geom && b.geom_surfacepoint AND
-                ST_CONTAINS(a.geom, b.geom_surfacepoint)
         GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
@@ -261,6 +212,31 @@ UPDATE demand.egon_loadarea AS t1
         ) AS t2
     WHERE   t1.id = t2.id;
 
+-- Add CTS consumption
+UPDATE demand.egon_loadarea AS t1
+    SET sector_consumption_cts_2050 = t2.demand
+    FROM (
+        SELECT  a.id AS id,
+                SUM(b.demand)::float AS demand
+        FROM    demand.egon_loadarea AS a,
+                (
+                    SELECT
+                        dem.demand AS demand,
+                        census.geom_point AS geom_point
+                    FROM
+                        demand.egon_demandregio_zensus_electricity as dem,
+                        society.destatis_zensus_population_per_ha AS census
+                    WHERE
+                        dem.scenario = 'eGon100RE' AND
+                        dem.sector = 'service' AND
+                        dem.zensus_population_id = census.id
+                ) AS b
+        WHERE   a.geom && b.geom_point AND
+                ST_CONTAINS(a.geom, b.geom_point)
+        GROUP BY a.id
+        ) AS t2
+    WHERE   t1.id = t2.id;
+
 -- Add CTS peak load
 UPDATE demand.egon_loadarea AS t1
     SET sector_peakload_cts_2050 = t2.peak_load_in_mw
@@ -288,6 +264,31 @@ UPDATE demand.egon_loadarea AS t1
                 ) AS b
         WHERE   a.geom && b.geom_point AND
                 ST_CONTAINS(a.geom, b.geom_point)
+        GROUP BY a.id
+        ) AS t2
+    WHERE   t1.id = t2.id;
+
+-- Add industrial consumption
+UPDATE demand.egon_loadarea AS t1
+    SET sector_consumption_industrial_2050 = t2.demand
+    FROM (
+        SELECT  a.id AS id,
+                SUM(b.demand)::float AS demand
+        FROM    demand.egon_loadarea AS a,
+                (
+                    SELECT
+                        sum(dem.demand) as demand,
+					    ST_PointOnSurface(osm.geom) AS geom_surfacepoint
+                    FROM
+                        openstreetmap.osm_landuse as osm,
+                        demand.egon_demandregio_osm_ind_electricity as dem
+                    WHERE
+                        dem.scenario = 'eGon100RE' AND
+                        dem.osm_id = osm.id
+                    GROUP BY osm.id
+                ) AS b
+        WHERE   a.geom && b.geom_surfacepoint AND
+                ST_CONTAINS(a.geom, b.geom_surfacepoint)
         GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
