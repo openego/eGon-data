@@ -1084,7 +1084,7 @@ def load_building_data():
         .sort_index()
     )
 
-    return gdf[~gdf.index.duplicated(keep='first')]
+    return gdf[~gdf.index.duplicated(keep="first")]
 
 
 @timer_func
@@ -1763,9 +1763,9 @@ def calculate_building_load_factor(
     """
     logger.debug(f"{buildings_gdf.index.name}. Find me.")
     gdf = mastr_gdf.merge(
-        buildings_gdf[["max_cap", "building_area"]].reset_index().loc[
-            ~buildings_gdf["max_cap"].isna()
-        ],
+        buildings_gdf[["max_cap", "building_area"]]
+        .reset_index()
+        .loc[~buildings_gdf["max_cap"].isna()],
         how="left",
         left_on="building_id",
         right_on="id",
