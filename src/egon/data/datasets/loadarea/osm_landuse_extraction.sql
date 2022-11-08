@@ -1,7 +1,7 @@
 /*
 OSM landuse sectors
 Extract landuse areas from OpenStreetMap.
-Cut the landuse with German boders (vg250) and make valid geometries.
+Cut the landuse with German borders (vg250) and make valid geometries.
 Divide into 4 landuse sectors:
 1. Residential
 2. Retail

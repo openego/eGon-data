@@ -1,5 +1,17 @@
-"""The central module containing all code to create tables for osm landuse
-extraction.
+"""
+OSM landuse extraction and load areas creation.
+
+**Landuse**
+
+* Landuse data is extracted from OpenStreetMap: residential, retail,
+  industrial, Agricultural
+* Data is cut with German borders (VG 250), data outside is dropped
+* Invalid geometries are fixed
+* Results are stored in table `openstreetmap.osm_landuse`
+
+**Load Areas**
+
+TBD
 """
 
 import os
