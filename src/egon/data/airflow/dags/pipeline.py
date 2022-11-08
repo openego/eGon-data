@@ -597,7 +597,11 @@ with airflow.DAG(
             osm_landuse,
             zensus_vg250,
             household_electricity_demand_annual,
-            tasks["hh_buildings.get-building-peak-loads"],
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".get-building-peak-loads"
+            ],
             cts_demand_buildings,
             demand_curves_industry,
         ]
