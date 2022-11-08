@@ -2651,6 +2651,40 @@ def geocode_mastr_data():
     create_geocoded_table(geocode_gdf)
 
 
+def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    sql = "SELECT building_id, zensus_population_id FROM boundaries.egon_map_zensus_mvgd_buildings"
+
+    buildings_gdf = (
+        gpd.GeoDataFrame(
+            buildings_gdf.merge(
+                right=db.select_dataframe(sql),
+                how="left",
+                on="building_id",
+            ),
+            crs=buildings_gdf.crs,
+        )
+        .drop(columns="building_id_y")
+        .rename(columns={"building_id_x": "building_id"})
+    )
+
+    sql = "SELECT * FROM boundaries.egon_map_zensus_weather_cell"
+
+    buildings_gdf = (
+        gpd.GeoDataFrame(
+            buildings_gdf.merge(
+                right=db.select_dataframe(sql),
+                how="left",
+                on="zensus_population_id",
+            ),
+            crs=buildings_gdf.crs,
+        )
+        .drop(columns="zensus_population_id_y")
+        .rename(columns={"zensus_population_id_x": "zensus_population_id"})
+    )
+
+    return buildings_gdf
+
+
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
@@ -2695,6 +2729,9 @@ def pv_rooftop_to_buildings():
         cap_per_bus_id_df = pd.concat(
             [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
+
+    # add weather cell
+    all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
 
     # export scenario
     create_scenario_table(add_voltage_level(all_buildings_gdf))
