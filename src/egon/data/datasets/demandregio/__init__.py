@@ -33,7 +33,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 clone_and_install,
