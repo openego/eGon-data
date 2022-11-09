@@ -1564,9 +1564,9 @@ def assign_voltage_level_to_buildings():
             cells_query.session.bind,
         )
 
-    df_peak_load_buildings = df_peak_loads.groupby("building_id")[
-        "peak_load_in_w"
-    ].sum()
+    df_peak_load_buildings = df_peak_loads.groupby(
+        ["building_id", "scenario"]
+    )["peak_load_in_w"].sum()
     df_peak_load_buildings = df_peak_load_buildings.to_frame()
     df_peak_load_buildings.loc[:, "voltage_level"] = 0
 
@@ -1594,7 +1594,7 @@ def assign_voltage_level_to_buildings():
         left=df_peak_loads.drop(columns="voltage_level"),
         right=df_peak_load_buildings["voltage_level"],
         how="left",
-        left_on="building_id",
+        left_on=["building_id", "scenario"],
         right_index=True,
     )
 
