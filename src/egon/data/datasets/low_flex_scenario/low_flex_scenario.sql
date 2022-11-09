@@ -50,3 +50,43 @@ INSERT INTO grid.egon_etrago_store_timeseries
 	 FROM grid.egon_etrago_store
 	 WHERE store_id=store_id
 	);
+	
+--Drops links with carriers 'dsm' from grid.egon_etrago_links_timeseries. Needs check
+INSERT INTO grid.egon_etrago_link_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, link_id, temp_id, p_set, p_min_pu
+    FROM grid.egon_etrago_link_timeseries WHERE scn_name='eGon2035';
+	DELETE FROM grid.egon_etrago_link_timeseries
+	WHERE NOT EXISTS 
+	(SELECT link_id 
+	 FROM grid.egon_etrago_link
+	 WHERE link_id=link_id
+	);
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_generator.
+INSERT INTO grid.egon_etrago_generator
+    SELECT 'eGon2035_lowflex' as scn_name, generator_id, bus, control, type, carrier, p_nom, p_nom_extendable,
+	p_nom_min, p_nom_max, p_min_pu, p_max_pu, p_set, q_set, sign, marginal_cost, build_year,
+	lifetime, capital_cost, efficiency, committable, start_up_cost, shut_down_cost, min_up_time, min_down_time,
+	up_time_before, down_time_before, ramp_limit_up, ramp_limit_down, ramp_limit_start_up, ramp_limit_shut_down,
+	e_nom_max
+    FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex ERROR RELATION DOES NOT EXIST
+--from grid.egon_etrago_line.
+INSERT INTO grid.egon_etrago_line
+    SELECT 'eGon2035_lowflex' as scn_name, line_id, bus0, bus1, type, carrier, x, r,
+	g, b, s_nom, s_nom_extendable, s_nom_min, s_nom_max, s_max_pu, build_year, lifetime,
+    capital_cost, lenght, cables, terrain_factor, num_parallel, v_ang_min,
+	v_ang_max, v_nom, geom
+    FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
+	
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_storage.
+INSERT INTO grid.egon_etrago_storage
+    SELECT 'eGon2035_lowflex' as scn_name, storage_id, bus, control, type, carrier, p_nom,
+	p_nom_extendable, p_nom_min, p_nom_max, p_min_pu, s_nom_min, s_nom_max, s_max_pu, build_year, lifetime,
+    capital_cost, lenght, cables, terrain_factor, num_parallel, v_ang_min,
+	v_ang_max, v_nom, geom
+    FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
