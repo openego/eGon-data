@@ -2,25 +2,27 @@
 adjusting data from demandRegio
 
 """
-import pandas as pd
-import numpy as np
-import egon.data.config
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data import db
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-    EgonScenario,
-)
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, ARRAY
+from pathlib import Path
+
+from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import numpy as np
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets import Dataset
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
 )
-from egon.data.datasets import Dataset
-from pathlib import Path
+from egon.data.datasets.scenario_parameters import (
+    EgonScenario,
+    get_sector_parameters,
+)
+import egon.data.config
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 try:
-    from disaggregator import data, spatial, config
+    from disaggregator import config, data, spatial
 
 except ImportError as e:
     pass
@@ -644,7 +646,7 @@ def insert_cts_ind_demands():
             # industry: no specific heat demand, use data from demandregio
             "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
             # no adjustments for status quo
-            "eGon2021": {}
+            "eGon2021": {},
         }
 
         insert_cts_ind(scn, year, engine, target_values)
