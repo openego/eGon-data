@@ -2664,6 +2664,8 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_mvgd_buildings
     """
 
+    logger.debug(f"{list(buildings_gdf.reset_index().columns)}")
+
     buildings_gdf = (
         buildings_gdf.reset_index()
         .merge(
