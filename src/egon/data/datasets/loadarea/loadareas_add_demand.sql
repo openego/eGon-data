@@ -132,7 +132,7 @@ UPDATE demand.egon_loadarea AS t1
     FROM (
         SELECT  a.id AS id,
                 SUM(b.demand)::float AS demand,
-                SUM(b.peak_load)::float AS peak_load,
+                SUM(b.peak_load)::float AS peak_load
         FROM    demand.egon_loadarea AS a,
                 (
                     SELECT
@@ -332,7 +332,7 @@ UPDATE demand.egon_loadarea AS t1
     FROM (
         SELECT  a.id AS id,
                 SUM(b.demand)::float AS demand,
-                SUM(b.peak_load)::float AS peak_load,
+                SUM(b.peak_load)::float AS peak_load
         FROM    demand.egon_loadarea AS a,
                 (
                     SELECT
