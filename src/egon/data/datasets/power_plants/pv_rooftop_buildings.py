@@ -1165,9 +1165,7 @@ def allocate_pv(
         buildings = q_buildings_gdf.loc[
             (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
         ]
-        gens = q_mastr_gdf.loc[
-            (q_mastr_gdf.ags == ags) & (q_mastr_gdf.building_id.isna())
-        ]
+        gens = q_mastr_gdf.loc[q_mastr_gdf.ags == ags]
 
         len_build = len(buildings)
         len_gens = len(gens)
