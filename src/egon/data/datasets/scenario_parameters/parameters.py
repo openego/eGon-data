@@ -463,6 +463,9 @@ def electricity(scenario):
             "solar": read_costs(costs, "solar", "VOM"),
         }
 
+    elif scenario == "eGon2021":
+        parameters = {}
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -645,6 +648,9 @@ def gas(scenario):
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
+    elif scenario == "eGon2021":
+        parameters = {}
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -725,6 +731,9 @@ def mobility(scenario):
                 },
             }
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -832,6 +841,9 @@ def heat(scenario):
             "DE_demand_reduction_service": 0.390895195300713,
             "DE_district_heating_share": 0.19,
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
