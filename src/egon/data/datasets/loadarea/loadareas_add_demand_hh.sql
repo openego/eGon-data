@@ -160,7 +160,7 @@ UPDATE demand.egon_loadarea AS t1
                     (
                         SELECT
                             nuts3,
-                            sueGon2021m(demand) as demand
+                            sum(demand) as demand
                         FROM demand.egon_demandregio_hh
                         WHERE
                             scenario = 'eGon2035'
