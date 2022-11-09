@@ -126,3 +126,49 @@ UPDATE demand.egon_loadarea AS t1
         GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
+
+------------------------
+-- Scenario: eGon2021 --
+------------------------
+-- Update values for status quo scenario
+
+UPDATE demand.egon_loadarea AS t1
+    SET
+        sector_consumption_residential = sector_consumption_residential_2035 * t2.scaling_factor,
+        sector_peakload_residential = sector_peakload_residential_2035 * t2.scaling_factor
+    FROM (
+        SELECT
+            la.id,
+            dr.scaling_factor
+        FROM
+            demand.egon_loadarea as la
+        LEFT JOIN
+            (
+                SELECT
+                    a.nuts3 as nuts,
+                    a.demand / b.demand as scaling_factor
+                FROM (
+                        SELECT
+                            nuts3,
+                            sum(demand) as demand
+                        FROM demand.egon_demandregio_hh
+                        WHERE
+                            scenario = 'eGon2021'
+                        GROUP BY nuts3
+                        ORDER BY nuts3
+                    ) AS a,
+                    (
+                        SELECT
+                            nuts3,
+                            sueGon2021m(demand) as demand
+                        FROM demand.egon_demandregio_hh
+                        WHERE
+                            scenario = 'eGon2035'
+                        GROUP BY nuts3
+                        ORDER BY nuts3
+                    ) AS b
+                WHERE a.nuts3 = b.nuts3
+            ) as dr
+        ON la.nuts = dr.nuts
+    ) as t2
+    WHERE t1.id = t2.id;
