@@ -149,7 +149,7 @@ UPDATE demand.egon_loadarea AS t1
                 ) AS b
         WHERE   a.geom && b.geom_surfacepoint AND
                 ST_CONTAINS(a.geom, b.geom_surfacepoint)
-        GROUP BY a.id;
+        GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
 
@@ -178,7 +178,7 @@ UPDATE demand.egon_loadarea AS t1
                 ) AS b
         WHERE   a.geom && b.geom AND
                 ST_CONTAINS(a.geom, b.geom)
-        GROUP BY a.id;
+        GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
 
@@ -349,7 +349,7 @@ UPDATE demand.egon_loadarea AS t1
                 ) AS b
         WHERE   a.geom && b.geom_surfacepoint AND
                 ST_CONTAINS(a.geom, b.geom_surfacepoint)
-        GROUP BY a.id;
+        GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
 
@@ -378,6 +378,6 @@ UPDATE demand.egon_loadarea AS t1
                 ) AS b
         WHERE   a.geom && b.geom AND
                 ST_CONTAINS(a.geom, b.geom)
-        GROUP BY a.id;
+        GROUP BY a.id
         ) AS t2
     WHERE   t1.id = t2.id;
