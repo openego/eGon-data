@@ -1225,7 +1225,7 @@ def allocate_pv(
                 )
             )
 
-            q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
+            # q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
 
         if count % 100 == 0:
@@ -1241,6 +1241,10 @@ def allocate_pv(
     q_mastr_gdf.loc[
         assigned_buildings.gens_id, "building_id"
     ] = assigned_buildings.index
+
+    assigned_gens = q_mastr_gdf.loc[~q_buildings_gdf.building_id.isna()]
+
+    assert len(assigned_buildings) == len(assigned_gens)
 
     logger.debug("Allocated status quo generators to buildings.")
 
