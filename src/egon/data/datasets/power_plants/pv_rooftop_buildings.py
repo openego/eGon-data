@@ -1239,7 +1239,7 @@ def allocate_pv(
         assigned_buildings.gens_id, "building_id"
     ] = assigned_buildings.index
 
-    assigned_gens = q_mastr_gdf.loc[~q_buildings_gdf.building_id.isna()]
+    assigned_gens = q_mastr_gdf.loc[~q_mastr_gdf.building_id.isna()]
 
     assert len(assigned_buildings) == len(assigned_gens)
 
