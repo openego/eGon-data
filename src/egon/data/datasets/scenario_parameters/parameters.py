@@ -120,6 +120,12 @@ def global_settings(scenario):
             },
         }
 
+    elif scenario == "eGon2021":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2021,
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
