@@ -104,6 +104,28 @@ def insert_scenarios():
 
     session.commit()
 
+    # Scenario eGon2021
+    eGon2021 = EgonScenario(name="eGon2021")
+
+    eGon2021.description = """
+        Status quo scenario for 2021. Note: This is NOT A COMPLETE SCENARIO
+        and covers only some sector data required by ding0, such as demand
+        on NUTS 3 level and generation units .
+        """
+    eGon2021.global_parameters = parameters.global_settings(eGon2021.name)
+
+    eGon2021.electricity_parameters = parameters.electricity(eGon2021.name)
+
+    eGon2021.gas_parameters = parameters.gas(eGon2021.name)
+
+    eGon2021.heat_parameters = parameters.heat(eGon2021.name)
+
+    eGon2021.mobility_parameters = parameters.mobility(eGon2021.name)
+
+    session.add(eGon2021)
+
+    session.commit()
+
 
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
@@ -159,6 +181,16 @@ def get_sector_parameters(sector, scenario=None):
                         WHERE name='eGon100RE'"""
                 ).val[0],
                 index=["eGon100RE"],
+            )
+        ).append(
+            pd.DataFrame(
+                db.select_dataframe(
+                    f"""
+                        SELECT {sector}_parameters as val
+                        FROM scenario.egon_scenario_parameters
+                        WHERE name='eGon2021'"""
+                ).val[0],
+                index=["eGon2021"],
             )
         )
 
