@@ -76,7 +76,11 @@ class LoadArea(Dataset):
                 census_cells_melt,
                 osm_landuse_census_cells_melt,
                 loadareas_create,
-                loadareas_add_demand,
+                {
+                    loadareas_add_demand_hh,
+                    loadareas_add_demand_cts,
+                    loadareas_add_demand_ind,
+                },
                 drop_temp_tables,
             ),
         )
@@ -154,10 +158,22 @@ def loadareas_create():
     execute_sql_script("loadareas_create.sql")
 
 
-def loadareas_add_demand():
-    """Adds consumption and peak load per sector to load areas"""
-    print("Add consumption and peak loads to load areas...")
-    execute_sql_script("loadareas_add_demand.sql")
+def loadareas_add_demand_hh():
+    """Adds consumption and peak load to load areas for households"""
+    print("Add consumption and peak loads to load areas for households...")
+    execute_sql_script("loadareas_add_demand_hh.sql")
+
+
+def loadareas_add_demand_cts():
+    """Adds consumption and peak load to load areas for CTS"""
+    print("Add consumption and peak loads to load areas for CTS...")
+    execute_sql_script("loadareas_add_demand_cts.sql")
+
+
+def loadareas_add_demand_ind():
+    """Adds consumption and peak load to load areas for industry"""
+    print("Add consumption and peak loads to load areas for industry...")
+    execute_sql_script("loadareas_add_demand_ind.sql")
 
 
 def drop_temp_tables():
