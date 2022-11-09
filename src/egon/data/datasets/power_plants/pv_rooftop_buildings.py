@@ -2664,15 +2664,10 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_mvgd_buildings
     """
 
-    buildings_gdf = (
-        buildings_gdf.reset_index()
-        .merge(
-            right=db.select_dataframe(sql),
-            how="left",
-            left_on="id",
-            right_on="building_id",
-        )
-        .set_index("id")
+    buildings_gdf = buildings_gdf.merge(
+        right=db.select_dataframe(sql),
+        how="left",
+        on="building_id",
     )
 
     sql = """
@@ -2687,9 +2682,11 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     )
 
     if buildings_gdf.weather_cell_id.isna().any():
+        missing = buildings_gdf.loc[
+            buildings_gdf.weather_cell_id.isna()
+        ].building_id.tolist()
         raise ValueError(
-            f"Following buildings don't have a weather cell id: "
-            f"{buildings_gdf.loc[buildings_gdf.weather_cell_id.isna()].building_id.tolist()}"
+            f"Following buildings don't have a weather cell id: {missing}"
         )
 
     return buildings_gdf
