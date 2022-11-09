@@ -431,7 +431,7 @@ def disagg_households_power(
     )
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
-    if scenario == "eGon2035":
+    if scenario in ["eGon2021", "eGon2035"]:
         # chose demand per household size from survey including weighted DHW
         power_per_HH = demand_per_hh_size["weighted DWH"] / 1e3
 
@@ -441,8 +441,9 @@ def disagg_households_power(
             * power_per_HH
         )
 
-        # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
-        df *= 119000000 / df.sum().sum()
+        if scenario == "eGon2035":
+            # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
+            df *= 119000000 / df.sum().sum()
 
     elif scenario == "eGon100RE":
 
@@ -597,7 +598,7 @@ def insert_household_demand():
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
         )
 
-    for scn in ["eGon2035", "eGon100RE"]:
+    for scn in ["eGon2021", "eGon2035", "eGon100RE"]:
 
         year = scenario_parameters.global_settings(scn)["population_year"]
 
@@ -626,7 +627,7 @@ def insert_cts_ind_demands():
 
     insert_cts_ind_wz_definitions()
 
-    for scn in ["eGon2035", "eGon100RE"]:
+    for scn in ["eGon2021", "eGon2035", "eGon100RE"]:
 
         year = scenario_parameters.global_settings(scn)["population_year"]
 
@@ -642,6 +643,8 @@ def insert_cts_ind_demands():
             # by share of heat according to JRC IDEES, data from 2011
             # industry: no specific heat demand, use data from demandregio
             "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
+            # no adjustments for status quo
+            "eGon2021": {}
         }
 
         insert_cts_ind(scn, year, engine, target_values)
