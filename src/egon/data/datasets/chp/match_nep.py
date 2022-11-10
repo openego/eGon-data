@@ -2,7 +2,6 @@
 The module containing all code dealing with large chp from NEP list.
 """
 
-from sqlalchemy.orm import sessionmaker
 import geopandas
 import pandas as pd
 
@@ -312,7 +311,8 @@ def match_nep_chp(
 
 
 ################################################### Final table ###################################################
-def insert_large_chp(sources, target, EgonChp):
+@db.session_scoped
+def insert_large_chp(sources, target, EgonChp, session=None):
     # Select CHP from NEP list
     chp_NEP = select_chp_from_nep(sources)
 
@@ -516,7 +516,6 @@ def insert_large_chp(sources, target, EgonChp):
     )
 
     # Insert into target table
-    session = sessionmaker(bind=db.engine())()
     for i, row in insert_chp.iterrows():
         entry = EgonChp(
             sources={
@@ -536,6 +535,5 @@ def insert_large_chp(sources, target, EgonChp):
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
         session.add(entry)
-    session.commit()
 
     return MaStR_konv

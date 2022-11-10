@@ -3,14 +3,16 @@ The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
 
+from pathlib import Path
+
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
 from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
@@ -19,6 +21,7 @@ from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
     extension_per_federal_state,
+    extension_to_areas,
     select_target,
 )
 from egon.data.datasets.power_plants import (
@@ -27,9 +30,6 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
-import pypsa
-from egon.data.datasets.chp.small_chp import extension_to_areas
-from pathlib import Path
 
 Base = declarative_base()
 
@@ -130,13 +130,18 @@ def nearest(
     return value
 
 
-def assign_heat_bus(scenario="eGon2035"):
+@db.session_scoped
+def assign_heat_bus(scenario="eGon2035", session=None):
     """Selects heat_bus for chps used in district heating.
 
     Parameters
     ----------
     scenario : str, optional
         Name of the corresponding scenario. The default is 'eGon2035'.
+
+    session : sqlalchemy.orm.Session
+        The session used in this function. Can be ignored because it will be
+        supplied automatically.
 
     Returns
     -------
@@ -192,7 +197,6 @@ def assign_heat_bus(scenario="eGon2035"):
     )
 
     # Insert district heating CHP with heat_bus_id
-    session = sessionmaker(bind=db.engine())()
     for i, row in chp.iterrows():
         if row.carrier != "biomass":
             entry = EgonChp(
@@ -226,16 +230,20 @@ def assign_heat_bus(scenario="eGon2035"):
                 geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
             )
         session.add(entry)
-    session.commit()
 
 
-def insert_biomass_chp(scenario):
+@db.session_scoped
+def insert_biomass_chp(scenario, session=None):
     """Insert biomass chp plants of future scenario
 
     Parameters
     ----------
     scenario : str
         Name of scenario.
+
+    session : sqlalchemy.orm.Session
+        The session used in this function. Can be ignored because it will be
+        supplied automatically.
 
     Returns
     -------
@@ -283,7 +291,6 @@ def insert_biomass_chp(scenario):
     mastr_loc = assign_use_case(mastr_loc, cfg["sources"])
 
     # Insert entries with location
-    session = sessionmaker(bind=db.engine())()
     for i, row in mastr_loc.iterrows():
         if row.ThermischeNutzleistung > 0:
             entry = EgonChp(
@@ -303,7 +310,6 @@ def insert_biomass_chp(scenario):
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
             session.add(entry)
-    session.commit()
 
 
 def insert_chp_egon2035():

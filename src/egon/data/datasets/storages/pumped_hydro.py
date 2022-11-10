@@ -4,7 +4,6 @@ data from MaStR and NEP.
 """
 
 from geopy.geocoders import Nominatim
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
 

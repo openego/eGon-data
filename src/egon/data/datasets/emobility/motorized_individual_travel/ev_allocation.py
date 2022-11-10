@@ -205,10 +205,10 @@ def calc_evs_per_municipality(ev_data, rs7_data):
             Vg250GemPopulation.ags_0.label("ags"),
             Vg250GemPopulation.gen,
             Vg250GemPopulation.population_total.label("pop"),
-        )
+        ).all()
 
-    muns = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
+    muns = pd.DataFrame.from_records(
+        [db.asdict(row) for row in query], index=None
     ).astype({"ags": "int64"})
 
     muns["ags_district"] = (
@@ -312,12 +312,11 @@ def calc_evs_per_grid_district(ev_data_muns):
             )
             .group_by(MvGridDistricts.bus_id, Vg250Gem.ags)
             .order_by(Vg250Gem.ags)
+            .all()
         )
 
-    mvgd_pop_per_mun = pd.read_sql(
-        query_pop_per_mvgd.statement,
-        query_pop_per_mvgd.session.bind,
-        index_col=None,
+    mvgd_pop_per_mun = pd.DataFrame.from_records(
+        [db.asdict(row) for row in query_pop_per_mvgd]
     ).astype({"bus_id": "int64", "pop": "int64", "ags": "int64"})
 
     # Calc population share of each municipality in MVGD
@@ -547,11 +546,13 @@ def allocate_evs_to_grid_districts():
         # Load EVs per grid district
         print("Loading EV counts for grid districts...")
         with db.session_scope() as session:
-            query = session.query(EgonEvCountMvGridDistrict).filter(
-                EgonEvCountMvGridDistrict.scenario == scenario_name
+            query = (
+                session.query(EgonEvCountMvGridDistrict)
+                .filter(EgonEvCountMvGridDistrict.scenario == scenario_name)
+                .all()
             )
-        ev_per_mvgd = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        ev_per_mvgd = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query]
         )
 
         # Convert EV types' wide to long format
@@ -569,11 +570,8 @@ def allocate_evs_to_grid_districts():
             query = session.query(EgonEvPool).filter(
                 EgonEvPool.scenario == scenario_name
             )
-        ev_pool = pd.read_sql(
-            query.statement,
-            query.session.bind,
-            index_col=None,
-        )
+            query = query.all()
+        ev_pool = pd.DataFrame.from_records([db.asdict(row) for row in query])
 
         # Draw EVs randomly for each grid district from pool
         print("  Draw EVs from pool for grid districts...")

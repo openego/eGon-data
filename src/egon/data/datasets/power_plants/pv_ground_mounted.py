@@ -1,8 +1,6 @@
-from shapely import wkb
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import psycopg2
 
 from egon.data import db
 
@@ -36,7 +34,7 @@ def insert():
         )
         df = df[df["Lage"] == "Freiflaeche"]
 
-        ### examine data concerning geographical locations and drop NaNs
+        # examine data concerning geographical locations and drop NaNs
         x1 = df["Laengengrad"].isnull().sum()
         x2 = df["Breitengrad"].isnull().sum()
         print(" ")
@@ -104,7 +102,7 @@ def insert():
                 v_l.loc[index] = np.NaN
         mastr["voltage_level"] = v_l
 
-        ### examine data concerning voltage level
+        # examine data concerning voltage level
         x1 = mastr["voltage_level"].isnull().sum()
         print(" ")
         print("Examination of voltage levels in MaStR data set:")
@@ -127,7 +125,7 @@ def insert():
         x3 = len(index_names)
         mastr.drop(index_names, inplace=True)
 
-        ### further examination
+        # further examination
         print("Number of PVs in low voltage level: " + str(x2))
         print("Number of PVs in LVMV level: " + str(x3))
         print(
@@ -173,7 +171,7 @@ def insert():
 
         # roads and railways
 
-        ### counting variable for examination
+        # counting variable for examination
         before = len(potentials_rora)
 
         # get small areas and create buffer for joining around them
@@ -199,7 +197,7 @@ def insert():
             join = gpd.GeoSeries(data=[x, y])
             potentials_rora["geom"].loc[index_potentials] = join.unary_union
 
-        ### examination of joining of areas
+        # examination of joining of areas
         count_small = len(small_buffers)
         count_join = len(o)
         count_delete = count_small - count_join
@@ -216,7 +214,7 @@ def insert():
 
         # agriculture
 
-        ### counting variable for examination
+        # counting variable for examination
         before = len(potentials_agri)
 
         # get small areas and create buffer for joining around them
@@ -242,7 +240,7 @@ def insert():
             join = gpd.GeoSeries(data=[x, y])
             potentials_agri["geom"].loc[index_potentials] = join.unary_union
 
-        ### examination of joining of areas
+        # examination of joining of areas
         count_small = len(small_buffers)
         count_join = len(o)
         count_delete = count_small - count_join
@@ -261,7 +259,7 @@ def insert():
 
         # check intersection of potential areas
 
-        ### counting variable
+        # counting variable
         agri_vorher = len(potentials_agri)
 
         # if areas intersect, keep road & railway potential areas and drop agricultural ones
@@ -272,7 +270,7 @@ def insert():
             index = o.iloc[i]
             potentials_agri.drop([index], inplace=True)
 
-        ### examination of intersection of areas
+        # examination of intersection of areas
         print(" ")
         print("Review function to avoid intersection of potential areas:")
         print("Initial length potentials_agri: " + str(agri_vorher))
@@ -323,7 +321,7 @@ def insert():
             # get voltage level of existing PVs
             index_pv = o.index[i]
             pot_sel["voltage_level"] = mastr["voltage_level"].loc[index_pv]
-        pot_sel = pot_sel[pot_sel["selected"] == True]
+        pot_sel = pot_sel[pot_sel["selected"] is True]
         pot_sel.drop("selected", axis=1, inplace=True)
 
         # drop selected existing pv parks from mastr
@@ -471,7 +469,7 @@ def insert():
 
         overlay = gpd.sjoin(centroids, distr)
 
-        ### examine potential area per grid district
+        # examine potential area per grid district
         anz = len(overlay)
         anz_distr = len(overlay["index_right"].unique())
         size = 137500  # m2 Fläche für > 5,5 MW: (5500 kW / (0,04 kW/m2))
@@ -738,7 +736,7 @@ def insert():
         return pv_exist
 
     def run_methodology(
-        con=db.engine(),
+        con=None,
         path="",
         pow_per_area=0.04,
         join_buffer=10,
@@ -765,6 +763,8 @@ def insert():
 
         """
 
+        if con is None:
+            con = db.engine()
         ###
         print(" ")
         print("MaStR-Data")
@@ -900,7 +900,7 @@ def insert():
             if len(distr_i) > 0:
                 distr_i["nuts"] = target[target["nuts"] == i]["nuts"].iloc[0]
 
-            ### examination of built PV parks per state
+            # examination of built PV parks per state
             rora_i_mv = rora_i[rora_i["voltage_level"] == 5]
             rora_i_hv = rora_i[rora_i["voltage_level"] == 4]
             agri_i_mv = agri_i[agri_i["voltage_level"] == 5]
@@ -981,8 +981,8 @@ def insert():
             con,
         )
 
-        ### create map to show distribution of installed capacity
-        if show_map == True:
+        # create map to show distribution of installed capacity
+        if show_map:
 
             # 1) eGon2035
 
@@ -1027,7 +1027,7 @@ def insert():
                 cmap="magma_r",
                 legend=True,
                 legend_kwds={
-                    "label": f"Installed capacity in MW",
+                    "label": "Installed capacity in MW",
                     "orientation": "vertical",
                 },
             )
@@ -1078,7 +1078,7 @@ def insert():
                 cmap="magma_r",
                 legend=True,
                 legend_kwds={
-                    "label": f"Installed capacity in MW",
+                    "label": "Installed capacity in MW",
                     "orientation": "vertical",
                 },
             )
@@ -1149,7 +1149,7 @@ def insert():
         sql = "SELECT MAX(id) FROM supply.egon_power_plants"
         max_id = pd.read_sql(sql, con)
         max_id = max_id["max"].iat[0]
-        if max_id == None:
+        if max_id is None:
             max_id = 1
 
         pv_park_id = max_id + 1
@@ -1212,7 +1212,7 @@ def insert():
         show_map=False,
     )
 
-    ### examination of results
+    # examination of results
     if len(pv_per_distr) > 0:
         pv_per_distr_mv = pv_per_distr[pv_per_distr["voltage_level"] == 5]
         pv_per_distr_hv = pv_per_distr[pv_per_distr["voltage_level"] == 4]
