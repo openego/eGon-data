@@ -66,7 +66,7 @@ def random_ints_until_sum(s_sum, m_max):
     return list_r
 
 
-def write_table_to_postgis(gdf, table, engine=db.engine(), drop=True):
+def write_table_to_postgis(gdf, table, engine=None, drop=True):
     """
     Helper function to append df data to table in db. Only predefined columns
     are passed. Error will raise if column is missing. Dtype of columns are
@@ -84,6 +84,9 @@ def write_table_to_postgis(gdf, table, engine=db.engine(), drop=True):
         Drop table before appending
 
     """
+
+    if engine is None:
+        engine = db.engine()
 
     # Only take in db table defined columns
     columns = [column.key for column in table.__table__.columns]
@@ -139,7 +142,7 @@ def psql_insert_copy(table, conn, keys, data_iter):
 
 
 def write_table_to_postgres(
-    df, db_table, engine=db.engine(), drop=False, index=False, if_exists="append"
+    df, db_table, engine=None, drop=False, index=False, if_exists="append"
 ):
     """
     Helper function to append df data to table in db. Fast string-copy is used.
@@ -164,6 +167,9 @@ def write_table_to_postgres(
         - append: If table exists, insert data. Create if does not exist.
 
     """
+
+    if engine is None:
+        engine = db.engine()
 
     # Only take in db table defined columns and dtypes
     columns = {

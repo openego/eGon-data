@@ -778,7 +778,7 @@ def dsm_cts_ind_processing():
         db.execute_sql(sql)
 
     def dsm_cts_ind(
-        con=db.engine(),
+        con=None,
         cts_cool_vent_ac_share=0.22,
         ind_cool_vent_share=0.039,
         ind_vent_share=0.017,
@@ -804,6 +804,9 @@ def dsm_cts_ind_processing():
             Share of ventilation in industry demand in sites of WZ 23
 
         """
+
+        if con is None:
+            con = db.engine()
 
         # CTS per osm-area: cooling, ventilation and air conditioning
 

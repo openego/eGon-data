@@ -738,7 +738,7 @@ def insert():
         return pv_exist
 
     def run_methodology(
-        con=db.engine(),
+        con=None,
         path="",
         pow_per_area=0.04,
         join_buffer=10,
@@ -765,6 +765,8 @@ def insert():
 
         """
 
+        if con is None:
+            con = db.engine()
         ###
         print(" ")
         print("MaStR-Data")
