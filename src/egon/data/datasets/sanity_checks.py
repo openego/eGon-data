@@ -620,9 +620,10 @@ def cts_electricity_demand_share(rtol=1e-5):
 
     with db.session_scope() as session:
         cells_query = session.query(EgonCtsElectricityDemandBuildingShare)
+        cells_query = cells_query.all()
 
-    df_demand_share = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+    df_demand_share = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
 
     np.testing.assert_allclose(
@@ -646,10 +647,10 @@ def cts_heat_demand_share(rtol=1e-5):
     to all buildings."""
 
     with db.session_scope() as session:
-        cells_query = session.query(EgonCtsHeatDemandBuildingShare)
+        cells_query = session.query(EgonCtsHeatDemandBuildingShare).all()
 
-    df_demand_share = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+    df_demand_share = pd.DataFrame.from_records(
+        [db.asdict(row) for row in cells_query]
     )
 
     np.testing.assert_allclose(
@@ -711,9 +712,10 @@ def sanitycheck_emobility_mit():
                     table.scenario == scenario_name,
                     table.scenario_variation == scenario_var_name,
                 )
+                query = query.all()
 
-                ev_counts = pd.read_sql(
-                    query.statement, query.session.bind, index_col=None
+                ev_counts = pd.DataFrame.from_records(
+                    [db.asdict(row) for row in query]
                 )
                 ev_counts_dict[level] = ev_counts.iloc[0].ev_count
                 print(
@@ -744,8 +746,9 @@ def sanitycheck_emobility_mit():
                 EgonEvMvGridDistrict.scenario == scenario_name,
                 EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
             )
+            query = query.all()
         ev_count_alloc = (
-            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            pd.DataFrame.from_records([db.asdict(row) for row in query])
             .iloc[0]
             .ev_count
         )
@@ -789,8 +792,9 @@ def sanitycheck_emobility_mit():
                 ),
                 EgonEvTrip.scenario == scenario_name,
             )
-        invalid_trips = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+            query = query.all()
+        invalid_trips = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query]
         )
         np.testing.assert_equal(
             invalid_trips.iloc[0].cnt,
@@ -820,8 +824,9 @@ def sanitycheck_emobility_mit():
                 < cast(EgonEvTrip.charging_demand, Numeric),
                 EgonEvTrip.scenario == scenario_name,
             )
-        invalid_trips = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+            query = query.all()
+        invalid_trips = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query]
         )
         np.testing.assert_equal(
             invalid_trips.iloc[0].cnt,
@@ -848,9 +853,10 @@ def sanitycheck_emobility_mit():
                     == scenario_var_name,
                 )
                 .group_by(EgonEvMvGridDistrict.bus_id)
+                .all()
             )
         mvgds_with_ev = (
-            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            pd.DataFrame.from_records([db.asdict(row) for row in query])
             .bus_id.sort_values()
             .to_list()
         )
@@ -884,9 +890,10 @@ def sanitycheck_emobility_mit():
                     EgonPfHvLink.bus1 == EgonPfHvLoad.bus,
                     EgonPfHvLink.bus1 == EgonPfHvStore.bus,
                 )
+                .all()
             )
-        model_components = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        model_components = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query]
         )
 
         # Check number of buses with model components connected
@@ -966,10 +973,9 @@ def sanitycheck_emobility_mit():
                     ),
                     attrs["table_ts"].scn_name == scenario_name,
                 )
-                attrs["ts"] = pd.read_sql(
-                    query.statement,
-                    query.session.bind,
-                    index_col=attrs["column_id"],
+                attrs["ts"] = pd.DataFrame.from_records(
+                    [db.asdict(row) for row in query.all()],
+                    index=attrs["column_id"],
                 )
 
         # Check if all timeseries have 8760 steps
@@ -1024,9 +1030,10 @@ def sanitycheck_emobility_mit():
                 EgonPfHvStore.scn_name == scenario_name,
                 EgonPfHvStore.carrier == "battery storage",
             )
+            query = query.all()
         storage_capacity_model = (
-            pd.read_sql(
-                query.statement, query.session.bind, index_col=None
+            pd.DataFrame.from_records(
+                [db.asdict(row) for row in query]
             ).e_nom.sum()
             / 1e3
         )
@@ -1057,9 +1064,10 @@ def sanitycheck_emobility_mit():
                     EgonEvPool.scenario == scenario_name,
                 )
                 .group_by(EgonEvMvGridDistrict.bus_id, EgonEvPool.type)
+                .all()
             )
-        count_per_ev_all = pd.read_sql(
-            query.statement, query.session.bind, index_col="bus_id"
+        count_per_ev_all = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query], index="bus_id"
         )
         count_per_ev_all["bat_cap"] = count_per_ev_all.type.map(
             meta_tech_data.battery_capacity
@@ -1126,9 +1134,10 @@ def sanitycheck_emobility_mit():
                     EgonPfHvLoad.scn_name == "eGon2035",
                     EgonPfHvLoadTimeseries.scn_name == "eGon2035",
                 )
+                .all()
             )
-        model_driving_load = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        model_driving_load = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query]
         )
         driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
 
@@ -1151,9 +1160,10 @@ def sanitycheck_emobility_mit():
                     EgonPfHvLoad.scn_name == "eGon2035_lowflex",
                     EgonPfHvLoadTimeseries.scn_name == "eGon2035_lowflex",
                 )
+                .all()
             )
-        model_charging_load_lowflex = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        model_charging_load_lowflex = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query]
         )
         charging_load = np.array(
             model_charging_load_lowflex.p_set.to_list()

@@ -1,6 +1,8 @@
 from contextlib import contextmanager
+from types import SimpleNamespace
 import codecs
 import functools
+import os
 import time
 
 from psycopg2.errors import DeadlockDetected, UniqueViolation
@@ -11,6 +13,63 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config
+
+
+def asdict(row, conversions=None):
+    """Convert a result row of an SQLAlchemy query to a dictionary.
+
+    This helper unifies the conversion of two types of query result rows,
+    namely instances of mapped classes and keyed tuples, to dictionaries.
+    That way it's suitable for massaging query results into a format which
+    can easily be converted to a `pandas` `DataFrame` like this:
+
+        ```python
+        df = pandas.DataFrame.from_records(
+            [asdict(row) for row in session.query(*columns).all()]
+        )
+        ```
+
+    Parameters
+    ----------
+    row : SQLAlchemy query result row
+    conversions : dict
+        Dictionary mapping column names to functions applied to the values of
+        that column. The default ist `None` which means no conversion is
+        applied.
+
+    Returns
+    -------
+    dict
+        The argument converted to a dictionary with column names as keys and
+        column values potentially converted by calling
+        `conversions[column_name](column_value)`.
+    """
+    result = None
+    if hasattr(row, "_asdict"):
+        result = row._asdict()
+    if hasattr(row, "__table__"):
+        result = {
+            column.name: getattr(row, column.name)
+            for column in row.__table__.columns
+        }
+    if (result is not None) and (conversions is None):
+        return result
+    if (result is not None) and (conversions is not None):
+        return {
+            k: conversions[k](v) if k in conversions else v
+            for k, v in result.items()
+        }
+    raise TypeError(
+        "Don't know how to convert `row` argument to dict because it has"
+        " neither an `_asdict`, nor a `__table__` attribute."
+    )
+
+
+@contextmanager
+def access():
+    """Provide a context with a session and an associated connection."""
+    with session_scope() as session, session.connection() as c, c.begin():
+        yield SimpleNamespace(session=session, connection=c)
 
 
 def credentials():
@@ -40,13 +99,19 @@ def credentials():
 
 def engine():
     """Engine for local database."""
+    if not hasattr(engine, "cache"):
+        engine.cache = {}
+    pid = os.getpid()
+    if pid in engine.cache:
+        return engine.cache[pid]
     db_config = credentials()
-    return create_engine(
+    engine.cache[pid] = create_engine(
         f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
         f"{db_config['POSTGRES_PASSWORD']}@{db_config['HOST']}:"
         f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
         echo=False,
     )
+    return engine.cache[pid]
 
 
 def execute_sql(sql_string):
@@ -61,10 +126,8 @@ def execute_sql(sql_string):
         SQL expression
 
     """
-    engine_local = engine()
-
-    with engine_local.connect().execution_options(autocommit=True) as con:
-        con.execute(text(sql_string))
+    with access() as database:
+        database.connection.execute(text(sql_string))
 
 
 def submit_comment(json, schema, table):
@@ -128,7 +191,7 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except:  # noqa: E722 (This is ok because we immediatey reraise.)
         session.rollback()
         raise
     finally:
@@ -179,7 +242,8 @@ def select_dataframe(sql, index_col=None, warning=True):
 
     """
 
-    df = pd.read_sql(sql, engine(), index_col=index_col)
+    with access() as database:
+        df = pd.read_sql(sql, database.connection, index_col=index_col)
 
     if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
@@ -208,9 +272,10 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
 
     """
 
-    gdf = gpd.read_postgis(
-        sql, engine(), index_col=index_col, geom_col=geom_col
-    )
+    with access() as database:
+        gdf = gpd.read_postgis(
+            sql, database.connection, index_col=index_col, geom_col=geom_col
+        )
 
     if gdf.size == 0:
         print(f"WARNING: No data returned by statement: \n {sql}")
@@ -354,7 +419,11 @@ def check_db_unique_violation(func):
 
 
 def assign_gas_bus_id(dataframe, scn_name, carrier):
-    """Assigns bus_ids to points (contained in a dataframe) according to location
+    """Assigns bus_ids to points according to location.
+
+    The points are taken from the given `dataframe` and the geometries by
+    which the `bus_id`s are assigned to them are taken from the
+    `grid.egon_gas_voronoi` table.
 
     Parameters
     ----------

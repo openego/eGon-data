@@ -2,6 +2,7 @@
 Central module containing all code dealing with processing era5 weather data.
 """
 
+from geoalchemy2.shape import to_shape
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -36,7 +37,6 @@ class RenewableFeedin(Dataset):
 
 
 Base = declarative_base()
-engine = db.engine()
 
 
 class MapZensusWeatherCell(Base):
@@ -491,7 +491,7 @@ def heat_pump_cop():
 
     # Calculate coefficient of performance for air sourced heat pumps
     # according to Brown et. al
-    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t ** 2
+    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t**2
 
     df = pd.DataFrame(
         index=temperature.to_pandas().index,
@@ -582,22 +582,30 @@ def mapping_zensus_weather():
             ),
             DestatisZensusPopulationPerHaInsideGermany.geom_point,
         )
+        cells_query = cells_query.all()
 
-    gdf_zensus_population = gpd.read_postgis(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col=None,
-        geom_col="geom_point",
+    gdf_zensus_population = gpd.GeoDataFrame(
+        pd.DataFrame.from_records(
+            [
+                db.asdict(row, conversions={"geom_point": to_shape})
+                for row in cells_query
+            ]
+        ),
+        geometry="geom_point",
     )
 
     with db.session_scope() as session:
         cells_query = session.query(EgonEra5Cells.w_id, EgonEra5Cells.geom)
+        cells_query = cells_query.all()
 
-    gdf_weather_cell = gpd.read_postgis(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col=None,
-        geom_col="geom",
+    gdf_weather_cell = gpd.GeoDataFrame(
+        pd.DataFrame.from_records(
+            [
+                db.asdict(row, conversions={"geom": to_shape})
+                for row in cells_query
+            ]
+        ),
+        geometry="geom",
     )
     # CRS is 4326
     gdf_weather_cell = gdf_weather_cell.to_crs(epsg=3035)
@@ -606,8 +614,8 @@ def mapping_zensus_weather():
         gdf_weather_cell, how="left", predicate="within"
     )
 
-    MapZensusWeatherCell.__table__.drop(bind=engine, checkfirst=True)
-    MapZensusWeatherCell.__table__.create(bind=engine, checkfirst=True)
+    MapZensusWeatherCell.__table__.drop(bind=db.engine(), checkfirst=True)
+    MapZensusWeatherCell.__table__.create(bind=db.engine(), checkfirst=True)
 
     # Write mapping into db
     with db.session_scope() as session:

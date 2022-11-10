@@ -1,7 +1,6 @@
 """
 The module containing all code dealing with chp < 10MW.
 """
-from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import numpy as np
 
@@ -13,7 +12,8 @@ from egon.data.datasets.power_plants import (
 )
 
 
-def insert_mastr_chp(mastr_chp, EgonChp):
+@db.session_scoped
+def insert_mastr_chp(mastr_chp, EgonChp, session=None):
     """Insert MaStR data from exising CHPs into database table
 
     Parameters
@@ -22,6 +22,9 @@ def insert_mastr_chp(mastr_chp, EgonChp):
         List of existing CHPs in MaStR.
     EgonChp : class
         Class definition of daabase table for CHPs
+    session : sqlalchemy.orm.Session
+        The session inside which this function operates. Ignore this, because
+        it will be supplied automatically.
 
     Returns
     -------
@@ -29,7 +32,6 @@ def insert_mastr_chp(mastr_chp, EgonChp):
 
     """
 
-    session = sessionmaker(bind=db.engine())()
     for i, row in mastr_chp.iterrows():
         entry = EgonChp(
             sources={
@@ -49,7 +51,6 @@ def insert_mastr_chp(mastr_chp, EgonChp):
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
         session.add(entry)
-    session.commit()
 
 
 def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
@@ -100,6 +101,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         insert_mastr_chp(mastr_chp, EgonChp)
 
 
+@db.session_scoped
 def extension_to_areas(
     areas,
     additional_capacity,
@@ -108,6 +110,7 @@ def extension_to_areas(
     EgonChp,
     district_heating=True,
     scenario="eGon2035",
+    session=None,
 ):
     """Builds new CHPs on potential industry or district heating areas.
 
@@ -151,14 +154,15 @@ def extension_to_areas(
         ORM-class definition of CHP database-table.
     district_heating : boolean, optional
         State if the areas are district heating areas. The default is True.
+    session : sqlalchemy.orm.Session
+        The session inside which this function operates. Ignore this, because
+        it will be supplied automatically.
 
     Returns
     -------
     None.
 
     """
-    session = sessionmaker(bind=db.engine())()
-
     np.random.seed(seed=config.settings()["egon-data"]["--random-seed"])
 
     # Add new CHP as long as the additional capacity is not reached

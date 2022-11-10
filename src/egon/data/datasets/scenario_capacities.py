@@ -6,7 +6,6 @@ from pathlib import Path
 
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import numpy as np
 import pandas as pd
 import yaml
@@ -16,7 +15,7 @@ from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
 
-### will be later imported from another file ###
+# will be later imported from another file #
 Base = declarative_base()
 
 
@@ -85,7 +84,6 @@ def create_table():
 
 
 def nuts_mapping():
-
     nuts_mapping = {
         "BW": "DE1",
         "NW": "DEA",
@@ -158,23 +156,26 @@ def insert_capacities_per_federal_state_nep():
     df_windoff = pd.read_excel(
         target_file,
         sheet_name="WInd_Offshore_NEP",
-    ).dropna(subset=['Bundesland', 'Netzverknuepfungspunkt'])
+    ).dropna(subset=["Bundesland", "Netzverknuepfungspunkt"])
 
     # Remove trailing whitespace from column Bundesland
-    df_windoff['Bundesland']= df_windoff['Bundesland'].str.strip()
+    df_windoff["Bundesland"] = df_windoff["Bundesland"].str.strip()
 
     # Group and sum capacities per federal state
-    df_windoff_fs = df_windoff[['Bundesland', 'C 2035']].groupby(['Bundesland']).sum()
+    df_windoff_fs = (
+        df_windoff[["Bundesland", "C 2035"]].groupby(["Bundesland"]).sum()
+    )
 
     # List federal state with an assigned wind offshore capacity
     index_list = list(df_windoff_fs.index.values)
 
-    # Overwrite capacities in df_windoff with more accurate values from df_windoff_fs
+    # Overwrite capacities in df_windoff with more accurate values from
+    # df_windoff_fs
 
     for state in index_list:
-
-        df.at['Wind offshore', state] = df_windoff_fs.at[state, 'C 2035']/1000
-
+        df.at["Wind offshore", state] = (
+            df_windoff_fs.at[state, "C 2035"] / 1000
+        )
 
     # sort NEP-carriers:
     rename_carrier = {
@@ -194,7 +195,7 @@ def insert_capacities_per_federal_state_nep():
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
     }
-    #'Elektromobilitaet gesamt': 'transport',
+    # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
@@ -216,7 +217,6 @@ def insert_capacities_per_federal_state_nep():
     ]
 
     for bl in map_nuts.index:
-
         data = pd.DataFrame(df[bl])
 
         # if distribution to federal states is not provided,
@@ -266,7 +266,8 @@ def insert_capacities_per_federal_state_nep():
     # Filter by carrier
     updated = insert_data[insert_data["carrier"].isin(carriers)]
 
-    # Merge to replace capacities for carriers "oil", "other_non_renewable" and "pumped_hydro"
+    # Merge to replace capacities for carriers "oil",
+    # "other_non_renewable" and "pumped_hydro"
     updated = (
         updated.merge(capacities_list, on=["carrier", "nuts"], how="left")
         .fillna(0)
@@ -494,7 +495,8 @@ def insert_nep_list_powerplants(export=True):
         return kw_liste_nep
 
 
-def district_heating_input():
+@db.session_scoped
+def district_heating_input(session=None):
     """Imports data for district heating networks in Germany
 
     Returns
@@ -522,10 +524,6 @@ def district_heating_input():
         df.loc[
             pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
         ] *= population_share()
-
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
 
     # insert heatpumps and resistive heater as link
     for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
@@ -561,8 +559,6 @@ def district_heating_input():
         )
 
         session.add(entry)
-
-    session.commit()
 
 
 def insert_data_nep():
@@ -691,7 +687,9 @@ def eGon100_capacities():
                             df.p_nom[f"residential_{merge_carrier}"]
                             + df.p_nom[f"services_{merge_carrier}"]
                         ),
-                        "component": df.component[f"residential_{merge_carrier}"],
+                        "component": df.component[
+                            f"residential_{merge_carrier}"
+                        ],
                     },
                 )
             )
@@ -708,7 +706,9 @@ def eGon100_capacities():
             "OCGT": "gas",
             "rural_ground_heat_pump": "residential_rural_heat_pump",
             "urban_central_air_heat_pump": "urban_central_heat_pump",
-            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
+            "urban_central_solar_thermal": (
+                "urban_central_solar_thermal_collector"
+            ),
         },
         inplace=True,
     )

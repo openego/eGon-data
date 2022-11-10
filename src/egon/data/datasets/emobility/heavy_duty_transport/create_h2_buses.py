@@ -163,8 +163,11 @@ def read_hgv_h2_demand(scenario: str = "eGon2035"):
             EgonHeavyDutyTransportVoronoi.scenario,
             EgonHeavyDutyTransportVoronoi.hydrogen_consumption,
         ).filter(EgonHeavyDutyTransportVoronoi.scenario == scenario)
+        query = query.all()
 
-    df = pd.read_sql(query.statement, query.session.bind, index_col="nuts3")
+    df = pd.DataFrame.from_records(
+        [db.asdict(row) for row in query], index="nuts3"
+    )
 
     sql_vg250 = """
                 SELECT nuts as nuts3, geometry as geom

@@ -473,10 +473,11 @@ def load_evs_trips(
             .order_by(
                 EgonEvTrip.egon_ev_pool_ev_id, EgonEvTrip.simbev_event_id
             )
+            .all()
         )
 
-    trip_data = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
+    trip_data = pd.DataFrame.from_records(
+        [db.asdict(row) for row in query]
     ).astype(
         {
             "ev_id": "int",
@@ -562,10 +563,11 @@ def write_model_data_to_db(
                     EgonEvTrip.simbev_event_id == 0,
                 )
                 .group_by(EgonEvPool.type)
+                .all()
             )
 
-        initial_soc_per_ev_type = pd.read_sql(
-            query_ev_soc.statement, query_ev_soc.session.bind, index_col="type"
+        initial_soc_per_ev_type = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query_ev_soc], index="type"
         )
 
         initial_soc_per_ev_type[
@@ -631,7 +633,6 @@ def write_model_data_to_db(
                         terrain_factor=1,
                     )
                 )
-            with db.session_scope() as session:
                 session.add(
                     EgonPfHvLinkTimeseries(
                         scn_name=scenario_name,
@@ -670,7 +671,6 @@ def write_model_data_to_db(
                         standing_loss=0,
                     )
                 )
-            with db.session_scope() as session:
                 session.add(
                     EgonPfHvStoreTimeseries(
                         scn_name=scenario_name,
@@ -697,7 +697,6 @@ def write_model_data_to_db(
                         sign=-1,
                     )
                 )
-            with db.session_scope() as session:
                 session.add(
                     EgonPfHvLoadTimeseries(
                         scn_name=scenario_name,
@@ -905,9 +904,9 @@ def delete_model_data_from_db():
 def load_grid_district_ids() -> pd.Series:
     """Load bus IDs of all grid districts"""
     with db.session_scope() as session:
-        query_mvgd = session.query(MvGridDistricts.bus_id)
-    return pd.read_sql(
-        query_mvgd.statement, query_mvgd.session.bind, index_col=None
+        query_mvgd = session.query(MvGridDistricts.bus_id).all()
+    return pd.DataFrame.from_records(
+        [db.asdict(row) for row in query_mvgd]
     ).bus_id.sort_values()
 
 
@@ -1014,9 +1013,10 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             )
             .filter(EgonEvMvGridDistrict.bus_id.in_(mvgd_bus_ids))
             .filter(EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None))
+            .all()
         )
-    evs_grid_district = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
+    evs_grid_district = pd.DataFrame.from_records(
+        [db.asdict(row) for row in query]
     ).astype({"ev_id": "int"})
 
     mvgd_bus_ids = evs_grid_district.bus_id.unique()
