@@ -671,6 +671,8 @@ Bug Fixes
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
 * Make gas grid links bidirectional
   `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
+* Delete gas buses in Germany disconnected of the german gas grid
+  `#1023 <https://github.com/openego/eGon-data/issues/1023>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
