@@ -90,3 +90,13 @@ INSERT INTO grid.egon_etrago_storage
     capital_cost, lenght, cables, terrain_factor, num_parallel, v_ang_min,
 	v_ang_max, v_nom, geom
     FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
+	
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_transformer.
+INSERT INTO grid.egon_etrago_transformer
+    SELECT 'eGon2035_lowflex' as scn_name, trafo_id, bus0, bus1, type, model, x,
+	r, g, b, s_nom_extendable, s_nom_min, s_nom_max, s_max_pu, tap_ratio, tap_side,
+    tap_position, phase_shift, build_year, lifetime, v_ang_min,
+	v_ang_max, capital_cost, num_parallel, geom, topo
+    FROM grid.egon_etrago_transformer WHERE scn_name='eGon2035';
