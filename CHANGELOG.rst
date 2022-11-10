@@ -235,6 +235,8 @@ Added
   `#988 <https://github.com/openego/eGon-data/issues/988>`_
 *  Add voltage level for electricity building loads
   `#955 <https://github.com/openego/eGon-data/issues/955>`_
+* Add load areas
+  `#1014 <https://github.com/openego/eGon-data/issues/1014>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703

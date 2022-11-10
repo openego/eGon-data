@@ -736,9 +736,15 @@ electrical_load_curves_industry:
     osm_load:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    osm_load_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     sites_load:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    sites_load_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
 
 etrago_electricity:
   sources:
