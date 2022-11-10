@@ -54,7 +54,8 @@ def insert_scenarios(session=None):
 
     """
 
-    db.execute_sql("DELETE FROM scenario.egon_scenario_parameters CASCADE;")
+    session.execute("DELETE FROM scenario.egon_scenario_parameters CASCADE;")
+    session.commit()
 
     # Scenario eGon2035
     egon2035 = EgonScenario(name="eGon2035")
