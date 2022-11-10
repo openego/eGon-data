@@ -15,7 +15,7 @@ from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
 
-### will be later imported from another file ###
+# will be later imported from another file #
 Base = declarative_base()
 
 
@@ -168,7 +168,8 @@ def insert_capacities_per_federal_state_nep():
     # List federal state with an assigned wind offshore capacity
     index_list = list(df_windoff_fs.index.values)
 
-    # Overwrite capacities in df_windoff with more accurate values from df_windoff_fs
+    # Overwrite capacities in df_windoff with more accurate values from
+    # df_windoff_fs
 
     for state in index_list:
 
@@ -193,7 +194,7 @@ def insert_capacities_per_federal_state_nep():
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
     }
-    #'Elektromobilitaet gesamt': 'transport',
+    # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
@@ -265,7 +266,8 @@ def insert_capacities_per_federal_state_nep():
     # Filter by carrier
     updated = insert_data[insert_data["carrier"].isin(carriers)]
 
-    # Merge to replace capacities for carriers "oil", "other_non_renewable" and "pumped_hydro"
+    # Merge to replace capacities for carriers "oil",
+    # "other_non_renewable" and "pumped_hydro"
     updated = (
         updated.merge(capacities_list, on=["carrier", "nuts"], how="left")
         .fillna(0)
@@ -702,7 +704,9 @@ def eGon100_capacities():
             "OCGT": "gas",
             "rural_ground_heat_pump": "residential_rural_heat_pump",
             "urban_central_air_heat_pump": "urban_central_heat_pump",
-            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
+            "urban_central_solar_thermal": (
+                "urban_central_solar_thermal_collector"
+            ),
         },
         inplace=True,
     )

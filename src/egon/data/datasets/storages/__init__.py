@@ -293,8 +293,8 @@ def allocate_pumped_hydro_eGon100RE():
     else:
         raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
 
-    # Get allocation of pumped_hydro plants in eGon2035 scenario as the reference
-    # for the distribution in eGon100RE scenario
+    # Get allocation of pumped_hydro plants in eGon2035 scenario as the
+    # reference for the distribution in eGon100RE scenario
     allocation = allocate_pumped_hydro_eGon2035(export=False)
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()

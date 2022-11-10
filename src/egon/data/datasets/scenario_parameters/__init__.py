@@ -174,7 +174,10 @@ def download_pypsa_technology_data():
     sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
         "zenodo"
     ]
-    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
+    url = (
+        f"https://zenodo.org/record/{sources['deposit_id']}/files/"
+        f"{sources['file']}"
+    )
     target_file = egon.data.config.datasets()["pypsa-technology-data"][
         "targets"
     ]["file"]

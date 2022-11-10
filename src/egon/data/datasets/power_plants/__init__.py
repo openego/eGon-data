@@ -3,7 +3,6 @@
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     Column,
     Float,
     Integer,
@@ -19,6 +18,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.power_plants import assign_weather_data
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
     select_nep_power_plants,
@@ -26,7 +26,6 @@ from egon.data.datasets.power_plants.conventional import (
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 import egon.data.config
-import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
@@ -799,10 +798,12 @@ def allocate_other_power_plants():
 
     # Select power plants representing carrier 'others' from MaStR files
     mastr_sludge = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
-        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""
+        "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Klaerschlamm'"
     )
     mastr_geothermal = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
-        """EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' and Technologie == 'ORCOrganicRankineCycleAnlage'"""
+        "EinheitBetriebsstatus=='InBetrieb'"
+        " and Energietraeger=='Geothermie'"
+        " and Technologie == 'ORCOrganicRankineCycleAnlage'"
     )
 
     mastr_sg = mastr_sludge.append(mastr_geothermal)

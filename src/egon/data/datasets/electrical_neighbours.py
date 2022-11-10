@@ -1055,7 +1055,8 @@ def insert_storage(capacities, session=None):
         """
     )
 
-    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    # Add missing information suitable for eTraGo selected from
+    # scenario_parameter table
     parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
         "efficiency"
     ]["pumped_hydro"]
