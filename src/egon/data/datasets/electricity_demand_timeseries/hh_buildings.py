@@ -131,7 +131,6 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
 )
 import egon.data.config
 
-engine = db.engine()
 Base = declarative_base()
 
 data_config = egon.data.config.datasets()
@@ -243,7 +242,7 @@ def match_osm_and_zensus_data(
         schema="society",
     )
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(egon_destatis_building_count, None)
+    inspect(db.engine()).reflecttable(egon_destatis_building_count, None)
 
     with db.session_scope() as session:
         cells_query = session.query(
@@ -331,7 +330,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         schema="society",
     )
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(
+    inspect(db.engine()).reflecttable(
         destatis_zensus_population_per_ha_inside_germany, None
     )
 
@@ -384,7 +383,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
 
     # get table metadata from db by name and schema
     buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
-    inspect(engine).reflecttable(buildings, None)
+    inspect(db.engine()).reflecttable(buildings, None)
 
     # get max number of building ids from non-filtered building table
     with db.session_scope() as session:
@@ -588,7 +587,7 @@ def reduce_synthetic_buildings(
 
     buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(buildings, None)
+    inspect(db.engine()).reflecttable(buildings, None)
 
     # total number of buildings
     with db.session_scope() as session:
@@ -705,10 +704,10 @@ def get_building_peak_loads():
         df_building_peak_loads["sector"] = "residential"
 
         BuildingElectricityPeakLoads.__table__.drop(
-            bind=engine, checkfirst=True
+            bind=db.engine(), checkfirst=True
         )
         BuildingElectricityPeakLoads.__table__.create(
-            bind=engine, checkfirst=True
+            bind=db.engine(), checkfirst=True
         )
 
         df_building_peak_loads = df_building_peak_loads.melt(
@@ -752,7 +751,9 @@ def map_houseprofiles_to_buildings():
         schema="boundaries",
     )
     # get table metadata from db by name and schema
-    inspect(engine).reflecttable(egon_map_zensus_buildings_residential, None)
+    inspect(db.engine()).reflecttable(
+        egon_map_zensus_buildings_residential, None
+    )
 
     with db.session_scope() as session:
         cells_query = session.query(egon_map_zensus_buildings_residential)
@@ -802,13 +803,13 @@ def map_houseprofiles_to_buildings():
     # synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
     synthetic_buildings["n_amenities_inside"] = 0
 
-    OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
-    OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
+    OsmBuildingsSynthetic.__table__.drop(bind=db.engine(), checkfirst=True)
+    OsmBuildingsSynthetic.__table__.create(bind=db.engine(), checkfirst=True)
 
     # Write new buildings incl coord into db
     synthetic_buildings.to_postgis(
         "osm_buildings_synthetic",
-        con=engine,
+        con=db.engine(),
         if_exists="append",
         schema="openstreetmap",
         dtype={
@@ -823,10 +824,10 @@ def map_houseprofiles_to_buildings():
     )
 
     HouseholdElectricityProfilesOfBuildings.__table__.drop(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
     HouseholdElectricityProfilesOfBuildings.__table__.create(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
 
     # Write building mapping into db

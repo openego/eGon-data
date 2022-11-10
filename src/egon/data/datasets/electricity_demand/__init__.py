@@ -21,7 +21,6 @@ import egon.data.config
 
 # will be later imported from another file ###
 Base = declarative_base()
-engine = db.engine()
 
 
 class HouseholdElectricityDemand(Dataset):

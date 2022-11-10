@@ -37,7 +37,6 @@ class RenewableFeedin(Dataset):
 
 
 Base = declarative_base()
-engine = db.engine()
 
 
 class MapZensusWeatherCell(Base):
@@ -615,8 +614,8 @@ def mapping_zensus_weather():
         gdf_weather_cell, how="left", predicate="within"
     )
 
-    MapZensusWeatherCell.__table__.drop(bind=engine, checkfirst=True)
-    MapZensusWeatherCell.__table__.create(bind=engine, checkfirst=True)
+    MapZensusWeatherCell.__table__.drop(bind=db.engine(), checkfirst=True)
+    MapZensusWeatherCell.__table__.create(bind=db.engine(), checkfirst=True)
 
     # Write mapping into db
     with db.session_scope() as session:

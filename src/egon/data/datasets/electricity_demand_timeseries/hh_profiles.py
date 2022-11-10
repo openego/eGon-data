@@ -139,7 +139,6 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
 Base = declarative_base()
-engine = db.engine()
 
 
 # Get random seed from config
@@ -270,13 +269,13 @@ def write_hh_profiles_to_db(hh_profiles):
     hh_profiles = hh_profiles.groupby("type").load_in_wh.apply(tuple)
     hh_profiles = hh_profiles.reset_index()
 
-    IeeHouseholdLoadProfiles.__table__.drop(bind=engine, checkfirst=True)
-    IeeHouseholdLoadProfiles.__table__.create(bind=engine)
+    IeeHouseholdLoadProfiles.__table__.drop(bind=db.engine(), checkfirst=True)
+    IeeHouseholdLoadProfiles.__table__.create(bind=db.engine())
 
     hh_profiles.to_sql(
         name=IeeHouseholdLoadProfiles.__table__.name,
         schema=IeeHouseholdLoadProfiles.__table__.schema,
-        con=engine,
+        con=db.engine(),
         if_exists="append",
         method="multi",
         chunksize=100,
@@ -1443,10 +1442,10 @@ def get_load_timeseries(
 def write_refinded_households_to_db(df_census_households_grid_refined):
     # Write allocation table into database
     EgonDestatisZensusHouseholdPerHaRefined.__table__.drop(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
     EgonDestatisZensusHouseholdPerHaRefined.__table__.create(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
 
     with db.session_scope() as session:
@@ -1558,10 +1557,10 @@ def houseprofiles_in_census_cells():
 
     # Write allocation table into database
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
     HouseholdElectricityProfilesInCensusCells.__table__.create(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
 
     with db.session_scope() as session:
@@ -1795,16 +1794,16 @@ def mv_grid_district_HH_electricity_load(
 
     if drop_table:
         EgonEtragoElectricityHouseholds.__table__.drop(
-            bind=engine, checkfirst=True
+            bind=db.engine(), checkfirst=True
         )
     EgonEtragoElectricityHouseholds.__table__.create(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
     # Insert data into respective database table
     mvgd_profiles.to_sql(
         name=EgonEtragoElectricityHouseholds.__table__.name,
         schema=EgonEtragoElectricityHouseholds.__table__.schema,
-        con=engine,
+        con=db.engine(),
         if_exists="append",
         method="multi",
         chunksize=10000,

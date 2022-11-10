@@ -8,8 +8,6 @@ import pandas as pd
 
 from egon.data import db
 
-engine = db.engine()
-
 
 def random_point_in_square(geom, tol):
     """
