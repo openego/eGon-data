@@ -456,6 +456,8 @@ Changed
   `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
+* Add eGon2021 scenario to demandregio dataset
+  `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
 
 
 Bug Fixes
