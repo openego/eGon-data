@@ -345,7 +345,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         )
 
     destatis_zensus_population_per_ha_inside_germany = gpd.read_postgis(
-        cells_query.statement, cells_query.session.bind, index_col="id"
+        cells_query.statement, db.engine(), index_col="id"
     )
 
     # add geom data of zensus cell
