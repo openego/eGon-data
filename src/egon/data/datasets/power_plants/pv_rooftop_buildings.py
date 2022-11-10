@@ -197,6 +197,7 @@ COLS_TO_EXPORT = [
     "hauptausrichtung",
     "hauptausrichtung_neigungswinkel",
     "voltage_level",
+    "weather_cell_id",
 ]
 
 # TODO
@@ -1069,16 +1070,21 @@ def load_building_data():
 
     buildings_within_gdf = buildings_overlay_gdf.loc[building_ids]
 
-    return (
-        buildings_within_gdf.drop(columns=["bus_id"])
+    gdf = (
+        buildings_within_gdf.reset_index()
+        .drop(columns=["bus_id"])
         .merge(
             how="left",
             right=map_building_bus_df,
-            left_index=True,
+            left_on="id",
             right_on="building_id",
         )
         .drop(columns=["building_id"])
+        .set_index("id")
+        .sort_index()
     )
+
+    return gdf[~gdf.index.duplicated(keep="first")]
 
 
 @timer_func
@@ -1219,7 +1225,7 @@ def allocate_pv(
                 )
             )
 
-            # q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
+            q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
 
         if count % 100 == 0:
@@ -1756,13 +1762,13 @@ def calculate_building_load_factor(
         GeoDataFrame containing geocoded MaStR data with calculated load factor.
     """
     gdf = mastr_gdf.merge(
-        buildings_gdf[["max_cap", "building_area"]].loc[
-            ~buildings_gdf["max_cap"].isna()
-        ],
+        buildings_gdf[["max_cap", "building_area"]]
+        .loc[~buildings_gdf["max_cap"].isna()]
+        .reset_index(),
         how="left",
         left_on="building_id",
-        right_index=True,
-    )
+        right_on="id",
+    ).set_index("id")
 
     return gdf.assign(load_factor=(gdf.capacity / gdf.max_cap).round(rounding))
 
@@ -2599,6 +2605,7 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     hauptausrichtung = Column(String)
     hauptausrichtung_neigungswinkel = Column(String)
     voltage_level = Column(Integer)
+    weather_cell_id = Column(Integer)
 
 
 def create_scenario_table(buildings_gdf):
@@ -2651,6 +2658,40 @@ def geocode_mastr_data():
     create_geocoded_table(geocode_gdf)
 
 
+def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    sql = """
+    SELECT building_id, zensus_population_id
+    FROM boundaries.egon_map_zensus_mvgd_buildings
+    """
+
+    buildings_gdf = buildings_gdf.merge(
+        right=db.select_dataframe(sql),
+        how="left",
+        on="building_id",
+    )
+
+    sql = """
+    SELECT zensus_population_id, w_id as weather_cell_id
+    FROM boundaries.egon_map_zensus_weather_cell
+    """
+
+    buildings_gdf = buildings_gdf.merge(
+        right=db.select_dataframe(sql),
+        how="left",
+        on="zensus_population_id",
+    )
+
+    if buildings_gdf.weather_cell_id.isna().any():
+        missing = buildings_gdf.loc[
+            buildings_gdf.weather_cell_id.isna()
+        ].building_id.tolist()
+        raise ValueError(
+            f"Following buildings don't have a weather cell id: {missing}"
+        )
+
+    return buildings_gdf
+
+
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
@@ -2695,6 +2736,9 @@ def pv_rooftop_to_buildings():
         cap_per_bus_id_df = pd.concat(
             [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
+
+    # add weather cell
+    all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
 
     # export scenario
     create_scenario_table(add_voltage_level(all_buildings_gdf))
