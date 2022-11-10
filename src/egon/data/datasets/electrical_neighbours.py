@@ -961,6 +961,7 @@ def insert_generators(capacities):
 
         session.add(entry)
         session.commit()
+    session.close()
 
     # assign generators time-series data
     renew_carriers_2035 = ["wind_onshore", "wind_offshore", "solar"]
@@ -1020,6 +1021,7 @@ def insert_generators(capacities):
 
         session.add(entry)
         session.commit()
+    session.close()
 
 
 @db.session_scoped

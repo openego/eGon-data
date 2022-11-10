@@ -247,6 +247,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
             )
             session.add(entry)
         session.commit()
+        session.close()
 
     else:
         return power_plants
@@ -317,6 +318,7 @@ def allocate_pumped_hydro_eGon100RE():
         )
         session.add(entry)
     session.commit()
+    session.close()
 
 
 def home_batteries_per_scenario(scenario):
@@ -410,6 +412,7 @@ def home_batteries_per_scenario(scenario):
         )
         session.add(entry)
     session.commit()
+    session.close()
 
 
 def allocate_pv_home_batteries():

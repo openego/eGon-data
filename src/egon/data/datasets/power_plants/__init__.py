@@ -289,6 +289,7 @@ def insert_biomass_plants(scenario):
             session.add(entry)
 
     session.commit()
+    session.close()
 
 
 def insert_hydro_plants(scenario):
@@ -376,6 +377,7 @@ def insert_hydro_plants(scenario):
             session.add(entry)
 
         session.commit()
+        session.close()
 
 
 def assign_voltage_level(mastr_loc, cfg):
@@ -723,6 +725,7 @@ def allocate_conventional_non_chp_power_plants():
                 )
                 session.add(entry)
             session.commit()
+            session.close()
 
 
 def allocate_other_power_plants():
@@ -881,3 +884,4 @@ def allocate_other_power_plants():
         )
         session.add(entry)
     session.commit()
+    session.close()
