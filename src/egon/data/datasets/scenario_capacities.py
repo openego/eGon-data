@@ -6,7 +6,6 @@ from pathlib import Path
 
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import numpy as np
 import pandas as pd
 import yaml
@@ -494,7 +493,8 @@ def insert_nep_list_powerplants(export=True):
         return kw_liste_nep
 
 
-def district_heating_input():
+@db.session_scoped
+def district_heating_input(session=None):
     """Imports data for district heating networks in Germany
 
     Returns
@@ -522,10 +522,6 @@ def district_heating_input():
         df.loc[
             pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
         ] *= population_share()
-
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
 
     # insert heatpumps and resistive heater as link
     for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
@@ -561,8 +557,6 @@ def district_heating_input():
         )
 
         session.add(entry)
-
-    session.commit()
 
 
 def insert_data_nep():

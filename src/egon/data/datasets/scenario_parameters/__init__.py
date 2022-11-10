@@ -8,7 +8,6 @@ import zipfile
 from sqlalchemy import VARCHAR, Column, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
 from egon.data import db
@@ -45,7 +44,8 @@ def create_table():
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
 
-def insert_scenarios():
+@db.session_scoped
+def insert_scenarios(session=None):
     """Insert scenarios and their parameters to scenario table
 
     Returns
@@ -55,8 +55,6 @@ def insert_scenarios():
     """
 
     db.execute_sql("DELETE FROM scenario.egon_scenario_parameters CASCADE;")
-
-    session = sessionmaker(bind=db.engine())()
 
     # Scenario eGon2035
     egon2035 = EgonScenario(name="eGon2035")

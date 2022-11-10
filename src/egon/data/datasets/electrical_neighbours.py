@@ -1022,7 +1022,8 @@ def insert_generators(capacities):
         session.commit()
 
 
-def insert_storage(capacities):
+@db.session_scoped
+def insert_storage(capacities, session=None):
     """Insert storage units for foreign countries based on TYNDP-data
 
     Parameters
@@ -1093,7 +1094,6 @@ def insert_storage(capacities):
         ] = parameters_pumped_hydro[x]
 
     # insert data
-    session = sessionmaker(bind=db.engine())()
     for i, row in store.iterrows():
         entry = etrago.EgonPfHvStorage(
             scn_name="eGon2035",
@@ -1153,7 +1153,8 @@ def tyndp_generation():
     insert_storage(capacities)
 
 
-def tyndp_demand():
+@db.session_scoped
+def tyndp_demand(session=None):
     """Copy load timeseries data from TYNDP 2020.
     According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
 
@@ -1181,10 +1182,6 @@ def tyndp_demand():
             {sources['osmtgmod_bus']['table']})
         """
     )
-
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
 
     nodes = [
         "AT00",
