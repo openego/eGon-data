@@ -633,7 +633,6 @@ def write_model_data_to_db(
                         terrain_factor=1,
                     )
                 )
-            with db.session_scope() as session:
                 session.add(
                     EgonPfHvLinkTimeseries(
                         scn_name=scenario_name,
@@ -672,7 +671,6 @@ def write_model_data_to_db(
                         standing_loss=0,
                     )
                 )
-            with db.session_scope() as session:
                 session.add(
                     EgonPfHvStoreTimeseries(
                         scn_name=scenario_name,
@@ -699,7 +697,6 @@ def write_model_data_to_db(
                         sign=-1,
                     )
                 )
-            with db.session_scope() as session:
                 session.add(
                     EgonPfHvLoadTimeseries(
                         scn_name=scenario_name,
