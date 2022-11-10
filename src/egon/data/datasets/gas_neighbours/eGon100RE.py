@@ -208,7 +208,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
 
     # Insert bus0 and bus1
     gas_pipelines_list = gas_pipelines_list[
-        ["bus0", "bus1", "length", "geom", "topo"]
+        ["bus0", "bus1", "length", "p_min_pu", "geom", "topo"]
     ].rename(columns={"bus0": "bus0_2035", "bus1": "bus1_2035"})
 
     gas_nodes_list_2035 = db.select_geodataframe(
@@ -224,7 +224,15 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         columns={"bus_id": "bus_id_CH4_2035"}
     )
     gas_pipelines_list_DE = pd.DataFrame(
-        columns=["length", "geom", "topo", "bus0", "bus1", "carrier"]
+        columns=[
+            "length",
+            "geom",
+            "topo",
+            "bus0",
+            "bus1",
+            "p_min_pu",
+            "carrier",
+        ]
     )
 
     for carrier in ["H2", "CH4"]:

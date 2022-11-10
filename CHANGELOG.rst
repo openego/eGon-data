@@ -669,6 +669,8 @@ Bug Fixes
 `#989 <https://github.com/openego/eGon-data/issues/989>`_
 * Fix zensus weather cells mapping
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
+* Make gas grid links bidirectional
+  `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
