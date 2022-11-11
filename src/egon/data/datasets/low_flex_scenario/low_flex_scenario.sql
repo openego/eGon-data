@@ -9,7 +9,12 @@ WHERE scn_name = 'eGon2035_lowflex' AND (carrier='dsm' OR carrier='rural_heat_st
 	   OR carrier='central_heat_store'
 	  OR carrier='H2_saltcavern');
 	  
-	  
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_bus_timeseries.
+INSERT INTO grid.egon_etrago_bus_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, bus_id, v_mag_pu_set 
+    FROM grid.egon_etrago_bus_timeseries WHERE scn_name='eGon2035';
+
 --Drops stores with carriers 'dsm', 'rural_heat_store',
 --'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_store.
 INSERT INTO grid.egon_etrago_store
@@ -22,6 +27,18 @@ DELETE FROM grid.egon_etrago_store
 WHERE scn_name = 'eGon2035_lowflex' AND (carrier='dsm' OR carrier='rural_heat_store' 
 	   OR carrier='central_heat_store'
 	  OR carrier='H2_saltcavern');
+	  
+--Drops stores with carriers 'dsm' from grid.egon_etrago_store_timeseries. Needs check
+INSERT INTO grid.egon_etrago_store_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, store_id, temp_id, s_max_pu, q_set, 
+	e_min_pu
+    FROM grid.egon_etrago_store_timeseries WHERE scn_name='eGon2035';
+	DELETE FROM grid.egon_etrago_store_timeseries
+	WHERE NOT EXISTS 
+	(SELECT store_id 
+	 FROM grid.egon_etrago_store
+	 WHERE store_id=store_id
+	);
 
 
 --Drops links with carriers 'dsm', 'rural_heat_store_charger',
@@ -38,18 +55,6 @@ WHERE scn_name = 'eGon2035_lowflex' AND (carrier='dsm' OR carrier='rural_heat_st
 		OR carrier='central_heat_store_discharger'
 	  OR carrier='H2_to_power' OR carrier='power_to_H2');
 	  
-	  
---Drops stores with carriers 'dsm' from grid.egon_etrago_store_timeseries. Needs check
-INSERT INTO grid.egon_etrago_store_timeseries
-    SELECT 'eGon2035_lowflex' as scn_name, store_id, temp_id, p_set, q_set, 
-	e_min_pu
-    FROM grid.egon_etrago_store_timeseries WHERE scn_name='eGon2035';
-	DELETE FROM grid.egon_etrago_store_timeseries
-	WHERE NOT EXISTS 
-	(SELECT store_id 
-	 FROM grid.egon_etrago_store
-	 WHERE store_id=store_id
-	);
 	
 --Drops links with carriers 'dsm' from grid.egon_etrago_links_timeseries. Needs check
 INSERT INTO grid.egon_etrago_link_timeseries
@@ -72,6 +77,15 @@ INSERT INTO grid.egon_etrago_generator
 	e_nom_max
     FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
 	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_generator_timeseries.
+INSERT INTO grid.egon_etrago_generator_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, generator_id, temp_id, p_set, q_set, 
+	p_min_pu, p_max_pu
+    FROM grid.egon_etrago_generator_timeseries WHERE scn_name='eGon2035';
+
+
+	
 --Changes scenario name eGon2035 to eGon2035_lowflex ERROR RELATION DOES NOT EXIST
 --from grid.egon_etrago_line.
 INSERT INTO grid.egon_etrago_line
@@ -79,17 +93,31 @@ INSERT INTO grid.egon_etrago_line
 	g, b, s_nom, s_nom_extendable, s_nom_min, s_nom_max, s_max_pu, build_year, lifetime,
     capital_cost, lenght, cables, terrain_factor, num_parallel, v_ang_min,
 	v_ang_max, v_nom, geom
-    FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
+    FROM grid.egon_etrago_line WHERE scn_name='eGon2035';
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_line_timeseries.
+INSERT INTO grid.egon_etrago_line_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, line_id, temp_id,  s_max_pu 
+    FROM grid.egon_etrago_line_timeseries WHERE scn_name='eGon2035';
 	
 	
 --Changes scenario name eGon2035 to eGon2035_lowflex 
---from grid.egon_etrago_storage.
+--from grid.egon_etrago_storage. 
+-- it has a problem: There is a column named "storage_id" in table "egon_etrago_storage", but it cannot be referenced from this part of the query.
 INSERT INTO grid.egon_etrago_storage
     SELECT 'eGon2035_lowflex' as scn_name, storage_id, bus, control, type, carrier, p_nom,
 	p_nom_extendable, p_nom_min, p_nom_max, p_min_pu, s_nom_min, s_nom_max, s_max_pu, build_year, lifetime,
     capital_cost, lenght, cables, terrain_factor, num_parallel, v_ang_min,
 	v_ang_max, v_nom, geom
-    FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
+    FROM grid.egon_etrago_storage WHERE scn_name='eGon2035';
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_storage_timeseries.
+INSERT INTO grid.egon_etrago_storage_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, storage_id, temp_id, p_set, q_set, 
+	p_min_pu, p_max_pu, state_of_charge_set
+    FROM grid.egon_etrago_storage_timeseries WHERE scn_name='eGon2035';
 	
 	
 --Changes scenario name eGon2035 to eGon2035_lowflex 
@@ -100,3 +128,9 @@ INSERT INTO grid.egon_etrago_transformer
     tap_position, phase_shift, build_year, lifetime, v_ang_min,
 	v_ang_max, capital_cost, num_parallel, geom, topo
     FROM grid.egon_etrago_transformer WHERE scn_name='eGon2035';
+	
+--Changes scenario name eGon2035 to eGon2035_lowflex 
+--from grid.egon_etrago_transformer_timeseries.
+INSERT INTO grid.egon_etrago_transformer_timeseries
+    SELECT 'eGon2035_lowflex' as scn_name, trafo_id, s_max_pu 
+    FROM grid.egon_etrago_storage_timeseries WHERE scn_name='eGon2035';
