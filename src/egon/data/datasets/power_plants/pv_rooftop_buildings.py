@@ -1630,7 +1630,9 @@ def cap_per_bus_id(
     FROM {targets['generators']['schema']}.{targets['generators']['table']}
     WHERE carrier = 'solar_rooftop'
     AND scn_name = '{scenario}'
+    AND control != "Slack"
     """
+    # TODO: woher kommen die Slack rows???
 
     return db.select_dataframe(sql, index_col="bus_id")
 
@@ -2695,6 +2697,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         missing = buildings_gdf.loc[
             buildings_gdf.weather_cell_id.isna()
         ].building_id.tolist()
+
         raise ValueError(
             f"Following buildings don't have a weather cell id: {missing}"
         )
