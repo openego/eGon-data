@@ -2343,6 +2343,9 @@ def desaggregate_pv(
                 f"{gdf.capacity.sum() + pv_installed}"
             )
 
+        pre_cap = allocated_buildings_gdf.capacity.sum()
+        new_cap = gdf.capacity.sum()
+
         allocated_buildings_gdf = pd.concat(
             [
                 allocated_buildings_gdf,
@@ -2350,10 +2353,14 @@ def desaggregate_pv(
             ]
         )
 
+        total_cap = allocated_buildings_gdf.capacity.sum()
+
+        assert np.isclose(pre_cap + new_cap, total_cap)
+
     logger.debug("Desaggregated scenario.")
     logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
     logger.debug(
-        f"Generator capacity: {allocated_buildings_gdf.capacity.sum(): g}"
+        f"Generator capacity: {allocated_buildings_gdf.capacity.sum() / 1000: g}"
     )
 
     return gpd.GeoDataFrame(
