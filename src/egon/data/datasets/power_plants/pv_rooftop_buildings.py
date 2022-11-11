@@ -1630,11 +1630,12 @@ def cap_per_bus_id(
     FROM {targets['generators']['schema']}.{targets['generators']['table']}
     WHERE carrier = 'solar_rooftop'
     AND scn_name = '{scenario}'
-    AND control != 'Slack'
     """
     # TODO: woher kommen die Slack rows???
 
-    return db.select_dataframe(sql, index_col="bus_id")
+    df = db.select_dataframe(sql, index_col="bus_id")
+
+    return df.loc[df.control != "Slack"]
 
     # overlay_gdf = overlay_gdf.assign(capacity=np.nan)
     #
