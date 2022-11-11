@@ -1626,7 +1626,7 @@ def cap_per_bus_id(
     targets = config.datasets()["solar_rooftop"]["targets"]
 
     sql = f"""
-    SELECT bus as bus_id, p_nom as capacity
+    SELECT bus as bus_id, control, p_nom as capacity
     FROM {targets['generators']['schema']}.{targets['generators']['table']}
     WHERE carrier = 'solar_rooftop'
     AND scn_name = '{scenario}'
