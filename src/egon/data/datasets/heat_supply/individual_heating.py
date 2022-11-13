@@ -195,23 +195,6 @@ def adapt_numpy_int64(numpy_int64):
     return AsIs(numpy_int64)
 
 
-def timeit(func):
-    """
-    Decorator for measuring function's running time.
-    """
-
-    def measure_time(*args, **kw):
-        start_time = time.time()
-        result = func(*args, **kw)
-        print(
-            "Processing time of %s(): %.2f seconds."
-            % (func.__qualname__, time.time() - start_time)
-        )
-        return result
-
-    return measure_time
-
-
 def cascade_per_technology(
     heat_per_mv,
     technologies,
