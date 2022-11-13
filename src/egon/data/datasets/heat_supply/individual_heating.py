@@ -1,11 +1,89 @@
-"""The central module containing all code dealing with
-individual heat supply.
+"""The central module containing all code dealing with individual heat supply.
 
+The desaggregation of heat pump capcacities takes place in three separate
+datasets: 'HeatPumpsPypsaEurSec', 'HeatPumps2035', 'HeatPumps2050'.
+#TODO WHY?
+
+The resulting data is stored in separate tables
+
+* `demand.egon_hp_capacity_buildings`:
+    This table is already created within
+    :func:``
+* `demand.egon_etrago_timeseries_individual_heating`:
+    This table is created within
+    :func:``
+* `demand.egon_building_heat_peak_loads`:
+    Mapping of heat demand time series and buildings including cell_id,
+    building, area and peak load. This table is created in
+    :func:``
+
+**The following datasets from the database are mainly used for creation:**
+
+* `boundaries.egon_map_zensus_grid_districts`:
+
+
+* `boundaries.egon_map_zensus_district_heating_areas`:
+
+
+* `demand.egon_peta_heat`:
+    Table of annual heat load demand for residential and cts at census cell
+    level from peta5.
+* `demand.egon_heat_timeseries_selected_profiles`:
+
+
+* `demand.egon_heat_idp_pool`:
+
+
+* `demand.egon_daily_heat_demand_per_climate_zone`:
+
+
+* `boundaries.egon_map_zensus_mvgd_buildings`:
+    A final mapping table including all buildings used for residential and
+    cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
+    building type (osm or synthetic)
+
+* `supply.egon_individual_heating`:
+
+
+* `demand.egon_cts_heat_demand_building_share`:
+    Table including the mv substation heat profile share of all selected
+    cts buildings for scenario eGon2035 and eGon100RE. This table is created
+    within :func:`cts_heat()`
+
+
+**What is the goal?**
+
+
+
+**What is the challenge?**
+
+
+**How are these datasets combined?**
+
+
+**What are central assumptions during the data processing?**
+
+
+**Drawbacks and limitations of the data**
+
+
+
+Example Query
+-----
+
+
+Notes
+-----
+
+This module docstring is rather a dataset documentation. Once, a decision
+is made in ... the content of this module docstring needs to be moved to
+docs attribute of the respective dataset class.
 """
+
+
 from pathlib import Path
 import os
 import random
-import time
 
 from airflow.operators.python_operator import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
@@ -106,9 +184,11 @@ class HeatPumpsPypsaEurSec(Dataset):
             name="HeatPumpsPypsaEurSec",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(delete_mvgd_ts_100RE,
-                   delete_heat_peak_loads_100RE,
-                {*dyn_parallel_tasks_pypsa_eur_sec()},),
+            tasks=(
+                delete_mvgd_ts_100RE,
+                delete_heat_peak_loads_100RE,
+                {*dyn_parallel_tasks_pypsa_eur_sec()},
+            ),
         )
 
 
@@ -1842,6 +1922,7 @@ def delete_heat_peak_loads_2035():
         session.query(BuildingHeatPeakLoads).filter(
             BuildingHeatPeakLoads.scenario == "eGon2035"
         ).delete(synchronize_session=False)
+
 
 def delete_heat_peak_loads_100RE():
     """Remove all heat peak loads for eGon100RE."""
