@@ -120,7 +120,6 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 
-engine = db.engine()
 Base = declarative_base()
 
 
@@ -866,7 +865,7 @@ def get_residential_buildings_with_decentral_heat_demand_in_mv_grid(
     )
 
     # get buildings with decentral heat demand
-    saio.register_schema("demand", engine)
+    saio.register_schema("demand", db.engine())
     from saio.demand import egon_heat_timeseries_selected_profiles
 
     with db.session_scope() as session:
@@ -1099,7 +1098,7 @@ def determine_buildings_with_hp_in_mv_grid(
 
     # get buildings with PV to give them a higher priority when selecting
     # buildings a heat pump will be allocated to
-    saio.register_schema("supply", engine)
+    saio.register_schema("supply", db.engine())
     from saio.supply import egon_power_plants_pv_roof_building
 
     with db.session_scope() as session:
@@ -1393,7 +1392,7 @@ def determine_hp_cap_buildings_eGon100RE():
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
     df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
 
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    EgonHpCapacityBuildings.__table__.create(bind=db.engine(), checkfirst=True)
 
     write_table_to_postgres(
         df_hp_cap_per_building_100RE_db,
@@ -1491,10 +1490,10 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
             f"{EgonEtragoTimeseriesIndividualHeating.__table__.name}."
         )
         EgonEtragoTimeseriesIndividualHeating.__table__.drop(
-            bind=engine, checkfirst=True
+            bind=db.engine(), checkfirst=True
         )
         EgonEtragoTimeseriesIndividualHeating.__table__.create(
-            bind=engine, checkfirst=True
+            bind=db.engine(), checkfirst=True
         )
 
     with db.session_scope() as session:
@@ -1888,20 +1887,20 @@ def delete_mvgd_ts(scenario):
 
 def delete_hp_capacity_100RE():
     """Remove all hp capacities for the selected eGon100RE"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    EgonHpCapacityBuildings.__table__.create(bind=db.engine(), checkfirst=True)
     delete_hp_capacity(scenario="eGon100RE")
 
 
 def delete_hp_capacity_2035():
     """Remove all hp capacities for the selected eGon2035"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    EgonHpCapacityBuildings.__table__.create(bind=db.engine(), checkfirst=True)
     delete_hp_capacity(scenario="eGon2035")
 
 
 def delete_mvgd_ts_2035():
     """Remove all mvgd ts for the selected eGon2035"""
     EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
     delete_mvgd_ts(scenario="eGon2035")
 
@@ -1909,14 +1908,14 @@ def delete_mvgd_ts_2035():
 def delete_mvgd_ts_100RE():
     """Remove all mvgd ts for the selected eGon100RE"""
     EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
+        bind=db.engine(), checkfirst=True
     )
     delete_mvgd_ts(scenario="eGon100RE")
 
 
 def delete_heat_peak_loads_2035():
     """Remove all heat peak loads for eGon2035."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+    BuildingHeatPeakLoads.__table__.create(bind=db.engine(), checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
@@ -1926,7 +1925,7 @@ def delete_heat_peak_loads_2035():
 
 def delete_heat_peak_loads_100RE():
     """Remove all heat peak loads for eGon100RE."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+    BuildingHeatPeakLoads.__table__.create(bind=db.engine(), checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
