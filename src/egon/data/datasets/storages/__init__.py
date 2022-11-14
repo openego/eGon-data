@@ -13,6 +13,9 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.power_plants import assign_voltage_level
+from egon.data.datasets.storages.home_batteries import (
+    allocate_home_batteries_to_buildings,
+)
 from egon.data.datasets.storages.pumped_hydro import (
     apply_voltage_level_thresholds,
     get_location,
@@ -38,17 +41,18 @@ class EgonStorages(Base):
     geom = Column(Geometry("POINT", 4326))
 
 
-class PumpedHydro(Dataset):
+class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 allocate_pumped_hydro_eGon2035,
                 allocate_pumped_hydro_eGon100RE,
-                allocate_pv_home_batteries,
+                allocate_pv_home_batteries_to_grids,
+                allocate_home_batteries_to_buildings,
             ),
         )
 
@@ -415,7 +419,7 @@ def home_batteries_per_scenario(scenario):
     session.close()
 
 
-def allocate_pv_home_batteries():
+def allocate_pv_home_batteries_to_grids():
 
     home_batteries_per_scenario("eGon2035")
     home_batteries_per_scenario("eGon100RE")

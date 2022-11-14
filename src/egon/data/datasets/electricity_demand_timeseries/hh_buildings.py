@@ -169,6 +169,7 @@ class BuildingElectricityPeakLoads(Base):
     scenario = Column(String, primary_key=True)
     sector = Column(String, primary_key=True)
     peak_load_in_w = Column(REAL)
+    voltage_level = Column(Integer, index=True)
 
 
 def match_osm_and_zensus_data(

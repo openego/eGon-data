@@ -36,11 +36,13 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
     carrier = "OCGT"
     gdf["carrier"] = carrier
 
-    buses = tuple(db.select_dataframe(
-        f"""SELECT bus_id FROM grid.egon_etrago_bus
+    buses = tuple(
+        db.select_dataframe(
+            f"""SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{scn_name}' AND country = 'DE';
         """
-    )['bus_id'])
+        )["bus_id"]
+    )
 
     # Delete old entries
     db.execute_sql(
@@ -54,7 +56,13 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
     gdf["efficiency"] = scn_params["efficiency"][carrier]
-    gdf["marginal_cost"] = scn_params["marginal_cost"][carrier]
+    gdf["marginal_cost"] = (
+        scn_params["marginal_cost"][carrier]
+        / scn_params["efficiency"][carrier]
+    )
+
+    # Adjust p_nom
+    gdf["p_nom"] = gdf["p_nom"] / scn_params["efficiency"][carrier]
 
     # Select next id value
     new_id = db.next_etrago_id("link")
@@ -110,7 +118,13 @@ def map_buses(scn_name):
         .rename(columns={"bus_id": "bus0", "geom": "geom_gas"})
         .reset_index(drop=True)
     )
-    gdf = pd.concat([gdf_AC.reset_index(drop=True), gd_gas_nearest,], axis=1,)
+    gdf = pd.concat(
+        [
+            gdf_AC.reset_index(drop=True),
+            gd_gas_nearest,
+        ],
+        axis=1,
+    )
 
     return gdf.rename(columns={"bus_id": "bus1"}).drop(
         columns=["geom", "geom_gas"]

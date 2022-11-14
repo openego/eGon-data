@@ -33,6 +33,7 @@ def insert_H2_overground_storage(scn_name="eGon2035"):
     # Does e_nom_extenable = True render e_nom useless?
     storages["e_nom"] = 0
     storages["e_nom_extendable"] = True
+    storages["e_cyclic"] = True
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
@@ -122,6 +123,7 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
     storages["carrier"] = carrier
     storages["e_nom"] = 0
     storages["e_nom_extendable"] = True
+    storages["e_cyclic"] = True
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
@@ -159,7 +161,6 @@ def calculate_and_map_saltcavern_storage_potential():
 
     # select onshore vg250 data
     sources = config.datasets()["bgr"]["sources"]
-    targets = config.datasets()["bgr"]["targets"]
     vg250_data = db.select_geodataframe(
         f"""SELECT * FROM
                 {sources['vg250_federal_states']['schema']}.
@@ -337,7 +338,13 @@ def calculate_and_map_saltcavern_storage_potential():
         epsg=25832
     ).area / potential_areas.groupby("gen")["shape_star"].transform("sum")
 
+    return potential_areas
+
+def write_saltcavern_potential():
+    """Write saltcavern potentials in the database"""
+    potential_areas = calculate_and_map_saltcavern_storage_potential()
     # write information to saltcavern data
+    targets = config.datasets()["bgr"]["targets"]
     potential_areas.to_crs(epsg=4326).to_postgis(
         targets["storage_potential"]["table"],
         db.engine(),

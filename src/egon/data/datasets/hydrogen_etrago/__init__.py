@@ -15,10 +15,10 @@ from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
     insert_power_to_h2_to_power_eGon100RE,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
-    calculate_and_map_saltcavern_storage_potential,
     insert_H2_overground_storage,
     insert_H2_saltcavern_storage,
     insert_H2_storage_eGon100RE,
+    write_saltcavern_potential,
 )
 
 
@@ -29,7 +29,7 @@ class HydrogenBusEtrago(Dataset):
             version="0.0.1",
             dependencies=dependencies,
             tasks=(
-                calculate_and_map_saltcavern_storage_potential,
+                write_saltcavern_potential,
                 insert_hydrogen_buses,
                 insert_hydrogen_buses_eGon100RE,
             ),
@@ -77,7 +77,7 @@ class HydrogenGridEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HydrogenGridEtrago",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_h2_pipelines,),
         )
