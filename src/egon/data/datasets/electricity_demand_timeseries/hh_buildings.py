@@ -765,10 +765,8 @@ def map_houseprofiles_to_buildings():
 
     with db.session_scope() as session:
         cells_query = session.query(HouseholdElectricityProfilesInCensusCells)
-        cells_query = cells_query.all()
-    egon_hh_profile_in_zensus_cell = pd.DataFrame.from_records(
-        [db.asdict(row) for row in cells_query]  # , index="cell_id")
-    )
+        cells_query = [db.asdict(row) for row in cells_query.all()]
+    egon_hh_profile_in_zensus_cell = pd.DataFrame.from_records(cells_query)
 
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(

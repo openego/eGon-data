@@ -904,10 +904,9 @@ def delete_model_data_from_db():
 def load_grid_district_ids() -> pd.Series:
     """Load bus IDs of all grid districts"""
     with db.session_scope() as session:
-        query_mvgd = session.query(MvGridDistricts.bus_id).all()
-    return pd.DataFrame.from_records(
-        [db.asdict(row) for row in query_mvgd]
-    ).bus_id.sort_values()
+        query_mvgd = session.query(MvGridDistricts.bus_id)
+        query_mvgd = [db.asdict(row) for row in query_mvgd.all()]
+    return pd.DataFrame.from_records(query_mvgd).bus_id.sort_values()
 
 
 def generate_model_data_grid_district(

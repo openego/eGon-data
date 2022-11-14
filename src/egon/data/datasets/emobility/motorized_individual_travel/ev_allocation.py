@@ -546,14 +546,11 @@ def allocate_evs_to_grid_districts():
         # Load EVs per grid district
         print("Loading EV counts for grid districts...")
         with db.session_scope() as session:
-            query = (
-                session.query(EgonEvCountMvGridDistrict)
-                .filter(EgonEvCountMvGridDistrict.scenario == scenario_name)
-                .all()
+            query = session.query(EgonEvCountMvGridDistrict).filter(
+                EgonEvCountMvGridDistrict.scenario == scenario_name
             )
-        ev_per_mvgd = pd.DataFrame.from_records(
-            [db.asdict(row) for row in query]
-        )
+            query = [db.asdict(row) for row in query.all()]
+        ev_per_mvgd = pd.DataFrame.from_records(query)
 
         # Convert EV types' wide to long format
         ev_per_mvgd = pd.melt(
@@ -570,8 +567,8 @@ def allocate_evs_to_grid_districts():
             query = session.query(EgonEvPool).filter(
                 EgonEvPool.scenario == scenario_name
             )
-            query = query.all()
-        ev_pool = pd.DataFrame.from_records([db.asdict(row) for row in query])
+            query = [db.asdict(row) for row in query.all()]
+        ev_pool = pd.DataFrame.from_records(query)
 
         # Draw EVs randomly for each grid district from pool
         print("  Draw EVs from pool for grid districts...")

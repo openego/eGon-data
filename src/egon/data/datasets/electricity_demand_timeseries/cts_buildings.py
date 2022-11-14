@@ -1021,12 +1021,10 @@ def calc_cts_building_profiles(
                 .filter(
                     EgonCtsElectricityDemandBuildingShare.bus_id.in_(bus_ids)
                 )
-                .all()
             )
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_demand_share = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_demand_share = pd.DataFrame.from_records(cells_query)
 
         # Get substation cts electricity load profiles of selected bus_ids
         with db.session_scope() as session:
@@ -1036,10 +1034,9 @@ def calc_cts_building_profiles(
                 .filter(EgonEtragoElectricityCts.bus_id.in_(bus_ids))
                 .all()
             )
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_cts_substation_profiles = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_cts_substation_profiles = pd.DataFrame.from_records(cells_query)
         df_cts_substation_profiles = pd.DataFrame.from_dict(
             df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
@@ -1055,12 +1052,10 @@ def calc_cts_building_profiles(
                 )
                 .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
                 .filter(EgonCtsHeatDemandBuildingShare.bus_id.in_(bus_ids))
-                .all()
             )
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_demand_share = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_demand_share = pd.DataFrame.from_records(cells_query)
 
         # Get substation cts heat load profiles of selected bus_ids
         with db.session_scope() as session:
@@ -1068,12 +1063,10 @@ def calc_cts_building_profiles(
                 session.query(EgonEtragoHeatCts)
                 .filter(EgonEtragoHeatCts.scn_name == scenario)
                 .filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
-                .all()
             )
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_cts_substation_profiles = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_cts_substation_profiles = pd.DataFrame.from_records(cells_query)
         df_cts_substation_profiles = pd.DataFrame.from_dict(
             df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
@@ -1406,10 +1399,9 @@ def cts_electricity():
     log.info("Start logging!")
     with db.session_scope() as session:
         cells_query = session.query(CtsBuildings).all()
+        cells_query = [db.asdict(row) for row in cells_query.all()]
 
-    df_cts_buildings = pd.DataFrame.from_records(
-        [db.asdict(row) for row in cells_query]
-    )
+    df_cts_buildings = pd.DataFrame.from_records(cells_query)
     log.info("CTS buildings from DB imported!")
     df_demand_share_2035 = calc_building_demand_profile_share(
         df_cts_buildings, scenario="eGon2035", sector="electricity"
@@ -1443,11 +1435,10 @@ def cts_heat():
     """
     log.info("Start logging!")
     with db.session_scope() as session:
-        cells_query = session.query(CtsBuildings).all()
+        cells_query = session.query(CtsBuildings)
+        cells_query = [db.asdict(row) for row in cells_query.all()]
 
-    df_cts_buildings = pd.DataFrame.from_records(
-        [db.asdict(row) for row in cells_query]
-    )
+    df_cts_buildings = pd.DataFrame.from_records(cells_query)
     log.info("CTS buildings from DB imported!")
 
     df_demand_share_2035 = calc_building_demand_profile_share(
@@ -1498,21 +1489,17 @@ def get_cts_electricity_peak_load():
             ).filter(
                 EgonCtsElectricityDemandBuildingShare.scenario == scenario
             )
-            cells_query = cells_query.all()
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_demand_share = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_demand_share = pd.DataFrame.from_records(cells_query)
 
         with db.session_scope() as session:
             cells_query = session.query(EgonEtragoElectricityCts).filter(
                 EgonEtragoElectricityCts.scn_name == scenario
             )
-            cells_query = cells_query.all()
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_cts_profiles = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_cts_profiles = pd.DataFrame.from_records(cells_query)
         df_cts_profiles = pd.DataFrame.from_dict(
             df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="columns",
@@ -1571,22 +1558,18 @@ def get_cts_heat_peak_load():
             ).filter(
                 EgonCtsElectricityDemandBuildingShare.scenario == scenario
             )
-            cells_query = cells_query.all()
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_demand_share = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_demand_share = pd.DataFrame.from_records(cells_query)
         log.info(f"Retrieved demand share for scenario: {scenario}")
 
         with db.session_scope() as session:
             cells_query = session.query(EgonEtragoHeatCts).filter(
                 EgonEtragoHeatCts.scn_name == scenario
             )
-            cells_query = cells_query.all()
+            cells_query = [db.asdict(row) for row in cells_query.all()]
 
-        df_cts_profiles = pd.DataFrame.from_records(
-            [db.asdict(row) for row in cells_query]
-        )
+        df_cts_profiles = pd.DataFrame.from_records(cells_query)
         log.info(f"Retrieved substation profiles for scenario: {scenario}")
 
         df_cts_profiles = pd.DataFrame.from_dict(

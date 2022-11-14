@@ -652,11 +652,9 @@ def cts_electricity_demand_share(rtol=1e-5):
 
     with db.session_scope() as session:
         cells_query = session.query(EgonCtsElectricityDemandBuildingShare)
-        cells_query = cells_query.all()
+        cells_query = [db.asdict(row) for row in cells_query.all()]
 
-    df_demand_share = pd.DataFrame.from_records(
-        [db.asdict(row) for row in cells_query]
-    )
+    df_demand_share = pd.DataFrame.from_records(cells_query)
 
     np.testing.assert_allclose(
         actual=df_demand_share.groupby(["bus_id", "scenario"])[
@@ -680,10 +678,8 @@ def cts_heat_demand_share(rtol=1e-5):
 
     with db.session_scope() as session:
         cells_query = session.query(EgonCtsHeatDemandBuildingShare).all()
-
-    df_demand_share = pd.DataFrame.from_records(
-        [db.asdict(row) for row in cells_query]
-    )
+        cells_query = [db.asdict(row) for row in cells_query]
+    df_demand_share = pd.DataFrame.from_records(cells_query)
 
     np.testing.assert_allclose(
         actual=df_demand_share.groupby(["bus_id", "scenario"])[
@@ -997,12 +993,10 @@ def sanitycheck_emobility_mit():
                     == scenario_var_name,
                 )
                 .group_by(EgonEvMvGridDistrict.bus_id)
-                .all()
             )
+            query = [db.asdict(row) for row in query.all()]
         mvgds_with_ev = (
-            pd.DataFrame.from_records([db.asdict(row) for row in query])
-            .bus_id.sort_values()
-            .to_list()
+            pd.DataFrame.from_records(query).bus_id.sort_values().to_list()
         )
 
         # Load model components
