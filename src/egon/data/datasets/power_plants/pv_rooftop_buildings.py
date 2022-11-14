@@ -2583,10 +2583,6 @@ def allocate_scenarios(
         pv_cap_per_sq_m=PV_CAP_PER_SQ_M,
     )
 
-    logger.debug(
-        f"2 {scenario}: {allocated_buildings_gdf.capacity.sum() / 1000: g}"
-    )
-
     allocated_buildings_gdf = allocated_buildings_gdf.assign(scenario=scenario)
 
     meta_buildings_gdf = frame_to_numeric(
@@ -2683,7 +2679,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     buildings_gdf = buildings_gdf.merge(
         right=db.select_dataframe(sql),
-        how="left",
+        how="inner",
         on="building_id",
     )
 
@@ -2694,7 +2690,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     buildings_gdf = buildings_gdf.merge(
         right=db.select_dataframe(sql),
-        how="left",
+        how="inner",
         on="zensus_population_id",
     )
 
@@ -2743,10 +2739,6 @@ def pv_rooftop_to_buildings():
             scenario,
         )
 
-        logger.debug(
-            f"1 {scenario}: {scenario_buildings_gdf.capacity.sum() / 1000: g}"
-        )
-
         all_buildings_gdf = gpd.GeoDataFrame(
             pd.concat(
                 [all_buildings_gdf, scenario_buildings_gdf], ignore_index=True
@@ -2754,9 +2746,6 @@ def pv_rooftop_to_buildings():
             crs=scenario_buildings_gdf.crs,
             geometry="geom",
         )
-
-        scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
-        logger.debug(f"0 {scenario}: {scn_df.capacity.sum() / 1000: g}")
 
         cap_per_bus_id_df = pd.concat(
             [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
