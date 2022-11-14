@@ -1496,11 +1496,11 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
             bind=db.engine(), checkfirst=True
         )
 
-    with db.session_scope() as session:
+    with db.session_scoped as session, session.connection() as c, c.begin():
         df_heat_mvgd_ts_db.to_sql(
             name=EgonEtragoTimeseriesIndividualHeating.__table__.name,
             schema=EgonEtragoTimeseriesIndividualHeating.__table__.schema,
-            con=session.connection(),
+            con=c,
             if_exists="append",
             method="multi",
             index=False,
