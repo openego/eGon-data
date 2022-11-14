@@ -520,8 +520,8 @@ def get_peta_demand(mvgd, scenario):
             )
         )
 
-        df_peta_demand = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        df_peta_demand = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         )
 
     return df_peta_demand
@@ -559,8 +559,8 @@ def get_residential_heat_profile_ids(mvgd):
             )
         )
 
-        df_profiles_ids = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        df_profiles_ids = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         )
     # Add building count per cell
     df_profiles_ids = pd.merge(
@@ -604,8 +604,8 @@ def get_daily_profiles(profile_ids):
             egon_heat_idp_pool.index.in_(profile_ids)
         )
 
-        df_profiles = pd.read_sql(
-            query.statement, query.session.bind, index_col="index"
+        df_profiles = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()], index="index"
         )
 
     # unnest array of profile values per id
@@ -644,8 +644,8 @@ def get_daily_demand_share(mvgd):
             MapZensusGridDistricts.bus_id == mvgd,
         )
 
-        df_daily_demand_share = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        df_daily_demand_share = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         )
     return df_daily_demand_share
 
@@ -822,8 +822,8 @@ def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
             ),
         )
 
-        cells_with_dh = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        cells_with_dh = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         ).zensus_population_id.values
 
     # remove zensus cells with district heating
@@ -878,8 +878,8 @@ def get_residential_buildings_with_decentral_heat_demand_in_mv_grid(
             )
         )
 
-        buildings_with_heat_demand = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        buildings_with_heat_demand = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         ).building_id.values
 
     return pd.Index(buildings_with_heat_demand)
@@ -927,8 +927,8 @@ def get_cts_buildings_with_decentral_heat_demand_in_mv_grid(
             ),
         )
 
-        buildings_with_heat_demand = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        buildings_with_heat_demand = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         ).building_id.values
 
     return pd.Index(buildings_with_heat_demand)
@@ -1010,8 +1010,8 @@ def get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id):
             .filter(EgonIndividualHeatingSupply.mv_grid_id == mv_grid_id)
         )
 
-        hp_cap_mv_grid = pd.read_sql(
-            query.statement, query.session.bind, index_col="mv_grid_id"
+        hp_cap_mv_grid = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()], index="mv_grid_id"
         )
     if hp_cap_mv_grid.empty:
         return 0.0
@@ -1032,8 +1032,8 @@ def get_heat_peak_demand_per_building(scenario, building_ids):
             .filter(BuildingHeatPeakLoads.building_id.in_(building_ids))
         )
 
-        df_heat_peak_demand = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        df_heat_peak_demand = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         )
 
     # TODO remove check
@@ -1110,8 +1110,8 @@ def determine_buildings_with_hp_in_mv_grid(
             egon_power_plants_pv_roof_building.scenario == "eGon2035",
         )
 
-        buildings_with_pv = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        buildings_with_pv = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         ).building_id.values
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
@@ -1363,8 +1363,8 @@ def determine_hp_cap_buildings_eGon100RE():
             )
             .distinct(MapZensusGridDistricts.bus_id)
         )
-        mvgd_ids = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        mvgd_ids = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         )
     mvgd_ids = mvgd_ids.sort_values("bus_id")
     mvgd_ids = mvgd_ids["bus_id"].values
@@ -1838,8 +1838,8 @@ def split_mvgds_into_bulks(n, max_n, func):
             )
             .distinct(MapZensusGridDistricts.bus_id)
         )
-        mvgd_ids = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
+        mvgd_ids = pd.DataFrame.from_records(
+            [db.asdict(row) for row in query.all()]
         )
 
     mvgd_ids = mvgd_ids.sort_values("bus_id").reset_index(drop=True)
