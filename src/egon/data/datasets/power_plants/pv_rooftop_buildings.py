@@ -2677,11 +2677,6 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_mvgd_buildings
     """
 
-    for scenario in SCENARIOS:
-        scn_df = buildings_gdf.loc[buildings_gdf.scenario == scenario]
-        logger.debug(f"0 {scenario}: {scn_df.capacity.sum() / 1000: g}")
-        logger.debug(f"0 {scenario}: {len(scn_df)}")
-
     buildings_gdf = buildings_gdf.merge(
         right=db.select_dataframe(sql).drop_duplicates(subset="building_id"),
         how="left",
@@ -2693,21 +2688,11 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_weather_cell
     """
 
-    for scenario in SCENARIOS:
-        scn_df = buildings_gdf.loc[buildings_gdf.scenario == scenario]
-        logger.debug(f"1 {scenario}: {scn_df.capacity.sum() / 1000: g}")
-        logger.debug(f"1 {scenario}: {len(scn_df)}")
-
     buildings_gdf = buildings_gdf.merge(
-        right=db.select_dataframe(sql),
+        right=db.select_dataframe(sql).drop_duplicates(subset="zensus_population_id"),
         how="inner",
         on="zensus_population_id",
     )
-
-    for scenario in SCENARIOS:
-        scn_df = buildings_gdf.loc[buildings_gdf.scenario == scenario]
-        logger.debug(f"2 {scenario}: {scn_df.capacity.sum() / 1000: g}")
-        logger.debug(f"2 {scenario}: {len(scn_df)}")
 
     if buildings_gdf.weather_cell_id.isna().any():
         missing = buildings_gdf.loc[
