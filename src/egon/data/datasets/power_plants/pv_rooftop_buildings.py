@@ -2689,8 +2689,10 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
 
     buildings_gdf = buildings_gdf.merge(
-        right=db.select_dataframe(sql).drop_duplicates(subset="zensus_population_id"),
-        how="inner",
+        right=db.select_dataframe(sql).drop_duplicates(
+            subset="zensus_population_id"
+        ),
+        how="left",
         on="zensus_population_id",
     )
 
@@ -2751,16 +2753,8 @@ def pv_rooftop_to_buildings():
             [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
 
-    for scenario in SCENARIOS:
-        scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
-        logger.debug(f"PV Cap {scenario}: {scn_df.capacity.sum() / 1000: g}")
-
     # add weather cell
     all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
-
-    for scenario in SCENARIOS:
-        scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
-        logger.debug(f"PV Cap {scenario}: {scn_df.capacity.sum() / 1000: g}")
 
     # export scenario
     create_scenario_table(add_voltage_level(all_buildings_gdf))
