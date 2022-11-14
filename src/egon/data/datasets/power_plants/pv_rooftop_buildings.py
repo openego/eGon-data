@@ -2677,6 +2677,10 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_mvgd_buildings
     """
 
+    for scenario in SCENARIOS:
+        scn_df = buildings_gdf.loc[buildings_gdf.scenario == scenario]
+        logger.debug(f"0 {scenario}: {scn_df.capacity.sum() / 1000: g}")
+
     buildings_gdf = buildings_gdf.merge(
         right=db.select_dataframe(sql),
         how="inner",
@@ -2688,11 +2692,19 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     FROM boundaries.egon_map_zensus_weather_cell
     """
 
+    for scenario in SCENARIOS:
+        scn_df = buildings_gdf.loc[buildings_gdf.scenario == scenario]
+        logger.debug(f"1 {scenario}: {scn_df.capacity.sum() / 1000: g}")
+
     buildings_gdf = buildings_gdf.merge(
         right=db.select_dataframe(sql),
         how="inner",
         on="zensus_population_id",
     )
+
+    for scenario in SCENARIOS:
+        scn_df = buildings_gdf.loc[buildings_gdf.scenario == scenario]
+        logger.debug(f"2 {scenario}: {scn_df.capacity.sum() / 1000: g}")
 
     if buildings_gdf.weather_cell_id.isna().any():
         missing = buildings_gdf.loc[
