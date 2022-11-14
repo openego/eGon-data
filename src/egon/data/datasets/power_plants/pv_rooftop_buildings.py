@@ -2692,7 +2692,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         right=db.select_dataframe(sql).drop_duplicates(
             subset="zensus_population_id"
         ),
-        how="inner",
+        how="left",
         on="zensus_population_id",
     )
 
