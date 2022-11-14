@@ -2310,7 +2310,7 @@ def desaggregate_pv(
         pv_missing = pv_target - pv_installed
 
         if pv_missing <= 0:
-            logger.info(
+            logger.warning(
                 f"In grid {bus_id} there is more PV installed ({pv_installed: g}) in "
                 f"status Quo than allocated within the scenario ({pv_target: g}). No "
                 f"new generators are added."
@@ -2751,8 +2751,20 @@ def pv_rooftop_to_buildings():
             [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
 
+    for scenario in SCENARIOS:
+        scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
+        logger.debug(
+            f"PV Cap {scenario}: {scn_df.capacity.sum()}"
+        )
+
     # add weather cell
     all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
+
+    for scenario in SCENARIOS:
+        scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
+        logger.debug(
+            f"PV Cap {scenario}: {scn_df.capacity.sum()}"
+        )
 
     # export scenario
     create_scenario_table(add_voltage_level(all_buildings_gdf))
