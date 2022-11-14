@@ -26,9 +26,9 @@ The resulting data is stored in separate tables
     Table including the mv substation heat profile share of all selected
     cts buildings for scenario eGon2035 and eGon100RE. This table is created
     within :func:`cts_heat()`
-* `demand.egon_building_peak_loads`:
-    Mapping of demand time series and buildings including cell_id, building
-    area and peak load. This table is already created within
+* `demand.egon_building_electricity_peak_loads`:
+    Mapping of electricity demand time series and buildings including cell_id,
+    building area and peak load. This table is already created within
     :func:`hh_buildings.get_building_peak_loads()`
 
 **The following datasets from the database are mainly used for creation:**
@@ -247,7 +247,7 @@ class CtsDemandBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsDemandBuildings",
-            version="0.0.0",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(
                 cts_buildings,
