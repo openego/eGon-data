@@ -2584,7 +2584,7 @@ def allocate_scenarios(
     )
 
     logger.debug(
-        f"2 {scenario}: {allocated_buildings_gdf.capacity.sum() / 1000}"
+        f"2 {scenario}: {allocated_buildings_gdf.capacity.sum() / 1000: g}"
     )
 
     allocated_buildings_gdf = allocated_buildings_gdf.assign(scenario=scenario)
@@ -2744,7 +2744,7 @@ def pv_rooftop_to_buildings():
         )
 
         logger.debug(
-            f"1 {scenario}: {scenario_buildings_gdf.capacity.sum() / 1000}"
+            f"1 {scenario}: {scenario_buildings_gdf.capacity.sum() / 1000: g}"
         )
 
         all_buildings_gdf = gpd.GeoDataFrame(
@@ -2755,20 +2755,23 @@ def pv_rooftop_to_buildings():
             geometry="geom",
         )
 
+        scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
+        logger.debug(f"0 {scenario}: {scn_df.capacity.sum() / 1000: g}")
+
         cap_per_bus_id_df = pd.concat(
             [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
 
     for scenario in SCENARIOS:
         scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
-        logger.debug(f"PV Cap {scenario}: {scn_df.capacity.sum()}")
+        logger.debug(f"PV Cap {scenario}: {scn_df.capacity.sum() / 1000: g}")
 
     # add weather cell
     all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
 
     for scenario in SCENARIOS:
         scn_df = all_buildings_gdf.loc[all_buildings_gdf.scenario == scenario]
-        logger.debug(f"PV Cap {scenario}: {scn_df.capacity.sum()}")
+        logger.debug(f"PV Cap {scenario}: {scn_df.capacity.sum() / 1000: g}")
 
     # export scenario
     create_scenario_table(add_voltage_level(all_buildings_gdf))
