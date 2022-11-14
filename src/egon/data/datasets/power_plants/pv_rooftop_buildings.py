@@ -1626,13 +1626,16 @@ def cap_per_bus_id(
     targets = config.datasets()["solar_rooftop"]["targets"]
 
     sql = f"""
-    SELECT bus as bus_id, p_nom as capacity
+    SELECT bus as bus_id, control, p_nom as capacity
     FROM {targets['generators']['schema']}.{targets['generators']['table']}
     WHERE carrier = 'solar_rooftop'
     AND scn_name = '{scenario}'
     """
+    # TODO: woher kommen die Slack rows???
 
-    return db.select_dataframe(sql, index_col="bus_id")
+    df = db.select_dataframe(sql, index_col="bus_id")
+
+    return df.loc[df.control != "Slack"]
 
     # overlay_gdf = overlay_gdf.assign(capacity=np.nan)
     #
@@ -2307,7 +2310,7 @@ def desaggregate_pv(
         pv_missing = pv_target - pv_installed
 
         if pv_missing <= 0:
-            logger.info(
+            logger.warning(
                 f"In grid {bus_id} there is more PV installed ({pv_installed: g}) in "
                 f"status Quo than allocated within the scenario ({pv_target: g}). No "
                 f"new generators are added."
@@ -2343,6 +2346,9 @@ def desaggregate_pv(
                 f"{gdf.capacity.sum() + pv_installed}"
             )
 
+        pre_cap = allocated_buildings_gdf.capacity.sum()
+        new_cap = gdf.capacity.sum()
+
         allocated_buildings_gdf = pd.concat(
             [
                 allocated_buildings_gdf,
@@ -2350,10 +2356,14 @@ def desaggregate_pv(
             ]
         )
 
+        total_cap = allocated_buildings_gdf.capacity.sum()
+
+        assert np.isclose(pre_cap + new_cap, total_cap)
+
     logger.debug("Desaggregated scenario.")
     logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
     logger.debug(
-        f"Generator capacity: {allocated_buildings_gdf.capacity.sum(): g}"
+        f"Generator capacity: {allocated_buildings_gdf.capacity.sum() / 1000: g}"
     )
 
     return gpd.GeoDataFrame(
@@ -2668,7 +2678,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
 
     buildings_gdf = buildings_gdf.merge(
-        right=db.select_dataframe(sql),
+        right=db.select_dataframe(sql).drop_duplicates(subset="building_id"),
         how="left",
         on="building_id",
     )
@@ -2679,7 +2689,9 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
 
     buildings_gdf = buildings_gdf.merge(
-        right=db.select_dataframe(sql),
+        right=db.select_dataframe(sql).drop_duplicates(
+            subset="zensus_population_id"
+        ),
         how="left",
         on="zensus_population_id",
     )
@@ -2688,6 +2700,7 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         missing = buildings_gdf.loc[
             buildings_gdf.weather_cell_id.isna()
         ].building_id.tolist()
+
         raise ValueError(
             f"Following buildings don't have a weather cell id: {missing}"
         )
