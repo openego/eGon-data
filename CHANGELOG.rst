@@ -422,6 +422,8 @@ Changed
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
+* Desaggregate industry demands to OSM areas and industrial sites
+  `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
 
 Bug Fixes
 ---------
