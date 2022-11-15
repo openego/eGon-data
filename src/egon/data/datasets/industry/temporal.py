@@ -3,14 +3,15 @@ timeseries data using demandregio
 
 """
 
-import egon.data.config
-import geopandas as gpd
-import pandas as pd
-import numpy as np
-from egon.data import db
-from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets.electricity_demand.temporal import calc_load_curve
+import egon.data.config
 
 Base = declarative_base()
 
@@ -34,7 +35,7 @@ def identify_voltage_level(df):
 
     """
 
-    df['voltage_level']= np.nan
+    df["voltage_level"] = np.nan
 
     # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
     df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
@@ -207,8 +208,10 @@ def calc_load_curves_ind_osm(scenario):
     ).set_index("id")
     curves_individual = curves_da[["id", "bus_id"]]
     curves_individual["p_set"] = curves_individual_interim.values.tolist()
-    curves_individual["scn_name"]= scenario
-    curves_individual = curves_individual.rename(columns={"id": "osm_id"}).set_index(['osm_id', 'scn_name'])
+    curves_individual["scn_name"] = scenario
+    curves_individual = curves_individual.rename(
+        columns={"id": "osm_id"}
+    ).set_index(["osm_id", "scn_name"])
 
     return load_ts_df, curves_individual
 
@@ -260,8 +263,12 @@ def insert_osm_ind_load():
             if_exists="append",
         )
 
-        curves_individual['peak_load'] = np.array(curves_individual['p_set'].values.tolist()).max(axis=1)
-        curves_individual['demand'] = np.array(curves_individual['p_set'].values.tolist()).sum(axis=1)
+        curves_individual["peak_load"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).max(axis=1)
+        curves_individual["demand"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).sum(axis=1)
         curves_individual = identify_voltage_level(curves_individual)
 
         curves_individual.to_sql(
@@ -270,8 +277,6 @@ def insert_osm_ind_load():
             con=db.engine(),
             if_exists="append",
         )
-
-
 
 
 def calc_load_curves_ind_sites(scenario):
@@ -365,8 +370,10 @@ def calc_load_curves_ind_sites(scenario):
     ).set_index("id")
     curves_individual = curves_da[["id", "bus_id"]]
     curves_individual["p_set"] = curves_individual_interim.values.tolist()
-    curves_individual["scn_name"]= scenario
-    curves_individual = curves_individual.rename(columns={"id": "site_id"}).set_index(['site_id', 'scn_name'])
+    curves_individual["scn_name"] = scenario
+    curves_individual = curves_individual.rename(
+        columns={"id": "site_id"}
+    ).set_index(["site_id", "scn_name"])
 
     return load_ts_df, curves_individual
 
@@ -420,8 +427,12 @@ def insert_sites_ind_load():
             if_exists="append",
         )
 
-        curves_individual['peak_load'] = np.array(curves_individual['p_set'].values.tolist()).max(axis=1)
-        curves_individual['demand'] = np.array(curves_individual['p_set'].values.tolist()).sum(axis=1)
+        curves_individual["peak_load"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).max(axis=1)
+        curves_individual["demand"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).sum(axis=1)
         curves_individual = identify_voltage_level(curves_individual)
 
         curves_individual.to_sql(

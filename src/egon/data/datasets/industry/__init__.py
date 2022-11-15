@@ -7,19 +7,19 @@
 """
 
 
-import egon.data.config
+from geoalchemy2 import Geometry
+from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
 )
-from geoalchemy2 import Geometry
-from sqlalchemy import Column, String, Float, Integer, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
-
+import egon.data.config
 
 Base = declarative_base()
 
@@ -56,14 +56,13 @@ class DemandCurvesOsmIndustryIndividual(Base):
     __tablename__ = "egon_osm_ind_load_curves_individual"
     __table_args__ = {"schema": "demand"}
 
-    osm_id = Column(Integer, primary_key= True)
+    osm_id = Column(Integer, primary_key=True)
     bus_id = Column(Integer)
-    scn_name = Column(String, primary_key= True)
+    scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
     peak_load = Column(Float)
     demand = Column(Float)
     voltage_level = Column(Integer)
-
 
 
 class DemandCurvesSitesIndustry(Base):
@@ -80,7 +79,7 @@ class DemandCurvesSitesIndustryIndividual(Base):
     __tablename__ = "egon_sites_ind_load_curves_individual"
     __table_args__ = {"schema": "demand"}
 
-    site_id = Column(Integer, primary_key = True)
+    site_id = Column(Integer, primary_key=True)
     bus_id = Column(Integer)
     scn_name = Column(String, primary_key=True)
     p_set = Column(ARRAY(Float))
@@ -169,7 +168,7 @@ def create_tables():
 
 
 def industrial_demand_distr():
-    """ Distribute electrical demands for industry to osm landuse polygons
+    """Distribute electrical demands for industry to osm landuse polygons
     and/or industrial sites, identified earlier in the process.
     The demands per subsector on nuts3-level from demandregio are distributed
     linearly to the area of the corresponding landuse polygons or evenly to
