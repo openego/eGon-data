@@ -632,6 +632,9 @@ Bug Fixes
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Mismatch of building bus_ids from cts_heat_demand_building_share
+  and mapping table
+`#989 <https://github.com/openego/eGon-data/issues/989>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
