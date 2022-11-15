@@ -215,6 +215,8 @@ Added
   `#919 <https://github.com/openego/eGon-data/issues/919>`_
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
+* Add mapping table for all used buildings
+  `#962 <https://github.com/openego/eGon-data/issues/962>`_
 * Add charging infrastructure for e-mobility
   `#937 <https://github.com/openego/eGon-data/issues/937>`_
 * Add zipfile check
