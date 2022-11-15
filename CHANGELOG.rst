@@ -227,6 +227,8 @@ Added
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Write simBEV metadata to DB table
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
+*  Add voltage level for electricity building loads
+  `#955 <https://github.com/openego/eGon-data/issues/955>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -434,6 +436,8 @@ Changed
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
+* Add eGon2021 scenario to demandregio dataset
+  `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
 
 
 Bug Fixes
@@ -630,9 +634,11 @@ Bug Fixes
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Mismatch of building bus_ids from cts_heat_demand_building_share
+  and mapping table
+`#989 <https://github.com/openego/eGon-data/issues/989>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
-.. _#669: https://github.com/openego/eGon-data/issues/669
