@@ -204,6 +204,7 @@ COLS_TO_EXPORT = [
 INCLUDE_SYNTHETIC_BUILDINGS = True
 ONLY_BUILDINGS_WITH_DEMAND = True
 TEST_RUN = False
+DIRTY_FIX = False
 
 
 def timer_func(func):
@@ -1162,23 +1163,21 @@ def allocate_pv(
 
     for count, ags in enumerate(ags_list):
 
-        buildings = q_buildings_gdf.loc[
-            (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
-        ]
+        buildings = q_buildings_gdf.loc[q_buildings_gdf.ags == ags]
         gens = q_mastr_gdf.loc[q_mastr_gdf.ags == ags]
 
-        len_build = len(buildings)
-        len_gens = len(gens)
-
-        if len_build < len_gens:
-            gens = gens.sample(len_build, random_state=RandomState(seed=seed))
-            logger.error(
-                f"There are {len_gens} generators and only {len_build}"
-                f" buildings in AGS {ags}. {len_gens - len(gens)} "
-                "generators were truncated to match the amount of buildings."
-            )
-
-            assert len_build == len(gens)
+        # len_build = len(buildings)
+        # len_gens = len(gens)
+        #
+        # if len_build < len_gens:
+        #     gens = gens.sample(len_build, random_state=RandomState(seed=seed))
+        #     logger.error(
+        #         f"There are {len_gens} generators and only {len_build}"
+        #         f" buildings in AGS {ags}. {len_gens - len(gens)} "
+        #         "generators were truncated to match the amount of buildings."
+        #     )
+        #
+        #     assert len_build == len(gens)
 
         for quant in gens.quant.unique():
             q_buildings = buildings.loc[buildings.quant == quant]
@@ -1198,34 +1197,25 @@ def allocate_pv(
 
                 add_buildings = pd.Index(
                     rng.choice(
-                        buildings.loc[
-                            (buildings.quant != quant)
-                            & (buildings.gens_id.isna())
-                        ].index,
+                        list(set(buildings.index) - set(q_buildings.index)),
                         size=delta,
                         replace=False,
                     )
                 )
 
-                q_buildings = buildings.loc[
-                    q_buildings.index.append(add_buildings)
-                ]
+                chosen_buildings = q_buildings.index.append(add_buildings)
 
-                assert len(q_buildings) == len_gens
-
-            chosen_buildings = pd.Index(
-                rng.choice(
+            else:
+                chosen_buildings = rng.choice(
                     q_buildings.index,
                     size=len_gens,
                     replace=False,
                 )
-            )
 
-            # q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
             buildings = buildings.drop(chosen_buildings)
 
-        if count % 100 == 0:
+        if count % 500 == 0:
             logger.debug(
                 f"Allocation of {count / num_ags * 100:g} % of AGS done. It took "
                 f"{perf_counter() - t0:g} seconds."
@@ -2712,6 +2702,23 @@ def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
     mastr_gdf = load_mastr_data()
+
+    if DIRTY_FIX:
+        mastr_gdf = mastr_gdf.reset_index()
+
+        df_list = [mastr_gdf]
+
+        for i in range(6):
+            df_append = mastr_gdf.copy()
+            df_append[MASTR_INDEX_COL] += f"_{i}"
+
+            df_list.append(df_append)
+
+        mastr_gdf = pd.concat(df_list, ignore_index=True).set_index(
+            MASTR_INDEX_COL
+        )
+
+        del df_list, df_append
 
     buildings_gdf = load_building_data()
 
