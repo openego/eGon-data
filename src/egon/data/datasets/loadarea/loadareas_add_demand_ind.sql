@@ -119,7 +119,7 @@ UPDATE demand.egon_loadarea AS t1
                         ind_sites.id,
                         ind_loads.demand,
                         ind_loads.peak_load,
-                        ST_TRANSFORM(ind_sites.geom)
+                        ST_TRANSFORM(ind_sites.geom, 3035)
                     FROM
                         demand.egon_industrial_sites as ind_sites,
                         demand.egon_sites_ind_load_curves_individual as ind_loads
