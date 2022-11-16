@@ -46,7 +46,7 @@ CREATE TABLE		demand.egon_loadarea_load_collect_buffer100 (
 -- insert buffer
 INSERT INTO	demand.egon_loadarea_load_collect_buffer100 (geom)
 	SELECT	(ST_DUMP(ST_MULTI(ST_UNION(
-			ST_BUFFER(geom, 100)
+			ST_MakeValid(ST_BUFFER(geom, 100))
 		)))).geom ::geometry(Polygon,3035) AS geom
 	FROM	demand.egon_loadarea_load_collect;
 --    ORDER BY id;
@@ -65,7 +65,7 @@ CREATE TABLE		demand.egon_loadarea_load_melt (
 -- insert buffer
 INSERT INTO	demand.egon_loadarea_load_melt (geom)
 	SELECT	(ST_DUMP(ST_MULTI(ST_UNION(
-			ST_BUFFER(buffer.geom, -99)
+			ST_MakeValid(ST_BUFFER(buffer.geom, -99))
 		)))).geom ::geometry(Polygon,3035) AS geom
 	FROM	demand.egon_loadarea_load_collect_buffer100 AS buffer
 	GROUP BY buffer.id
