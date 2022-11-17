@@ -2727,7 +2727,16 @@ def pv_rooftop_to_buildings():
             f"smallets MaStR gens: {cap_after / 1000: g} MW"
         )
 
-        for i in range(6):
+        target = 34
+        actual = 6
+
+        share = cap_after / cap_before
+
+        n = int(round(target / actual / share, 0))
+
+        logger.debug(f"N: {n}")
+
+        for i in range(n):
             df_append = truncated_gdf.copy()
             df_append[MASTR_INDEX_COL] += f"_{i}"
 
