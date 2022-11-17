@@ -460,6 +460,8 @@ Changed
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
 * Add eGon2021 scenario to demandregio dataset
   `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
+* Desaggregate industry demands to OSM areas and industrial sites
+  `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
 
 
 Bug Fixes
