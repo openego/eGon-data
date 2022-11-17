@@ -1166,18 +1166,18 @@ def allocate_pv(
         buildings = q_buildings_gdf.loc[q_buildings_gdf.ags == ags]
         gens = q_mastr_gdf.loc[q_mastr_gdf.ags == ags]
 
-        # len_build = len(buildings)
-        # len_gens = len(gens)
-        #
-        # if len_build < len_gens:
-        #     gens = gens.sample(len_build, random_state=RandomState(seed=seed))
-        #     logger.error(
-        #         f"There are {len_gens} generators and only {len_build}"
-        #         f" buildings in AGS {ags}. {len_gens - len(gens)} "
-        #         "generators were truncated to match the amount of buildings."
-        #     )
-        #
-        #     assert len_build == len(gens)
+        len_build = len(buildings)
+        len_gens = len(gens)
+
+        if len_build < len_gens:
+            gens = gens.sample(len_build, random_state=RandomState(seed=seed))
+            logger.error(
+                f"There are {len_gens} generators and only {len_build}"
+                f" buildings in AGS {ags}. {len_gens - len(gens)} "
+                "generators were truncated to match the amount of buildings."
+            )
+
+            assert len_build == len(gens)
 
         for quant in gens.quant.unique():
             q_buildings = buildings.loc[buildings.quant == quant]
