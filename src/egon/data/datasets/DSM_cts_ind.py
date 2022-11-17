@@ -212,7 +212,7 @@ def dsm_cts_ind_processing():
                 data=curves_bus["bus_id"], index=curves_bus["id"].astype(int)
             )
             ts["scenario_name"] = scenario
-            curves_bus.drop({"id", "bus_id"}, axis=1, inplace=True)
+            curves_bus.drop({"id", "bus_id", "geom"}, axis=1, inplace=True)
             ts["p_set"] = curves_bus.values.tolist()
 
             # add subsector to relate to Schmidt's tables afterwards

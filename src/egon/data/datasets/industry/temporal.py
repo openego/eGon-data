@@ -3,15 +3,49 @@ timeseries data using demandregio
 
 """
 
-import egon.data.config
-import geopandas as gpd
-import pandas as pd
-from egon.data import db
-from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets.electricity_demand.temporal import calc_load_curve
+import egon.data.config
 
 Base = declarative_base()
+
+
+def identify_voltage_level(df):
+
+    """Identify the voltage_level of a grid component based on its peak load and
+    defined thresholds.
+
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data frame containing information about peak loads
+
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame with an additional column with voltage level
+
+    """
+
+    df["voltage_level"] = np.nan
+
+    # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
+    df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
+    df.loc[df["peak_load"] > 0.1, "voltage_level"] = 6
+    df.loc[df["peak_load"] > 0.2, "voltage_level"] = 5
+    df.loc[df["peak_load"] > 5.5, "voltage_level"] = 4
+    df.loc[df["peak_load"] > 20, "voltage_level"] = 3
+    df.loc[df["peak_load"] > 120, "voltage_level"] = 1
+
+    return df
 
 
 def identify_bus(load_curves, demand_area):
@@ -50,17 +84,11 @@ def identify_bus(load_curves, demand_area):
     )
 
     # Initialize dataframe to identify peak load per demand area (e.g. osm landuse area or industrial site)
-    peak = pd.DataFrame(columns=["id", "peak_load", "voltage_level"])
+    peak = pd.DataFrame(columns=["id", "peak_load"])
     peak["id"] = load_curves.max(axis=0).index
     peak["peak_load"] = load_curves.max(axis=0).values
 
-    # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
-    peak.loc[peak["peak_load"] < 0.1, "voltage_level"] = 7
-    peak.loc[peak["peak_load"] > 0.1, "voltage_level"] = 6
-    peak.loc[peak["peak_load"] > 0.2, "voltage_level"] = 5
-    peak.loc[peak["peak_load"] > 5.5, "voltage_level"] = 4
-    peak.loc[peak["peak_load"] > 20, "voltage_level"] = 3
-    peak.loc[peak["peak_load"] > 120, "voltage_level"] = 1
+    peak = identify_voltage_level(peak)
 
     # Assign bus_id to demand area by merging landuse and peak df
     peak = pd.merge(demand_area, peak, right_on="id", left_index=True)
@@ -85,7 +113,7 @@ def identify_bus(load_curves, demand_area):
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
         load_curves.T,
-        peak_bus[["bus_id", "id"]],
+        peak_bus[["bus_id", "id", "geom"]],
         left_index=True,
         right_on="id",
     )
@@ -173,7 +201,19 @@ def calc_load_curves_ind_osm(scenario):
 
     # Insert time series data to df as an array
     load_ts_df.p_set = curves_bus.values.tolist()
-    return load_ts_df
+
+    # Create Dataframe to store time series individually
+    curves_individual_interim = (
+        curves_da.drop(["bus_id", "geom"], axis=1).fillna(0)
+    ).set_index("id")
+    curves_individual = curves_da[["id", "bus_id"]]
+    curves_individual["p_set"] = curves_individual_interim.values.tolist()
+    curves_individual["scn_name"] = scenario
+    curves_individual = curves_individual.rename(
+        columns={"id": "osm_id"}
+    ).set_index(["osm_id", "scn_name"])
+
+    return load_ts_df, curves_individual
 
 
 def insert_osm_ind_load():
@@ -200,8 +240,16 @@ def insert_osm_ind_load():
             """
         )
 
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['osm_load_individual']['schema']}.{targets['osm_load_individual']['table']}
+            WHERE scn_name = '{scenario}'
+            """
+        )
+
         # Calculate cts load curves per mv substation (hvmv bus)
-        data = calc_load_curves_ind_osm(scenario)
+        data, curves_individual = calc_load_curves_ind_osm(scenario)
         data.index = data.index.rename("bus")
         data["scn_name"] = scenario
 
@@ -211,6 +259,21 @@ def insert_osm_ind_load():
         data.to_sql(
             targets["osm_load"]["table"],
             schema=targets["osm_load"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+        curves_individual["peak_load"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).max(axis=1)
+        curves_individual["demand"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).sum(axis=1)
+        curves_individual = identify_voltage_level(curves_individual)
+
+        curves_individual.to_sql(
+            targets["osm_load_individual"]["table"],
+            schema=targets["osm_load_individual"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
@@ -301,7 +364,18 @@ def calc_load_curves_ind_sites(scenario):
     # Insert data for pf load timeseries table
     load_ts_df.p_set = curves_bus.values.tolist()
 
-    return load_ts_df
+    # Create Dataframe to store time series individually
+    curves_individual_interim = (
+        curves_da.drop(["bus_id", "geom", "wz"], axis=1).fillna(0)
+    ).set_index("id")
+    curves_individual = curves_da[["id", "bus_id"]]
+    curves_individual["p_set"] = curves_individual_interim.values.tolist()
+    curves_individual["scn_name"] = scenario
+    curves_individual = curves_individual.rename(
+        columns={"id": "site_id"}
+    ).set_index(["site_id", "scn_name"])
+
+    return load_ts_df, curves_individual
 
 
 def insert_sites_ind_load():
@@ -328,8 +402,18 @@ def insert_sites_ind_load():
             """
         )
 
+        # Delete existing data from database
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['sites_load_individual']['schema']}.
+            {targets['sites_load_individual']['table']}
+            WHERE scn_name = '{scenario}'
+            """
+        )
+
         # Calculate industrial load curves per bus
-        data = calc_load_curves_ind_sites(scenario)
+        data, curves_individual = calc_load_curves_ind_sites(scenario)
         data.index = data.index.rename(["bus", "wz"])
         data["scn_name"] = scenario
 
@@ -339,6 +423,21 @@ def insert_sites_ind_load():
         data.to_sql(
             targets["sites_load"]["table"],
             schema=targets["sites_load"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+        curves_individual["peak_load"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).max(axis=1)
+        curves_individual["demand"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).sum(axis=1)
+        curves_individual = identify_voltage_level(curves_individual)
+
+        curves_individual.to_sql(
+            targets["sites_load_individual"]["table"],
+            schema=targets["sites_load_individual"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
