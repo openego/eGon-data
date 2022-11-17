@@ -7,11 +7,9 @@
 """
 
 
-from geoalchemy2 import Geometry
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
-import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -221,7 +219,9 @@ def industrial_demand_distr():
                 WHERE sector = 3
                 AND NOT ST_Intersects(
                     geom,
-                    (SELECT ST_UNION(ST_Transform(geom,3035)) FROM {sources['industrial_sites']['schema']}.{sources['industrial_sites']['table']}))
+                    (SELECT ST_UNION(ST_Transform(geom,3035)) FROM
+                    {sources['industrial_sites']['schema']}.
+                    {sources['industrial_sites']['table']}))
                 AND name NOT LIKE '%%kraftwerk%%'
                 AND name NOT LIKE '%%Stadtwerke%%'
                 AND name NOT LIKE '%%Müllverbrennung%%'
@@ -259,7 +259,8 @@ def industrial_demand_distr():
                 {sources['industrial_sites']['table']}""",
             index_col=None,
         )
-        # Count number of industrial sites per subsector (wz) and nuts3 district
+        # Count number of industrial sites per subsector (wz) and nuts3
+        # district
         sites_grouped = (
             sites.groupby(["nuts3", "wz"]).size().reset_index(name="counts")
         )
@@ -276,30 +277,36 @@ def industrial_demand_distr():
                          WHERE sector = 'industry')"""
         )
 
-        # Replace wz=17 and wz=18 by wz=1718 as a differentiation of these two subsectors can't be performed
+        # Replace wz=17 and wz=18 by wz=1718 as a differentiation of these two
+        # subsectors can't be performed
         demand_nuts3_import["wz"] = demand_nuts3_import["wz"].replace(
             [17, 18], 1718
         )
 
-        # Group results by nuts3 and wz to aggregate demands from subsectors 17 and 18
+        # Group results by nuts3 and wz to aggregate demands from subsectors
+        # 17 and 18
         demand_nuts3 = (
             demand_nuts3_import.groupby(["nuts3", "wz"]).sum().reset_index()
         )
 
-        # A differentiation between those industrial subsectors (wz) which aren't represented
-        # and subsectors with a representation in the data set on industrial sites is needed
+        # A differentiation between those industrial subsectors (wz) which
+        # aren't represented and subsectors with a representation in the
+        # dataset on industrial sites is needed
 
-        # Select industrial demand for sectors which aren't found in industrial sites as category a
+        # Select industrial demand for sectors which aren't found in
+        # industrial sites as category a
         demand_nuts3_a = demand_nuts3[
             ~demand_nuts3["wz"].isin([1718, 19, 20, 23, 24])
         ]
 
-        # Select industrial demand for sectors which are found in industrial sites as category b
+        # Select industrial demand for sectors which are found in industrial
+        # sites as category b
         demand_nuts3_b = demand_nuts3[
             demand_nuts3["wz"].isin([1718, 19, 20, 23, 24])
         ]
 
-        # Bring demands on nuts3 level and information on industrial sites per nuts3 district together
+        # Bring demands on nuts3 level and information on industrial sites per
+        # nuts3 district together
         demand_nuts3_b = demand_nuts3_b.merge(
             sites_grouped,
             how="left",
@@ -307,7 +314,8 @@ def industrial_demand_distr():
             right_on=["nuts3", "wz"],
         )
 
-        # Define share of industrial demand per nuts3 region and subsector allocated to industrial sites
+        # Define share of industrial demand per nuts3 region and subsector
+        # allocated to industrial sites
         share_to_sites = 0.5
 
         # Define demand per site for every nuts3 region and subsector
@@ -319,7 +327,8 @@ def industrial_demand_distr():
         # Replace NaN by 0
         demand_nuts3_b = demand_nuts3_b.fillna(0)
 
-        # Calculate demand which needs to be distributed to osm landuse areas from category b
+        # Calculate demand which needs to be distributed to osm landuse areas
+        # from category b
         demand_nuts3_b["demand_b_osm"] = demand_nuts3_b["demand"] - (
             demand_nuts3_b["demand_per_site"] * demand_nuts3_b["counts"]
         )
@@ -339,7 +348,8 @@ def industrial_demand_distr():
             {"demand_b_osm": "demand"}, axis=1
         )
 
-        # Create df containing all demand per wz which will be allocated to osm areas
+        # Create df containing all demand per wz which will be allocated to
+        # osm areas
         demand_nuts3_osm_wz = demand_nuts3_a.append(
             demand_nuts3_b_osm, ignore_index=True
         )
