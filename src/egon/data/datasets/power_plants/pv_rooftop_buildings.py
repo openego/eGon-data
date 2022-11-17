@@ -1149,8 +1149,12 @@ def allocate_pv(
     """
     rng = default_rng(seed=seed)
 
-    q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
-    q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
+    q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan).sort_values(
+        by=["ags", "quant"]
+    )
+    q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan).sort_values(
+        by=["ags", "quant"]
+    )
 
     ags_list = q_buildings_gdf.ags.unique()
 
@@ -2301,9 +2305,9 @@ def desaggregate_pv(
 
         if pv_missing <= 0:
             logger.warning(
-                f"In grid {bus_id} there is more PV installed ({pv_installed: g}) in "
-                f"status Quo than allocated within the scenario ({pv_target: g}). No "
-                f"new generators are added."
+                f"In grid {bus_id} there is more PV installed ({pv_installed: g} kW) in"
+                f" status Quo than allocated within the scenario ({pv_target: g} kW). "
+                f"No new generators are added."
             )
 
             continue
@@ -2706,10 +2710,25 @@ def pv_rooftop_to_buildings():
     if DIRTY_FIX:
         mastr_gdf = mastr_gdf.reset_index()
 
-        df_list = [mastr_gdf]
+        df_list = [mastr_gdf.copy()]
+
+        truncated_gdf = mastr_gdf.sort_values(by="capacity", ascending=False)
+
+        cap_before = truncated_gdf.capacity.sum()
+
+        size = int(0.05 * len(truncated_gdf))
+
+        truncated_gdf = truncated_gdf.iloc[size:]
+
+        cap_after = truncated_gdf.capacity.sum()
+
+        logger.debug(
+            f"Capacity of all MaStR gens: {cap_before / 1000: g} MW\nCapacity of 95% "
+            f"smallets MaStR gens: {cap_after / 1000: g} MW"
+        )
 
         for i in range(6):
-            df_append = mastr_gdf.copy()
+            df_append = truncated_gdf.copy()
             df_append[MASTR_INDEX_COL] += f"_{i}"
 
             df_list.append(df_append)
