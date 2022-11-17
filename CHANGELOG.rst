@@ -454,8 +454,6 @@ Changed
   `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
-* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
-  `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
 * Add eGon2021 scenario to demandregio dataset
@@ -668,7 +666,7 @@ Bug Fixes
   `#984 <https://github.com/openego/eGon-data/issues/984>`_
 * Mismatch of building bus_ids from cts_heat_demand_building_share
   and mapping table
-`#989 <https://github.com/openego/eGon-data/issues/989>`_
+  `#989 <https://github.com/openego/eGon-data/issues/989>`_
 * Fix zensus weather cells mapping
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
 * Make gas grid links bidirectional
