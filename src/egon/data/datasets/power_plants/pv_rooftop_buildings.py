@@ -204,6 +204,7 @@ COLS_TO_EXPORT = [
 INCLUDE_SYNTHETIC_BUILDINGS = True
 ONLY_BUILDINGS_WITH_DEMAND = True
 TEST_RUN = False
+DIRTY_FIX = False
 
 
 def timer_func(func):
@@ -1148,8 +1149,12 @@ def allocate_pv(
     """
     rng = default_rng(seed=seed)
 
-    q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan)
-    q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan)
+    q_buildings_gdf = q_buildings_gdf.assign(gens_id=np.nan).sort_values(
+        by=["ags", "quant"]
+    )
+    q_mastr_gdf = q_mastr_gdf.assign(building_id=np.nan).sort_values(
+        by=["ags", "quant"]
+    )
 
     ags_list = q_buildings_gdf.ags.unique()
 
@@ -1162,9 +1167,7 @@ def allocate_pv(
 
     for count, ags in enumerate(ags_list):
 
-        buildings = q_buildings_gdf.loc[
-            (q_buildings_gdf.ags == ags) & (q_buildings_gdf.gens_id.isna())
-        ]
+        buildings = q_buildings_gdf.loc[q_buildings_gdf.ags == ags]
         gens = q_mastr_gdf.loc[q_mastr_gdf.ags == ags]
 
         len_build = len(buildings)
@@ -1198,34 +1201,25 @@ def allocate_pv(
 
                 add_buildings = pd.Index(
                     rng.choice(
-                        buildings.loc[
-                            (buildings.quant != quant)
-                            & (buildings.gens_id.isna())
-                        ].index,
+                        list(set(buildings.index) - set(q_buildings.index)),
                         size=delta,
                         replace=False,
                     )
                 )
 
-                q_buildings = buildings.loc[
-                    q_buildings.index.append(add_buildings)
-                ]
+                chosen_buildings = q_buildings.index.append(add_buildings)
 
-                assert len(q_buildings) == len_gens
-
-            chosen_buildings = pd.Index(
-                rng.choice(
+            else:
+                chosen_buildings = rng.choice(
                     q_buildings.index,
                     size=len_gens,
                     replace=False,
                 )
-            )
 
-            # q_mastr_gdf.loc[q_gens.index, "building_id"] = chosen_buildings
             q_buildings_gdf.loc[chosen_buildings, "gens_id"] = q_gens.index
             buildings = buildings.drop(chosen_buildings)
 
-        if count % 100 == 0:
+        if count % 500 == 0:
             logger.debug(
                 f"Allocation of {count / num_ags * 100:g} % of AGS done. It took "
                 f"{perf_counter() - t0:g} seconds."
@@ -2311,9 +2305,9 @@ def desaggregate_pv(
 
         if pv_missing <= 0:
             logger.warning(
-                f"In grid {bus_id} there is more PV installed ({pv_installed: g}) in "
-                f"status Quo than allocated within the scenario ({pv_target: g}). No "
-                f"new generators are added."
+                f"In grid {bus_id} there is more PV installed ({pv_installed: g} kW) in"
+                f" status Quo than allocated within the scenario ({pv_target: g} kW). "
+                f"No new generators are added."
             )
 
             continue
@@ -2712,6 +2706,47 @@ def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
     mastr_gdf = load_mastr_data()
+
+    if DIRTY_FIX:
+        mastr_gdf = mastr_gdf.reset_index()
+
+        df_list = [mastr_gdf.copy()]
+
+        truncated_gdf = mastr_gdf.sort_values(by="capacity", ascending=False)
+
+        cap_before = truncated_gdf.capacity.sum()
+
+        size = int(0.05 * len(truncated_gdf))
+
+        truncated_gdf = truncated_gdf.iloc[size:]
+
+        cap_after = truncated_gdf.capacity.sum()
+
+        logger.debug(
+            f"Capacity of all MaStR gens: {cap_before / 1000: g} MW\nCapacity of 95% "
+            f"smallets MaStR gens: {cap_after / 1000: g} MW"
+        )
+
+        target = 34
+        actual = 6
+
+        share = cap_after / cap_before
+
+        n = int(round(target / actual / share, 0))
+
+        logger.debug(f"N: {n}")
+
+        for i in range(n):
+            df_append = truncated_gdf.copy()
+            df_append[MASTR_INDEX_COL] += f"_{i}"
+
+            df_list.append(df_append)
+
+        mastr_gdf = pd.concat(df_list, ignore_index=True).set_index(
+            MASTR_INDEX_COL
+        )
+
+        del df_list, df_append
 
     buildings_gdf = load_building_data()
 
