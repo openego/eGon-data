@@ -950,6 +950,50 @@ def calc_building_demand_profile_share(
     return df_demand_share
 
 
+def get_peta_demand(mvgd, scenario):
+    """
+    Retrieve annual peta heat demand for CTS for either
+    eGon2035 or eGon100RE scenario.
+
+    Parameters
+    ----------
+    mvgd : int
+        ID of substation for which to get CTS demand.
+    scenario : str
+        Possible options are eGon2035 or eGon100RE
+
+    Returns
+    -------
+    df_peta_demand : pd.DataFrame
+        Annual residential heat demand per building and scenario. Columns of
+        the dataframe are zensus_population_id and demand.
+
+    """
+
+    with db.session_scope() as session:
+        query = (
+            session.query(
+                MapZensusGridDistricts.zensus_population_id,
+                EgonPetaHeat.demand,
+            )
+            .filter(MapZensusGridDistricts.bus_id == int(mvgd))
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == EgonPetaHeat.zensus_population_id
+            )
+            .filter(
+                EgonPetaHeat.sector == "service",
+                EgonPetaHeat.scenario == scenario,
+            )
+        )
+
+        df_peta_demand = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+
+    return df_peta_demand
+
+
 def calc_cts_building_profiles(
     bus_ids,
     scenario,
