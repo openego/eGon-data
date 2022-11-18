@@ -1073,6 +1073,9 @@ def calc_cts_building_profiles(
         )
 
         # Get substation cts heat load profiles of selected bus_ids
+        # (this profile only contains zensus cells with individual heating;
+        #  in order to obtain a profile for the whole MV grid it is afterwards
+        #  scaled by the grids total CTS demand from peta)
         with db.session_scope() as session:
             cells_query = (
                 session.query(EgonEtragoHeatCts).filter(
@@ -1088,6 +1091,15 @@ def calc_cts_building_profiles(
             df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
         )
+        for bus_id in bus_ids:
+            # get peta demand to scale load profile to
+            peta_cts_demand = get_peta_demand(bus_id, scenario)
+            scaling_factor = (
+                peta_cts_demand.demand.sum() /
+                df_cts_substation_profiles.loc[bus_id, :].sum()
+            )
+            # scale load profile
+            df_cts_substation_profiles.loc[bus_id, :] *= scaling_factor
 
     else:
         raise KeyError("Sector needs to be either 'electricity' or 'heat'")
