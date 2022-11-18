@@ -117,8 +117,9 @@ def hts_to_etrago():
             gas_voronoi = db.select_geodataframe(
                 f"""
                 SELECT bus_id, geom FROM 
-                grid.egon_voronoi_ch4
+                grid.egon_gas_voronoi
                 WHERE scn_name = '{scenario}'
+                AND carrier = 'CH4'
                 """
             )
 
