@@ -114,6 +114,7 @@ from functools import partial
 import random
 
 from geoalchemy2 import Geometry
+from geoalchemy2.elements import WKTElement
 from sqlalchemy import REAL, Column, Integer, String, Table, func, inspect
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -803,6 +804,11 @@ def map_houseprofiles_to_buildings():
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
+
+    synthetic_buildings.loc[:, "geom_point"] = [
+        WKTElement(f"SRID=3035;{p}", extended=True)
+        for p in synthetic_buildings.loc[:, "geom_point"]
+    ]
 
     # Write new buildings incl coord into db
     synthetic_buildings.to_postgis(

@@ -166,6 +166,7 @@ docs attribute of the respective dataset class.
 """
 
 from geoalchemy2 import Geometry
+from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import REAL, Column, Integer, String, func
@@ -1225,6 +1226,12 @@ def cts_buildings():
     log.info("Synthetic buildings created!")
 
     # TODO remove renaming after #722
+
+    df_synthetic_buildings_with_amenities.loc[:, "geom_point"] = [
+        WKTElement(f"SRID=3035;{p}", extended=True)
+        for p in df_synthetic_buildings_with_amenities.loc[:, "geom_point"]
+    ]
+
     write_table_to_postgis(
         df_synthetic_buildings_with_amenities.rename(
             columns={
@@ -1288,6 +1295,11 @@ def cts_buildings():
         df_cells_with_cts_demand_only, points="geom_point"
     )
     log.info(f"{median_n_amenities} synthetic buildings per cell created")
+
+    df_synthetic_buildings_without_amenities.loc[:, "geom_point"] = [
+        WKTElement(f"SRID=3035;{p}", extended=True)
+        for p in df_synthetic_buildings_without_amenities.loc[:, "geom_point"]
+    ]
 
     # TODO remove renaming after #722
     write_table_to_postgis(
