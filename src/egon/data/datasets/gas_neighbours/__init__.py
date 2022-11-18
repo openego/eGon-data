@@ -19,7 +19,9 @@ class GasNeighbours(Dataset):
             version="0.0.2",
             dependencies=dependencies,
             tasks=(
-                {tyndp_gas_generation, tyndp_gas_demand, grid},
+                tyndp_gas_generation,
+                tyndp_gas_demand,
+                grid,
                 insert_gas_neigbours_eGon100RE,
             ),
         )
