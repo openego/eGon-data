@@ -268,7 +268,7 @@ INSERT INTO grid.egon_etrago_storage_timeseries
 		p_max_pu, 
 		state_of_charge_set, 
 		inflow,
-		margional_cost
+		marginal_cost
     FROM grid.egon_etrago_storage_timeseries 
 	WHERE scn_name='eGon2035';
  
