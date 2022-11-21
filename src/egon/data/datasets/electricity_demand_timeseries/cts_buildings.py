@@ -1092,14 +1092,15 @@ def calc_cts_building_profiles(
             orient="index",
         )
         for bus_id in bus_ids:
-            # get peta demand to scale load profile to
-            peta_cts_demand = get_peta_demand(bus_id, scenario)
-            scaling_factor = (
-                peta_cts_demand.demand.sum() /
-                df_cts_substation_profiles.loc[bus_id, :].sum()
-            )
-            # scale load profile
-            df_cts_substation_profiles.loc[bus_id, :] *= scaling_factor
+            if bus_id in df_cts_substation_profiles.index:
+                # get peta demand to scale load profile to
+                peta_cts_demand = get_peta_demand(bus_id, scenario)
+                scaling_factor = (
+                    peta_cts_demand.demand.sum() /
+                    df_cts_substation_profiles.loc[bus_id, :].sum()
+                )
+                # scale load profile
+                df_cts_substation_profiles.loc[bus_id, :] *= scaling_factor
 
     else:
         raise KeyError("Sector needs to be either 'electricity' or 'heat'")
