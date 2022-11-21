@@ -134,6 +134,65 @@ INSERT INTO grid.egon_etrago_line_timeseries
     FROM grid.egon_etrago_line_timeseries 
 	WHERE scn_name='eGon2035';
     
+-- Copy relevant link components including time series
+DELETE FROM grid.egon_etrago_link WHERE scn_name='eGon2035_lowflex';
+DELETE FROM grid.egon_etrago_link_timeseries WHERE scn_name='eGon2035_lowflex'; 
+
+INSERT INTO grid.egon_etrago_link
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		link_id, 
+		bus0, 
+		bus1, 
+		type, 
+		carrier, 
+		efficiency, 
+		build_year, 
+		lifetime, 
+		p_nom, 
+		p_nom_extendable, 
+		p_nom_min, 
+		p_nom_max, 
+		p_min_pu, 
+		p_max_pu, 
+		p_set, 
+		capital_cost, 
+		marginal_cost, 
+		length, 
+		terrain_factor, 
+		geom, 
+		topo
+    FROM grid.egon_etrago_link 
+	WHERE scn_name='eGon2035'
+	AND carrier NOT IN 
+	(
+		'dsm', 
+		'rural_heat_store_charger', 
+		'rural_heat_store_discharger', 
+		'central_heat_store_charger', 
+		'central_heat_store_discharger', 
+	  	'H2_to_power', 
+		'power_to_H2'
+	);
+
+INSERT INTO grid.egon_etrago_link_timeseries
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		link_id, 
+		temp_id, 
+		p_set, 
+		p_min_pu, 
+		p_max_pu, 
+		efficiency,
+		marginal_cost
+    FROM grid.egon_etrago_link_timeseries 
+	WHERE scn_name='eGon2035'
+	AND link_id IN
+	(
+		SELECT link_id 
+	 	FROM grid.egon_etrago_link
+	 	WHERE scn_name='eGon2035_lowflex'
+	);
     
 --Drops stores with carriers 'dsm', 'rural_heat_store',
 --'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_store.
