@@ -221,6 +221,57 @@ INSERT INTO grid.egon_etrago_load_timeseries
     FROM grid.egon_etrago_load_timeseries 
 	WHERE scn_name='eGon2035';
     
+-- Copy relevant storage components including time series
+DELETE FROM grid.egon_etrago_storage WHERE scn_name='eGon2035_lowflex';
+DELETE FROM grid.egon_etrago_storage_timeseries WHERE scn_name='eGon2035_lowflex';
+
+INSERT INTO grid.egon_etrago_storage
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		storage_id, 
+		bus, 
+		control, 
+		type, 
+		carrier, 
+		p_nom,
+		p_nom_extendable, 
+		p_nom_min, 
+		p_nom_max, 
+		p_min_pu, 
+		p_max_pu, 
+		p_set, 
+		q_set, 
+		sign, 
+		marginal_cost, 
+		capital_cost, 
+		build_year, 
+		lifetime, 
+		state_of_charge_initial, 
+		cyclic_state_of_charge, 
+		state_of_charge_set, 
+		max_hours, 
+		efficiency_store, 
+		efficiency_dispatch, 
+		standing_loss, 
+		inflow
+    FROM grid.egon_etrago_storage 
+	WHERE scn_name='eGon2035';
+	
+INSERT INTO grid.egon_etrago_storage_timeseries
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		storage_id, 
+		temp_id, 
+		p_set, 
+		q_set, 
+		p_min_pu, 
+		p_max_pu, 
+		state_of_charge_set, 
+		inflow,
+		margional_cost
+    FROM grid.egon_etrago_storage_timeseries 
+	WHERE scn_name='eGon2035';
+    
 --Drops stores with carriers 'dsm', 'rural_heat_store',
 --'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_store.
 INSERT INTO grid.egon_etrago_store
@@ -245,51 +296,6 @@ INSERT INTO grid.egon_etrago_store_timeseries
 	 FROM grid.egon_etrago_store
 	 WHERE store_id=store_id
 	);
-
-
---Drops links with carriers 'dsm', 'rural_heat_store_charger',
---'rural_heat_store_discharger','H2_to_power' and 'power_to_H2' from grid.egon_etrago_link.
-INSERT INTO grid.egon_etrago_link
-    SELECT 'eGon2035_lowflex' as scn_name, link_id, bus0, bus1, type, carrier, efficiency, 
-	build_year, lifetime, p_nom, p_nom_extendable, p_nom_min, p_nom_max, p_min_pu, p_max_pu, 
-	p_set, capital_cost, marginal_cost, length, terrain_factor, geom, topo
-	
-    FROM grid.egon_etrago_link WHERE scn_name='eGon2035';
-DELETE FROM grid.egon_etrago_link
-WHERE scn_name = 'eGon2035_lowflex' AND (carrier='dsm' OR carrier='rural_heat_store_charger' 
-	   OR carrier='rural_heat_store_discharger' OR carrier='central_heat_store_charger'
-		OR carrier='central_heat_store_discharger'
-	  OR carrier='H2_to_power' OR carrier='power_to_H2');
-	  
-	
---Drops links with carriers 'dsm' from grid.egon_etrago_links_timeseries. Needs check
-INSERT INTO grid.egon_etrago_link_timeseries
-    SELECT 'eGon2035_lowflex' as scn_name, link_id, temp_id, p_set, p_min_pu
-    FROM grid.egon_etrago_link_timeseries WHERE scn_name='eGon2035';
-	DELETE FROM grid.egon_etrago_link_timeseries
-	WHERE NOT EXISTS 
-	(SELECT link_id 
-	 FROM grid.egon_etrago_link
-	 WHERE link_id=link_id
-	);
-	
-	
---Changes scenario name eGon2035 to eGon2035_lowflex 
---from grid.egon_etrago_storage. 
--- it has a problem: There is a column named "storage_id" in table "egon_etrago_storage", but it cannot be referenced from this part of the query.
-INSERT INTO grid.egon_etrago_storage
-    SELECT 'eGon2035_lowflex' as scn_name, storage_id, bus, control, type, carrier, p_nom,
-	p_nom_extendable, p_nom_min, p_nom_max, p_min_pu, s_nom_min, s_nom_max, s_max_pu, build_year, lifetime,
-    capital_cost, lenght, cables, terrain_factor, num_parallel, v_ang_min,
-	v_ang_max, v_nom, geom
-    FROM grid.egon_etrago_storage WHERE scn_name='eGon2035';
-	
---Changes scenario name eGon2035 to eGon2035_lowflex 
---from grid.egon_etrago_storage_timeseries.
-INSERT INTO grid.egon_etrago_storage_timeseries
-    SELECT 'eGon2035_lowflex' as scn_name, storage_id, temp_id, p_set, q_set, 
-	p_min_pu, p_max_pu, state_of_charge_set
-    FROM grid.egon_etrago_storage_timeseries WHERE scn_name='eGon2035';
 	
 	
 --Changes scenario name eGon2035 to eGon2035_lowflex 
