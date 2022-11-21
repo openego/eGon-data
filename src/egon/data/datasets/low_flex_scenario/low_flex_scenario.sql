@@ -271,31 +271,59 @@ INSERT INTO grid.egon_etrago_storage_timeseries
 		margional_cost
     FROM grid.egon_etrago_storage_timeseries 
 	WHERE scn_name='eGon2035';
-    
---Drops stores with carriers 'dsm', 'rural_heat_store',
---'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_store.
+ 
+ -- Copy relevant store components including time series
+DELETE FROM grid.egon_etrago_store WHERE scn_name='eGon2035_lowflex';
+DELETE FROM grid.egon_etrago_store_timeseries WHERE scn_name='eGon2035_lowflex';
+
 INSERT INTO grid.egon_etrago_store
-    SELECT 'eGon2035_lowflex' as scn_name, store_id, bus, type, carrier, e_nom, e_nom_extendable, 
-	e_nom_min, e_nom_max, e_min_pu, e_max_pu, p_set, q_set, e_initial, e_cyclic, 
-	sign, marginal_cost, capital_cost, standing_loss, build_year, lifetime
-	
-    FROM grid.egon_etrago_store WHERE scn_name='eGon2035';
-DELETE FROM grid.egon_etrago_store
-WHERE scn_name = 'eGon2035_lowflex' AND (carrier='dsm' OR carrier='rural_heat_store' 
-	   OR carrier='central_heat_store'
-	  OR carrier='H2_saltcavern');
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		store_id, 
+		bus, 
+		type, 
+		carrier, 
+		e_nom, 
+		e_nom_extendable, 
+		e_nom_min, 
+		e_nom_max, 
+		e_min_pu, 
+		e_max_pu, 
+		p_set, 
+		q_set, 
+		e_initial, 
+		e_cyclic, 
+		sign, 
+		marginal_cost, 
+		capital_cost, 
+		standing_loss, 
+		build_year, 
+		lifetime
+    FROM grid.egon_etrago_store 
+	WHERE scn_name='eGon2035'
+	AND carrier NOT IN 
+		('dsm', 
+		 'rural_heat_store',
+	   	 'central_heat_store',
+	     'H2_underground');
 	  
---Drops stores with carriers 'dsm' from grid.egon_etrago_store_timeseries. Needs check
 INSERT INTO grid.egon_etrago_store_timeseries
-    SELECT 'eGon2035_lowflex' as scn_name, store_id, temp_id, s_max_pu, q_set, 
-	e_min_pu
-    FROM grid.egon_etrago_store_timeseries WHERE scn_name='eGon2035';
-	DELETE FROM grid.egon_etrago_store_timeseries
-	WHERE NOT EXISTS 
-	(SELECT store_id 
-	 FROM grid.egon_etrago_store
-	 WHERE store_id=store_id
-	);
+    SELECT 
+	'eGon2035_lowflex' as scn_name, 
+	store_id, 
+	temp_id, 
+	p_set, 
+	q_set, 
+	e_min_pu,
+	e_max_pu,
+	marginal_cost
+    FROM grid.egon_etrago_store_timeseries 
+	WHERE scn_name='eGon2035'
+	AND store_id IN
+		(SELECT store_id 
+		 FROM grid.egon_etrago_store
+		 WHERE scn_name='eGon2035_lowflex'
+		);
 	
 	
 --Changes scenario name eGon2035 to eGon2035_lowflex 
