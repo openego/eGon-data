@@ -36,12 +36,59 @@ INSERT INTO grid.egon_etrago_bus_timeseries
 		 	FROM grid.egon_etrago_bus
 		 	WHERE scn_name = 'eGon2035_lowflex'); 
 
-	  
---Changes scenario name eGon2035 to eGon2035_lowflex 
---from grid.egon_etrago_bus_timeseries.
-INSERT INTO grid.egon_etrago_bus_timeseries
-    SELECT 'eGon2035_lowflex' as scn_name, bus_id, v_mag_pu_set 
-    FROM grid.egon_etrago_bus_timeseries WHERE scn_name='eGon2035';
+-- Copy relevant generators including time series
+DELETE FROM grid.egon_etrago_generator WHERE scn_name='eGon2035_lowflex';
+DELETE FROM grid.egon_etrago_generator_timeseries WHERE scn_name='eGon2035_lowflex';
+
+INSERT INTO grid.egon_etrago_generator
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		generator_id, 
+		bus, 
+		control, 
+		type, 
+		carrier, 
+		p_nom, 
+		p_nom_extendable,
+		p_nom_min, 
+		p_nom_max, 
+		p_min_pu, 
+		p_max_pu, 
+		p_set, 
+		q_set, 
+		sign, 
+		marginal_cost, 
+		build_year,
+		lifetime, 
+		capital_cost, 
+		efficiency, 
+		committable, 
+		start_up_cost, 
+		shut_down_cost, 
+		min_up_time, 
+		min_down_time,
+		up_time_before, 
+		down_time_before, 
+		ramp_limit_up, 
+		ramp_limit_down, 
+		ramp_limit_start_up, 
+		ramp_limit_shut_down,
+		e_nom_max
+    FROM grid.egon_etrago_generator 
+	WHERE scn_name='eGon2035';
+	
+INSERT INTO grid.egon_etrago_generator_timeseries
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		generator_id, 
+		temp_id, 
+		p_set, 
+		q_set, 
+		p_min_pu, 
+		p_max_pu
+    FROM grid.egon_etrago_generator_timeseries 
+	WHERE scn_name='eGon2035';
+
 
 --Drops stores with carriers 'dsm', 'rural_heat_store',
 --'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_store.
@@ -94,25 +141,6 @@ INSERT INTO grid.egon_etrago_link_timeseries
 	 FROM grid.egon_etrago_link
 	 WHERE link_id=link_id
 	);
-	
---Changes scenario name eGon2035 to eGon2035_lowflex 
---from grid.egon_etrago_generator.
-INSERT INTO grid.egon_etrago_generator
-    SELECT 'eGon2035_lowflex' as scn_name, generator_id, bus, control, type, carrier, p_nom, p_nom_extendable,
-	p_nom_min, p_nom_max, p_min_pu, p_max_pu, p_set, q_set, sign, marginal_cost, build_year,
-	lifetime, capital_cost, efficiency, committable, start_up_cost, shut_down_cost, min_up_time, min_down_time,
-	up_time_before, down_time_before, ramp_limit_up, ramp_limit_down, ramp_limit_start_up, ramp_limit_shut_down,
-	e_nom_max
-    FROM grid.egon_etrago_generator WHERE scn_name='eGon2035';
-	
---Changes scenario name eGon2035 to eGon2035_lowflex 
---from grid.egon_etrago_generator_timeseries.
-INSERT INTO grid.egon_etrago_generator_timeseries
-    SELECT 'eGon2035_lowflex' as scn_name, generator_id, temp_id, p_set, q_set, 
-	p_min_pu, p_max_pu
-    FROM grid.egon_etrago_generator_timeseries WHERE scn_name='eGon2035';
-
-
 	
 --Changes scenario name eGon2035 to eGon2035_lowflex ERROR RELATION DOES NOT EXIST
 --from grid.egon_etrago_line.
