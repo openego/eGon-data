@@ -194,6 +194,33 @@ INSERT INTO grid.egon_etrago_link_timeseries
 	 	WHERE scn_name='eGon2035_lowflex'
 	);
     
+-- Copy relevant load components including time series
+DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex';
+DELETE FROM grid.egon_etrago_load_timeseries WHERE scn_name='eGon2035_lowflex'; 
+
+INSERT INTO grid.egon_etrago_load
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		load_id, 
+		bus,
+		type,
+		carrier,
+		p_set,
+		q_set,
+		sign		
+    FROM grid.egon_etrago_load 
+	WHERE scn_name='eGon2035';
+
+INSERT INTO grid.egon_etrago_load_timeseries
+    SELECT 
+		'eGon2035_lowflex' as scn_name, 
+		load_id, 
+		temp_id, 
+		p_set, 
+		q_set
+    FROM grid.egon_etrago_load_timeseries 
+	WHERE scn_name='eGon2035';
+    
 --Drops stores with carriers 'dsm', 'rural_heat_store',
 --'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_store.
 INSERT INTO grid.egon_etrago_store
