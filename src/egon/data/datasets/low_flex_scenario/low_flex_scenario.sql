@@ -1,13 +1,41 @@
---Drops buses with carriers 'dsm', 'rural_heat_store',
---'central_heat_store' and 'H2_saltcavern' from grid.egon_etrago_bus.
+-- Copy relevant buses and bus time series
+DELETE FROM grid.egon_etrago_bus WHERE scn_name='eGon2035_lowflex';
+DELETE FROM grid.egon_etrago_bus_timeseries WHERE scn_name='eGon2035_lowflex';
+
 INSERT INTO grid.egon_etrago_bus
-    SELECT 'eGon2035_lowflex' as scn_name, bus_id, v_nom, type, carrier, v_mag_pu_set, v_mag_pu_min, v_mag_pu_max,
-	x, y, geom, country
-    FROM grid.egon_etrago_bus WHERE scn_name='eGon2035';
-DELETE FROM grid.egon_etrago_bus
-WHERE scn_name = 'eGon2035_lowflex' AND (carrier='dsm' OR carrier='rural_heat_store' 
-	   OR carrier='central_heat_store'
-	  OR carrier='H2_saltcavern');
+    SELECT 
+	'eGon2035_lowflex' as scn_name, 
+	bus_id, 
+	v_nom, 
+	type, 
+	carrier, 
+	v_mag_pu_set, 
+	v_mag_pu_min, 
+	v_mag_pu_max,
+	x, 
+	y, 
+	geom, 
+	country
+    FROM grid.egon_etrago_bus 
+	WHERE scn_name='eGon2035'
+	AND carrier NOT IN 
+		('dsm', 
+		 'rural_heat_store', 
+		 'central_heat_store',
+	  	 'H2_saltcavern');
+	
+INSERT INTO grid.egon_etrago_bus_timeseries
+	SELECT 
+		'eGon2035_lowflex' as scn_name,
+		bus_id, 
+		v_mag_pu_set
+	FROM grid.egon_etrago_bus_timeseries 
+	WHERE scn_name='eGon2035'
+	AND bus_id IN
+		(SELECT bus_id 
+		 	FROM grid.egon_etrago_bus
+		 	WHERE scn_name = 'eGon2035_lowflex'); 
+
 	  
 --Changes scenario name eGon2035 to eGon2035_lowflex 
 --from grid.egon_etrago_bus_timeseries.
