@@ -1,3 +1,13 @@
+/*
+Low flex scenario
+Create a low flex scenario based on scenario 'eGon2035' by copying this scenario and
+neglecting all flexibilities provided by non-electrical sectors. 
+__copyright__   = "Hochschule Flensburg"
+__license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+__url__         = "https://github.com/openego/data_processing/blob/master/LICENSE"
+__author__      = "Alonsoju95, IlkaCu"
+*/
+
 -- Copy relevant buses and bus time series
 DELETE FROM grid.egon_etrago_bus WHERE scn_name='eGon2035_lowflex';
 DELETE FROM grid.egon_etrago_bus_timeseries WHERE scn_name='eGon2035_lowflex';
