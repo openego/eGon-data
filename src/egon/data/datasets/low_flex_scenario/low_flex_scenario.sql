@@ -32,7 +32,8 @@ INSERT INTO grid.egon_etrago_bus
 		('dsm', 
 		 'rural_heat_store', 
 		 'central_heat_store',
-	  	 'H2_saltcavern');
+	  	 'H2_saltcavern',
+		 'Li ion');
 	
 INSERT INTO grid.egon_etrago_bus_timeseries
 	SELECT 
@@ -182,7 +183,8 @@ INSERT INTO grid.egon_etrago_link
 		'central_heat_store_charger', 
 		'central_heat_store_discharger', 
 	  	'H2_to_power', 
-		'power_to_H2'
+		'power_to_H2',
+		'BEV charger'
 	);
 
 INSERT INTO grid.egon_etrago_link_timeseries
@@ -205,8 +207,11 @@ INSERT INTO grid.egon_etrago_link_timeseries
 	);
     
 -- Copy relevant load components including time series
-DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex';
-DELETE FROM grid.egon_etrago_load_timeseries WHERE scn_name='eGon2035_lowflex'; 
+DELETE FROM grid.egon_etrago_load_timeseries WHERE scn_name='eGon2035_lowflex'
+AND load_id NOT IN (
+ SELECT load_id FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV'
+)
+DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV';
 
 INSERT INTO grid.egon_etrago_load
     SELECT 
@@ -219,7 +224,8 @@ INSERT INTO grid.egon_etrago_load
 		q_set,
 		sign		
     FROM grid.egon_etrago_load 
-	WHERE scn_name='eGon2035';
+	WHERE scn_name='eGon2035'
+	AND carrier = 'land transport EV';
 
 INSERT INTO grid.egon_etrago_load_timeseries
     SELECT 
@@ -229,7 +235,12 @@ INSERT INTO grid.egon_etrago_load_timeseries
 		p_set, 
 		q_set
     FROM grid.egon_etrago_load_timeseries 
-	WHERE scn_name='eGon2035';
+	WHERE scn_name='eGon2035'
+	AND load_id IN (
+	SELECT load_id 
+	FROM grid.egon_etrago_load
+	WHERE scn_name = 'eGon2035_lowflex')
+	;
     
 -- Copy relevant storage components including time series
 DELETE FROM grid.egon_etrago_storage WHERE scn_name='eGon2035_lowflex';
@@ -315,8 +326,9 @@ INSERT INTO grid.egon_etrago_store
 		('dsm', 
 		 'rural_heat_store',
 	   	 'central_heat_store',
-	     'H2_underground');
-	  
+	     'H2_underground',
+		 'battery storage');
+
 INSERT INTO grid.egon_etrago_store_timeseries
     SELECT 
 	'eGon2035_lowflex' as scn_name, 
