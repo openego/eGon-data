@@ -800,6 +800,7 @@ def sanitycheck_pv_rooftop_buildings():
             assert isclose(
                 target,
                 merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
             ), (
                 f"{target} != "
                 f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
