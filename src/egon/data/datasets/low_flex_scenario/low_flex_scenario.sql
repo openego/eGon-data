@@ -100,7 +100,7 @@ INSERT INTO grid.egon_etrago_generator_timeseries
     FROM grid.egon_etrago_generator_timeseries 
 	WHERE scn_name='eGon2035';
 
--- Copy relevant lines including time series
+-- Copy lines including time series without copying s_max_pu 
 DELETE FROM grid.egon_etrago_line WHERE scn_name='eGon2035_lowflex';
 DELETE FROM grid.egon_etrago_line_timeseries WHERE scn_name='eGon2035_lowflex';
 
@@ -141,7 +141,7 @@ INSERT INTO grid.egon_etrago_line_timeseries
 		'eGon2035_lowflex' as scn_name, 
 		line_id, 
 		temp_id,  
-		s_max_pu 
+		NULL as s_max_pu 
     FROM grid.egon_etrago_line_timeseries 
 	WHERE scn_name='eGon2035';
     
