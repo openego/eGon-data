@@ -182,10 +182,20 @@ INSERT INTO grid.egon_etrago_link
 		'rural_heat_store_discharger', 
 		'central_heat_store_charger', 
 		'central_heat_store_discharger', 
-	  	'H2_to_power', 
-		'power_to_H2',
 		'BEV charger'
-	);
+	)
+    AND link_id NOT IN (
+        SELECT link_id FROM grid.egon_etrago_link 
+        WHERE scn_name = 'eGon2035' 
+        AND carrier IN ('H2_to_power', 'power_to_H2') 
+        AND (bus0 IN (SELECT bus_id 
+                        FROM grid.egon_etrago_bus 
+                        WHERE scn_name='eGon2035' 
+                        AND carrier= 'H2_saltcavern') 
+             OR bus1 IN (SELECT bus_id 
+                            FROM grid.egon_etrago_bus 
+                            WHERE scn_name='eGon2035' 
+                            AND carrier= 'H2_saltcavern')));
 
 INSERT INTO grid.egon_etrago_link_timeseries
     SELECT 
