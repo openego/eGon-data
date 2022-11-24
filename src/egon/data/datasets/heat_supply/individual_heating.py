@@ -207,6 +207,9 @@ from egon.data.datasets.electricity_demand_timeseries.mapping import (
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     write_table_to_postgres,
 )
+from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    reduce_mem_usage
+)
 from egon.data.datasets.heat_demand import EgonPetaHeat
 from egon.data.datasets.heat_demand_timeseries.daily import (
     EgonDailyHeatDemandPerClimateZone,
@@ -789,6 +792,7 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
     ]
 
     df_peta_demand = get_peta_demand(mvgd, scenario)
+    df_peta_demand = reduce_mem_usage(df_peta_demand)
 
     # TODO maybe return empty dataframe
     if df_peta_demand.empty:
@@ -812,12 +816,19 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         left=df_peta_demand, right=df_profiles_ids, on="zensus_population_id"
     )
 
+    df_profile_merge.demand = df_profile_merge.demand.div(df_profile_merge.buildings)
+    df_profile_merge.drop('buildings', axis='columns', inplace=True)
+
     # Merge daily demand to daily profile ids by zensus_population_id and day
     df_profile_merge = pd.merge(
         left=df_profile_merge,
         right=df_daily_demand_share,
         on=["zensus_population_id", "day_of_year"],
     )
+    df_profile_merge.demand = df_profile_merge.demand.mul(
+        df_profile_merge.daily_demand_share)
+    df_profile_merge.drop('daily_demand_share', axis='columns', inplace=True)
+    df_profile_merge = reduce_mem_usage(df_profile_merge)
 
     # Merge daily profiles by profile id
     df_profile_merge = pd.merge(
@@ -826,14 +837,15 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         left_on="selected_idp_profiles",
         right_index=True,
     )
+    df_profile_merge = reduce_mem_usage(df_profile_merge)
 
-    # Scale profiles
-    df_profile_merge["demand_ts"] = (
-        df_profile_merge["idp"]
-        .mul(df_profile_merge["daily_demand_share"])
-        .mul(df_profile_merge["demand"])
-        .div(df_profile_merge["buildings"])
-    )
+    df_profile_merge.demand = df_profile_merge.demand.mul(
+        df_profile_merge.idp.astype(float))
+    df_profile_merge.drop('idp', axis='columns', inplace=True)
+
+    df_profile_merge.rename({'demand': 'demand_ts'}, axis='columns', inplace=True)
+
+    df_profile_merge = reduce_mem_usage(df_profile_merge)
 
     return df_profile_merge.loc[:, columns]
 
