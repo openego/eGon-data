@@ -774,7 +774,7 @@ def sanitycheck_pv_rooftop_buildings():
                 # since the required data is missing for a SH run, it is
                 # implemented manually here
                 total_2035 = 84070
-                sh_2035 = 2700
+                sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
 
                 share = sh_2035 / total_2035
 
