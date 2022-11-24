@@ -284,6 +284,7 @@ class HeatPumpsPypsaEurSec(Dataset):
             version="0.0.2",
             dependencies=dependencies,
             tasks=(
+                delete_pypsa_eur_sec_csv_file,
                 delete_mvgd_ts_100RE,
                 delete_heat_peak_loads_100RE,
                 {*dyn_parallel_tasks_pypsa_eur_sec()},
@@ -1635,6 +1636,16 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
         )
+
+
+def delete_pypsa_eur_sec_csv_file():
+    """Delete pypsa eur sec minimum heat pump capacity csv before new run"""
+
+    folder = Path(".") / "input-pypsa-eur-sec"
+    file = folder / "minimum_hp_capacity_mv_grid_100RE.csv"
+    if file.is_file():
+        logger.info(f"Delete {file}")
+        os.remove(file)
 
 
 def catch_missing_buidings(buildings_decentral_heating, peak_load):
