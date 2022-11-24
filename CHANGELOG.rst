@@ -642,7 +642,7 @@ Bug Fixes
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
 * Mismatch of building bus_ids from cts_heat_demand_building_share
   and mapping table
-`#989 <https://github.com/openego/eGon-data/issues/989>`_
+  `#989 <https://github.com/openego/eGon-data/issues/989>`_
 * Fix zensus weather cells mapping
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
 
