@@ -21,7 +21,7 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
@@ -783,6 +783,7 @@ def sanitycheck_pv_rooftop_buildings():
             assert isclose(
                 target,
                 merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
             ), (
                 f"{target} != "
                 f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
