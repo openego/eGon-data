@@ -231,6 +231,8 @@ Added
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Write simBEV metadata to DB table
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
+*  Add voltage level for electricity building loads
+  `#955 <https://github.com/openego/eGon-data/issues/955>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -434,10 +436,14 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Adjust H2 industry profiles abroad for eGon2035
+  `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
+* Add eGon2021 scenario to demandregio dataset
+  `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
 
 
 Bug Fixes
@@ -630,10 +636,17 @@ Bug Fixes
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
 * Drop era5 weather cell table using cascade
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
+* Remove drop of p_set and q_set for loads without timeserie
+  `#971 <https://github.com/openego/eGon-data/issues/971>`_
 * Delete gas bus with wrong country code
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Adjust p_nom and marginal cost for OCGT in eGon2035
+  `#863 <https://github.com/openego/eGon-data/issues/863>`_
+* Mismatch of building bus_ids from cts_heat_demand_building_share
+  and mapping table
+  `#989 <https://github.com/openego/eGon-data/issues/989>`_
 * Fix zensus weather cells mapping
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
 
