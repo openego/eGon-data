@@ -3,13 +3,17 @@ This module does sanity checks for both the eGon2035 and the eGon100RE scenario
 separately where a percentage error is given to showcase difference in output
 and input values. Please note that there are missing input technologies in the
 supply tables.
-Authors: @ALonso, @dana, @nailend, @nesnoj
+Authors: @ALonso, @dana, @nailend, @nesnoj, @khelfen
 """
+from math import isclose
+from pathlib import Path
 
 from sqlalchemy import Numeric
 from sqlalchemy.sql import and_, cast, func, or_
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from egon.data import config, db, logger
 from egon.data.datasets import Dataset
@@ -37,7 +41,15 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    PV_CAP_PER_SQ_M,
+    ROOF_FACTOR,
+    SCENARIOS,
+    load_building_data,
+    scenario_data,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data
 
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
@@ -58,6 +70,7 @@ class SanityChecks(Dataset):
                 cts_electricity_demand_share,
                 cts_heat_demand_share,
                 sanitycheck_emobility_mit,
+                sanitycheck_pv_rooftop_buildings,
             },
         )
 
@@ -662,6 +675,119 @@ def cts_heat_demand_share(rtol=1e-5):
     )
 
     logger.info("The aggregated demand shares equal to one!.")
+
+
+def sanitycheck_pv_rooftop_buildings():
+    def egon_power_plants_pv_roof_building():
+        sql = """
+        SELECT *
+        FROM supply.egon_power_plants_pv_roof_building
+        """
+
+        return db.select_dataframe(sql, index_col="index")
+
+    pv_roof_df = egon_power_plants_pv_roof_building()
+
+    valid_buildings_gdf = load_building_data()
+
+    valid_buildings_gdf = valid_buildings_gdf.assign(
+        bus_id=valid_buildings_gdf.bus_id.astype(int),
+        overlay_id=valid_buildings_gdf.overlay_id.astype(int),
+        max_cap=valid_buildings_gdf.building_area.multiply(
+            ROOF_FACTOR * PV_CAP_PER_SQ_M
+        ),
+    )
+
+    merge_df = pv_roof_df.merge(
+        valid_buildings_gdf[["building_area"]],
+        how="left",
+        left_on="building_id",
+        right_index=True,
+    )
+
+    assert (
+        len(merge_df.loc[merge_df.building_area.isna()]) == 0
+    ), f"{len(merge_df.loc[merge_df.building_area.isna()])} != 0"
+
+    scenarios = ["status_quo", "eGon2035"]
+
+    base_path = Path(egon.data.__path__[0]).resolve()
+
+    res_dir = base_path / "sanity_checks"
+
+    res_dir.mkdir(parents=True, exist_ok=True)
+
+    for scenario in scenarios:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
+
+        scenario_df = merge_df.loc[merge_df.scenario == scenario]
+
+        logger.info(
+            scenario + " Capacity:\n" + str(scenario_df.capacity.describe())
+        )
+
+        small_gens_df = scenario_df.loc[scenario_df.capacity < 100]
+
+        sns.histplot(data=small_gens_df, x="capacity", ax=ax1).set_title(
+            scenario
+        )
+
+        sns.scatterplot(
+            data=small_gens_df, x="capacity", y="building_area", ax=ax2
+        ).set_title(scenario)
+
+        plt.tight_layout()
+
+        plt.savefig(
+            res_dir / f"{scenario}_pv_rooftop_distribution.png",
+            bbox_inches="tight",
+        )
+
+    for scenario in SCENARIOS:
+        if scenario == "eGon2035":
+            assert isclose(
+                scenario_data(scenario=scenario).capacity.sum(),
+                merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
+            ), (
+                f"{scenario_data(scenario=scenario).capacity.sum()} != "
+                f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
+            )
+        elif scenario == "eGon100RE":
+            sources = config.datasets()["solar_rooftop"]["sources"]
+
+            target = db.select_dataframe(
+                f"""
+                SELECT capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE carrier = 'solar_rooftop'
+                AND scenario_name = '{scenario}'
+                """
+            ).capacity[0]
+
+            dataset = config.settings()["egon-data"]["--dataset-boundary"]
+
+            if dataset == "Schleswig-Holstein":
+                # since the required data is missing for a SH run, it is implemented
+                # manually here
+                total_2035 = 84070
+                sh_2035 = 2700
+
+                share = sh_2035 / total_2035
+
+                target *= share
+
+            assert isclose(
+                target,
+                merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
+            ), (
+                f"{target} != "
+                f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
+            )
+        else:
+            raise ValueError(f"Scenario {scenario} is not valid.")
 
 
 def sanitycheck_emobility_mit():
