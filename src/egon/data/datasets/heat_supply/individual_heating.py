@@ -1627,12 +1627,9 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
     if not file.is_file():
         logger.info(f"Create {file}")
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
-            file, mode="w", header=False
+            file, mode="w", header=True
         )
     else:
-        logger.info(f"Remove {file}")
-        os.remove(file)
-        logger.info(f"Create {file}")
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
         )
