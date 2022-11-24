@@ -17,6 +17,10 @@ from egon.data.datasets.power_plants.conventional import (
     select_no_chp_combustion_mastr,
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    geocode_mastr_data,
+    pv_rooftop_to_buildings,
+)
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
@@ -45,7 +49,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.10",
+            version="0.0.14",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -55,7 +59,11 @@ class PowerPlants(Dataset):
                 {
                     wind_onshore.insert,
                     pv_ground_mounted.insert,
-                    pv_rooftop_per_mv_grid,
+                    (
+                        pv_rooftop_per_mv_grid,
+                        geocode_mastr_data,
+                        pv_rooftop_to_buildings,
+                    ),
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,
@@ -791,7 +799,8 @@ def allocate_other_power_plants():
         """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""  # noqa: E501
     )
     mastr_geothermal = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
-        """EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' and Technologie == 'ORCOrganicRankineCycleAnlage'"""  # noqa: E501
+        "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
+        "and Technologie == 'ORCOrganicRankineCycleAnlage'"
     )
 
     mastr_sg = mastr_sludge.append(mastr_geothermal)

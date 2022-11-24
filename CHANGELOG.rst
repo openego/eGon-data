@@ -201,6 +201,10 @@ Added
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
 * Add motorized individual travel
   `#553 <https://github.com/openego/eGon-data/issues/553>`_
+* Allocating MaStR PV rooftop power plants to OSM and synthetic buildings.
+  Desaggregating PV rooftop scenarios to mv grid districts and OSM and synthetic
+  buildings.
+  `#684 <https://github.com/openego/eGon-data/issues/684>`_
 * Add mapping zensus - weather cells
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
@@ -611,7 +615,7 @@ Bug Fixes
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
 * Fix gas costs
-  `#830 <https://github.com/openego/eGon-data/issues/847>`_
+  `#847 <https://github.com/openego/eGon-data/issues/847>`_
 * Add imports that have been wrongly deleted
   `#849 <https://github.com/openego/eGon-data/issues/849>`_
 * Fix final demand of heat demand timeseries
@@ -644,7 +648,9 @@ Bug Fixes
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
 * Mismatch of building bus_ids from cts_heat_demand_building_share
   and mapping table
-`#989 <https://github.com/openego/eGon-data/issues/989>`_
+  `#989 <https://github.com/openego/eGon-data/issues/989>`_
+* Fix zensus weather cells mapping
+  `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
