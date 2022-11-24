@@ -10,6 +10,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
     load_building_data,
+    scenario_data,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -158,10 +159,10 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
         if dataset == "Schleswig-Holstein":
-            # since the required data is missing for a SH run, it is implemented
-            # manually here
+            # since the required data is missing for a SH run, it is
+            # implemented manually here
             total_2035 = 84070
-            sh_2035 = 2700
+            sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
 
             share = sh_2035 / total_2035
 
@@ -187,8 +188,8 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         }
     )
 
-    # ensure that no more pv rooftop capacity is allocated to any mv grid district than
-    # there is rooftop potential
+    # ensure that no more pv rooftop capacity is allocated to any mv grid
+    # district than there is rooftop potential
     max_cap_per_bus_df = (
         valid_buildings_gdf[["max_cap", "bus_id"]].groupby("bus_id").sum()
         / 1000
@@ -225,8 +226,8 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
     if loss < 0:
         logger.debug(
-            f"{loss:g} MW got redistributed from MV grids with too little rooftop "
-            f"potential towards other MV grids."
+            f"{loss:g} MW got redistributed from MV grids with too little "
+            f"rooftop potential towards other MV grids."
         )
 
     # Select feedin timeseries
