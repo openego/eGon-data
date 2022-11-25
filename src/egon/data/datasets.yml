@@ -834,9 +834,15 @@ DSM_CTS_industry:
     ind_osm_loadcurves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    ind_osm_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     ind_sites_loadcurves:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
     ind_sites:
       schema: 'demand'
       table: 'egon_industrial_sites'
