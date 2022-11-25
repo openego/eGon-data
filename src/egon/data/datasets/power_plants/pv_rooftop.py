@@ -1,5 +1,7 @@
 """The module containing all code dealing with pv rooftop distribution.
 """
+from pathlib import Path
+
 from loguru import logger
 from numpy import isclose
 import geopandas as gpd
@@ -159,9 +161,21 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
         if dataset == "Schleswig-Holstein":
-            # since the required data is missing for a SH run, it is
-            # implemented manually here
-            total_2035 = 84070
+            sources = config.datasets()["scenario_input"]["sources"]
+
+            path = Path(
+                f"./data_bundle_egon_data/nep2035_version2021/"
+                f"{sources['eGon2035']['capacities']}"
+            ).resolve()
+
+            total_2035 = (
+                pd.read_excel(
+                    path,
+                    sheet_name="1.Entwurf_NEP2035_V2021",
+                    index_col="Unnamed: 0",
+                ).at["PV (Aufdach)", "Summe"]
+                * 1000
+            )
             sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
 
             share = sh_2035 / total_2035
