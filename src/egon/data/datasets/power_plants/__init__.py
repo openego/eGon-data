@@ -22,7 +22,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
 import egon.data.config
-import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data
+import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
@@ -796,7 +796,7 @@ def allocate_other_power_plants():
 
     # Select power plants representing carrier 'others' from MaStR files
     mastr_sludge = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
-        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""
+        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""  # noqa: E501
     )
     mastr_geothermal = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "

@@ -21,7 +21,7 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
@@ -49,6 +49,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     scenario_data,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
 import egon.data
 
 TESTMODE_OFF = (
@@ -60,7 +61,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
@@ -71,6 +72,7 @@ class SanityChecks(Dataset):
                 cts_heat_demand_share,
                 sanitycheck_emobility_mit,
                 sanitycheck_pv_rooftop_buildings,
+                sanitycheck_home_batteries,
             },
         )
 
@@ -769,10 +771,22 @@ def sanitycheck_pv_rooftop_buildings():
             dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
             if dataset == "Schleswig-Holstein":
-                # since the required data is missing for a SH run, it is implemented
-                # manually here
-                total_2035 = 84070
-                sh_2035 = 2700
+                sources = config.datasets()["scenario_input"]["sources"]
+
+                path = Path(
+                    f"./data_bundle_egon_data/nep2035_version2021/"
+                    f"{sources['eGon2035']['capacities']}"
+                ).resolve()
+
+                total_2035 = (
+                    pd.read_excel(
+                        path,
+                        sheet_name="1.Entwurf_NEP2035_V2021",
+                        index_col="Unnamed: 0",
+                    ).at["PV (Aufdach)", "Summe"]
+                    * 1000
+                )
+                sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
 
                 share = sh_2035 / total_2035
 
@@ -1345,3 +1359,48 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
+
+
+def sanitycheck_home_batteries():
+    # get constants
+    constants = config.datasets()["home_batteries"]["constants"]
+    scenarios = constants["scenarios"]
+    cbat_pbat_ratio = get_cbat_pbat_ratio()
+
+    sources = config.datasets()["home_batteries"]["sources"]
+    targets = config.datasets()["home_batteries"]["targets"]
+
+    for scenario in scenarios:
+        # get home battery capacity per mv grid id
+        sql = f"""
+        SELECT el_capacity as p_nom, bus_id FROM
+        {sources["storage"]["schema"]}
+        .{sources["storage"]["table"]}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        """
+
+        home_batteries_df = db.select_dataframe(sql, index_col="bus_id")
+
+        home_batteries_df = home_batteries_df.assign(
+            capacity=home_batteries_df.p_nom * cbat_pbat_ratio
+        )
+
+        sql = f"""
+        SELECT * FROM
+        {targets["home_batteries"]["schema"]}
+        .{targets["home_batteries"]["table"]}
+        WHERE scenario = '{scenario}'
+        """
+
+        home_batteries_buildings_df = db.select_dataframe(
+            sql, index_col="index"
+        )
+
+        df = (
+            home_batteries_buildings_df[["bus_id", "p_nom", "capacity"]]
+            .groupby("bus_id")
+            .sum()
+        )
+
+        assert (home_batteries_df.round(6) == df.round(6)).all().all()
