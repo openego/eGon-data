@@ -61,7 +61,7 @@ class EgonPowerPlantsPv(Base):
     feedin_type = Column(String(47), nullable=True) # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
 
-    geom = Column(Geometry("POINT", 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
 
 class EgonPowerPlantsWind(Base):
@@ -88,7 +88,7 @@ class EgonPowerPlantsWind(Base):
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
 
-    geom = Column(Geometry("POINT", 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
 
 class EgonPowerPlantsBiomass(Base):
@@ -114,7 +114,7 @@ class EgonPowerPlantsBiomass(Base):
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
 
-    geom = Column(Geometry("POINT", 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
 
 class EgonPowerPlantsHydro(Base):
@@ -138,7 +138,7 @@ class EgonPowerPlantsHydro(Base):
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
 
-    geom = Column(Geometry("POINT", 4326), index=True)
+    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
 
 class EgonPowerPlants(Base):
