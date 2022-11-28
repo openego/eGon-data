@@ -152,7 +152,7 @@ class EgonPowerPlants(Base):
     voltage_level = Column(Integer)
     weather_cell_id = Column(Integer)
     scenario = Column(String)
-    geom = Column(Geometry("POINT", 4326))
+    geom = Column(Geometry("POINT", 4326), index=True)
 
 
 class PowerPlants(Dataset):
