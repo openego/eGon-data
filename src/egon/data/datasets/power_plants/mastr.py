@@ -1,4 +1,14 @@
-"""Import MaStR dataset and write to DB tables"""
+"""Import MaStR dataset and write to DB tables
+
+Data dump from Marktstammdatenregister is imported into the database. Only the
+following technologies are taken into account:
+* PV
+* wind turbines
+* biomass/biogas plants
+* hydro plants
+
+The data is used especially for the generation of status quo grids by ding0.
+"""
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
