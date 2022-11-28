@@ -30,7 +30,7 @@ class EgonPowerPlantsPv(Base):
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(21), nullable=True)  # Bundesland
+    federal_state = Column(String(31), nullable=True)  # Bundesland
 
     site_type = Column(String(69), nullable=True)  # Lage
     usage_sector = Column(String(36), nullable=True)  # Nutzungsbereich
@@ -71,7 +71,7 @@ class EgonPowerPlantsWind(Base):
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(21), nullable=True)  # Bundesland
+    federal_state = Column(String(31), nullable=True)  # Bundesland
 
     site_type = Column(String(17), nullable=True)  # Lage
     manufacturer_name = Column(String(100), nullable=True)  # Hersteller
@@ -98,7 +98,7 @@ class EgonPowerPlantsBiomass(Base):
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(21), nullable=True)  # Bundesland
+    federal_state = Column(String(31), nullable=True)  # Bundesland
 
     technology = Column(String(45), nullable=True)  # Technologie
     fuel_name = Column(String(52), nullable=True)  # Hauptbrennstoff
@@ -124,7 +124,7 @@ class EgonPowerPlantsHydro(Base):
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(21), nullable=True)  # Bundesland
+    federal_state = Column(String(31), nullable=True)  # Bundesland
 
     type = Column(Integer, nullable=True)  # ArtDerWasserkraftanlage
     water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
