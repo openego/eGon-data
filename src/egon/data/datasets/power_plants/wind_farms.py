@@ -155,7 +155,7 @@ def generate_wind_farms():
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]
     # Delete all the offshore wind turbines
-    wea = wea[wea["Kuestenentfernung"] == 0]
+    wea = wea.loc[wea["Lage"] == "Windkraft an Land"]
     # the variable map_ap_wea_farm have the connection point of all the available wt
     # in the dataframe bus.
     map_ap_wea_farm = {}
