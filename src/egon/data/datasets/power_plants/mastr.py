@@ -11,7 +11,6 @@ The data is used especially for the generation of status quo grids by ding0.
 """
 from geoalchemy2 import Geometry
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Column,
     DateTime,
@@ -24,15 +23,14 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
 
-import egon.data.config
 from egon.data import db
+import egon.data.config
 
 Base = declarative_base()
 
 TESTMODE_OFF = (
-    egon.data.config.settings()[
-        "egon-data"
-    ]["--dataset-boundary"] == "Everything"
+    egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+    == "Everything"
 )
 
 
@@ -229,7 +227,7 @@ def import_mastr():
                 + list(cols_mapping[tech].keys())
             ),
             index_col=None,
-            dtype={"Postleitzahl": str}
+            dtype={"Postleitzahl": str},
         ).rename(columns=cols_mapping)
 
         # drop units outside of Germany
@@ -239,7 +237,11 @@ def import_mastr():
 
         # filter for SH units if in testmode
         if not TESTMODE_OFF:
-            print("    TESTMODE: Dropping all units outside of Schleswig-Holstein...")
+            print(
+                """    TESTMODE:
+                Dropping all units outside of Schleswig-Holstein...
+                """
+            )
             units = units.loc[units.Bundesland == "SchleswigHolstein"]
 
         # merge and rename voltage level
@@ -248,7 +250,7 @@ def import_mastr():
             locations[["MaStRNummer", "Spannungsebene"]],
             left_on="LokationMastrNummer",
             right_on="MaStRNummer",
-            how="left"
+            how="left",
         )
         vlevel_mapping = {
             "Höchstspannung": 1,
@@ -266,22 +268,23 @@ def import_mastr():
         units = gpd.GeoDataFrame(
             units,
             geometry=gpd.points_from_xy(
-                units["Laengengrad"], units["Breitengrad"],
-                crs=4326
+                units["Laengengrad"], units["Breitengrad"], crs=4326
             ),
-            crs=4326
+            crs=4326,
         )
 
         # drop unnecessary and rename columns
         print("  Reformatting...")
-        units.drop(columns=[
-            "LokationMastrNummer",
-            "MaStRNummer",
-            "Laengengrad",
-            "Breitengrad",
-            "Spannungsebene",
-            "Land"],
-            inplace=True
+        units.drop(
+            columns=[
+                "LokationMastrNummer",
+                "MaStRNummer",
+                "Laengengrad",
+                "Breitengrad",
+                "Spannungsebene",
+                "Land",
+            ],
+            inplace=True,
         )
         mapping = cols_mapping["all"].copy()
         mapping.update(cols_mapping[tech])
