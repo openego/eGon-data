@@ -106,7 +106,9 @@ def create_tables():
         EgonPowerPlantsHydro,
     ]
     for t in tables:
-        db.execute_sql(f"DROP TABLE IF EXISTS {t.schema}.{t.name} CASCADE;")
+        db.execute_sql(
+            f"DROP TABLE IF EXISTS {t.__table_args__['schema']}.{t.__tablename__} CASCADE;"
+        )
         t.__table__.create(bind=engine, checkfirst=True)
 
 
