@@ -4,6 +4,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+import egon.data.config
 from egon.data import db
 
 
@@ -56,7 +57,7 @@ def insert():
     )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
     target_power_df = target_power_df.to_crs(3035)
-    
+
     #Create the shape for full Germany
     target_power_df.at['DE', 'geom'] = target_power_df['geom'].unary_union
     target_power_df.at['DE', 'name'] = 'Germany'
@@ -112,6 +113,9 @@ def generate_wind_farms():
     *No parameters required
 
     """
+    # get config
+    cfg = egon.data.config.datasets()["power_plants"]
+
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
     def filter_current_wf(wf_geometry):
@@ -146,11 +150,11 @@ def generate_wind_farms():
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
-    bus = pd.read_csv("location_elec_generation_raw.csv")
+    bus = pd.read_csv(cfg["sources"]["mastr_location"])
     # Drop all the rows without connection point
     bus.dropna(subset=["NetzanschlusspunktMastrNummer"], inplace=True)
     # wea has info of each wind turbine in Germany.
-    wea = pd.read_csv("bnetza_mastr_wind_cleaned.csv")
+    wea = pd.read_csv(cfg["sources"]["mastr_wind"])
 
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]
@@ -488,7 +492,7 @@ def generate_map():
         sql = "SELECT geom FROM grid.egon_mv_grid_district"
         mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
         mv_districts = mv_districts.to_crs(3035)
-    
+
         mv_districts["power"] = 0.0
         for std in mv_districts.index:
             try:
@@ -497,7 +501,7 @@ def generate_map():
                 ).el_capacity.sum()
             except:
                 print(std)
-    
+
         fig, ax = plt.subplots(1, 1)
         mv_districts.geom.plot(linewidth=0.2, ax=ax, color="black")
         mv_districts.plot(
