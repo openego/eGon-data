@@ -188,6 +188,7 @@ def create_tables():
     None.
     """
 
+    # Tables for future scenarios
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
     engine = db.engine()
@@ -198,6 +199,19 @@ def create_tables():
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
+
+    # Tables for status quo
+    tables = [
+        EgonPowerPlantsWind,
+        EgonPowerPlantsPv,
+        EgonPowerPlantsBiomass,
+        EgonPowerPlantsHydro,
+    ]
+    for t in tables:
+        db.execute_sql(
+            f"DROP TABLE IF EXISTS {t.schema}.{t.name} CASCADE;"
+        )
+        t.__table__.create(bind=engine, checkfirst=True)
 
 
 def scale_prox2now(df, target, level="federal_state"):
