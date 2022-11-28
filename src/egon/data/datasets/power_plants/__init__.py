@@ -18,6 +18,7 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
+from egon.data.datasets.power_plants.mastr import import_mastr
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     geocode_mastr_data,
@@ -163,6 +164,7 @@ class PowerPlants(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
+                import_mastr,
                 insert_hydro_biomass,
                 allocate_conventional_non_chp_power_plants,
                 allocate_other_power_plants,
