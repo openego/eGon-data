@@ -446,6 +446,8 @@ Changed
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
 * Add eGon2021 scenario to demandregio dataset
   `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
+* Update MaStR dataset
+  `#519 <https://github.com/openego/eGon-data/issues/519>`_
 
 
 Bug Fixes
