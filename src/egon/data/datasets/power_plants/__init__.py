@@ -59,7 +59,7 @@ class EgonPowerPlantsPv(Base):
     capacity = Column(Float) # Nettonennleistung
     capacity_inverter = Column(Float, nullable=True) # ZugeordneteWirkleistungWechselrichter in MW
     feedin_type = Column(String(47), nullable=True) # Einspeisungsart
-    voltage_level = Column(Integer)
+    voltage_level = Column(Integer, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True)
 
@@ -86,7 +86,7 @@ class EgonPowerPlantsWind(Base):
 
     capacity = Column(Float) # Nettonennleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer)
+    voltage_level = Column(Integer, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True)
 
@@ -112,7 +112,7 @@ class EgonPowerPlantsBiomass(Base):
     capacity = Column(Float) # Nettonennleistung
     th_capacity = Column(Float, nullable=True) # ThermischeNutzleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer)
+    voltage_level = Column(Integer, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True)
 
@@ -136,7 +136,7 @@ class EgonPowerPlantsHydro(Base):
 
     capacity = Column(Float, nullable=False) # Nettonennleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer)
+    voltage_level = Column(Integer, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True)
 
