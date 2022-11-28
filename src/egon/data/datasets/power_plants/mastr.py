@@ -281,6 +281,12 @@ def import_mastr() -> None:
             ),
             crs=4326,
         )
+        units_wo_geom = len(
+            units.loc[(units.Laengengrad.isna() | units.Laengengrad.isna())]
+        )
+        print(
+            f"    {units_wo_geom}/{len(units)} units do not have a geometry!"
+        )
 
         # drop unnecessary and rename columns
         print("  Reformatting...")
