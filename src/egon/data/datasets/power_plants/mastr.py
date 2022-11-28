@@ -144,7 +144,7 @@ class EgonPowerPlantsHydro(Base):
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
 
-    type = Column(Integer, nullable=True)  # ArtDerWasserkraftanlage
+    plant_type = Column(Integer, nullable=True)  # ArtDerWasserkraftanlage
     water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
 
     capacity = Column(Float, nullable=True)  # Nettonennleistung
@@ -178,7 +178,7 @@ def import_mastr():
             "NebenausrichtungNeigungswinkel": "orientation_secondary_angle",
             "EinheitlicheAusrichtungUndNeigungswinkel": "orientation_uniform",
             "AnzahlModule": "module_count",
-            "ZugeordneteWirkleistungWechselrichter": "capacity_inverter",
+            "zugeordneteWirkleistungWechselrichter": "capacity_inverter",
         },
         "wind": {
             "Lage": "site_type",
@@ -194,7 +194,7 @@ def import_mastr():
             "ThermischeNutzleistung": "th_capacity",
         },
         "hydro": {
-            "ArtDerWasserkraftanlage": "type",
+            "ArtDerWasserkraftanlage": "plant_type",
             "ArtDesZuflusses": "water_origin",
         },
     }
