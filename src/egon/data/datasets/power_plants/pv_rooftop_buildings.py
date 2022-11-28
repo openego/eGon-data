@@ -61,7 +61,6 @@ SEED = int(config.settings()["egon-data"]["--random-seed"])
 MASTR_RELEVANT_COLS = [
     "EinheitMastrNummer",
     "Bruttoleistung",
-    "StatisikFlag",
     "Bruttoleistung_extended",
     "Nettonennleistung",
     "InstallierteLeistung",
@@ -88,7 +87,6 @@ MASTR_RELEVANT_COLS = [
 MASTR_DTYPES = {
     "EinheitMastrNummer": str,
     "Bruttoleistung": float,
-    "StatisikFlag": str,
     "Bruttoleistung_extended": float,
     "Nettonennleistung": float,
     "InstallierteLeistung": float,
@@ -260,10 +258,9 @@ def mastr_data(
     )
 
     mastr_df = mastr_df.loc[
-        (mastr_df.StatisikFlag == "B")
-        & (mastr_df.EinheitBetriebsstatus == "InBetrieb")
+        (mastr_df.EinheitBetriebsstatus == "InBetrieb")
         & (mastr_df.Land == "Deutschland")
-        & (mastr_df.Lage == "BaulicheAnlagen")
+        & (mastr_df.Lage == "Bauliche Anlagen (Hausdach, Gebäude und Fassade)")
     ]
 
     if (
