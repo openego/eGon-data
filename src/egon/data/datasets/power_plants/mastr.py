@@ -21,11 +21,19 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
 import pandas as pd
 
 import egon.data.config
+from egon.data import db
 
 Base = declarative_base()
+
+TESTMODE_OFF = (
+    egon.data.config.settings()[
+        "egon-data"
+    ]["--dataset-boundary"] == "Everything"
+)
 
 
 class EgonPowerPlantsPv(Base):
@@ -147,6 +155,7 @@ class EgonPowerPlantsHydro(Base):
 
 
 def import_mastr():
+    engine = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
 
     cols_mapping = {
@@ -209,11 +218,86 @@ def import_mastr():
     # import units
     technologies = ["pv", "wind", "biomass", "hydro"]
     for tech in technologies:
+        # read units
+        print(f"Importing MaStR dataset: {tech}:")
+        print("  Reading CSV and filtering data...")
         units = pd.read_csv(
             source_files[tech],
             usecols=(
-                list(cols_mapping["all"].keys())
+                ["LokationMastrNummer", "Laengengrad", "Breitengrad", "Land"]
+                + list(cols_mapping["all"].keys())
                 + list(cols_mapping[tech].keys())
             ),
             index_col=None,
+            dtype={"Postleitzahl": str}
         ).rename(columns=cols_mapping)
+
+        # drop units outside of Germany
+        len_old = len(units)
+        units = units.loc[units.Land == "Deutschland"]
+        print(f"    {len_old-len(units)} units outside of Germany dropped...")
+
+        # filter for SH units if in testmode
+        if not TESTMODE_OFF:
+            print("    TESTMODE: Dropping all units outside of Schleswig-Holstein...")
+            units = units.loc[units.Bundesland == "SchleswigHolstein"]
+
+        # merge and rename voltage level
+        print("  Merging with locations and allocate voltage level...")
+        units = units.merge(
+            locations[["MaStRNummer", "Spannungsebene"]],
+            left_on="LokationMastrNummer",
+            right_on="MaStRNummer",
+            how="left"
+        )
+        vlevel_mapping = {
+            "Höchstspannung": 1,
+            "UmspannungZurHochspannung": 2,
+            "Hochspannung": 3,
+            "UmspannungZurMittelspannung": 4,
+            "Mittelspannung": 5,
+            "UmspannungZurNiederspannung": 6,
+            "Niederspannung": 7,
+        }
+        units["voltage_level"] = units.Spannungsebene.replace(vlevel_mapping)
+
+        # add geometry
+        print("  Adding geometries...")
+        units = gpd.GeoDataFrame(
+            units,
+            geometry=gpd.points_from_xy(
+                units["Laengengrad"], units["Breitengrad"],
+                crs=4326
+            ),
+            crs=4326
+        )
+
+        # drop unnecessary and rename columns
+        print("  Reformatting...")
+        units.drop(columns=[
+            "LokationMastrNummer",
+            "MaStRNummer",
+            "Laengengrad",
+            "Breitengrad",
+            "Spannungsebene",
+            "Land"],
+            inplace=True
+        )
+        mapping = cols_mapping["all"].copy()
+        mapping.update(cols_mapping[tech])
+        mapping.update({"geometry": "geom"})
+        units.rename(columns=mapping, inplace=True)
+        units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
+        if tech == "hydro":
+            units["plant_type"] = units.plant_type.fillna(-1).astype(int)
+        units.set_geometry("geom", inplace=True)
+        units["id"] = range(0, len(units))
+
+        # write to DB
+        print("  Writing to DB...")
+        units.to_postgis(
+            name=target_tables[tech].__tablename__,
+            con=engine,
+            if_exists="append",
+            schema=target_tables[tech].__table_args__["schema"],
+        )
