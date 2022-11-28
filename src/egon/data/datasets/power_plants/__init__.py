@@ -402,7 +402,9 @@ def assign_voltage_level(mastr_loc, cfg):
     if "LokationMastrNummer" in mastr_loc.columns:
         location = pd.read_csv(
             cfg["sources"]["mastr_location"],
-            usecols=["LokationMastrNummer", "Spannungsebene"],
+            usecols=["MaStRNummer", "Spannungsebene"],
+        ).rename(
+            columns={"MaStRNummer": "LokationMastrNummer"}
         ).set_index("LokationMastrNummer")
 
         location = location[~location.index.duplicated(keep="first")]
