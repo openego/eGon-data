@@ -798,7 +798,7 @@ def allocate_other_power_plants():
 
     # Select power plants representing carrier 'others' from MaStR files
     mastr_sludge = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
-        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""  # noqa: E501
+        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klärschlamm'"""  # noqa: E501
     )
     mastr_geothermal = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
