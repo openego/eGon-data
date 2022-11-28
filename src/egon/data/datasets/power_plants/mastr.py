@@ -49,7 +49,7 @@ class EgonPowerPlantsPv(Base):
     )  # EinheitlicheAusrichtungUndNeigungswinkel
     module_count = Column(Float, nullable=True)  # AnzahlModule
 
-    capacity = Column(Float)  # Nettonennleistung
+    capacity = Column(Float, nullable=True)  # Nettonennleistung
     capacity_inverter = Column(
         Float, nullable=True
     )  # ZugeordneteWirkleistungWechselrichter in MW
@@ -79,7 +79,7 @@ class EgonPowerPlantsWind(Base):
     hub_height = Column(Float, nullable=True)  # Nabenhoehe
     rotor_diameter = Column(Float, nullable=True)  # Rotordurchmesser
 
-    capacity = Column(Float)  # Nettonennleistung
+    capacity = Column(Float, nullable=True)  # Nettonennleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
 
@@ -104,7 +104,7 @@ class EgonPowerPlantsBiomass(Base):
     fuel_name = Column(String(52), nullable=True)  # Hauptbrennstoff
     fuel_type = Column(String(19), nullable=True)  # Biomasseart
 
-    capacity = Column(Float)  # Nettonennleistung
+    capacity = Column(Float, nullable=True)  # Nettonennleistung
     th_capacity = Column(Float, nullable=True)  # ThermischeNutzleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
@@ -129,7 +129,7 @@ class EgonPowerPlantsHydro(Base):
     type = Column(Integer, nullable=True)  # ArtDerWasserkraftanlage
     water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
 
-    capacity = Column(Float, nullable=False)  # Nettonennleistung
+    capacity = Column(Float, nullable=True)  # Nettonennleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
 
