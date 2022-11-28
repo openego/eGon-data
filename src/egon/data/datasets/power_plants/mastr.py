@@ -152,7 +152,8 @@ class EgonPowerPlantsHydro(Base):
     geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
 
-def import_mastr():
+def import_mastr() -> None:
+    """Import MaStR data into database"""
     engine = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
 
@@ -212,6 +213,14 @@ def import_mastr():
 
     # import locations
     locations = pd.read_csv(cfg["sources"]["mastr_location"], index_col=None)
+
+    # import grid districts
+    mv_grid_districts = db.select_geodataframe(
+        f"""
+        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        """,
+        epsg=4326,
+    )
 
     # import units
     technologies = ["pv", "wind", "biomass", "hydro"]
@@ -295,6 +304,15 @@ def import_mastr():
             units["plant_type"] = units.plant_type.fillna(-1).astype(int)
         units.set_geometry("geom", inplace=True)
         units["id"] = range(0, len(units))
+
+        # assign bus ids
+        print("  Assigning bus ids...")
+        units = (
+            units.loc[~units.geom.x.isna()]
+            .sjoin(mv_grid_districts[["bus_id", "geom"]], how="left")
+            .drop(columns=["index_right"])
+        )
+        units["bus_id"] = units.bus_id.fillna(-1).astype(int)
 
         # write to DB
         print("  Writing to DB...")
