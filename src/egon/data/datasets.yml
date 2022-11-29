@@ -732,6 +732,9 @@ electrical_load_curves_industry:
     egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
+    egon_ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
   targets:
     osm_load:
       schema: 'demand'
