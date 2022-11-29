@@ -49,7 +49,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.14.dev",
+            version="0.0.15",
             dependencies=dependencies,
             tasks=(
                 create_tables,

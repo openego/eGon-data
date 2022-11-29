@@ -1,3 +1,37 @@
+"""
+Home Battery allocation to buildings
+
+Main module for allocation of home batteries onto buildings and sizing them
+depending on pv rooftop system size.
+
+**Contents of this module**
+* Creation of DB tables
+* Allocate given home battery capacity per mv grid to buildings with pv rooftop
+  systems. The sizing of the home battery system depends on the size of the
+  pv rooftop system and can be set within the *datasets.yml*. Default sizing is
+  1:1 between the pv rooftop capacity (kWp) and the battery capacity (kWh).
+* Write results to DB
+
+**Configuration**
+
+The config of this dataset can be found in *datasets.yml* in section
+*home_batteries*.
+
+**Scenarios and variations**
+
+Assumptions can be changed within the *datasets.yml*.
+
+Only buildings with a pv rooftop systems are considered within the allocation
+process. The default sizing of home batteries is 1:1 between the pv rooftop
+capacity (kWp) and the battery capacity (kWh). Reaching the exact value of the
+allocation of battery capacities per grid area leads to slight deviations from
+this specification.
+
+## Methodology
+
+The selection of buildings is done randomly until a result is reached which is
+close to achieving the sizing specification.
+"""
 from loguru import logger
 from numpy.random import RandomState
 from sqlalchemy import Column, Float, Integer, String

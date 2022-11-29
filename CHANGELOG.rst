@@ -425,10 +425,10 @@ Changed
   `#803 <https://github.com/openego/eGon-data/issues/803>`_
 * Integrate additional industrial electricity demands for eGon100RE
   `#817 <https://github.com/openego/eGon-data/issues/817>`_
+* Set non extendable gas components from p-e-s as so for eGon100RE
+  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Integrate new data bundle using zenodo sandbox
   `#866 <https://github.com/openego/eGon-data/issues/866>`_
-* Set non extendable gas links from p-e-s as so for eGon100RE
-  `#877 <https://github.com/openego/eGon-data/issues/877>`_
 * Add noflex scenario for motorized individual travel
   `#821 <https://github.com/openego/eGon-data/issues/821>`_
 * Allocate PV home batteries to mv grid districts
@@ -675,6 +675,8 @@ Bug Fixes
   `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
 * Delete gas buses in Germany disconnected of the german gas grid
   `#1023 <https://github.com/openego/eGon-data/issues/1023>`_
+* Fix solar rooftop in test mode
+  `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
