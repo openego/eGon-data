@@ -233,10 +233,10 @@ Added
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
 * Heat pump desaggregation to buildings
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
-* Add desaggregation of pv home batteries onto buildings
-  `#988 <https://github.com/openego/eGon-data/issues/988>`_
 *  Add voltage level for electricity building loads
   `#955 <https://github.com/openego/eGon-data/issues/955>`_
+* Add desaggregation of pv home batteries onto buildings
+  `#988 <https://github.com/openego/eGon-data/issues/988>`_
 * Add load areas
   `#1014 <https://github.com/openego/eGon-data/issues/1014>`_
 
