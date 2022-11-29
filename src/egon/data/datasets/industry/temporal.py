@@ -110,6 +110,26 @@ def identify_bus(load_curves, demand_area):
     # Bring both dataframes together
     peak_bus = peak_hv_c.append(peak_hv_p, ignore_index=True)
 
+    # Select ehv voronoi
+    ehv_voronoi = db.select_geodataframe(
+        f"""SELECT bus_id, geom FROM
+                {sources['egon_mv_grid_district']['schema']}.
+                {sources['egon_mv_grid_district']['table']}""",
+        geom_col="geom",
+        epsg=3035,
+    )
+
+    # Identify all demand areas connected to EHV buses
+    peak_ehv = peak[peak["voltage_level"] == 1]
+
+    # Perform a spatial join between the centroid of the demand area and ehv voronoi to identify grid connection point
+    peak_ehv["centroid"] = peak_ehv["geom"].centroid
+    peak_ehv = peak_ehv.set_geometry("centroid")
+    peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
+
+    # Bring both dataframes together
+    peak_bus = peak_bus.append(peak_ehv, ignore_index=True)
+
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
         load_curves.T,
@@ -371,6 +391,7 @@ def calc_load_curves_ind_sites(scenario):
     curves_individual = curves_da[["id", "bus_id"]]
     curves_individual["p_set"] = curves_individual_interim.values.tolist()
     curves_individual["scn_name"] = scenario
+    curves_individual= curves_individual.merge(curves_da[["wz", "id"]], left_on='id', right_on='id')
     curves_individual = curves_individual.rename(
         columns={"id": "site_id"}
     ).set_index(["site_id", "scn_name"])
