@@ -653,6 +653,8 @@ Bug Fixes
   `#989 <https://github.com/openego/eGon-data/issues/989>`_
 * Fix zensus weather cells mapping
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
+* Fix solar rooftop in test mode
+  `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

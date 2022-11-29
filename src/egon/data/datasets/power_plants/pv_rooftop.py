@@ -161,11 +161,11 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
         if dataset == "Schleswig-Holstein":
-            sources = config.datasets()["scenario_input"]["sources"]
+            sources_scn = config.datasets()["scenario_input"]["sources"]
 
             path = Path(
                 f"./data_bundle_egon_data/nep2035_version2021/"
-                f"{sources['eGon2035']['capacities']}"
+                f"{sources_scn['eGon2035']['capacities']}"
             ).resolve()
 
             total_2035 = (
