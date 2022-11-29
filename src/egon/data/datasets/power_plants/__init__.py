@@ -16,6 +16,13 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
+from egon.data.datasets.power_plants.mastr import (
+    EgonPowerPlantsBiomass,
+    EgonPowerPlantsHydro,
+    EgonPowerPlantsPv,
+    EgonPowerPlantsWind,
+    import_mastr,
+)
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     geocode_mastr_data,
@@ -42,7 +49,7 @@ class EgonPowerPlants(Base):
     voltage_level = Column(Integer)
     weather_cell_id = Column(Integer)
     scenario = Column(String)
-    geom = Column(Geometry("POINT", 4326))
+    geom = Column(Geometry("POINT", 4326), index=True)
 
 
 class PowerPlants(Dataset):
@@ -53,6 +60,7 @@ class PowerPlants(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
+                import_mastr,
                 insert_hydro_biomass,
                 allocate_conventional_non_chp_power_plants,
                 allocate_other_power_plants,
@@ -78,6 +86,7 @@ def create_tables():
     None.
     """
 
+    # Tables for future scenarios
     cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
     engine = db.engine()
@@ -88,6 +97,19 @@ def create_tables():
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
+
+    # Tables for status quo
+    tables = [
+        EgonPowerPlantsWind,
+        EgonPowerPlantsPv,
+        EgonPowerPlantsBiomass,
+        EgonPowerPlantsHydro,
+    ]
+    for t in tables:
+        db.execute_sql(
+            f"DROP TABLE IF EXISTS {t.__table_args__['schema']}.{t.__tablename__} CASCADE;"
+        )
+        t.__table__.create(bind=engine, checkfirst=True)
 
 
 def scale_prox2now(df, target, level="federal_state"):
