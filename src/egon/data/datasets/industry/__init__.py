@@ -84,6 +84,7 @@ class DemandCurvesSitesIndustryIndividual(Base):
     peak_load = Column(Float)
     demand = Column(Float)
     voltage_level = Column(Integer)
+    wz = Column(Integer)
 
 
 def create_tables():
