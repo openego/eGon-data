@@ -12,6 +12,10 @@ OSM landuse extraction and load areas creation.
 **Load Areas**
 
 TBD
+
+Note: industrial demand contains:
+* voltage levels 4-7
+* only demand from ind. sites+osm located in LA!
 """
 
 import os
