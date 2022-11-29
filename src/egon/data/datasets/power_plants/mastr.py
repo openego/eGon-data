@@ -215,6 +215,15 @@ def import_mastr() -> None:
         "biomass": EgonPowerPlantsBiomass,
         "hydro": EgonPowerPlantsHydro,
     }
+    vlevel_mapping = {
+        "Höchstspannung": 1,
+        "UmspannungZurHochspannung": 2,
+        "Hochspannung": 3,
+        "UmspannungZurMittelspannung": 4,
+        "Mittelspannung": 5,
+        "UmspannungZurNiederspannung": 6,
+        "Niederspannung": 7,
+    }
 
     # import locations
     locations = pd.read_csv(cfg["sources"]["mastr_location"], index_col=None)
@@ -266,15 +275,6 @@ def import_mastr() -> None:
             right_on="MaStRNummer",
             how="left",
         )
-        vlevel_mapping = {
-            "Höchstspannung": 1,
-            "UmspannungZurHochspannung": 2,
-            "Hochspannung": 3,
-            "UmspannungZurMittelspannung": 4,
-            "Mittelspannung": 5,
-            "UmspannungZurNiederspannung": 6,
-            "Niederspannung": 7,
-        }
         units["voltage_level"] = units.Spannungsebene.replace(vlevel_mapping)
 
         # add geometry
