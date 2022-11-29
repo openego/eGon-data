@@ -391,7 +391,9 @@ def calc_load_curves_ind_sites(scenario):
     curves_individual = curves_da[["id", "bus_id"]]
     curves_individual["p_set"] = curves_individual_interim.values.tolist()
     curves_individual["scn_name"] = scenario
-    curves_individual= curves_individual.merge(curves_da[["wz", "id"]], left_on='id', right_on='id')
+    curves_individual = curves_individual.merge(
+        curves_da[["wz", "id"]], left_on="id", right_on="id"
+    )
     curves_individual = curves_individual.rename(
         columns={"id": "site_id"}
     ).set_index(["site_id", "scn_name"])
