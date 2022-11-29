@@ -7,6 +7,67 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
 
+# CONSTANTS
+# TODO: move to datasets.yml
+CON = db.engine()
+
+# CTS
+CTS_COOL_VENT_AC_SHARE = 0.22
+
+S_FLEX_CTS = 0.5
+S_UTIL_CTS = 0.67
+S_INC_CTS = 1
+S_DEC_CTS = 0
+DELTA_T_CTS = 1
+
+# industry
+IND_VENT_COOL_SHARE = 0.039
+IND_VENT_SHARE = 0.017
+
+# OSM
+S_FLEX_OSM = 0.5
+S_UTIL_OSM = 0.73
+S_INC_OSM = 0.9
+S_DEC_OSM = 0.5
+DELTA_T_OSM = 1
+
+# paper
+S_FLEX_PAPER = 0.15
+S_UTIL_PAPER = 0.86
+S_INC_PAPER = 0.95
+S_DEC_PAPER = 0
+DELTA_T_PAPER = 3
+
+# recycled paper
+S_FLEX_RECYCLED_PAPER = 0.7
+S_UTIL_RECYCLED_PAPER = 0.85
+S_INC_RECYCLED_PAPER = 0.95
+S_DEC_RECYCLED_PAPER = 0
+DELTA_T_RECYCLED_PAPER = 3
+
+# pulp
+S_FLEX_PULP = 0.7
+S_UTIL_PULP = 0.83
+S_INC_PULP = 0.95
+S_DEC_PULP = 0
+DELTA_T_PULP = 2
+
+# cement
+S_FLEX_CEMENT = 0.61
+S_UTIL_CEMENT = 0.65
+S_INC_CEMENT = 0.95
+S_DEC_CEMENT = 0
+DELTA_T_CEMENT = 4
+
+# wz 23
+WZ = 23
+
+S_FLEX_WZ = 0.5
+S_UTIL_WZ = 0.8
+S_INC_WZ = 1
+S_DEC_WZ = 0.5
+DELTA_T_WZ = 1
+
 
 class dsm_Potential(Dataset):
     def __init__(self, dependencies):
@@ -95,6 +156,41 @@ def ind_osm_data_import(ind_vent_cool_share):
     return dsm
 
 
+def ind_osm_data_import_individual(ind_vent_cool_share):
+
+    """
+    Import industry data per osm-area necessary to identify DSM-potential.
+        ----------
+    ind_share: float
+        Share of considered application in industry demand
+    """
+
+    # import load data
+
+    sources = config.datasets()["DSM_CTS_industry"]["sources"][
+        "ind_osm_loadcurves_individual"
+    ]
+
+    dsm = db.select_dataframe(
+        f"""SELECT osm_id, bus_id as bus, scn_name, p_set FROM
+        {sources['schema']}.{sources['table']}"""
+    )
+
+    # calculate share of timeseries for cooling and ventilation out of
+    # industry-data
+
+    timeseries = dsm["p_set"].copy()
+
+    for index, liste in timeseries.iteritems():
+        share = [float(item) * ind_vent_cool_share for item in liste]
+
+        timeseries.loc[index] = share
+
+    dsm["p_set"] = timeseries.copy()
+
+    return dsm
+
+
 def ind_sites_vent_data_import(ind_vent_share, wz):
 
     """
@@ -113,13 +209,54 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
     ]
 
     dsm = db.select_dataframe(
-        f"""SELECT bus, scn_name, p_set, wz FROM
+        f"""SELECT bus, scn_name, wz, p_set FROM
         {sources['schema']}.{sources['table']}"""
     )
 
     # select load for considered applications
 
     dsm = dsm[dsm["wz"] == wz]
+
+    # calculate share of timeseries for ventilation
+
+    timeseries = dsm["p_set"].copy()
+
+    for index, liste in timeseries.iteritems():
+        share = [float(item) * ind_vent_share for item in liste]
+        timeseries.loc[index] = share
+
+    dsm["p_set"] = timeseries.copy()
+
+    return dsm
+
+
+def ind_sites_vent_data_import_individual(ind_vent_share, wz):
+    """
+    Import industry sites necessary to identify DSM-potential.
+        ----------
+    ind_vent_share: float
+        Share of considered application in industry demand
+    wz: int
+        Wirtschaftszweig to be considered within industry sites
+    """
+
+    # import load data
+
+    sources = config.datasets()["DSM_CTS_industry"]["sources"][
+        "ind_sites_loadcurves_individual"
+    ]
+
+    # TODO: at the moment `wz` is missing within the table
+    #  egon_sites_ind_load_curves_individual. Edit this part as soon as it is
+    #  available
+    dsm = db.select_dataframe(
+        f"""SELECT site_id, bus_id as bus, scn_name, p_set FROM
+        {sources['schema']}.{sources['table']}"""
+    )
+
+    # select load for considered applications
+
+    # dsm = dsm[dsm["wz"] == wz]
 
     # calculate share of timeseries for ventilation
 
@@ -256,7 +393,7 @@ def ind_sites_data_import():
 
     dsm = relate_to_schmidt_sites(dsm)
 
-    return dsm
+    return dsm[["application", "id", "bus", "scn_name", "p_set"]]
 
 
 def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
@@ -796,10 +933,9 @@ def delete_dsm_entries(carrier):
 def dsm_cts_ind(
     con=db.engine(),
     cts_cool_vent_ac_share=0.22,
-    ind_cool_vent_share=0.039,
+    ind_vent_cool_share=0.039,
     ind_vent_share=0.017,
 ):
-
     """
     Execute methodology to create and implement components for DSM considering
     a) CTS per osm-area: combined potentials of cooling, ventilation and air
@@ -820,7 +956,7 @@ def dsm_cts_ind(
         Connection to database
     cts_cool_vent_ac_share: float
         Share of cooling, ventilation and AC in CTS demand
-    ind_cool_vent_share: float
+    ind_vent_cool_share: float
         Share of cooling and ventilation in industry demand
     ind_vent_share: float
         Share of ventilation in industry demand in sites of WZ 23
@@ -838,7 +974,12 @@ def dsm_cts_ind(
     # calculate combined potentials of cooling, ventilation and air
     # conditioning in CTS using combined parameters by Heitkoetter et. al.
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.5, s_util=0.67, s_inc=1, s_dec=0, delta_t=1, dsm=dsm
+        s_flex=S_FLEX_CTS,
+        s_util=S_UTIL_CTS,
+        s_inc=S_INC_CTS,
+        s_dec=S_DEC_CTS,
+        delta_t=DELTA_T_CTS,
+        dsm=dsm,
     )
 
     dsm_buses, dsm_links, dsm_stores = create_dsm_components(
@@ -855,12 +996,17 @@ def dsm_cts_ind(
     print("industry per osm-area: cooling and ventilation")
     print(" ")
 
-    dsm = ind_osm_data_import(ind_cool_vent_share)
+    dsm = ind_osm_data_import(ind_vent_cool_share)
 
     # calculate combined potentials of cooling and ventilation in industrial
     # sector using combined parameters by Heitkoetter et. al.
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.5, s_util=0.73, s_inc=0.9, s_dec=0.5, delta_t=1, dsm=dsm
+        s_flex=S_FLEX_OSM,
+        s_util=S_UTIL_OSM,
+        s_inc=S_INC_OSM,
+        s_dec=S_DEC_OSM,
+        delta_t=DELTA_T_OSM,
+        dsm=dsm,
     )
 
     dsm_buses, dsm_links, dsm_stores = create_dsm_components(
@@ -904,11 +1050,11 @@ def dsm_cts_ind(
     # calculate potentials of industrial sites with paper-applications
     # using parameters by Heitkoetter et al.
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.15,
-        s_util=0.86,
-        s_inc=0.95,
-        s_dec=0,
-        delta_t=3,
+        s_flex=S_FLEX_PAPER,
+        s_util=S_UTIL_PAPER,
+        s_inc=S_INC_PAPER,
+        s_dec=S_DEC_PAPER,
+        delta_t=DELTA_T_PAPER,
         dsm=dsm_paper,
     )
 
@@ -938,11 +1084,11 @@ def dsm_cts_ind(
     )
 
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.7,
-        s_util=0.85,
-        s_inc=0.95,
-        s_dec=0,
-        delta_t=3,
+        s_flex=S_FLEX_RECYCLED_PAPER,
+        s_util=S_UTIL_RECYCLED_PAPER,
+        s_inc=S_INC_RECYCLED_PAPER,
+        s_dec=S_DEC_RECYCLED_PAPER,
+        delta_t=DELTA_T_RECYCLED_PAPER,
         dsm=dsm_recycled_paper,
     )
 
@@ -970,11 +1116,11 @@ def dsm_cts_ind(
     # calculate potentials of industrial sites with pulp-applications
     # using parameters by Heitkoetter et. al.
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.7,
-        s_util=0.83,
-        s_inc=0.95,
-        s_dec=0,
-        delta_t=2,
+        s_flex=S_FLEX_PULP,
+        s_util=S_UTIL_PULP,
+        s_inc=S_INC_PULP,
+        s_dec=S_DEC_PULP,
+        delta_t=DELTA_T_PULP,
         dsm=dsm_pulp,
     )
 
@@ -1004,11 +1150,11 @@ def dsm_cts_ind(
     # calculate potentials of industrial sites with cement-applications
     # using parameters by Heitkoetter et. al.
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.61,
-        s_util=0.65,
-        s_inc=0.95,
-        s_dec=0,
-        delta_t=4,
+        s_flex=S_FLEX_CEMENT,
+        s_util=S_UTIL_CEMENT,
+        s_inc=S_INC_CEMENT,
+        s_dec=S_DEC_CEMENT,
+        delta_t=DELTA_T_CEMENT,
         dsm=dsm_cement,
     )
 
@@ -1044,7 +1190,12 @@ def dsm_cts_ind(
     # calculate potentials of ventialtion in industrial sites of WZ 23
     # using parameters by Heitkoetter et. al.
     p_max, p_min, e_max, e_min = calculate_potentials(
-        s_flex=0.5, s_util=0.8, s_inc=1, s_dec=0.5, delta_t=1, dsm=dsm
+        s_flex=S_FLEX_WZ,
+        s_util=S_UTIL_WZ,
+        s_inc=S_INC_WZ,
+        s_dec=S_DEC_WZ,
+        delta_t=DELTA_T_WZ,
+        dsm=dsm,
     )
 
     dsm_buses, dsm_links, dsm_stores = create_dsm_components(
@@ -1063,7 +1214,6 @@ def dsm_cts_ind(
     )
 
     # aggregate DSM components per substation
-
     dsm_buses, dsm_links, dsm_stores = aggregate_components(
         df_dsm_buses, df_dsm_links, df_dsm_stores
     )
@@ -1078,5 +1228,234 @@ def dsm_cts_ind(
     data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
 
 
+def dsm_cts_ind_individual(
+    con=CON,
+    cts_cool_vent_ac_share=CTS_COOL_VENT_AC_SHARE,
+    ind_vent_cool_share=IND_VENT_COOL_SHARE,
+    ind_vent_share=IND_VENT_SHARE,
+):
+    """
+    Execute methodology to create and implement components for DSM considering
+    a) CTS per osm-area: combined potentials of cooling, ventilation and air
+      conditioning
+    b) Industry per osm-are: combined potentials of cooling and ventilation
+    c) Industrial Sites: potentials of ventilation in sites of
+      "Wirtschaftszweig" (WZ) 23
+    d) Industrial Sites: potentials of sites specified by subsectors
+      identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+      Paper, Recycled Paper, Pulp, Cement
+
+    Modelled using the methods by Heitkoetter et. al.:
+    https://doi.org/10.1016/j.adapen.2020.100001
+
+    Parameters
+    ----------
+    con :
+        Connection to database
+    cts_cool_vent_ac_share: float
+        Share of cooling, ventilation and AC in CTS demand
+    ind_vent_cool_share: float
+        Share of cooling and ventilation in industry demand
+    ind_vent_share: float
+        Share of ventilation in industry demand in sites of WZ 23
+
+    """
+
+    # CTS per osm-area: cooling, ventilation and air conditioning
+
+    print(" ")
+    print("CTS per osm-area: cooling, ventilation and air conditioning")
+    print(" ")
+
+    dsm = cts_data_import(cts_cool_vent_ac_share)
+
+    # calculate combined potentials of cooling, ventilation and air
+    # conditioning in CTS using combined parameters by Heitkoetter et. al.
+    vals = calculate_potentials(
+        s_flex=S_FLEX_CTS,
+        s_util=S_UTIL_CTS,
+        s_inc=S_INC_CTS,
+        s_dec=S_DEC_CTS,
+        delta_t=DELTA_T_CTS,
+        dsm=dsm,
+    )
+
+    # TODO: Werte sind noch nicht p.u.
+
+    base_columns = [
+        "bus",
+        "scn_name",
+        "p_set",
+        "p_max_pu",
+        "p_min_pu",
+        "e_max_pu",
+        "e_min_pu",
+    ]
+
+    cts_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
+    cts_df.columns = base_columns
+
+    print(" ")
+    print("industry per osm-area: cooling and ventilation")
+    print(" ")
+
+    dsm = ind_osm_data_import_individual(ind_vent_cool_share)
+
+    # calculate combined potentials of cooling and ventilation in industrial
+    # sector using combined parameters by Heitkoetter et. al.
+    vals = calculate_potentials(
+        s_flex=S_FLEX_OSM,
+        s_util=S_UTIL_OSM,
+        s_inc=S_INC_OSM,
+        s_dec=S_DEC_OSM,
+        delta_t=DELTA_T_OSM,
+        dsm=dsm,
+    )
+
+    columns = ["osm_id"] + base_columns
+
+    osm_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
+    osm_df.columns = columns
+
+    # industry sites
+
+    # industry sites: different applications
+
+    dsm = ind_sites_data_import()
+
+    print(" ")
+    print("industry sites: paper")
+    print(" ")
+
+    dsm_paper = gpd.GeoDataFrame(
+        dsm[
+            dsm["application"].isin(
+                [
+                    "Graphic Paper",
+                    "Packing Paper and Board",
+                    "Hygiene Paper",
+                    "Technical/Special Paper and Board",
+                ]
+            )
+        ]
+    )
+
+    # calculate potentials of industrial sites with paper-applications
+    # using parameters by Heitkoetter et al.
+    vals = calculate_potentials(
+        s_flex=S_FLEX_PAPER,
+        s_util=S_UTIL_PAPER,
+        s_inc=S_INC_PAPER,
+        s_dec=S_DEC_PAPER,
+        delta_t=DELTA_T_PAPER,
+        dsm=dsm_paper,
+    )
+
+    columns = ["application", "id"] + base_columns
+
+    paper_df = pd.concat([dsm_paper, *vals], axis=1, ignore_index=True)
+    paper_df.columns = columns
+
+    print(" ")
+    print("industry sites: recycled paper")
+    print(" ")
+
+    # calculate potentials of industrial sites with recycled paper-applications
+    # using parameters by Heitkoetter et. al.
+    dsm_recycled_paper = gpd.GeoDataFrame(
+        dsm[dsm["application"] == "Recycled Paper"]
+    )
+
+    vals = calculate_potentials(
+        s_flex=S_FLEX_RECYCLED_PAPER,
+        s_util=S_UTIL_RECYCLED_PAPER,
+        s_inc=S_INC_RECYCLED_PAPER,
+        s_dec=S_DEC_RECYCLED_PAPER,
+        delta_t=DELTA_T_RECYCLED_PAPER,
+        dsm=dsm_recycled_paper,
+    )
+
+    df_recycled_paper = pd.concat(
+        [dsm_recycled_paper, *vals], axis=1, ignore_index=True
+    )
+    df_recycled_paper.columns = columns
+
+    print(" ")
+    print("industry sites: pulp")
+    print(" ")
+
+    dsm_pulp = gpd.GeoDataFrame(dsm[dsm["application"] == "Mechanical Pulp"])
+
+    # calculate potentials of industrial sites with pulp-applications
+    # using parameters by Heitkoetter et. al.
+    vals = calculate_potentials(
+        s_flex=S_FLEX_PULP,
+        s_util=S_UTIL_PULP,
+        s_inc=S_INC_PULP,
+        s_dec=S_DEC_PULP,
+        delta_t=DELTA_T_PULP,
+        dsm=dsm_pulp,
+    )
+
+    df_pulp = pd.concat([dsm_pulp, *vals], axis=1, ignore_index=True)
+    df_pulp.columns = columns
+
+    # industry sites: cement
+
+    print(" ")
+    print("industry sites: cement")
+    print(" ")
+
+    dsm_cement = gpd.GeoDataFrame(dsm[dsm["application"] == "Cement Mill"])
+
+    # calculate potentials of industrial sites with cement-applications
+    # using parameters by Heitkoetter et. al.
+    vals = calculate_potentials(
+        s_flex=S_FLEX_CEMENT,
+        s_util=S_UTIL_CEMENT,
+        s_inc=S_INC_CEMENT,
+        s_dec=S_DEC_CEMENT,
+        delta_t=DELTA_T_CEMENT,
+        dsm=dsm_cement,
+    )
+
+    df_cement = pd.concat([dsm_cement, *vals], axis=1, ignore_index=True)
+    df_cement.columns = columns
+
+    # industry sites: ventilation in WZ23
+
+    print(" ")
+    print("industry sites: ventilation in WZ23")
+    print(" ")
+
+    dsm = ind_sites_vent_data_import_individual(ind_vent_share, wz=23)
+
+    # drop entries of Cement Mills whose DSM-potentials have already been
+    # modelled
+    cement = np.unique(dsm_cement["bus"].values)
+    index_names = np.array(dsm[dsm["bus"].isin(cement)].index)
+    dsm.drop(index_names, inplace=True)
+
+    # calculate potentials of ventialtion in industrial sites of WZ 23
+    # using parameters by Heitkoetter et. al.
+    vals = calculate_potentials(
+        s_flex=S_FLEX_WZ,
+        s_util=S_UTIL_WZ,
+        s_inc=S_INC_WZ,
+        s_dec=S_DEC_WZ,
+        delta_t=DELTA_T_WZ,
+        dsm=dsm,
+    )
+
+    columns = ["site_id"] + base_columns
+
+    df_ind_sites = pd.concat([dsm, *vals], axis=1, ignore_index=True)
+    df_ind_sites.columns = columns
+
+    # TODO
+
+
 def dsm_cts_ind_processing():
     dsm_cts_ind()
+
+    dsm_cts_ind_individual()
