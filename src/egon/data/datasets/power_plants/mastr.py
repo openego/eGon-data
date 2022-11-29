@@ -1,13 +1,15 @@
 """Import MaStR dataset and write to DB tables
 
-Data dump from Marktstammdatenregister is imported into the database. Only the
-following technologies are taken into account:
-* PV
-* wind turbines
-* biomass/biogas plants
-* hydro plants
+Data dump from Marktstammdatenregister is imported into the database. Only
+some technologies are taken into account and written to the following tables:
+* PV: table `supply.egon_power_plants_pv`
+* wind turbines: table `supply.egon_power_plants_wind`
+* biomass/biogas plants: table `supply.egon_power_plants_biomass`
+* hydro plants: table `supply.egon_power_plants_hydro`
 
 The data is used especially for the generation of status quo grids by ding0.
+Empty data in columns `voltage_level`, `bus_id` (all tables), and `plant_type`
+(supply.egon_power_plants_hydro) is indicated by the value -1.
 """
 from geoalchemy2 import Geometry
 from sqlalchemy import (
