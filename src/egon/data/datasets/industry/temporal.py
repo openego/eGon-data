@@ -249,7 +249,7 @@ def insert_osm_ind_load():
         "targets"
     ]
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2021", "eGon2035", "eGon100RE"]:
 
         # Delete existing data from database
         db.execute_sql(
@@ -414,7 +414,7 @@ def insert_sites_ind_load():
         "targets"
     ]
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2021", "eGon2035", "eGon100RE"]:
 
         # Delete existing data from database
         db.execute_sql(
