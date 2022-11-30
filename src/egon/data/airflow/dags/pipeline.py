@@ -13,7 +13,7 @@ from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
-from egon.data.datasets.DSM_cts_ind import dsm_Potential
+from egon.data.datasets.DSM_cts_ind import DsmPotential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
@@ -498,7 +498,7 @@ with airflow.DAG(
     )
 
     # DSM (demand site management)
-    components_dsm = dsm_Potential(
+    components_dsm = DsmPotential(
         dependencies=[
             cts_electricity_demand_annual,
             demand_curves_industry,

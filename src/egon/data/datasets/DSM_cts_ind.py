@@ -1,3 +1,5 @@
+from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -68,21 +70,98 @@ S_INC_WZ = 1
 S_DEC_WZ = 0.5
 DELTA_T_WZ = 1
 
+Base = declarative_base()
 
-class dsm_Potential(Dataset):
+
+class DsmPotential(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="DSM_potentials",
+            name="DsmPotential",
             version="0.0.4.dev",
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing),
         )
 
 
+# Datasets
+class EgonEtragoElectricityCtsDsmTimeseries(Base):
+    target = config.datasets()["DSM_CTS_industry"]["targets"][
+        "cts_loadcurves_dsm"
+    ]
+
+    __tablename__ = target["table"]
+    __table_args__ = {"schema": target["schema"]}
+
+    bus = Column(Integer, primary_key=True, index=True)
+    scn_name = Column(String, primary_key=True, index=True)
+    p_set = Column(ARRAY(Float))
+    p_max_pu = Column(ARRAY(Float))
+    p_min_pu = Column(ARRAY(Float))
+    e_max_pu = Column(ARRAY(Float))
+    e_min_pu = Column(ARRAY(Float))
+
+
+class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
+    target = config.datasets()["DSM_CTS_industry"]["targets"][
+        "ind_osm_loadcurves_individual_dsm"
+    ]
+
+    __tablename__ = target["table"]
+    __table_args__ = {"schema": target["schema"]}
+
+    osm_id = Column(Integer, primary_key=True, index=True)
+    scn_name = Column(String, primary_key=True, index=True)
+    bus = Column(Integer)
+    p_set = Column(ARRAY(Float))
+    p_max_pu = Column(ARRAY(Float))
+    p_min_pu = Column(ARRAY(Float))
+    e_max_pu = Column(ARRAY(Float))
+    e_min_pu = Column(ARRAY(Float))
+
+
+class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
+    target = config.datasets()["DSM_CTS_industry"]["targets"][
+        "demandregio_ind_sites_dsm"
+    ]
+
+    __tablename__ = target["table"]
+    __table_args__ = {"schema": target["schema"]}
+
+    industrial_sites_id = Column(Integer, primary_key=True, index=True)
+    scn_name = Column(String, primary_key=True, index=True)
+    bus = Column(Integer)
+    application = Column(String)
+    p_set = Column(ARRAY(Float))
+    p_max_pu = Column(ARRAY(Float))
+    p_min_pu = Column(ARRAY(Float))
+    e_max_pu = Column(ARRAY(Float))
+    e_min_pu = Column(ARRAY(Float))
+
+
+class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
+    target = config.datasets()["DSM_CTS_industry"]["targets"][
+        "ind_sites_loadcurves_individual"
+    ]
+
+    __tablename__ = target["table"]
+    __table_args__ = {"schema": target["schema"]}
+
+    site_id = Column(Integer, primary_key=True, index=True)
+    scn_name = Column(String, primary_key=True, index=True)
+    bus = Column(Integer)
+    p_set = Column(ARRAY(Float))
+    p_max_pu = Column(ARRAY(Float))
+    p_min_pu = Column(ARRAY(Float))
+    e_max_pu = Column(ARRAY(Float))
+    e_min_pu = Column(ARRAY(Float))
+
+
+# Code
 def cts_data_import(cts_cool_vent_ac_share):
     """
     Import CTS data necessary to identify DSM-potential.
-        ----------
+
+    ----------
     cts_share: float
         Share of cooling, ventilation and AC in CTS demand
     """
@@ -1202,19 +1281,19 @@ def dsm_cts_ind(
     )
 
     # TODO
-    #     # aggregate DSM components per substation
-    #     dsm_buses, dsm_links, dsm_stores = aggregate_components(
-    #         df_dsm_buses, df_dsm_links, df_dsm_stores
-    #     )
-
-    #     # export aggregated DSM components to database
-
-    #     delete_dsm_entries("dsm-cts")
-    #     delete_dsm_entries("dsm-ind-osm")
-    #     delete_dsm_entries("dsm-ind-sites")
-    #     delete_dsm_entries("dsm")
-
-    data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
+    # # aggregate DSM components per substation
+    # dsm_buses, dsm_links, dsm_stores = aggregate_components(
+    #     df_dsm_buses, df_dsm_links, df_dsm_stores
+    # )
+    #
+    # # export aggregated DSM components to database
+    #
+    # delete_dsm_entries("dsm-cts")
+    # delete_dsm_entries("dsm-ind-osm")
+    # delete_dsm_entries("dsm-ind-sites")
+    # delete_dsm_entries("dsm")
+    #
+    # data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
 
 
 def col_per_unit(lst):
@@ -1228,6 +1307,20 @@ def calc_per_unit(df):
         df[col] = df[col].apply(col_per_unit)
 
     return df
+
+
+def create_table(df, table, engine=CON):
+    """Create table"""
+    table.__table__.drop(bind=engine, checkfirst=True)
+    table.__table__.create(bind=engine, checkfirst=True)
+
+    df.to_sql(
+        name=table.__table__.name,
+        schema=table.__table__.schema,
+        con=engine,
+        if_exists="append",
+        index=False,
+    )
 
 
 def dsm_cts_ind_individual(
@@ -1281,8 +1374,6 @@ def dsm_cts_ind_individual(
         delta_t=DELTA_T_CTS,
         dsm=dsm,
     )
-
-    # TODO: Werte sind noch nicht p.u.
 
     base_columns = [
         "bus",
@@ -1355,7 +1446,7 @@ def dsm_cts_ind_individual(
         dsm=dsm_paper,
     )
 
-    columns = ["application", "id"] + base_columns
+    columns = ["application", "industrial_sites_id"] + base_columns
 
     paper_df = pd.concat([dsm_paper, *vals], axis=1, ignore_index=True)
     paper_df.columns = columns
@@ -1430,6 +1521,10 @@ def dsm_cts_ind_individual(
     cement_df.columns = columns
     cement_df = calc_per_unit(cement_df)
 
+    ind_df = pd.concat(
+        [paper_df, recycled_paper_df, pulp_df, cement_df], ignore_index=True
+    )
+
     # industry sites: ventilation in WZ23
 
     print(" ")
@@ -1445,7 +1540,7 @@ def dsm_cts_ind_individual(
     dsm.drop(index_names, inplace=True)
 
     # calculate potentials of ventialtion in industrial sites of WZ 23
-    # using parameters by Heitkoetter et. al.
+    # using parameters by Heitkoetter et al.
     vals = calculate_potentials(
         s_flex=S_FLEX_WZ,
         s_util=S_UTIL_WZ,
@@ -1461,7 +1556,25 @@ def dsm_cts_ind_individual(
     ind_sites_df.columns = columns
     ind_sites_df = calc_per_unit(ind_sites_df)
 
-    # TODO
+    # create tables
+    create_table(
+        df=cts_df, table=EgonEtragoElectricityCtsDsmTimeseries, engine=CON
+    )
+    create_table(
+        df=osm_df,
+        table=EgonOsmIndLoadCurvesIndividualDsmTimeseries,
+        engine=CON,
+    )
+    create_table(
+        df=ind_df,
+        table=EgonDemandregioSitesIndElectricityDsmTimeseries,
+        engine=CON,
+    )
+    create_table(
+        df=ind_sites_df,
+        table=EgonSitesIndLoadCurvesIndividualDsmTimeseries,
+        engine=CON,
+    )
 
 
 def dsm_cts_ind_processing():
