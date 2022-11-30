@@ -32,6 +32,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_osm_ind_load_curves_individual as ind_osm
                     WHERE
                         ind_osm.scn_name = 'eGon2021' AND
+                        ind_osm.voltage_level in (4,5,6,7) AND
                         ind_osm.osm_id = landuse.id
                     GROUP BY landuse.id
                 ) AS b
@@ -62,6 +63,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_sites_ind_load_curves_individual as ind_loads
                     WHERE
                         ind_loads.scn_name = 'eGon2021' AND
+                        ind_loads.voltage_level in (4,5,6,7) AND
                         ind_loads.site_id = ind_sites.id
                 ) AS b
         WHERE   a.geom && b.geom AND
@@ -95,6 +97,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_osm_ind_load_curves_individual as ind_osm
                     WHERE
                         ind_osm.scn_name = 'eGon2035' AND
+                        ind_osm.voltage_level in (4,5,6,7) AND
                         ind_osm.osm_id = landuse.id
                     GROUP BY landuse.id
                 ) AS b
@@ -125,6 +128,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_sites_ind_load_curves_individual as ind_loads
                     WHERE
                         ind_loads.scn_name = 'eGon2035' AND
+                        ind_loads.voltage_level in (4,5,6,7) AND
                         ind_loads.site_id = ind_sites.id
                 ) AS b
         WHERE   a.geom && b.geom AND
@@ -158,6 +162,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_osm_ind_load_curves_individual as ind_osm
                     WHERE
                         ind_osm.scn_name = 'eGon100RE' AND
+                        ind_osm.voltage_level in (4,5,6,7) AND
                         ind_osm.osm_id = landuse.id
                     GROUP BY landuse.id
                 ) AS b
@@ -188,6 +193,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_sites_ind_load_curves_individual as ind_loads
                     WHERE
                         ind_loads.scn_name = 'eGon100RE' AND
+                        ind_loads.voltage_level in (4,5,6,7) AND
                         ind_loads.site_id = ind_sites.id
                 ) AS b
         WHERE   a.geom && b.geom AND
