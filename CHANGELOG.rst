@@ -677,6 +677,8 @@ Bug Fixes
   `#1023 <https://github.com/openego/eGon-data/issues/1023>`_
 * Fix solar rooftop in test mode
   `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
+* Fix installed capacity per individual heat pump
+  `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
