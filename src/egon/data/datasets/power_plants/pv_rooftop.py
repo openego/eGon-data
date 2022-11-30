@@ -1,10 +1,25 @@
 """The module containing all code dealing with pv rooftop distribution.
 """
+from pathlib import Path
+
+from loguru import logger
+from numpy import isclose
 import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    PV_CAP_PER_SQ_M,
+    ROOF_FACTOR,
+    load_building_data,
+    scenario_data,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+
+# assumption on theoretical maximum occupancy of rooftops within an mv grid
+# district
+# TODO: this is a wild guess
+MAX_THEORETICAL_PV_OCCUPANCY = 0.5
 
 
 def pv_rooftop_per_mv_grid():
@@ -88,6 +103,20 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
          """
     )
 
+    # make sure only grid districts with any buildings are used
+    valid_buildings_gdf = load_building_data()
+
+    valid_buildings_gdf = valid_buildings_gdf.assign(
+        bus_id=valid_buildings_gdf.bus_id.astype(int),
+        overlay_id=valid_buildings_gdf.overlay_id.astype(int),
+        max_cap=valid_buildings_gdf.building_area.multiply(
+            ROOF_FACTOR * PV_CAP_PER_SQ_M
+        ),
+    )
+
+    bus_ids = valid_buildings_gdf.bus_id.unique()
+    demand = demand.loc[demand.bus_id.isin(bus_ids)]
+
     # Distribute to mv grids per federal state or Germany
     if level == "federal_state":
         targets_per_federal_state = db.select_dataframe(
@@ -129,6 +158,30 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             """
         ).capacity[0]
 
+        dataset = config.settings()["egon-data"]["--dataset-boundary"]
+
+        if dataset == "Schleswig-Holstein":
+            sources_scn = config.datasets()["scenario_input"]["sources"]
+
+            path = Path(
+                f"./data_bundle_egon_data/nep2035_version2021/"
+                f"{sources_scn['eGon2035']['capacities']}"
+            ).resolve()
+
+            total_2035 = (
+                pd.read_excel(
+                    path,
+                    sheet_name="1.Entwurf_NEP2035_V2021",
+                    index_col="Unnamed: 0",
+                ).at["PV (Aufdach)", "Summe"]
+                * 1000
+            )
+            sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
+
+            share = sh_2035 / total_2035
+
+            target *= share
+
         demand["share_country"] = demand.demand / demand.demand.sum()
 
         demand.set_index("bus_id", inplace=True)
@@ -148,6 +201,48 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             "generator_id": range(new_id, new_id + len(demand)),
         }
     )
+
+    # ensure that no more pv rooftop capacity is allocated to any mv grid
+    # district than there is rooftop potential
+    max_cap_per_bus_df = (
+        valid_buildings_gdf[["max_cap", "bus_id"]].groupby("bus_id").sum()
+        / 1000
+        * MAX_THEORETICAL_PV_OCCUPANCY
+    )
+
+    pv_rooftop = pv_rooftop.merge(
+        max_cap_per_bus_df, how="left", left_on="bus", right_index=True
+    )
+
+    assert ~pv_rooftop.max_cap.isna().any(), (
+        "There are bus IDs within 'pv_rooftop' which are not included within "
+        " 'max_cap_per_bus_df'."
+    )
+
+    pv_rooftop = pv_rooftop.assign(delta=pv_rooftop.max_cap - pv_rooftop.p_nom)
+    loss = pv_rooftop.delta.clip(upper=0).sum()
+    total = pv_rooftop.p_nom.sum()
+
+    pv_rooftop = pv_rooftop.assign(
+        p_nom=pv_rooftop[["p_nom", "max_cap"]].min(axis=1)
+    )
+
+    pos_delta = pv_rooftop.loc[pv_rooftop.delta > 0].delta
+    rel_delta = pos_delta / pos_delta.sum()
+    add_pv_cap = rel_delta * abs(loss)
+
+    pv_rooftop.loc[add_pv_cap.index, "p_nom"] += add_pv_cap
+    pv_rooftop = pv_rooftop.drop(columns=["max_cap", "delta"])
+
+    assert isclose(
+        total, pv_rooftop.p_nom.sum()
+    ), f"{total} != {pv_rooftop.p_nom.sum()}"
+
+    if loss < 0:
+        logger.debug(
+            f"{loss:g} MW got redistributed from MV grids with too little "
+            f"rooftop potential towards other MV grids."
+        )
 
     # Select feedin timeseries
     weather_cells = db.select_geodataframe(
