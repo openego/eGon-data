@@ -3,7 +3,6 @@ timeseries data using demandregio
 
 """
 
-from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -18,8 +17,8 @@ Base = declarative_base()
 
 def identify_voltage_level(df):
 
-    """Identify the voltage_level of a grid component based on its peak load and
-    defined thresholds.
+    """Identify the voltage_level of a grid component based on its peak load
+    and defined thresholds.
 
 
     Parameters
@@ -37,7 +36,8 @@ def identify_voltage_level(df):
 
     df["voltage_level"] = np.nan
 
-    # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
+    # Identify voltage_level for every demand area taking thresholds into
+    # account which were defined in the eGon project
     df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
     df.loc[df["peak_load"] > 0.1, "voltage_level"] = 6
     df.loc[df["peak_load"] > 0.2, "voltage_level"] = 5
@@ -49,15 +49,16 @@ def identify_voltage_level(df):
 
 
 def identify_bus(load_curves, demand_area):
-    """Identify the grid connection point for a consumer by determining its grid level
-    based on the time series' peak load and the spatial intersection to mv
-    grid districts or ehv voronoi cells.
+    """Identify the grid connection point for a consumer by determining its
+    grid level based on the time series' peak load and the spatial
+    intersection to mv grid districts or ehv voronoi cells.
 
 
     Parameters
     ----------
     load_curves : pandas.DataFrame
-        Demand timeseries per demand area (e.g. osm landuse area, industrial site)
+        Demand timeseries per demand area (e.g. osm landuse area, industrial
+        site)
 
     demand_area: pandas.DataFrame
         Dataframe with id and geometry of areas where an industrial demand
@@ -83,7 +84,8 @@ def identify_bus(load_curves, demand_area):
         epsg=3035,
     )
 
-    # Initialize dataframe to identify peak load per demand area (e.g. osm landuse area or industrial site)
+    # Initialize dataframe to identify peak load per demand area (e.g. osm
+    # landuse area or industrial site)
     peak = pd.DataFrame(columns=["id", "peak_load"])
     peak["id"] = load_curves.max(axis=0).index
     peak["peak_load"] = load_curves.max(axis=0).values
@@ -96,12 +98,14 @@ def identify_bus(load_curves, demand_area):
     # Identify all demand areas connected to HVMV buses
     peak_hv = peak[peak["voltage_level"] > 1]
 
-    # Perform a spatial join between the centroid of the demand area and mv grid districts to identify grid connection point
+    # Perform a spatial join between the centroid of the demand area and mv
+    # grid districts to identify grid connection point
     peak_hv["centroid"] = peak_hv["geom"].centroid
     peak_hv = peak_hv.set_geometry("centroid")
     peak_hv_c = gpd.sjoin(peak_hv, griddistrict, how="inner", op="intersects")
 
-    # Perform a spatial join between the polygon of the demand area  and mv grid districts to ensure every area got assign to a bus
+    # Perform a spatial join between the polygon of the demand area  and mv
+    # grid districts to ensure every area got assign to a bus
     peak_hv_p = peak_hv[~peak_hv.isin(peak_hv_c)].dropna().set_geometry("geom")
     peak_hv_p = gpd.sjoin(
         peak_hv_p, griddistrict, how="inner", op="intersects"
@@ -122,7 +126,8 @@ def identify_bus(load_curves, demand_area):
     # Identify all demand areas connected to EHV buses
     peak_ehv = peak[peak["voltage_level"] == 1]
 
-    # Perform a spatial join between the centroid of the demand area and ehv voronoi to identify grid connection point
+    # Perform a spatial join between the centroid of the demand area and ehv
+    # voronoi to identify grid connection point
     peak_ehv["centroid"] = peak_ehv["geom"].centroid
     peak_ehv = peak_ehv.set_geometry("centroid")
     peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
@@ -142,7 +147,8 @@ def identify_bus(load_curves, demand_area):
 
 
 def calc_load_curves_ind_osm(scenario):
-    """Temporal disaggregate electrical demand per osm industrial landuse area.
+    """Temporal disaggregate electrical demand per osm industrial landuse
+    area.
 
 
     Parameters
@@ -153,8 +159,8 @@ def calc_load_curves_ind_osm(scenario):
     Returns
     -------
     pandas.DataFrame
-        Demand timeseries of industry allocated to osm landuse areas and aggregated
-        per substation id
+        Demand timeseries of industry allocated to osm landuse areas and
+        aggregated per substation id
 
     """
 
@@ -237,7 +243,8 @@ def calc_load_curves_ind_osm(scenario):
 
 
 def insert_osm_ind_load():
-    """Inserts electrical industry loads assigned to osm landuse areas to the database
+    """Inserts electrical industry loads assigned to osm landuse areas to the
+    database.
 
     Returns
     -------
@@ -263,7 +270,8 @@ def insert_osm_ind_load():
         db.execute_sql(
             f"""
             DELETE FROM
-            {targets['osm_load_individual']['schema']}.{targets['osm_load_individual']['table']}
+            {targets['osm_load_individual']['schema']}.
+            {targets['osm_load_individual']['table']}
             WHERE scn_name = '{scenario}'
             """
         )
@@ -300,7 +308,8 @@ def insert_osm_ind_load():
 
 
 def calc_load_curves_ind_sites(scenario):
-    """Temporal disaggregation of load curves per industrial site and industrial subsector.
+    """Temporal disaggregation of load curves per industrial site and
+    industrial subsector.
 
 
     Parameters
@@ -311,8 +320,8 @@ def calc_load_curves_ind_sites(scenario):
     Returns
     -------
     pandas.DataFrame
-        Demand timeseries of industry allocated to industrial sites and aggregated
-        per substation id and industrial subsector
+        Demand timeseries of industry allocated to industrial sites and
+        aggregated per substation id and industrial subsector
 
     """
     sources = egon.data.config.datasets()["electrical_load_curves_industry"][
@@ -340,12 +349,13 @@ def calc_load_curves_ind_sites(scenario):
         epsg=3035,
     )
 
-    # Replace entries to bring it in line with demandregio's subsector definitions
+    # Replace entries to bring it in line with demandregio's subsector
+    # definitions
     demands_ind_sites.replace(1718, 17, inplace=True)
     share_wz_sites = demands_ind_sites.copy()
 
-    # Create additional df on wz_share per industrial site, which is always set to one
-    # as the industrial demand per site is subsector specific
+    # Create additional df on wz_share per industrial site, which is always
+    # set to one as the industrial demand per site is subsector specific
 
     share_wz_sites.demand = 1
     share_wz_sites.reset_index(inplace=True)
@@ -402,7 +412,8 @@ def calc_load_curves_ind_sites(scenario):
 
 
 def insert_sites_ind_load():
-    """Inserts electrical industry loads assigned to osm landuse areas to the database
+    """Inserts electrical industry loads assigned to osm landuse areas to the
+    database.
 
     Returns
     -------
