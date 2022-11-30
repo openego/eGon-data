@@ -16,7 +16,7 @@ from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
 
-### will be later imported from another file ###
+# will be later imported from another file
 Base = declarative_base()
 
 
@@ -128,7 +128,8 @@ def insert_capacities_per_federal_state_nep():
     db.execute_sql(
         f"""
         DELETE FROM
-        {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
         WHERE scenario_name = 'eGon2035'
         AND nuts != 'DE'
         """
@@ -158,23 +159,27 @@ def insert_capacities_per_federal_state_nep():
     df_windoff = pd.read_excel(
         target_file,
         sheet_name="WInd_Offshore_NEP",
-    ).dropna(subset=['Bundesland', 'Netzverknuepfungspunkt'])
+    ).dropna(subset=["Bundesland", "Netzverknuepfungspunkt"])
 
     # Remove trailing whitespace from column Bundesland
-    df_windoff['Bundesland']= df_windoff['Bundesland'].str.strip()
+    df_windoff["Bundesland"] = df_windoff["Bundesland"].str.strip()
 
     # Group and sum capacities per federal state
-    df_windoff_fs = df_windoff[['Bundesland', 'C 2035']].groupby(['Bundesland']).sum()
+    df_windoff_fs = (
+        df_windoff[["Bundesland", "C 2035"]].groupby(["Bundesland"]).sum()
+    )
 
     # List federal state with an assigned wind offshore capacity
     index_list = list(df_windoff_fs.index.values)
 
-    # Overwrite capacities in df_windoff with more accurate values from df_windoff_fs
+    # Overwrite capacities in df_windoff with more accurate values from
+    # df_windoff_fs
 
     for state in index_list:
 
-        df.at['Wind offshore', state] = df_windoff_fs.at[state, 'C 2035']/1000
-
+        df.at["Wind offshore", state] = (
+            df_windoff_fs.at[state, "C 2035"] / 1000
+        )
 
     # sort NEP-carriers:
     rename_carrier = {
@@ -194,7 +199,7 @@ def insert_capacities_per_federal_state_nep():
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
     }
-    #'Elektromobilitaet gesamt': 'transport',
+    # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
@@ -266,7 +271,8 @@ def insert_capacities_per_federal_state_nep():
     # Filter by carrier
     updated = insert_data[insert_data["carrier"].isin(carriers)]
 
-    # Merge to replace capacities for carriers "oil", "other_non_renewable" and "pumped_hydro"
+    # Merge to replace capacities for carriers "oil", "other_non_renewable" and
+    # "pumped_hydro"
     updated = (
         updated.merge(capacities_list, on=["carrier", "nuts"], how="left")
         .fillna(0)
@@ -309,7 +315,8 @@ def population_share():
         pd.read_sql(
             f"""
             SELECT SUM(population)
-            FROM {sources['zensus_population']['schema']}.{sources['zensus_population']['table']}
+            FROM {sources['zensus_population']['schema']}.
+            {sources['zensus_population']['table']}
             WHERE population>0
             """,
             con=db.engine(),
@@ -691,7 +698,9 @@ def eGon100_capacities():
                             df.p_nom[f"residential_{merge_carrier}"]
                             + df.p_nom[f"services_{merge_carrier}"]
                         ),
-                        "component": df.component[f"residential_{merge_carrier}"],
+                        "component": df.component[
+                            f"residential_{merge_carrier}"
+                        ],
                     },
                 )
             )
@@ -708,7 +717,9 @@ def eGon100_capacities():
             "OCGT": "gas",
             "rural_ground_heat_pump": "residential_rural_heat_pump",
             "urban_central_air_heat_pump": "urban_central_heat_pump",
-            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
+            "urban_central_solar_thermal": (
+                "urban_central_solar_thermal_collector"
+            ),
         },
         inplace=True,
     )

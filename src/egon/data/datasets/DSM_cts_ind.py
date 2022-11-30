@@ -80,7 +80,6 @@ class dsm_Potential(Dataset):
 
 
 def cts_data_import(cts_cool_vent_ac_share):
-
     """
     Import CTS data necessary to identify DSM-potential.
         ----------
@@ -122,7 +121,6 @@ def cts_data_import(cts_cool_vent_ac_share):
 
 
 def ind_osm_data_import(ind_vent_cool_share):
-
     """
     Import industry data per osm-area necessary to identify DSM-potential.
         ----------
@@ -157,7 +155,6 @@ def ind_osm_data_import(ind_vent_cool_share):
 
 
 def ind_osm_data_import_individual(ind_vent_cool_share):
-
     """
     Import industry data per osm-area necessary to identify DSM-potential.
         ----------
@@ -172,8 +169,11 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
     ]
 
     dsm = db.select_dataframe(
-        f"""SELECT osm_id, bus_id as bus, scn_name, p_set FROM
-        {sources['schema']}.{sources['table']}"""
+        f"""
+        SELECT osm_id, bus_id as bus, scn_name, p_set FROM
+        {sources['schema']}.{sources['table']}
+        WHERE scn_name in ('eGon2035', 'eGon100RE')
+        """
     )
 
     # calculate share of timeseries for cooling and ventilation out of
@@ -192,7 +192,6 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
 
 
 def ind_sites_vent_data_import(ind_vent_share, wz):
-
     """
     Import industry sites necessary to identify DSM-potential.
         ----------
@@ -209,13 +208,12 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
     ]
 
     dsm = db.select_dataframe(
-        f"""SELECT bus, scn_name, wz, p_set FROM
-        {sources['schema']}.{sources['table']}"""
+        f"""
+        SELECT bus, scn_name, p_set FROM
+        {sources['schema']}.{sources['table']}
+        WHERE wz = '{wz}'
+        """
     )
-
-    # select load for considered applications
-
-    dsm = dsm[dsm["wz"] == wz]
 
     # calculate share of timeseries for ventilation
 
@@ -246,17 +244,14 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
         "ind_sites_loadcurves_individual"
     ]
 
-    # TODO: at the moment `wz` is missing within the table
-    #  egon_sites_ind_load_curves_individual. Edit this part as soon as it is
-    #  available
     dsm = db.select_dataframe(
-        f"""SELECT site_id, bus_id as bus, scn_name, p_set FROM
-        {sources['schema']}.{sources['table']}"""
+        f"""
+        SELECT site_id, bus_id as bus, scn_name, p_set FROM
+        {sources['schema']}.{sources['table']}
+        WHERE scn_name IN ('eGon2035', 'eGon100RE')
+        AND wz = '{wz}'
+        """
     )
-
-    # select load for considered applications
-
-    # dsm = dsm[dsm["wz"] == wz]
 
     # calculate share of timeseries for ventilation
 
@@ -272,7 +267,6 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
 
 
 def calc_ind_site_timeseries(scenario):
-
     # calculate timeseries per site
     # -> using code from egon.data.datasets.industry.temporal:
     # calc_load_curves_ind_sites
@@ -346,7 +340,6 @@ def calc_ind_site_timeseries(scenario):
 
 
 def relate_to_schmidt_sites(dsm):
-
     # import industrial sites by Schmidt
 
     source = config.datasets()["DSM_CTS_industry"]["sources"][
@@ -397,7 +390,6 @@ def ind_sites_data_import():
 
 
 def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
-
     """
     Calculate DSM-potential per bus using the methods by Heitkoetter et. al.:
         https://doi.org/10.1016/j.adapen.2020.100001
@@ -505,7 +497,6 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
 
 
 def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
-
     """
     Create components representing DSM.
     Parameters
@@ -673,7 +664,6 @@ def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
 
 
 def aggregate_components(df_dsm_buses, df_dsm_links, df_dsm_stores):
-
     # aggregate buses
 
     grouper = [df_dsm_buses.original_bus, df_dsm_buses.scn_name]
@@ -751,7 +741,6 @@ def aggregate_components(df_dsm_buses, df_dsm_links, df_dsm_stores):
 
 
 def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
-
     """
     Export new components to database.
 
@@ -865,7 +854,6 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
 
 def delete_dsm_entries(carrier):
-
     """
     Deletes DSM-components from database if they already exist before creating
     new ones.
@@ -1148,7 +1136,7 @@ def dsm_cts_ind(
     dsm_cement = gpd.GeoDataFrame(dsm[dsm["application"] == "Cement Mill"])
 
     # calculate potentials of industrial sites with cement-applications
-    # using parameters by Heitkoetter et. al.
+    # using parameters by Heitkoetter et al.
     p_max, p_min, e_max, e_min = calculate_potentials(
         s_flex=S_FLEX_CEMENT,
         s_util=S_UTIL_CEMENT,
@@ -1179,7 +1167,7 @@ def dsm_cts_ind(
     print("industry sites: ventilation in WZ23")
     print(" ")
 
-    dsm = ind_sites_vent_data_import(ind_vent_share, wz=23)
+    dsm = ind_sites_vent_data_import(ind_vent_share, wz=WZ)
 
     # drop entries of Cement Mills whose DSM-potentials have already been
     # modelled
@@ -1213,19 +1201,33 @@ def dsm_cts_ind(
         pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
     )
 
-    # aggregate DSM components per substation
-    dsm_buses, dsm_links, dsm_stores = aggregate_components(
-        df_dsm_buses, df_dsm_links, df_dsm_stores
-    )
+    # TODO
+    #     # aggregate DSM components per substation
+    #     dsm_buses, dsm_links, dsm_stores = aggregate_components(
+    #         df_dsm_buses, df_dsm_links, df_dsm_stores
+    #     )
 
-    # export aggregated DSM components to database
+    #     # export aggregated DSM components to database
 
-    delete_dsm_entries("dsm-cts")
-    delete_dsm_entries("dsm-ind-osm")
-    delete_dsm_entries("dsm-ind-sites")
-    delete_dsm_entries("dsm")
+    #     delete_dsm_entries("dsm-cts")
+    #     delete_dsm_entries("dsm-ind-osm")
+    #     delete_dsm_entries("dsm-ind-sites")
+    #     delete_dsm_entries("dsm")
 
     data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
+
+
+def col_per_unit(lst):
+    max_val = max([abs(val) for val in lst])
+
+    return [val / max_val for val in lst]
+
+
+def calc_per_unit(df):
+    for col in ["p_max_pu", "p_min_pu", "e_max_pu", "e_min_pu"]:
+        df[col] = df[col].apply(col_per_unit)
+
+    return df
 
 
 def dsm_cts_ind_individual(
@@ -1294,6 +1296,7 @@ def dsm_cts_ind_individual(
 
     cts_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
     cts_df.columns = base_columns
+    cts_df = calc_per_unit(cts_df)
 
     print(" ")
     print("industry per osm-area: cooling and ventilation")
@@ -1316,6 +1319,7 @@ def dsm_cts_ind_individual(
 
     osm_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
     osm_df.columns = columns
+    osm_df = calc_per_unit(osm_df)
 
     # industry sites
 
@@ -1355,6 +1359,7 @@ def dsm_cts_ind_individual(
 
     paper_df = pd.concat([dsm_paper, *vals], axis=1, ignore_index=True)
     paper_df.columns = columns
+    paper_df = calc_per_unit(paper_df)
 
     print(" ")
     print("industry sites: recycled paper")
@@ -1375,10 +1380,11 @@ def dsm_cts_ind_individual(
         dsm=dsm_recycled_paper,
     )
 
-    df_recycled_paper = pd.concat(
+    recycled_paper_df = pd.concat(
         [dsm_recycled_paper, *vals], axis=1, ignore_index=True
     )
-    df_recycled_paper.columns = columns
+    recycled_paper_df.columns = columns
+    recycled_paper_df = calc_per_unit(recycled_paper_df)
 
     print(" ")
     print("industry sites: pulp")
@@ -1397,8 +1403,9 @@ def dsm_cts_ind_individual(
         dsm=dsm_pulp,
     )
 
-    df_pulp = pd.concat([dsm_pulp, *vals], axis=1, ignore_index=True)
-    df_pulp.columns = columns
+    pulp_df = pd.concat([dsm_pulp, *vals], axis=1, ignore_index=True)
+    pulp_df.columns = columns
+    pulp_df = calc_per_unit(pulp_df)
 
     # industry sites: cement
 
@@ -1409,7 +1416,7 @@ def dsm_cts_ind_individual(
     dsm_cement = gpd.GeoDataFrame(dsm[dsm["application"] == "Cement Mill"])
 
     # calculate potentials of industrial sites with cement-applications
-    # using parameters by Heitkoetter et. al.
+    # using parameters by Heitkoetter et al.
     vals = calculate_potentials(
         s_flex=S_FLEX_CEMENT,
         s_util=S_UTIL_CEMENT,
@@ -1419,8 +1426,9 @@ def dsm_cts_ind_individual(
         dsm=dsm_cement,
     )
 
-    df_cement = pd.concat([dsm_cement, *vals], axis=1, ignore_index=True)
-    df_cement.columns = columns
+    cement_df = pd.concat([dsm_cement, *vals], axis=1, ignore_index=True)
+    cement_df.columns = columns
+    cement_df = calc_per_unit(cement_df)
 
     # industry sites: ventilation in WZ23
 
@@ -1428,7 +1436,7 @@ def dsm_cts_ind_individual(
     print("industry sites: ventilation in WZ23")
     print(" ")
 
-    dsm = ind_sites_vent_data_import_individual(ind_vent_share, wz=23)
+    dsm = ind_sites_vent_data_import_individual(ind_vent_share, wz=WZ)
 
     # drop entries of Cement Mills whose DSM-potentials have already been
     # modelled
@@ -1449,8 +1457,9 @@ def dsm_cts_ind_individual(
 
     columns = ["site_id"] + base_columns
 
-    df_ind_sites = pd.concat([dsm, *vals], axis=1, ignore_index=True)
-    df_ind_sites.columns = columns
+    ind_sites_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
+    ind_sites_df.columns = columns
+    ind_sites_df = calc_per_unit(ind_sites_df)
 
     # TODO
 
