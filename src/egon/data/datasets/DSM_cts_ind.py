@@ -94,7 +94,8 @@ class EgonEtragoElectricityCtsDsmTimeseries(Base):
 
     bus = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
-    p_set = Column(ARRAY(Float))
+    p_nom = Column(Float)
+    e_nom = Column(Float)
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -112,7 +113,8 @@ class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
     osm_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
     bus = Column(Integer)
-    p_set = Column(ARRAY(Float))
+    p_nom = Column(Float)
+    e_nom = Column(Float)
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -131,7 +133,8 @@ class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
     scn_name = Column(String, primary_key=True, index=True)
     bus = Column(Integer)
     application = Column(String)
-    p_set = Column(ARRAY(Float))
+    p_nom = Column(Float)
+    e_nom = Column(Float)
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -149,7 +152,8 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
     site_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
     bus = Column(Integer)
-    p_set = Column(ARRAY(Float))
+    p_nom = Column(Float)
+    e_nom = Column(Float)
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -190,7 +194,7 @@ def cts_data_import(cts_cool_vent_ac_share):
 
     timeseries = dsm["p_set"].copy()
 
-    for index, liste in timeseries.iteritems():
+    for index, liste in timeseries.items():
         share = [float(item) * cts_cool_vent_ac_share for item in liste]
         timeseries.loc[index] = share
 
@@ -223,7 +227,7 @@ def ind_osm_data_import(ind_vent_cool_share):
 
     timeseries = dsm["p_set"].copy()
 
-    for index, liste in timeseries.iteritems():
+    for index, liste in timeseries.items():
         share = [float(item) * ind_vent_cool_share for item in liste]
 
         timeseries.loc[index] = share
@@ -260,7 +264,7 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
 
     timeseries = dsm["p_set"].copy()
 
-    for index, liste in timeseries.iteritems():
+    for index, liste in timeseries.items():
         share = [float(item) * ind_vent_cool_share for item in liste]
 
         timeseries.loc[index] = share
@@ -298,7 +302,7 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
 
     timeseries = dsm["p_set"].copy()
 
-    for index, liste in timeseries.iteritems():
+    for index, liste in timeseries.items():
         share = [float(item) * ind_vent_share for item in liste]
         timeseries.loc[index] = share
 
@@ -336,7 +340,7 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
 
     timeseries = dsm["p_set"].copy()
 
-    for index, liste in timeseries.iteritems():
+    for index, liste in timeseries.items():
         share = [float(item) * ind_vent_share for item in liste]
         timeseries.loc[index] = share
 
@@ -498,7 +502,7 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
 
     scheduled_load = timeseries.copy()
 
-    for index, liste in scheduled_load.iteritems():
+    for index, liste in scheduled_load.items():
         share = []
         for item in liste:
             share.append(item * s_flex)
@@ -508,7 +512,7 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
 
     # calculate energy annual requirement
     energy_annual = pd.Series(index=timeseries.index, dtype=float)
-    for index, liste in timeseries.iteritems():
+    for index, liste in timeseries.items():
         energy_annual.loc[index] = sum(liste)
 
     # calculate Lambda
@@ -518,7 +522,7 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
 
     # P_max
     p_max = scheduled_load.copy()
-    for index, liste in scheduled_load.iteritems():
+    for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
         p = []
         for item in liste:
@@ -530,7 +534,7 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
 
     # P_min
     p_min = scheduled_load.copy()
-    for index, liste in scheduled_load.iteritems():
+    for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
         p = []
         for item in liste:
@@ -545,7 +549,7 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     e_max = scheduled_load.copy()
     e_min = scheduled_load.copy()
 
-    for index, liste in scheduled_load.iteritems():
+    for index, liste in scheduled_load.items():
         emin = []
         emax = []
         for i in range(len(liste)):
@@ -596,7 +600,7 @@ def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
 
     # calculate P_nom and P per unit
     p_nom = pd.Series(index=p_max.index, dtype=float)
-    for index, row in p_max.iteritems():
+    for index, row in p_max.items():
         nom = max(max(row), abs(min(p_min.loc[index])))
         p_nom.loc[index] = nom
         new = [element / nom for element in row]
@@ -606,7 +610,7 @@ def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
 
     # calculate E_nom and E per unit
     e_nom = pd.Series(index=p_min.index, dtype=float)
-    for index, row in e_max.iteritems():
+    for index, row in e_max.items():
         nom = max(max(row), abs(min(e_min.loc[index])))
         e_nom.loc[index] = nom
         new = [element / nom for element in row]
@@ -831,7 +835,7 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
         Links connecting DSM-buses and DSM-stores
     dsm_stores: DataFrame
         Stores representing DSM-potential
-    carrier: String
+    carrier: str
         Remark to be filled in column 'carrier' identifying DSM-potential
     """
 
@@ -939,7 +943,7 @@ def delete_dsm_entries(carrier):
 
     Parameters
         ----------
-     carrier: String
+     carrier: str
         Remark in column 'carrier' identifying DSM-potential
     """
 
@@ -1181,7 +1185,7 @@ def dsm_cts_ind(
     dsm_pulp = gpd.GeoDataFrame(dsm[dsm["application"] == "Mechanical Pulp"])
 
     # calculate potentials of industrial sites with pulp-applications
-    # using parameters by Heitkoetter et. al.
+    # using parameters by Heitkoetter et al.
     p_max, p_min, e_max, e_min = calculate_potentials(
         s_flex=S_FLEX_PULP,
         s_util=S_UTIL_PULP,
@@ -1255,7 +1259,7 @@ def dsm_cts_ind(
     dsm.drop(index_names, inplace=True)
 
     # calculate potentials of ventialtion in industrial sites of WZ 23
-    # using parameters by Heitkoetter et. al.
+    # using parameters by Heitkoetter et al.
     p_max, p_min, e_max, e_min = calculate_potentials(
         s_flex=S_FLEX_WZ,
         s_util=S_UTIL_WZ,
@@ -1280,31 +1284,57 @@ def dsm_cts_ind(
         pd.concat([df_dsm_stores, dsm_stores], ignore_index=True)
     )
 
-    # TODO
-    # # aggregate DSM components per substation
-    # dsm_buses, dsm_links, dsm_stores = aggregate_components(
-    #     df_dsm_buses, df_dsm_links, df_dsm_stores
-    # )
-    #
-    # # export aggregated DSM components to database
-    #
-    # delete_dsm_entries("dsm-cts")
-    # delete_dsm_entries("dsm-ind-osm")
-    # delete_dsm_entries("dsm-ind-sites")
-    # delete_dsm_entries("dsm")
-    #
-    # data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
+    # aggregate DSM components per substation
+    dsm_buses, dsm_links, dsm_stores = aggregate_components(
+        df_dsm_buses, df_dsm_links, df_dsm_stores
+    )
+
+    # export aggregated DSM components to database
+
+    delete_dsm_entries("dsm-cts")
+    delete_dsm_entries("dsm-ind-osm")
+    delete_dsm_entries("dsm-ind-sites")
+    delete_dsm_entries("dsm")
+
+    data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
 
 
-def col_per_unit(lst):
-    max_val = max([abs(val) for val in lst])
+def get_p_nom_e_nom(df: pd.DataFrame):
+    p_nom = [
+        max(max(val), max(abs(v) for v in df.p_min_pu.at[idx]))
+        for idx, val in df.p_max_pu.items()
+    ]
 
-    return [val / max_val for val in lst]
+    e_nom = [
+        max(max(val), max(abs(v) for v in df.e_min_pu.at[idx]))
+        for idx, val in df.e_max_pu.items()
+    ]
+
+    return df.assign(p_nom=p_nom, e_nom=e_nom)
 
 
 def calc_per_unit(df):
-    for col in ["p_max_pu", "p_min_pu", "e_max_pu", "e_min_pu"]:
-        df[col] = df[col].apply(col_per_unit)
+    df = get_p_nom_e_nom(df)
+
+    for col in ["p_max_pu", "p_min_pu"]:
+        rslt = []
+
+        for idx, lst in df[col].items():
+            p_nom = df.p_nom.at[idx]
+
+            rslt.append([v / p_nom for v in lst])
+
+        df[col] = rslt
+
+    for col in ["e_max_pu", "e_min_pu"]:
+        rslt = []
+
+        for idx, lst in df[col].items():
+            e_nom = df.e_nom.at[idx]
+
+            rslt.append([v / e_nom for v in lst])
+
+        df[col] = rslt
 
     return df
 
@@ -1314,7 +1344,7 @@ def create_table(df, table, engine=CON):
     table.__table__.drop(bind=engine, checkfirst=True)
     table.__table__.create(bind=engine, checkfirst=True)
 
-    df.to_sql(
+    df.drop(columns=["p_set"]).to_sql(
         name=table.__table__.name,
         schema=table.__table__.schema,
         con=engine,
@@ -1324,7 +1354,6 @@ def create_table(df, table, engine=CON):
 
 
 def dsm_cts_ind_individual(
-    con=CON,
     cts_cool_vent_ac_share=CTS_COOL_VENT_AC_SHARE,
     ind_vent_cool_share=IND_VENT_COOL_SHARE,
     ind_vent_share=IND_VENT_SHARE,
@@ -1345,8 +1374,6 @@ def dsm_cts_ind_individual(
 
     Parameters
     ----------
-    con :
-        Connection to database
     cts_cool_vent_ac_share: float
         Share of cooling, ventilation and AC in CTS demand
     ind_vent_cool_share: float
@@ -1396,7 +1423,7 @@ def dsm_cts_ind_individual(
     dsm = ind_osm_data_import_individual(ind_vent_cool_share)
 
     # calculate combined potentials of cooling and ventilation in industrial
-    # sector using combined parameters by Heitkoetter et. al.
+    # sector using combined parameters by Heitkoetter et al.
     vals = calculate_potentials(
         s_flex=S_FLEX_OSM,
         s_util=S_UTIL_OSM,
@@ -1484,7 +1511,7 @@ def dsm_cts_ind_individual(
     dsm_pulp = gpd.GeoDataFrame(dsm[dsm["application"] == "Mechanical Pulp"])
 
     # calculate potentials of industrial sites with pulp-applications
-    # using parameters by Heitkoetter et. al.
+    # using parameters by Heitkoetter et al.
     vals = calculate_potentials(
         s_flex=S_FLEX_PULP,
         s_util=S_UTIL_PULP,
