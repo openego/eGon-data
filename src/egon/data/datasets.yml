@@ -682,7 +682,7 @@ distributed_industrial_demand:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios: ["eGon2021", "eGon2035", "eGon100RE"]
     wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
