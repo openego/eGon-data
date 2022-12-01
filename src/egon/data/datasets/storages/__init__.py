@@ -12,7 +12,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import assign_voltage_level
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
@@ -105,7 +105,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
     mastr["voltage_level"] = assign_voltage_level(
         mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         cfg,
-        WORKING_DIR_MASTR_NEW
+        WORKING_DIR_MASTR_OLD
     )
 
     # Initalize DataFrame for matching power plants
