@@ -5,27 +5,28 @@ import pandas as pd
 import psycopg2
 
 from egon.data import db
+import egon.data.config
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 
 
 def insert():
-    def mastr_existing_pv(path, pow_per_area):
+    def mastr_existing_pv(pow_per_area):
 
         """Import MaStR data from csv-files.
 
         Parameters
         ----------
-        path : string
-            Path to location of MaStR-file
         pow_per_area: int
             Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
 
         """
+        cfg = egon.data.config.datasets()["power_plants"]
 
         # import MaStR data: locations, grid levels and installed capacities
 
         # get relevant pv plants: ground mounted
         df = pd.read_csv(
-            path + "bnetza_mastr_solar_cleaned.csv",
+            WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_pv"],
             usecols=[
                 "Lage",
                 "Laengengrad",
@@ -76,7 +77,7 @@ def insert():
 
         mastr["voltage_level"] = pd.Series(dtype=int)
         lvl = pd.read_csv(
-            path + "location_elec_generation_raw.csv",
+            WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_location"],
             usecols=["Spannungsebene", "MaStRNummer"],
         )
 
@@ -739,7 +740,6 @@ def insert():
 
     def run_methodology(
         con=db.engine(),
-        path="",
         pow_per_area=0.04,
         join_buffer=10,
         max_dist_hv=20000,
@@ -752,15 +752,13 @@ def insert():
          ----------
          con:
              Connection to database
-         path : string
-             Path to location of MaStR-file
          pow_per_area: int, default 0.4
              Assumption for areas of existing pv farms and power of new built pv farms depending on area in kW/m²
          join_buffer : int, default 10
              Maximum distance for joining of potential areas (only small ones to big ones) in m
          max_dist_hv : int, default 20000
              Assumption for maximum distance of park with hv-power to next substation in m
-        show_map:  boolean
+         show_map:  boolean
             Optional creation of map to show distribution of installed capacity
 
         """
@@ -771,7 +769,7 @@ def insert():
         print(" ")
 
         # MaStR-data: existing PV farms
-        mastr = mastr_existing_pv(path, pow_per_area)
+        mastr = mastr_existing_pv(pow_per_area)
 
         ###
         print(" ")
@@ -1205,7 +1203,6 @@ def insert():
         pv_per_distr_100RE,
     ) = run_methodology(
         con=db.engine(),
-        path="",
         pow_per_area=0.04,
         join_buffer=10,
         max_dist_hv=20000,

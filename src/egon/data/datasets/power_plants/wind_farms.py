@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+import egon.data.config
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 
 
 def insert():
@@ -112,6 +114,8 @@ def generate_wind_farms():
     *No parameters required
 
     """
+    cfg = egon.data.config.datasets()["power_plants"]
+
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
     def filter_current_wf(wf_geometry):
@@ -146,11 +150,15 @@ def generate_wind_farms():
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
-    bus = pd.read_csv("location_elec_generation_raw.csv")
+    bus = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_location"]
+    )
     # Drop all the rows without connection point
     bus.dropna(subset=["NetzanschlusspunktMastrNummer"], inplace=True)
     # wea has info of each wind turbine in Germany.
-    wea = pd.read_csv("bnetza_mastr_wind_cleaned.csv")
+    wea = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_wind"]
+    )
 
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]
