@@ -297,6 +297,15 @@ mastr:
   file_basename: "bnetza_mastr"
   deposit_id: 808086
 
+mastr_new:
+  technologies:
+    - "wind"
+    - "hydro"
+    - "solar"
+    - "biomass"
+  file_basename: "bnetza_mastr"
+  deposit_id: 1132987
+
 re_potential_areas:
   target:
     schema: "supply"

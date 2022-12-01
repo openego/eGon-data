@@ -29,6 +29,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 import egon.data.config
 
 Base = declarative_base()
@@ -147,7 +148,7 @@ class EgonPowerPlantsHydro(Base):
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
 
-    plant_type = Column(Integer, nullable=True)  # ArtDerWasserkraftanlage
+    plant_type = Column(String(39), nullable=True)  # ArtDerWasserkraftanlage
     water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
 
     capacity = Column(Float, nullable=True)  # Nettonennleistung
@@ -204,10 +205,10 @@ def import_mastr() -> None:
     }
 
     source_files = {
-        "pv": cfg["sources"]["mastr_pv"],
-        "wind": cfg["sources"]["mastr_wind"],
-        "biomass": cfg["sources"]["mastr_biomass"],
-        "hydro": cfg["sources"]["mastr_hydro"],
+        "pv": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_pv"],
+        "wind": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"],
+        "biomass": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"],
+        "hydro": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"],
     }
     target_tables = {
         "pv": EgonPowerPlantsPv,
@@ -226,7 +227,10 @@ def import_mastr() -> None:
     }
 
     # import locations
-    locations = pd.read_csv(cfg["sources"]["mastr_location"], index_col=None)
+    locations = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"],
+        index_col=None
+    )
 
     # import grid districts
     mv_grid_districts = db.select_geodataframe(
