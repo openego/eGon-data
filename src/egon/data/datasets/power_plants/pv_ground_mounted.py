@@ -33,6 +33,7 @@ def insert():
                 "Breitengrad",
                 "Nettonennleistung",
                 "EinheitMastrNummer",
+                "LokationMastrNummer"
             ],
         )
         df = df[df["Lage"] == "Freifläche"]
@@ -71,7 +72,7 @@ def insert():
         mastr["buffer"].crs = 3035
 
         # derive MaStR-Nummer
-        mastr["mastr_nummer"] = df["EinheitMastrNummer"]
+        mastr["LokationMastrNummer"] = df["LokationMastrNummer"]
 
         # derive voltage level
 
@@ -79,31 +80,30 @@ def insert():
         lvl = pd.read_csv(
             cfg["sources"]["mastr_location"],
             usecols=["Spannungsebene", "MaStRNummer"],
-        )
+        )    
 
         # assign voltage_level to MaStR-unit:
-        v_l = pd.Series()
-        for index, row in mastr.iterrows():
-            nr = row["mastr_nummer"]
-            l = lvl[lvl["MaStRNummer"] == "['" + nr + "']"]["Spannungsebene"]
-            if len(l) > 0:
-                if l.iloc[0] == "Mittelspannung":
-                    v_l.loc[index] = 5
-                if l.iloc[0] == "UmspannungZurMittelspannung":
-                    v_l.loc[index] = 4
-                elif l.iloc[0] == "Hochspannung":
-                    v_l.loc[index] = 3
-                elif l.iloc[0] == "UmspannungZurHochspannung":
-                    v_l.loc[index] = 1
-                elif l.iloc[0] == "Höchstspannung":
-                    v_l.loc[index] = 1
-                elif l.iloc[0] == "UmspannungZurNiederspannung":
-                    v_l.loc[index] = l.iloc[0]
-                elif l.iloc[0] == "Niederspannung":
-                    v_l.loc[index] = l.iloc[0]
-            else:
-                v_l.loc[index] = np.NaN
-        mastr["voltage_level"] = v_l
+            
+        vlevel_mapping = {
+        "Höchstspannung": 1,
+        "UmspannungZurHochspannung": 2,
+        "Hochspannung": 3,
+        "UmspannungZurMittelspannung": 4,
+        "Mittelspannung": 5,
+        "UmspannungZurNiederspannung": 6,
+        "Niederspannung": 7,
+        }            
+            
+        mastr = mastr.merge(
+            lvl[["MaStRNummer", "Spannungsebene"]],
+            left_on="LokationMastrNummer",
+            right_on="MaStRNummer",
+            how="left",
+        )
+        
+        mastr["voltage_level"] = mastr.Spannungsebene.replace(vlevel_mapping)
+        
+        mastr.drop(["MaStRNummer", "Spannungsebene"], axis=1, inplace=True)
 
         ### examine data concerning voltage level
         x1 = mastr["voltage_level"].isnull().sum()
@@ -114,7 +114,7 @@ def insert():
             "NaNs in voltage level caused by a) a missing assignment to the number or b) insufficient data: "
             + str(x1)
         )
-        # drop PVs with missing values due to a) no assignemtn of MaStR-numbers or b) missing data in row
+        # drop PVs with missing values due to a) no assignment of MaStR-numbers or b) missing data in row
         mastr.dropna(inplace=True)
         print("Number of rows after neglecting NaNs: " + str(len(mastr)))
 
