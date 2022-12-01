@@ -304,7 +304,7 @@ mastr_new:
     - "solar"
     - "biomass"
   file_basename: "bnetza_mastr"
-  deposit_id: 1132839
+  deposit_id: 1132987
 
 re_potential_areas:
   target:
