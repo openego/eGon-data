@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 import psycopg2
 
-import egon.data.config
 from egon.data import db
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+import egon.data.config
 
 
 def insert():
@@ -26,7 +27,7 @@ def insert():
 
         # get relevant pv plants: ground mounted
         df = pd.read_csv(
-            cfg["sources"]["mastr_pv"],
+            WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_pv"],
             usecols=[
                 "Lage",
                 "Laengengrad",
@@ -35,7 +36,7 @@ def insert():
                 "EinheitMastrNummer",
             ],
         )
-        df = df[df["Lage"] == "Freifläche"]
+        df = df[df["Lage"] == "Freiflaeche"]
 
         ### examine data concerning geographical locations and drop NaNs
         x1 = df["Laengengrad"].isnull().sum()
@@ -77,7 +78,7 @@ def insert():
 
         mastr["voltage_level"] = pd.Series(dtype=int)
         lvl = pd.read_csv(
-            cfg["sources"]["mastr_location"],
+            WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_location"],
             usecols=["Spannungsebene", "MaStRNummer"],
         )
 
