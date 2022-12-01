@@ -11,6 +11,9 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.mastr import (
+    WORKING_DIR_MASTR_OLD, WORKING_DIR_MASTR_NEW
+)
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
     select_nep_power_plants,
@@ -260,7 +263,8 @@ def insert_biomass_plants(scenario):
     target = select_target("biomass", scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv(cfg["sources"]["mastr_biomass"]).query(
+    mastr = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]).query(
         "EinheitBetriebsstatus=='InBetrieb'"
     )
 
@@ -290,7 +294,9 @@ def insert_biomass_plants(scenario):
 
     # Assign bus_id
     if len(mastr_loc) > 0:
-        mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
+        mastr_loc["voltage_level"] = assign_voltage_level(
+            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+        )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
 
     # Insert entries with location
@@ -345,7 +351,8 @@ def insert_hydro_plants(scenario):
         target = select_target(carrier, scenario)
 
         # import data for MaStR
-        mastr = pd.read_csv(cfg["sources"]["mastr_hydro"]).query(
+        mastr = pd.read_csv(
+            WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"]).query(
             "EinheitBetriebsstatus=='InBetrieb'"
         )
 
@@ -379,7 +386,9 @@ def insert_hydro_plants(scenario):
 
         # Assign bus_id and voltage level
         if len(mastr_loc) > 0:
-            mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
+            mastr_loc["voltage_level"] = assign_voltage_level(
+                mastr_loc, cfg, WORKING_DIR_MASTR_NEW
+            )
             mastr_loc = assign_bus_id(mastr_loc, cfg)
 
         # Insert entries with location
@@ -400,7 +409,7 @@ def insert_hydro_plants(scenario):
         session.commit()
 
 
-def assign_voltage_level(mastr_loc, cfg):
+def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
     """Assigns voltage level to power plants.
 
     If location data inluding voltage level is available from
@@ -422,9 +431,19 @@ def assign_voltage_level(mastr_loc, cfg):
     mastr_loc["voltage_level"] = np.nan
 
     if "LokationMastrNummer" in mastr_loc.columns:
+        # Adjust column names to format of MaStR location dataset
+        if mastr_working_dir == WORKING_DIR_MASTR_OLD:
+            cols = ["LokationMastrNummer", "Spannungsebene"]
+        elif mastr_working_dir == WORKING_DIR_MASTR_NEW:
+            cols = ["MaStRNummer", "Spannungsebene"]
+        else:
+            raise ValueError("Invalid MaStR working directory!")
+
         location = pd.read_csv(
-            cfg["sources"]["mastr_location"],
-            usecols=["LokationMastrNummer", "Spannungsebene"],
+            mastr_working_dir / cfg["sources"]["mastr_location"],
+            usecols=cols,
+        ).rename(
+            columns={"MaStRNummer": "LokationMastrNummer"}
         ).set_index("LokationMastrNummer")
 
         location = location[~location.index.duplicated(keep="first")]
@@ -616,7 +635,9 @@ def allocate_conventional_non_chp_power_plants():
 
             # Assign voltage level to MaStR
             mastr["voltage_level"] = assign_voltage_level(
-                mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1), cfg
+                mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
+                cfg,
+                WORKING_DIR_MASTR_OLD
             )
 
             # Initalize DataFrame for matching power plants
@@ -817,10 +838,12 @@ def allocate_other_power_plants():
     )
 
     # Select power plants representing carrier 'others' from MaStR files
-    mastr_sludge = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
+    mastr_sludge = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]).query(
         """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klaerschlamm'"""  # noqa: E501
     )
-    mastr_geothermal = pd.read_csv(cfg["sources"]["mastr_gsgk"]).query(
+    mastr_geothermal = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
         "and Technologie == 'ORCOrganicRankineCycleAnlage'"
     )

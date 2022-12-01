@@ -8,6 +8,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.chp.small_chp import assign_use_case
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -112,7 +113,7 @@ def select_chp_from_mastr(sources):
 
     # Read-in data from MaStR
     MaStR_konv = pd.read_csv(
-        sources["mastr_combustion"],
+        WORKING_DIR_MASTR_OLD / sources["mastr_combustion"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",

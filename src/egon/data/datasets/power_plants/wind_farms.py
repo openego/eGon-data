@@ -56,7 +56,7 @@ def insert():
     )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
     target_power_df = target_power_df.to_crs(3035)
-    
+
     #Create the shape for full Germany
     target_power_df.at['DE', 'geom'] = target_power_df['geom'].unary_union
     target_power_df.at['DE', 'name'] = 'Germany'
@@ -488,7 +488,7 @@ def generate_map():
         sql = "SELECT geom FROM grid.egon_mv_grid_district"
         mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
         mv_districts = mv_districts.to_crs(3035)
-    
+
         mv_districts["power"] = 0.0
         for std in mv_districts.index:
             try:
@@ -497,7 +497,7 @@ def generate_map():
                 ).el_capacity.sum()
             except:
                 print(std)
-    
+
         fig, ax = plt.subplots(1, 1)
         mv_districts.geom.plot(linewidth=0.2, ax=ax, color="black")
         mv_districts.plot(
