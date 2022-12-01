@@ -565,6 +565,32 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
+    # Storages to eTraGo
+    storage_etrago = StorageEtrago(
+        dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
+    )
+
+    mit_charging_infrastructure = MITChargingInfrastructure(
+        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
+    )
+
+    # eMobility: heavy duty transport
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
+    )
+
+    # Heat pump disaggregation for eGon2035
+    heat_pumps_2035 = HeatPumps2035(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            heat_pumps_pypsa_eur_sec,
+            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
+        ]
+    )
+
     # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
         dependencies=[
@@ -572,12 +598,17 @@ with airflow.DAG(
             heat_etrago,
             heat_time_series,
             mv_grid_districts,
+            heat_pumps_2035,
         ]
     )
 
-    # Storages to eTraGo
-    storage_etrago = StorageEtrago(
-        dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
+    # Heat pump disaggregation for eGon100RE
+    heat_pumps_2050 = HeatPumps2050(
+        dependencies=[
+            run_pypsaeursec,
+            heat_pumps_pypsa_eur_sec,
+            heat_supply,
+        ]
     )
 
     # eMobility: motorized individual travel
@@ -602,36 +633,6 @@ with airflow.DAG(
             create_gas_polygons_egon100RE,
             gas_production_insert_data,
             insert_data_gas_stores,
-        ]
-    )
-
-    mit_charging_infrastructure = MITChargingInfrastructure(
-        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
-    )
-
-    # eMobility: heavy duty transport
-    heavy_duty_transport = HeavyDutyTransport(
-        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
-    )
-
-    # Heat pump disaggregation for eGon2035
-    heat_pumps_2035 = HeatPumps2035(
-        dependencies=[
-            cts_demand_buildings,
-            DistrictHeatingAreas,
-            heat_supply,
-            heat_time_series,
-            heat_pumps_pypsa_eur_sec,
-            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
-        ]
-    )
-
-    # Heat pump disaggregation for eGon100RE
-    heat_pumps_2050 = HeatPumps2050(
-        dependencies=[
-            run_pypsaeursec,
-            heat_pumps_pypsa_eur_sec,
-            heat_supply,
         ]
     )
 
