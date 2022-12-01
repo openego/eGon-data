@@ -147,7 +147,7 @@ class EgonPowerPlantsHydro(Base):
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
 
-    plant_type = Column(Integer, nullable=True)  # ArtDerWasserkraftanlage
+    plant_type = Column(String(39), nullable=True)  # ArtDerWasserkraftanlage
     water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
 
     capacity = Column(Float, nullable=True)  # Nettonennleistung
