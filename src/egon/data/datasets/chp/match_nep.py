@@ -324,6 +324,7 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         config.datasets()["chp_location"],
+        WORKING_DIR_MASTR_OLD
     )
 
     # Initalize DataFrame for match CHPs
@@ -377,6 +378,7 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         config.datasets()["chp_location"],
+        WORKING_DIR_MASTR_OLD
     )
 
     # Match CHP from NEP list with aggregated MaStR units
