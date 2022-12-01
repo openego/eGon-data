@@ -49,6 +49,7 @@ from egon.data import config, db
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
 )
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 
@@ -248,7 +249,8 @@ def mastr_data(
         DataFrame containing MaStR data.
     """
     mastr_path = Path(
-        config.datasets()["power_plants"]["sources"]["mastr_pv"]
+        WORKING_DIR_MASTR_NEW
+        / config.datasets()["power_plants"]["sources"]["mastr_pv"]
     ).resolve()
 
     mastr_df = pd.read_csv(
