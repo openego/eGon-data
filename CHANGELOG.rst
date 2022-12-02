@@ -234,7 +234,7 @@ Added
 * Heat pump desaggregation to buildings
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 *  Add voltage level for electricity building loads
-   `#955 <https://github.com/openego/eGon-data/issues/955>`_
+  `#955 <https://github.com/openego/eGon-data/issues/955>`_
 * Add desaggregation of pv home batteries onto buildings
   `#988 <https://github.com/openego/eGon-data/issues/988>`_
 * Add load areas
@@ -242,6 +242,8 @@ Added
 * Desaggregation of DSM time series onto CTS consumers per bus id and
   individual indutry consumers.
   `#1048 <https://github.com/openego/eGon-data/issues/1048>`_
+* Add low flex scenario 'eGon2035_lowflex'
+  `#822 <https://github.com/openego/eGon-data/issues/822>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -353,7 +355,7 @@ Changed
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
 *  Aggregate generators and stores for CH4
-   `#629 <https://github.com/openego/eGon-data/issues/629>`_
+  `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
   `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
@@ -407,7 +409,7 @@ Changed
 * Include simplified restrictions for H2 feed-in into CH4 grid
   `#790 <https://github.com/openego/eGon-data/issues/790>`_
 *  Update hh electricity profiles
-   `#735 <https://github.com/openego/eGon-data/issues/735>`_
+  `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
