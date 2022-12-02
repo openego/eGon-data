@@ -218,8 +218,11 @@ def ind_osm_data_import(ind_vent_cool_share):
     ]
 
     dsm = db.select_dataframe(
-        f"""SELECT bus, scn_name, p_set FROM
-        {sources['schema']}.{sources['table']}"""
+        f"""
+        SELECT bus, scn_name, p_set FROM
+        {sources['schema']}.{sources['table']}
+        WHERE scn_name IN ('eGon2035', 'eGon100RE')
+        """
     )
 
     # calculate share of timeseries for cooling and ventilation out of
@@ -294,7 +297,8 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
         f"""
         SELECT bus, scn_name, p_set FROM
         {sources['schema']}.{sources['table']}
-        WHERE wz = {wz}
+        WHERE scn_name IN ('eGon2035', 'eGon100RE')
+        AND wz = {wz}
         """
     )
 
