@@ -229,7 +229,7 @@ def import_mastr() -> None:
     # import locations
     locations = pd.read_csv(
         WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"],
-        index_col=None
+        index_col=None,
     )
 
     # import grid districts
@@ -244,7 +244,7 @@ def import_mastr() -> None:
     technologies = ["pv", "wind", "biomass", "hydro"]
     for tech in technologies:
         # read units
-        print(f"Importing MaStR dataset: {tech}:")
+        print(f"===== Importing MaStR dataset: {tech} =====")
         print("  Reading CSV and filtering data...")
         units = pd.read_csv(
             source_files[tech],
@@ -315,8 +315,7 @@ def import_mastr() -> None:
         mapping.update({"geometry": "geom"})
         units.rename(columns=mapping, inplace=True)
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
-        if tech == "hydro":
-            units["plant_type"] = units.plant_type.fillna(-1).astype(int)
+
         units.set_geometry("geom", inplace=True)
         units["id"] = range(0, len(units))
 
