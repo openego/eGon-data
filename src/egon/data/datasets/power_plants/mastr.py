@@ -244,7 +244,7 @@ def import_mastr() -> None:
     technologies = ["pv", "wind", "biomass", "hydro"]
     for tech in technologies:
         # read units
-        print(f"Importing MaStR dataset: {tech}:")
+        print(f"===== Importing MaStR dataset: {tech} =====")
         print("  Reading CSV and filtering data...")
         units = pd.read_csv(
             source_files[tech],
