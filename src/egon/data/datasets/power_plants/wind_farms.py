@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 import egon.data.config
 
 
@@ -151,28 +151,25 @@ def generate_wind_farms():
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
-    bus = pd.read_csv(WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_location"])
+    bus = pd.read_csv(WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"], index_col= "MaStRNummer")
     # Drop all the rows without connection point
     bus.dropna(subset=["NetzanschlusspunktMastrNummer"], inplace=True)
     # wea has info of each wind turbine in Germany.
-    wea = pd.read_csv(WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_wind"])
+    wea = pd.read_csv(WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"])
 
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]
     # Delete all the offshore wind turbines
-    wea = wea[wea["Kuestenentfernung"] == 0]
+    wea = wea.loc[wea["Lage"] == "Windkraft an Land"]
     # the variable map_ap_wea_farm have the connection point of all the available wt
     # in the dataframe bus.
     map_ap_wea_farm = {}
     map_ap_wea_voltage = {}
-    for i in bus.index:
-        for unit in bus["MaStRNummer"][i][1:-1].split(", "):
-            map_ap_wea_farm[unit[1:-1]] = bus["NetzanschlusspunktMastrNummer"][
-                i
-            ]
-            map_ap_wea_voltage[unit[1:-1]] = bus["Spannungsebene"][i]
-    wea["connection point"] = wea["EinheitMastrNummer"].apply(wind_farm)
-    wea["voltage"] = wea["EinheitMastrNummer"].apply(voltage)
+
+    wea["connection point"] = wea["LokationMastrNummer"].map(
+        bus["NetzanschlusspunktMastrNummer"])
+    wea["voltage"] = wea["LokationMastrNummer"].map(
+        bus["NetzanschlusspunktMastrNummer"])
 
     # Create the columns 'geometry' which will have location of each WT in a point type
     wea = gpd.GeoDataFrame(
@@ -197,6 +194,7 @@ def generate_wind_farms():
             wt_location["geometry"].values
         ).convex_hull
         current_wfs.at[conn_point, "voltage"] = wt_location["voltage"].iat[0]
+
     current_wfs["geometry2"] = current_wfs["geometry"].to_crs(3035)
     current_wfs["area"] = current_wfs["geometry2"].apply(lambda x: x.area)
     current_wfs["length"] = current_wfs["geometry2"].apply(lambda x: x.length)
