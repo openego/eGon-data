@@ -80,7 +80,7 @@ from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
-from egon.data.datasets.storages import PumpedHydro
+from egon.data.datasets.storages import Storages
 from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
@@ -420,7 +420,7 @@ with airflow.DAG(
             run_pypsaeursec,
             foreign_lines,
             insert_hydrogen_buses,
-            create_gas_polygons_egon100RE
+            create_gas_polygons_egon100RE,
         ]
     )
 
@@ -508,7 +508,7 @@ with airflow.DAG(
     )
 
     # Pumped hydro units
-    pumped_hydro = PumpedHydro(
+    pumped_hydro = Storages(
         dependencies=[
             mastr_data,
             mv_grid_districts,
