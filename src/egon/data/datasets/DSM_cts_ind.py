@@ -221,7 +221,6 @@ def ind_osm_data_import(ind_vent_cool_share):
         f"""
         SELECT bus, scn_name, p_set FROM
         {sources['schema']}.{sources['table']}
-        WHERE scn_name IN ('eGon2035', 'eGon100RE')
         """
     )
 
@@ -258,7 +257,6 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
         f"""
         SELECT osm_id, bus_id as bus, scn_name, p_set FROM
         {sources['schema']}.{sources['table']}
-        WHERE scn_name in ('eGon2035', 'eGon100RE')
         """
     )
 
@@ -297,8 +295,7 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
         f"""
         SELECT bus, scn_name, p_set FROM
         {sources['schema']}.{sources['table']}
-        WHERE scn_name IN ('eGon2035', 'eGon100RE')
-        AND wz = {wz}
+        WHERE wz = {wz}
         """
     )
 
@@ -335,8 +332,7 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
         f"""
         SELECT site_id, bus_id as bus, scn_name, p_set FROM
         {sources['schema']}.{sources['table']}
-        WHERE scn_name IN ('eGon2035', 'eGon100RE')
-        AND wz = {wz}
+        WHERE wz = {wz}
         """
     )
 
