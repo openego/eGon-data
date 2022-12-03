@@ -14,26 +14,26 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+from multiprocessing import Process
+from pathlib import Path
 import os
 import socket
 import subprocess
 import sys
 import time
-from multiprocessing import Process
-from pathlib import Path
 
-import click
-import yaml
 from psycopg2 import OperationalError as PSPGOE
-
-import egon.data
-import egon.data.airflow
-import egon.data.config as config
-import importlib_resources as resources
-from egon.data import logger
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError as SQLAOE
 from sqlalchemy.orm import Session
+import click
+import importlib_resources as resources
+import yaml
+
+from egon.data import logger
+import egon.data
+import egon.data.airflow
+import egon.data.config as config
 
 
 @click.group(
