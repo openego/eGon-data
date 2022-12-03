@@ -120,7 +120,7 @@ class Tasks(dict):
         if isinstance(graph, Callable):
             graph = PythonOperator(
                 task_id=f"{prefix(graph)}{graph.__name__.replace('_', '-')}",
-                python_callable=graph,
+                python_callable=logger.catch(reraise=True)(graph),
             )
         self.graph = graph
         if isinstance(graph, Operator):

@@ -438,6 +438,7 @@ def serve(context):
     subprocess.run(["airflow", "webserver"] + context.args)
 
 
+@logger.catch(reraise=True)
 def main():
     try:
         egon_data.main(sys.argv[1:])
