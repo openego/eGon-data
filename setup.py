@@ -104,6 +104,7 @@ setup(
         "pyaml",
         "pypsa==0.17.1",
         "rasterio",
+        "rich",
         "rioxarray",
         "rtree",
         "saio",
