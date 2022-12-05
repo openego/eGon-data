@@ -50,6 +50,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
 )
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
+from egon.data.datasets.power_plants.mastr import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 
@@ -2427,7 +2428,8 @@ def add_voltage_level(
     buildings_gdf: gpd.GeoDataFrame,
 ) -> gpd.GeoDataFrame:
     """
-    Add voltage level derived from generator capacity to the power plants.
+    Get voltage level data from mastr table and assign to units.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -2439,22 +2441,22 @@ def add_voltage_level(
         GeoDataFrame containing OSM building data with voltage level per generator.
     """
 
-    def voltage_levels(p: float) -> int:
-        if p < 100:
-            return 7
-        elif p < 200:
-            return 6
-        elif p < 5500:
-            return 5
-        elif p < 20000:
-            return 4
-        elif p < 120000:
-            return 3
-        return 1
-
-    return buildings_gdf.assign(
-        voltage_level=buildings_gdf.capacity.apply(voltage_levels)
+    with db.session_scope() as session:
+        query = session.query(
+            EgonPowerPlantsPv.gens_id,
+            EgonPowerPlantsPv.voltage_level,
+        )
+    voltage_levels_df = pd.read_sql(
+        query.statement, query.session.bind, index_col=None
     )
+    buildings_gdf = buildings_gdf.merge(
+        voltage_levels_df,
+        left_on="gens_id",
+        right_on="gens_id",
+        how="left",
+    )
+
+    return buildings_gdf
 
 
 def add_start_up_date(
