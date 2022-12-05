@@ -9,8 +9,15 @@ following tables:
 * biomass/biogas plants: table `supply.egon_power_plants_biomass`
 * hydro plants: table `supply.egon_power_plants_hydro`
 
-Empty data in columns `voltage_level`, `bus_id` (all tables), and `plant_type`
-(supply.egon_power_plants_hydro) is indicated by the value -1.
+Handling of empty source data in MaStr dump:
+* `voltage_level`: inferred based on nominal power (`capacity`) using the
+  ranges from
+  https://redmine.iks.cs.ovgu.de/oe/projects/ego-n/wiki/Definition_of_thresholds_for_voltage_level_assignment
+  which results in True in column `voltage_level_inferred`. Remaining datasets
+  are set to -1 (which only occurs if `capacity` is empty).
+* `supply.egon_power_plants_*.bus_id`: set to -1 (only if not within grid
+  districts, this should not happen)
+* `supply.egon_power_plants_hydro.plant_type`: NaN
 
 The data is used especially for the generation of status quo grids by ding0.
 """
