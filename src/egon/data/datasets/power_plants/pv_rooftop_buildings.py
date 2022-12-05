@@ -204,7 +204,6 @@ COLS_TO_EXPORT = [
 INCLUDE_SYNTHETIC_BUILDINGS = True
 ONLY_BUILDINGS_WITH_DEMAND = True
 TEST_RUN = False
-DIRTY_FIX = False
 
 
 def timer_func(func):
@@ -2707,47 +2706,6 @@ def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
     mastr_gdf = load_mastr_data()
-
-    if DIRTY_FIX:
-        mastr_gdf = mastr_gdf.reset_index()
-
-        df_list = [mastr_gdf.copy()]
-
-        truncated_gdf = mastr_gdf.sort_values(by="capacity", ascending=False)
-
-        cap_before = truncated_gdf.capacity.sum()
-
-        size = int(0.05 * len(truncated_gdf))
-
-        truncated_gdf = truncated_gdf.iloc[size:]
-
-        cap_after = truncated_gdf.capacity.sum()
-
-        logger.debug(
-            f"Capacity of all MaStR gens: {cap_before / 1000: g} MW\nCapacity of 95% "
-            f"smallets MaStR gens: {cap_after / 1000: g} MW"
-        )
-
-        target = 34
-        actual = 6
-
-        share = cap_after / cap_before
-
-        n = int(round(target / actual / share, 0))
-
-        logger.debug(f"N: {n}")
-
-        for i in range(n):
-            df_append = truncated_gdf.copy()
-            df_append[MASTR_INDEX_COL] += f"_{i}"
-
-            df_list.append(df_append)
-
-        mastr_gdf = pd.concat(df_list, ignore_index=True).set_index(
-            MASTR_INDEX_COL
-        )
-
-        del df_list, df_append
 
     buildings_gdf = load_building_data()
 
