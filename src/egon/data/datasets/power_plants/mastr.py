@@ -77,6 +77,7 @@ class EgonPowerPlantsPv(Base):
     )  # ZugeordneteWirkleistungWechselrichter in MW
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
+    voltage_level_inferred = Column(Boolean, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
@@ -104,6 +105,7 @@ class EgonPowerPlantsWind(Base):
     capacity = Column(Float, nullable=True)  # Nettonennleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
+    voltage_level_inferred = Column(Boolean, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
@@ -130,6 +132,7 @@ class EgonPowerPlantsBiomass(Base):
     th_capacity = Column(Float, nullable=True)  # ThermischeNutzleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
+    voltage_level_inferred = Column(Boolean, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
@@ -154,12 +157,53 @@ class EgonPowerPlantsHydro(Base):
     capacity = Column(Float, nullable=True)  # Nettonennleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
+    voltage_level_inferred = Column(Boolean, nullable=True)
 
     geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
 
 
 def import_mastr() -> None:
     """Import MaStR data into database"""
+
+    def infer_voltage_level(
+        units_gdf: gpd.GeoDataFrame,
+    ) -> gpd.GeoDataFrame:
+        """
+        Infer nan values in voltage level derived from generator capacity to
+        the power plants.
+
+        Parameters
+        -----------
+        units_gdf : geopandas.GeoDataFrame
+            GeoDataFrame containing units with voltage levels from MaStR
+        Returnsunits_gdf: gpd.GeoDataFrame
+        -------
+        geopandas.GeoDataFrame
+            GeoDataFrame containing units all having assigned a voltage level.
+        """
+
+        def voltage_levels(p: float) -> int:
+            if p <= 100:
+                return 7
+            elif p <= 200:
+                return 6
+            elif p <= 5500:
+                return 5
+            elif p <= 20000:
+                return 4
+            elif p <= 120000:
+                return 3
+            return 1
+
+        units_gdf["voltage_level_inferred"] = False
+        mask = units_gdf.voltage_level.isna()
+        units_gdf.loc[mask, "voltage_level_inferred"] = True
+        units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[
+            mask
+        ].Nettonennleistung.apply(voltage_levels)
+
+        return units_gdf
+
     engine = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
 
@@ -279,7 +323,10 @@ def import_mastr() -> None:
             right_on="MaStRNummer",
             how="left",
         )
+        # convert voltage levels to numbers
         units["voltage_level"] = units.Spannungsebene.replace(vlevel_mapping)
+        # set voltage level for nan values
+        units = infer_voltage_level(units)
 
         # add geometry
         print("  Adding geometries...")
