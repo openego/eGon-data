@@ -384,7 +384,7 @@ def import_mastr() -> None:
         units["bus_id"] = units.bus_id.fillna(-1).astype(int)
 
         # write to DB
-        print("  Writing to DB...")
+        print(f"  Writing {len(units)} units to DB...")
         units.to_postgis(
             name=target_tables[tech].__tablename__,
             con=engine,
