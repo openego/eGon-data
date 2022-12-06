@@ -216,10 +216,11 @@ INSERT INTO grid.egon_etrago_link_timeseries
 	 	WHERE scn_name='eGon2035_lowflex'
 	);
 
--- Copy relevant load components including time series
+-- Copy relevant load components including time series except for emobility (MIT) which
+-- have been created in egon.data.datasets.emobility.motorized_individual_travel.model_timeseries
 DELETE FROM grid.egon_etrago_load_timeseries WHERE scn_name='eGon2035_lowflex'
 AND load_id NOT IN (
- SELECT load_id FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV'
+ SELECT load_id FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier = 'land transport EV'
 );
 DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV';
 
@@ -235,7 +236,7 @@ INSERT INTO grid.egon_etrago_load
 		sign
     FROM grid.egon_etrago_load
 	WHERE scn_name='eGon2035'
-	AND carrier = 'land transport EV';
+	AND carrier != 'land transport EV';
 
 INSERT INTO grid.egon_etrago_load_timeseries
     SELECT
@@ -249,7 +250,8 @@ INSERT INTO grid.egon_etrago_load_timeseries
 	AND load_id IN (
 	SELECT load_id
 	FROM grid.egon_etrago_load
-	WHERE scn_name = 'eGon2035_lowflex')
+	WHERE scn_name = 'eGon2035_lowflex'
+	AND carrier != 'land transport EV')
 	;
 
 -- Copy relevant storage components including time series
