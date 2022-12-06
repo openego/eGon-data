@@ -16,7 +16,7 @@ Handling of empty source data in MaStr dump:
   which results in True in column `voltage_level_inferred`. Remaining datasets
   are set to -1 (which only occurs if `capacity` is empty).
 * `supply.egon_power_plants_*.bus_id`: set to -1 (only if not within grid
-  districts, this should not happen)
+  districts or no geom available, e.g. for units with nom. power <30 kW)
 * `supply.egon_power_plants_hydro.plant_type`: NaN
 
 The data is used especially for the generation of status quo grids by ding0.
