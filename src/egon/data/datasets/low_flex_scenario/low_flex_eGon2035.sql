@@ -220,7 +220,7 @@ INSERT INTO grid.egon_etrago_link_timeseries
 DELETE FROM grid.egon_etrago_load_timeseries WHERE scn_name='eGon2035_lowflex'
 AND load_id NOT IN (
  SELECT load_id FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV'
-)
+);
 DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV';
 
 INSERT INTO grid.egon_etrago_load
