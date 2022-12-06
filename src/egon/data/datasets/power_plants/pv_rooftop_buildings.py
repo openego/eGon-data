@@ -2748,6 +2748,32 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return buildings_gdf
 
 
+def add_bus_ids_sq(buildings_gdf: gpd.GeoDataFrame,) -> gpd.GeoDataFrame:
+    """Add bus ids for status_quo units
+
+    Parameters
+    -----------
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with desaggregated PV
+        plants.
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing OSM building data with bus_id per
+        generator.
+    """
+    grid_districts_gdf = grid_districts(EPSG)
+
+    mask = buildings_gdf.scenario == "status_quo"
+    buildings_gdf.loc[mask, "bus_id"] = (
+        buildings_gdf.loc[mask]
+        .sjoin(grid_districts_gdf, how="left")
+        .index_right
+    )
+
+    return buildings_gdf
+
+
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
@@ -2795,6 +2821,9 @@ def pv_rooftop_to_buildings():
 
     # add weather cell
     all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
+
+    # add bus IDs for status quo scenario
+    all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf)
 
     # export scenario
     create_scenario_table(add_voltage_level(all_buildings_gdf))
