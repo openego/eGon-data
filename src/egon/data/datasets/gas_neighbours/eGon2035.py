@@ -422,7 +422,11 @@ def insert_generators(gen):
 
 
 def calc_global_ch4_demand(Norway_global_demand_1y):
-    """Calculates global gas demands from TYNDP data
+    """Calculates global CH4 demands abroad for eGon2035 scenario
+
+    The data comes from TYNDP 2020 according to NEP 2021 from the
+    scenario 'Distributed Energy', linear interpolate between 2030
+    and 2040.
 
     Returns
     -------
@@ -442,7 +446,7 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     df = (
         df.query(
             'Scenario == "Distributed Energy" & '
-            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Case == "Average" &'
             'Category == "Demand"'
         )
         .drop(
@@ -498,11 +502,14 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
 
 
 def import_ch4_demandTS():
-    """Import from the PyPSA-eur-sec run the timeseries of
-    residential rural heat per neighbor country.
-    This timeserie is used to calculate:
-    - the global (yearly) heat demand of Norway (that will be supplied by CH4)
-    - the normalized CH4 hourly resolved demand profile
+    """Calculate global CH4 demand in Norway and CH4 demand profile
+
+    Import from the PyPSA-eur-sec run the timeseries of residential
+    rural heat per neighbor country. This timeserie is used to
+    calculate:
+      * the global (yearly) heat demand of Norway
+        (that will be supplied by CH4)
+      * the normalized CH4 hourly resolved demand profile
 
     Parameters
     ----------
@@ -552,63 +559,13 @@ def import_ch4_demandTS():
     return Norway_global_demand, neighbor_loads_t
 
 
-def import_power_to_h2_demandTS():
-    """Import from the PyPSA-eur-sec run the timeseries of
-    industry demand heat per neighbor country and normalize it
-    in order to model the power-to-H2 hourly resolved demand profile.
-
-    Parameters
-    ----------
-    None.
-
-    Returns
-    -------
-    neighbor_loads_t: pandas.DataFrame
-        Normalized CH4 hourly resolved demand profiles per neighbor country
-
-    """
-
-    cwd = Path(".")
-    target_file = (
-        cwd
-        / "data_bundle_egon_data"
-        / "pypsa_eur_sec"
-        / "2022-07-26-egondata-integration"
-        / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
-    )
-
-    network = pypsa.Network(str(target_file))
-
-    # Set country tag for all buses
-    network.buses.country = network.buses.index.str[:2]
-    neighbors = network.buses[network.buses.country != "DE"]
-    neighbors = neighbors[
-        (neighbors["country"].isin(countries))
-        & (
-            neighbors["carrier"] == "residential rural heat"
-        )  # no available industry profile for now, using another timeserie
-    ]  # .drop_duplicates(subset="country")
-
-    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
-    neighbor_loads_t_index = neighbor_loads.index[
-        neighbor_loads.index.isin(network.loads_t.p_set.columns)
-    ]
-    neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
-
-    for i in neighbor_loads_t.columns:
-        neighbor_loads_t[i] = neighbor_loads_t[i] / neighbor_loads_t[i].sum()
-
-    return neighbor_loads_t
-
-
 def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
-    """Insert gas final demands for foreign countries
+    """Insert CH4 demands abroad in the database for eGon2035
 
     Parameters
     ----------
     global_demand : pandas.DataFrame
-        Global gas demand per foreign node in 1 year
+        Global CH4 demand per foreign node in 1 year
     gas_demandTS : pandas.DataFrame
         Normalized time serie of the demand per foreign country
 
@@ -621,8 +578,10 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
-    # Delete existing data
+    scn_name = "eGon2035"
+    carrier = "CH4"
 
+    # Delete existing data
     db.execute_sql(
         f"""
         DELETE FROM 
@@ -634,9 +593,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
                 SELECT bus_id FROM
                 {sources['buses']['schema']}.{sources['buses']['table']}
                 WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-            AND scn_name = 'eGon2035'
-            AND carrier = 'CH4'            
+                AND scn_name = '{scn_name}')
+            AND scn_name = '{scn_name}'
+            AND carrier = '{carrier}'
         );
         """
     )
@@ -649,9 +608,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
             SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         """
     )
 
@@ -670,7 +629,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     global_demand = global_demand.assign(**c)
 
     new_id = db.next_etrago_id("load")
@@ -855,7 +814,12 @@ def insert_storage(ch4_storage_capacities):
 
 
 def calc_global_power_to_h2_demand():
-    """Calculates global power demand linked to h2 production from TYNDP data
+    """Calculates H2 demand abroad for eGon2035 scenario
+
+    Calculates global power demand abroad linked to H2 production.
+    The data comes from TYNDP 2020 according to NEP 2021 from the
+    scenario 'Distributed Energy', linear interpolate between 2030
+    and 2040.
 
     Returns
     -------
@@ -874,7 +838,7 @@ def calc_global_power_to_h2_demand():
     df = (
         df.query(
             'Scenario == "Distributed Energy" & '
-            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Case == "Average" &'
             'Parameter == "P2H2"'
         )
         .drop(
@@ -943,32 +907,24 @@ def calc_global_power_to_h2_demand():
     return global_power_to_h2_demand
 
 
-def insert_power_to_h2_demand(
-    global_power_to_h2_demand, normalized_power_to_h2_demandTS
-):
+def insert_power_to_h2_demand(global_power_to_h2_demand):
+    """Insert H2 demands into database for eGon2035
+
+    Detailled description
+    This function insert data in the database and has no return.
+
+    Parameters
+    ----------
+    global_power_to_h2_demand : pandas.DataFrame
+        Global H2 demand per foreign node in 1 year
+
+    """
     sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
-    # Delete existing data
-
-    db.execute_sql(
-        f"""
-        DELETE FROM 
-        {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
-        WHERE "load_id" IN (
-            SELECT load_id FROM 
-            {targets['loads']['schema']}.{targets['loads']['table']}
-            WHERE bus IN (
-                SELECT bus_id FROM
-                {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-            AND scn_name = 'eGon2035'
-            AND carrier = 'H2 for industry'            
-        );
-        """
-    )
+    scn_name = "eGon2035"
+    carrier = "H2_for_industry"
 
     db.execute_sql(
         f"""
@@ -978,9 +934,9 @@ def insert_power_to_h2_demand(
             SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'H2 for industry'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         """
     )
 
@@ -1005,7 +961,7 @@ def insert_power_to_h2_demand(
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "H2 for industry"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
 
     new_id = db.next_etrago_id("load")
@@ -1013,10 +969,14 @@ def insert_power_to_h2_demand(
         new_id, new_id + len(global_power_to_h2_demand)
     )
 
+    global_power_to_h2_demand = global_power_to_h2_demand.rename(
+        columns={"GlobD_2035": "p_set"}
+    )
+
     power_to_h2_demand_TS = global_power_to_h2_demand.copy()
     # Remove useless columns
     global_power_to_h2_demand = global_power_to_h2_demand.drop(
-        columns=["Node/Line", "GlobD_2035"]
+        columns=["Node/Line"]
     )
 
     # Insert data to db
@@ -1024,57 +984,6 @@ def insert_power_to_h2_demand(
         targets["loads"]["table"],
         db.engine(),
         schema=targets["loads"]["schema"],
-        index=False,
-        if_exists="append",
-    )
-
-    # Insert time series
-    normalized_power_to_h2_demandTS = normalized_power_to_h2_demandTS.drop(
-        columns=[
-            "NO3 0 residential rural heat",
-            "CH0 0 residential rural heat",
-            "LU0 0 residential rural heat",
-        ]
-    )
-
-    power_to_h2_demand_TS = power_to_h2_demand_TS.replace(
-        {
-            "Node/Line": {
-                "UK00": "GB4",
-                "UKNI": "GB5",
-                "DKW1": "DK3",
-                "DKE1": "DK0",
-                "SE02": "SE3",
-            }
-        }
-    )
-
-    p_set = []
-    for index, row in power_to_h2_demand_TS.iterrows():
-        normalized_TS_df = normalized_power_to_h2_demandTS.loc[
-            :,
-            normalized_power_to_h2_demandTS.columns.str.contains(
-                row["Node/Line"][:3]
-            ),
-        ]
-        p_set.append(
-            (
-                normalized_TS_df[normalized_TS_df.columns[0]]
-                * row["GlobD_2035"]
-            ).tolist()
-        )
-
-    power_to_h2_demand_TS["p_set"] = p_set
-    power_to_h2_demand_TS["temp_id"] = 1
-    power_to_h2_demand_TS = power_to_h2_demand_TS.drop(
-        columns=["Node/Line", "GlobD_2035", "bus", "carrier"]
-    )
-
-    # Insert data to db
-    power_to_h2_demand_TS.to_sql(
-        targets["load_timeseries"]["table"],
-        db.engine(),
-        schema=targets["load_timeseries"]["schema"],
         index=False,
         if_exists="append",
     )
@@ -1373,22 +1282,34 @@ def tyndp_gas_generation():
 
 
 def tyndp_gas_demand():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+    """Insert gas demands abroad for eGon2035
 
-    Returns
-    -------
-    None.
+    Insert CH4 and H2 demands abroad for eGon2035 by executing the
+    following steps:
+      * CH4
+          * Calculation of the global CH4 demand in Norway and of the
+            CH4 demand profile by executing the function
+            :py:func:`import_ch4_demandTS`
+          * Calculation of the global CH4 demands by executing the
+            function :py:func:`calc_global_ch4_demand`
+          * Insertion the CH4 loads and their associated time series
+            in the database by executing the function
+            :py:func:`insert_ch4_demand`
+      * H2
+          * Calculation of the global power demand abroad linked
+            to H2 production by executing the function
+            :py:func:`calc_global_power_to_h2_demand`
+          * Insertion of these loads in the database by executing the
+            function :py:func:`insert_power_to_h2_demand`
+    This function insert data in the database and has no return.
+
     """
     Norway_global_demand_1y, normalized_ch4_demandTS = import_ch4_demandTS()
     global_ch4_demand = calc_global_ch4_demand(Norway_global_demand_1y)
     insert_ch4_demand(global_ch4_demand, normalized_ch4_demandTS)
 
-    normalized_power_to_h2_demandTS = import_power_to_h2_demandTS()
     global_power_to_h2_demand = calc_global_power_to_h2_demand()
-    insert_power_to_h2_demand(
-        global_power_to_h2_demand, normalized_power_to_h2_demandTS
-    )
+    insert_power_to_h2_demand(global_power_to_h2_demand)
 
 
 def grid():

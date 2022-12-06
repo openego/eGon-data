@@ -12,9 +12,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.era5 import EgonEra5Cells, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets.zensus_vg250 import (
-    DestatisZensusPopulationPerHaInsideGermany,
-)
+from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 import egon.data.config
 
 
@@ -22,7 +20,7 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks={
                 wind,
@@ -45,7 +43,7 @@ class MapZensusWeatherCell(Base):
 
     zensus_population_id = Column(
         Integer,
-        ForeignKey(DestatisZensusPopulationPerHaInsideGermany.id),
+        ForeignKey(DestatisZensusPopulationPerHa.id),
         primary_key=True,
         index=True,
     )
@@ -491,7 +489,7 @@ def heat_pump_cop():
 
     # Calculate coefficient of performance for air sourced heat pumps
     # according to Brown et. al
-    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t ** 2
+    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t**2
 
     df = pd.DataFrame(
         index=temperature.to_pandas().index,
@@ -577,10 +575,8 @@ def mapping_zensus_weather():
 
     with db.session_scope() as session:
         cells_query = session.query(
-            DestatisZensusPopulationPerHaInsideGermany.id.label(
-                "zensus_population_id"
-            ),
-            DestatisZensusPopulationPerHaInsideGermany.geom_point,
+            DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
+            DestatisZensusPopulationPerHa.geom_point,
         )
 
     gdf_zensus_population = gpd.read_postgis(

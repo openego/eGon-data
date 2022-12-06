@@ -201,6 +201,10 @@ Added
   `#382 <https://github.com/openego/eGon-data/issues/382>`_
 * Add motorized individual travel
   `#553 <https://github.com/openego/eGon-data/issues/553>`_
+* Allocating MaStR PV rooftop power plants to OSM and synthetic buildings.
+  Desaggregating PV rooftop scenarios to mv grid districts and OSM and synthetic
+  buildings.
+  `#684 <https://github.com/openego/eGon-data/issues/684>`_
 * Add mapping zensus - weather cells
   `#845 <https://github.com/openego/eGon-data/issues/845>`_
 * Add pv rooftop plants per mv grid for eGon100RE
@@ -215,6 +219,8 @@ Added
   `#919 <https://github.com/openego/eGon-data/issues/919>`_
 * Add distribution of CHP plants for eGon100RE
   `#851 <https://github.com/openego/eGon-data/issues/851>`_
+* Add mapping table for all used buildings
+  `#962 <https://github.com/openego/eGon-data/issues/962>`_
 * Add charging infrastructure for e-mobility
   `#937 <https://github.com/openego/eGon-data/issues/937>`_
 * Add zipfile check
@@ -225,6 +231,10 @@ Added
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Write simBEV metadata to DB table
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
+*  Add voltage level for electricity building loads
+  `#955 <https://github.com/openego/eGon-data/issues/955>`_
+* Add desaggregation of pv home batteries onto buildings
+  `#988 <https://github.com/openego/eGon-data/issues/988>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -428,10 +438,14 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Adjust H2 industry profiles abroad for eGon2035
+  `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
 * Add rural heat pumps per medium voltage grid district
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
+* Add eGon2021 scenario to demandregio dataset
+  `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
 
 
 Bug Fixes
@@ -601,7 +615,7 @@ Bug Fixes
 * Fix model load timeseries in motorized individual travel
   `#830 <https://github.com/openego/eGon-data/issues/830>`_
 * Fix gas costs
-  `#830 <https://github.com/openego/eGon-data/issues/847>`_
+  `#847 <https://github.com/openego/eGon-data/issues/847>`_
 * Add imports that have been wrongly deleted
   `#849 <https://github.com/openego/eGon-data/issues/849>`_
 * Fix final demand of heat demand timeseries
@@ -624,12 +638,23 @@ Bug Fixes
   `#914 <https://github.com/openego/eGon-data/issues/914>`_
 * Drop era5 weather cell table using cascade
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
+* Remove drop of p_set and q_set for loads without timeserie
+  `#971 <https://github.com/openego/eGon-data/issues/971>`_
 * Delete gas bus with wrong country code
   `#958 <https://github.com/openego/eGon-data/issues/958>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Make gas grid links bidirectional
   `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
+* Adjust p_nom and marginal cost for OCGT in eGon2035
+  `#863 <https://github.com/openego/eGon-data/issues/863>`_
+* Mismatch of building bus_ids from cts_heat_demand_building_share
+  and mapping table
+  `#989 <https://github.com/openego/eGon-data/issues/989>`_
+* Fix zensus weather cells mapping
+  `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
+* Fix solar rooftop in test mode
+  `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
