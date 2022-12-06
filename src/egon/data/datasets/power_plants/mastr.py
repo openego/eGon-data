@@ -375,10 +375,11 @@ def import_mastr() -> None:
 
         # assign bus ids
         print("  Assigning bus ids...")
-        units = (
-            units.loc[~units.geom.x.isna()]
+        units = units.assign(
+            bus_id=units.loc[~units.geom.x.isna()]
             .sjoin(mv_grid_districts[["bus_id", "geom"]], how="left")
             .drop(columns=["index_right"])
+            .bus_id
         )
         units["bus_id"] = units.bus_id.fillna(-1).astype(int)
 
