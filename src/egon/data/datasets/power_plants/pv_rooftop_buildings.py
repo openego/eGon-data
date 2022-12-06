@@ -997,14 +997,15 @@ def load_building_data():
     * `openstreetmap.osm_buildings_filtered` (from OSM)
     * `openstreetmap.osm_buildings_synthetic` (synthetic, created by us)
 
-    Use column `id` for both as it is unique hence you concat both datasets. If
-    INCLUDE_SYNTHETIC_BUILDINGS is False synthetic buildings will not be loaded.
+    Use column `id` for both as it is unique hence you concat both datasets.
+    If INCLUDE_SYNTHETIC_BUILDINGS is False synthetic buildings will not be
+    loaded.
 
     Returns
     -------
     gepandas.GeoDataFrame
-        GeoDataFrame containing OSM buildings data with buildings without an AGS ID
-        dropped.
+        GeoDataFrame containing OSM buildings data with buildings without an
+        AGS ID dropped.
     """
 
     municipalities_gdf = municipality_data()
@@ -1045,8 +1046,8 @@ def load_building_data():
         end_len = len(building_ids)
 
         logger.debug(
-            f"{end_len/init_len * 100: g} % ({end_len} / {init_len}) of buildings have "
-            f"peak load."
+            f"{end_len/init_len * 100: g} % ({end_len} / {init_len}) "
+            f"of buildings have peak load."
         )
 
         buildings_gdf = buildings_gdf.loc[building_ids]
@@ -1074,7 +1075,10 @@ def load_building_data():
     buildings_overlay_gdf = drop_buildings_outside_grids(buildings_overlay_gdf)
 
     # overwrite bus_id with data from new table
-    sql = "SELECT building_id, bus_id FROM boundaries.egon_map_zensus_mvgd_buildings"
+    sql = (
+        "SELECT building_id, bus_id FROM "
+        "boundaries.egon_map_zensus_mvgd_buildings"
+    )
     map_building_bus_df = db.select_dataframe(sql)
 
     building_ids = np.intersect1d(
@@ -1234,8 +1238,8 @@ def allocate_pv(
 
         if count % 500 == 0:
             logger.debug(
-                f"Allocation of {count / num_ags * 100:g} % of AGS done. It took "
-                f"{perf_counter() - t0:g} seconds."
+                f"Allocation of {count / num_ags * 100:g} % of AGS done. "
+                f"It took {perf_counter() - t0:g} seconds."
             )
 
             t0 = perf_counter()
@@ -1286,12 +1290,12 @@ def validate_output(
     """
     Validate output.
 
-    * Validate that there are exactly as many buildings with a pv system as there are
-      pv systems with a building
-    * Validate that the building IDs with a pv system are the same building IDs as
-      assigned to the pv systems
-    * Validate that the pv system IDs with a building are the same pv system IDs as
-      assigned to the buildings
+    * Validate that there are exactly as many buildings with a pv system as
+      there are pv systems with a building
+    * Validate that the building IDs with a pv system are the same building
+      IDs as assigned to the pv systems
+    * Validate that the pv system IDs with a building are the same pv system
+      IDs as assigned to the buildings
 
     Parameters
     -----------
@@ -1344,8 +1348,8 @@ def drop_unallocated_gens(
     Returns
     -------
     geopandas.GeoDataFrame
-        GeoDataFrame containing MaStR data with generators dropped which did not get
-        allocated.
+        GeoDataFrame containing MaStR data with generators dropped which did
+        not get allocated.
     """
     init_len = len(gdf)
     gdf = gdf.loc[~gdf.building_id.isna()]
@@ -1372,8 +1376,8 @@ def allocate_to_buildings(
     mastr_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing MaStR data with geocoded locations.
     buildings_gdf : geopandas.GeoDataFrame
-        GeoDataFrame containing OSM buildings data with buildings without an AGS ID
-        dropped.
+        GeoDataFrame containing OSM buildings data with buildings without an
+        AGS ID dropped.
     Returns
     -------
     tuple with two geopandas.GeoDataFrame s
@@ -1567,7 +1571,8 @@ def add_overlay_id_to_buildings(
     buildings_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data.
     grid_federal_state_gdf : geopandas.GeoDataFrame
-        GeoDataFrame with intersection shapes between counties and grid districts.
+        GeoDataFrame with intersection shapes between counties and grid
+        districts.
     Returns
     -------
     geopandas.GeoDataFrame
@@ -1694,8 +1699,8 @@ def determine_end_of_life_gens(
     after = mastr_gdf.loc[~mastr_gdf.end_of_life].capacity.sum()
 
     logger.debug(
-        "Determined if pv rooftop systems reached their end of life.\nTotal capacity: "
-        f"{before}\nActive capacity: {after}"
+        f"Determined if pv rooftop systems reached their end of life.\nTotal "
+        f"capacity: {before}\nActive capacity: {after}"
     )
 
     return mastr_gdf
@@ -1772,7 +1777,8 @@ def calculate_building_load_factor(
     Returns
     -------
     geopandas.GeoDataFrame
-        GeoDataFrame containing geocoded MaStR data with calculated load factor.
+        GeoDataFrame containing geocoded MaStR data with calculated load
+        factor.
     """
     gdf = mastr_gdf.merge(
         buildings_gdf[["max_cap", "building_area"]]
@@ -1851,7 +1857,7 @@ def probabilities(
         List of capacity ranges to distinguish between. The first tuple should
         start with a zero and the last one should end with infinite.
     properties : list(str)
-        List of properties to calculate probabilities for. Strings needs to be
+        List of properties to calculate probabilities for. Strings need to be
         in columns of mastr_gdf.
     Returns
     -------
@@ -2273,8 +2279,8 @@ def desaggregate_pv(
     cap_bus_ids = set(cap_df.index)
 
     logger.debug(
-        f"Bus IDs from buildings: {len(building_bus_ids)}\nBus IDs from capacity: "
-        f"{len(cap_bus_ids)}"
+        f"Bus IDs from buildings: {len(building_bus_ids)}\nBus IDs from "
+        f"capacity: {len(cap_bus_ids)}"
     )
 
     if len(building_bus_ids) > len(cap_bus_ids):
@@ -2303,9 +2309,9 @@ def desaggregate_pv(
 
         if len(pot_buildings_gdf) == 0:
             logger.error(
-                f"In grid {bus_id} there are no potential buildings to allocate "
-                "PV capacity to. The grid is skipped. This message should only "
-                "appear doing test runs with few buildings."
+                f"In grid {bus_id} there are no potential buildings to "
+                f"allocate PV capacity to. The grid is skipped. This message "
+                f"should only appear doing test runs with few buildings."
             )
 
             continue
@@ -2318,8 +2324,9 @@ def desaggregate_pv(
 
         if pv_missing <= 0:
             logger.warning(
-                f"In grid {bus_id} there is more PV installed ({pv_installed: g} kW) in"
-                f" status Quo than allocated within the scenario ({pv_target: g} kW). "
+                f"In grid {bus_id} there is more PV installed "
+                f"({pv_installed: g} kW) in status Quo than allocated within "
+                f"the scenario ({pv_target: g} kW). "
                 f"No new generators are added."
             )
 
@@ -2328,8 +2335,9 @@ def desaggregate_pv(
         if pot_buildings_gdf.max_cap.sum() < pv_missing:
             logger.error(
                 f"In grid {bus_id} there is less PV potential ("
-                f"{pot_buildings_gdf.max_cap.sum():g} kW) than allocated PV  capacity "
-                f"({pv_missing:g} kW). The average roof utilization will be very high."
+                f"{pot_buildings_gdf.max_cap.sum():g} kW) than allocated PV "
+                f"capacity ({pv_missing:g} kW). The average roof utilization "
+                f"will be very high."
             )
 
         gdf = desaggregate_pv_in_mv_grid(
@@ -2348,7 +2356,8 @@ def desaggregate_pv(
             gdf.capacity.sum() + pv_installed, pv_target, rtol=1e-3
         ):
             logger.warning(
-                f"The desired capacity and actual capacity in grid {bus_id} differ.\n"
+                f"The desired capacity and actual capacity in grid {bus_id} "
+                f"differ.\n"
                 f"Desired cap: {pv_target}\nActual cap: "
                 f"{gdf.capacity.sum() + pv_installed}"
             )
@@ -2370,7 +2379,8 @@ def desaggregate_pv(
     logger.debug("Desaggregated scenario.")
     logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
     logger.debug(
-        f"Generator capacity: {allocated_buildings_gdf.capacity.sum() / 1000: g}"
+        f"Generator capacity: "
+        f"{allocated_buildings_gdf.capacity.sum() / 1000: g}"
     )
 
     return gpd.GeoDataFrame(
@@ -2452,8 +2462,10 @@ def add_voltage_level(
     Returns
     -------
     geopandas.GeoDataFrame
-        GeoDataFrame containing OSM building data with voltage level per generator.
+        GeoDataFrame containing OSM building data with voltage level per
+        generator.
     """
+
     def voltage_levels(p: float) -> int:
         if p <= 100:
             return 7
@@ -2541,8 +2553,8 @@ def allocate_scenarios(
     valid_buildings_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data.
     last_scenario_gdf : geopandas.GeoDataFrame
-        GeoDataFrame containing OSM buildings matched with pv generators from temporal
-        preceding scenario.
+        GeoDataFrame containing OSM buildings matched with pv generators from
+        temporally preceding scenario.
     scenario : str
         Scenario to desaggrgate and allocate.
     Returns
