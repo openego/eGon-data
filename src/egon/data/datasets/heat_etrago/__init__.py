@@ -257,8 +257,7 @@ def insert_store(scenario, carrier):
 
 def store():
     insert_store("eGon2035", "central_heat")
-    # Temporary drop everything related to rural heat
-    # insert_store("eGon2035", "rural_heat")
+    insert_store("eGon2035", "rural_heat")
 
 
 def insert_central_direct_heat(scenario="eGon2035"):
