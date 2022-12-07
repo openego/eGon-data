@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import codecs
 import functools
+import os
 import time
 
 from psycopg2.errors import DeadlockDetected, UniqueViolation
@@ -38,8 +39,8 @@ def credentials():
     return configuration
 
 
-def engine():
-    """Engine for local database."""
+@functools.lru_cache(maxsize=None)
+def engine_for(pid):
     db_config = credentials()
     return create_engine(
         f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
@@ -47,6 +48,11 @@ def engine():
         f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
         echo=False,
     )
+
+
+def engine():
+    """Engine for local database."""
+    return engine_for(os.getpid())
 
 
 def execute_sql(sql_string):
