@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import codecs
 import functools
+import os
 import time
 
 from psycopg2.errors import DeadlockDetected, UniqueViolation
@@ -38,8 +39,8 @@ def credentials():
     return configuration
 
 
-def engine():
-    """Engine for local database."""
+@functools.lru_cache(maxsize=None)
+def engine_for(pid):
     db_config = credentials()
     return create_engine(
         f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"
@@ -47,6 +48,11 @@ def engine():
         f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
         echo=False,
     )
+
+
+def engine():
+    """Engine for local database."""
+    return engine_for(os.getpid())
 
 
 def execute_sql(sql_string):
@@ -128,7 +134,7 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except:  # noqa: E722 (This is OK, because of the immediate re-raise.)
         session.rollback()
         raise
     finally:
@@ -354,7 +360,11 @@ def check_db_unique_violation(func):
 
 
 def assign_gas_bus_id(dataframe, scn_name, carrier):
-    """Assigns bus_ids to points (contained in a dataframe) according to location
+    """Assign `bus_id`s to points according to location.
+
+    The points are taken from the given `dataframe` and the geometries by
+    which the `bus_id`s are assigned to them are taken from the
+    `grid.egon_gas_voronoi` table.
 
     Parameters
     ----------
