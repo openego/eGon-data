@@ -373,6 +373,9 @@ def import_mastr() -> None:
         units.set_geometry("geom", inplace=True)
         units["id"] = range(0, len(units))
 
+        # change capacity unit: kW to MW
+        units["capacity"] = units["capacity"] / 1e3
+
         # assign bus ids
         print("  Assigning bus ids...")
         units = units.assign(
