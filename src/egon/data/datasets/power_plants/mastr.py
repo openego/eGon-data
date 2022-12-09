@@ -375,6 +375,10 @@ def import_mastr() -> None:
 
         # change capacity unit: kW to MW
         units["capacity"] = units["capacity"] / 1e3
+        if "capacity_inverter" in units.columns:
+            units["capacity_inverter"] = units["capacity_inverter"] / 1e3
+        if "th_capacity" in units.columns:
+            units["th_capacity"] = units["th_capacity"] / 1e3
 
         # assign bus ids
         print("  Assigning bus ids...")
