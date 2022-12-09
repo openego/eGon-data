@@ -96,6 +96,7 @@ class EgonEtragoElectricityCtsDsmTimeseries(Base):
     scn_name = Column(String, primary_key=True, index=True)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -115,6 +116,7 @@ class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
     bus = Column(Integer)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -135,6 +137,7 @@ class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
     application = Column(String)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -154,6 +157,7 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
     bus = Column(Integer)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -1344,7 +1348,7 @@ def create_table(df, table, engine=CON):
     table.__table__.drop(bind=engine, checkfirst=True)
     table.__table__.create(bind=engine, checkfirst=True)
 
-    df.drop(columns=["p_set"]).to_sql(
+    df.to_sql(
         name=table.__table__.name,
         schema=table.__table__.schema,
         con=engine,
