@@ -1,24 +1,28 @@
 """The central module containing all code dealing with power plant data.
 """
+from pathlib import Path
+
 from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from egon.data.datasets.storages.pumped_hydro import (
-    select_mastr_pumped_hydro,
-    select_nep_pumped_hydro,
-    match_storage_units,
-    get_location,
-    apply_voltage_level_thresholds,
-)
-from egon.data.datasets.power_plants import assign_voltage_level
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets import Dataset
-
+from egon.data.datasets.power_plants import assign_voltage_level
+from egon.data.datasets.storages.home_batteries import (
+    allocate_home_batteries_to_buildings,
+)
+from egon.data.datasets.storages.pumped_hydro import (
+    apply_voltage_level_thresholds,
+    get_location,
+    match_storage_units,
+    select_mastr_pumped_hydro,
+    select_nep_pumped_hydro,
+)
 
 Base = declarative_base()
 
@@ -37,15 +41,19 @@ class EgonStorages(Base):
     geom = Column(Geometry("POINT", 4326))
 
 
-class PumpedHydro(Dataset):
+class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.1",
+            version="0.0.4",
             dependencies=dependencies,
-            tasks=(create_tables,
-                   allocate_pumped_hydro_eGon2035,
-                   allocate_pumped_hydro_eGon100RE),
+            tasks=(
+                create_tables,
+                allocate_pumped_hydro_eGon2035,
+                allocate_pumped_hydro_eGon100RE,
+                allocate_pv_home_batteries_to_grids,
+                allocate_home_batteries_to_buildings,
+            ),
         )
 
 
@@ -240,7 +248,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
                 bus_id=row.bus_id,
                 scenario=row.scenario,
                 geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-                )
+            )
             session.add(entry)
         session.commit()
 
@@ -279,24 +287,24 @@ def allocate_pumped_hydro_eGon100RE():
 
     if boundary == "Schleswig-Holstein":
         # Break capacity of pumped hydron plants down SH share in eGon2035
-        capacity_phes = capacity.iat[0,0]*0.0176
+        capacity_phes = capacity.iat[0, 0] * 0.0176
 
     elif boundary == "Everything":
         # Select national capacity for pumped hydro
-        capacity_phes = capacity.iat[0,0]
+        capacity_phes = capacity.iat[0, 0]
 
     else:
         raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
 
-    # Get allocation of pumped_hydro plants in eGon2035 scenario as the reference
-    # for the distribution in eGon100RE scenario
+    # Get allocation of pumped_hydro plants in eGon2035 scenario as the
+    # reference for the distribution in eGon100RE scenario
     allocation = allocate_pumped_hydro_eGon2035(export=False)
 
-    scaling_factor = capacity_phes/allocation.el_capacity.sum()
+    scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
     power_plants = allocation.copy()
     power_plants["scenario"] = "eGon100RE"
-    power_plants["el_capacity"] = allocation.el_capacity*scaling_factor
+    power_plants["el_capacity"] = allocation.el_capacity * scaling_factor
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
@@ -310,6 +318,105 @@ def allocate_pumped_hydro_eGon100RE():
             bus_id=row.bus_id,
             scenario=row.scenario,
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-            )
+        )
         session.add(entry)
     session.commit()
+
+
+def home_batteries_per_scenario(scenario):
+    """Allocates home batteries which define a lower boundary for extendable
+    battery storage units. The overall installed capacity is taken from NEP
+    for eGon2035 scenario. The spatial distribution of installed battery
+    capacities is based on the installed pv rooftop capacity.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    cfg = config.datasets()["storages"]
+    dataset = config.settings()["egon-data"]["--dataset-boundary"]
+
+    if scenario == "eGon2035":
+
+        target_file = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "nep2035_version2021"
+            / cfg["sources"]["nep_capacities"]
+        )
+
+        capacities_nep = pd.read_excel(
+            target_file,
+            sheet_name="1.Entwurf_NEP2035_V2021",
+            index_col="Unnamed: 0",
+        )
+        
+    # Select target value in MW
+        target = capacities_nep.Summe["PV-Batteriespeicher"]*1000
+
+    else:
+        target = db.select_dataframe(
+            f"""
+            SELECT capacity
+            FROM {cfg['sources']['capacities']}
+            WHERE scenario_name = '{scenario}'
+            AND carrier = 'battery';
+            """
+        ).capacity[0]
+
+    pv_rooftop = db.select_dataframe(
+        f"""
+        SELECT bus, p_nom, generator_id
+        FROM {cfg['sources']['generators']}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'solar_rooftop'
+        AND bus IN
+            (SELECT bus_id FROM {cfg['sources']['bus']}
+               WHERE scn_name = '{scenario}' AND country = 'DE' );
+        """
+    )
+
+    if dataset == "Schleswig-Holstein":
+        target = target / 16
+
+    battery = pv_rooftop
+    battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
+    battery = battery.drop(columns=["p_nom"])
+
+    battery["carrier"] = "home_battery"
+    battery["scenario"] = scenario
+
+    if scenario == "eGon2035":
+        source = "NEP"
+
+    else:
+        source = "p-e-s"
+
+    battery[
+        "source"
+    ] = f"{source} capacity allocated based in installed PV rooftop capacity"
+
+    # Insert into target table
+    session = sessionmaker(bind=db.engine())()
+    for i, row in battery.iterrows():
+        entry = EgonStorages(
+            sources={"el_capacity": row.source},
+            source_id={"generator_id": row.generator_id},
+            carrier=row.carrier,
+            el_capacity=row.p_nom_min,
+            bus_id=row.bus,
+            scenario=row.scenario,
+        )
+        session.add(entry)
+    session.commit()
+
+
+def allocate_pv_home_batteries_to_grids():
+
+    home_batteries_per_scenario("eGon2035")
+    home_batteries_per_scenario("eGon100RE")
