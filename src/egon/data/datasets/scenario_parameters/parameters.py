@@ -120,6 +120,12 @@ def global_settings(scenario):
             },
         }
 
+    elif scenario == "eGon2021":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2021,
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -300,6 +306,12 @@ def electricity(scenario):
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"]["lignite"],
+            "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            + read_costs(costs, "coal", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["coal"],
+            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
@@ -450,6 +462,9 @@ def electricity(scenario):
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -633,6 +648,9 @@ def gas(scenario):
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
+    elif scenario == "eGon2021":
+        parameters = {}
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -713,6 +731,9 @@ def mobility(scenario):
                 },
             }
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -823,6 +844,9 @@ def heat(scenario):
             "DE_demand_reduction_service": 0.390895195300713,
             "DE_district_heating_share": 0.19,
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")

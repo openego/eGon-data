@@ -94,6 +94,8 @@ setup(
         "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
         "matplotlib",
         "netcdf4",
+        "numpy<1.23",  # incompatibilities with shapely 1.7.
+        # See: https://stackoverflow.com/a/73354885/12460232
         "oedialect==0.0.8",
         "omi",
         "openpyxl",
@@ -105,7 +107,9 @@ setup(
         "rioxarray",
         "rtree",
         "saio",
-        "snakemake",
+        "seaborn",
+        "shapely",
+        "snakemake<7",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
         "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
         "xarray",
