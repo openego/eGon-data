@@ -68,10 +68,15 @@ TESTMODE_OFF = (
 
 
 class SanityChecks(Dataset):
+    #:
+    name: str = "SanityChecks"
+    #:
+    version: str = "0.0.6"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="SanityChecks",
-            version="0.0.6",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
