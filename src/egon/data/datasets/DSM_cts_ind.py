@@ -528,25 +528,14 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     p_max = scheduled_load.copy()
     for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
-        p = []
-        for item in liste:
-            value = lamb * s_inc - item
-            if value < 0:
-                value = 0
-            p.append(value)
-        p_max.loc[index] = p
+        p_max.loc[index] = [lamb * s_inc - item for item in liste]
 
     # P_min
     p_min = scheduled_load.copy()
     for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
-        p = []
-        for item in liste:
-            value = -(item - lamb * s_dec)
-            if value > 0:
-                value = 0
-            p.append(value)
-        p_min.loc[index] = p
+
+        p_min.loc[index] = [-(item - lamb * s_dec) for item in liste]
 
     # calculation of E_max and E_min
 
