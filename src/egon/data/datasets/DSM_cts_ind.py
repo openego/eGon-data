@@ -390,7 +390,7 @@ def dsm_cts_ind_processing():
         # if components should be exported seperately 
         # and not as aggregated DSM-components:
         
-        if export_aggregated == False:
+        if not export_aggregated:
             
             # calculate P_nom and P per unit
             p_nom = pd.Series(index=p_max.index, dtype=float)
@@ -499,7 +499,7 @@ def dsm_cts_ind_processing():
         dsm_links["link_id"] = link_id
 
         # add calculated timeseries to df to be returned
-        if export_aggregated == False:
+        if not export_aggregated:
             dsm_links["p_nom"] = p_nom
         dsm_links["p_min"] = p_min
         dsm_links["p_max"] = p_max
@@ -539,7 +539,7 @@ def dsm_cts_ind_processing():
         dsm_stores["store_id"] = store_id
 
         # add calculated timeseries to df to be returned
-        if export_aggregated == False:
+        if not export_aggregated:
             dsm_stores["e_nom"] = e_nom
         dsm_stores["e_min"] = e_min
         dsm_stores["e_max"] = e_max
