@@ -244,6 +244,8 @@ Added
   `#1048 <https://github.com/openego/eGon-data/issues/1048>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add new MaStR dataset
+  `#1051 <https://github.com/openego/eGon-data/issues/1051>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -422,8 +424,6 @@ Changed
   `#787 <https://github.com/openego/eGon-data/issues/787>`_
 * Update pypsa-eur-sec fork and store national demand time series
   `#402 <https://github.com/openego/eGon-data/issues/402>`_
-* Add biogas generators ton eGon100RE
-  `#402 <https://github.com/openego/eGon-data/issues/844>`_
 * Move and merge the two assign_gas_bus_id functions to a central place
   `#797 <https://github.com/openego/eGon-data/issues/797>`_
 * Add coordinates to non AC buses abroad in eGon100RE
@@ -465,6 +465,8 @@ Changed
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
 * Add eGon2021 scenario to demandregio dataset
   `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
+* Update MaStR dataset
+  `#519 <https://github.com/openego/eGon-data/issues/519>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
 

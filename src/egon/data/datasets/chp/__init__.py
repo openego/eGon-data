@@ -29,6 +29,7 @@ from egon.data.datasets.power_plants import (
 )
 import pypsa
 from egon.data.datasets.chp.small_chp import extension_to_areas
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from pathlib import Path
 
 Base = declarative_base()
@@ -248,7 +249,8 @@ def insert_biomass_chp(scenario):
     target = select_target("biomass", scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv(cfg["sources"]["mastr_biomass"]).query(
+    mastr = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]).query(
         "EinheitBetriebsstatus=='InBetrieb'"
     )
 
@@ -278,7 +280,11 @@ def insert_biomass_chp(scenario):
 
     # Assign bus_id
     if len(mastr_loc) > 0:
-        mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
+        mastr_loc["voltage_level"] = assign_voltage_level(
+            mastr_loc,
+            cfg,
+            WORKING_DIR_MASTR_OLD
+        )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
     mastr_loc = assign_use_case(mastr_loc, cfg["sources"])
 
