@@ -52,7 +52,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 from egon.data.datasets.gas_grid import (
     define_gas_nodes_list,
     define_gas_pipeline_list,
-    insert_gas_buses_abroad,
+    define_gas_buses_abroad,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
@@ -1654,7 +1654,7 @@ def sanity_check_CH4_grid(scn):
     )["p_nom_germany"].values[0]
 
     gas_nodes_list = define_gas_nodes_list()
-    abroad_gas_nodes_list = insert_gas_buses_abroad()
+    abroad_gas_nodes_list = define_gas_buses_abroad()
     gas_grid = define_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
     gas_grid_germany = gas_grid[
         (gas_grid["country_0"] == "DE") & (gas_grid["country_1"] == "DE")
