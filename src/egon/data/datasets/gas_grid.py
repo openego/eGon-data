@@ -229,12 +229,10 @@ def insert_CH4_nodes_list(gas_nodes_list):
         dtype={"geom": Geometry()},
     )
 
+def define_gas_buses_abroad(scn_name="eGon2035"):
+    """Define central CH4 buses in foreign countries for eGon2035
 
-def insert_gas_buses_abroad(scn_name="eGon2035"):
-    """Insert central CH4 buses in foreign countries for eGon2035
-
-    Detailled description to be completed:
-    Insert central gas buses in foreign countries to db, same buses
+    Define central gas buses in foreign countries to db, same buses
     than the foreign AC buses
 
     Parameters
@@ -247,6 +245,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses : dataframe
         Dataframe containing the CH4 buses in the neighbouring countries
         and one in the center of Germany in test mode
+
     """
     # Select sources and targets from dataset configuration
     sources = config.datasets()["electrical_neighbours"]["sources"]
@@ -254,15 +253,6 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
         "main_gas_carrier"
     ]
-
-    # Connect to local database
-    engine = db.engine()
-    db.execute_sql(
-        f"""
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
-    scn_name = '{scn_name}' AND country != 'DE';
-    """
-    )
 
     # Select the foreign buses
     gdf_abroad_buses = central_buses_egon100(sources)
@@ -321,6 +311,41 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses = gdf_abroad_buses.rename(
         columns={"geometry": "geom"}
     ).set_geometry("geom", crs=4326)
+
+    return gdf_abroad_buses
+
+
+def insert_gas_buses_abroad(scn_name="eGon2035"):
+    """Insert central CH4 buses in foreign countries for eGon2035
+
+    Insert central gas buses in foreign countries to db, same buses
+    than the foreign AC buses
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    gdf_abroad_buses : dataframe
+        Dataframe containing the CH4 buses in the neighbouring countries
+        and one in the center of Germany in test mode
+    """
+    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
+        "main_gas_carrier"
+    ]
+
+    # Connect to local database
+    engine = db.engine()
+    db.execute_sql(
+        f"""
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
+    scn_name = '{scn_name}' AND country != 'DE';
+    """
+    )
+
+    gdf_abroad_buses = define_gas_buses_abroad(scn_name)
 
     # Insert to db
     gdf_abroad_buses.to_postgis(

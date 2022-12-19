@@ -5,6 +5,7 @@ and input values. Please note that there are missing input technologies in the
 supply tables.
 Authors: @ALonso, @dana, @nailend, @nesnoj, @khelfen
 """
+import ast
 from math import isclose
 from pathlib import Path
 import ast
@@ -45,7 +46,7 @@ from egon.data.datasets.etrago_setup import (
 from egon.data.datasets.gas_grid import (
     define_gas_nodes_list,
     define_gas_pipeline_list,
-    insert_gas_buses_abroad,
+    define_gas_buses_abroad,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
@@ -88,8 +89,7 @@ class SanityChecks(Dataset):
                 sanitycheck_emobility_mit,
                 sanitycheck_pv_rooftop_buildings,
                 sanitycheck_home_batteries,
-                etrago_eGon100RE_gas,
-                etrago_eGon2035_gas,
+                etrago_eGon2035_gas_DE,
             },
         )
 
@@ -1430,12 +1430,10 @@ def sanity_check_gas_buses(scn):
     H2_grid grid buses in Germany. The deviation is calculated between
     the number gas grid buses in the database and the original
     Scigrid_gas number of gas buses.
-
     Parameters
     ----------
     scn_name : str
         Name of the scenario
-
     """
     logger.info(f"BUSES")
 
@@ -1481,7 +1479,6 @@ def sanity_check_gas_buses(scn):
 
 def sanity_check_CH4_stores(scn):
     """Execute sanity checks for the CH4 stores in Germany
-
     Returns print statements as sanity checks for the CH4 stores
     capacity in Germany. The deviation is calculated between:
       * the sum of the capacities of the stores with carrier 'CH4'
@@ -1492,12 +1489,10 @@ def sanity_check_CH4_stores(scn):
             allocated to H2 in eGon100RE) and
           * the sum of the capacities of the stores in the source
             document (Storages from the SciGRID_gas data)
-
     Parameters
     ----------
     scn_name : str
         Name of the scenario
-
     """
     output_CH4_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom::numeric) as e_nom_germany
@@ -1573,7 +1568,6 @@ def sanity_check_CH4_stores(scn):
 
 def sanity_check_H2_saltcavern_stores(scn):
     """Execute sanity checks for the H2 saltcavern stores in Germany
-
     Returns print as sanity checks for the H2 saltcavern potential
     storage capacity in Germany. The deviation is calculated between:
       * the sum of the of the H2 saltcavern potential storage capacity
@@ -1590,7 +1584,6 @@ def sanity_check_H2_saltcavern_stores(scn):
     ----------
     scn_name : str
         Name of the scenario
-
     """
     output_H2_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_germany
@@ -1625,7 +1618,6 @@ def sanity_check_H2_saltcavern_stores(scn):
 
 def sanity_check_CH4_grid(scn):
     """Execute sanity checks for the gas grid capacity in Germany
-
     Returns print statements as sanity checks for the CH4 links
     (pipelines) in Germany. The deviation is calculated between
     the sum of the power (p_nom) of all the CH4 pipelines in Germany
@@ -1640,12 +1632,10 @@ def sanity_check_CH4_grid(scn):
     ----------
     scn_name : str
         Name of the scenario
-
     Returns
     -------
     scn_name : float
         Sum of the power (p_nom) of all the pipelines in Germany
-
     """
     grid_carrier = "CH4"
     output_gas_grid = db.select_dataframe(
@@ -1671,7 +1661,7 @@ def sanity_check_CH4_grid(scn):
     )["p_nom_germany"].values[0]
 
     gas_nodes_list = define_gas_nodes_list()
-    abroad_gas_nodes_list = insert_gas_buses_abroad()
+    abroad_gas_nodes_list = define_gas_buses_abroad()
     gas_grid = define_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
     gas_grid_germany = gas_grid[
         (gas_grid["country_0"] == "DE") & (gas_grid["country_1"] == "DE")
@@ -1700,7 +1690,7 @@ def sanity_check_CH4_grid(scn):
     return p_nom_total
 
 
-def etrago_eGon2035_gas():
+def etrago_eGon2035_gas_DE():
     """Execute basic sanity checks for the gas sector in eGon2035
 
     Returns print statements as sanity checks for the gas sector in
@@ -1720,7 +1710,6 @@ def etrago_eGon2035_gas():
           * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
           * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
       * Links: with the function :py:func:`sanity_check_CH4_grid`
-
     """
     scn = "eGon2035"
 
@@ -1862,212 +1851,6 @@ def etrago_eGon2035_gas():
         # Links
         logger.info(f"LINKS")
         sanity_check_CH4_grid(scn)
-
-    else:
-        print("Testmode is on, skipping sanity check.")
-
-
-def etrago_eGon100RE_gas():
-    """Execute basic sanity checks for the gas sector in eGon100RE
-
-    Returns print statements as sanity checks for the gas sector in
-    the eGon100RE scenario for the following components in Germany:
-      * Buses: with the function :py:func:`sanity_check_gas_buses`
-      * Loads: for the carriers 'CH4_for_industry' and 'H2_for_industry'
-        the deviation is calculated between the sum of the loads in the
-        database and the value calculated by PyPSA-eur-sec for Germany
-        (that as been spatial distributed)
-      * Generators: the deviation is calculated between the sums of the
-        nominal powers of the biogas generators in the database and of
-        the ones in the source document (Biogaspartner Einspeiseatlas
-        Deutschland from the dena)
-      * Stores: deviations for stores with following carriers are
-        calculated:
-          * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
-          * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
-          * 'H2': the deviation is calculated between the store
-            capacity the gas grid allocated to H2 (total capacity
-            multiplied by the share of the grid associated to H2) and
-            the sum of the capacities of the storages with carrier 'H2'
-            in the database.
-      * Links: only the gas transport links do have sanity checks. The
-        CH4 pipelines with the function :py:func:`sanity_check_CH4_grid`.
-        For the H2 pipelines, the deviation is calculated between the
-        sum of the power (p_nom) of all the H2 pipelines in Germany in
-        the database and the sum of the powers of the imported pipelines.
-        multiplied by the share of the grid allocated to hydrogen
-        (share calculated by PyPSA-eur-sec). (This test works also in
-        test mode.)
-
-    """
-    scn = "eGon100RE"
-
-    if TESTMODE_OFF:
-        logger.info(f"Gas sanity checks for scenario {scn}")
-
-        # Buses
-        sanity_check_gas_buses(scn)
-
-        # Loads
-        logger.info(f"LOADS")
-
-        for carrier in ["CH4_for_industry", "H2_for_industry"]:
-
-            output_gas_demand = db.select_dataframe(
-                f"""SELECT (SUM(
-                    (SELECT SUM(p)
-                    FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
-                    FROM grid.egon_etrago_load a
-                    JOIN grid.egon_etrago_load_timeseries b
-                    ON (a.load_id = b.load_id)
-                    JOIN grid.egon_etrago_bus c
-                    ON (a.bus=c.bus_id)
-                    AND b.scn_name = '{scn}'
-                    AND a.scn_name = '{scn}'
-                    AND c.scn_name = '{scn}'
-                    AND c.country = 'DE'
-                    AND a.carrier = '{carrier}';
-                """,
-                warning=False,
-            )["load_twh"].values[0]
-
-            n = read_network()
-            node_pes = {
-                "CH4_for_industry": "DE0 0 gas for industry",
-                "H2_for_industry": "DE0 0 H2 for industry",
-            }
-            input_gas_demand = (
-                n.loads.loc[node_pes[carrier], "p_set"] * 8760 / 1000000
-            )
-
-            e_demand = (
-                round(
-                    (output_gas_demand - input_gas_demand) / input_gas_demand,
-                    2,
-                )
-                * 100
-            )
-            logger.info(f"Deviation {carrier}: {e_demand} %")
-
-        # Generators
-        logger.info(f"GENERATORS")
-        carrier_generator = "CH4"
-
-        output_biogas_generation = db.select_dataframe(
-            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
-                    FROM grid.egon_etrago_generator
-                    WHERE scn_name = '{scn}'
-                    AND carrier = '{carrier_generator}'
-                    AND bus IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
-                        WHERE scn_name = '{scn}'
-                        AND country = 'DE'
-                        AND carrier = '{carrier_generator}');
-                    """,
-            warning=False,
-        )["p_nom_germany"].values[0]
-
-        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-        target_file = Path(".") / "datasets" / "gas_data" / basename
-
-        conversion_factor_b = 0.01083  # m^3/h to MWh/h
-        input_biogas_generation = (
-            pd.read_excel(
-                target_file,
-                usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
-            )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
-            * conversion_factor_b
-        )
-
-        e_biogas_generation = (
-            round(
-                (output_biogas_generation - input_biogas_generation)
-                / input_biogas_generation,
-                2,
-            )
-            * 100
-        )
-        logger.info(f"Deviation biogas generation: {e_biogas_generation} %")
-
-        # Stores
-        logger.info(f"STORES")
-        sanity_check_CH4_stores(scn)
-        sanity_check_H2_saltcavern_stores(scn)
-
-        output_H2_grid_cap_store = db.select_dataframe(
-            f"""SELECT SUM(e_nom::numeric) as e_nom_germany
-                FROM grid.egon_etrago_store
-                WHERE scn_name = '{scn}'
-                AND carrier = 'H2'
-                AND bus IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn}'
-                    AND country = 'DE'
-                    AND carrier = 'H2_grid');
-                """,
-            warning=False,
-        )["e_nom_germany"].values[0]
-
-        input_H2_grid_cap_store = 13000 * (
-            get_sector_parameters("gas", "eGon100RE")[
-                "retrofitted_CH4pipeline-to-H2pipeline_share"
-            ]
-        )
-
-        e_H2_grid_cap_store = (
-            round(
-                (output_H2_grid_cap_store - input_H2_grid_cap_store)
-                / input_H2_grid_cap_store,
-                2,
-            )
-            * 100
-        )
-        logger.info(
-            f"Deviation H2 grid capacity stores: {e_H2_grid_cap_store} %"
-        )
-
-        # Links
-        logger.info(f"LINKS")
-        p_nom_total = sanity_check_CH4_grid(scn)
-
-        output_H2_grid = db.select_dataframe(
-            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
-                FROM grid.egon_etrago_link
-                WHERE scn_name = '{scn}'
-                AND carrier = 'H2_retrofit'
-                AND bus0 IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn}'
-                    AND country = 'DE'
-                    AND carrier = 'H2_grid')
-                AND bus1 IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn}'
-                    AND country = 'DE'
-                    AND carrier = 'H2_grid')
-                    ;
-                """,
-            warning=False,
-        )["p_nom_germany"].values[0]
-
-        input_H2_grid = p_nom_total * (
-            get_sector_parameters("gas", "eGon100RE")[
-                "retrofitted_CH4pipeline-to-H2pipeline_share"
-            ]
-        )
-
-        e_H2_grid = (
-            round(
-                (output_H2_grid - input_H2_grid) / input_H2_grid,
-                2,
-            )
-            * 100
-        )
-        logger.info(f"Deviation of the capacity of the H2 grid: {e_H2_grid} %")
 
     else:
         print("Testmode is on, skipping sanity check.")

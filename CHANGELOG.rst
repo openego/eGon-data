@@ -457,8 +457,6 @@ Changed
   `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
   `#933 <https://github.com/openego/eGon-data/issues/933>`_
-* Add sanity checks for gas sector
-  `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
 * Add rural heat pumps per medium voltage grid district
@@ -469,7 +467,10 @@ Changed
   `#519 <https://github.com/openego/eGon-data/issues/519>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
-
+* Add missing VOM costs for heat sector components
+  `#942 <https://github.com/openego/eGon-data/issues/942>`_
+* Add sanity checks for gas sector in eGon2035
+  `#864 <https://github.com/openego/eGon-data/issues/864>`_
 
 Bug Fixes
 ---------
@@ -684,6 +685,8 @@ Bug Fixes
   `#1023 <https://github.com/openego/eGon-data/issues/1023>`_
 * Fix solar rooftop in test mode
   `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
+* Add missing filter for scenario name in chp expansion
+  `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
 
