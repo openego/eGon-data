@@ -234,7 +234,7 @@ Added
 * Heat pump desaggregation to buildings
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 *  Add voltage level for electricity building loads
-  `#955 <https://github.com/openego/eGon-data/issues/955>`_
+   `#955 <https://github.com/openego/eGon-data/issues/955>`_
 * Add desaggregation of pv home batteries onto buildings
   `#988 <https://github.com/openego/eGon-data/issues/988>`_
 * Add load areas
@@ -357,7 +357,7 @@ Changed
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
 *  Aggregate generators and stores for CH4
-  `#629 <https://github.com/openego/eGon-data/issues/629>`_
+   `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
   `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
@@ -411,7 +411,7 @@ Changed
 * Include simplified restrictions for H2 feed-in into CH4 grid
   `#790 <https://github.com/openego/eGon-data/issues/790>`_
 *  Update hh electricity profiles
-  `#735 <https://github.com/openego/eGon-data/issues/735>`_
+   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
@@ -471,6 +471,7 @@ Changed
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Add sanity checks for gas sector in eGon2035
   `#864 <https://github.com/openego/eGon-data/issues/864>`_
+
 
 Bug Fixes
 ---------
@@ -689,6 +690,8 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
+* Fix aggregation of DSM-components
+  `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

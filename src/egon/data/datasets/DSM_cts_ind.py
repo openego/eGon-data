@@ -96,6 +96,7 @@ class EgonEtragoElectricityCtsDsmTimeseries(Base):
     scn_name = Column(String, primary_key=True, index=True)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -115,6 +116,7 @@ class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
     bus = Column(Integer)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -135,6 +137,7 @@ class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
     application = Column(String)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -154,6 +157,7 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
     bus = Column(Integer)
     p_nom = Column(Float)
     e_nom = Column(Float)
+    p_set = Column(ARRAY(Float))
     p_max_pu = Column(ARRAY(Float))
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
@@ -503,9 +507,7 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     scheduled_load = timeseries.copy()
 
     for index, liste in scheduled_load.items():
-        share = []
-        for item in liste:
-            share.append(item * s_flex)
+        share = [item * s_flex for item in liste]
         scheduled_load.loc[index] = share
 
     # calculate maximum capacity Lambda
@@ -524,25 +526,14 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     p_max = scheduled_load.copy()
     for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
-        p = []
-        for item in liste:
-            value = lamb * s_inc - item
-            if value < 0:
-                value = 0
-            p.append(value)
-        p_max.loc[index] = p
+        p_max.loc[index] = [lamb * s_inc - item for item in liste]
 
     # P_min
     p_min = scheduled_load.copy()
     for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
-        p = []
-        for item in liste:
-            value = -(item - lamb * s_dec)
-            if value > 0:
-                value = 0
-            p.append(value)
-        p_min.loc[index] = p
+
+        p_min.loc[index] = [-(item - lamb * s_dec) for item in liste]
 
     # calculation of E_max and E_min
 
@@ -579,7 +570,9 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     return p_max, p_min, e_max, e_min
 
 
-def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
+def create_dsm_components(
+    con, p_max, p_min, e_max, e_min, dsm, export_aggregated=True
+):
     """
     Create components representing DSM.
     Parameters
@@ -597,26 +590,26 @@ def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
     dsm: DataFrame
         List of existing buses with DSM-potential including timeseries of loads
     """
+    if not export_aggregated:
+        # calculate P_nom and P per unit
+        p_nom = pd.Series(index=p_max.index, dtype=float)
+        for index, row in p_max.items():
+            nom = max(max(row), abs(min(p_min.loc[index])))
+            p_nom.loc[index] = nom
+            new = [element / nom for element in row]
+            p_max.loc[index] = new
+            new = [element / nom for element in p_min.loc[index]]
+            p_min.loc[index] = new
 
-    # calculate P_nom and P per unit
-    p_nom = pd.Series(index=p_max.index, dtype=float)
-    for index, row in p_max.items():
-        nom = max(max(row), abs(min(p_min.loc[index])))
-        p_nom.loc[index] = nom
-        new = [element / nom for element in row]
-        p_max.loc[index] = new
-        new = [element / nom for element in p_min.loc[index]]
-        p_min.loc[index] = new
-
-    # calculate E_nom and E per unit
-    e_nom = pd.Series(index=p_min.index, dtype=float)
-    for index, row in e_max.items():
-        nom = max(max(row), abs(min(e_min.loc[index])))
-        e_nom.loc[index] = nom
-        new = [element / nom for element in row]
-        e_max.loc[index] = new
-        new = [element / nom for element in e_min.loc[index]]
-        e_min.loc[index] = new
+        # calculate E_nom and E per unit
+        e_nom = pd.Series(index=p_min.index, dtype=float)
+        for index, row in e_max.items():
+            nom = max(max(row), abs(min(e_min.loc[index])))
+            e_nom.loc[index] = nom
+            new = [element / nom for element in row]
+            e_max.loc[index] = new
+            new = [element / nom for element in e_min.loc[index]]
+            e_min.loc[index] = new
 
     # add DSM-buses to "original" buses
     dsm_buses = gpd.GeoDataFrame(index=dsm.index)
@@ -703,7 +696,8 @@ def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
     dsm_links["link_id"] = link_id
 
     # add calculated timeseries to df to be returned
-    dsm_links["p_nom"] = p_nom
+    if not export_aggregated:
+        dsm_links["p_nom"] = p_nom
     dsm_links["p_min"] = p_min
     dsm_links["p_max"] = p_max
 
@@ -739,7 +733,8 @@ def create_dsm_components(con, p_max, p_min, e_max, e_min, dsm):
     dsm_stores["store_id"] = store_id
 
     # add calculated timeseries to df to be returned
-    dsm_stores["e_nom"] = e_nom
+    if not export_aggregated:
+        dsm_stores["e_nom"] = e_nom
     dsm_stores["e_min"] = e_min
     dsm_stores["e_max"] = e_max
 
@@ -762,23 +757,29 @@ def aggregate_components(df_dsm_buses, df_dsm_links, df_dsm_stores):
     df_dsm_links["p_min"] = df_dsm_links["p_min"].apply(lambda x: np.array(x))
 
     grouper = [df_dsm_links.original_bus, df_dsm_links.scn_name]
-    p_nom = df_dsm_links.groupby(grouper)["p_nom"].sum()
+
     p_max = df_dsm_links.groupby(grouper)["p_max"].apply(np.sum)
     p_min = df_dsm_links.groupby(grouper)["p_min"].apply(np.sum)
 
     df_dsm_links = df_dsm_links.groupby(grouper).first()
-    df_dsm_links.p_nom = p_nom
     df_dsm_links.p_max = p_max
     df_dsm_links.p_min = p_min
-
-    df_dsm_links["p_max"] = df_dsm_links["p_max"].apply(lambda x: list(x))
-    df_dsm_links["p_min"] = df_dsm_links["p_min"].apply(lambda x: list(x))
 
     df_dsm_links.reset_index(inplace=True)
     df_dsm_links.sort_values("scn_name", inplace=True)
 
-    # aggregate stores
+    # calculate P_nom and P per unit
+    for index, row in df_dsm_links.iterrows():
+        nom = max(max(row.p_max), abs(min(row.p_min)))
+        df_dsm_links.at[index, "p_nom"] = nom
 
+    df_dsm_links["p_max"] = df_dsm_links["p_max"] / df_dsm_links["p_nom"]
+    df_dsm_links["p_min"] = df_dsm_links["p_min"] / df_dsm_links["p_nom"]
+
+    df_dsm_links["p_max"] = df_dsm_links["p_max"].apply(lambda x: list(x))
+    df_dsm_links["p_min"] = df_dsm_links["p_min"].apply(lambda x: list(x))
+
+    # aggregate stores
     df_dsm_stores["e_max"] = df_dsm_stores["e_max"].apply(
         lambda x: np.array(x)
     )
@@ -787,20 +788,27 @@ def aggregate_components(df_dsm_buses, df_dsm_links, df_dsm_stores):
     )
 
     grouper = [df_dsm_stores.original_bus, df_dsm_stores.scn_name]
-    e_nom = df_dsm_stores.groupby(grouper)["e_nom"].sum()
+
     e_max = df_dsm_stores.groupby(grouper)["e_max"].apply(np.sum)
     e_min = df_dsm_stores.groupby(grouper)["e_min"].apply(np.sum)
 
     df_dsm_stores = df_dsm_stores.groupby(grouper).first()
-    df_dsm_stores.e_nom = e_nom
     df_dsm_stores.e_max = e_max
     df_dsm_stores.e_min = e_min
 
-    df_dsm_stores["e_max"] = df_dsm_stores["e_max"].apply(lambda x: list(x))
-    df_dsm_stores["e_min"] = df_dsm_stores["e_min"].apply(lambda x: list(x))
-
     df_dsm_stores.reset_index(inplace=True)
     df_dsm_stores.sort_values("scn_name", inplace=True)
+
+    # calculate E_nom and E per unit
+    for index, row in df_dsm_stores.iterrows():
+        nom = max(max(row.e_max), abs(min(row.e_min)))
+        df_dsm_stores.at[index, "e_nom"] = nom
+
+    df_dsm_stores["e_max"] = df_dsm_stores["e_max"] / df_dsm_stores["e_nom"]
+    df_dsm_stores["e_min"] = df_dsm_stores["e_min"] / df_dsm_stores["e_nom"]
+
+    df_dsm_stores["e_max"] = df_dsm_stores["e_max"].apply(lambda x: list(x))
+    df_dsm_stores["e_min"] = df_dsm_stores["e_min"].apply(lambda x: list(x))
 
     # select new bus_ids for aggregated buses and add to links and stores
     bus_id = db.next_etrago_id("Bus") + df_dsm_buses.index
@@ -1344,7 +1352,7 @@ def create_table(df, table, engine=CON):
     table.__table__.drop(bind=engine, checkfirst=True)
     table.__table__.create(bind=engine, checkfirst=True)
 
-    df.drop(columns=["p_set"]).to_sql(
+    df.to_sql(
         name=table.__table__.name,
         schema=table.__table__.schema,
         con=engine,
