@@ -61,7 +61,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.11",
+            version="0.0.12",
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
@@ -249,8 +249,9 @@ def insert_capacities_per_federal_state_nep():
         data["nuts"] = map_nuts.nuts[bl]
         data["scenario_name"] = "eGon2035"
 
-        # According to NEP, each heatpump has 3kW_el installed capacity
-        data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 3e-6
+        # According to NEP, each heatpump has 5kW_el installed capacity
+        # source: Entwurf des Szenariorahmens NEP 2035, version 2021, page 47
+        data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
         data.loc[
             data.carrier == "residential_rural_heat_pump", "component"
         ] = "link"
