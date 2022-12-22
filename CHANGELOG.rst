@@ -448,6 +448,8 @@ Changed
   `#987 <https://github.com/openego/eGon-data/issues/987>`_
 * Add eGon2021 scenario to demandregio dataset
   `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
+* Add missing VOM costs for heat sector components
+  `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
 
@@ -657,6 +659,10 @@ Bug Fixes
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
 * Fix solar rooftop in test mode
   `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
+* Add missing filter for scenario name in chp expansion
+  `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
+* Fix installed capacity per individual heat pump
+  `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
