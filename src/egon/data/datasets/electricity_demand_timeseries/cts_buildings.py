@@ -30,6 +30,10 @@ The resulting data is stored in separate tables
     Mapping of demand time series and buildings including cell_id, building
     area and peak load. This table is already created within
     :func:`hh_buildings.get_building_peak_loads()`
+* `boundaries.egon_map_zensus_mvgd_buildings`:
+    A final mapping table including all buildings used for residential and
+    cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
+    building type (osm or synthetic)
 
 **The following datasets from the database are mainly used for creation:**
 
@@ -184,6 +188,9 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     BuildingElectricityPeakLoads,
     OsmBuildingsSynthetic,
 )
+from egon.data.datasets.electricity_demand_timeseries.mapping import (
+    map_all_used_buildings,
+)
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_ints_until_sum,
     random_point_in_square,
@@ -250,12 +257,13 @@ class CtsDemandBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsDemandBuildings",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
                 {get_cts_electricity_peak_load, get_cts_heat_peak_load},
+                map_all_used_buildings,
                 assign_voltage_level_to_buildings,
             ),
         )

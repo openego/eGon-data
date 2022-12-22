@@ -14,7 +14,7 @@ class FixEhvSubnetworks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="FixEhvSubnetworks",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=run,
         )
@@ -365,13 +365,15 @@ def fix_subnetworks(scn_name):
 
         # Umspannwerk Vieselbach
         # delete isolated bus and trafo
-        drop_bus(11.121774798935334, 51.00038603925895, 380, scn_name)
         drop_trafo(11.121774798935334, 51.00038603925895, 220, 380, scn_name)
+        drop_bus(11.121774798935334, 51.00038603925895, 380, scn_name)
+
 
         # Umspannwerk Waldlaubersheim
         # delete isolated bus and trafo
-        drop_bus(7.815993836091339, 49.92211102637183, 380, scn_name)
         drop_trafo(7.815993836091339, 49.92211102637183, 110, 380, scn_name)
+        drop_bus(7.815993836091339, 49.92211102637183, 380, scn_name)
+
 
 
 def run():
