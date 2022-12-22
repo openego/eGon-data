@@ -448,6 +448,9 @@ Changed
   `#1035 <https://github.com/openego/eGon-data/issues/1035>`_
 * Add missing VOM costs for heat sector components
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
+* Desaggregate industry demands to OSM areas and industrial sites
+  `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
+
 
 Bug Fixes
 ---------

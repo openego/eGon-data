@@ -682,7 +682,7 @@ distributed_industrial_demand:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios: ["eGon2021", "eGon2035", "eGon100RE"]
     wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -732,13 +732,22 @@ electrical_load_curves_industry:
     egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
+    egon_ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
   targets:
     osm_load:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    osm_load_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     sites_load:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    sites_load_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
 
 etrago_electricity:
   sources:
