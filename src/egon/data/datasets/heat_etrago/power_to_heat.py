@@ -89,6 +89,11 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     # Assign voltage level
     heat_pumps["voltage_level"] = 7
 
+    # Set marginal_cost
+    heat_pumps["marginal_cost"] = get_sector_parameters("heat", "eGon2035")[
+        "marginal_cost"
+    ]["rural_heat_pump"]
+
     # Insert heatpumps
     insert_power_to_heat_per_level(
         heat_pumps,
@@ -174,6 +179,11 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     central_heat_pumps = assign_voltage_level(
         central_heat_pumps, carrier="heat_pump"
     )
+
+    # Set marginal_cost
+    central_heat_pumps["marginal_cost"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["marginal_cost"]["central_heat_pump"]
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)

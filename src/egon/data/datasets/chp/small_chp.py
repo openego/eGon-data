@@ -554,6 +554,7 @@ def extension_per_federal_state(federal_state, EgonChp):
             {target_table['table']}
             WHERE sources::json->>'el_capacity' = 'MaStR'
             AND carrier != 'biomass'
+            AND scenario = 'eGon2035'
             AND ST_Intersects(geom, (
             SELECT ST_Union(geometry) FROM
             {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} b
