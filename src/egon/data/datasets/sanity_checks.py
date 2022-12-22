@@ -61,7 +61,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
