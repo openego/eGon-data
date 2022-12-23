@@ -1,7 +1,6 @@
 """
-The module containing all code allocating power plants of different conventional
-technologies (oil, gas, others) based on
-data from MaStR and NEP.
+The module containing all code allocating power plants of different
+conventional technologies (oil, gas, others) based on data from MaStR and NEP.
 """
 
 import geopandas as gpd
@@ -12,7 +11,7 @@ import egon.data.config
 
 
 def select_nep_power_plants(carrier):
-    """ Select power plants with location from NEP's list of power plants
+    """Select power plants with location from NEP's list of power plants
 
     Parameters
     ----------
@@ -54,7 +53,7 @@ def select_nep_power_plants(carrier):
 
 
 def select_no_chp_combustion_mastr(carrier):
-    """ Select power plants of a certain carrier from MaStR data which excludes
+    """Select power plants of a certain carrier from MaStR data which excludes
     all power plants used for allocation of CHP plants.
 
     Parameters
@@ -99,7 +98,7 @@ def match_nep_no_chp(
     consider_carrier=True,
     consider_capacity=True,
 ):
-    """ Match Power plants (no CHP) from MaStR to list of power plants from NEP
+    """Match Power plants (no CHP) from MaStR to list of power plants from NEP
 
     Parameters
     ----------
@@ -209,7 +208,8 @@ def match_nep_no_chp(
                 # Drop matched power plant from nep
                 nep = nep.drop(index)
 
-                # Drop matched powerplant from MaStR list if the location is accurate
+                # Drop matched powerplant from MaStR list if the location is
+                # accurate
                 if consider_capacity & consider_carrier:
                     mastr = mastr.drop(selected.index)
 

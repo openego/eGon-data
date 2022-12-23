@@ -63,7 +63,7 @@ from egon.data.datasets.industrial_gas_demand import (
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
-from egon.data.datasets.loadarea import LoadArea
+from egon.data.datasets.loadarea import LoadArea, OsmLanduse
 from egon.data.datasets.low_flex_scenario import LowFlexScenario
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
@@ -211,7 +211,7 @@ with airflow.DAG(
     )
 
     # Extract landuse areas from the `osm` dataset
-    load_area = LoadArea(dependencies=[osm, vg250])
+    osm_landuse = OsmLanduse(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
     renewable_feedin = RenewableFeedin(
@@ -301,7 +301,7 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             industrial_sites,
-            load_area,
+            osm_landuse,
             mv_grid_districts,
             osm,
         ]
@@ -452,7 +452,7 @@ with airflow.DAG(
             demand_curves_industry,
             district_heating_areas,
             industrial_sites,
-            load_area,
+            osm_landuse,
             mastr_data,
             mv_grid_districts,
             scenario_capacities,
@@ -592,8 +592,23 @@ with airflow.DAG(
         ]
     )
 
-    # Include low flex scenario(s)
+    # Create load areas
+    load_areas = LoadArea(
+        dependencies=[
+            osm_landuse,
+            zensus_vg250,
+            household_electricity_demand_annual,
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".get-building-peak-loads"
+            ],
+            cts_demand_buildings,
+            demand_curves_industry,
+        ]
+    )
 
+    # Include low flex scenario(s)
     low_flex_scenario = LowFlexScenario(
         dependencies=[
             storage_etrago,
