@@ -1429,19 +1429,65 @@ def sanitycheck_home_batteries():
 
         assert (home_batteries_df.round(6) == df.round(6)).all().all()
 
+
 def sanity_check_gas_buses(scn):
     """Execute sanity checks for the gas buses in Germany
-    Returns print statements as sanity checks for the CH4 and
-    H2_grid grid buses in Germany. The deviation is calculated between
-    the number gas grid buses in the database and the original
-    Scigrid_gas number of gas buses.
+
+    Returns print statements as sanity checks for the CH4, H2_grid and
+    H2_saltcavern buses.
+      * For all of them, it is checked if they are not isolated.
+      * For the grid buses, the deviation is calculated between the
+        number of gas grid buses in the database and the original
+        Scigrid_gas number of gas buses in Germany.
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
+
     """
     logger.info(f"BUSES")
 
+    # Are gas buses isolated?
+    corresponding_carriers = {
+        "eGon2035": {
+            "CH4": "CH4",
+            "H2_grid": "H2_feedin",
+            "H2_saltcavern": "power_to_H2",
+        },
+        # "eGon100RE": {
+        #     "CH4": "CH4",
+        #     "H2_grid": "H2_retrofit",
+        #     "H2_saltcavern": "H2_extension",
+        # }
+    }
+    for key in corresponding_carriers[scn]:
+        isolated_gas_buses = db.select_dataframe(
+            f"""
+            SELECT bus_id, carrier, country
+            FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn}'
+            AND carrier = '{key}'
+            AND country = 'DE'
+            AND bus_id NOT IN
+                (SELECT bus0
+                FROM grid.egon_etrago_link
+                WHERE scn_name = '{scn}'
+                AND carrier = '{corresponding_carriers[scn][key]}')
+            AND bus_id NOT IN
+                (SELECT bus1
+                FROM grid.egon_etrago_link
+                WHERE scn_name = '{scn}'
+                AND carrier = '{corresponding_carriers[scn][key]}')
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_gas_buses.empty:
+            logger.info(f"Isolated {key} buses:")
+            logger.info(isolated_gas_buses)
+
+    # Deviation of the gas grid buses number
     target_file = (
         Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
     )
@@ -1459,7 +1505,6 @@ def sanity_check_gas_buses(scn):
     input_grid_buses = len(Grid_buses_list.index)
 
     for carrier in ["CH4", "H2_grid"]:
-
         output_grid_buses_df = db.select_dataframe(
             f"""
             SELECT bus_id
