@@ -1529,6 +1529,7 @@ def sanity_check_gas_buses(scn):
 
 def sanity_check_CH4_stores(scn):
     """Execute sanity checks for the CH4 stores in Germany
+
     Returns print statements as sanity checks for the CH4 stores
     capacity in Germany. The deviation is calculated between:
       * the sum of the capacities of the stores with carrier 'CH4'
@@ -1539,10 +1540,12 @@ def sanity_check_CH4_stores(scn):
             allocated to H2 in eGon100RE) and
           * the sum of the capacities of the stores in the source
             document (Storages from the SciGRID_gas data)
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
+
     """
     output_CH4_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom::numeric) as e_nom_germany
@@ -1618,6 +1621,7 @@ def sanity_check_CH4_stores(scn):
 
 def sanity_check_H2_saltcavern_stores(scn):
     """Execute sanity checks for the H2 saltcavern stores in Germany
+
     Returns print as sanity checks for the H2 saltcavern potential
     storage capacity in Germany. The deviation is calculated between:
       * the sum of the of the H2 saltcavern potential storage capacity
@@ -1628,10 +1632,12 @@ def sanity_check_H2_saltcavern_stores(scn):
         total hydrogen storage potential of the corresponding federal
         state (data from InSpEE-DS report).
     This test works also in test mode.
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
+
     """
     output_H2_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_germany
@@ -1837,14 +1843,17 @@ def sanity_check_CH4_grid(scn):
     In eGon100RE, the sum is reduced by the share of the grid that is
     allocated to hydrogen (share calculated by PyPSA-eur-sec).
     This test works also in test mode.
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
+
     Returns
     -------
     scn_name : float
         Sum of the power (p_nom) of all the pipelines in Germany
+
     """
     grid_carrier = "CH4"
     output_gas_grid = db.select_dataframe(
