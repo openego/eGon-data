@@ -5,9 +5,9 @@ and input values. Please note that there are missing input technologies in the
 supply tables.
 Authors: @ALonso, @dana, @nailend, @nesnoj, @khelfen
 """
-import ast
 from math import isclose
 from pathlib import Path
+import ast
 
 from sqlalchemy import Numeric
 from sqlalchemy.sql import and_, cast, func, or_
@@ -42,20 +42,28 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
+from egon.data.datasets.gas_grid import (
+    define_gas_buses_abroad,
+    define_gas_nodes_list,
+    define_gas_pipeline_list,
+)
+from egon.data.datasets.gas_neighbours.eGon2035 import (
+    calc_capacities,
+    calc_ch4_storage_capacities,
+    calc_global_ch4_demand,
+    calc_global_power_to_h2_demand,
+    calculate_ch4_grid_capacities,
+    import_ch4_demandTS,
+)
+from egon.data.datasets.hydrogen_etrago.storage import (
+    calculate_and_map_saltcavern_storage_potential,
+)
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
     SCENARIOS,
     load_building_data,
     scenario_data,
-)
-from egon.data.datasets.gas_grid import (
-    define_gas_nodes_list,
-    define_gas_pipeline_list,
-    define_gas_buses_abroad,
-)
-from egon.data.datasets.hydrogen_etrago.storage import (
-    calculate_and_map_saltcavern_storage_potential,
 )
 from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
