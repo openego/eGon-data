@@ -5,7 +5,6 @@ and input values. Please note that there are missing input technologies in the
 supply tables.
 Authors: @ALonso, @dana, @nailend, @nesnoj, @khelfen
 """
-import ast
 from math import isclose
 from pathlib import Path
 import ast
@@ -44,9 +43,17 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.gas_grid import (
+    define_gas_buses_abroad,
     define_gas_nodes_list,
     define_gas_pipeline_list,
-    define_gas_buses_abroad,
+)
+from egon.data.datasets.gas_neighbours.eGon2035 import (
+    calc_capacities,
+    calc_ch4_storage_capacities,
+    calc_global_ch4_demand,
+    calc_global_power_to_h2_demand,
+    calculate_ch4_grid_capacities,
+    import_ch4_demandTS,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
@@ -1426,17 +1433,61 @@ def sanitycheck_home_batteries():
 def sanity_check_gas_buses(scn):
     """Execute sanity checks for the gas buses in Germany
 
-    Returns print statements as sanity checks for the CH4 and
-    H2_grid grid buses in Germany. The deviation is calculated between
-    the number gas grid buses in the database and the original
-    Scigrid_gas number of gas buses.
+    Returns print statements as sanity checks for the CH4, H2_grid and
+    H2_saltcavern buses.
+      * For all of them, it is checked if they are not isolated.
+      * For the grid buses, the deviation is calculated between the
+        number of gas grid buses in the database and the original
+        Scigrid_gas number of gas buses in Germany.
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
+
     """
     logger.info(f"BUSES")
 
+    # Are gas buses isolated?
+    corresponding_carriers = {
+        "eGon2035": {
+            "CH4": "CH4",
+            "H2_grid": "H2_feedin",
+            "H2_saltcavern": "power_to_H2",
+        },
+        # "eGon100RE": {
+        #     "CH4": "CH4",
+        #     "H2_grid": "H2_retrofit",
+        #     "H2_saltcavern": "H2_extension",
+        # }
+    }
+    for key in corresponding_carriers[scn]:
+        isolated_gas_buses = db.select_dataframe(
+            f"""
+            SELECT bus_id, carrier, country
+            FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn}'
+            AND carrier = '{key}'
+            AND country = 'DE'
+            AND bus_id NOT IN
+                (SELECT bus0
+                FROM grid.egon_etrago_link
+                WHERE scn_name = '{scn}'
+                AND carrier = '{corresponding_carriers[scn][key]}')
+            AND bus_id NOT IN
+                (SELECT bus1
+                FROM grid.egon_etrago_link
+                WHERE scn_name = '{scn}'
+                AND carrier = '{corresponding_carriers[scn][key]}')
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_gas_buses.empty:
+            logger.info(f"Isolated {key} buses:")
+            logger.info(isolated_gas_buses)
+
+    # Deviation of the gas grid buses number
     target_file = (
         Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
     )
@@ -1454,7 +1505,6 @@ def sanity_check_gas_buses(scn):
     input_grid_buses = len(Grid_buses_list.index)
 
     for carrier in ["CH4", "H2_grid"]:
-
         output_grid_buses_df = db.select_dataframe(
             f"""
             SELECT bus_id
@@ -1479,6 +1529,7 @@ def sanity_check_gas_buses(scn):
 
 def sanity_check_CH4_stores(scn):
     """Execute sanity checks for the CH4 stores in Germany
+
     Returns print statements as sanity checks for the CH4 stores
     capacity in Germany. The deviation is calculated between:
       * the sum of the capacities of the stores with carrier 'CH4'
@@ -1489,10 +1540,12 @@ def sanity_check_CH4_stores(scn):
             allocated to H2 in eGon100RE) and
           * the sum of the capacities of the stores in the source
             document (Storages from the SciGRID_gas data)
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
+
     """
     output_CH4_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom::numeric) as e_nom_germany
@@ -1568,6 +1621,7 @@ def sanity_check_CH4_stores(scn):
 
 def sanity_check_H2_saltcavern_stores(scn):
     """Execute sanity checks for the H2 saltcavern stores in Germany
+
     Returns print as sanity checks for the H2 saltcavern potential
     storage capacity in Germany. The deviation is calculated between:
       * the sum of the of the H2 saltcavern potential storage capacity
@@ -1584,6 +1638,7 @@ def sanity_check_H2_saltcavern_stores(scn):
     ----------
     scn_name : str
         Name of the scenario
+
     """
     output_H2_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_germany
@@ -1616,8 +1671,171 @@ def sanity_check_H2_saltcavern_stores(scn):
     logger.info(f"Deviation H2 saltcavern stores: {e_H2_stores} %")
 
 
+def sanity_check_gas_one_port(scn):
+    """Check connections of gas one-port components
+
+    Verify that gas one-port component (loads, generators, stores) are
+    all connected to a bus (of the right carrier) present in the data
+    base. Return print statements if this is not the case.
+    These sanity checks are not specific to Germany, they also include
+    the neighbouring countries.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    if scn == "eGon2035":
+        # Loads
+        ## CH4_for_industry Germany
+        isolated_one_port_c = db.select_dataframe(
+            f"""
+            SELECT load_id, bus, carrier, scn_name
+                FROM grid.egon_etrago_load
+                WHERE scn_name = '{scn}'
+                AND carrier = 'CH4_for_industry'
+                AND bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'CH4')
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_one_port_c.empty:
+            logger.info(f"Isolated loads:")
+            logger.info(isolated_one_port_c)
+
+        ## CH4_for_industry abroad
+        isolated_one_port_c = db.select_dataframe(
+            f"""
+            SELECT load_id, bus, carrier, scn_name
+                FROM grid.egon_etrago_load
+                WHERE scn_name = '{scn}'
+                AND carrier = 'CH4'
+                AND bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country != 'DE'
+                    AND carrier = 'CH4')
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_one_port_c.empty:
+            logger.info(f"Isolated loads:")
+            logger.info(isolated_one_port_c)
+
+        ## H2_for_industry
+        isolated_one_port_c = db.select_dataframe(
+            f"""
+            SELECT load_id, bus, carrier, scn_name
+                FROM grid.egon_etrago_load
+                WHERE scn_name = '{scn}'
+                AND carrier = 'H2_for_industry'
+                AND (bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'H2_grid')
+                AND bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country != 'DE'
+                    AND carrier = 'AC'))
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_one_port_c.empty:
+            logger.info(f"Isolated loads:")
+            logger.info(isolated_one_port_c)
+
+        # Genrators
+        isolated_one_port_c = db.select_dataframe(
+            f"""
+            SELECT generator_id, bus, carrier, scn_name
+                FROM grid.egon_etrago_generator
+                WHERE scn_name = '{scn}'
+                AND carrier = 'CH4'
+                AND bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND carrier = 'CH4');
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_one_port_c.empty:
+            logger.info(f"Isolated generators:")
+            logger.info(isolated_one_port_c)
+
+        # Stores
+        ## CH4 and H2_underground
+        corresponding_carriers = {
+            "CH4": "CH4",
+            "H2_saltcavern": "H2_underground",
+        }
+        for key in corresponding_carriers:
+            isolated_one_port_c = db.select_dataframe(
+                f"""
+                SELECT store_id, bus, carrier, scn_name
+                    FROM grid.egon_etrago_store
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{corresponding_carriers[key]}'
+                    AND bus NOT IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND carrier = '{key}')
+                ;
+                """,
+                warning=False,
+            )
+            if not isolated_one_port_c.empty:
+                logger.info(f"Isolated stores:")
+                logger.info(isolated_one_port_c)
+
+        ## H2_overground
+        isolated_one_port_c = db.select_dataframe(
+            f"""
+            SELECT store_id, bus, carrier, scn_name
+                FROM grid.egon_etrago_store
+                WHERE scn_name = '{scn}'
+                AND carrier = 'H2_overground'
+                AND bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'H2_saltcavern')
+                AND bus NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = 'H2_grid')
+            ;
+            """,
+            warning=False,
+        )
+        if not isolated_one_port_c.empty:
+            logger.info(f"Isolated stores:")
+            logger.info(isolated_one_port_c)
+
+    # elif scn == "eGon2035":
+
+
 def sanity_check_CH4_grid(scn):
     """Execute sanity checks for the gas grid capacity in Germany
+
     Returns print statements as sanity checks for the CH4 links
     (pipelines) in Germany. The deviation is calculated between
     the sum of the power (p_nom) of all the CH4 pipelines in Germany
@@ -1632,10 +1850,12 @@ def sanity_check_CH4_grid(scn):
     ----------
     scn_name : str
         Name of the scenario
+
     Returns
     -------
     scn_name : float
         Sum of the power (p_nom) of all the pipelines in Germany
+
     """
     grid_carrier = "CH4"
     output_gas_grid = db.select_dataframe(
@@ -1690,6 +1910,57 @@ def sanity_check_CH4_grid(scn):
     return p_nom_total
 
 
+def sanity_check_gas_links(scn):
+    """Check connections of gas links
+
+    Verify that gas links are all connected to buses present in the data
+    base. Return print statements if this is not the case.
+    This sanity check is not specific to Germany, it also includes
+    the neighbouring countries.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+    carriers = [
+        "CH4",
+        "H2_feedin",
+        "H2_to_CH4",
+        "CH4_to_H2",
+        "H2_to_power",
+        "power_to_H2",
+        "OCGT",
+        "central_gas_boiler",
+        "central_gas_CHP",
+        "central_gas_CHP_heat",
+        "industrial_gas_CHP",
+    ]
+    for c in carriers:
+        link_with_missing_bus = db.select_dataframe(
+            f"""
+            SELECT link_id, bus0, bus1, carrier, scn_name
+                FROM grid.egon_etrago_link
+                WHERE scn_name = '{scn}'
+                AND carrier = '{c}'
+                AND (bus0 NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}')
+                OR bus1 NOT IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'))
+            ;
+            """,
+            warning=False,
+        )
+        if not link_with_missing_bus.empty:
+            logger.info(f"Links with missing bus:")
+            logger.info(link_with_missing_bus)
+
+
 def etrago_eGon2035_gas_DE():
     """Execute basic sanity checks for the gas sector in eGon2035
 
@@ -1709,7 +1980,15 @@ def etrago_eGon2035_gas_DE():
         calculated:
           * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
           * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
-      * Links: with the function :py:func:`sanity_check_CH4_grid`
+      * One-port components (loads, generators, stores): verification
+        that they are all connected to a bus present in the data base
+        with the function :py:func:`sanity_check_gas_one_port`
+      * Links: verification:
+          * that the gas links are all connected to buses present in
+            the data base with the function :py:func:`sanity_check_gas_links`
+          * of the capacity of the gas grid with the function
+            :py:func:`sanity_check_CH4_grid`
+
     """
     scn = "eGon2035"
 
@@ -1848,9 +2127,245 @@ def etrago_eGon2035_gas_DE():
         sanity_check_CH4_stores(scn)
         sanity_check_H2_saltcavern_stores(scn)
 
+        # One-port components
+        sanity_check_gas_one_port(scn)
+
         # Links
         logger.info(f"LINKS")
         sanity_check_CH4_grid(scn)
+        sanity_check_gas_links(scn)
+
+    else:
+        print("Testmode is on, skipping sanity check.")
+
+
+def etrago_eGon2035_gas_abroad():
+    """Execute basic sanity checks for the gas sector in eGon2035 abroad
+
+    Returns print statements as sanity checks for the gas sector in
+    the eGon2035 scenario for the following components in Germany:
+      * Buses
+      * Loads: for the carriers 'CH4' and 'H2_for_industry'
+        the deviation is calculated between the sum of the loads in the
+        database and the sum in the sources document (TYND)
+      * Generators: the deviation is calculated between the sums of the
+        nominal powers of the methane generators abroad in the database
+        and of the ones in the sources document (TYNP)
+      * Stores: the deviation for methane stores abroad is calculated
+        between the sum of the capacities in the data base and the one
+        of the source document (SciGRID_gas data)
+      * Links: verification of the capacity of the crossbordering gas
+        grid pipelines.
+
+    """
+    scn = "eGon2035"
+
+    if TESTMODE_OFF:
+        logger.info(f"Gas sanity checks abroad for scenario {scn}")
+
+        # Buses
+        logger.info(f"BUSES")
+
+        # Are gas buses isolated?
+        corresponding_carriers = {
+            "eGon2035": {
+                "CH4": "CH4",
+            },
+            # "eGon100RE": {
+            #     "CH4": "CH4",
+            #     "H2_grid": "H2_retrofit",
+            # }
+        }
+        for key in corresponding_carriers[scn]:
+            isolated_gas_buses_abroad = db.select_dataframe(
+                f"""
+                SELECT bus_id, carrier, country
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn}'
+                AND carrier = '{key}'
+                AND country != 'DE'
+                AND bus_id NOT IN
+                    (SELECT bus0
+                    FROM grid.egon_etrago_link
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{corresponding_carriers[scn][key]}')
+                AND bus_id NOT IN
+                    (SELECT bus1
+                    FROM grid.egon_etrago_link
+                    WHERE scn_name = '{scn}'
+                    AND carrier = '{corresponding_carriers[scn][key]}')
+                ;
+                """,
+                warning=False,
+            )
+            if not isolated_gas_buses_abroad.empty:
+                logger.info(f"Isolated {key} buses abroad:")
+                logger.info(isolated_gas_buses_abroad)
+
+        # Loads
+        logger.info(f"LOADS")
+
+        (
+            Norway_global_demand_1y,
+            normalized_ch4_demandTS,
+        ) = import_ch4_demandTS()
+        input_CH4_demand_abroad = calc_global_ch4_demand(
+            Norway_global_demand_1y
+        )
+        input_CH4_demand = input_CH4_demand_abroad["GlobD_2035"].sum()
+
+        ## CH4
+        output_CH4_demand = db.select_dataframe(
+            f"""SELECT (SUM(
+                (SELECT SUM(p)
+                FROM UNNEST(b.p_set) p)))::numeric as load_mwh
+                FROM grid.egon_etrago_load a
+                JOIN grid.egon_etrago_load_timeseries b
+                ON (a.load_id = b.load_id)
+                JOIN grid.egon_etrago_bus c
+                ON (a.bus=c.bus_id)
+                AND b.scn_name = '{scn}'
+                AND a.scn_name = '{scn}'
+                AND c.scn_name = '{scn}'
+                AND c.country != 'DE'
+                AND a.carrier = 'CH4';
+            """,
+            warning=False,
+        )["load_mwh"].values[0]
+
+        e_demand_CH4 = (
+            round(
+                (output_CH4_demand - input_CH4_demand) / input_CH4_demand,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation CH4 load: {e_demand_CH4} %")
+
+        ## H2_for_industry
+        input_power_to_h2_demand_abroad = calc_global_power_to_h2_demand()
+        input_H2_demand = input_power_to_h2_demand_abroad["GlobD_2035"].sum()
+
+        output_H2_demand = db.select_dataframe(
+            f"""SELECT SUM(p_set::numeric) as p_set_abroad
+                    FROM grid.egon_etrago_load
+                    WHERE scn_name = '{scn}'
+                    AND carrier = 'H2_for_industry'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country != 'DE'
+                        AND carrier = 'AC');
+                    """,
+            warning=False,
+        )["p_set_abroad"].values[0]
+
+        e_demand_H2 = (
+            round(
+                (output_H2_demand - input_H2_demand) / input_H2_demand,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation H2_for_industry load: {e_demand_H2} %")
+
+        # Generators
+        logger.info(f"GENERATORS ")
+        CH4_gen = calc_capacities()
+        input_CH4_gen = CH4_gen["cap_2035"].sum()
+
+        output_CH4_gen = db.select_dataframe(
+            f"""SELECT SUM(p_nom::numeric) as p_nom_abroad
+                    FROM grid.egon_etrago_generator
+                    WHERE scn_name = '{scn}'
+                    AND carrier = 'CH4'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country != 'DE'
+                        AND carrier = 'CH4');
+                    """,
+            warning=False,
+        )["p_nom_abroad"].values[0]
+
+        e_gen = (
+            round(
+                (output_CH4_gen - input_CH4_gen) / input_CH4_gen,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation CH4 generators: {e_gen} %")
+
+        # Stores
+        logger.info(f"STORES")
+        ch4_input_capacities = calc_ch4_storage_capacities()
+        input_CH4_stores = ch4_input_capacities["e_nom"].sum()
+
+        output_CH4_stores = db.select_dataframe(
+            f"""SELECT SUM(e_nom::numeric) as e_nom_abroad
+                    FROM grid.egon_etrago_store
+                    WHERE scn_name = '{scn}'
+                    AND carrier = 'CH4'
+                    AND bus IN
+                        (SELECT bus_id
+                        FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn}'
+                        AND country != 'DE'
+                        AND carrier = 'CH4');
+                    """,
+            warning=False,
+        )["e_nom_abroad"].values[0]
+
+        e_stores = (
+            round(
+                (output_CH4_stores - input_CH4_stores) / input_CH4_stores,
+                2,
+            )
+            * 100
+        )
+        logger.info(f"Deviation CH4 stores: {e_stores} %")
+
+        # Links
+        logger.info(f"LINKS")
+        ch4_grid_input_capacities = calculate_ch4_grid_capacities()
+        input_CH4_grid = ch4_grid_input_capacities["p_nom"].sum()
+
+        grid_carrier = "CH4"
+        output_gas_grid = db.select_dataframe(
+            f"""SELECT SUM(p_nom::numeric) as p_nom
+            FROM grid.egon_etrago_link
+            WHERE scn_name = '{scn}'
+            AND carrier = '{grid_carrier}'
+            AND (bus0 IN
+                (SELECT bus_id
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn}'
+                AND country != 'DE'
+                AND carrier = '{grid_carrier}')
+            OR bus1 IN
+                (SELECT bus_id
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn}'
+                AND country != 'DE'
+                AND carrier = '{grid_carrier}'))
+                ;
+            """,
+            warning=False,
+        )["p_nom"].values[0]
+
+        e_gas_grid = (
+            round(
+                (output_gas_grid - input_CH4_grid) / input_CH4_grid,
+                2,
+            )
+            * 100
+        )
+        logger.info(
+            f"Deviation of the capacity of the crossbordering CH4 grid: {e_gas_grid} %"
+        )
 
     else:
         print("Testmode is on, skipping sanity check.")

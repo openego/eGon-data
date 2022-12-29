@@ -168,7 +168,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
     For eGon2035, all the CH4 crossbordering pipelines are inserted
     there (no H2 grid in this scenario).
     For eGon100RE, only the the crossbordering pipelines with Germany
-    are inserted there (the other ones are inerted in PypsaEurSec),
+    are inserted there (the other ones are inserted in PypsaEurSec),
     but in this scenario there are H2 and CH4 pipelines.
 
     Parameters
