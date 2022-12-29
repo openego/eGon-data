@@ -79,7 +79,7 @@ class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         super().__init__(
