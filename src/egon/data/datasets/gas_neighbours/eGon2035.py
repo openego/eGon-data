@@ -99,6 +99,14 @@ def get_foreign_gas_bus_id(carrier="CH4"):
 
 
 def read_LNG_capacities():
+    """Read LNG import capacities from Scigrid gas data
+
+    Returns
+    -------
+    IGGIELGN_LNGs: pandas.Series
+        LNG terminal capacities per foreign country node (in GWh/d)
+
+    """
     lng_file = "datasets/gas_data/data/IGGIELGN_LNGs.csv"
     IGGIELGN_LNGs = gpd.read_file(lng_file)
 
@@ -267,23 +275,42 @@ def calc_capacities():
 
 
 def calc_capacity_per_year(df, lng, year):
-    """Calculates gas production capacities from TYNDP data for a specified year
+    """Calculates gas production capacities for a specified year
+
+    For a specified year and for the foreign country nodes this function
+    calculates the gas production capacity, considering the gas
+    (conventional and bio) production capacity from TYNDP data and the
+    LGN import capacity from Scigrid gas data.
+
+    The columns of the returned dataframe are the following:
+      * Value_bio_year: biogas capacity prodution (in GWh/d)
+      * Value_conv_year: conventional gas capacity prodution including
+        LNG imports (in GWh/d)
+      * CH4_year: total gas production capacity (in GWh/d). This value
+        is calculated using the peak production value from the TYNDP.
+      * e_nom_max_year: total gas production capacity representative
+        for the whole year (in GWh/d). This value is calculated using
+        the average production value from the TYNDP and will then be
+        used to limit the energy that can be generated in one year.
+      * ratioConv_year: ratio of fossil gas production capacity (from
+        LNG and conventional extraction) in the total gas production capacity
 
     Parameters
     ----------
     df : pandas.DataFrame
-        DataFrame containing all TYNDP data.
+        Gas (conventional and bio) production capacities from TYNDP (in GWh/d)
 
-    lng : geopandas.GeoDataFrame
-        Georeferenced LNG terminal capacities.
+    lng : pandas.Series
+        LNG terminal capacities per foreign country node (in GWh/d)
 
     year : int
         Year to calculate gas production capacity for.
 
     Returns
     -------
-    pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
+    df_year : pandas.DataFrame
+        Gas production capacities (in GWh/d) per foreign country node
+
     """
     df_conv_peak = (
         df[
@@ -338,12 +365,15 @@ def calc_capacity_per_year(df, lng, year):
     df_year[f"CH4_{year}"] = (
         df_year[f"Value_conv_{year}"] + df_year[f"Value_bio_{year}"]
     )
-    df_year[f"ratioConv_{year}"] = (
-        df_year[f"Value_conv_{year}_peak"] / df_year[f"CH4_{year}"]
-    )
     df_year[f"e_nom_max_{year}"] = (
-        df_year[f"Value_conv_{year}_average"] + df_year[f"Value_bio_{year}"]
+        df_year[f"Value_conv_{year}_average"]
+        + df_year[f"Value_bio_{year}"]
+        + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
     )
+    df_year[f"ratioConv_{year}"] = (
+        df_year[f"Value_conv_{year}_average"]
+        + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
+    ) / df_year[f"e_nom_max_{year}"]
     df_year = df_year.drop(
         columns=[
             "LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)",
