@@ -269,7 +269,7 @@ def calc_capacities():
         ignore_index=True,
     )
 
-    # Add generator in Russia of infinite capacity
+    # Add generator in Russia
     e_nom_max_RU = 51  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
     grouped_capacities = grouped_capacities.append(
         {
