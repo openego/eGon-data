@@ -248,11 +248,25 @@ def calc_capacities():
         grouped_capacities["cap_2035"] * conversion_factor
     )
 
-    # Add generator in Russia of infinite capacity
+    conv_bcma_to_MWh = 1.06 * 1e7
+    # Add generator in Norway
+    e_nom_max_NO = 42  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
     grouped_capacities = grouped_capacities.append(
         {
-            "cap_2035": 1e9,
-            "e_nom_max": np.inf,
+            "cap_2035": e_nom_max_NO * conv_bcma_to_MWh / 8760,
+            "e_nom_max": e_nom_max_NO * conv_bcma_to_MWh,
+            "ratioConv_2035": 1,
+            "index": "NON1",
+        },
+        ignore_index=True,
+    )
+
+    # Add generator in Russia of infinite capacity
+    e_nom_max_RU = 51  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
+    grouped_capacities = grouped_capacities.append(
+        {
+            "cap_2035": e_nom_max_RU * conv_bcma_to_MWh / 8760,
+            "e_nom_max": e_nom_max_RU * conv_bcma_to_MWh,
             "ratioConv_2035": 1,
             "index": "RU",
         },
