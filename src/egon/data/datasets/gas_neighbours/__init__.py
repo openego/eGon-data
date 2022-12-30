@@ -16,7 +16,7 @@ class GasNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNeighbours",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 {tyndp_gas_generation, tyndp_gas_demand, grid},
