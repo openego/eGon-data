@@ -166,12 +166,20 @@ def read_LNG_capacities():
 
 
 def calc_capacities():
-    """Calculates gas production capacities from TYNDP data
+    """Calculates gas production capacities of neighbouring countries
+
+    For each neigbouring country, this function calculates the gas
+    generation capacity in 2035 using the function
+    :py:func:`calc_capacity_per_year` for 2030 and 2040 and
+    interpolating the results. These capacities include LNG import, as
+    well as conventional and biogas production.
+    Two conventional gas generators for are manually added for Norway
+    and Russia (capacity source: TYNPD 2022).
 
     Returns
     -------
-    pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
+    grouped_capacities: pandas.DataFrame
+        Gas production capacities per foreign node
 
     """
 
