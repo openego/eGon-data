@@ -456,6 +456,8 @@ Changed
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
+* Add gas generator in Norway
+  `#1074 <https://github.com/openego/eGon-data/issues/1074>`_
 
 
 Bug Fixes
