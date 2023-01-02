@@ -113,11 +113,19 @@ def read_LNG_capacities():
 
 
 def calc_capacities():
-    """Calculates gas production capacities from TYNDP data
+    """Calculates gas production capacities of neighbouring countries
+
+    For each neigbouring country, this function calculates the gas
+    generation capacity in 2035 using the function
+    :py:func:`calc_capacity_per_year` for 2030 and 2040 and
+    interpolating the results. These capacities include LNG import, as
+    well as conventional and biogas production.
+    Two conventional gas generators for are manually added for Norway
+    and Russia (capacity source: TYNPD 2022).
 
     Returns
     -------
-    grouped_capacities : pandas.DataFrame
+    grouped_capacities: pandas.DataFrame
         Gas production capacities per foreign node
 
     """
@@ -195,11 +203,25 @@ def calc_capacities():
         grouped_capacities["cap_2035"] * conversion_factor
     )
 
-    # Add generator in Russia of infinite capacity
+    conv_bcma_to_MWh = 1.06 * 1e7
+    # Add generator in Norway
+    e_nom_max_NO = 42  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
     grouped_capacities = grouped_capacities.append(
         {
-            "cap_2035": 1e9,
-            "e_nom_max": np.inf,
+            "cap_2035": e_nom_max_NO * conv_bcma_to_MWh / 8760,
+            "e_nom_max": e_nom_max_NO * conv_bcma_to_MWh,
+            "ratioConv_2035": 1,
+            "index": "NON1",
+        },
+        ignore_index=True,
+    )
+
+    # Add generator in Russia
+    e_nom_max_RU = 51  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
+    grouped_capacities = grouped_capacities.append(
+        {
+            "cap_2035": e_nom_max_RU * conv_bcma_to_MWh / 8760,
+            "e_nom_max": e_nom_max_RU * conv_bcma_to_MWh,
             "ratioConv_2035": 1,
             "index": "RU",
         },

@@ -471,6 +471,8 @@ Changed
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Add sanity checks for gas sector in eGon2035
   `#864 <https://github.com/openego/eGon-data/issues/864>`_
+* Add gas generator in Norway
+  `#1074 <https://github.com/openego/eGon-data/issues/1074>`_
 
 
 Bug Fixes
