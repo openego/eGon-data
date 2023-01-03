@@ -173,8 +173,9 @@ def calc_capacities():
     :py:func:`calc_capacity_per_year` for 2030 and 2040 and
     interpolating the results. These capacities include LNG import, as
     well as conventional and biogas production.
-    Two conventional gas generators for are manually added for Norway
-    and Russia (capacity source: TYNPD 2022).
+    Two conventional gas generators for are added for Norway and Russia
+    interpolating the supply potential (min) values from the TYNPD 2020
+    for 2030 and 2040.
 
     Returns
     -------
@@ -187,13 +188,13 @@ def calc_capacities():
 
     # insert installed capacities
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
-    df = pd.read_excel(
+    df0 = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
     )
 
     df = (
-        df.query(
+        df0.query(
             'Scenario == "Distributed Energy" & '
             '(Case == "Peak" | Case == "Average") &'  # Case: 2 Week/Average/DF/Peak
             'Category == "Production"'
@@ -256,30 +257,52 @@ def calc_capacities():
         grouped_capacities["cap_2035"] * conversion_factor
     )
 
-    conv_bcma_to_MWh = 1.06 * 1e7
-    # Add generator in Norway
-    e_nom_max_NO = 42  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
-    grouped_capacities = grouped_capacities.append(
-        {
-            "cap_2035": e_nom_max_NO * conv_bcma_to_MWh / 8760,
-            "e_nom_max": e_nom_max_NO * conv_bcma_to_MWh,
-            "ratioConv_2035": 1,
-            "index": "NON1",
-        },
-        ignore_index=True,
+    # Add generators in Norway and Russia
+    df_conv = (
+        df0.query('Case == "Min" & ' 'Category == "Supply Potential"')
+        .drop(
+            columns=[
+                "Generator_ID",
+                "Climate Year",
+                "Simulation_ID",
+                "Node 1",
+                "Path",
+                "Direct/Indirect",
+                "Sector",
+                "Note",
+                "Category",
+                "Scenario",
+                "Parameter",
+                "Case",
+            ]
+        )
+        .set_index("Node/Line")
+        .sort_index()
     )
 
-    # Add generator in Russia
-    e_nom_max_RU = 51  # [bcma] TYNPD 2022 https://2022.entsos-tyndp-scenarios.eu/download/ (Gas data)
-    grouped_capacities = grouped_capacities.append(
-        {
-            "cap_2035": e_nom_max_RU * conv_bcma_to_MWh / 8760,
-            "e_nom_max": e_nom_max_RU * conv_bcma_to_MWh,
-            "ratioConv_2035": 1,
-            "index": "RU",
-        },
-        ignore_index=True,
+    df_conv_2030 = df_conv[df_conv["Year"] == 2030].rename(
+        columns={"Value": f"Value_2030"}
     )
+    df_conv_2040 = df_conv[df_conv["Year"] == 2040].rename(
+        columns={"Value": f"Value_2040"}
+    )
+    df_conv_2035 = pd.concat([df_conv_2040, df_conv_2030], axis=1)
+
+    df_conv_2035["cap_2035"] = (
+        (df_conv_2035["Value_2030"] + df_conv_2035["Value_2040"]) / 2
+    ) * conversion_factor
+    df_conv_2035["e_nom_max"] = df_conv_2035["cap_2035"] * 8760
+    df_conv_2035["ratioConv_2035"] = 1
+
+    df_conv_2035 = df_conv_2035.drop(
+        columns=[
+            "Year",
+            "Value_2030",
+            "Value_2040",
+        ]
+    ).reset_index()
+    df_conv_2035 = df_conv_2035.rename(columns={"Node/Line": "index"})
+    grouped_capacities = grouped_capacities.append(df_conv_2035)
 
     # choose capacities for considered countries
     grouped_capacities = grouped_capacities[
