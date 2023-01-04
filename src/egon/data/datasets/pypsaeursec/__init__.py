@@ -743,7 +743,6 @@ def neighbor_reduction():
                     "efficiency4",
                     "lifetime",
                     "p_nom",
-                    # "p_min_pu",
                     "p_nom_extendable",
                     "pipe_retrofit",
                 ],
@@ -753,7 +752,6 @@ def neighbor_reduction():
                 columns={"p_nom_opt": "p_nom"}
             )
             neighbor_links["p_nom_extendable"] = False
-            # neighbor_links["p_min_pu"] = -1.
 
         # Define geometry and add to lines dataframe as 'topo'
         gdf = gpd.GeoDataFrame(index=neighbor_links.index)
