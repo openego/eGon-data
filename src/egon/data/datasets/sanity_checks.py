@@ -1408,7 +1408,7 @@ def sanitycheck_home_batteries():
 
 
 def sanitycheck_dsm():
-    def df_from_series(s):
+    def df_from_series(s: pd.Series):
         return pd.DataFrame.from_dict(dict(zip(s.index, s.values)))
 
     for scenario in ["eGon2035", "eGon100RE"]:
