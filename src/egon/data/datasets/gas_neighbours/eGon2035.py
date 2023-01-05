@@ -238,13 +238,24 @@ def calc_capacities():
         * conversion_factor
         * 8760
     )
-    df_2035["ratioConv_2035"] = (
-        df_2035["ratioConv_2030"] + df_2035["ratioConv_2040"]
+    df_2035["share_LNG_2035"] = (
+        df_2035["share_LNG_2030"] + df_2035["share_LNG_2040"]
     ) / 2
+    df_2035["share_conv_pipe_2035"] = (
+        df_2035["share_conv_pipe_2030"] + df_2035["share_conv_pipe_2040"]
+    ) / 2
+    df_2035["share_bio_2035"] = (
+        df_2035["share_bio_2030"] + df_2035["share_bio_2040"]
+    ) / 2
+
     grouped_capacities = df_2035.drop(
         columns=[
-            "ratioConv_2030",
-            "ratioConv_2040",
+            "share_LNG_2030",
+            "share_LNG_2040",
+            "share_conv_pipe_2030",
+            "share_conv_pipe_2040",
+            "share_bio_2030",
+            "share_bio_2040",
             "CH4_2040",
             "CH4_2030",
             "e_nom_max_2030",
@@ -261,7 +272,9 @@ def calc_capacities():
         {
             "cap_2035": 1e9,
             "e_nom_max": np.inf,
-            "ratioConv_2035": 1,
+            "share_LNG_2035": 0,
+            "share_conv_pipe_2035": 1,
+            "share_bio_2035": 0,
             "index": "RU",
         },
         ignore_index=True,
@@ -292,8 +305,12 @@ def calc_capacity_per_year(df, lng, year):
         for the whole year (in GWh/d). This value is calculated using
         the average production value from the TYNDP and will then be
         used to limit the energy that can be generated in one year.
-      * ratioConv_year: ratio of fossil gas production capacity (from
-        LNG and conventional extraction) in the total gas production capacity
+      * share_LNG_year: share of LGN import capacity in the total gas
+        production capacity
+      * share_conv_pipe_year: share of conventional gas extraction
+        capacity in the total gas production capacity
+      * share_bio_year: share of biogas production capacity in the
+        total gas production capacity
 
     Parameters
     ----------
@@ -370,10 +387,17 @@ def calc_capacity_per_year(df, lng, year):
         + df_year[f"Value_bio_{year}"]
         + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
     )
-    df_year[f"ratioConv_{year}"] = (
-        df_year[f"Value_conv_{year}_average"]
-        + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
-    ) / df_year[f"e_nom_max_{year}"]
+    df_year[f"share_LNG_{year}"] = (
+        df_year[f"LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
+        / df_year[f"e_nom_max_{year}"]
+    )
+    df_year[f"share_conv_pipe_{year}"] = (
+        df_year[f"Value_conv_{year}_average"] / df_year[f"e_nom_max_{year}"]
+    )
+    df_year[f"share_bio_{year}"] = (
+        df_year[f"Value_bio_{year}"] / df_year[f"e_nom_max_{year}"]
+    )
+
     df_year = df_year.drop(
         columns=[
             "LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)",
@@ -386,7 +410,15 @@ def calc_capacity_per_year(df, lng, year):
 
 
 def insert_generators(gen):
-    """Insert gas generators for foreign countries based on TYNDP-data
+    """Insert gas generators for foreign countries in the database
+
+    Insert gas generators for foreign countries in the data base.
+    The marginal cost of the methane is calculated as the sum of the
+    imported LNG cost, of the conventional natural gas cost and of the
+    biomethane cost, weighted by their share in the total import/
+    production capacity.
+    LNG is considerate to be 30% more expensive than the natural gas
+    transported by pipelines (source: iwd, 2022).
 
     Parameters
     ----------
@@ -434,12 +466,21 @@ def insert_generators(gen):
     gen["generator_id"] = range(new_id, new_id + len(gen))
     gen["p_nom"] = gen["cap_2035"]
     gen["marginal_cost"] = (
-        gen["ratioConv_2035"] * scn_params["marginal_cost"]["CH4"]
-        + (1 - gen["ratioConv_2035"]) * scn_params["marginal_cost"]["biogas"]
+        gen["share_LNG_2035"] * scn_params["marginal_cost"]["CH4"] * 1.3
+        + gen["share_conv_pipe_2035"] * scn_params["marginal_cost"]["CH4"]
+        + gen["share_bio_2035"] * scn_params["marginal_cost"]["biogas"]
     )
 
     # Remove useless columns
-    gen = gen.drop(columns=["index", "ratioConv_2035", "cap_2035"])
+    gen = gen.drop(
+        columns=[
+            "index",
+            "share_LNG_2035",
+            "share_conv_pipe_2035",
+            "share_bio_2035",
+            "cap_2035",
+        ]
+    )
 
     # Insert data to db
     gen.to_sql(
