@@ -75,15 +75,22 @@ def insert_generators(gen, scn_name):
 
         gen["p_nom"] = gen["cap_2035"]
         gen["marginal_cost"] = (
-            gen["ratioConv_2035"] * scn_params["marginal_cost"]["CH4"]
-            + (1 - gen["ratioConv_2035"])
-            * scn_params["marginal_cost"]["biogas"]
+        gen["share_LNG_2035"] * scn_params["marginal_cost"]["CH4"] * 1.3
+        + gen["share_conv_pipe_2035"] * scn_params["marginal_cost"]["CH4"]
+        + gen["share_bio_2035"] * scn_params["marginal_cost"]["biogas"]
         )
-
         gen["scn_name"] = scn_name
 
         # Remove useless columns
-        gen = gen.drop(columns=["index", "ratioConv_2035", "cap_2035"])
+        gen = gen.drop(
+            columns=[
+                "index",
+                "share_LNG_2035",
+                "share_conv_pipe_2035",
+                "share_bio_2035",
+                "cap_2035",
+            ]
+    )
 
     # Add missing columns
     new_id = db.next_etrago_id("generator")
