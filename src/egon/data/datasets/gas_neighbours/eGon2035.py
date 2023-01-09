@@ -45,7 +45,7 @@ countries = [
 def get_foreign_gas_bus_id(carrier="CH4"):
     """Calculate the etrago bus id based on the geometry
 
-    Mapp node_ids from TYNDP and etragos bus_id
+    Map node_ids from TYNDP and etragos bus_id
 
     Parameters
     ----------
