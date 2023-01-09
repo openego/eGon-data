@@ -7,6 +7,7 @@ from egon.data.datasets.gas_neighbours.eGon100RE import (
 )
 from egon.data.datasets.gas_neighbours.eGon2035 import (
     grid,
+    insert_ocgt_abroad,
     tyndp_gas_demand,
     tyndp_gas_generation,
 )
@@ -22,6 +23,7 @@ class GasNeighbours(Dataset):
                 tyndp_gas_generation,
                 tyndp_gas_demand,
                 grid,
+                insert_ocgt_abroad,
                 insert_gas_neigbours_eGon100RE,
             ),
         )
