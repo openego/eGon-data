@@ -68,7 +68,7 @@ from egon.data.datasets.industrial_gas_demand import (
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
-from egon.data.datasets.loadarea import LoadArea
+from egon.data.datasets.loadarea import LoadArea, OsmLanduse
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
@@ -84,7 +84,7 @@ from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
-from egon.data.datasets.storages import PumpedHydro
+from egon.data.datasets.storages import Storages
 from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
@@ -215,7 +215,7 @@ with airflow.DAG(
     )
 
     # Extract landuse areas from the `osm` dataset
-    load_area = LoadArea(dependencies=[osm, vg250])
+    osm_landuse = OsmLanduse(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
     renewable_feedin = RenewableFeedin(
@@ -305,7 +305,7 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             industrial_sites,
-            load_area,
+            osm_landuse,
             mv_grid_districts,
             osm,
         ]
@@ -475,7 +475,7 @@ with airflow.DAG(
             demand_curves_industry,
             district_heating_areas,
             industrial_sites,
-            load_area,
+            osm_landuse,
             mastr_data,
             mv_grid_districts,
             scenario_capacities,
@@ -531,7 +531,7 @@ with airflow.DAG(
     )
 
     # Pumped hydro units
-    pumped_hydro = PumpedHydro(
+    pumped_hydro = Storages(
         dependencies=[
             mastr_data,
             mv_grid_districts,
@@ -625,6 +625,40 @@ with airflow.DAG(
             create_gas_polygons_egon100RE,
             gas_production_insert_data,
             insert_data_ch4_storages,
+        ]
+    )
+
+    mit_charging_infrastructure = MITChargingInfrastructure(
+        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
+    )
+
+    # eMobility: heavy duty transport
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
+    )
+
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
+        ]
+    )
+
+    # Create load areas
+    load_areas = LoadArea(
+        dependencies=[
+            osm_landuse,
+            zensus_vg250,
+            household_electricity_demand_annual,
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".get-building-peak-loads"
+            ],
+            cts_demand_buildings,
+            demand_curves_industry,
         ]
     )
 

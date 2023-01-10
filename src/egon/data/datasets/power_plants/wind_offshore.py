@@ -41,8 +41,8 @@ def insert():
     )
     offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
 
-    # Import manually generated list of wind offshore farms with their connexion
-    # points (OSM_id)
+    # Import manually generated list of wind offshore farms with their
+    # connection points (OSM_id)
     id_bus = {
         "Büttel": "136034396",
         "Heide/West": "603661085",
@@ -164,7 +164,7 @@ def insert():
 
     # Import capacity targets for wind_offshore per scenario
     sql = f"""
-        SELECT * FROM {cfg["sources"]["capacities"]} 
+        SELECT * FROM {cfg["sources"]["capacities"]}
         WHERE scenario_name = 'eGon100RE' AND
         carrier = 'wind_offshore'
         """
@@ -187,9 +187,9 @@ def insert():
     # Delete, in case of existing, previous wind offshore parks
 
     db.execute_sql(
-        f""" 
-    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']} 
-    WHERE carrier IN ('wind_offshore') 
+        f"""
+    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    WHERE carrier IN ('wind_offshore')
     """
     )
 
@@ -202,7 +202,7 @@ def insert():
     )
     max_id = pd.read_sql(sql, con)
     max_id = max_id["max"].iat[0]
-    if max_id == None:
+    if max_id is None:
         ini_id = 1
     else:
         ini_id = int(max_id + 1)
