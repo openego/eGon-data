@@ -101,12 +101,6 @@ def define_gas_nodes_list():
         gas_nodes_list["id"] == "N_88_NS_LMGN", "country_code"
     ] = "XX"
 
-    # Delete gas buses disconnected of the german grid
-    gas_nodes_list = gas_nodes_list[
-        (gas_nodes_list["id"] != "INET_N_48")
-        & (gas_nodes_list["id"] != "INET_N_527")
-    ]
-
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
 
     gas_nodes_list["bus_id"] = range(new_id, new_id + len(gas_nodes_list))
@@ -555,8 +549,6 @@ def define_gas_pipeline_list(
         (gas_pipelines_list["id"] != "PLNG_2637_Seg_0_Seg_0_Seg_0")
         & (gas_pipelines_list["id"] != "NSG_6650_Seg_2_Seg_0")
         & (gas_pipelines_list["id"] != "NSG_6734_Seg_2_Seg_0")
-        & (gas_pipelines_list["id"] != "EntsoG_Map__ST_417_Seg_0")
-        & (gas_pipelines_list["id"] != "EntsoG_Map__ST_435_Seg_0")
     ]
 
     # Remove link test if length = 0
