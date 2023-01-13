@@ -698,6 +698,8 @@ Bug Fixes
   `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
 * Add missing gas turbines abroad
   `#1079 <https://github.com/openego/eGon-data/issues/1079>`_
+* Fix gas pipelines isolated of the German grid
+  `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
