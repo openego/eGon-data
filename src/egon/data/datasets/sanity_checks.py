@@ -79,7 +79,7 @@ class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -97,6 +97,7 @@ class SanityChecks(Dataset):
                 sanitycheck_pv_rooftop_buildings,
                 sanitycheck_home_batteries,
                 etrago_eGon2035_gas_DE,
+                sanitycheck_dsm,
             },
         )
 
@@ -2369,3 +2370,135 @@ def etrago_eGon2035_gas_abroad():
 
     else:
         print("Testmode is on, skipping sanity check.")
+def sanitycheck_dsm():
+    def df_from_series(s: pd.Series):
+        return pd.DataFrame.from_dict(dict(zip(s.index, s.values)))
+
+    for scenario in ["eGon2035", "eGon100RE"]:
+        # p_min and p_max
+        sql = f"""
+        SELECT link_id, bus0 as bus, p_nom FROM grid.egon_etrago_link
+        WHERE carrier = 'dsm'
+        AND scn_name = '{scenario}'
+        ORDER BY link_id
+        """
+
+        meta_df = db.select_dataframe(sql, index_col="link_id")
+        link_ids = str(meta_df.index.tolist())[1:-1]
+
+        sql = f"""
+        SELECT link_id, p_min_pu, p_max_pu
+        FROM grid.egon_etrago_link_timeseries
+        WHERE scn_name = '{scenario}'
+        AND link_id IN ({link_ids})
+        ORDER BY link_id
+        """
+
+        ts_df = db.select_dataframe(sql, index_col="link_id")
+
+        p_max_df = df_from_series(ts_df.p_max_pu).mul(meta_df.p_nom)
+        p_min_df = df_from_series(ts_df.p_min_pu).mul(meta_df.p_nom)
+
+        p_max_df.columns = meta_df.bus.tolist()
+        p_min_df.columns = meta_df.bus.tolist()
+
+        targets = config.datasets()["DSM_CTS_industry"]["targets"]
+
+        tables = [
+            "cts_loadcurves_dsm",
+            "ind_osm_loadcurves_individual_dsm",
+            "demandregio_ind_sites_dsm",
+            "ind_sites_loadcurves_individual",
+        ]
+
+        df_list = []
+
+        for table in tables:
+            target = targets[table]
+            sql = f"""
+            SELECT bus, p_nom, e_nom, p_min_pu, p_max_pu, e_max_pu, e_min_pu
+            FROM {target["schema"]}.{target["table"]}
+            WHERE scn_name = '{scenario}'
+            ORDER BY bus
+            """
+
+            df_list.append(db.select_dataframe(sql))
+
+        individual_ts_df = pd.concat(df_list, ignore_index=True)
+
+        groups = individual_ts_df[["bus"]].reset_index().groupby("bus").groups
+
+        individual_p_max_df = df_from_series(individual_ts_df.p_max_pu).mul(
+            individual_ts_df.p_nom
+        )
+        individual_p_max_df = pd.DataFrame(
+            [
+                individual_p_max_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+        individual_p_min_df = df_from_series(individual_ts_df.p_min_pu).mul(
+            individual_ts_df.p_nom
+        )
+        individual_p_min_df = pd.DataFrame(
+            [
+                individual_p_min_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+
+        assert np.isclose(p_max_df, individual_p_max_df).all()
+        assert np.isclose(p_min_df, individual_p_min_df).all()
+
+        # e_min and e_max
+        sql = f"""
+        SELECT store_id, bus, e_nom FROM grid.egon_etrago_store
+        WHERE carrier = 'dsm'
+        AND scn_name = '{scenario}'
+        ORDER BY store_id
+        """
+
+        meta_df = db.select_dataframe(sql, index_col="store_id")
+        store_ids = str(meta_df.index.tolist())[1:-1]
+
+        sql = f"""
+        SELECT store_id, e_min_pu, e_max_pu
+        FROM grid.egon_etrago_store_timeseries
+        WHERE scn_name = '{scenario}'
+        AND store_id IN ({store_ids})
+        ORDER BY store_id
+        """
+
+        ts_df = db.select_dataframe(sql, index_col="store_id")
+
+        e_max_df = df_from_series(ts_df.e_max_pu).mul(meta_df.e_nom)
+        e_min_df = df_from_series(ts_df.e_min_pu).mul(meta_df.e_nom)
+
+        e_max_df.columns = meta_df.bus.tolist()
+        e_min_df.columns = meta_df.bus.tolist()
+
+        individual_e_max_df = df_from_series(individual_ts_df.e_max_pu).mul(
+            individual_ts_df.e_nom
+        )
+        individual_e_max_df = pd.DataFrame(
+            [
+                individual_e_max_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+        individual_e_min_df = df_from_series(individual_ts_df.e_min_pu).mul(
+            individual_ts_df.e_nom
+        )
+        individual_e_min_df = pd.DataFrame(
+            [
+                individual_e_min_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+
+        assert np.isclose(e_max_df, individual_e_max_df).all()
+        assert np.isclose(e_min_df, individual_e_min_df).all()
