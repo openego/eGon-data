@@ -459,7 +459,11 @@ Changed
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
+* SQLAlchemy `engine` objects created via :code:`egon.data.db.engine`
+  are now cached on a per process basis, so only one `engine` is ever
+  created for a single process. This fixes issue `#799`_.
 
+.. _#799: https://github.com/openego/eGon-data/issues/799
 
 Bug Fixes
 ---------
