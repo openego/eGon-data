@@ -676,6 +676,7 @@ Bug Fixes
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
 * Fix aggregation of DSM-components
   `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
+* Fix URL of TYNDP scenario dataset
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
