@@ -847,9 +847,15 @@ DSM_CTS_industry:
     ind_osm_loadcurves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    ind_osm_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     ind_sites_loadcurves:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
     ind_sites:
       schema: 'demand'
       table: 'egon_industrial_sites'
@@ -875,6 +881,18 @@ DSM_CTS_industry:
     store_timeseries:
       schema: 'grid'
       table: 'egon_etrago_store_timeseries'
+    cts_loadcurves_dsm:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_cts_dsm_timeseries'
+    ind_osm_loadcurves_individual_dsm:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual_dsm_timeseries'
+    demandregio_ind_sites_dsm:
+      schema: 'demand'
+      table: 'egon_demandregio_sites_ind_electricity_dsm_timeseries'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual_dsm_timeseries'
 
 generators_etrago:
   sources:
@@ -1039,7 +1057,7 @@ electrical_neighbours:
 
 tyndp:
   sources:
-      capacities: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      capacities: "https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
       demand_2030: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
       demand_2040: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
   targets:
