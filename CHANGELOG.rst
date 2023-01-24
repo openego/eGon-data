@@ -615,11 +615,13 @@ Bug Fixes
   `#909 <https://github.com/openego/eGon-data/issues/909>`_
 * Overwrite capacities for conventional power plants with data from nep list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
-* Create unique ids on generated tasks to avoid circular flows in pipeline
-  `#986 <https://github.com/openego/eGon-data/issues/986>`_
+* Automatically generated tasks now get unique :code:`task_id`\s.
+  Fixes issue `#985`_ via PR `#986`_.
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
 .. _#669: https://github.com/openego/eGon-data/issues/669
+.. _#985: https://github.com/openego/eGon-data/issues/985
+.. _#986: https://github.com/openego/eGon-data/pull/986
