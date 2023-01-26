@@ -526,14 +526,14 @@ def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     p_max = scheduled_load.copy()
     for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
-        p_max.loc[index] = [lamb * s_inc - item for item in liste]
+        p_max.loc[index] = [max(0, lamb * s_inc - item) for item in liste]
 
     # P_min
     p_min = scheduled_load.copy()
     for index, liste in scheduled_load.items():
         lamb = lam.loc[index]
 
-        p_min.loc[index] = [-(item - lamb * s_dec) for item in liste]
+        p_min.loc[index] = [min(0, -(item - lamb * s_dec)) for item in liste]
 
     # calculation of E_max and E_min
 
@@ -959,8 +959,10 @@ def delete_dsm_entries(carrier):
 
     # buses
 
-    sql = f"""DELETE FROM {targets["bus"]["schema"]}.{targets["bus"]["table"]} b
-     WHERE (b.carrier LIKE '{carrier}');"""
+    sql = f"""
+    DELETE FROM {targets["bus"]["schema"]}.{targets["bus"]["table"]} b
+    WHERE (b.carrier LIKE '{carrier}');
+    """
     db.execute_sql(sql)
 
     # links
