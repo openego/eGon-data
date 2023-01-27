@@ -41,7 +41,7 @@ from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
-from egon.data.datasets.gas_grid import GasNodesandPipes
+from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
@@ -359,7 +359,7 @@ with airflow.DAG(
     )
 
     # Import gas grid
-    gas_grid_insert_data = GasNodesandPipes(
+    gas_grid_insert_data = GasNodesAndPipes(
         dependencies=[
             data_bundle,
             foreign_lines,
