@@ -6,15 +6,12 @@ from urllib.request import urlretrieve
 import ast
 import zipfile
 
-from geoalchemy2.types import Geometry
 from shapely.geometry import LineString, MultiLineString
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import pypsa
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
 from egon.data.datasets.electrical_neighbours import (
     get_foreign_bus_id,
     get_map_buses,
