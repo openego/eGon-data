@@ -773,7 +773,7 @@ def calc_ch4_storage_capacities():
         end_year.append(param["end_year"])
         max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    end_year = [float("inf") if x == None else x for x in end_year]
+    end_year = [float("inf") if x is None else x for x in end_year]
     ch4_storage_capacities = ch4_storage_capacities.assign(end_year=end_year)
     ch4_storage_capacities = ch4_storage_capacities[
         ch4_storage_capacities["end_year"] >= 2035
