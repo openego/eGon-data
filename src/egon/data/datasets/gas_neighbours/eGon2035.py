@@ -279,10 +279,10 @@ def calc_capacities():
     )
 
     df_conv_2030 = df_conv[df_conv["Year"] == 2030].rename(
-        columns={"Value": f"Value_2030"}
+        columns={"Value": "Value_2030"}
     )
     df_conv_2040 = df_conv[df_conv["Year"] == 2040].rename(
-        columns={"Value": f"Value_2040"}
+        columns={"Value": "Value_2040"}
     )
     df_conv_2035 = pd.concat([df_conv_2040, df_conv_2030], axis=1)
 
