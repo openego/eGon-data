@@ -1486,8 +1486,13 @@ def sanitycheck_dsm():
             index=groups.keys(),
         ).T
 
-        assert np.isclose(p_max_df, individual_p_max_df).all()
-        assert np.isclose(p_min_df, individual_p_min_df).all()
+        # due to the fact that time series are clipped at zero (either
+        # direction) there is a little difference between the sum of the
+        # individual time series and the aggregated time series as the second
+        # is generated independent of the others. This makes atol=1e-03
+        # necessary.
+        assert np.allclose(p_max_df, individual_p_max_df, atol=1e-03)
+        assert np.allclose(p_min_df, individual_p_min_df, atol=1e-03)
 
         # e_min and e_max
         sql = f"""
@@ -1537,5 +1542,5 @@ def sanitycheck_dsm():
             index=groups.keys(),
         ).T
 
-        assert np.isclose(e_max_df, individual_e_max_df).all()
-        assert np.isclose(e_min_df, individual_e_min_df).all()
+        assert np.allclose(e_max_df, individual_e_max_df)
+        assert np.allclose(e_min_df, individual_e_min_df)
