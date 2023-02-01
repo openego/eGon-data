@@ -352,9 +352,7 @@ def calc_capacity_per_year(df, lng, year):
         df[
             (df["Parameter"] == "Biomethane")
             & (df["Year"] == year)
-            & (
-                df["Case"] == "Peak"
-            )
+            & (df["Case"] == "Peak")
             # Peak and Average have the same values for biogas
             # production in 2030 and 2040
         ]
