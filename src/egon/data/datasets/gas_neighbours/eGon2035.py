@@ -193,7 +193,8 @@ def calc_capacities():
     df = (
         df0.query(
             'Scenario == "Distributed Energy" & '
-            '(Case == "Peak" | Case == "Average") &'  # Case: 2 Week/Average/DF/Peak
+            '(Case == "Peak" | Case == "Average") &'
+            # Case: 2 Week/Average/DF/Peak
             'Category == "Production"'
         )
         .drop(
@@ -309,7 +310,9 @@ def calc_capacities():
 
 
 def calc_capacity_per_year(df, lng, year):
-    """Calculates gas production capacities from TYNDP data for a specified year
+    """
+    Calculates gas production capacities from TYNDP data for a specified
+    year
 
     Parameters
     ----------
@@ -351,7 +354,9 @@ def calc_capacity_per_year(df, lng, year):
             & (df["Year"] == year)
             & (
                 df["Case"] == "Peak"
-            )  # Peak and Average have the same valus for biogas production in 2030 and 2040
+            )
+            # Peak and Average have the same values for biogas
+            # production in 2030 and 2040
         ]
         .rename(columns={"Value": f"Value_bio_{year}"})
         .drop(columns=["Parameter", "Year", "Case"])
@@ -823,8 +828,9 @@ def insert_storage(ch4_storage_capacities):
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
         AND bus IN (
-            SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = 'eGon2035' 
+            SELECT bus_id
+            FROM {sources['buses']['schema']}.{sources['buses']['table']}
+            WHERE scn_name = 'eGon2035'
             AND country != 'DE'
             );
         """
