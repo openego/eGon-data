@@ -192,10 +192,10 @@ def calc_capacities():
 
     df = (
         df0.query(
-            'Scenario == "Distributed Energy" & '
-            '(Case == "Peak" | Case == "Average") &'
+            'Scenario == "Distributed Energy" &'
+            ' (Case == "Peak" | Case == "Average") &'
             # Case: 2 Week/Average/DF/Peak
-            'Category == "Production"'
+            ' Category == "Production"'
         )
         .drop(
             columns=[
