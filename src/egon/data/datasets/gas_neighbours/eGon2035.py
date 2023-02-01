@@ -311,8 +311,8 @@ def calc_capacities():
 
 def calc_capacity_per_year(df, lng, year):
     """
-    Calculates gas production capacities from TYNDP data for a specified
-    year
+    Calculate gas production capacities from TYNDP data for a specified
+    year.
 
     Parameters
     ----------
