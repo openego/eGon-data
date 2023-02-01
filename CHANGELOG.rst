@@ -473,7 +473,11 @@ Changed
   `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Add gas generator in Norway
   `#1074 <https://github.com/openego/eGon-data/issues/1074>`_
+* SQLAlchemy `engine` objects created via :code:`egon.data.db.engine`
+  are now cached on a per process basis, so only one `engine` is ever
+  created for a single process. This fixes issue `#799`_.
 
+.. _#799: https://github.com/openego/eGon-data/issues/799
 
 Bug Fixes
 ---------
@@ -698,9 +702,14 @@ Bug Fixes
   `#1079 <https://github.com/openego/eGon-data/issues/1079>`_
 * Fix gas pipelines isolated of the German grid
   `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
+* Fix URL of TYNDP scenario dataset
+* Automatically generated tasks now get unique :code:`task_id`\s.
+  Fixes issue `#985`_ via PR `#986`_.
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
 .. _#669: https://github.com/openego/eGon-data/issues/669
+.. _#985: https://github.com/openego/eGon-data/issues/985
+.. _#986: https://github.com/openego/eGon-data/pull/986

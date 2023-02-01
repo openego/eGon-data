@@ -40,7 +40,7 @@ def credentials():
 
 
 @functools.lru_cache(maxsize=None)
-def engine_for(pid):
+def engine_for(pid):  # pylint: disable=unused-argument
     db_config = credentials()
     return create_engine(
         f"postgresql+psycopg2://{db_config['POSTGRES_USER']}:"

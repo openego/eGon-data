@@ -97,6 +97,7 @@ class SanityChecks(Dataset):
                 sanitycheck_pv_rooftop_buildings,
                 sanitycheck_home_batteries,
                 etrago_eGon2035_gas_DE,
+                etrago_eGon2035_gas_abroad,
                 sanitycheck_dsm,
             },
         )
@@ -2148,10 +2149,10 @@ def etrago_eGon2035_gas_abroad():
       * Buses
       * Loads: for the carriers 'CH4' and 'H2_for_industry'
         the deviation is calculated between the sum of the loads in the
-        database and the sum in the sources document (TYND)
+        database and the sum in the sources document (TYNDP)
       * Generators: the deviation is calculated between the sums of the
         nominal powers of the methane generators abroad in the database
-        and of the ones in the sources document (TYNP)
+        and of the ones in the sources document (TYNDP)
       * Stores: the deviation for methane stores abroad is calculated
         between the sum of the capacities in the data base and the one
         of the source document (SciGRID_gas data)
@@ -2370,6 +2371,8 @@ def etrago_eGon2035_gas_abroad():
 
     else:
         print("Testmode is on, skipping sanity check.")
+
+
 def sanitycheck_dsm():
     def df_from_series(s: pd.Series):
         return pd.DataFrame.from_dict(dict(zip(s.index, s.values)))
