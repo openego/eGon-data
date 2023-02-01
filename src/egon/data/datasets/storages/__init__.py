@@ -12,6 +12,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import assign_voltage_level
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
@@ -102,7 +103,9 @@ def allocate_pumped_hydro_eGon2035(export=True):
 
     # Assign voltage level to MaStR
     mastr["voltage_level"] = assign_voltage_level(
-        mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1), cfg
+        mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
+        cfg,
+        WORKING_DIR_MASTR_OLD
     )
 
     # Initalize DataFrame for matching power plants
@@ -355,7 +358,7 @@ def home_batteries_per_scenario(scenario):
             sheet_name="1.Entwurf_NEP2035_V2021",
             index_col="Unnamed: 0",
         )
-        
+
     # Select target value in MW
         target = capacities_nep.Summe["PV-Batteriespeicher"]*1000
 

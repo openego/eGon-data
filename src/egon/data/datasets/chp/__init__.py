@@ -3,6 +3,8 @@ The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
 
+from pathlib import Path
+
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
 from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
@@ -11,6 +13,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
@@ -19,17 +22,16 @@ from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
     extension_per_federal_state,
+    extension_to_areas,
     select_target,
 )
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
     filter_mastr_geometry,
     scale_prox2now,
 )
-import pypsa
-from egon.data.datasets.chp.small_chp import extension_to_areas
-from pathlib import Path
 
 Base = declarative_base()
 
@@ -248,9 +250,9 @@ def insert_biomass_chp(scenario):
     target = select_target("biomass", scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv(cfg["sources"]["mastr_biomass"]).query(
-        "EinheitBetriebsstatus=='InBetrieb'"
-    )
+    mastr = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
+    ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
@@ -278,7 +280,9 @@ def insert_biomass_chp(scenario):
 
     # Assign bus_id
     if len(mastr_loc) > 0:
-        mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
+        mastr_loc["voltage_level"] = assign_voltage_level(
+            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+        )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
     mastr_loc = assign_use_case(mastr_loc, cfg["sources"])
 
