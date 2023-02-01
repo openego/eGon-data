@@ -1214,6 +1214,8 @@ def calculate_ch4_grid_capacities():
     ].map(dict_cross_pipes_DE)
     DE_pipe_capacities_list = DE_pipe_capacities_list.set_index("country_code")
 
+    schema = sources["buses"]["schema"]
+    table = sources["buses"]["table"]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
 
         # Select cross-bording links
@@ -1223,21 +1225,21 @@ def calculate_ch4_grid_capacities():
                     WHERE scn_name = 'eGon2035' 
                     AND carrier = 'CH4'
                     AND (("bus0" IN (
-                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        SELECT bus_id FROM {schema}.{table}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
                     )
                     OR ("bus0" IN (
-                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        SELECT bus_id FROM {schema}.{table}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035'))
