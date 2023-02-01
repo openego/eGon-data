@@ -1019,7 +1019,6 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
         columns={"GlobD_2035": "p_set"}
     )
 
-    power_to_h2_demand_TS = global_power_to_h2_demand.copy()
     # Remove useless columns
     global_power_to_h2_demand = global_power_to_h2_demand.drop(
         columns=["Node/Line"]
