@@ -94,13 +94,11 @@ class EgonEtragoElectricityCtsDsmTimeseries(Base):
 
     bus = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
-    p_nom = Column(Float)
-    e_nom = Column(Float)
     p_set = Column(ARRAY(Float))
-    p_max_pu = Column(ARRAY(Float))
-    p_min_pu = Column(ARRAY(Float))
-    e_max_pu = Column(ARRAY(Float))
-    e_min_pu = Column(ARRAY(Float))
+    p_max = Column(ARRAY(Float))
+    p_min = Column(ARRAY(Float))
+    e_max = Column(ARRAY(Float))
+    e_min = Column(ARRAY(Float))
 
 
 class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
@@ -114,13 +112,11 @@ class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
     osm_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
     bus = Column(Integer)
-    p_nom = Column(Float)
-    e_nom = Column(Float)
     p_set = Column(ARRAY(Float))
-    p_max_pu = Column(ARRAY(Float))
-    p_min_pu = Column(ARRAY(Float))
-    e_max_pu = Column(ARRAY(Float))
-    e_min_pu = Column(ARRAY(Float))
+    p_max = Column(ARRAY(Float))
+    p_min = Column(ARRAY(Float))
+    e_max = Column(ARRAY(Float))
+    e_min = Column(ARRAY(Float))
 
 
 class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
@@ -135,13 +131,11 @@ class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
     scn_name = Column(String, primary_key=True, index=True)
     bus = Column(Integer)
     application = Column(String)
-    p_nom = Column(Float)
-    e_nom = Column(Float)
     p_set = Column(ARRAY(Float))
-    p_max_pu = Column(ARRAY(Float))
-    p_min_pu = Column(ARRAY(Float))
-    e_max_pu = Column(ARRAY(Float))
-    e_min_pu = Column(ARRAY(Float))
+    p_max = Column(ARRAY(Float))
+    p_min = Column(ARRAY(Float))
+    e_max = Column(ARRAY(Float))
+    e_min = Column(ARRAY(Float))
 
 
 class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
@@ -155,13 +149,11 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
     site_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
     bus = Column(Integer)
-    p_nom = Column(Float)
-    e_nom = Column(Float)
     p_set = Column(ARRAY(Float))
-    p_max_pu = Column(ARRAY(Float))
-    p_min_pu = Column(ARRAY(Float))
-    e_max_pu = Column(ARRAY(Float))
-    e_min_pu = Column(ARRAY(Float))
+    p_max = Column(ARRAY(Float))
+    p_min = Column(ARRAY(Float))
+    e_max = Column(ARRAY(Float))
+    e_min = Column(ARRAY(Float))
 
 
 # Code
@@ -1308,46 +1300,6 @@ def dsm_cts_ind(
     data_export(dsm_buses, dsm_links, dsm_stores, carrier="dsm")
 
 
-def get_p_nom_e_nom(df: pd.DataFrame):
-    p_nom = [
-        max(max(val), max(abs(v) for v in df.p_min_pu.at[idx]))
-        for idx, val in df.p_max_pu.items()
-    ]
-
-    e_nom = [
-        max(max(val), max(abs(v) for v in df.e_min_pu.at[idx]))
-        for idx, val in df.e_max_pu.items()
-    ]
-
-    return df.assign(p_nom=p_nom, e_nom=e_nom)
-
-
-def calc_per_unit(df):
-    df = get_p_nom_e_nom(df)
-
-    for col in ["p_max_pu", "p_min_pu"]:
-        rslt = []
-
-        for idx, lst in df[col].items():
-            p_nom = df.p_nom.at[idx]
-
-            rslt.append([v / p_nom for v in lst])
-
-        df[col] = rslt
-
-    for col in ["e_max_pu", "e_min_pu"]:
-        rslt = []
-
-        for idx, lst in df[col].items():
-            e_nom = df.e_nom.at[idx]
-
-            rslt.append([v / e_nom for v in lst])
-
-        df[col] = rslt
-
-    return df
-
-
 def create_table(df, table, engine=CON):
     """Create table"""
     table.__table__.drop(bind=engine, checkfirst=True)
@@ -1360,6 +1312,10 @@ def create_table(df, table, engine=CON):
         if_exists="append",
         index=False,
     )
+
+
+def div_list(lst: list, div: float):
+    return [v / div for v in lst]
 
 
 def dsm_cts_ind_individual(
@@ -1411,19 +1367,22 @@ def dsm_cts_ind_individual(
         dsm=dsm,
     )
 
+    dsm = dsm.assign(
+        p_set=dsm.p_set.apply(div_list, div=cts_cool_vent_ac_share)
+    )
+
     base_columns = [
         "bus",
         "scn_name",
         "p_set",
-        "p_max_pu",
-        "p_min_pu",
-        "e_max_pu",
-        "e_min_pu",
+        "p_max",
+        "p_min",
+        "e_max",
+        "e_min",
     ]
 
     cts_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
     cts_df.columns = base_columns
-    cts_df = calc_per_unit(cts_df)
 
     print(" ")
     print("industry per osm-area: cooling and ventilation")
@@ -1442,11 +1401,12 @@ def dsm_cts_ind_individual(
         dsm=dsm,
     )
 
+    dsm = dsm.assign(p_set=dsm.p_set.apply(div_list, div=ind_vent_cool_share))
+
     columns = ["osm_id"] + base_columns
 
     osm_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
     osm_df.columns = columns
-    osm_df = calc_per_unit(osm_df)
 
     # industry sites
 
@@ -1486,7 +1446,6 @@ def dsm_cts_ind_individual(
 
     paper_df = pd.concat([dsm_paper, *vals], axis=1, ignore_index=True)
     paper_df.columns = columns
-    paper_df = calc_per_unit(paper_df)
 
     print(" ")
     print("industry sites: recycled paper")
@@ -1511,7 +1470,6 @@ def dsm_cts_ind_individual(
         [dsm_recycled_paper, *vals], axis=1, ignore_index=True
     )
     recycled_paper_df.columns = columns
-    recycled_paper_df = calc_per_unit(recycled_paper_df)
 
     print(" ")
     print("industry sites: pulp")
@@ -1532,7 +1490,6 @@ def dsm_cts_ind_individual(
 
     pulp_df = pd.concat([dsm_pulp, *vals], axis=1, ignore_index=True)
     pulp_df.columns = columns
-    pulp_df = calc_per_unit(pulp_df)
 
     # industry sites: cement
 
@@ -1555,7 +1512,6 @@ def dsm_cts_ind_individual(
 
     cement_df = pd.concat([dsm_cement, *vals], axis=1, ignore_index=True)
     cement_df.columns = columns
-    cement_df = calc_per_unit(cement_df)
 
     ind_df = pd.concat(
         [paper_df, recycled_paper_df, pulp_df, cement_df], ignore_index=True
@@ -1590,7 +1546,6 @@ def dsm_cts_ind_individual(
 
     ind_sites_df = pd.concat([dsm, *vals], axis=1, ignore_index=True)
     ind_sites_df.columns = columns
-    ind_sites_df = calc_per_unit(ind_sites_df)
 
     # create tables
     create_table(
