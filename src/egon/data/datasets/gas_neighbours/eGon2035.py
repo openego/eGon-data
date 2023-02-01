@@ -629,10 +629,10 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM 
+            SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE bus IN (
                 SELECT bus_id FROM
@@ -822,7 +822,7 @@ def insert_storage(ch4_storage_capacities):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
+        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
         AND bus IN (
@@ -1221,7 +1221,7 @@ def calculate_ch4_grid_capacities():
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
                 FROM {sources['links']['schema']}.{sources['links']['table']}
-                    WHERE scn_name = 'eGon2035' 
+                    WHERE scn_name = 'eGon2035'
                     AND carrier = 'CH4'
                     AND (("bus0" IN (
                         SELECT bus_id FROM {schema}.{table}
