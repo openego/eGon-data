@@ -257,7 +257,7 @@ def calc_capacities():
 
     # Add generators in Norway and Russia
     df_conv = (
-        df0.query('Case == "Min" & ' 'Category == "Supply Potential"')
+        df0.query('Case == "Min" & Category == "Supply Potential"')
         .drop(
             columns=[
                 "Generator_ID",
