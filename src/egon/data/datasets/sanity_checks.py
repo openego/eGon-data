@@ -97,6 +97,7 @@ class SanityChecks(Dataset):
                 sanitycheck_pv_rooftop_buildings,
                 sanitycheck_home_batteries,
                 etrago_eGon2035_gas_DE,
+                etrago_eGon2035_gas_abroad,
                 sanitycheck_dsm,
             },
         )
