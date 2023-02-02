@@ -242,6 +242,8 @@ Added
   `#1014 <https://github.com/openego/eGon-data/issues/1014>`_
 * Add new MaStR dataset
   `#1051 <https://github.com/openego/eGon-data/issues/1051>`_
+* Heat pump desaggregation to buildings
+  `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -678,6 +680,10 @@ Bug Fixes
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
 * Add missing gas turbines abroad
   `#1079 <https://github.com/openego/eGon-data/issues/1079>`_
+* Fix gas generators abroad (marginal cost and e_nom_max)
+  `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
+* Fix gas pipelines isolated of the German grid
+  `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
 * Fix aggregation of DSM-components
   `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
 * Fix URL of TYNDP scenario dataset
