@@ -2419,7 +2419,7 @@ def sanitycheck_dsm():
         for table in tables:
             target = targets[table]
             sql = f"""
-            SELECT bus, p_nom, e_nom, p_min_pu, p_max_pu, e_max_pu, e_min_pu
+            SELECT bus, p_min, p_max, e_max, e_min
             FROM {target["schema"]}.{target["table"]}
             WHERE scn_name = '{scenario}'
             ORDER BY bus
@@ -2431,9 +2431,8 @@ def sanitycheck_dsm():
 
         groups = individual_ts_df[["bus"]].reset_index().groupby("bus").groups
 
-        individual_p_max_df = df_from_series(individual_ts_df.p_max_pu).mul(
-            individual_ts_df.p_nom
-        )
+        individual_p_max_df = df_from_series(individual_ts_df.p_max)
+
         individual_p_max_df = pd.DataFrame(
             [
                 individual_p_max_df[idxs].sum(axis=1)
@@ -2441,9 +2440,9 @@ def sanitycheck_dsm():
             ],
             index=groups.keys(),
         ).T
-        individual_p_min_df = df_from_series(individual_ts_df.p_min_pu).mul(
-            individual_ts_df.p_nom
-        )
+
+        individual_p_min_df = df_from_series(individual_ts_df.p_min)
+
         individual_p_min_df = pd.DataFrame(
             [
                 individual_p_min_df[idxs].sum(axis=1)
@@ -2452,8 +2451,13 @@ def sanitycheck_dsm():
             index=groups.keys(),
         ).T
 
-        assert np.isclose(p_max_df, individual_p_max_df).all()
-        assert np.isclose(p_min_df, individual_p_min_df).all()
+        # due to the fact that time series are clipped at zero (either
+        # direction) there is a little difference between the sum of the
+        # individual time series and the aggregated time series as the second
+        # is generated independent of the others. This makes atol=1e-03
+        # necessary.
+        assert np.allclose(p_max_df, individual_p_max_df, atol=1e-03)
+        assert np.allclose(p_min_df, individual_p_min_df, atol=1e-03)
 
         # e_min and e_max
         sql = f"""
@@ -2482,9 +2486,8 @@ def sanitycheck_dsm():
         e_max_df.columns = meta_df.bus.tolist()
         e_min_df.columns = meta_df.bus.tolist()
 
-        individual_e_max_df = df_from_series(individual_ts_df.e_max_pu).mul(
-            individual_ts_df.e_nom
-        )
+        individual_e_max_df = df_from_series(individual_ts_df.e_max)
+
         individual_e_max_df = pd.DataFrame(
             [
                 individual_e_max_df[idxs].sum(axis=1)
@@ -2492,9 +2495,8 @@ def sanitycheck_dsm():
             ],
             index=groups.keys(),
         ).T
-        individual_e_min_df = df_from_series(individual_ts_df.e_min_pu).mul(
-            individual_ts_df.e_nom
-        )
+        individual_e_min_df = df_from_series(individual_ts_df.e_min)
+
         individual_e_min_df = pd.DataFrame(
             [
                 individual_e_min_df[idxs].sum(axis=1)
@@ -2503,5 +2505,5 @@ def sanitycheck_dsm():
             index=groups.keys(),
         ).T
 
-        assert np.isclose(e_max_df, individual_e_max_df).all()
-        assert np.isclose(e_min_df, individual_e_min_df).all()
+        assert np.allclose(e_max_df, individual_e_max_df)
+        assert np.allclose(e_min_df, individual_e_min_df)

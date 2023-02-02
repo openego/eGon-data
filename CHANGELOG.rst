@@ -694,6 +694,8 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
+* Fix gas pipelines isolated of the German grid
+  `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
 * Fix aggregation of DSM-components
   `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
 * Fix gas generators abroad (marginal cost and e_nom_max)
@@ -705,6 +707,8 @@ Bug Fixes
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
+* Fix faulty DSM time series
+  `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
