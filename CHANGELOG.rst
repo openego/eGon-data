@@ -242,6 +242,8 @@ Added
   `#1014 <https://github.com/openego/eGon-data/issues/1014>`_
 * Add new MaStR dataset
   `#1051 <https://github.com/openego/eGon-data/issues/1051>`_
+* Heat pump desaggregation to buildings
+  `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
