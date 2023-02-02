@@ -186,6 +186,9 @@ def insert_store(scenario, carrier):
             "efficiency": get_sector_parameters("heat", "eGon2035")[
                 "efficiency"
             ]["water_tank_charger"],
+            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+                "marginal_cost"
+            ]["water_tank_charger"],
             "p_nom_extendable": True,
             "link_id": range(
                 db.next_etrago_id("link"),
@@ -210,6 +213,9 @@ def insert_store(scenario, carrier):
             "carrier": carrier + "_store_discharger",
             "efficiency": get_sector_parameters("heat", "eGon2035")[
                 "efficiency"
+            ]["water_tank_discharger"],
+            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+                "marginal_cost"
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
             "link_id": range(
@@ -449,10 +455,13 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     # Add LineString topology
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
-    # Add efficiency of gas boilers
+    # Add efficiency and marginal costs of gas boilers
     central_boilers["efficiency"] = get_sector_parameters("heat", "eGon2035")[
         "efficiency"
     ]["central_gas_boiler"]
+    central_boilers["marginal_cost"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["marginal_cost"]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     central_boilers["p_nom"] = central_boilers.capacity.div(

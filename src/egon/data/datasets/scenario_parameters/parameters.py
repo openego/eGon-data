@@ -120,6 +120,12 @@ def global_settings(scenario):
             },
         }
 
+    elif scenario == "eGon2021":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2021,
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -457,6 +463,9 @@ def electricity(scenario):
             "solar": read_costs(costs, "solar", "VOM"),
         }
 
+    elif scenario == "eGon2021":
+        parameters = {}
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -639,6 +648,9 @@ def gas(scenario):
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
+    elif scenario == "eGon2021":
+        parameters = {}
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -719,6 +731,9 @@ def mobility(scenario):
                 },
             }
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -818,6 +833,9 @@ def heat(scenario):
                 costs, "central resistive heater", "VOM"
             ),
             "geo_thermal": 2.9,  # Danish Energy Agency
+            "water_tank_charger": 0,  # Danish Energy Agency
+            "water_tank_discharger": 0,  # Danish Energy Agency
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
     elif scenario == "eGon100RE":
@@ -826,6 +844,9 @@ def heat(scenario):
             "DE_demand_reduction_service": 0.390895195300713,
             "DE_district_heating_share": 0.19,
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")

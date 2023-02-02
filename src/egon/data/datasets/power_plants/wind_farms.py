@@ -1,10 +1,12 @@
 from matplotlib import pyplot as plt
-from shapely.geometry import LineString, MultiPoint, Point, Polygon
+from shapely.geometry import MultiPoint, Point
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
+import egon.data.config
 
 
 def insert():
@@ -26,7 +28,10 @@ def insert():
     )
 
     # target_power_df has the expected capacity of each federal state
-    sql = "SELECT  carrier, capacity, nuts, scenario_name FROM supply.egon_scenario_capacities"
+    sql = (
+        "SELECT  carrier, capacity, nuts, scenario_name FROM "
+        "supply.egon_scenario_capacities"
+    )
     target_power_df = pd.read_sql(sql, con)
 
     # mv_districts has geographic info of medium voltage districts in Germany
@@ -56,10 +61,10 @@ def insert():
     )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
     target_power_df = target_power_df.to_crs(3035)
-    
-    #Create the shape for full Germany
-    target_power_df.at['DE', 'geom'] = target_power_df['geom'].unary_union
-    target_power_df.at['DE', 'name'] = 'Germany'
+
+    # Create the shape for full Germany
+    target_power_df.at["DE", "geom"] = target_power_df["geom"].unary_union
+    target_power_df.at["DE", "name"] = "Germany"
     # Generate WFs for Germany based on potential areas and existing WFs
     wf_areas, wf_areas_ni = generate_wind_farms()
 
@@ -112,6 +117,9 @@ def generate_wind_farms():
     *No parameters required
 
     """
+    # get config
+    cfg = egon.data.config.datasets()["power_plants"]
+
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
     def filter_current_wf(wf_geometry):
@@ -146,30 +154,33 @@ def generate_wind_farms():
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
-    bus = pd.read_csv("location_elec_generation_raw.csv")
+    bus = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"],
+        index_col="MaStRNummer",
+    )
     # Drop all the rows without connection point
     bus.dropna(subset=["NetzanschlusspunktMastrNummer"], inplace=True)
     # wea has info of each wind turbine in Germany.
-    wea = pd.read_csv("bnetza_mastr_wind_cleaned.csv")
+    wea = pd.read_csv(WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"])
 
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]
     # Delete all the offshore wind turbines
-    wea = wea[wea["Kuestenentfernung"] == 0]
-    # the variable map_ap_wea_farm have the connection point of all the available wt
-    # in the dataframe bus.
+    wea = wea.loc[wea["Lage"] == "Windkraft an Land"]
+    # the variable map_ap_wea_farm have the connection point of all the
+    # available wt in the dataframe bus.
     map_ap_wea_farm = {}
     map_ap_wea_voltage = {}
-    for i in bus.index:
-        for unit in bus["MaStRNummer"][i][1:-1].split(", "):
-            map_ap_wea_farm[unit[1:-1]] = bus["NetzanschlusspunktMastrNummer"][
-                i
-            ]
-            map_ap_wea_voltage[unit[1:-1]] = bus["Spannungsebene"][i]
-    wea["connection point"] = wea["EinheitMastrNummer"].apply(wind_farm)
-    wea["voltage"] = wea["EinheitMastrNummer"].apply(voltage)
 
-    # Create the columns 'geometry' which will have location of each WT in a point type
+    wea["connection point"] = wea["LokationMastrNummer"].map(
+        bus["NetzanschlusspunktMastrNummer"]
+    )
+    wea["voltage"] = wea["LokationMastrNummer"].map(
+        bus["NetzanschlusspunktMastrNummer"]
+    )
+
+    # Create the columns 'geometry' which will have location of each WT in a
+    # point type
     wea = gpd.GeoDataFrame(
         wea,
         geometry=gpd.points_from_xy(
@@ -183,7 +194,8 @@ def generate_wind_farms():
     wf_size = wf_size[wf_size >= 3]
     # Filter all the WT which are not part of a wind farm of at least 3 WT
     wea = wea[wea["connection point"].isin(wf_size.index)]
-    # current_wfs has all the geometries that represent the existing wind farms
+    # current_wfs has all the geometries that represent the existing wind
+    # farms
     current_wfs = gpd.GeoDataFrame(
         index=wf_size.index, crs=4326, columns=["geometry", "voltage"]
     )
@@ -192,10 +204,12 @@ def generate_wind_farms():
             wt_location["geometry"].values
         ).convex_hull
         current_wfs.at[conn_point, "voltage"] = wt_location["voltage"].iat[0]
+
     current_wfs["geometry2"] = current_wfs["geometry"].to_crs(3035)
     current_wfs["area"] = current_wfs["geometry2"].apply(lambda x: x.area)
     current_wfs["length"] = current_wfs["geometry2"].apply(lambda x: x.length)
-    # The 'filter_wts' is used to discard atypical values for the current wind farms
+    # The 'filter_wts' is used to discard atypical values for the current wind
+    # farms
     current_wfs["filter2"] = current_wfs["geometry2"].apply(
         lambda x: filter_current_wf(x)
     )
@@ -208,14 +222,14 @@ def generate_wind_farms():
 
     # Exclude areas smaller than X m². X was calculated as the area of
     # 3 WT in the corners of an equilateral triangle with l = 4*rotor_diameter
-    min_area = 4 * (0.126 ** 2) * np.sqrt(3)
+    min_area = 4 * (0.126**2) * np.sqrt(3)
     wf_areas = wf_areas[wf_areas["area [km²]"] > min_area]
 
     # Find the centroid of all the suitable potential areas
     wf_areas["centroid"] = wf_areas.centroid
 
-    # find the potential areas that intersects the convex hulls of current wind farms
-    # and assign voltage levels
+    # find the potential areas that intersects the convex hulls of current
+    # wind farms and assign voltage levels
     wf_areas = wf_areas.to_crs(4326)
     for i in wf_areas.index:
         intersection = current_wfs.intersects(wf_areas.at[i, "geom"])
@@ -224,7 +238,8 @@ def generate_wind_farms():
         else:
             wf_areas.at[i, "voltage"] = current_wfs[intersection].voltage[0]
 
-    # wf_areas_ni has the potential areas which don't intersect any current wind farm
+    # wf_areas_ni has the potential areas which don't intersect any current
+    # wind farm
     wf_areas_ni = wf_areas[wf_areas["voltage"] == "No Intersection"]
     wf_areas = wf_areas[wf_areas["voltage"] != "No Intersection"]
     return wf_areas, wf_areas_ni
@@ -239,7 +254,8 @@ def wind_power_states(
     source,
     fed_state,
 ):
-    """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
+    """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL
+    database.
 
     Parameters
     ----------
@@ -267,17 +283,19 @@ def wind_power_states(
 
     con = db.engine()
     sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
-    # hvmv_substation has the information about HV transmission lines in Germany
+    # hvmv_substation has the information about HV transmission lines in
+    # Germany
     hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col="point")
 
     # Set wind potential depending on geographical location
     power_north = 21.05  # MW/km²
     power_south = 16.81  # MW/km²
-    # Set a maximum installed capacity to limit the power of big potential areas
+    # Set a maximum installed capacity to limit the power of big potential
+    # areas
     max_power_hv = 120  # in MW
     max_power_mv = 20  # in MW
-    # Max distance between WF (connected to MV) and nearest HV substation that
-    # allows its connection to HV.
+    # Max distance between WF (connected to MV) and nearest HV substation
+    # that allows its connection to HV.
     max_dist_hv = 20000  # in meters
 
     summary = pd.DataFrame(
@@ -310,9 +328,9 @@ def wind_power_states(
         | (state_wf["voltage"] == "UmspannungZurHochspannung")
     ]
 
-    # Wind farms connected to MV network will be connected to HV network if the distance
-    # to the closest HV substation is =< max_dist_hv, and the installed capacity
-    # is bigger than max_power_mv
+    # Wind farms connected to MV network will be connected to HV network if
+    # the distance to the closest HV substation is =< max_dist_hv, and the
+    # installed capacity is bigger than max_power_mv
     hvmv_substation = hvmv_substation.to_crs(3035)
     hvmv_substation["voltage"] = hvmv_substation["voltage"].apply(
         lambda x: int(x.split(";")[0])
@@ -371,8 +389,8 @@ def wind_power_states(
     else:
         extra_wf = state_mv_districts.copy()
         extra_wf = extra_wf.drop(columns=["centroid"])
-        # the column centroid has the coordinates of the substation corresponting
-        # to each mv_grid_district
+        # the column centroid has the coordinates of the substation
+        # corresponding to each mv_grid_district
         extra_wf["centroid"] = extra_wf.apply(match_district_se, axis=1)
         extra_wf = extra_wf.set_geometry("centroid")
         extra_wf["area [km²]"] = 0.0
@@ -422,7 +440,7 @@ def wind_power_states(
     sql = "SELECT MAX(id) FROM supply.egon_power_plants"
     max_id = pd.read_sql(sql, con)
     max_id = max_id["max"].iat[0]
-    if max_id == None:
+    if max_id is None:
         wind_farm_id = 1
     else:
         wind_farm_id = int(max_id + 1)
@@ -475,20 +493,23 @@ def generate_map():
     con = db.engine()
 
     # Import wind farms from egon-data
-    sql = """SELECT  carrier, el_capacity, geom, scenario FROM supply.egon_power_plants
-    WHERE carrier = 'wind_onshore'"""
+    sql = (
+        "SELECT  carrier, el_capacity, geom, scenario FROM "
+        "supply.egon_power_plants WHERE carrier = 'wind_onshore'"
+    )
     wind_farms_t = gpd.GeoDataFrame.from_postgis(
         sql, con, geom_col="geom", crs=4326
     )
     wind_farms_t = wind_farms_t.to_crs(3035)
 
     for scenario in wind_farms_t.scenario.unique():
-        wind_farms = wind_farms_t[wind_farms_t['scenario'] == scenario]
-        # mv_districts has geographic info of medium voltage districts in Germany
+        wind_farms = wind_farms_t[wind_farms_t["scenario"] == scenario]
+        # mv_districts has geographic info of medium voltage districts in
+        # Germany
         sql = "SELECT geom FROM grid.egon_mv_grid_district"
         mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
         mv_districts = mv_districts.to_crs(3035)
-    
+
         mv_districts["power"] = 0.0
         for std in mv_districts.index:
             try:
@@ -497,7 +518,7 @@ def generate_map():
                 ).el_capacity.sum()
             except:
                 print(std)
-    
+
         fig, ax = plt.subplots(1, 1)
         mv_districts.geom.plot(linewidth=0.2, ax=ax, color="black")
         mv_districts.plot(
@@ -510,5 +531,5 @@ def generate_map():
                 "orientation": "vertical",
             },
         )
-        plt.savefig(f'wind_farms_{scenario}.png', dpi=300)
+        plt.savefig(f"wind_farms_{scenario}.png", dpi=300)
     return 0
