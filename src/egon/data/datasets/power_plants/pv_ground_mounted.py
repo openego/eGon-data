@@ -36,7 +36,7 @@ def insert():
                 "LokationMastrNummer",
             ],
         )
-        df = df[df["Lage"] == "Freiflaeche"]
+        df = df[df["Lage"] == "Freifläche"]
 
         # examine data concerning geographical locations and drop NaNs
         x1 = df["Laengengrad"].isnull().sum()

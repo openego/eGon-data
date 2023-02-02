@@ -27,7 +27,7 @@ class GasNodesandPipes(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNodesandPipes",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(insert_gas_data, insert_gas_data_eGon100RE),
         )
@@ -393,12 +393,25 @@ def insert_gas_pipeline_list(
     gas_pipelines_list = gas_pipelines_list[
         gas_pipelines_list["country_code"].str.contains("DE")
     ]
-
     # Remove links disconnected of the rest of the grid
-    # Remove manually for disconnected link EntsoG_Map__ST_195
+    # Remove manually for disconnected link EntsoG_Map__ST_195 and EntsoG_Map__ST_108
     gas_pipelines_list = gas_pipelines_list[
-        ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_195")
+        gas_pipelines_list["node_id"] != "['SEQ_11790_p', 'Stor_EU_107']"
     ]
+    gas_pipelines_list = gas_pipelines_list[
+        ~gas_pipelines_list["id"].str.match("EntsoG_Map__ST_108")
+    ]
+
+    # Manually add pipeline to artificially connect isolated pipeline
+    gas_pipelines_list.at["new_pipe", "param"] = gas_pipelines_list[
+        gas_pipelines_list["id"] == "NO_PS_8_Seg_0_Seg_23"
+    ]["param"].values[0]
+    gas_pipelines_list.at[
+        "new_pipe", "node_id"
+    ] = "['SEQ_12442_p', 'LKD_N_200']"
+    gas_pipelines_list.at["new_pipe", "lat"] = "[53.358536, 53.412719]"
+    gas_pipelines_list.at["new_pipe", "long"] = "[7.041677, 7.093251]"
+    gas_pipelines_list.at["new_pipe", "country_code"] = "['DE', 'DE']"
 
     gas_pipelines_list["link_id"] = range(
         new_id, new_id + len(gas_pipelines_list)

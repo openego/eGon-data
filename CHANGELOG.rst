@@ -37,7 +37,7 @@ Added
 * OSM data import as done in open_ego
   `#1 <https://github.com/openego/eGon-data/issues/1>`_
   which was updated to the latest long-term data set of the 2021-01-01 in
-  #223 <https://github.com/openego/eGon-data/issues/223>`_
+  `#223 <https://github.com/openego/eGon-data/issues/223>`_
 * Verwaltungsgebiete data import (vg250) more or less done as in open_ego
   `#3 <https://github.com/openego/eGon-data/issues/3>`_
 * Zensus population data import
@@ -232,15 +232,20 @@ Added
 * Write simBEV metadata to DB table
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
 *  Add voltage level for electricity building loads
-  `#955 <https://github.com/openego/eGon-data/issues/955>`_
+   `#955 <https://github.com/openego/eGon-data/issues/955>`_
 * Add desaggregation of pv home batteries onto buildings
   `#988 <https://github.com/openego/eGon-data/issues/988>`_
-* Add low flex scenario 'eGon2035_lowflex'
-  `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Desaggregation of DSM time series onto CTS consumers per bus id and
+  individual indutry consumers.
+  `#1048 <https://github.com/openego/eGon-data/issues/1048>`_
 * Add load areas
   `#1014 <https://github.com/openego/eGon-data/issues/1014>`_
 * Add new MaStR dataset
   `#1051 <https://github.com/openego/eGon-data/issues/1051>`_
+* Heat pump desaggregation to buildings
+  `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
+* Add low flex scenario 'eGon2035_lowflex'
+  `#822 <https://github.com/openego/eGon-data/issues/822>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -279,7 +284,7 @@ Changed
 * Update installation of demandregio's disaggregator
   `#202 <https://github.com/openego/eGon-data/issues/202>`_
 * Update etrago tables
-  `#243 <https://github.com/openego/eGon-data/issues/243>`_and
+  `#243 <https://github.com/openego/eGon-data/issues/243>`_ and
   `#285 <https://github.com/openego/eGon-data/issues/285>`_
 * Migrate VG250 to datasets
   `#283 <https://github.com/openego/eGon-data/issues/283>`_
@@ -352,7 +357,7 @@ Changed
 * Integrate fuel and CO2 costs for eGon2035 to scenario parameters
   `#549 <https://github.com/openego/eGon-data/issues/549>`_
 *  Aggregate generators and stores for CH4
-  `#629 <https://github.com/openego/eGon-data/issues/629>`_
+   `#629 <https://github.com/openego/eGon-data/issues/629>`_
 * Fill missing household data for populated cells
   `#431 <https://github.com/openego/eGon-data/issues/431>`_
 * Fix RE potential areas outside of Germany by updating
@@ -406,7 +411,7 @@ Changed
 * Include simplified restrictions for H2 feed-in into CH4 grid
   `#790 <https://github.com/openego/eGon-data/issues/790>`_
 *  Update hh electricity profiles
-  `#735 <https://github.com/openego/eGon-data/issues/735>`_
+   `#735 <https://github.com/openego/eGon-data/issues/735>`_
 * Improve CH4 stores and productions aggregation by removing dedicated task
   `#775 <https://github.com/openego/eGon-data/pull/775>`_
 * Add CH4 stores in Germany for eGon100RE
@@ -458,7 +463,15 @@ Changed
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
+* Add gas generator in Norway
+  `#1074 <https://github.com/openego/eGon-data/issues/1074>`_
+* SQLAlchemy `engine` objects created via :code:`egon.data.db.engine`
+  are now cached on a per process basis, so only one `engine` is ever
+  created for a single process. This fixes issue `#799`_.
+* Insert rural heat per supply technology
+  `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 
+.. _#799: https://github.com/openego/eGon-data/issues/799
 
 Bug Fixes
 ---------
@@ -669,9 +682,20 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
+* Fix gas generators abroad (marginal cost and e_nom_max)
+  `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
+* Fix gas pipelines isolated of the German grid
+  `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
+* Fix aggregation of DSM-components
+  `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
+* Fix URL of TYNDP scenario dataset
+* Automatically generated tasks now get unique :code:`task_id`\s.
+  Fixes issue `#985`_ via PR `#986`_.
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
 .. _#669: https://github.com/openego/eGon-data/issues/669
+.. _#985: https://github.com/openego/eGon-data/issues/985
+.. _#986: https://github.com/openego/eGon-data/pull/986
