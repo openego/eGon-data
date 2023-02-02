@@ -466,6 +466,8 @@ Changed
 * SQLAlchemy `engine` objects created via :code:`egon.data.db.engine`
   are now cached on a per process basis, so only one `engine` is ever
   created for a single process. This fixes issue `#799`_.
+* Insert rural heat per supply technology
+  `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
