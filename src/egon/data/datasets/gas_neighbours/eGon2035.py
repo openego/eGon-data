@@ -6,15 +6,12 @@ from urllib.request import urlretrieve
 import ast
 import zipfile
 
-from geoalchemy2.types import Geometry
 from shapely.geometry import LineString, MultiLineString
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import pypsa
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
 from egon.data.datasets.electrical_neighbours import (
     get_foreign_bus_id,
     get_map_buses,
@@ -166,12 +163,21 @@ def read_LNG_capacities():
 
 
 def calc_capacities():
-    """Calculates gas production capacities from TYNDP data
+    """Calculates gas production capacities of neighbouring countries
+
+    For each neigbouring country, this function calculates the gas
+    generation capacity in 2035 using the function
+    :py:func:`calc_capacity_per_year` for 2030 and 2040 and
+    interpolating the results. These capacities include LNG import, as
+    well as conventional and biogas production.
+    Two conventional gas generators for are added for Norway and Russia
+    interpolating the supply potential (min) values from the TYNPD 2020
+    for 2030 and 2040.
 
     Returns
     -------
-    pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
+    grouped_capacities: pandas.DataFrame
+        Gas production capacities per foreign node
 
     """
 
@@ -179,16 +185,17 @@ def calc_capacities():
 
     # insert installed capacities
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
-    df = pd.read_excel(
+    df0 = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
     )
 
     df = (
-        df.query(
-            'Scenario == "Distributed Energy" & '
-            '(Case == "Peak" | Case == "Average") &'  # Case: 2 Week/Average/DF/Peak
-            'Category == "Production"'
+        df0.query(
+            'Scenario == "Distributed Energy" &'
+            ' (Case == "Peak" | Case == "Average") &'
+            # Case: 2 Week/Average/DF/Peak
+            ' Category == "Production"'
         )
         .drop(
             columns=[
@@ -248,16 +255,52 @@ def calc_capacities():
         grouped_capacities["cap_2035"] * conversion_factor
     )
 
-    # Add generator in Russia of infinite capacity
-    grouped_capacities = grouped_capacities.append(
-        {
-            "cap_2035": 1e9,
-            "e_nom_max": np.inf,
-            "ratioConv_2035": 1,
-            "index": "RU",
-        },
-        ignore_index=True,
+    # Add generators in Norway and Russia
+    df_conv = (
+        df0.query('Case == "Min" & Category == "Supply Potential"')
+        .drop(
+            columns=[
+                "Generator_ID",
+                "Climate Year",
+                "Simulation_ID",
+                "Node 1",
+                "Path",
+                "Direct/Indirect",
+                "Sector",
+                "Note",
+                "Category",
+                "Scenario",
+                "Parameter",
+                "Case",
+            ]
+        )
+        .set_index("Node/Line")
+        .sort_index()
     )
+
+    df_conv_2030 = df_conv[df_conv["Year"] == 2030].rename(
+        columns={"Value": "Value_2030"}
+    )
+    df_conv_2040 = df_conv[df_conv["Year"] == 2040].rename(
+        columns={"Value": "Value_2040"}
+    )
+    df_conv_2035 = pd.concat([df_conv_2040, df_conv_2030], axis=1)
+
+    df_conv_2035["cap_2035"] = (
+        (df_conv_2035["Value_2030"] + df_conv_2035["Value_2040"]) / 2
+    ) * conversion_factor
+    df_conv_2035["e_nom_max"] = df_conv_2035["cap_2035"] * 8760
+    df_conv_2035["ratioConv_2035"] = 1
+
+    df_conv_2035 = df_conv_2035.drop(
+        columns=[
+            "Year",
+            "Value_2030",
+            "Value_2040",
+        ]
+    ).reset_index()
+    df_conv_2035 = df_conv_2035.rename(columns={"Node/Line": "index"})
+    grouped_capacities = grouped_capacities.append(df_conv_2035)
 
     # choose capacities for considered countries
     grouped_capacities = grouped_capacities[
@@ -267,7 +310,9 @@ def calc_capacities():
 
 
 def calc_capacity_per_year(df, lng, year):
-    """Calculates gas production capacities from TYNDP data for a specified year
+    """
+    Calculate gas production capacities from TYNDP data for a specified
+    year.
 
     Parameters
     ----------
@@ -307,9 +352,9 @@ def calc_capacity_per_year(df, lng, year):
         df[
             (df["Parameter"] == "Biomethane")
             & (df["Year"] == year)
-            & (
-                df["Case"] == "Peak"
-            )  # Peak and Average have the same valus for biogas production in 2030 and 2040
+            & (df["Case"] == "Peak")
+            # Peak and Average have the same values for biogas
+            # production in 2030 and 2040
         ]
         .rename(columns={"Value": f"Value_bio_{year}"})
         .drop(columns=["Parameter", "Year", "Case"])
@@ -584,10 +629,10 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM 
+            SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE bus IN (
                 SELECT bus_id FROM
@@ -728,7 +773,7 @@ def calc_ch4_storage_capacities():
         end_year.append(param["end_year"])
         max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    end_year = [float("inf") if x == None else x for x in end_year]
+    end_year = [float("inf") if x is None else x for x in end_year]
     ch4_storage_capacities = ch4_storage_capacities.assign(end_year=end_year)
     ch4_storage_capacities = ch4_storage_capacities[
         ch4_storage_capacities["end_year"] >= 2035
@@ -777,12 +822,13 @@ def insert_storage(ch4_storage_capacities):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
+        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
         AND bus IN (
-            SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = 'eGon2035' 
+            SELECT bus_id
+            FROM {sources['buses']['schema']}.{sources['buses']['table']}
+            WHERE scn_name = 'eGon2035'
             AND country != 'DE'
             );
         """
@@ -973,7 +1019,6 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
         columns={"GlobD_2035": "p_set"}
     )
 
-    power_to_h2_demand_TS = global_power_to_h2_demand.copy()
     # Remove useless columns
     global_power_to_h2_demand = global_power_to_h2_demand.drop(
         columns=["Node/Line"]
@@ -1168,30 +1213,32 @@ def calculate_ch4_grid_capacities():
     ].map(dict_cross_pipes_DE)
     DE_pipe_capacities_list = DE_pipe_capacities_list.set_index("country_code")
 
+    schema = sources["buses"]["schema"]
+    table = sources["buses"]["table"]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
 
         # Select cross-bording links
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
                 FROM {sources['links']['schema']}.{sources['links']['table']}
-                    WHERE scn_name = 'eGon2035' 
+                    WHERE scn_name = 'eGon2035'
                     AND carrier = 'CH4'
                     AND (("bus0" IN (
-                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        SELECT bus_id FROM {schema}.{table}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
                     )
                     OR ("bus0" IN (
-                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        SELECT bus_id FROM {schema}.{table}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035'))
