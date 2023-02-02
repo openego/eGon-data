@@ -69,6 +69,7 @@ from egon.data.datasets.industrial_gas_demand import (
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
+from egon.data.datasets.low_flex_scenario import LowFlexScenario
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
@@ -662,6 +663,18 @@ with airflow.DAG(
         ]
     )
 
+    # Include low flex scenario(s)
+    low_flex_scenario = LowFlexScenario(
+        dependencies=[
+            storage_etrago,
+            hts_etrago_table,
+            fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
+        ]
+    )
+
     # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
@@ -672,5 +685,6 @@ with airflow.DAG(
             household_electricity_demand_annual,
             cts_demand_buildings,
             emobility_mit,
+            low_flex_scenario,
         ]
     )
