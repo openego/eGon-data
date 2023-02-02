@@ -431,7 +431,7 @@ def calc_capacity_per_year(df, lng, year):
         + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
     )
     df_year[f"share_LNG_{year}"] = (
-        df_year[f"LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
+        df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
         / df_year[f"e_nom_max_{year}"]
     )
     df_year[f"share_conv_pipe_{year}"] = (
