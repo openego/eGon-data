@@ -230,7 +230,7 @@ class Dataset:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
             name = prefix(self)
-            name = name if name else f"{self.name}."
+            name = f"{name if name else f'{self.__module__}.'}{self.name}."
             update_version = PythonOperator(
                 task_id=f"{name}update-version",
                 # Do nothing, because updating will be added later.

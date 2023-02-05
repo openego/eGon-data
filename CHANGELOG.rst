@@ -242,6 +242,10 @@ Added
   `#1014 <https://github.com/openego/eGon-data/issues/1014>`_
 * Add new MaStR dataset
   `#1051 <https://github.com/openego/eGon-data/issues/1051>`_
+* Heat pump desaggregation to buildings
+  `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
+* Add low flex scenario 'eGon2035_lowflex'
+  `#822 <https://github.com/openego/eGon-data/issues/822>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -459,7 +463,15 @@ Changed
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
+* Add gas generator in Norway
+  `#1074 <https://github.com/openego/eGon-data/issues/1074>`_
+* SQLAlchemy `engine` objects created via :code:`egon.data.db.engine`
+  are now cached on a per process basis, so only one `engine` is ever
+  created for a single process. This fixes issue `#799`_.
+* Insert rural heat per supply technology
+  `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 
+.. _#799: https://github.com/openego/eGon-data/issues/799
 
 Bug Fixes
 ---------
@@ -670,11 +682,20 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
+* Fix gas generators abroad (marginal cost and e_nom_max)
+  `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
+* Fix gas pipelines isolated of the German grid
+  `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
 * Fix aggregation of DSM-components
   `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
+* Fix URL of TYNDP scenario dataset
+* Automatically generated tasks now get unique :code:`task_id`\s.
+  Fixes issue `#985`_ via PR `#986`_.
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
 .. _#556: https://github.com/openego/eGon-data/issues/556
 .. _#641: https://github.com/openego/eGon-data/issues/641
 .. _#669: https://github.com/openego/eGon-data/issues/669
+.. _#985: https://github.com/openego/eGon-data/issues/985
+.. _#986: https://github.com/openego/eGon-data/pull/986
