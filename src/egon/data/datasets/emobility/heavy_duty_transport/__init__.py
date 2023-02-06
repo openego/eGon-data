@@ -90,8 +90,7 @@ def download_hgv_data():
     sources = DATASET_CFG["original_data"]["sources"]
 
     # Create the folder, if it does not exist
-    if not WORKING_DIR.is_dir():
-        WORKING_DIR.mkdir(parents=True)
+    WORKING_DIR.mkdir(parents=True, exist_ok=True)
 
     url = sources["BAST"]["url"]
     file = WORKING_DIR / sources["BAST"]["file"]
@@ -110,7 +109,7 @@ class HeavyDutyTransport(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeavyDutyTransport",
-            version="0.0.2.dev",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 {
