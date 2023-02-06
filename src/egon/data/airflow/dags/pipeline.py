@@ -629,24 +629,6 @@ with airflow.DAG(
         ]
     )
 
-    mit_charging_infrastructure = MITChargingInfrastructure(
-        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
-    )
-
-    # eMobility: heavy duty transport
-    heavy_duty_transport = HeavyDutyTransport(
-        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
-    )
-
-    cts_demand_buildings = CtsDemandBuildings(
-        dependencies=[
-            osm_buildings_streets,
-            cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
-            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
-        ]
-    )
-
     # Create load areas
     load_areas = LoadArea(
         dependencies=[
