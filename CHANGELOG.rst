@@ -490,6 +490,8 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Change hgv data source to use database
+  `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
