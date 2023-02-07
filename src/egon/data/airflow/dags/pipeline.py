@@ -654,7 +654,6 @@ with airflow.DAG(
     )
 
     # Include low flex scenario(s)
-
     low_flex_scenario = LowFlexScenario(
         dependencies=[
             storage_etrago,

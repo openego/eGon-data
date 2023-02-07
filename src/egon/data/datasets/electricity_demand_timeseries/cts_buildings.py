@@ -257,7 +257,7 @@ class CtsDemandBuildings(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CtsDemandBuildings",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 cts_buildings,
@@ -918,33 +918,6 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    # # Fix #989
-    # # Mismatched bus_id
-    # # May result in failing sanity checks
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    #
-    # with db.session_scope() as session:
-    #     query = session.query(
-    #         egon_map_zensus_buildings_filtered_all.id,
-    #         MapZensusGridDistricts.bus_id,
-    #     ).filter(
-    #         egon_map_zensus_buildings_filtered_all.id.in_(
-    #             df_cts_buildings.id.values
-    #         ),
-    #         MapZensusGridDistricts.zensus_population_id
-    #         == egon_map_zensus_buildings_filtered_all.zensus_population_id,
-    #     )
-    #
-    #     df_map_bus_id = pd.read_sql(
-    #         query.statement, session.connection(), index_col=None
-    #     )
-    #
-    # df_demand_share = pd.merge(
-    #     left=df_demand_share.drop(columns="bus_id"),
-    #     right=df_map_bus_id,
-    #     on="id",
-    # )
-
     # only pass selected columns
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
@@ -1109,8 +1082,8 @@ def calc_cts_building_profiles(
                 # get peta demand to scale load profile to
                 peta_cts_demand = get_peta_demand(bus_id, scenario)
                 scaling_factor = (
-                    peta_cts_demand.demand.sum() /
-                    df_cts_substation_profiles.loc[bus_id, :].sum()
+                    peta_cts_demand.demand.sum()
+                    / df_cts_substation_profiles.loc[bus_id, :].sum()
                 )
                 # scale load profile
                 df_cts_substation_profiles.loc[bus_id, :] *= scaling_factor
@@ -1401,30 +1374,6 @@ def cts_buildings():
     df_cts_buildings = df_cts_buildings.reset_index().rename(
         columns={"index": "serial"}
     )
-
-    # # Fix #989
-    # # Mismatched zensus population id
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    #
-    # with db.session_scope() as session:
-    #     query = session.query(
-    #         egon_map_zensus_buildings_filtered_all.id,
-    #         egon_map_zensus_buildings_filtered_all.zensus_population_id,
-    #     ).filter(
-    #         egon_map_zensus_buildings_filtered_all.id.in_(
-    #             df_cts_buildings.id.values
-    #         )
-    #     )
-    #
-    #     df_map_zensus_population_id = pd.read_sql(
-    #         query.statement, session.connection(), index_col=None
-    #     )
-    #
-    # df_cts_buildings = pd.merge(
-    #     left=df_cts_buildings.drop(columns="zensus_population_id"),
-    #     right=df_map_zensus_population_id,
-    #     on="id",
-    # )
 
     # Write table to db for debugging and postprocessing
     write_table_to_postgis(
