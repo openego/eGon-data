@@ -125,7 +125,7 @@ Added
 * Merge electrical loads per bus and export to etrago tables
   `#328 <https://github.com/openego/eGon-data/issues/328>`_
 * Insert industial gas demand
-  `#321 <https://github.com/openego/eGon-data/issues/358>`_
+  `#358 <https://github.com/openego/eGon-data/issues/358>`_
 * Integrate existing CHP and extdended CHP > 10MW_el
   `#266 <https://github.com/openego/eGon-data/issues/266>`_
 * Add random seed to CLI parameters
@@ -334,13 +334,13 @@ Changed
 * Replace 'gas' carrier with 'CH4' and 'H2' carriers
   `#436 <https://github.com/openego/eGon-data/issues/436>`_
 * Adjust file path for industrial sites import
-  `#397 <https://github.com/openego/eGon-data/issues/418>`_
+  `#418 <https://github.com/openego/eGon-data/issues/418>`_
 * Rename columns subst_id to bus_id
   `#335 <https://github.com/openego/eGon-data/issues/335>`_
 * Apply black and isort for all python scripts
   `#463 <https://github.com/openego/eGon-data/issues/463>`_
 * Update deposit id for zenodo download
-  `#397 <https://github.com/openego/eGon-data/issues/498>`_
+  `#498 <https://github.com/openego/eGon-data/issues/498>`_
 * Add to etrago.setug.py the busmap table
   `#484 <https://github.com/openego/eGon-data/issues/484>`_
 * Migrate dlr script to datasets
@@ -389,7 +389,7 @@ Changed
   `#628 <https://github.com/openego/eGon-data/issues/628>`_
 * Fill table demand.egon_demandregio_zensus_electricity after profile
   allocation
-  `#620 <https://github.com/openego/eGon-data/issues/586>`_
+  `#586 <https://github.com/openego/eGon-data/issues/586>`_
 * Change method of building assignment
   `#663 <https://github.com/openego/eGon-data/issues/663>`_
 * Create new OSM residential building table
@@ -542,7 +542,7 @@ Bug Fixes
   `#387 <https://github.com/openego/eGon-data/issues/387>`_
 * Fix unnecessary columns in normal mode for inserting the gas
   production
-  `#387 <https://github.com/openego/eGon-data/issues/390>`_
+  `#390 <https://github.com/openego/eGon-data/issues/390>`_
 * Add xlrd and openpyxl to installation setup
   `#400 <https://github.com/openego/eGon-data/issues/400>`_
 * Store files of OSM, zensus and VG250 in working dir
@@ -571,7 +571,7 @@ Bug Fixes
 * Use inbuilt `datetime` package instead of `pandas.datetime`
   `#516 <https://github.com/openego/eGon-data/issues/516>`_
 * Add missing 'sign' for CH4 and H2 loads
-  `#516 <https://github.com/openego/eGon-data/issues/538>`_
+  `#538 <https://github.com/openego/eGon-data/issues/538>`_
 * Delete only AC loads for eTraGo in electricity_demand_etrago
   `#535 <https://github.com/openego/eGon-data/issues/535>`_
 * Filter target values by scenario name
@@ -708,7 +708,7 @@ Bug Fixes
 * Fix gas pipelines isolated of the German grid
   `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
 * Fix aggregation of DSM-components
-  `#1058 <https://github.com/openego/eGon-data/issues/1069>`_
+  `#1069 <https://github.com/openego/eGon-data/issues/1069>`_
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
