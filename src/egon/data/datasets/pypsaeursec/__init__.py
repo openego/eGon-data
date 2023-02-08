@@ -287,14 +287,14 @@ def neighbor_reduction():
 
     network.lines = network.lines.drop(
         network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            & (network.lines["bus1"].isin(network.buses.index) == False)
+            ~network.lines.loc[:, "bus0"].isin(network.buses.index)
+            & ~network.lines["bus1"].isin(network.buses.index)
         ].index
     )
 
     # select all lines which have at bus1 the bus which is kept
     lines_cb_1 = network.lines[
-        (network.lines["bus0"].isin(network.buses.index) == False)
+        ~network.lines["bus0"].isin(network.buses.index)
     ]
 
     # create a load at bus1 with the line's hourly loading
@@ -309,7 +309,7 @@ def neighbor_reduction():
 
     # select all lines which have at bus0 the bus which is kept
     lines_cb_0 = network.lines[
-        (network.lines["bus1"].isin(network.buses.index) == False)
+        ~network.lines["bus1"].isin(network.buses.index)
     ]
 
     # create a load at bus0 with the line's hourly loading
@@ -326,14 +326,14 @@ def neighbor_reduction():
 
     network.links = network.links.drop(
         network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            & (network.links["bus1"].isin(network.buses.index) == False)
+            ~network.links["bus0"].isin(network.buses.index)
+            & ~network.links["bus1"].isin(network.buses.index)
         ].index
     )
 
     # select all links which have at bus1 the bus which is kept
     links_cb_1 = network.links[
-        (network.links["bus0"].isin(network.buses.index) == False)
+        ~network.links["bus0"].isin(network.buses.index)
     ]
 
     # create a load at bus1 with the link's hourly loading
@@ -350,7 +350,7 @@ def neighbor_reduction():
 
     # select all links which have at bus0 the bus which is kept
     links_cb_0 = network.links[
-        (network.links["bus1"].isin(network.buses.index) == False)
+        ~network.links["bus1"].isin(network.buses.index)
     ]
 
     # create a load at bus0 with the link's hourly loading
@@ -369,39 +369,37 @@ def neighbor_reduction():
 
     network.lines = network.lines.drop(
         network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            | (network.lines["bus1"].isin(network.buses.index) == False)
+            ~network.lines["bus0"].isin(network.buses.index)
+            | ~network.lines["bus1"].isin(network.buses.index)
         ].index
     )
 
     network.links = network.links.drop(
         network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            | (network.links["bus1"].isin(network.buses.index) == False)
+            ~network.links["bus0"].isin(network.buses.index)
+            | ~network.links["bus1"].isin(network.buses.index)
         ].index
     )
 
     network.transformers = network.transformers.drop(
         network.transformers[
-            (network.transformers["bus0"].isin(network.buses.index) == False)
-            | (network.transformers["bus1"].isin(network.buses.index) == False)
+            ~network.transformers["bus0"].isin(network.buses.index)
+            | ~network.transformers["bus1"].isin(network.buses.index)
         ].index
     )
     network.generators = network.generators.drop(
         network.generators[
-            (network.generators["bus"].isin(network.buses.index) == False)
+            ~network.generators["bus"].isin(network.buses.index)
         ].index
     )
 
     network.loads = network.loads.drop(
-        network.loads[
-            (network.loads["bus"].isin(network.buses.index) == False)
-        ].index
+        network.loads[~network.loads["bus"].isin(network.buses.index)].index
     )
 
     network.storage_units = network.storage_units.drop(
         network.storage_units[
-            (network.storage_units["bus"].isin(network.buses.index) == False)
+            ~network.storage_units["bus"].isin(network.buses.index)
         ].index
     )
 
