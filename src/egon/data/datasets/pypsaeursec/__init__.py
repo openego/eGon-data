@@ -428,7 +428,7 @@ def neighbor_reduction():
     network.buses.country = network.buses.index.str[:2]
     neighbors = network.buses[network.buses.country != "DE"]
 
-    neighbors["new_index"] = (
+    neighbors.loc[:, "new_index"] = (
         db.next_etrago_id("bus") + neighbors.reset_index().index
     )
 
@@ -554,7 +554,7 @@ def neighbor_reduction():
     # Connect to local database
     engine = db.engine()
 
-    neighbors["scn_name"] = "eGon100RE"
+    neighbors.loc[:, "scn_name"] = "eGon100RE"
     neighbors.index = neighbors["new_index"]
 
     # Correct geometry for non AC buses
@@ -609,11 +609,11 @@ def neighbor_reduction():
 
     # prepare and write neighboring crossborder lines to etrago tables
     def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE"):
-        neighbor_lines["scn_name"] = scn
-        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(
-            int
-        )
-        neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
+        neighbor_lines.loc[:, "scn_name"] = scn
+        neighbor_lines.loc[:, "cables"] = 3 * neighbor_lines[
+            "num_parallel"
+        ].astype(int)
+        neighbor_lines.loc[:, "s_nom"] = neighbor_lines["s_nom_min"]
 
         for i in [
             "name",
@@ -689,7 +689,7 @@ def neighbor_reduction():
         None
 
         """
-        neighbor_links["scn_name"] = scn
+        neighbor_links.loc[:, "scn_name"] = scn
 
         if extendable is True:
             neighbor_links = neighbor_links.drop(
@@ -808,9 +808,9 @@ def neighbor_reduction():
     links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
 
     # prepare neighboring generators for etrago tables
-    neighbor_gens["scn_name"] = "eGon100RE"
-    neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
-    neighbor_gens["p_nom_extendable"] = False
+    neighbor_gens.loc[:, "scn_name"] = "eGon100RE"
+    neighbor_gens.loc[:, "p_nom"] = neighbor_gens["p_nom_opt"]
+    neighbor_gens.loc[:, "p_nom_extendable"] = False
 
     # Unify carrier names
     neighbor_gens.carrier = neighbor_gens.carrier.str.replace(" ", "_")
@@ -847,7 +847,7 @@ def neighbor_reduction():
     )
 
     # prepare neighboring loads for etrago tables
-    neighbor_loads["scn_name"] = "eGon100RE"
+    neighbor_loads.loc[:, "scn_name"] = "eGon100RE"
 
     # Unify carrier names
     neighbor_loads.carrier = neighbor_loads.carrier.str.replace(" ", "_")
@@ -879,7 +879,7 @@ def neighbor_reduction():
     )
 
     # prepare neighboring stores for etrago tables
-    neighbor_stores["scn_name"] = "eGon100RE"
+    neighbor_stores.loc[:, "scn_name"] = "eGon100RE"
 
     # Unify carrier names
     neighbor_stores.carrier = neighbor_stores.carrier.str.replace(" ", "_")
@@ -919,7 +919,7 @@ def neighbor_reduction():
     )
 
     # prepare neighboring storage_units for etrago tables
-    neighbor_storage["scn_name"] = "eGon100RE"
+    neighbor_storage.loc[:, "scn_name"] = "eGon100RE"
 
     # Unify carrier names
     neighbor_storage.carrier = neighbor_storage.carrier.str.replace(" ", "_")
