@@ -411,17 +411,16 @@ def neighbor_reduction():
         "transformers",
         "links",
     ]
-    for g in components:  # loads_t
-        h = g + "_t"
-        nw = getattr(network, h)  # network.loads_t
-        for i in nw.keys():  # network.loads_t.p
-            cols = [
-                j
-                for j in getattr(nw, i).columns
-                if j not in getattr(network, g).index
+    for component in components:
+        component_t = getattr(network, f"{component}_t")
+        for key in component_t.keys():
+            columns = [
+                column
+                for column in getattr(component_t, key).columns
+                if column not in getattr(network, component).index
             ]
-            for k in cols:
-                del getattr(nw, i)[k]
+            for column in columns:
+                del getattr(component_t, key)[column]
 
     # writing components of neighboring countries to etrago tables
 
@@ -453,9 +452,11 @@ def neighbor_reduction():
     neighbor_lines.index += db.next_etrago_id("line")
 
     if not network.lines_t["s_max_pu"].empty:
-        for i in neighbor_lines_t.columns:
-            new_index = neighbor_lines[neighbor_lines["name"] == i].index
-            neighbor_lines_t.rename(columns={i: new_index[0]}, inplace=True)
+        for column in neighbor_lines_t.columns:
+            new_index = neighbor_lines[neighbor_lines["name"] == column].index
+            neighbor_lines_t.rename(
+                columns={column: new_index[0]}, inplace=True
+            )
 
     # links
     neighbor_links = network.links[
@@ -488,9 +489,9 @@ def neighbor_reduction():
     )
     neighbor_gens.index += db.next_etrago_id("generator")
 
-    for i in neighbor_gens_t.columns:
-        new_index = neighbor_gens[neighbor_gens["name"] == i].index
-        neighbor_gens_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_gens_t.columns:
+        new_index = neighbor_gens[neighbor_gens["name"] == column].index
+        neighbor_gens_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # loads
 
@@ -506,9 +507,9 @@ def neighbor_reduction():
     )
     neighbor_loads.index += db.next_etrago_id("load")
 
-    for i in neighbor_loads_t.columns:
-        new_index = neighbor_loads[neighbor_loads["index"] == i].index
-        neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_loads_t.columns:
+        new_index = neighbor_loads[neighbor_loads["index"] == column].index
+        neighbor_loads_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # stores
     neighbor_stores = network.stores[network.stores.bus.isin(neighbors.index)]
@@ -523,9 +524,9 @@ def neighbor_reduction():
     )
     neighbor_stores.index += db.next_etrago_id("store")
 
-    for i in neighbor_stores_t.columns:
-        new_index = neighbor_stores[neighbor_stores["name"] == i].index
-        neighbor_stores_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_stores_t.columns:
+        new_index = neighbor_stores[neighbor_stores["name"] == column].index
+        neighbor_stores_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # storage_units
     neighbor_storage = network.storage_units[
@@ -546,9 +547,9 @@ def neighbor_reduction():
     )
     neighbor_storage.index += db.next_etrago_id("storage")
 
-    for i in neighbor_storage_t.columns:
-        new_index = neighbor_storage[neighbor_storage["name"] == i].index
-        neighbor_storage_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_storage_t.columns:
+        new_index = neighbor_storage[neighbor_storage["name"] == column].index
+        neighbor_storage_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # Connect to local database
     engine = db.engine()
