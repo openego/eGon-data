@@ -17,7 +17,6 @@ import yaml
 from egon.data import __path__, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.config
 import egon.data.subprocess as subproc
 
 
