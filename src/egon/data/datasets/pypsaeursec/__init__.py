@@ -22,7 +22,6 @@ import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
-
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
     filepath.mkdir(parents=True, exist_ok=True)
@@ -130,7 +129,6 @@ def run_pypsa_eur_sec():
 
 
 def read_network():
-
     # Set execute_pypsa_eur_sec to False until optional task is implemented
     execute_pypsa_eur_sec = False
     cwd = Path(".")
@@ -264,7 +262,6 @@ def clean_database():
 
 
 def neighbor_reduction():
-
     network = read_network()
 
     network.links.drop("pipe_retrofit", axis="columns", inplace=True)
@@ -834,9 +831,15 @@ def neighbor_reduction():
             "ror": "run_of_river",
             "offwind-ac": "wind_offshore",
             "offwind-dc": "wind_offshore",
-            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
-            "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
-            "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
+            "urban_central_solar_thermal": (
+                "urban_central_solar_thermal_collector"
+            ),
+            "residential_rural_solar_thermal": (
+                "residential_rural_solar_thermal_collector"
+            ),
+            "services_rural_solar_thermal": (
+                "services_rural_solar_thermal_collector"
+            ),
         },
         inplace=True,
     )
