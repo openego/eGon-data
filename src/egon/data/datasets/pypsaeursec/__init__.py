@@ -948,9 +948,9 @@ def neighbor_reduction():
     )
     neighbor_loads_t_etrago["scn_name"] = "eGon100RE"
     neighbor_loads_t_etrago["temp_id"] = 1
-    for i in neighbor_loads_t.columns:
-        neighbor_loads_t_etrago["p_set"][i] = neighbor_loads_t[
-            i
+    for column in neighbor_loads_t.columns:
+        neighbor_loads_t_etrago.at[column, "p_set"] = neighbor_loads_t.loc[
+            :, column
         ].values.tolist()
 
     neighbor_loads_t_etrago.to_sql(
@@ -969,9 +969,9 @@ def neighbor_reduction():
     )
     neighbor_gens_t_etrago["scn_name"] = "eGon100RE"
     neighbor_gens_t_etrago["temp_id"] = 1
-    for i in neighbor_gens_t.columns:
-        neighbor_gens_t_etrago["p_max_pu"][i] = neighbor_gens_t[
-            i
+    for column in neighbor_gens_t.columns:
+        neighbor_gens_t_etrago.at[column, "p_max_pu"] = neighbor_gens_t.loc[
+            :, column
         ].values.tolist()
 
     neighbor_gens_t_etrago.to_sql(
@@ -990,10 +990,10 @@ def neighbor_reduction():
     )
     neighbor_stores_t_etrago["scn_name"] = "eGon100RE"
     neighbor_stores_t_etrago["temp_id"] = 1
-    for i in neighbor_stores_t.columns:
-        neighbor_stores_t_etrago["e_min_pu"][i] = neighbor_stores_t[
-            i
-        ].values.tolist()
+    for column in neighbor_stores_t.columns:
+        neighbor_stores_t_etrago.at[
+            column, "e_min_pu"
+        ] = neighbor_stores_t.loc[:, column].values.tolist()
 
     neighbor_stores_t_etrago.to_sql(
         "egon_etrago_store_timeseries",
@@ -1011,10 +1011,10 @@ def neighbor_reduction():
     )
     neighbor_storage_t_etrago["scn_name"] = "eGon100RE"
     neighbor_storage_t_etrago["temp_id"] = 1
-    for i in neighbor_storage_t.columns:
-        neighbor_storage_t_etrago["inflow"][i] = neighbor_storage_t[
-            i
-        ].values.tolist()
+    for column in neighbor_storage_t.columns:
+        neighbor_storage_t_etrago.at[
+            column, "inflow"
+        ] = neighbor_storage_t.loc[:, column].values.tolist()
 
     neighbor_storage_t_etrago.to_sql(
         "egon_etrago_storage_timeseries",
@@ -1032,10 +1032,10 @@ def neighbor_reduction():
         )
         neighbor_lines_t_etrago["scn_name"] = "eGon100RE"
 
-        for i in neighbor_lines_t.columns:
-            neighbor_lines_t_etrago["s_max_pu"][i] = neighbor_lines_t[
-                i
-            ].values.tolist()
+        for column in neighbor_lines_t.columns:
+            neighbor_lines_t_etrago.at[
+                column, "s_max_pu"
+            ] = neighbor_lines_t.loc[:, column].values.tolist()
 
         neighbor_lines_t_etrago.to_sql(
             "egon_etrago_line_timeseries",
