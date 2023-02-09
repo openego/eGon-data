@@ -72,11 +72,9 @@ from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
-from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.sanity_checks import SanityChecks
-from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import Storages
@@ -184,11 +182,6 @@ with airflow.DAG(
     # MV (medium voltage) grid districts
     mv_grid_districts = mv_grid_districts_setup(
         dependencies=[substation_voronoi]
-    )
-
-    # Import potential areas for wind onshore and ground-mounted PV
-    re_potential_areas = re_potential_area_setup(
-        dependencies=[data_bundle, setup]
     )
 
     # Calculate future heat demand based on Peta5_0_1 data
@@ -320,16 +313,6 @@ with airflow.DAG(
         dependencies=[run_pypsaeursec, tyndp_data]
     )
 
-    # Import NEP (Netzentwicklungsplan) data
-    scenario_capacities = ScenarioCapacities(
-        dependencies=[
-            data_bundle,
-            run_pypsaeursec,
-            setup,
-            vg250,
-            zensus_population,
-        ]
-    )
 
     # CHP locations
     chp = Chp(
@@ -340,7 +323,6 @@ with airflow.DAG(
             osm_landuse,
             mastr_data,
             mv_grid_districts,
-            scenario_capacities,
         ]
     )
 
@@ -352,9 +334,7 @@ with airflow.DAG(
             household_electricity_demand_annual,
             mastr_data,
             mv_grid_districts,
-            re_potential_areas,
             renewable_feedin,
-            scenario_capacities,
             scenario_parameters,
             setup,
             substation_extraction,
@@ -380,7 +360,6 @@ with airflow.DAG(
             mastr_data,
             mv_grid_districts,
             power_plants,
-            scenario_capacities,
             scenario_parameters,
             setup,
             vg250_mv_grid_districts,
