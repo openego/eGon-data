@@ -146,7 +146,10 @@ def read_network():
         opts = data_config["scenario"]["opts"][0]
         sector_opts = data_config["scenario"]["sector_opts"][0]
         planning_horizons = data_config["scenario"]["planning_horizons"][0]
-        file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(
+        file = (
+            "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}"
+            "_{planning_horizons}.nc"
+        ).format(
             simpl=simpl,
             clusters=clusters,
             opts=opts,
