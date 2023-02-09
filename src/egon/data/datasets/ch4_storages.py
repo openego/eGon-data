@@ -36,7 +36,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Storages(Dataset):
-    """ "Insert the non extendable gas stores in Germany into the database
+    """Insert the non extendable gas stores in Germany into the database
 
     Insert the non extendable gas stores into the database in Germany
     for the scnenarios eGon2035 and eGon100RE using the function
@@ -66,8 +66,8 @@ def import_installed_ch4_storages(scn_name):
     cavern stores in Germany, adjuts and returns them.
     Caverns reference: SciGRID_gas dataset (datasets/gas_data/data/IGGIELGN_Storages.csv
     downloaded in :func:`insert_gas_data <egon.data.datasets.gas_grid.insert_gas_data>`).
-    For more information on these data refer to the
-    `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_
+    For more information on these data, refer to the
+    `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
 
     Parameters
     ----------
@@ -322,11 +322,11 @@ def insert_ch4_stores(scn_name):
 
 
 def insert_ch4_storages():
-    """Overall function for to import non extendable gas stores in Germany
+    """Overall function to import non extendable gas stores in Germany
 
-    This function insert the methane stores for the scenarios eGon2035
-    and eGon100RE by using the function :py:func:`insert_ch4_stores`
-    and has no return.
+    This function inserts the methane stores in Germany for the
+    scenarios eGon2035 and eGon100RE by using the function
+    :py:func:`insert_ch4_stores` and has no return.
 
     """
     insert_ch4_stores("eGon2035")

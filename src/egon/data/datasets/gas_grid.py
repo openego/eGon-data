@@ -79,8 +79,8 @@ def download_SciGRID_gas_data():
       * Storages (file IGGIELGN_Storages.csv),
       * LNG terminals (file IGGIELGN_LNGs.csv).
 
-    For more information on these data refer to the
-    `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_
+    For more information on these data refer, to the
+    `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
 
     Returns
     -------

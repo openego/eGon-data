@@ -228,7 +228,7 @@ def read_and_process_demand(
         fonction :py:func:`read_industrial_demand`
       * Attribute the bus_id to which each load and it associated time
         serie is associated by calling the function :py:func:`assign_gas_bus_id <egon.data.db.assign_gas_bus_id>`
-        from :py:module:`egon.data.db`
+        from :py:mod:`egon.data.db <egon.data.db>`
       * Adjust the columns: add "carrier" and remove useless ones
 
     Parameters
