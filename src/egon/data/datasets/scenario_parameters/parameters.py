@@ -125,6 +125,11 @@ def global_settings(scenario):
             "weather_year": 2011,
             "population_year": 2021,
         }
+    elif scenario == "SQ2015_hist":
+        parameters = {
+            "weather_year": 2015,
+            "population_year": 2015,
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
