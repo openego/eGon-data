@@ -147,15 +147,8 @@ def read_network():
         sector_opts = data_config["scenario"]["sector_opts"][0]
         planning_horizons = data_config["scenario"]["planning_horizons"][0]
         file = (
-            "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}"
-            "_{planning_horizons}.nc"
-        ).format(
-            simpl=simpl,
-            clusters=clusters,
-            opts=opts,
-            lv=lv,
-            sector_opts=sector_opts,
-            planning_horizons=planning_horizons,
+            f"elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}"
+            f"_{planning_horizons}.nc"
         )
 
         target_file = (
@@ -202,9 +195,9 @@ def clean_database():
     for comp in comp_one_port:
         db.execute_sql(
             f"""
-            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
-            WHERE {comp + "_id"} IN (
-                SELECT {comp + "_id"} FROM {"grid.egon_etrago_" + comp}
+            DELETE FROM grid.egon_etrago_{comp}_timeseries
+            WHERE {comp}_id IN (
+                SELECT {comp}_id FROM grid.egon_etrago_{comp}
                 WHERE bus IN (
                     SELECT bus_id FROM grid.egon_etrago_bus
                     WHERE country != 'DE'
@@ -212,7 +205,7 @@ def clean_database():
                 AND scn_name = '{scn_name}'
             );
 
-            DELETE FROM {"grid.egon_etrago_" + comp}
+            DELETE FROM grid.egon_etrago_{comp}
             WHERE bus IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
@@ -229,10 +222,10 @@ def clean_database():
     for comp, id in zip(comp_2_ports, ["line_id", "trafo_id", "link_id"]):
         db.execute_sql(
             f"""
-            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
+            DELETE FROM grid.egon_etrago_{comp}_timeseries
             WHERE scn_name = '{scn_name}'
             AND {id} IN (
-                SELECT {id} FROM {"grid.egon_etrago_" + comp}
+                SELECT {id} FROM grid.egon_etrago_{comp}
             WHERE "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
@@ -243,7 +236,7 @@ def clean_database():
                 AND scn_name = '{scn_name}')
             );
 
-            DELETE FROM {"grid.egon_etrago_" + comp}
+            DELETE FROM grid.egon_etrago_{comp}
             WHERE scn_name = '{scn_name}'
             AND "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
@@ -308,13 +301,11 @@ def neighbor_reduction():
     for i, k in zip(lines_cb_1.bus1.values, lines_cb_1.index):
         network.add(
             "Load",
-            "slack_fix " + i + " " + k,
+            f"slack_fix {i} {k}",
             bus=i,
             p_set=network.lines_t.p1[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_1.carrier[k]
+        network.loads.carrier.loc[f"slack_fix {i} {k}"] = lines_cb_1.carrier[k]
 
     # select all lines which have at bus0 the bus which is kept
     lines_cb_0 = network.lines[
@@ -325,13 +316,11 @@ def neighbor_reduction():
     for i, k in zip(lines_cb_0.bus0.values, lines_cb_0.index):
         network.add(
             "Load",
-            "slack_fix " + i + " " + k,
+            f"slack_fix {i} {k}",
             bus=i,
             p_set=network.lines_t.p0[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_0.carrier[k]
+        network.loads.carrier.loc[f"slack_fix {i} {k}"] = lines_cb_0.carrier[k]
 
     # do the same for links
 
@@ -351,12 +340,12 @@ def neighbor_reduction():
     for i, k in zip(links_cb_1.bus1.values, links_cb_1.index):
         network.add(
             "Load",
-            "slack_fix_links " + i + " " + k,
+            f"slack_fix_links {i} {k}",
             bus=i,
             p_set=network.links_t.p1[k],
         )
         network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
+            f"slack_fix_links {i} {k}"
         ] = links_cb_1.carrier[k]
 
     # select all links which have at bus0 the bus which is kept
@@ -368,12 +357,12 @@ def neighbor_reduction():
     for i, k in zip(links_cb_0.bus0.values, links_cb_0.index):
         network.add(
             "Load",
-            "slack_fix_links " + i + " " + k,
+            f"slack_fix_links {i} {k}",
             bus=i,
             p_set=network.links_t.p0[k],
         )
         network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
+            f"slack_fix_links {i} {k}"
         ] = links_cb_0.carrier[k]
 
     # drop remaining foreign components
