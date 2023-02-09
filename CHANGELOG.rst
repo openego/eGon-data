@@ -237,7 +237,7 @@ Added
   `#868 <https://github.com/openego/eGon-data/issues/868>`_
 * Write simBEV metadata to DB table
   `PR #978 <https://github.com/openego/eGon-data/pull/978>`_
-*  Add voltage level for electricity building loads
+* Add voltage level for electricity building loads
   `#955 <https://github.com/openego/eGon-data/issues/955>`_
 * Add desaggregation of pv home batteries onto buildings
   `#988 <https://github.com/openego/eGon-data/issues/988>`_
@@ -732,6 +732,9 @@ Bug Fixes
   Fixes issue `#985`_ via PR `#986`_.
 * Fix faulty DSM time series
   `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
+* Set upper limit on commissioning date for units from MaStR
+  dataset
+  `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

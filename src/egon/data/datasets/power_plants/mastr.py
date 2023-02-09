@@ -313,6 +313,23 @@ def import_mastr() -> None:
         units = units.loc[units.Land == "Deutschland"]
         print(f"    {len_old-len(units)} units outside of Germany dropped...")
 
+        # drop units installed after reference date (eGon2021 scenario)
+        len_old = len(units)
+        ts = pd.Timestamp("2022-01-01 00:00:00")
+        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) < ts]
+        print(
+            f"    {len_old - len(units)} units installed after {ts} dropped..."
+        )
+
+        # drop not operating units
+        len_old = len(units)
+        units = units.loc[units.EinheitBetriebsstatus.isin(
+            ["InBetrieb", "VoruebergehendStillgelegt"]
+        )]
+        print(
+            f"    {len_old - len(units)} not operating units dropped..."
+        )
+
         # filter for SH units if in testmode
         if not TESTMODE_OFF:
             print(
