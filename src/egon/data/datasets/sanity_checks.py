@@ -1448,7 +1448,7 @@ def sanity_check_gas_buses(scn):
         Name of the scenario
 
     """
-    logger.info(f"BUSES")
+    logger.info("BUSES")
 
     # Are gas buses isolated?
     corresponding_carriers = {
@@ -1539,9 +1539,8 @@ def sanity_check_CH4_stores(scn):
       * the sum of:
           * the capacity the gas grid allocated to CH4 (total capacity
             in eGon2035 and capacity reduced the share of the grid
-            allocated to H2 in eGon100RE) and
-          * the sum of the capacities of the stores in the source
-            document (Storages from the SciGRID_gas data)
+            allocated to H2 in eGon100RE)
+          * the total capacity of the CH4 stores in Germany (source: GIE)
 
     Parameters
     ----------
@@ -1564,38 +1563,6 @@ def sanity_check_CH4_stores(scn):
         warning=False,
     )["e_nom_germany"].values[0]
 
-    target_file = (
-        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Storages.csv"
-    )
-
-    CH4_storages_list = pd.read_csv(
-        target_file,
-        delimiter=";",
-        decimal=".",
-        usecols=["country_code", "param"],
-    )
-
-    CH4_storages_list = CH4_storages_list[
-        CH4_storages_list["country_code"].str.match("DE")
-    ]
-
-    max_workingGas_M_m3 = []
-    end_year = []
-    for index, row in CH4_storages_list.iterrows():
-        param = ast.literal_eval(row["param"])
-        end_year.append(param["end_year"])
-        max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
-    CH4_storages_list["max_workingGas_M_m3"] = max_workingGas_M_m3
-    CH4_storages_list["end_year"] = [
-        float("inf") if x == None else x for x in end_year
-    ]
-
-    # Remove unused storage units
-    CH4_storages_list = CH4_storages_list[
-        CH4_storages_list["end_year"]
-        >= get_sector_parameters("global", scn)["population_year"]
-    ]
-
     if scn == "eGon2035":
         grid_cap = 130000
     elif scn == "eGon100RE":
@@ -1605,11 +1572,10 @@ def sanity_check_CH4_stores(scn):
                 "retrofitted_CH4pipeline-to-H2pipeline_share"
             ]
         )
-    conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
-    input_CH4_stores = (
-        conv_factor * sum(CH4_storages_list["max_workingGas_M_m3"].to_list())
-        + grid_cap
-    )
+
+    stores_cap_D = 266424202 # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+
+    input_CH4_stores = stores_cap_D + grid_cap
 
     e_CH4_stores = (
         round(
@@ -1708,7 +1674,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated loads:")
+            logger.info("Isolated loads:")
             logger.info(isolated_one_port_c)
 
         ## CH4_for_industry abroad
@@ -1729,7 +1695,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated loads:")
+            logger.info("Isolated loads:")
             logger.info(isolated_one_port_c)
 
         ## H2_for_industry
@@ -1756,7 +1722,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated loads:")
+            logger.info("Isolated loads:")
             logger.info(isolated_one_port_c)
 
         # Genrators
@@ -1776,7 +1742,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated generators:")
+            logger.info("Isolated generators:")
             logger.info(isolated_one_port_c)
 
         # Stores
@@ -1802,7 +1768,7 @@ def sanity_check_gas_one_port(scn):
                 warning=False,
             )
             if not isolated_one_port_c.empty:
-                logger.info(f"Isolated stores:")
+                logger.info("Isolated stores:")
                 logger.info(isolated_one_port_c)
 
         ## H2_overground
@@ -1829,7 +1795,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated stores:")
+            logger.info("Isolated stores:")
             logger.info(isolated_one_port_c)
 
     # elif scn == "eGon2035":
@@ -1959,7 +1925,7 @@ def sanity_check_gas_links(scn):
             warning=False,
         )
         if not link_with_missing_bus.empty:
-            logger.info(f"Links with missing bus:")
+            logger.info("Links with missing bus:")
             logger.info(link_with_missing_bus)
 
 
@@ -2001,7 +1967,7 @@ def etrago_eGon2035_gas_DE():
         sanity_check_gas_buses(scn)
 
         # Loads
-        logger.info(f"LOADS")
+        logger.info("LOADS")
 
         path = Path(".") / "datasets" / "gas_data" / "demand"
         corr_file = path / "region_corr.json"
@@ -2055,7 +2021,7 @@ def etrago_eGon2035_gas_DE():
             logger.info(f"Deviation {carrier}: {e_demand} %")
 
         # Generators
-        logger.info(f"GENERATORS")
+        logger.info("GENERATORS")
         carrier_generator = "CH4"
 
         output_gas_generation = db.select_dataframe(
@@ -2125,7 +2091,7 @@ def etrago_eGon2035_gas_DE():
         )
 
         # Stores
-        logger.info(f"STORES")
+        logger.info("STORES")
         sanity_check_CH4_stores(scn)
         sanity_check_H2_saltcavern_stores(scn)
 
@@ -2133,7 +2099,7 @@ def etrago_eGon2035_gas_DE():
         sanity_check_gas_one_port(scn)
 
         # Links
-        logger.info(f"LINKS")
+        logger.info("LINKS")
         sanity_check_CH4_grid(scn)
         sanity_check_gas_links(scn)
 
@@ -2166,7 +2132,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Gas sanity checks abroad for scenario {scn}")
 
         # Buses
-        logger.info(f"BUSES")
+        logger.info("BUSES")
 
         # Are gas buses isolated?
         corresponding_carriers = {
@@ -2205,7 +2171,7 @@ def etrago_eGon2035_gas_abroad():
                 logger.info(isolated_gas_buses_abroad)
 
         # Loads
-        logger.info(f"LOADS")
+        logger.info("LOADS")
 
         (
             Norway_global_demand_1y,
@@ -2273,7 +2239,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Deviation H2_for_industry load: {e_demand_H2} %")
 
         # Generators
-        logger.info(f"GENERATORS ")
+        logger.info("GENERATORS ")
         CH4_gen = calc_capacities()
         input_CH4_gen = CH4_gen["cap_2035"].sum()
 
@@ -2302,7 +2268,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Deviation CH4 generators: {e_gen} %")
 
         # Stores
-        logger.info(f"STORES")
+        logger.info("STORES")
         ch4_input_capacities = calc_ch4_storage_capacities()
         input_CH4_stores = ch4_input_capacities["e_nom"].sum()
 
@@ -2331,7 +2297,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Deviation CH4 stores: {e_stores} %")
 
         # Links
-        logger.info(f"LINKS")
+        logger.info("LINKS")
         ch4_grid_input_capacities = calculate_ch4_grid_capacities()
         input_CH4_grid = ch4_grid_input_capacities["p_nom"].sum()
 
