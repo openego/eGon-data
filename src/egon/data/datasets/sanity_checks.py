@@ -1448,7 +1448,7 @@ def sanity_check_gas_buses(scn):
         Name of the scenario
 
     """
-    logger.info(f"BUSES")
+    logger.info("BUSES")
 
     # Are gas buses isolated?
     corresponding_carriers = {
@@ -1707,7 +1707,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated loads:")
+            logger.info("Isolated loads:")
             logger.info(isolated_one_port_c)
 
         ## CH4_for_industry abroad
@@ -1728,7 +1728,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated loads:")
+            logger.info("Isolated loads:")
             logger.info(isolated_one_port_c)
 
         ## H2_for_industry
@@ -1755,7 +1755,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated loads:")
+            logger.info("Isolated loads:")
             logger.info(isolated_one_port_c)
 
         # Genrators
@@ -1775,7 +1775,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated generators:")
+            logger.info("Isolated generators:")
             logger.info(isolated_one_port_c)
 
         # Stores
@@ -1801,7 +1801,7 @@ def sanity_check_gas_one_port(scn):
                 warning=False,
             )
             if not isolated_one_port_c.empty:
-                logger.info(f"Isolated stores:")
+                logger.info("Isolated stores:")
                 logger.info(isolated_one_port_c)
 
         ## H2_overground
@@ -1828,7 +1828,7 @@ def sanity_check_gas_one_port(scn):
             warning=False,
         )
         if not isolated_one_port_c.empty:
-            logger.info(f"Isolated stores:")
+            logger.info("Isolated stores:")
             logger.info(isolated_one_port_c)
 
     # elif scn == "eGon2035":
@@ -1957,7 +1957,7 @@ def sanity_check_gas_links(scn):
             warning=False,
         )
         if not link_with_missing_bus.empty:
-            logger.info(f"Links with missing bus:")
+            logger.info("Links with missing bus:")
             logger.info(link_with_missing_bus)
 
 
@@ -1999,7 +1999,7 @@ def etrago_eGon2035_gas_DE():
         sanity_check_gas_buses(scn)
 
         # Loads
-        logger.info(f"LOADS")
+        logger.info("LOADS")
 
         path = Path(".") / "datasets" / "gas_data" / "demand"
         corr_file = path / "region_corr.json"
@@ -2053,7 +2053,7 @@ def etrago_eGon2035_gas_DE():
             logger.info(f"Deviation {carrier}: {e_demand} %")
 
         # Generators
-        logger.info(f"GENERATORS")
+        logger.info("GENERATORS")
         carrier_generator = "CH4"
 
         output_gas_generation = db.select_dataframe(
@@ -2123,7 +2123,7 @@ def etrago_eGon2035_gas_DE():
         )
 
         # Stores
-        logger.info(f"STORES")
+        logger.info("STORES")
         sanity_check_CH4_stores(scn)
         sanity_check_H2_saltcavern_stores(scn)
 
@@ -2131,7 +2131,7 @@ def etrago_eGon2035_gas_DE():
         sanity_check_gas_one_port(scn)
 
         # Links
-        logger.info(f"LINKS")
+        logger.info("LINKS")
         sanity_check_CH4_grid(scn)
         sanity_check_gas_links(scn)
 
@@ -2164,7 +2164,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Gas sanity checks abroad for scenario {scn}")
 
         # Buses
-        logger.info(f"BUSES")
+        logger.info("BUSES")
 
         # Are gas buses isolated?
         corresponding_carriers = {
@@ -2203,7 +2203,7 @@ def etrago_eGon2035_gas_abroad():
                 logger.info(isolated_gas_buses_abroad)
 
         # Loads
-        logger.info(f"LOADS")
+        logger.info("LOADS")
 
         (
             Norway_global_demand_1y,
@@ -2271,7 +2271,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Deviation H2_for_industry load: {e_demand_H2} %")
 
         # Generators
-        logger.info(f"GENERATORS ")
+        logger.info("GENERATORS ")
         CH4_gen = calc_capacities()
         input_CH4_gen = CH4_gen["cap_2035"].sum()
 
@@ -2300,7 +2300,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Deviation CH4 generators: {e_gen} %")
 
         # Stores
-        logger.info(f"STORES")
+        logger.info("STORES")
         ch4_input_capacities = calc_ch4_storage_capacities()
         input_CH4_stores = ch4_input_capacities["e_nom"].sum()
 
@@ -2329,7 +2329,7 @@ def etrago_eGon2035_gas_abroad():
         logger.info(f"Deviation CH4 stores: {e_stores} %")
 
         # Links
-        logger.info(f"LINKS")
+        logger.info("LINKS")
         ch4_grid_input_capacities = calculate_ch4_grid_capacities()
         input_CH4_grid = ch4_grid_input_capacities["p_nom"].sum()
 
