@@ -1539,9 +1539,8 @@ def sanity_check_CH4_stores(scn):
       * the sum of:
           * the capacity the gas grid allocated to CH4 (total capacity
             in eGon2035 and capacity reduced the share of the grid
-            allocated to H2 in eGon100RE) and
-          * the sum of the capacities of the stores in the source
-            document (Storages from the SciGRID_gas data)
+            allocated to H2 in eGon100RE)
+          * the total capacity of the CH4 stores in Germany (source: GIE)
 
     Parameters
     ----------
@@ -1564,38 +1563,6 @@ def sanity_check_CH4_stores(scn):
         warning=False,
     )["e_nom_germany"].values[0]
 
-    target_file = (
-        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Storages.csv"
-    )
-
-    CH4_storages_list = pd.read_csv(
-        target_file,
-        delimiter=";",
-        decimal=".",
-        usecols=["country_code", "param"],
-    )
-
-    CH4_storages_list = CH4_storages_list[
-        CH4_storages_list["country_code"].str.match("DE")
-    ]
-
-    max_workingGas_M_m3 = []
-    end_year = []
-    for index, row in CH4_storages_list.iterrows():
-        param = ast.literal_eval(row["param"])
-        end_year.append(param["end_year"])
-        max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
-    CH4_storages_list["max_workingGas_M_m3"] = max_workingGas_M_m3
-    CH4_storages_list["end_year"] = [
-        float("inf") if x == None else x for x in end_year
-    ]
-
-    # Remove unused storage units
-    CH4_storages_list = CH4_storages_list[
-        CH4_storages_list["end_year"]
-        >= get_sector_parameters("global", scn)["population_year"]
-    ]
-
     if scn == "eGon2035":
         grid_cap = 130000
     elif scn == "eGon100RE":
@@ -1605,11 +1572,10 @@ def sanity_check_CH4_stores(scn):
                 "retrofitted_CH4pipeline-to-H2pipeline_share"
             ]
         )
-    conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
-    input_CH4_stores = (
-        conv_factor * sum(CH4_storages_list["max_workingGas_M_m3"].to_list())
-        + grid_cap
-    )
+
+    stores_cap_D = 266424202 # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+
+    input_CH4_stores = stores_cap_D + grid_cap
 
     e_CH4_stores = (
         round(
