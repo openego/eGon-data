@@ -52,7 +52,7 @@ def import_installed_ch4_storages(scn_name):
         target_file,
         delimiter=";",
         decimal=".",
-        usecols=["lat", "long", "country_code", "param"],
+        usecols=["lat", "long", "country_code", "param", "method"],
     )
 
     Gas_storages_list = Gas_storages_list[
@@ -63,13 +63,18 @@ def import_installed_ch4_storages(scn_name):
     max_workingGas_M_m3 = []
     NUTS1 = []
     end_year = []
+    method_cap = []
     for index, row in Gas_storages_list.iterrows():
         param = ast.literal_eval(row["param"])
         NUTS1.append(param["nuts_id_1"])
         end_year.append(param["end_year"])
         max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    Gas_storages_list = Gas_storages_list.assign(NUTS1=NUTS1)
+        method = ast.literal_eval(row["method"])
+        method_cap.append(method["max_workingGas_M_m3"])
+
+    Gas_storages_list["method_cap"] = method_cap
+    Gas_storages_list = Gas_storages_list.assign(NUTS1=NUTS1).drop_duplicates()
 
     # Calculate e_nom
     conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
@@ -77,6 +82,19 @@ def import_installed_ch4_storages(scn_name):
 
     end_year = [float("inf") if x == None else x for x in end_year]
     Gas_storages_list = Gas_storages_list.assign(end_year=end_year)
+
+    # Adjust the storage capacities calculated by 'Median(max_workingGas_M_m3)'
+    total_german_cap = 266424202  # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    ch4_estimated = Gas_storages_list[
+        Gas_storages_list.method_cap == "Median(max_workingGas_M_m3)"
+    ]
+    german_cap_source = Gas_storages_list[
+        Gas_storages_list.method_cap != "Median(max_workingGas_M_m3)"
+    ].e_nom.sum()
+
+    Gas_storages_list.loc[ch4_estimated.index, "e_nom"] = (
+        total_german_cap - german_cap_source
+    ) / len(ch4_estimated)
 
     # Cut data to federal state if in testmode
     boundary = settings()["egon-data"]["--dataset-boundary"]
@@ -143,6 +161,7 @@ def import_installed_ch4_storages(scn_name):
             "end_year",
             "geom",
             "bus_id",
+            "method_cap",
         ]
     )
 
