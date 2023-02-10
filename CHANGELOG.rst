@@ -735,6 +735,8 @@ Bug Fixes
 * Set upper limit on commissioning date for units from MaStR
   dataset
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
+* Adjust capacities of German CH4 stores
+  `#1096 <https://github.com/openego/eGon-data/issues/1096>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
