@@ -313,9 +313,12 @@ def import_mastr() -> None:
         units = units.loc[units.Land == "Deutschland"]
         print(f"    {len_old-len(units)} units outside of Germany dropped...")
 
-        # drop units installed after reference date (eGon2021 scenario)
+        # drop units installed after reference date from cfg
+        # (eGon2021 scenario)
         len_old = len(units)
-        ts = pd.Timestamp("2022-01-01 00:00:00")
+        ts = pd.Timestamp(
+            egon.data.config.datasets()["mastr_new"]["egon2021_date_max"]
+        )
         units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) < ts]
         print(
             f"    {len_old - len(units)} units installed after {ts} dropped..."
