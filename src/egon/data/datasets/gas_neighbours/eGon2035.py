@@ -745,36 +745,6 @@ def calc_ch4_storage_capacities():
         .values
     )
 
-    return ch4_storage_capacities
-
-
-def insert_storage(ch4_storage_capacities):
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
-
-    # Clean table
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
-        WHERE "carrier" = 'CH4'
-        AND scn_name = 'eGon2035'
-        AND bus IN (
-            SELECT bus_id
-            FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = 'eGon2035'
-            AND country != 'DE'
-            );
-        """
-    )
-    # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
-    ch4_storage_capacities = ch4_storage_capacities.assign(**c)
-
-    new_id = db.next_etrago_id("store")
-    ch4_storage_capacities["store_id"] = range(
-        new_id, new_id + len(ch4_storage_capacities)
-    )
-
     ch4_storage_capacities.drop(
         ["Country"],
         axis=1,
