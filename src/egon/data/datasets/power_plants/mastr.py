@@ -319,7 +319,7 @@ def import_mastr() -> None:
         ts = pd.Timestamp(
             egon.data.config.datasets()["mastr_new"]["egon2021_date_max"]
         )
-        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) < ts]
+        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
         print(
             f"    {len_old - len(units)} units installed after {ts} dropped..."
         )
