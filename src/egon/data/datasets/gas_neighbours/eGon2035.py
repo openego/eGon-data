@@ -4,6 +4,7 @@
 from pathlib import Path
 from urllib.request import urlretrieve
 import ast
+import ssl
 import zipfile
 
 from shapely.geometry import LineString, MultiLineString
@@ -947,7 +948,11 @@ def calculate_ch4_grid_capacities():
     url = "https://www.entsog.eu/sites/default/files/2021-07/" + basename
     target_file = Path(".") / "datasets" / "gas_data" / basename
 
+    context_backup = ssl._create_default_https_context
+    ssl._create_default_https_context = ssl._create_unverified_context
     urlretrieve(url, target_file)
+    ssl._create_default_https_context = context_backup
+
     map_pipelines = {
         "NORDSTREAM": "RU00",
         "NORDSTREAM 2": "RU00",
