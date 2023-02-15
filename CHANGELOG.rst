@@ -737,6 +737,8 @@ Bug Fixes
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 * Adjust capacities of German CH4 stores
   `#1096 <https://github.com/openego/eGon-data/issues/1096>`_
+* Bypass SSL verification
+  `#1102 <https://github.com/openego/eGon-data/issues/1102>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
