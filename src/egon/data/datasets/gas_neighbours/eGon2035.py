@@ -593,8 +593,8 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
         .drop(columns=["Parameter", "Year"])
     )
 
-    # Conversion GWh/d to MWh/h
-    conversion_factor = 1000 / 24
+    # Conversion GWh/d to MWh/y
+    conversion_factor = 1000 * 365
 
     df_2035 = pd.concat([df_2040, df_2030], axis=1)
     df_2035["GlobD_2035"] = (
@@ -603,7 +603,7 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     df_2035.loc["NOS0"] = [
         0,
         0,
-        Norway_global_demand_1y / 8760,
+        Norway_global_demand_1y,
     ]  # Manually add Norway demand
     grouped_demands = df_2035.drop(
         columns=["Value_2030", "Value_2040"]
@@ -938,8 +938,8 @@ def calc_global_power_to_h2_demand():
 
     Returns
     -------
-    pandas.DataFrame
-        Global power-to-h2 demand per foreign node
+    global_power_to_h2_demand : pandas.DataFrame
+        Global hourly power-to-h2 demand per foreign node
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -1026,12 +1026,12 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     """Insert H2 demands into database for eGon2035
 
     Detailled description
-    This function insert data in the database and has no return.
+    This function inserts data in the database and has no return.
 
     Parameters
     ----------
     global_power_to_h2_demand : pandas.DataFrame
-        Global H2 demand per foreign node in 1 year
+        Global hourly power-to-h2 demand per foreign node
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
