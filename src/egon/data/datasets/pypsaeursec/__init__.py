@@ -416,11 +416,11 @@ def neighbor_reduction():
         for key in component_t.keys():
             columns = [
                 column
-                for column in getattr(component_t, key).columns
+                for column in component_t[key].columns
                 if column not in getattr(network, component).index
             ]
             for column in columns:
-                del getattr(component_t, key)[column]
+                del component_t[key][column]
 
     # writing components of neighboring countries to etrago tables
 
