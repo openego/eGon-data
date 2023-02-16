@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
@@ -59,8 +59,6 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
-
-# from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def data_preprocessing(
@@ -93,7 +91,7 @@ def data_preprocessing(
     # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
         charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid / 10 ** 3
+            ev_data_df.charging_capacity_grid / 10**3
         ),
         minimum_charging_time=(
             ev_data_df.charging_demand
@@ -588,7 +586,7 @@ def write_model_data_to_db(
         """Write model data to eTraGo tables"""
 
         @db.check_db_unique_violation
-        def write_bus(scenario_name: str) -> None:
+        def write_bus(scenario_name: str) -> int:
             # eMob MIT bus
             emob_bus_id = db.next_etrago_id("bus")
             with db.session_scope() as session:
@@ -619,7 +617,7 @@ def write_model_data_to_db(
                         carrier="BEV charger",
                         efficiency=float(run_config.eta_cp),
                         p_nom=(
-                            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()
+                            load_time_series_df.simultaneous_plugged_in_charging_capacity.max()  # noqa: E501
                         ),
                         p_nom_extendable=False,
                         p_nom_min=0,
@@ -641,7 +639,7 @@ def write_model_data_to_db(
                         temp_id=1,
                         p_min_pu=None,
                         p_max_pu=(
-                            hourly_load_time_series_df.ev_availability.to_list()
+                            hourly_load_time_series_df.ev_availability.to_list()  # noqa: E501
                         ),
                     )
                 )
@@ -744,7 +742,7 @@ def write_model_data_to_db(
                 scenario_name=scenario_name,
                 connection_bus_id=emob_bus_id,
                 load_ts=(
-                    hourly_load_time_series_df.driving_load_time_series.to_list()
+                    hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
                 ),
             )
         else:

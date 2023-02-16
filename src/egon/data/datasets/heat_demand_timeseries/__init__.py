@@ -258,7 +258,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
     annual_demand = db.select_dataframe(
         f"""
-        SELECT a.zensus_population_id, demand/c.count as per_building , area_id FROM
+        SELECT a.zensus_population_id, demand/c.count as per_building , area_id, demand as demand_total FROM
         demand.egon_peta_heat a
         INNER JOIN (
             SELECT * FROM demand.egon_map_zensus_district_heating_areas
@@ -352,6 +352,20 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                         ].values
                     )
                 )
+
+            diff = (
+                slice_df.groupby("day").sum()[range(24)].sum().sum()
+                - annual_demand[
+                    annual_demand.area_id == area
+                ].demand_total.sum()
+            ) / (
+                annual_demand[annual_demand.area_id == area].demand_total.sum()
+            )
+
+            assert (
+                abs(diff) < 0.03
+            ), f"""Deviation of residential heat demand time 
+            series for district heating grid {str(area)} is {diff}"""
 
             hh = np.concatenate(
                 slice_df.groupby("day").sum()[range(24)].values
@@ -613,7 +627,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
     annual_demand = db.select_dataframe(
         f"""
-        SELECT a.zensus_population_id, demand/c.count as per_building, bus_id
+        SELECT a.zensus_population_id, demand/c.count as per_building, demand as demand_total, bus_id
         FROM demand.egon_peta_heat a
 
 
@@ -718,6 +732,16 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
         hh = np.concatenate(
             slice_df.groupby("day").sum()[range(24)].values
         ).ravel()
+
+        diff = (
+            slice_df.groupby("day").sum()[range(24)].sum().sum()
+            - annual_demand[annual_demand.bus_id == grid].demand_total.sum()
+        ) / (annual_demand[annual_demand.bus_id == grid].demand_total.sum())
+
+        assert (
+            abs(diff) < 0.03
+        ), f"""Deviation of residential heat demand time 
+        series for mv grid {str(grid)} is {diff}"""
 
         if not (slice_df[hour].empty or cts.empty):
             entry = EgonEtragoTimeseriesIndividualHeating(

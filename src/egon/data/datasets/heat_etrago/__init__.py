@@ -69,10 +69,18 @@ def insert_buses(carrier, scenario):
             SELECT ST_Centroid(geom) AS geom
             FROM {sources['mv_grids']['schema']}.
             {sources['mv_grids']['table']}
-            WHERE bus_id IN (
-                SELECT bus_id FROM 
-                demand.egon_etrago_timeseries_individual_heating
-                WHERE scenario = '{scenario}')
+            WHERE bus_id IN 
+                (SELECT DISTINCT bus_id 
+                FROM boundaries.egon_map_zensus_grid_districts a
+                JOIN demand.egon_peta_heat b 
+                ON a.zensus_population_id = b.zensus_population_id
+                WHERE b.scenario = '{scenario}'
+                AND b.zensus_population_id NOT IN (
+                SELECT zensus_population_id FROM 
+                	demand.egon_map_zensus_district_heating_areas
+                	WHERE scenario = '{scenario}'
+                )
+            )
             """
         )
         heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
@@ -178,6 +186,9 @@ def insert_store(scenario, carrier):
             "efficiency": get_sector_parameters("heat", "eGon2035")[
                 "efficiency"
             ]["water_tank_charger"],
+            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+                "marginal_cost"
+            ]["water_tank_charger"],
             "p_nom_extendable": True,
             "link_id": range(
                 db.next_etrago_id("link"),
@@ -202,6 +213,9 @@ def insert_store(scenario, carrier):
             "carrier": carrier + "_store_discharger",
             "efficiency": get_sector_parameters("heat", "eGon2035")[
                 "efficiency"
+            ]["water_tank_discharger"],
+            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+                "marginal_cost"
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
             "link_id": range(
@@ -249,8 +263,7 @@ def insert_store(scenario, carrier):
 
 def store():
     insert_store("eGon2035", "central_heat")
-    # Temporary drop everything related to rural heat
-    # insert_store("eGon2035", "rural_heat")
+    insert_store("eGon2035", "rural_heat")
 
 
 def insert_central_direct_heat(scenario="eGon2035"):
@@ -442,10 +455,13 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     # Add LineString topology
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
-    # Add efficiency of gas boilers
+    # Add efficiency and marginal costs of gas boilers
     central_boilers["efficiency"] = get_sector_parameters("heat", "eGon2035")[
         "efficiency"
     ]["central_gas_boiler"]
+    central_boilers["marginal_cost"] = get_sector_parameters(
+        "heat", "eGon2035"
+    )["marginal_cost"]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     central_boilers["p_nom"] = central_boilers.capacity.div(
@@ -573,9 +589,9 @@ def buses():
     """
 
     insert_buses("central_heat", scenario="eGon2035")
-    # insert_buses("rural_heat", scenario="eGon2035")
+    insert_buses("rural_heat", scenario="eGon2035")
     insert_buses("central_heat", scenario="eGon100RE")
-    # insert_buses("rural_heat", scenario="eGon100RE")
+    insert_buses("rural_heat", scenario="eGon100RE")
 
 
 def supply():
@@ -592,8 +608,7 @@ def supply():
 
     insert_central_direct_heat(scenario="eGon2035")
     insert_central_power_to_heat(scenario="eGon2035")
-    # Temporary drop everything related to rural heat
-    # insert_individual_power_to_heat(scenario="eGon2035")
+    insert_individual_power_to_heat(scenario="eGon2035")
 
     # insert_rural_gas_boilers(scenario="eGon2035")
     insert_central_gas_boilers(scenario="eGon2035")

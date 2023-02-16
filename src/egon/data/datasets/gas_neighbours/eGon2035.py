@@ -1,4 +1,4 @@
-"""The central module containing all code dealing with gas neighbours
+"""Central module containing code dealing with gas neighbours for eGon2035
 """
 
 from pathlib import Path
@@ -6,18 +6,18 @@ from urllib.request import urlretrieve
 import ast
 import zipfile
 
-from geoalchemy2.types import Geometry
 from shapely.geometry import LineString, MultiLineString
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import pypsa
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
 from egon.data.datasets.electrical_neighbours import (
     get_foreign_bus_id,
     get_map_buses,
+)
+from egon.data.datasets.gas_neighbours.gas_abroad import (
+    insert_gas_grid_capacities,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -39,18 +39,15 @@ countries = [
 ]
 
 
-class GasNeighbours(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="GasNeighbours",
-            version="0.0.1",
-            dependencies=dependencies,
-            tasks=({tyndp_gas_generation, tyndp_gas_demand, grid}),
-        )
+def get_foreign_gas_bus_id(carrier="CH4"):
+    """Calculate the etrago bus id based on the geometry
 
+    Mapp node_ids from TYNDP and etragos bus_id
 
-def get_foreign_gas_bus_id():
-    """Calculate the etrago bus id from gas nodes of TYNDP based on the geometry
+    Parameters
+    ----------
+    carrier : str
+        Name of the carrier
 
     Returns
     -------
@@ -58,14 +55,15 @@ def get_foreign_gas_bus_id():
         List of mapped node_ids from TYNDP and etragos bus_id
 
     """
-
     sources = config.datasets()["gas_neighbours"]["sources"]
+    scn_name = "eGon2035"
 
     bus_id = db.select_geodataframe(
-        """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
+        f"""
+        SELECT bus_id, ST_Buffer(geom, 1) as geom, country
         FROM grid.egon_etrago_bus
-        WHERE scn_name = 'eGon2035'
-        AND carrier = 'CH4'
+        WHERE scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         AND country != 'DE'
         """,
         epsg=3035,
@@ -98,6 +96,14 @@ def get_foreign_gas_bus_id():
 
 
 def read_LNG_capacities():
+    """Read LNG import capacities from Scigrid gas data
+
+    Returns
+    -------
+    IGGIELGN_LNGs: pandas.Series
+        LNG terminal capacities per foreign country node (in GWh/d)
+
+    """
     lng_file = "datasets/gas_data/data/IGGIELGN_LNGs.csv"
     IGGIELGN_LNGs = gpd.read_file(lng_file)
 
@@ -165,12 +171,21 @@ def read_LNG_capacities():
 
 
 def calc_capacities():
-    """Calculates gas production capacities from TYNDP data
+    """Calculates gas production capacities of neighbouring countries
+
+    For each neigbouring country, this function calculates the gas
+    generation capacity in 2035 using the function
+    :py:func:`calc_capacity_per_year` for 2030 and 2040 and
+    interpolating the results. These capacities include LNG import, as
+    well as conventional and biogas production.
+    Two conventional gas generators for are added for Norway and Russia
+    interpolating the supply potential (min) values from the TYNPD 2020
+    for 2030 and 2040.
 
     Returns
     -------
-    pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
+    grouped_capacities: pandas.DataFrame
+        Gas production capacities per foreign node
 
     """
 
@@ -178,16 +193,17 @@ def calc_capacities():
 
     # insert installed capacities
     file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
-    df = pd.read_excel(
+    df0 = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
     )
 
     df = (
-        df.query(
-            'Scenario == "Distributed Energy" & '
-            '(Case == "Peak" | Case == "Average") &'  # Case: 2 Week/Average/DF/Peak
-            'Category == "Production"'
+        df0.query(
+            'Scenario == "Distributed Energy" &'
+            ' (Case == "Peak" | Case == "Average") &'
+            # Case: 2 Week/Average/DF/Peak
+            ' Category == "Production"'
         )
         .drop(
             columns=[
@@ -229,13 +245,24 @@ def calc_capacities():
         * conversion_factor
         * 8760
     )
-    df_2035["ratioConv_2035"] = (
-        df_2035["ratioConv_2030"] + df_2035["ratioConv_2040"]
+    df_2035["share_LNG_2035"] = (
+        df_2035["share_LNG_2030"] + df_2035["share_LNG_2040"]
     ) / 2
+    df_2035["share_conv_pipe_2035"] = (
+        df_2035["share_conv_pipe_2030"] + df_2035["share_conv_pipe_2040"]
+    ) / 2
+    df_2035["share_bio_2035"] = (
+        df_2035["share_bio_2030"] + df_2035["share_bio_2040"]
+    ) / 2
+
     grouped_capacities = df_2035.drop(
         columns=[
-            "ratioConv_2030",
-            "ratioConv_2040",
+            "share_LNG_2030",
+            "share_LNG_2040",
+            "share_conv_pipe_2030",
+            "share_conv_pipe_2040",
+            "share_bio_2030",
+            "share_bio_2040",
             "CH4_2040",
             "CH4_2030",
             "e_nom_max_2030",
@@ -247,16 +274,54 @@ def calc_capacities():
         grouped_capacities["cap_2035"] * conversion_factor
     )
 
-    # Add generator in Russia of infinite capacity
-    grouped_capacities = grouped_capacities.append(
-        {
-            "cap_2035": 1e9,
-            "e_nom_max": np.inf,
-            "ratioConv_2035": 1,
-            "index": "RU",
-        },
-        ignore_index=True,
+    # Add generators in Norway and Russia
+    df_conv = (
+        df0.query('Case == "Min" & Category == "Supply Potential"')
+        .drop(
+            columns=[
+                "Generator_ID",
+                "Climate Year",
+                "Simulation_ID",
+                "Node 1",
+                "Path",
+                "Direct/Indirect",
+                "Sector",
+                "Note",
+                "Category",
+                "Scenario",
+                "Parameter",
+                "Case",
+            ]
+        )
+        .set_index("Node/Line")
+        .sort_index()
     )
+
+    df_conv_2030 = df_conv[df_conv["Year"] == 2030].rename(
+        columns={"Value": "Value_2030"}
+    )
+    df_conv_2040 = df_conv[df_conv["Year"] == 2040].rename(
+        columns={"Value": "Value_2040"}
+    )
+    df_conv_2035 = pd.concat([df_conv_2040, df_conv_2030], axis=1)
+
+    df_conv_2035["cap_2035"] = (
+        (df_conv_2035["Value_2030"] + df_conv_2035["Value_2040"]) / 2
+    ) * conversion_factor
+    df_conv_2035["e_nom_max"] = df_conv_2035["cap_2035"] * 8760
+    df_conv_2035["share_LNG_2035"] = 0
+    df_conv_2035["share_conv_pipe_2035"] = 1
+    df_conv_2035["share_bio_2035"] = 0
+
+    df_conv_2035 = df_conv_2035.drop(
+        columns=[
+            "Year",
+            "Value_2030",
+            "Value_2040",
+        ]
+    ).reset_index()
+    df_conv_2035 = df_conv_2035.rename(columns={"Node/Line": "index"})
+    grouped_capacities = grouped_capacities.append(df_conv_2035)
 
     # choose capacities for considered countries
     grouped_capacities = grouped_capacities[
@@ -266,23 +331,46 @@ def calc_capacities():
 
 
 def calc_capacity_per_year(df, lng, year):
-    """Calculates gas production capacities from TYNDP data for a specified year
+    """Calculates gas production capacities for a specified year
+
+    For a specified year and for the foreign country nodes this function
+    calculates the gas production capacity, considering the gas
+    (conventional and bio) production capacity from TYNDP data and the
+    LGN import capacity from Scigrid gas data.
+
+    The columns of the returned dataframe are the following:
+      * Value_bio_year: biogas capacity prodution (in GWh/d)
+      * Value_conv_year: conventional gas capacity prodution including
+        LNG imports (in GWh/d)
+      * CH4_year: total gas production capacity (in GWh/d). This value
+        is calculated using the peak production value from the TYNDP.
+      * e_nom_max_year: total gas production capacity representative
+        for the whole year (in GWh/d). This value is calculated using
+        the average production value from the TYNDP and will then be
+        used to limit the energy that can be generated in one year.
+      * share_LNG_year: share of LGN import capacity in the total gas
+        production capacity
+      * share_conv_pipe_year: share of conventional gas extraction
+        capacity in the total gas production capacity
+      * share_bio_year: share of biogas production capacity in the
+        total gas production capacity
 
     Parameters
     ----------
     df : pandas.DataFrame
-        DataFrame containing all TYNDP data.
+        Gas (conventional and bio) production capacities from TYNDP (in GWh/d)
 
-    lng : geopandas.GeoDataFrame
-        Georeferenced LNG terminal capacities.
+    lng : pandas.Series
+        LNG terminal capacities per foreign country node (in GWh/d)
 
     year : int
         Year to calculate gas production capacity for.
 
     Returns
     -------
-    pandas.DataFrame
-        Gas production capacities per foreign node and energy carrier
+    df_year : pandas.DataFrame
+        Gas production capacities (in GWh/d) per foreign country node
+
     """
     df_conv_peak = (
         df[
@@ -306,9 +394,9 @@ def calc_capacity_per_year(df, lng, year):
         df[
             (df["Parameter"] == "Biomethane")
             & (df["Year"] == year)
-            & (
-                df["Case"] == "Peak"
-            )  # Peak and Average have the same valus for biogas production in 2030 and 2040
+            & (df["Case"] == "Peak")
+            # Peak and Average have the same values for biogas
+            # production in 2030 and 2040
         ]
         .rename(columns={"Value": f"Value_bio_{year}"})
         .drop(columns=["Parameter", "Year", "Case"])
@@ -337,12 +425,22 @@ def calc_capacity_per_year(df, lng, year):
     df_year[f"CH4_{year}"] = (
         df_year[f"Value_conv_{year}"] + df_year[f"Value_bio_{year}"]
     )
-    df_year[f"ratioConv_{year}"] = (
-        df_year[f"Value_conv_{year}_peak"] / df_year[f"CH4_{year}"]
-    )
     df_year[f"e_nom_max_{year}"] = (
-        df_year[f"Value_conv_{year}_average"] + df_year[f"Value_bio_{year}"]
+        df_year[f"Value_conv_{year}_average"]
+        + df_year[f"Value_bio_{year}"]
+        + df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
     )
+    df_year[f"share_LNG_{year}"] = (
+        df_year["LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)"]
+        / df_year[f"e_nom_max_{year}"]
+    )
+    df_year[f"share_conv_pipe_{year}"] = (
+        df_year[f"Value_conv_{year}_average"] / df_year[f"e_nom_max_{year}"]
+    )
+    df_year[f"share_bio_{year}"] = (
+        df_year[f"Value_bio_{year}"] / df_year[f"e_nom_max_{year}"]
+    )
+
     df_year = df_year.drop(
         columns=[
             "LNG max_cap_store2pipe_M_m3_per_d (in GWh/d)",
@@ -354,9 +452,16 @@ def calc_capacity_per_year(df, lng, year):
     return df_year
 
 
-
 def insert_generators(gen):
-    """Insert gas generators for foreign countries based on TYNDP-data
+    """Insert gas generators for foreign countries in the database
+
+    Insert gas generators for foreign countries in the data base.
+    The marginal cost of the methane is calculated as the sum of the
+    imported LNG cost, of the conventional natural gas cost and of the
+    biomethane cost, weighted by their share in the total import/
+    production capacity.
+    LNG is considerate to be 30% more expensive than the natural gas
+    transported by pipelines (source: iwd, 2022).
 
     Parameters
     ----------
@@ -404,12 +509,21 @@ def insert_generators(gen):
     gen["generator_id"] = range(new_id, new_id + len(gen))
     gen["p_nom"] = gen["cap_2035"]
     gen["marginal_cost"] = (
-        gen["ratioConv_2035"] * scn_params["marginal_cost"]["CH4"]
-        + (1 - gen["ratioConv_2035"]) * scn_params["marginal_cost"]["biogas"]
+        gen["share_LNG_2035"] * scn_params["marginal_cost"]["CH4"] * 1.3
+        + gen["share_conv_pipe_2035"] * scn_params["marginal_cost"]["CH4"]
+        + gen["share_bio_2035"] * scn_params["marginal_cost"]["biogas"]
     )
 
     # Remove useless columns
-    gen = gen.drop(columns=["index", "ratioConv_2035", "cap_2035"])
+    gen = gen.drop(
+        columns=[
+            "index",
+            "share_LNG_2035",
+            "share_conv_pipe_2035",
+            "share_bio_2035",
+            "cap_2035",
+        ]
+    )
 
     # Insert data to db
     gen.to_sql(
@@ -422,7 +536,11 @@ def insert_generators(gen):
 
 
 def calc_global_ch4_demand(Norway_global_demand_1y):
-    """Calculates global gas demands from TYNDP data
+    """Calculates global CH4 demands abroad for eGon2035 scenario
+
+    The data comes from TYNDP 2020 according to NEP 2021 from the
+    scenario 'Distributed Energy', linear interpolate between 2030
+    and 2040.
 
     Returns
     -------
@@ -442,7 +560,7 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     df = (
         df.query(
             'Scenario == "Distributed Energy" & '
-            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Case == "Average" &'
             'Category == "Demand"'
         )
         .drop(
@@ -498,11 +616,14 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
 
 
 def import_ch4_demandTS():
-    """Import from the PyPSA-eur-sec run the timeseries of
-    residential rural heat per neighbor country.
-    This timeserie is used to calculate:
-    - the global (yearly) heat demand of Norway (that will be supplied by CH4)
-    - the normalized CH4 hourly resolved demand profile
+    """Calculate global CH4 demand in Norway and CH4 demand profile
+
+    Import from the PyPSA-eur-sec run the timeseries of residential
+    rural heat per neighbor country. This timeserie is used to
+    calculate:
+      * the global (yearly) heat demand of Norway
+        (that will be supplied by CH4)
+      * the normalized CH4 hourly resolved demand profile
 
     Parameters
     ----------
@@ -552,63 +673,13 @@ def import_ch4_demandTS():
     return Norway_global_demand, neighbor_loads_t
 
 
-def import_power_to_h2_demandTS():
-    """Import from the PyPSA-eur-sec run the timeseries of
-    industry demand heat per neighbor country and normalize it
-    in order to model the power-to-H2 hourly resolved demand profile.
-
-    Parameters
-    ----------
-    None.
-
-    Returns
-    -------
-    neighbor_loads_t: pandas.DataFrame
-        Normalized CH4 hourly resolved demand profiles per neighbor country
-
-    """
-
-    cwd = Path(".")
-    target_file = (
-        cwd
-        / "data_bundle_egon_data"
-        / "pypsa_eur_sec"
-        / "2022-07-26-egondata-integration"
-        / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
-    )
-
-    network = pypsa.Network(str(target_file))
-
-    # Set country tag for all buses
-    network.buses.country = network.buses.index.str[:2]
-    neighbors = network.buses[network.buses.country != "DE"]
-    neighbors = neighbors[
-        (neighbors["country"].isin(countries))
-        & (
-            neighbors["carrier"] == "residential rural heat"
-        )  # no available industry profile for now, using another timeserie
-    ]  # .drop_duplicates(subset="country")
-
-    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
-    neighbor_loads_t_index = neighbor_loads.index[
-        neighbor_loads.index.isin(network.loads_t.p_set.columns)
-    ]
-    neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
-
-    for i in neighbor_loads_t.columns:
-        neighbor_loads_t[i] = neighbor_loads_t[i] / neighbor_loads_t[i].sum()
-
-    return neighbor_loads_t
-
-
 def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
-    """Insert gas final demands for foreign countries
+    """Insert CH4 demands abroad in the database for eGon2035
 
     Parameters
     ----------
     global_demand : pandas.DataFrame
-        Global gas demand per foreign node in 1 year
+        Global CH4 demand per foreign node in 1 year
     gas_demandTS : pandas.DataFrame
         Normalized time serie of the demand per foreign country
 
@@ -621,22 +692,24 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
-    # Delete existing data
+    scn_name = "eGon2035"
+    carrier = "CH4"
 
+    # Delete existing data
     db.execute_sql(
         f"""
-        DELETE FROM 
+        DELETE FROM
         {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM 
+            SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE bus IN (
                 SELECT bus_id FROM
                 {sources['buses']['schema']}.{sources['buses']['table']}
                 WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-            AND scn_name = 'eGon2035'
-            AND carrier = 'CH4'            
+                AND scn_name = '{scn_name}')
+            AND scn_name = '{scn_name}'
+            AND carrier = '{carrier}'
         );
         """
     )
@@ -649,9 +722,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
             SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         """
     )
 
@@ -670,7 +743,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     global_demand = global_demand.assign(**c)
 
     new_id = db.next_etrago_id("load")
@@ -769,7 +842,7 @@ def calc_ch4_storage_capacities():
         end_year.append(param["end_year"])
         max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    end_year = [float("inf") if x == None else x for x in end_year]
+    end_year = [float("inf") if x is None else x for x in end_year]
     ch4_storage_capacities = ch4_storage_capacities.assign(end_year=end_year)
     ch4_storage_capacities = ch4_storage_capacities[
         ch4_storage_capacities["end_year"] >= 2035
@@ -818,12 +891,13 @@ def insert_storage(ch4_storage_capacities):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}  
+        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
         AND bus IN (
-            SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
-            WHERE scn_name = 'eGon2035' 
+            SELECT bus_id
+            FROM {sources['buses']['schema']}.{sources['buses']['table']}
+            WHERE scn_name = 'eGon2035'
             AND country != 'DE'
             );
         """
@@ -855,7 +929,12 @@ def insert_storage(ch4_storage_capacities):
 
 
 def calc_global_power_to_h2_demand():
-    """Calculates global power demand linked to h2 production from TYNDP data
+    """Calculates H2 demand abroad for eGon2035 scenario
+
+    Calculates global power demand abroad linked to H2 production.
+    The data comes from TYNDP 2020 according to NEP 2021 from the
+    scenario 'Distributed Energy', linear interpolate between 2030
+    and 2040.
 
     Returns
     -------
@@ -874,7 +953,7 @@ def calc_global_power_to_h2_demand():
     df = (
         df.query(
             'Scenario == "Distributed Energy" & '
-            'Case == "Average" &'  # Case: 2 Week/Average/DF/Peak
+            'Case == "Average" &'
             'Parameter == "P2H2"'
         )
         .drop(
@@ -943,32 +1022,24 @@ def calc_global_power_to_h2_demand():
     return global_power_to_h2_demand
 
 
-def insert_power_to_h2_demand(
-    global_power_to_h2_demand, normalized_power_to_h2_demandTS
-):
+def insert_power_to_h2_demand(global_power_to_h2_demand):
+    """Insert H2 demands into database for eGon2035
+
+    Detailled description
+    This function insert data in the database and has no return.
+
+    Parameters
+    ----------
+    global_power_to_h2_demand : pandas.DataFrame
+        Global H2 demand per foreign node in 1 year
+
+    """
     sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
     map_buses = get_map_buses()
 
-    # Delete existing data
-
-    db.execute_sql(
-        f"""
-        DELETE FROM 
-        {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
-        WHERE "load_id" IN (
-            SELECT load_id FROM 
-            {targets['loads']['schema']}.{targets['loads']['table']}
-            WHERE bus IN (
-                SELECT bus_id FROM
-                {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-            AND scn_name = 'eGon2035'
-            AND carrier = 'H2 for industry'            
-        );
-        """
-    )
+    scn_name = "eGon2035"
+    carrier = "H2_for_industry"
 
     db.execute_sql(
         f"""
@@ -978,9 +1049,9 @@ def insert_power_to_h2_demand(
             SELECT bus_id FROM
             {sources['buses']['schema']}.{sources['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'H2 for industry'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier = '{carrier}'
         """
     )
 
@@ -1005,7 +1076,7 @@ def insert_power_to_h2_demand(
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "H2 for industry"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
 
     new_id = db.next_etrago_id("load")
@@ -1013,10 +1084,13 @@ def insert_power_to_h2_demand(
         new_id, new_id + len(global_power_to_h2_demand)
     )
 
-    power_to_h2_demand_TS = global_power_to_h2_demand.copy()
+    global_power_to_h2_demand = global_power_to_h2_demand.rename(
+        columns={"GlobD_2035": "p_set"}
+    )
+
     # Remove useless columns
     global_power_to_h2_demand = global_power_to_h2_demand.drop(
-        columns=["Node/Line", "GlobD_2035"]
+        columns=["Node/Line"]
     )
 
     # Insert data to db
@@ -1024,57 +1098,6 @@ def insert_power_to_h2_demand(
         targets["loads"]["table"],
         db.engine(),
         schema=targets["loads"]["schema"],
-        index=False,
-        if_exists="append",
-    )
-
-    # Insert time series
-    normalized_power_to_h2_demandTS = normalized_power_to_h2_demandTS.drop(
-        columns=[
-            "NO3 0 residential rural heat",
-            "CH0 0 residential rural heat",
-            "LU0 0 residential rural heat",
-        ]
-    )
-
-    power_to_h2_demand_TS = power_to_h2_demand_TS.replace(
-        {
-            "Node/Line": {
-                "UK00": "GB4",
-                "UKNI": "GB5",
-                "DKW1": "DK3",
-                "DKE1": "DK0",
-                "SE02": "SE3",
-            }
-        }
-    )
-
-    p_set = []
-    for index, row in power_to_h2_demand_TS.iterrows():
-        normalized_TS_df = normalized_power_to_h2_demandTS.loc[
-            :,
-            normalized_power_to_h2_demandTS.columns.str.contains(
-                row["Node/Line"][:3]
-            ),
-        ]
-        p_set.append(
-            (
-                normalized_TS_df[normalized_TS_df.columns[0]]
-                * row["GlobD_2035"]
-            ).tolist()
-        )
-
-    power_to_h2_demand_TS["p_set"] = p_set
-    power_to_h2_demand_TS["temp_id"] = 1
-    power_to_h2_demand_TS = power_to_h2_demand_TS.drop(
-        columns=["Node/Line", "GlobD_2035", "bus", "carrier"]
-    )
-
-    # Insert data to db
-    power_to_h2_demand_TS.to_sql(
-        targets["load_timeseries"]["table"],
-        db.engine(),
-        schema=targets["load_timeseries"]["schema"],
         index=False,
         if_exists="append",
     )
@@ -1259,30 +1282,32 @@ def calculate_ch4_grid_capacities():
     ].map(dict_cross_pipes_DE)
     DE_pipe_capacities_list = DE_pipe_capacities_list.set_index("country_code")
 
+    schema = sources["buses"]["schema"]
+    table = sources["buses"]["table"]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
 
         # Select cross-bording links
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
                 FROM {sources['links']['schema']}.{sources['links']['table']}
-                    WHERE scn_name = 'eGon2035' 
+                    WHERE scn_name = 'eGon2035'
                     AND carrier = 'CH4'
                     AND (("bus0" IN (
-                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        SELECT bus_id FROM {schema}.{table}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
                     )
                     OR ("bus0" IN (
-                        SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        SELECT bus_id FROM {schema}.{table}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {sources['buses']['schema']}.{sources['buses']['table']}
+                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035'))
@@ -1357,72 +1382,6 @@ def calculate_ch4_grid_capacities():
     return Neighbouring_pipe_capacities_list
 
 
-def insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list):
-    """Insert CH4 grid capacities for foreign countries based on TYNDP-data
-
-    Parameters
-    ----------
-    Neighbouring_pipe_capacities_list : pandas.DataFrame
-
-    Returns
-    -------
-    None.
-
-    """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
-
-    # Insert border crossing CH4 pipelines between foreign countries
-    # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM 
-        {sources['links']['schema']}.{sources['links']['table']}
-        WHERE "bus0" IN (
-            SELECT bus_id FROM 
-            {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND carrier = 'CH4'
-                AND scn_name = 'eGon2035')
-        OR "bus1" IN (
-            SELECT bus_id FROM 
-            {sources['buses']['schema']}.{sources['buses']['table']}
-                WHERE country != 'DE'
-                AND carrier = 'CH4'
-                AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-        AND carrier = 'CH4'            
-        ;
-        """
-    )
-
-    # Insert data to db
-    Neighbouring_pipe_capacities_list.to_postgis(
-        "egon_etrago_gas_link",
-        db.engine(),
-        schema="grid",
-        index=False,
-        if_exists="replace",
-        dtype={"geom": Geometry(), "topo": Geometry()},
-    )
-
-    db.execute_sql(
-        f"""
-    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
-
-    INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
-        scn_name, link_id, carrier,
-        bus0, bus1,p_nom, length, geom, topo)
-    
-    SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, length, geom, topo
-
-    FROM grid.egon_etrago_gas_link;
-
-    DROP TABLE grid.egon_etrago_gas_link;
-        """
-    )
-
-
 def tyndp_gas_generation():
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
@@ -1439,22 +1398,34 @@ def tyndp_gas_generation():
 
 
 def tyndp_gas_demand():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+    """Insert gas demands abroad for eGon2035
 
-    Returns
-    -------
-    None.
+    Insert CH4 and H2 demands abroad for eGon2035 by executing the
+    following steps:
+      * CH4
+          * Calculation of the global CH4 demand in Norway and of the
+            CH4 demand profile by executing the function
+            :py:func:`import_ch4_demandTS`
+          * Calculation of the global CH4 demands by executing the
+            function :py:func:`calc_global_ch4_demand`
+          * Insertion the CH4 loads and their associated time series
+            in the database by executing the function
+            :py:func:`insert_ch4_demand`
+      * H2
+          * Calculation of the global power demand abroad linked
+            to H2 production by executing the function
+            :py:func:`calc_global_power_to_h2_demand`
+          * Insertion of these loads in the database by executing the
+            function :py:func:`insert_power_to_h2_demand`
+    This function insert data in the database and has no return.
+
     """
     Norway_global_demand_1y, normalized_ch4_demandTS = import_ch4_demandTS()
     global_ch4_demand = calc_global_ch4_demand(Norway_global_demand_1y)
     insert_ch4_demand(global_ch4_demand, normalized_ch4_demandTS)
 
-    normalized_power_to_h2_demandTS = import_power_to_h2_demandTS()
     global_power_to_h2_demand = calc_global_power_to_h2_demand()
-    insert_power_to_h2_demand(
-        global_power_to_h2_demand, normalized_power_to_h2_demandTS
-    )
+    insert_power_to_h2_demand(global_power_to_h2_demand)
 
 
 def grid():
@@ -1466,4 +1437,6 @@ def grid():
     None.
     """
     Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
-    insert_ch4_grid_capacities(Neighbouring_pipe_capacities_list)
+    insert_gas_grid_capacities(
+        Neighbouring_pipe_capacities_list, scn_name="eGon2035"
+    )
