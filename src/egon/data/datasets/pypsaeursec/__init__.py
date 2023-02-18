@@ -19,12 +19,10 @@ import yaml
 from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.config
 import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
-
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
     filepath.mkdir(parents=True, exist_ok=True)
@@ -132,7 +130,6 @@ def run_pypsa_eur_sec():
 
 
 def read_network():
-
     # Set execute_pypsa_eur_sec to False until optional task is implemented
     execute_pypsa_eur_sec = False
     cwd = Path(".")
@@ -151,13 +148,9 @@ def read_network():
         opts = data_config["scenario"]["opts"][0]
         sector_opts = data_config["scenario"]["sector_opts"][0]
         planning_horizons = data_config["scenario"]["planning_horizons"][0]
-        file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(
-            simpl=simpl,
-            clusters=clusters,
-            opts=opts,
-            lv=lv,
-            sector_opts=sector_opts,
-            planning_horizons=planning_horizons,
+        file = (
+            f"elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}"
+            f"_{planning_horizons}.nc"
         )
 
         target_file = (
@@ -204,9 +197,9 @@ def clean_database():
     for comp in comp_one_port:
         db.execute_sql(
             f"""
-            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
-            WHERE {comp + "_id"} IN (
-                SELECT {comp + "_id"} FROM {"grid.egon_etrago_" + comp}
+            DELETE FROM grid.egon_etrago_{comp}_timeseries
+            WHERE {comp}_id IN (
+                SELECT {comp}_id FROM grid.egon_etrago_{comp}
                 WHERE bus IN (
                     SELECT bus_id FROM grid.egon_etrago_bus
                     WHERE country != 'DE'
@@ -214,7 +207,7 @@ def clean_database():
                 AND scn_name = '{scn_name}'
             );
 
-            DELETE FROM {"grid.egon_etrago_" + comp}
+            DELETE FROM grid.egon_etrago_{comp}
             WHERE bus IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
@@ -231,10 +224,10 @@ def clean_database():
     for comp, id in zip(comp_2_ports, ["line_id", "trafo_id", "link_id"]):
         db.execute_sql(
             f"""
-            DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
+            DELETE FROM grid.egon_etrago_{comp}_timeseries
             WHERE scn_name = '{scn_name}'
             AND {id} IN (
-                SELECT {id} FROM {"grid.egon_etrago_" + comp}
+                SELECT {id} FROM grid.egon_etrago_{comp}
             WHERE "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
@@ -245,7 +238,7 @@ def clean_database():
                 AND scn_name = '{scn_name}')
             );
 
-            DELETE FROM {"grid.egon_etrago_" + comp}
+            DELETE FROM grid.egon_etrago_{comp}
             WHERE scn_name = '{scn_name}'
             AND "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
@@ -266,7 +259,6 @@ def clean_database():
 
 
 def neighbor_reduction():
-
     network = read_network()
 
     network.links.drop("pipe_retrofit", axis="columns", inplace=True)
@@ -297,125 +289,119 @@ def neighbor_reduction():
 
     network.lines = network.lines.drop(
         network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            & (network.lines["bus1"].isin(network.buses.index) == False)
+            ~network.lines.loc[:, "bus0"].isin(network.buses.index)
+            & ~network.lines["bus1"].isin(network.buses.index)
         ].index
     )
 
     # select all lines which have at bus1 the bus which is kept
     lines_cb_1 = network.lines[
-        (network.lines["bus0"].isin(network.buses.index) == False)
+        ~network.lines["bus0"].isin(network.buses.index)
     ]
 
     # create a load at bus1 with the line's hourly loading
     for i, k in zip(lines_cb_1.bus1.values, lines_cb_1.index):
         network.add(
             "Load",
-            "slack_fix " + i + " " + k,
+            f"slack_fix {i} {k}",
             bus=i,
             p_set=network.lines_t.p1[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_1.carrier[k]
+        network.loads.carrier.loc[f"slack_fix {i} {k}"] = lines_cb_1.carrier[k]
 
     # select all lines which have at bus0 the bus which is kept
     lines_cb_0 = network.lines[
-        (network.lines["bus1"].isin(network.buses.index) == False)
+        ~network.lines["bus1"].isin(network.buses.index)
     ]
 
     # create a load at bus0 with the line's hourly loading
     for i, k in zip(lines_cb_0.bus0.values, lines_cb_0.index):
         network.add(
             "Load",
-            "slack_fix " + i + " " + k,
+            f"slack_fix {i} {k}",
             bus=i,
             p_set=network.lines_t.p0[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_0.carrier[k]
+        network.loads.carrier.loc[f"slack_fix {i} {k}"] = lines_cb_0.carrier[k]
 
     # do the same for links
 
     network.links = network.links.drop(
         network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            & (network.links["bus1"].isin(network.buses.index) == False)
+            ~network.links["bus0"].isin(network.buses.index)
+            & ~network.links["bus1"].isin(network.buses.index)
         ].index
     )
 
     # select all links which have at bus1 the bus which is kept
     links_cb_1 = network.links[
-        (network.links["bus0"].isin(network.buses.index) == False)
+        ~network.links["bus0"].isin(network.buses.index)
     ]
 
     # create a load at bus1 with the link's hourly loading
     for i, k in zip(links_cb_1.bus1.values, links_cb_1.index):
         network.add(
             "Load",
-            "slack_fix_links " + i + " " + k,
+            f"slack_fix_links {i} {k}",
             bus=i,
             p_set=network.links_t.p1[k],
         )
         network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
+            f"slack_fix_links {i} {k}"
         ] = links_cb_1.carrier[k]
 
     # select all links which have at bus0 the bus which is kept
     links_cb_0 = network.links[
-        (network.links["bus1"].isin(network.buses.index) == False)
+        ~network.links["bus1"].isin(network.buses.index)
     ]
 
     # create a load at bus0 with the link's hourly loading
     for i, k in zip(links_cb_0.bus0.values, links_cb_0.index):
         network.add(
             "Load",
-            "slack_fix_links " + i + " " + k,
+            f"slack_fix_links {i} {k}",
             bus=i,
             p_set=network.links_t.p0[k],
         )
         network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
+            f"slack_fix_links {i} {k}"
         ] = links_cb_0.carrier[k]
 
     # drop remaining foreign components
 
     network.lines = network.lines.drop(
         network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            | (network.lines["bus1"].isin(network.buses.index) == False)
+            ~network.lines["bus0"].isin(network.buses.index)
+            | ~network.lines["bus1"].isin(network.buses.index)
         ].index
     )
 
     network.links = network.links.drop(
         network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            | (network.links["bus1"].isin(network.buses.index) == False)
+            ~network.links["bus0"].isin(network.buses.index)
+            | ~network.links["bus1"].isin(network.buses.index)
         ].index
     )
 
     network.transformers = network.transformers.drop(
         network.transformers[
-            (network.transformers["bus0"].isin(network.buses.index) == False)
-            | (network.transformers["bus1"].isin(network.buses.index) == False)
+            ~network.transformers["bus0"].isin(network.buses.index)
+            | ~network.transformers["bus1"].isin(network.buses.index)
         ].index
     )
     network.generators = network.generators.drop(
         network.generators[
-            (network.generators["bus"].isin(network.buses.index) == False)
+            ~network.generators["bus"].isin(network.buses.index)
         ].index
     )
 
     network.loads = network.loads.drop(
-        network.loads[
-            (network.loads["bus"].isin(network.buses.index) == False)
-        ].index
+        network.loads[~network.loads["bus"].isin(network.buses.index)].index
     )
 
     network.storage_units = network.storage_units.drop(
         network.storage_units[
-            (network.storage_units["bus"].isin(network.buses.index) == False)
+            ~network.storage_units["bus"].isin(network.buses.index)
         ].index
     )
 
@@ -427,17 +413,16 @@ def neighbor_reduction():
         "transformers",
         "links",
     ]
-    for g in components:  # loads_t
-        h = g + "_t"
-        nw = getattr(network, h)  # network.loads_t
-        for i in nw.keys():  # network.loads_t.p
-            cols = [
-                j
-                for j in getattr(nw, i).columns
-                if j not in getattr(network, g).index
+    for component in components:
+        component_t = getattr(network, f"{component}_t")
+        for key in component_t.keys():
+            columns = [
+                column
+                for column in component_t[key].columns
+                if column not in getattr(network, component).index
             ]
-            for k in cols:
-                del getattr(nw, i)[k]
+            for column in columns:
+                del component_t[key][column]
 
     # writing components of neighboring countries to etrago tables
 
@@ -445,7 +430,7 @@ def neighbor_reduction():
     network.buses.country = network.buses.index.str[:2]
     neighbors = network.buses[network.buses.country != "DE"]
 
-    neighbors["new_index"] = (
+    neighbors.loc[:, "new_index"] = (
         db.next_etrago_id("bus") + neighbors.reset_index().index
     )
 
@@ -469,9 +454,11 @@ def neighbor_reduction():
     neighbor_lines.index += db.next_etrago_id("line")
 
     if not network.lines_t["s_max_pu"].empty:
-        for i in neighbor_lines_t.columns:
-            new_index = neighbor_lines[neighbor_lines["name"] == i].index
-            neighbor_lines_t.rename(columns={i: new_index[0]}, inplace=True)
+        for column in neighbor_lines_t.columns:
+            new_index = neighbor_lines[neighbor_lines["name"] == column].index
+            neighbor_lines_t.rename(
+                columns={column: new_index[0]}, inplace=True
+            )
 
     # links
     neighbor_links = network.links[
@@ -504,9 +491,9 @@ def neighbor_reduction():
     )
     neighbor_gens.index += db.next_etrago_id("generator")
 
-    for i in neighbor_gens_t.columns:
-        new_index = neighbor_gens[neighbor_gens["name"] == i].index
-        neighbor_gens_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_gens_t.columns:
+        new_index = neighbor_gens[neighbor_gens["name"] == column].index
+        neighbor_gens_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # loads
 
@@ -522,9 +509,9 @@ def neighbor_reduction():
     )
     neighbor_loads.index += db.next_etrago_id("load")
 
-    for i in neighbor_loads_t.columns:
-        new_index = neighbor_loads[neighbor_loads["index"] == i].index
-        neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_loads_t.columns:
+        new_index = neighbor_loads[neighbor_loads["index"] == column].index
+        neighbor_loads_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # stores
     neighbor_stores = network.stores[network.stores.bus.isin(neighbors.index)]
@@ -539,9 +526,9 @@ def neighbor_reduction():
     )
     neighbor_stores.index += db.next_etrago_id("store")
 
-    for i in neighbor_stores_t.columns:
-        new_index = neighbor_stores[neighbor_stores["name"] == i].index
-        neighbor_stores_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_stores_t.columns:
+        new_index = neighbor_stores[neighbor_stores["name"] == column].index
+        neighbor_stores_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # storage_units
     neighbor_storage = network.storage_units[
@@ -562,15 +549,15 @@ def neighbor_reduction():
     )
     neighbor_storage.index += db.next_etrago_id("storage")
 
-    for i in neighbor_storage_t.columns:
-        new_index = neighbor_storage[neighbor_storage["name"] == i].index
-        neighbor_storage_t.rename(columns={i: new_index[0]}, inplace=True)
+    for column in neighbor_storage_t.columns:
+        new_index = neighbor_storage[neighbor_storage["name"] == column].index
+        neighbor_storage_t.rename(columns={column: new_index[0]}, inplace=True)
 
     # Connect to local database
     engine = db.engine()
 
-    neighbors["scn_name"] = "eGon100RE"
-    neighbors.index = neighbors["new_index"]
+    neighbors.loc[:, "scn_name"] = "eGon100RE"
+    neighbors.index = neighbors.loc[:, "new_index"]
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
@@ -625,11 +612,11 @@ def neighbor_reduction():
 
     # prepare and write neighboring crossborder lines to etrago tables
     def lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE"):
-        neighbor_lines["scn_name"] = scn
-        neighbor_lines["cables"] = 3 * neighbor_lines["num_parallel"].astype(
-            int
-        )
-        neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
+        neighbor_lines.loc[:, "scn_name"] = scn
+        neighbor_lines.loc[:, "cables"] = 3 * neighbor_lines.loc[
+            :, "num_parallel"
+        ].astype(int)
+        neighbor_lines.loc[:, "s_nom"] = neighbor_lines.loc[:, "s_nom_min"]
 
         for i in [
             "name",
@@ -705,7 +692,7 @@ def neighbor_reduction():
         None
 
         """
-        neighbor_links["scn_name"] = scn
+        neighbor_links.loc[:, "scn_name"] = scn
 
         if extendable is True:
             neighbor_links = neighbor_links.drop(
@@ -824,9 +811,9 @@ def neighbor_reduction():
     links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
 
     # prepare neighboring generators for etrago tables
-    neighbor_gens["scn_name"] = "eGon100RE"
-    neighbor_gens["p_nom"] = neighbor_gens["p_nom_opt"]
-    neighbor_gens["p_nom_extendable"] = False
+    neighbor_gens.loc[:, "scn_name"] = "eGon100RE"
+    neighbor_gens.loc[:, "p_nom"] = neighbor_gens.loc[:, "p_nom_opt"]
+    neighbor_gens.loc[:, "p_nom_extendable"] = False
 
     # Unify carrier names
     neighbor_gens.carrier = neighbor_gens.carrier.str.replace(" ", "_")
@@ -837,9 +824,15 @@ def neighbor_reduction():
             "ror": "run_of_river",
             "offwind-ac": "wind_offshore",
             "offwind-dc": "wind_offshore",
-            "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
-            "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
-            "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
+            "urban_central_solar_thermal": (
+                "urban_central_solar_thermal_collector"
+            ),
+            "residential_rural_solar_thermal": (
+                "residential_rural_solar_thermal_collector"
+            ),
+            "services_rural_solar_thermal": (
+                "services_rural_solar_thermal_collector"
+            ),
         },
         inplace=True,
     )
@@ -857,7 +850,7 @@ def neighbor_reduction():
     )
 
     # prepare neighboring loads for etrago tables
-    neighbor_loads["scn_name"] = "eGon100RE"
+    neighbor_loads.loc[:, "scn_name"] = "eGon100RE"
 
     # Unify carrier names
     neighbor_loads.carrier = neighbor_loads.carrier.str.replace(" ", "_")
@@ -996,7 +989,7 @@ def neighbor_reduction():
     )
 
     # prepare neighboring storage_units for etrago tables
-    neighbor_storage["scn_name"] = "eGon100RE"
+    neighbor_storage.loc[:, "scn_name"] = "eGon100RE"
 
     # Unify carrier names
     neighbor_storage.carrier = neighbor_storage.carrier.str.replace(" ", "_")
@@ -1025,9 +1018,9 @@ def neighbor_reduction():
     )
     neighbor_loads_t_etrago["scn_name"] = "eGon100RE"
     neighbor_loads_t_etrago["temp_id"] = 1
-    for i in neighbor_loads_t.columns:
-        neighbor_loads_t_etrago["p_set"][i] = neighbor_loads_t[
-            i
+    for column in neighbor_loads_t.columns:
+        neighbor_loads_t_etrago.at[column, "p_set"] = neighbor_loads_t.loc[
+            :, column
         ].values.tolist()
 
     neighbor_loads_t_etrago.to_sql(
@@ -1046,9 +1039,9 @@ def neighbor_reduction():
     )
     neighbor_gens_t_etrago["scn_name"] = "eGon100RE"
     neighbor_gens_t_etrago["temp_id"] = 1
-    for i in neighbor_gens_t.columns:
-        neighbor_gens_t_etrago["p_max_pu"][i] = neighbor_gens_t[
-            i
+    for column in neighbor_gens_t.columns:
+        neighbor_gens_t_etrago.at[column, "p_max_pu"] = neighbor_gens_t.loc[
+            :, column
         ].values.tolist()
 
     neighbor_gens_t_etrago.to_sql(
@@ -1067,10 +1060,10 @@ def neighbor_reduction():
     )
     neighbor_stores_t_etrago["scn_name"] = "eGon100RE"
     neighbor_stores_t_etrago["temp_id"] = 1
-    for i in neighbor_stores_t.columns:
-        neighbor_stores_t_etrago["e_min_pu"][i] = neighbor_stores_t[
-            i
-        ].values.tolist()
+    for column in neighbor_stores_t.columns:
+        neighbor_stores_t_etrago.at[
+            column, "e_min_pu"
+        ] = neighbor_stores_t.loc[:, column].values.tolist()
 
     neighbor_stores_t_etrago.to_sql(
         "egon_etrago_store_timeseries",
@@ -1088,10 +1081,10 @@ def neighbor_reduction():
     )
     neighbor_storage_t_etrago["scn_name"] = "eGon100RE"
     neighbor_storage_t_etrago["temp_id"] = 1
-    for i in neighbor_storage_t.columns:
-        neighbor_storage_t_etrago["inflow"][i] = neighbor_storage_t[
-            i
-        ].values.tolist()
+    for column in neighbor_storage_t.columns:
+        neighbor_storage_t_etrago.at[
+            column, "inflow"
+        ] = neighbor_storage_t.loc[:, column].values.tolist()
 
     neighbor_storage_t_etrago.to_sql(
         "egon_etrago_storage_timeseries",
@@ -1109,10 +1102,10 @@ def neighbor_reduction():
         )
         neighbor_lines_t_etrago["scn_name"] = "eGon100RE"
 
-        for i in neighbor_lines_t.columns:
-            neighbor_lines_t_etrago["s_max_pu"][i] = neighbor_lines_t[
-                i
-            ].values.tolist()
+        for column in neighbor_lines_t.columns:
+            neighbor_lines_t_etrago.at[
+                column, "s_max_pu"
+            ] = neighbor_lines_t.loc[:, column].values.tolist()
 
         neighbor_lines_t_etrago.to_sql(
             "egon_etrago_line_timeseries",
@@ -1134,7 +1127,7 @@ def overwrite_H2_pipeline_share():
     """
     scn_name = "eGon100RE"
     # Select source and target from dataset configuration
-    target = egon.data.config.datasets()["pypsa-eur-sec"]["target"]
+    target = config.datasets()["pypsa-eur-sec"]["target"]
 
     n = read_network()
 
@@ -1155,7 +1148,11 @@ def overwrite_H2_pipeline_share():
     parameters = db.select_dataframe(
         f"""
         SELECT *
-        FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        FROM {
+            target['scenario_parameters']['schema']
+        }.{
+            target['scenario_parameters']['table']
+        }
         WHERE name = '{scn_name}'
         """
     )
@@ -1167,7 +1164,11 @@ def overwrite_H2_pipeline_share():
     # Update data in db
     db.execute_sql(
         f"""
-    UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+    UPDATE {
+        target['scenario_parameters']['schema']
+    }.{
+        target['scenario_parameters']['table']
+    }
     SET gas_parameters = '{gas_param}'
     WHERE name = '{scn_name}';
     """
@@ -1196,7 +1197,11 @@ def overwrite_max_gas_generation_overtheyear():
         parameters = db.select_dataframe(
             f"""
             SELECT *
-            FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+            FROM {
+                target['scenario_parameters']['schema']
+            }.{
+                target['scenario_parameters']['table']
+            }
             WHERE name = '{scn_name}'
             """
         )
@@ -1208,7 +1213,11 @@ def overwrite_max_gas_generation_overtheyear():
         # Update data in db
         db.execute_sql(
             f"""
-        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        UPDATE {
+            target['scenario_parameters']['schema']
+        }.{
+            target['scenario_parameters']['table']
+        }
         SET gas_parameters = '{gas_param}'
         WHERE name = '{scn_name}';
         """
