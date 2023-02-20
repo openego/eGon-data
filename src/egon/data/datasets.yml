@@ -297,6 +297,15 @@ mastr:
   file_basename: "bnetza_mastr"
   deposit_id: 808086
 
+mastr_new:
+  technologies:
+    - "wind"
+    - "hydro"
+    - "solar"
+    - "biomass"
+  file_basename: "bnetza_mastr"
+  deposit_id: 1132987
+
 re_potential_areas:
   target:
     schema: "supply"
@@ -346,6 +355,8 @@ hotmaps_current_policy_scenario_heat_demands_buildings:
 
 power_plants:
   sources:
+      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
+      mastr_wind: "bnetza_mastr_wind_cleaned.csv"
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
@@ -681,7 +692,7 @@ distributed_industrial_demand:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios: ["eGon2021", "eGon2035", "eGon100RE"]
     wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -731,13 +742,22 @@ electrical_load_curves_industry:
     egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
+    egon_ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
   targets:
     osm_load:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    osm_load_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     sites_load:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    sites_load_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
 
 etrago_electricity:
   sources:
@@ -827,9 +847,15 @@ DSM_CTS_industry:
     ind_osm_loadcurves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    ind_osm_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     ind_sites_loadcurves:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
     ind_sites:
       schema: 'demand'
       table: 'egon_industrial_sites'
@@ -855,6 +881,18 @@ DSM_CTS_industry:
     store_timeseries:
       schema: 'grid'
       table: 'egon_etrago_store_timeseries'
+    cts_loadcurves_dsm:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_cts_dsm_timeseries'
+    ind_osm_loadcurves_individual_dsm:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual_dsm_timeseries'
+    demandregio_ind_sites_dsm:
+      schema: 'demand'
+      table: 'egon_demandregio_sites_ind_electricity_dsm_timeseries'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual_dsm_timeseries'
 
 generators_etrago:
   sources:
@@ -900,6 +938,12 @@ gas_stores:
     stores:
       schema: 'grid'
       table: 'egon_etrago_store'
+
+pypsa-eur-sec:
+  target:
+    scenario_parameters:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
 
 gas_prod:
   source:
@@ -1019,7 +1063,7 @@ electrical_neighbours:
 
 tyndp:
   sources:
-      capacities: "https://www.entsos-tyndp2020-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      capacities: "https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
       demand_2030: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
       demand_2040: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
   targets:
@@ -1092,6 +1136,9 @@ emobility_mit:
     export_results_to_csv: True
     parallel_tasks: 10
 
+demand_timeseries_mvgd:
+  parallel_tasks: 10
+
 charging_infrastructure:
   original_data:
     sources:
@@ -1154,7 +1201,9 @@ mobility_hgv:
       # share of FCEV trucks
       # within the egon project the flat guess is 100%
       fcev_share: 1.
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios:
+        - "eGon2035"
+        - "eGon100RE"
       carrier: "H2_hgv_load"
       energy_value_h2: 39.4  # kWh/kg
       hours_per_year: 8760
@@ -1171,3 +1220,24 @@ mobility_hgv:
       # Langfristszenarien
       # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
       eGon100RE: 40000000000
+
+home_batteries:
+  constants:
+    scenarios:
+      - "eGon2035"
+      - "eGon100RE"
+    # Mean ratio between the storage capacity and the power of the pv rooftop system
+    cbat_ppv_ratio: 1
+    rtol: 0.05
+    max_it: 100
+  sources:
+    etrago_storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+    storage:
+      schema: 'supply'
+      table: 'egon_storages'
+  targets:
+    home_batteries:
+      schema: 'supply'
+      table: 'egon_home_batteries'
