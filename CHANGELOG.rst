@@ -484,6 +484,8 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Insert lifetime for components from p-e-s in eGon100RE
+  `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
