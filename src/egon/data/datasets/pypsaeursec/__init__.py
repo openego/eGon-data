@@ -785,6 +785,17 @@ def neighbor_reduction():
             inplace=True,
         )
 
+        for c in [
+            "H2_to_CH4",
+            "H2_to_power",
+            "power_to_H2",
+            "CH4_to_H2",
+        ]:
+            neighbor_links.loc[
+                (neighbor_links.carrier == c),
+                "lifetime",
+            ] = get_sector_parameters("gas", "eGon100RE")["lifetime"][c]
+
         neighbor_links.to_postgis(
             "egon_etrago_link",
             engine,
@@ -917,6 +928,12 @@ def neighbor_reduction():
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
+
+    for c in ["H2_underground", "H2_overground"]:
+        neighbor_stores.loc[
+            (neighbor_stores.carrier == c),
+            "lifetime",
+        ] = get_sector_parameters("gas", "eGon100RE")["lifetime"][c]
 
     neighbor_stores.to_sql(
         "egon_etrago_store",
