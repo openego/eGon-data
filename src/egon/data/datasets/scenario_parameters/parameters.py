@@ -570,15 +570,8 @@ def gas(scenario):
 
         parameters = {
             "main_gas_carrier": "H2",
-            "retrofitted_CH4pipeline-to-H2pipeline_share": 0.75,
-            # The H2 network will be based on 75% of converted natural gas pipelines.
-            # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf
-            # This value is used temporary, later on we will use the result of p-e-s
-            "retrofitted_capacity_share": 0.8,
-            # The volumetric energy density of pure H2 at 50 bar vs. pure CH4 at
-            # 50 bar is at about 30 %, however due to less friction volumetric flow can
-            # be increased for pure H2 leading to higher capacities
-            # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf p.10
+            "retrofitted_CH4pipeline-to-H2pipeline_share": 0.23,
+            # p-e-s result, this value is overwritten if p-e-s is run
         }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {

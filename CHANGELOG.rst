@@ -461,6 +461,8 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
+  `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Adjust H2 industry profiles abroad for eGon2035
   `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Introduce carrier name 'others'
