@@ -321,6 +321,44 @@ def insert_industrial_gas_demand_egon2035():
     insert_industrial_gas_demand_time_series(industrial_gas_demand)
 
 
+def calculate_total_demand_100RE():
+    """Calculate total industrial gas demands in germany in eGon100RE
+
+    These global values are red from the p-e-s run.
+
+    Returns
+    -------
+        H2_total_PES, CH4_total_PES : floats
+            Total industrial gas demand in germany in eGon100RE
+
+    """
+    n = read_network()
+
+    try:
+        H2_total_PES = (
+            n.loads[n.loads["carrier"] == "H2 for industry"].loc[
+                "DE0 0 H2 for industry", "p_set"
+            ]
+            * 8760
+        )
+    except KeyError:
+        H2_total_PES = 42090000
+        print("Could not find data from PES-run, assigning fallback number.")
+
+    try:
+        CH4_total_PES = (
+            n.loads[n.loads["carrier"] == "gas for industry"].loc[
+                "DE0 0 gas for industry", "p_set"
+            ]
+            * 8760
+        )
+    except KeyError:
+        CH4_total_PES = 105490000
+        print("Could not find data from PES-run, assigning fallback number.")
+
+    return H2_total_PES, CH4_total_PES
+
+
 def insert_industrial_gas_demand_egon100RE():
     """Insert list of industrial gas demand (one per NUTS3) in database
 
@@ -348,29 +386,8 @@ def insert_industrial_gas_demand_egon100RE():
     # adjust H2 and CH4 total demands (values from PES)
     # CH4 demand = 0 in 100RE, therefore scale H2 ts
     # fallback values see https://github.com/openego/eGon-data/issues/626
-    n = read_network()
 
-    try:
-        H2_total_PES = (
-            n.loads[n.loads["carrier"] == "H2 for industry"].loc[
-                "DE0 0 H2 for industry", "p_set"
-            ]
-            * 8760
-        )
-    except KeyError:
-        H2_total_PES = 42090000
-        print("Could not find data from PES-run, assigning fallback number.")
-
-    try:
-        CH4_total_PES = (
-            n.loads[n.loads["carrier"] == "gas for industry"].loc[
-                "DE0 0 gas for industry", "p_set"
-            ]
-            * 8760
-        )
-    except KeyError:
-        CH4_total_PES = 105490000
-        print("Could not find data from PES-run, assigning fallback number.")
+    H2_total_PES, CH4_total_PES = calculate_total_demand_100RE()
 
     boundary = settings()["egon-data"]["--dataset-boundary"]
     if boundary != "Everything":
