@@ -120,6 +120,12 @@ def global_settings(scenario):
             },
         }
 
+    elif scenario == "eGon2021":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2021,
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -457,6 +463,9 @@ def electricity(scenario):
             "solar": read_costs(costs, "solar", "VOM"),
         }
 
+    elif scenario == "eGon2021":
+        parameters = {}
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -490,7 +499,7 @@ def gas(scenario):
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
-            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
@@ -499,9 +508,8 @@ def gas(scenario):
         parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
-            "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
-            #  what about H2 compressors?
             "H2_feedin": 0,
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
@@ -518,9 +526,8 @@ def gas(scenario):
         parameters["lifetime"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
-            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
-            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "lifetime"
             ),
@@ -559,27 +566,46 @@ def gas(scenario):
     elif scenario == "eGon100RE":
 
         costs = read_csv(2050)
+        interest_rate = 0.07  # [p.u.]
 
         parameters = {
             "main_gas_carrier": "H2",
             "retrofitted_CH4pipeline-to-H2pipeline_share": 0.23,
-            # p-e-s result, this value is overwritted if p-e-s is run
+            # p-e-s result, this value is overwritten if p-e-s is run
         }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
-            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
+
+        # Insert FOM in %
+        parameters["FOM"] = {
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "FOM"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "FOM"
+            ),
+            "power_to_H2": read_costs(costs, "electrolysis", "FOM"),
+            "H2_to_power": read_costs(costs, "fuel cell", "FOM"),
+            "CH4_to_H2": read_costs(costs, "SMR", "FOM"),
+            "H2_to_CH4": read_costs(costs, "methanation", "FOM"),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "FOM"),
+            "H2_pipeline_retrofit": read_costs(
+                costs, "H2 (g) pipeline repurposed", "FOM"
+            ),
+        }
+
         # Insert overnight investment costs
         parameters["overnight_cost"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "investment"),
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
-            "CH4_to_H2": read_costs(costs, "SMR", "investment"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
-            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "investment"
             ),
@@ -598,9 +624,8 @@ def gas(scenario):
         parameters["lifetime"] = {
             "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
-            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),  # CC?
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
-            #  what about H2 compressors?
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "lifetime"
             ),
@@ -617,18 +642,30 @@ def gas(scenario):
         parameters["capital_cost"] = {}
 
         for comp in parameters["overnight_cost"].keys():
-            parameters["capital_cost"][comp] = annualize_capital_costs(
-                parameters["overnight_cost"][comp],
-                parameters["lifetime"][comp],
-                global_settings("eGon2035")["interest_rate"],
+            parameters["capital_cost"][comp] = (
+                annualize_capital_costs(
+                    parameters["overnight_cost"][comp],
+                    parameters["lifetime"][comp],
+                    interest_rate,
+                )
+                + parameters["overnight_cost"][comp]
+                * (parameters["FOM"][comp] / 100)
             )
 
+        for comp in ["H2_to_power", "H2_to_CH4"]:
+            parameters["capital_cost"][comp] = (
+                annualize_capital_costs(
+                    parameters["overnight_cost"][comp],
+                    parameters["lifetime"][comp],
+                    interest_rate,
+                )
+                + parameters["overnight_cost"][comp]
+                * (parameters["FOM"][comp] / 100)
+            ) * parameters["efficiency"][comp]
+
         parameters["marginal_cost"] = {
-            # "CH4": global_settings(scenario)["fuel_costs"]["gas"]
-            # + global_settings(scenario)["co2_costs"]
-            # * global_settings(scenario)["co2_emissions"]["gas"],
             "OCGT": read_costs(costs, "OCGT", "VOM"),
-            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "biogas": read_costs(costs, "biogas", "fuel"),
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
@@ -636,6 +673,8 @@ def gas(scenario):
         parameters["max_gas_generation_overtheyear"] = {
             "biogas": 14450103,  # [MWh] Value from reference p-e-s run
         }
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -717,6 +756,9 @@ def mobility(scenario):
                 },
             }
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -816,6 +858,9 @@ def heat(scenario):
                 costs, "central resistive heater", "VOM"
             ),
             "geo_thermal": 2.9,  # Danish Energy Agency
+            "water_tank_charger": 0,  # Danish Energy Agency
+            "water_tank_discharger": 0,  # Danish Energy Agency
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
     elif scenario == "eGon100RE":
@@ -824,6 +869,9 @@ def heat(scenario):
             "DE_demand_reduction_service": 0.390895195300713,
             "DE_district_heating_share": 0.19,
         }
+
+    elif scenario == "eGon2021":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")

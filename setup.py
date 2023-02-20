@@ -5,7 +5,8 @@ from __future__ import absolute_import, print_function
 from glob import glob
 from os.path import basename, dirname, join, splitext
 import io
-import re 
+import re
+
 from setuptools import find_packages, setup
 
 
@@ -78,7 +79,7 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires=">=3.7.*",
+    python_requires=">=3.7",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         "apache-airflow>=1.10.14,<2.0",  # See accompanying commit message
@@ -106,8 +107,9 @@ setup(
         "rioxarray",
         "rtree",
         "saio",
+        "seaborn",
         "shapely",
-        "snakemake",
+        "snakemake<7",
         "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
         "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
         "xarray",

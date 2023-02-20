@@ -3,13 +3,17 @@ This module does sanity checks for both the eGon2035 and the eGon100RE scenario
 separately where a percentage error is given to showcase difference in output
 and input values. Please note that there are missing input technologies in the
 supply tables.
-Authors: @ALonso, @dana, @nailend, @nesnoj
+Authors: @ALonso, @dana, @nailend, @nesnoj, @khelfen
 """
+from math import isclose
+from pathlib import Path
 
 from sqlalchemy import Numeric
 from sqlalchemy.sql import and_, cast, func, or_
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from egon.data import config, db, logger
 from egon.data.datasets import Dataset
@@ -17,7 +21,7 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
 )
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
@@ -37,7 +41,16 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStore,
     EgonPfHvStoreTimeseries,
 )
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    PV_CAP_PER_SQ_M,
+    ROOF_FACTOR,
+    SCENARIOS,
+    load_building_data,
+    scenario_data,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
+import egon.data
 
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
@@ -48,7 +61,7 @@ class SanityChecks(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SanityChecks",
-            version="0.0.5",
+            version="0.0.7",
             dependencies=dependencies,
             tasks={
                 etrago_eGon2035_electricity,
@@ -58,6 +71,9 @@ class SanityChecks(Dataset):
                 cts_electricity_demand_share,
                 cts_heat_demand_share,
                 sanitycheck_emobility_mit,
+                sanitycheck_pv_rooftop_buildings,
+                sanitycheck_home_batteries,
+                sanitycheck_dsm,
             },
         )
 
@@ -664,6 +680,131 @@ def cts_heat_demand_share(rtol=1e-5):
     logger.info("The aggregated demand shares equal to one!.")
 
 
+def sanitycheck_pv_rooftop_buildings():
+    def egon_power_plants_pv_roof_building():
+        sql = """
+        SELECT *
+        FROM supply.egon_power_plants_pv_roof_building
+        """
+
+        return db.select_dataframe(sql, index_col="index")
+
+    pv_roof_df = egon_power_plants_pv_roof_building()
+
+    valid_buildings_gdf = load_building_data()
+
+    valid_buildings_gdf = valid_buildings_gdf.assign(
+        bus_id=valid_buildings_gdf.bus_id.astype(int),
+        overlay_id=valid_buildings_gdf.overlay_id.astype(int),
+        max_cap=valid_buildings_gdf.building_area.multiply(
+            ROOF_FACTOR * PV_CAP_PER_SQ_M
+        ),
+    )
+
+    merge_df = pv_roof_df.merge(
+        valid_buildings_gdf[["building_area"]],
+        how="left",
+        left_on="building_id",
+        right_index=True,
+    )
+
+    assert (
+        len(merge_df.loc[merge_df.building_area.isna()]) == 0
+    ), f"{len(merge_df.loc[merge_df.building_area.isna()])} != 0"
+
+    scenarios = ["status_quo", "eGon2035"]
+
+    base_path = Path(egon.data.__path__[0]).resolve()
+
+    res_dir = base_path / "sanity_checks"
+
+    res_dir.mkdir(parents=True, exist_ok=True)
+
+    for scenario in scenarios:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
+
+        scenario_df = merge_df.loc[merge_df.scenario == scenario]
+
+        logger.info(
+            scenario + " Capacity:\n" + str(scenario_df.capacity.describe())
+        )
+
+        small_gens_df = scenario_df.loc[scenario_df.capacity < 100]
+
+        sns.histplot(data=small_gens_df, x="capacity", ax=ax1).set_title(
+            scenario
+        )
+
+        sns.scatterplot(
+            data=small_gens_df, x="capacity", y="building_area", ax=ax2
+        ).set_title(scenario)
+
+        plt.tight_layout()
+
+        plt.savefig(
+            res_dir / f"{scenario}_pv_rooftop_distribution.png",
+            bbox_inches="tight",
+        )
+
+    for scenario in SCENARIOS:
+        if scenario == "eGon2035":
+            assert isclose(
+                scenario_data(scenario=scenario).capacity.sum(),
+                merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
+            ), (
+                f"{scenario_data(scenario=scenario).capacity.sum()} != "
+                f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
+            )
+        elif scenario == "eGon100RE":
+            sources = config.datasets()["solar_rooftop"]["sources"]
+
+            target = db.select_dataframe(
+                f"""
+                SELECT capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE carrier = 'solar_rooftop'
+                AND scenario_name = '{scenario}'
+                """
+            ).capacity[0]
+
+            dataset = config.settings()["egon-data"]["--dataset-boundary"]
+
+            if dataset == "Schleswig-Holstein":
+                sources = config.datasets()["scenario_input"]["sources"]
+
+                path = Path(
+                    f"./data_bundle_egon_data/nep2035_version2021/"
+                    f"{sources['eGon2035']['capacities']}"
+                ).resolve()
+
+                total_2035 = (
+                    pd.read_excel(
+                        path,
+                        sheet_name="1.Entwurf_NEP2035_V2021",
+                        index_col="Unnamed: 0",
+                    ).at["PV (Aufdach)", "Summe"]
+                    * 1000
+                )
+                sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
+
+                share = sh_2035 / total_2035
+
+                target *= share
+
+            assert isclose(
+                target,
+                merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
+                rel_tol=1e-02,
+            ), (
+                f"{target} != "
+                f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
+            )
+        else:
+            raise ValueError(f"Scenario {scenario} is not valid.")
+
+
 def sanitycheck_emobility_mit():
     """Execute sanity checks for eMobility: motorized individual travel
 
@@ -1219,3 +1360,182 @@ def sanitycheck_emobility_mit():
     check_model_data_lowflex_eGon2035()
 
     print("=====================================================")
+
+
+def sanitycheck_home_batteries():
+    # get constants
+    constants = config.datasets()["home_batteries"]["constants"]
+    scenarios = constants["scenarios"]
+    cbat_pbat_ratio = get_cbat_pbat_ratio()
+
+    sources = config.datasets()["home_batteries"]["sources"]
+    targets = config.datasets()["home_batteries"]["targets"]
+
+    for scenario in scenarios:
+        # get home battery capacity per mv grid id
+        sql = f"""
+        SELECT el_capacity as p_nom, bus_id FROM
+        {sources["storage"]["schema"]}
+        .{sources["storage"]["table"]}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        """
+
+        home_batteries_df = db.select_dataframe(sql, index_col="bus_id")
+
+        home_batteries_df = home_batteries_df.assign(
+            capacity=home_batteries_df.p_nom * cbat_pbat_ratio
+        )
+
+        sql = f"""
+        SELECT * FROM
+        {targets["home_batteries"]["schema"]}
+        .{targets["home_batteries"]["table"]}
+        WHERE scenario = '{scenario}'
+        """
+
+        home_batteries_buildings_df = db.select_dataframe(
+            sql, index_col="index"
+        )
+
+        df = (
+            home_batteries_buildings_df[["bus_id", "p_nom", "capacity"]]
+            .groupby("bus_id")
+            .sum()
+        )
+
+        assert (home_batteries_df.round(6) == df.round(6)).all().all()
+
+
+def sanitycheck_dsm():
+    def df_from_series(s: pd.Series):
+        return pd.DataFrame.from_dict(dict(zip(s.index, s.values)))
+
+    for scenario in ["eGon2035", "eGon100RE"]:
+        # p_min and p_max
+        sql = f"""
+        SELECT link_id, bus0 as bus, p_nom FROM grid.egon_etrago_link
+        WHERE carrier = 'dsm'
+        AND scn_name = '{scenario}'
+        ORDER BY link_id
+        """
+
+        meta_df = db.select_dataframe(sql, index_col="link_id")
+        link_ids = str(meta_df.index.tolist())[1:-1]
+
+        sql = f"""
+        SELECT link_id, p_min_pu, p_max_pu
+        FROM grid.egon_etrago_link_timeseries
+        WHERE scn_name = '{scenario}'
+        AND link_id IN ({link_ids})
+        ORDER BY link_id
+        """
+
+        ts_df = db.select_dataframe(sql, index_col="link_id")
+
+        p_max_df = df_from_series(ts_df.p_max_pu).mul(meta_df.p_nom)
+        p_min_df = df_from_series(ts_df.p_min_pu).mul(meta_df.p_nom)
+
+        p_max_df.columns = meta_df.bus.tolist()
+        p_min_df.columns = meta_df.bus.tolist()
+
+        targets = config.datasets()["DSM_CTS_industry"]["targets"]
+
+        tables = [
+            "cts_loadcurves_dsm",
+            "ind_osm_loadcurves_individual_dsm",
+            "demandregio_ind_sites_dsm",
+            "ind_sites_loadcurves_individual",
+        ]
+
+        df_list = []
+
+        for table in tables:
+            target = targets[table]
+            sql = f"""
+            SELECT bus, p_nom, e_nom, p_min_pu, p_max_pu, e_max_pu, e_min_pu
+            FROM {target["schema"]}.{target["table"]}
+            WHERE scn_name = '{scenario}'
+            ORDER BY bus
+            """
+
+            df_list.append(db.select_dataframe(sql))
+
+        individual_ts_df = pd.concat(df_list, ignore_index=True)
+
+        groups = individual_ts_df[["bus"]].reset_index().groupby("bus").groups
+
+        individual_p_max_df = df_from_series(individual_ts_df.p_max_pu).mul(
+            individual_ts_df.p_nom
+        )
+        individual_p_max_df = pd.DataFrame(
+            [
+                individual_p_max_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+        individual_p_min_df = df_from_series(individual_ts_df.p_min_pu).mul(
+            individual_ts_df.p_nom
+        )
+        individual_p_min_df = pd.DataFrame(
+            [
+                individual_p_min_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+
+        assert np.isclose(p_max_df, individual_p_max_df).all()
+        assert np.isclose(p_min_df, individual_p_min_df).all()
+
+        # e_min and e_max
+        sql = f"""
+        SELECT store_id, bus, e_nom FROM grid.egon_etrago_store
+        WHERE carrier = 'dsm'
+        AND scn_name = '{scenario}'
+        ORDER BY store_id
+        """
+
+        meta_df = db.select_dataframe(sql, index_col="store_id")
+        store_ids = str(meta_df.index.tolist())[1:-1]
+
+        sql = f"""
+        SELECT store_id, e_min_pu, e_max_pu
+        FROM grid.egon_etrago_store_timeseries
+        WHERE scn_name = '{scenario}'
+        AND store_id IN ({store_ids})
+        ORDER BY store_id
+        """
+
+        ts_df = db.select_dataframe(sql, index_col="store_id")
+
+        e_max_df = df_from_series(ts_df.e_max_pu).mul(meta_df.e_nom)
+        e_min_df = df_from_series(ts_df.e_min_pu).mul(meta_df.e_nom)
+
+        e_max_df.columns = meta_df.bus.tolist()
+        e_min_df.columns = meta_df.bus.tolist()
+
+        individual_e_max_df = df_from_series(individual_ts_df.e_max_pu).mul(
+            individual_ts_df.e_nom
+        )
+        individual_e_max_df = pd.DataFrame(
+            [
+                individual_e_max_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+        individual_e_min_df = df_from_series(individual_ts_df.e_min_pu).mul(
+            individual_ts_df.e_nom
+        )
+        individual_e_min_df = pd.DataFrame(
+            [
+                individual_e_min_df[idxs].sum(axis=1)
+                for idxs in groups.values()
+            ],
+            index=groups.keys(),
+        ).T
+
+        assert np.isclose(e_max_df, individual_e_max_df).all()
+        assert np.isclose(e_min_df, individual_e_min_df).all()

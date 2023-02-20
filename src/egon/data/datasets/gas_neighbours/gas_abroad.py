@@ -212,9 +212,9 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
 
     INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
         scn_name, link_id, carrier,
-        bus0, bus1, p_nom, length, geom, topo)
+        bus0, bus1, p_nom, p_min_pu, length, geom, topo)
     
-    SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, length, geom, topo
+    SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, p_min_pu, length, geom, topo
 
     FROM grid.egon_etrago_gas_link;
 
