@@ -574,7 +574,7 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers.remove("AC")
+    carriers = [e for e in carriers if e not in ("AC", "biogas")]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
@@ -681,7 +681,7 @@ def neighbor_reduction():
           * Delete the useless columns
           * If extendable is false only (non default case):
               * Replace p_nom = 0 with the p_nom_op values (arrising
-              from the p-e-s optimisation)
+                from the p-e-s optimisation)
               * Setting p_nom_extendable to false
           * Add geomtry to the links: 'geom' and 'topo' columns
           * Change the name of the carriers to have the consistent in
@@ -801,7 +801,7 @@ def neighbor_reduction():
     ]
 
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC"]
+    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
@@ -866,14 +866,17 @@ def neighbor_reduction():
             "electricity": "AC",
             "DC": "AC",
             "industry_electricity": "AC",
-            "H2_pipeline": "H2_system_boundary",
+            "H2_pipeline_retrofitted": "H2_system_boundary",
+            "gas_pipeline": "CH4_system_boundary",
             "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
 
-    for i in ["index", "p_set", "q_set"]:
-        neighbor_loads = neighbor_loads.drop(i, axis=1)
+    neighbor_loads = neighbor_loads.drop(
+        columns=["index"],
+        errors="ignore",
+    )
 
     neighbor_loads.to_sql(
         "egon_etrago_load",
@@ -1117,7 +1120,6 @@ else:
     tasks = (
         clean_database,
         neighbor_reduction,
-        overwrite_H2_pipeline_share,  # to be tested in CI - should be remove afterward
     )
 
 
