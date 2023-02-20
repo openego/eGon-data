@@ -705,6 +705,8 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
+* Add missing gas turbines abroad
+  `#1079 <https://github.com/openego/eGon-data/issues/1079>`_
 * Fix gas generators abroad (marginal cost and e_nom_max)
   `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
 * Fix gas pipelines isolated of the German grid
