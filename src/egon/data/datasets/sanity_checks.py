@@ -58,6 +58,9 @@ from egon.data.datasets.gas_neighbours.eGon2035 import (
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
 )
+from egon.data.datasets.industrial_gas_demand import (
+    calculate_total_demand_100RE,
+)
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
@@ -98,6 +101,7 @@ class SanityChecks(Dataset):
                 sanitycheck_home_batteries,
                 etrago_eGon2035_gas_DE,
                 etrago_eGon2035_gas_abroad,
+                etrago_eGon100RE_gas_DE,
                 sanitycheck_dsm,
             },
         )
@@ -1457,11 +1461,11 @@ def sanity_check_gas_buses(scn):
             "H2_grid": "H2_feedin",
             "H2_saltcavern": "power_to_H2",
         },
-        # "eGon100RE": {
-        #     "CH4": "CH4",
-        #     "H2_grid": "H2_retrofit",
-        #     "H2_saltcavern": "H2_extension",
-        # }
+        "eGon100RE": {
+            "CH4": "CH4",
+            "H2_grid": "H2_retrofit",
+            "H2_saltcavern": "H2_gridextension",
+        },
     }
     for key in corresponding_carriers[scn]:
         isolated_gas_buses = db.select_dataframe(
@@ -2335,6 +2339,81 @@ def etrago_eGon2035_gas_abroad():
 
     else:
         print("Testmode is on, skipping sanity check.")
+
+
+def etrago_eGon100RE_gas_DE():
+    """Execute basic sanity checks for the gas sector in eGon100RE
+
+    Returns print statements as sanity checks for the gas sector in
+    the eGon100RE scenario for the following components in Germany:
+      * Buses: with the function :py:func:`sanity_check_gas_buses`
+      * Loads: for the carriers 'CH4_for_industry' and 'H2_for_industry'
+        the deviation is calculated between the sum of the loads in the
+        database and the loads calcultaed by p-e-s
+      * Generators: with the function :py:func:`sanity_check_gas_generators_DE`
+      * Stores: deviations for stores with following carriers are
+        calculated:
+          * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
+          * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
+          * 'H2': the deviation is calculated between the sum of the
+            capacities of the stores with carrier 'H2' in the database
+            and the sum of the capacity the gas grid allocated to H2
+
+    """
+    scn = "eGon100RE"
+    TESTMODE_OFF = True
+    if TESTMODE_OFF:
+        logger.info(f"Gas sanity checks for scenario {scn}")
+
+        # Buses
+        sanity_check_gas_buses(scn)
+
+        # Loads
+        logger.info("LOADS")
+
+        H2_d, CH4_d = calculate_total_demand_100RE()
+
+        for carrier, total_ind_gas_d in zip(
+            ["H2_for_industry", "CH4_for_industry"], [H2_d, CH4_d]
+        ):
+
+            output_gas_demand = db.select_dataframe(
+                f"""SELECT (SUM(
+                    (SELECT SUM(p)
+                    FROM UNNEST(b.p_set) p)))::numeric as load
+                    FROM grid.egon_etrago_load a
+                    JOIN grid.egon_etrago_load_timeseries b
+                    ON (a.load_id = b.load_id)
+                    JOIN grid.egon_etrago_bus c
+                    ON (a.bus=c.bus_id)
+                    AND b.scn_name = '{scn}'
+                    AND a.scn_name = '{scn}'
+                    AND c.scn_name = '{scn}'
+                    AND c.country = 'DE'
+                    AND a.carrier = '{carrier}';
+                """,
+                warning=False,
+            )["load"].values[0]
+
+            input_gas_demand = total_ind_gas_d
+
+            e_demand = (
+                round(
+                    (output_gas_demand - input_gas_demand) / input_gas_demand,
+                    2,
+                )
+                * 100
+            )
+            logger.info(f"Deviation {carrier}: {e_demand} %")
+
+        # Generators
+        sanity_check_gas_generators_DE(scn)
+
+        # Stores
+        logger.info("STORES")
+        sanity_check_CH4_stores(scn)
+        sanity_check_H2_saltcavern_stores(scn)
+        # Check for H2 should be implemented when H2 stores are in dev
 
 
 def sanitycheck_dsm():
