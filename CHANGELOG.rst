@@ -475,6 +475,8 @@ Changed
   `#519 <https://github.com/openego/eGon-data/issues/519>`_
 * Add missing VOM costs for heat sector components
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
+* Add sanity checks for gas sector in eGon2035
+  `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
 * Add gas generator in Norway
