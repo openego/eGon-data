@@ -13,7 +13,7 @@ from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
-from egon.data.datasets.DSM_cts_ind import dsm_Potential
+from egon.data.datasets.DSM_cts_ind import DsmPotential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
@@ -49,6 +49,11 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2035,
+    HeatPumps2050,
+    HeatPumpsPypsaEurSec,
+)
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenGridEtrago,
@@ -63,7 +68,8 @@ from egon.data.datasets.industrial_gas_demand import (
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
-from egon.data.datasets.loadarea import LoadArea
+from egon.data.datasets.loadarea import LoadArea, OsmLanduse
+from egon.data.datasets.low_flex_scenario import LowFlexScenario
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
 from egon.data.datasets.osm import OpenStreetMap
@@ -210,7 +216,7 @@ with airflow.DAG(
     )
 
     # Extract landuse areas from the `osm` dataset
-    load_area = LoadArea(dependencies=[osm, vg250])
+    osm_landuse = OsmLanduse(dependencies=[osm, vg250])
 
     # Calculate feedin from renewables
     renewable_feedin = RenewableFeedin(
@@ -300,7 +306,7 @@ with airflow.DAG(
         dependencies=[
             demandregio,
             industrial_sites,
-            load_area,
+            osm_landuse,
             mv_grid_districts,
             osm,
         ]
@@ -329,6 +335,24 @@ with airflow.DAG(
         ]
     )
 
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
+        ]
+    )
+
+    # Minimum heat pump capacity for pypsa-eur-sec
+    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_time_series,
+        ]
+    )
+
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -339,6 +363,7 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
+            heat_pumps_pypsa_eur_sec,
         ]
     )
 
@@ -451,7 +476,7 @@ with airflow.DAG(
             demand_curves_industry,
             district_heating_areas,
             industrial_sites,
-            load_area,
+            osm_landuse,
             mastr_data,
             mv_grid_districts,
             scenario_capacities,
@@ -498,7 +523,7 @@ with airflow.DAG(
     )
 
     # DSM (demand site management)
-    components_dsm = dsm_Potential(
+    components_dsm = DsmPotential(
         dependencies=[
             cts_electricity_demand_annual,
             demand_curves_industry,
@@ -533,6 +558,32 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
+    # Storages to eTraGo
+    storage_etrago = StorageEtrago(
+        dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
+    )
+
+    mit_charging_infrastructure = MITChargingInfrastructure(
+        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
+    )
+
+    # eMobility: heavy duty transport
+    heavy_duty_transport = HeavyDutyTransport(
+        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
+    )
+
+    # Heat pump disaggregation for eGon2035
+    heat_pumps_2035 = HeatPumps2035(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            heat_pumps_pypsa_eur_sec,
+            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
+        ]
+    )
+
     # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
         dependencies=[
@@ -540,12 +591,17 @@ with airflow.DAG(
             heat_etrago,
             heat_time_series,
             mv_grid_districts,
+            heat_pumps_2035,
         ]
     )
 
-    # Storages to eTraGo
-    storage_etrago = StorageEtrago(
-        dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
+    # Heat pump disaggregation for eGon100RE
+    heat_pumps_2050 = HeatPumps2050(
+        dependencies=[
+            run_pypsaeursec,
+            heat_pumps_pypsa_eur_sec,
+            heat_supply,
+        ]
     )
 
     # eMobility: motorized individual travel
@@ -591,6 +647,34 @@ with airflow.DAG(
         ]
     )
 
+    # Create load areas
+    load_areas = LoadArea(
+        dependencies=[
+            osm_landuse,
+            zensus_vg250,
+            household_electricity_demand_annual,
+            tasks[
+                "electricity_demand_timeseries"
+                ".hh_buildings"
+                ".get-building-peak-loads"
+            ],
+            cts_demand_buildings,
+            demand_curves_industry,
+        ]
+    )
+
+    # Include low flex scenario(s)
+    low_flex_scenario = LowFlexScenario(
+        dependencies=[
+            storage_etrago,
+            hts_etrago_table,
+            fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
+        ]
+    )
+
     # ########## Keep this dataset at the end
     # Sanity Checks
     sanity_checks = SanityChecks(
@@ -601,5 +685,6 @@ with airflow.DAG(
             household_electricity_demand_annual,
             cts_demand_buildings,
             emobility_mit,
+            low_flex_scenario,
         ]
     )
