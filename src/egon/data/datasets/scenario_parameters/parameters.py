@@ -571,7 +571,7 @@ def gas(scenario):
         parameters = {
             "main_gas_carrier": "H2",
             "retrofitted_CH4pipeline-to-H2pipeline_share": 0.23,
-            # p-e-s result, this value is overwritted if p-e-s is run
+            # p-e-s result, this value is overwritten if p-e-s is run
         }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {

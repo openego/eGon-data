@@ -465,10 +465,10 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
-* Adjust H2 industry profiles abroad for eGon2035
-  `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
   `#933 <https://github.com/openego/eGon-data/issues/933>`_
+* Adjust H2 industry profiles abroad for eGon2035
+  `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Introduce carrier name 'others'
   `#819 <https://github.com/openego/eGon-data/issues/819>`_
 * Add rural heat pumps per medium voltage grid district
@@ -492,6 +492,8 @@ Changed
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Insert lifetime for components from p-e-s in eGon100RE
+  `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
@@ -702,6 +704,10 @@ Bug Fixes
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
 * Create unique ids on generated tasks to avoid circular flows in pipeline
   `#986 <https://github.com/openego/eGon-data/issues/986>`_
+* Make gas grid links bidirectional
+  `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
+* Correct gas technology costs for eGon100RE
+  `#984 <https://github.com/openego/eGon-data/issues/984>`_
 * Adjust p_nom and marginal cost for OCGT in eGon2035
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
 * Correct gas technology costs for eGon100RE
@@ -719,10 +725,10 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
-* Fix gas generators abroad (marginal cost and e_nom_max)
-  `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
 * Add missing gas turbines abroad
   `#1079 <https://github.com/openego/eGon-data/issues/1079>`_
+* Fix gas generators abroad (marginal cost and e_nom_max)
+  `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
 * Fix gas pipelines isolated of the German grid
   `#1081 <https://github.com/openego/eGon-data/issues/1081>`_
 * Fix aggregation of DSM-components
