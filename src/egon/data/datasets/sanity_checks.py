@@ -1577,7 +1577,7 @@ def sanity_check_CH4_stores(scn):
             ]
         )
 
-    stores_cap_D = 266424202 # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    stores_cap_D = 266424202  # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
 
     input_CH4_stores = stores_cap_D + grid_cap
 
@@ -1931,6 +1931,98 @@ def sanity_check_gas_links(scn):
             logger.info(link_with_missing_bus)
 
 
+def sanity_check_gas_generators_DE(scn):
+    """Execute sanity checks for the gas production capacity in Germany
+
+    The deviation is calculated between the sums of the nominal powers
+    of the gas generators in the database and of the ones in the sources
+    documents:
+      * Biogaspartner Einspeiseatlas Deutschland from the dena for the
+        biogas and Productions from the SciGRID_gas data for the natural
+        gas for eGon2035
+      * Biogaspartner Einspeiseatlas Deutschland from the dena for the
+        biogas only for eGon10RE
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    """
+
+    logger.info("GENERATORS")
+    carrier_generator = "CH4"
+
+    output_gas_generation = db.select_dataframe(
+        f"""SELECT SUM(p_nom::numeric) as p_nom_germany
+                FROM grid.egon_etrago_generator
+                WHERE scn_name = '{scn}'
+                AND carrier = '{carrier_generator}'
+                AND bus IN
+                    (SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE'
+                    AND carrier = '{carrier_generator}');
+                """,
+        warning=False,
+    )["p_nom_germany"].values[0]
+
+    basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+    target_file = Path(".") / "datasets" / "gas_data" / basename
+
+    conversion_factor_b = 0.010830  # m^3/h to MWh/h
+    p_biogas = (
+        pd.read_excel(
+            target_file,
+            usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
+        )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
+        * conversion_factor_b
+    )
+
+    if scn == "eGon2035":
+        target_file = (
+            Path(".")
+            / "datasets"
+            / "gas_data"
+            / "data"
+            / "IGGIELGN_Productions.csv"
+        )
+
+        NG_generators_list = pd.read_csv(
+            target_file,
+            delimiter=";",
+            decimal=".",
+            usecols=["country_code", "param"],
+        )
+
+        NG_generators_list = NG_generators_list[
+            NG_generators_list["country_code"].str.match("DE")
+        ]
+
+        p_NG = 0
+        for index, row in NG_generators_list.iterrows():
+            param = ast.literal_eval(row["param"])
+            p_NG = p_NG + param["max_supply_M_m3_per_d"]
+        conversion_factor = 437.5  # MCM/day to MWh/h
+        p_NG = p_NG * conversion_factor
+
+        input_gas_generation = p_NG + p_biogas
+
+    elif scn == "eGon100RE":
+        input_gas_generation = p_biogas
+
+    e_generation = (
+        round(
+            (output_gas_generation - input_gas_generation)
+            / input_gas_generation,
+            2,
+        )
+        * 100
+    )
+    logger.info(f"Deviation {carrier_generator} generation: {e_generation} %")
+
+
 def etrago_eGon2035_gas_DE():
     """Execute basic sanity checks for the gas sector in eGon2035
 
@@ -1941,11 +2033,7 @@ def etrago_eGon2035_gas_DE():
         the deviation is calculated between the sum of the loads in the
         database and the sum the loads in the sources document
         (opendata.ffe database)
-      * Generators: the deviation is calculated between the sums of the
-        nominal powers of the gas generators in the database and of
-        the ones in the sources document (Biogaspartner Einspeiseatlas
-        Deutschland from the dena and Productions from the SciGRID_gas
-        data)
+      * Generators: with the function :py:func:`sanity_check_gas_generators_DE`
       * Stores: deviations for stores with following carriers are
         calculated:
           * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
@@ -2023,74 +2111,7 @@ def etrago_eGon2035_gas_DE():
             logger.info(f"Deviation {carrier}: {e_demand} %")
 
         # Generators
-        logger.info("GENERATORS")
-        carrier_generator = "CH4"
-
-        output_gas_generation = db.select_dataframe(
-            f"""SELECT SUM(p_nom::numeric) as p_nom_germany
-                    FROM grid.egon_etrago_generator
-                    WHERE scn_name = '{scn}'
-                    AND carrier = '{carrier_generator}'
-                    AND bus IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
-                        WHERE scn_name = '{scn}'
-                        AND country = 'DE'
-                        AND carrier = '{carrier_generator}');
-                    """,
-            warning=False,
-        )["p_nom_germany"].values[0]
-
-        target_file = (
-            Path(".")
-            / "datasets"
-            / "gas_data"
-            / "data"
-            / "IGGIELGN_Productions.csv"
-        )
-
-        NG_generators_list = pd.read_csv(
-            target_file,
-            delimiter=";",
-            decimal=".",
-            usecols=["country_code", "param"],
-        )
-
-        NG_generators_list = NG_generators_list[
-            NG_generators_list["country_code"].str.match("DE")
-        ]
-
-        p_NG = 0
-        for index, row in NG_generators_list.iterrows():
-            param = ast.literal_eval(row["param"])
-            p_NG = p_NG + param["max_supply_M_m3_per_d"]
-        conversion_factor = 437.5  # MCM/day to MWh/h
-        p_NG = p_NG * conversion_factor
-
-        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-        target_file = Path(".") / "datasets" / "gas_data" / basename
-
-        conversion_factor_b = 0.01083  # m^3/h to MWh/h
-        p_biogas = (
-            pd.read_excel(
-                target_file,
-                usecols=["Einspeisung Biomethan [(N*m^3)/h)]"],
-            )["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
-            * conversion_factor_b
-        )
-
-        input_gas_generation = p_NG + p_biogas
-        e_generation = (
-            round(
-                (output_gas_generation - input_gas_generation)
-                / input_gas_generation,
-                2,
-            )
-            * 100
-        )
-        logger.info(
-            f"Deviation {carrier_generator} generation: {e_generation} %"
-        )
+        sanity_check_gas_generators_DE(scn)
 
         # Stores
         logger.info("STORES")
