@@ -3,27 +3,62 @@ timeseries data using demandregio
 
 """
 
-import egon.data.config
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
-from sqlalchemy import ARRAY, Column, Float, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+import egon.data.config
 
 Base = declarative_base()
 
 
+def identify_voltage_level(df):
+
+    """Identify the voltage_level of a grid component based on its peak load
+    and defined thresholds.
+
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data frame containing information about peak loads
+
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame with an additional column with voltage level
+
+    """
+
+    df["voltage_level"] = np.nan
+
+    # Identify voltage_level for every demand area taking thresholds into
+    # account which were defined in the eGon project
+    df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
+    df.loc[df["peak_load"] > 0.1, "voltage_level"] = 6
+    df.loc[df["peak_load"] > 0.2, "voltage_level"] = 5
+    df.loc[df["peak_load"] > 5.5, "voltage_level"] = 4
+    df.loc[df["peak_load"] > 20, "voltage_level"] = 3
+    df.loc[df["peak_load"] > 120, "voltage_level"] = 1
+
+    return df
+
+
 def identify_bus(load_curves, demand_area):
-    """Identify the grid connection point for a consumer by determining its grid level
-    based on the time series' peak load and the spatial intersection to mv
-    grid districts or ehv voronoi cells.
+    """Identify the grid connection point for a consumer by determining its
+    grid level based on the time series' peak load and the spatial
+    intersection to mv grid districts or ehv voronoi cells.
 
 
     Parameters
     ----------
     load_curves : pandas.DataFrame
-        Demand timeseries per demand area (e.g. osm landuse area, industrial site)
+        Demand timeseries per demand area (e.g. osm landuse area, industrial
+        site)
 
     demand_area: pandas.DataFrame
         Dataframe with id and geometry of areas where an industrial demand
@@ -49,18 +84,13 @@ def identify_bus(load_curves, demand_area):
         epsg=3035,
     )
 
-    # Initialize dataframe to identify peak load per demand area (e.g. osm landuse area or industrial site)
-    peak = pd.DataFrame(columns=["id", "peak_load", "voltage_level"])
+    # Initialize dataframe to identify peak load per demand area (e.g. osm
+    # landuse area or industrial site)
+    peak = pd.DataFrame(columns=["id", "peak_load"])
     peak["id"] = load_curves.max(axis=0).index
     peak["peak_load"] = load_curves.max(axis=0).values
 
-    # Identify voltage_level for every demand area taking thresholds into account which were defined in the eGon project
-    peak.loc[peak["peak_load"] < 0.1, "voltage_level"] = 7
-    peak.loc[peak["peak_load"] > 0.1, "voltage_level"] = 6
-    peak.loc[peak["peak_load"] > 0.2, "voltage_level"] = 5
-    peak.loc[peak["peak_load"] > 5.5, "voltage_level"] = 4
-    peak.loc[peak["peak_load"] > 20, "voltage_level"] = 3
-    peak.loc[peak["peak_load"] > 120, "voltage_level"] = 1
+    peak = identify_voltage_level(peak)
 
     # Assign bus_id to demand area by merging landuse and peak df
     peak = pd.merge(demand_area, peak, right_on="id", left_index=True)
@@ -68,12 +98,14 @@ def identify_bus(load_curves, demand_area):
     # Identify all demand areas connected to HVMV buses
     peak_hv = peak[peak["voltage_level"] > 1]
 
-    # Perform a spatial join between the centroid of the demand area and mv grid districts to identify grid connection point
+    # Perform a spatial join between the centroid of the demand area and mv
+    # grid districts to identify grid connection point
     peak_hv["centroid"] = peak_hv["geom"].centroid
     peak_hv = peak_hv.set_geometry("centroid")
     peak_hv_c = gpd.sjoin(peak_hv, griddistrict, how="inner", op="intersects")
 
-    # Perform a spatial join between the polygon of the demand area  and mv grid districts to ensure every area got assign to a bus
+    # Perform a spatial join between the polygon of the demand area  and mv
+    # grid districts to ensure every area got assign to a bus
     peak_hv_p = peak_hv[~peak_hv.isin(peak_hv_c)].dropna().set_geometry("geom")
     peak_hv_p = gpd.sjoin(
         peak_hv_p, griddistrict, how="inner", op="intersects"
@@ -82,10 +114,31 @@ def identify_bus(load_curves, demand_area):
     # Bring both dataframes together
     peak_bus = peak_hv_c.append(peak_hv_p, ignore_index=True)
 
+    # Select ehv voronoi
+    ehv_voronoi = db.select_geodataframe(
+        f"""SELECT bus_id, geom FROM
+                {sources['egon_mv_grid_district']['schema']}.
+                {sources['egon_mv_grid_district']['table']}""",
+        geom_col="geom",
+        epsg=3035,
+    )
+
+    # Identify all demand areas connected to EHV buses
+    peak_ehv = peak[peak["voltage_level"] == 1]
+
+    # Perform a spatial join between the centroid of the demand area and ehv
+    # voronoi to identify grid connection point
+    peak_ehv["centroid"] = peak_ehv["geom"].centroid
+    peak_ehv = peak_ehv.set_geometry("centroid")
+    peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
+
+    # Bring both dataframes together
+    peak_bus = peak_bus.append(peak_ehv, ignore_index=True)
+
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
         load_curves.T,
-        peak_bus[["bus_id", "id"]],
+        peak_bus[["bus_id", "id", "geom"]],
         left_index=True,
         right_on="id",
     )
@@ -94,7 +147,8 @@ def identify_bus(load_curves, demand_area):
 
 
 def calc_load_curves_ind_osm(scenario):
-    """Temporal disaggregate electrical demand per osm industrial landuse area.
+    """Temporal disaggregate electrical demand per osm industrial landuse
+    area.
 
 
     Parameters
@@ -105,8 +159,8 @@ def calc_load_curves_ind_osm(scenario):
     Returns
     -------
     pandas.DataFrame
-        Demand timeseries of industry allocated to osm landuse areas and aggregated
-        per substation id
+        Demand timeseries of industry allocated to osm landuse areas and
+        aggregated per substation id
 
     """
 
@@ -173,11 +227,24 @@ def calc_load_curves_ind_osm(scenario):
 
     # Insert time series data to df as an array
     load_ts_df.p_set = curves_bus.values.tolist()
-    return load_ts_df
+
+    # Create Dataframe to store time series individually
+    curves_individual_interim = (
+        curves_da.drop(["bus_id", "geom"], axis=1).fillna(0)
+    ).set_index("id")
+    curves_individual = curves_da[["id", "bus_id"]]
+    curves_individual["p_set"] = curves_individual_interim.values.tolist()
+    curves_individual["scn_name"] = scenario
+    curves_individual = curves_individual.rename(
+        columns={"id": "osm_id"}
+    ).set_index(["osm_id", "scn_name"])
+
+    return load_ts_df, curves_individual
 
 
 def insert_osm_ind_load():
-    """Inserts electrical industry loads assigned to osm landuse areas to the database
+    """Inserts electrical industry loads assigned to osm landuse areas to the
+    database.
 
     Returns
     -------
@@ -189,7 +256,7 @@ def insert_osm_ind_load():
         "targets"
     ]
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2021", "eGon2035", "eGon100RE"]:
 
         # Delete existing data from database
         db.execute_sql(
@@ -200,8 +267,17 @@ def insert_osm_ind_load():
             """
         )
 
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['osm_load_individual']['schema']}.
+            {targets['osm_load_individual']['table']}
+            WHERE scn_name = '{scenario}'
+            """
+        )
+
         # Calculate cts load curves per mv substation (hvmv bus)
-        data = calc_load_curves_ind_osm(scenario)
+        data, curves_individual = calc_load_curves_ind_osm(scenario)
         data.index = data.index.rename("bus")
         data["scn_name"] = scenario
 
@@ -215,9 +291,25 @@ def insert_osm_ind_load():
             if_exists="append",
         )
 
+        curves_individual["peak_load"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).max(axis=1)
+        curves_individual["demand"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).sum(axis=1)
+        curves_individual = identify_voltage_level(curves_individual)
+
+        curves_individual.to_sql(
+            targets["osm_load_individual"]["table"],
+            schema=targets["osm_load_individual"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
 
 def calc_load_curves_ind_sites(scenario):
-    """Temporal disaggregation of load curves per industrial site and industrial subsector.
+    """Temporal disaggregation of load curves per industrial site and
+    industrial subsector.
 
 
     Parameters
@@ -228,8 +320,8 @@ def calc_load_curves_ind_sites(scenario):
     Returns
     -------
     pandas.DataFrame
-        Demand timeseries of industry allocated to industrial sites and aggregated
-        per substation id and industrial subsector
+        Demand timeseries of industry allocated to industrial sites and
+        aggregated per substation id and industrial subsector
 
     """
     sources = egon.data.config.datasets()["electrical_load_curves_industry"][
@@ -257,12 +349,13 @@ def calc_load_curves_ind_sites(scenario):
         epsg=3035,
     )
 
-    # Replace entries to bring it in line with demandregio's subsector definitions
+    # Replace entries to bring it in line with demandregio's subsector
+    # definitions
     demands_ind_sites.replace(1718, 17, inplace=True)
     share_wz_sites = demands_ind_sites.copy()
 
-    # Create additional df on wz_share per industrial site, which is always set to one
-    # as the industrial demand per site is subsector specific
+    # Create additional df on wz_share per industrial site, which is always
+    # set to one as the industrial demand per site is subsector specific
 
     share_wz_sites.demand = 1
     share_wz_sites.reset_index(inplace=True)
@@ -301,11 +394,26 @@ def calc_load_curves_ind_sites(scenario):
     # Insert data for pf load timeseries table
     load_ts_df.p_set = curves_bus.values.tolist()
 
-    return load_ts_df
+    # Create Dataframe to store time series individually
+    curves_individual_interim = (
+        curves_da.drop(["bus_id", "geom", "wz"], axis=1).fillna(0)
+    ).set_index("id")
+    curves_individual = curves_da[["id", "bus_id"]]
+    curves_individual["p_set"] = curves_individual_interim.values.tolist()
+    curves_individual["scn_name"] = scenario
+    curves_individual = curves_individual.merge(
+        curves_da[["wz", "id"]], left_on="id", right_on="id"
+    )
+    curves_individual = curves_individual.rename(
+        columns={"id": "site_id"}
+    ).set_index(["site_id", "scn_name"])
+
+    return load_ts_df, curves_individual
 
 
 def insert_sites_ind_load():
-    """Inserts electrical industry loads assigned to osm landuse areas to the database
+    """Inserts electrical industry loads assigned to osm landuse areas to the
+    database.
 
     Returns
     -------
@@ -317,7 +425,7 @@ def insert_sites_ind_load():
         "targets"
     ]
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2021", "eGon2035", "eGon100RE"]:
 
         # Delete existing data from database
         db.execute_sql(
@@ -328,8 +436,18 @@ def insert_sites_ind_load():
             """
         )
 
+        # Delete existing data from database
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['sites_load_individual']['schema']}.
+            {targets['sites_load_individual']['table']}
+            WHERE scn_name = '{scenario}'
+            """
+        )
+
         # Calculate industrial load curves per bus
-        data = calc_load_curves_ind_sites(scenario)
+        data, curves_individual = calc_load_curves_ind_sites(scenario)
         data.index = data.index.rename(["bus", "wz"])
         data["scn_name"] = scenario
 
@@ -339,6 +457,21 @@ def insert_sites_ind_load():
         data.to_sql(
             targets["sites_load"]["table"],
             schema=targets["sites_load"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+        curves_individual["peak_load"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).max(axis=1)
+        curves_individual["demand"] = np.array(
+            curves_individual["p_set"].values.tolist()
+        ).sum(axis=1)
+        curves_individual = identify_voltage_level(curves_individual)
+
+        curves_individual.to_sql(
+            targets["sites_load_individual"]["table"],
+            schema=targets["sites_load_individual"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
