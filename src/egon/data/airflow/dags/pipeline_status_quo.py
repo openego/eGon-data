@@ -121,7 +121,7 @@ with airflow.DAG(
     scenario_parameters = ScenarioParameters(dependencies=[setup])
 
     # Download TYNDP data
-    tyndp_data = Tyndp(dependencies=[setup])
+    tyndp_data = Tyndp(dependencies=[setup]) TODO: kick out or adjust
 
     # Import zensus population
     zensus_population = ZensusPopulation(dependencies=[setup, vg250])
