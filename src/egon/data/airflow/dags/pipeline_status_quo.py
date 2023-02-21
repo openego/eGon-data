@@ -58,7 +58,6 @@ from egon.data.datasets.hydrogen_etrago import (
 )
 from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
-    IndustrialGasDemandeGon100RE,
     IndustrialGasDemandeGon2035,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
@@ -348,7 +347,7 @@ with airflow.DAG(
             tasks["etrago_setup.create-tables"],
         ]
     )
-    # Create gas voronoi eGon2035
+    # Create gas voronoi eGon2035 TODO: adjust for SQ
     create_gas_polygons_egon2035 = GasAreaseGon2035(
         dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
@@ -374,7 +373,7 @@ with airflow.DAG(
         dependencies=[create_gas_polygons_egon2035]
     )
 
-    # Assign industrial gas demand eGon2035
+    # Assign industrial gas demand eGon2035 TODO: adjust for SQ
     IndustrialGasDemandeGon2035(
         dependencies=[create_gas_polygons_egon2035, industrial_gas_demand]
     )
@@ -472,7 +471,7 @@ with airflow.DAG(
         dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
     )
 
-    # eMobility: motorized individual travel
+    # eMobility: motorized individual travel TODO: adjust for SQ
     emobility_mit = MotorizedIndividualTravel(
         dependencies=[
             data_bundle,
@@ -501,7 +500,7 @@ with airflow.DAG(
         dependencies=[mv_grid_districts, hh_demand_buildings_setup]
     )
 
-    # eMobility: heavy duty transport
+    # eMobility: heavy duty transport TODO: adjust for SQ
     heavy_duty_transport = HeavyDutyTransport(
         dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
     )
