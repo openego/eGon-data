@@ -299,10 +299,14 @@ mastr:
 
 mastr_new:
   technologies:
-    - "wind"
-    - "hydro"
-    - "solar"
     - "biomass"
+    - "combustion"
+    - "gsgk"
+    - "hydro"
+    - "nuclear"
+    - "solar"
+    - "storage"
+    - "wind"
   file_basename: "bnetza_mastr"
   deposit_id: 1132987
 
