@@ -673,7 +673,6 @@ def gas(scenario):
         parameters["max_gas_generation_overtheyear"] = {
             "biogas": 14450103,  # [MWh] Value from reference p-e-s run
         }
-
     elif scenario == "eGon2021":
         parameters = {}
 
