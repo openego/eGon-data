@@ -576,7 +576,9 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers = [e for e in carriers if e not in ("AC", "biogas")]
+    carriers = [
+        e for e in carriers if e not in ("AC", "biogas", "gas for industry")
+    ]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
@@ -610,7 +612,6 @@ def neighbor_reduction():
     neighbors.carrier.replace(
         {
             "gas": "CH4",
-            "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
@@ -781,7 +782,6 @@ def neighbor_reduction():
                 "H2_pipeline_retrofitted": "H2_retrofit",
                 "SMR": "CH4_to_H2",
                 "Sabatier": "H2_to_CH4",
-                "gas_for_industry": "CH4_for_industry",
                 "gas_pipeline": "CH4",
             },
             inplace=True,
@@ -799,11 +799,22 @@ def neighbor_reduction():
     non_extendable_links_carriers = [
         "H2 pipeline retrofitted",
         "gas pipeline",
-        "biogas to gas",
     ]
 
+    map_CH4_for_ind_buses = neighbor_links[
+        neighbor_links.carrier == "gas for industry"
+    ].set_index("bus1")["bus0"]
+    map_biogas_to_gas = neighbor_links[
+        neighbor_links.carrier == "biogas to gas"
+    ].set_index("bus0")["bus1"]
+
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
+    excluded_carriers = [
+        "gas for industry",
+        "gas for industry CC",
+        "SMR CC",
+        "biogas to gas",
+    ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
@@ -875,6 +886,11 @@ def neighbor_reduction():
         inplace=True,
     )
 
+    # Attribute CH4 bus to CH4_for_industry loads
+    neighbor_loads["bus"] = neighbor_loads["bus"].replace(
+        map_CH4_for_ind_buses
+    )
+
     neighbor_loads = neighbor_loads.drop(
         columns=["index"],
         errors="ignore",
@@ -919,6 +935,9 @@ def neighbor_reduction():
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
+
+    # Attribute CH4 bus to CH4_for_industry loads
+    neighbor_stores["bus"] = neighbor_stores["bus"].replace(map_biogas_to_gas)
 
     neighbor_stores.to_sql(
         "egon_etrago_store",
