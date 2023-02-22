@@ -21,6 +21,8 @@ Handling of empty source data in MaStr dump:
 
 The data is used especially for the generation of status quo grids by ding0.
 """
+from pathlib import Path
+
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     Boolean,
@@ -35,16 +37,28 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
-import egon.data.config
 
 Base = declarative_base()
 
 TESTMODE_OFF = (
-    egon.data.config.settings()["egon-data"]["--dataset-boundary"]
-    == "Everything"
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
 )
+
+
+class EgonMastrGeocoded(Base):
+    __tablename__ = "egon_mastr_geocoded"
+    __table_args__ = {"schema": "supply"}
+
+    index = Column(
+        Integer, Sequence("mastr_geocoded_seq"), primary_key=True, index=True
+    )
+    zip_and_municipality = Column(String)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    altitude = Column(Float)
+    geometry = Column(Geometry("POINT", 4326))
 
 
 class EgonPowerPlantsPv(Base):
@@ -212,7 +226,43 @@ def import_mastr() -> None:
         return units_gdf
 
     engine = db.engine()
-    cfg = egon.data.config.datasets()["power_plants"]
+
+    # import geocoded data
+    cfg = config.datasets()["mastr_new"]
+    path_parts = cfg["geocoding_path"]
+    path = Path(*["."] + path_parts).resolve()
+    path = list(path.iterdir())[0]
+
+    deposit_id_geocoding = int(path.parts[-1].split(".")[0].split("_")[-1])
+    deposit_id_mastr = cfg["deposit_id"]
+
+    if deposit_id_geocoding != deposit_id_mastr:
+        raise AssertionError(
+            f"The zenodo (sandbox) deposit ID {deposit_id_mastr} for the MaStR"
+            f" dataset is not matching with the geocoding version "
+            f"{deposit_id_geocoding}. Make sure to hermonize the data. When "
+            f"the MaStR dataset is updated also update the geocoding and "
+            f"update the egon data bundle. The geocoding can be done using: "
+            f"https://github.com/RLI-sandbox/mastr-geocoding"
+        )
+
+    geocoding_gdf = gpd.read_file(path)
+
+    # remove failed requests
+    geocoding_gdf = geocoding_gdf.loc[geocoding_gdf.geometry.is_valid]
+
+    EgonMastrGeocoded.__table__.drop(bind=engine, checkfirst=True)
+    EgonMastrGeocoded.__table__.create(bind=engine, checkfirst=True)
+
+    geocoding_gdf.to_postgis(
+        name=EgonMastrGeocoded.__tablename__,
+        con=engine,
+        if_exists="append",
+        schema=EgonMastrGeocoded.__table_args__["schema"],
+        index=True,
+    )
+
+    cfg = config.datasets()["power_plants"]
 
     cols_mapping = {
         "all": {
@@ -392,6 +442,9 @@ def import_mastr() -> None:
 
         # write to DB
         print(f"  Writing {len(units)} units to DB...")
+        target_tables[tech].__table__.drop(bind=engine, checkfirst=True)
+        target_tables[tech].__table__.create(bind=engine, checkfirst=True)
+
         units.to_postgis(
             name=target_tables[tech].__tablename__,
             con=engine,

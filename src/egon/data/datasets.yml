@@ -309,6 +309,9 @@ mastr_new:
     - "wind"
   file_basename: "bnetza_mastr"
   deposit_id: 1132987
+  geocoding_path:
+    - "data_bundle_egon_data"
+    - "mastr_geocoding"
 
 re_potential_areas:
   target:
