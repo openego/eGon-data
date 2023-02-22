@@ -60,7 +60,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.16",
+            version="0.0.17.dev",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -111,7 +111,10 @@ def create_tables():
     ]
     for t in tables:
         db.execute_sql(
-            f"DROP TABLE IF EXISTS {t.__table_args__['schema']}.{t.__tablename__} CASCADE;"
+            f"""
+            DROP TABLE IF EXISTS {t.__table_args__['schema']}.
+            {t.__tablename__} CASCADE;
+            """
         )
         t.__table__.create(bind=engine, checkfirst=True)
 
