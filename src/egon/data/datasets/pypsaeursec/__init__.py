@@ -259,9 +259,11 @@ def clean_database():
         )
 
     db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = '{scn_name}' "
-        "AND country <> 'DE'"
+        f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        AND country != 'DE'
+        """
     )
 
 
