@@ -13,19 +13,6 @@ only on the hydrogen related components in Germany and the module
 :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>` on the hydrogen
 related components.
 
-Dependencies (pipeline)
-=======================
-* :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
-* :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-* :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
-* :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-
-Resulting tables
-================
-* :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
-* :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
-* :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
-
 """
 from egon.data.datasets import Dataset
 from egon.data.datasets.hydrogen_etrago.bus import (
@@ -57,6 +44,14 @@ class HydrogenBusEtrago(Dataset):
     :py:func:`calculate_and_map_saltcavern_storage_potential <egon.data.datasets.hydrogen_etrago.storage.calculate_and_map_saltcavern_storage_potential>`,
     :py:func:`insert_hydrogen_buses <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses>` and
     :py:func:`insert_hydrogen_buses_eGon100RE <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses_eGon100RE>`.
+
+    *Dependencies*
+      * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+
+    *Resulting*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
 
     """
 
@@ -92,6 +87,17 @@ class HydrogenStoreEtrago(Dataset):
       * H2 stores (overground and underground) for the scenario eGon100RE
         with the function :py:func:`insert_H2_storage_eGon100RE <egon.data.datasets.hydrogen_etrago.storage.insert_H2_storage_eGon100RE>`.
 
+    *Dependencies*
+      * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
+      * :py:class:`HydrogenGridEtrago <HydrogenGridEtrago>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+
+    *Resulting*
+      * :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
+
     """
 
     #:
@@ -119,6 +125,16 @@ class HydrogenPowerLinkEtrago(Dataset):
     the database for the scenarios eGon2035 and eGon100RE by executing
     successively the functions :py:func:`insert_power_to_h2_to_power <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power>`
     and :py:func:`insert_power_to_h2_to_power_eGon100RE <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power_eGon100RE>`.
+
+    *Dependencies*
+      * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
+      * :py:class:`HydrogenGridEtrago <HydrogenGridEtrago>`
+
+    *Resulting*
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
 
     """
 
@@ -148,6 +164,17 @@ class HydrogenMethaneLinkEtrago(Dataset):
     functions :py:func:`insert_h2_to_ch4_to_h2 <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_to_h2>`
     and :py:func:`insert_h2_to_ch4_eGon100RE <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_eGon100RE>`.
 
+    *Dependencies*
+      * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
+      * :py:class:`HydrogenGridEtrago <HydrogenGridEtrago>`
+      * :py:class:`HydrogenPowerLinkEtrago <HydrogenPowerLinkEtrago>`
+
+    *Resulting*
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+
     """
 
     #:
@@ -170,6 +197,18 @@ class HydrogenGridEtrago(Dataset):
     Insert the H2 links (pipelines) into Germany in the database for the
     scenario eGon100RE by executing the function
     :py:func:`insert_h2_pipelines <egon.data.datasets.hydrogen_etrago.h2_grid.insert_h2_pipelines>`.
+
+    *Dependencies*
+      * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec>`
+      * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
+
+
+    *Resulting*
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
 
     """
 

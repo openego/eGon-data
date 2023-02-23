@@ -6,19 +6,6 @@ In this this module, the functions to import the industrial hydrogen and
 methane demands from the opendata.ffe database and to insert them in
 the database after modification are to be found.
 
-Dependencies (pipeline)
-=======================
-* :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-* :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-* :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
-* :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-* :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
-
-Resulting tables
-================
-* :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
-* :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
-
 """
 
 from pathlib import Path
@@ -43,10 +30,14 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class IndustrialGasDemand(Dataset):
-    """Download the industrial gas demands from the opendata.ffe database
+    """
+    Download the industrial gas demands from the opendata.ffe database
 
     Data are downloaded in the folder ./datasets/gas_data/demand using
     the function :py:func:`download_industrial_gas_demand` and no dataset is resulting.
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
 
     """
 
@@ -69,9 +60,17 @@ class IndustrialGasDemandeGon2035(Dataset):
 
     Insert the industrial methane and hydrogen demands and their
     associated time series for the scenario eGon2035 by executing the
-    function :py:func:`insert_industrial_gas_demand_egon2035` which extends the
-    :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>`
-    and :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` tables.
+    function :py:func:`insert_industrial_gas_demand_egon2035`.
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
 
     """
 
@@ -94,9 +93,17 @@ class IndustrialGasDemandeGon100RE(Dataset):
 
     Insert the industrial methane and hydrogen demands and their
     associated time series for the scenario eGon100RE by executing the
-    function :py:func:`insert_industrial_gas_demand_egon100RE` which extends the
-    :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>`
-    and :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` tables.
+    function :py:func:`insert_industrial_gas_demand_egon100RE`.
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
 
     """
 
@@ -599,7 +606,7 @@ def download_industrial_gas_demand():
     the folder ./datasets/gas_data/demand and the function has no
     return.
     These loads are hourly and NUTS3-geographic resolved. For more
-    information on these data, refer to the `Extremos project documentation <https://opendata.ffe.de/project/extremos/>`_
+    information on these data, refer to the `Extremos project documentation <https://opendata.ffe.de/project/extremos/>`_.
 
     """
     correspondance_url = (
