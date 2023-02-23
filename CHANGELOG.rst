@@ -484,6 +484,8 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
