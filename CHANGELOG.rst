@@ -494,6 +494,8 @@ Changed
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
 * Insert lifetime for components from p-e-s in eGon100RE
   `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
@@ -710,15 +712,11 @@ Bug Fixes
   `#984 <https://github.com/openego/eGon-data/issues/984>`_
 * Adjust p_nom and marginal cost for OCGT in eGon2035
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
-* Correct gas technology costs for eGon100RE
-  `#984 <https://github.com/openego/eGon-data/issues/984>`_
 * Mismatch of building bus_ids from cts_heat_demand_building_share
   and mapping table
   `#989 <https://github.com/openego/eGon-data/issues/989>`_
 * Fix zensus weather cells mapping
   `#1031 <https://github.com/openego/eGon-data/issues/1031>`_
-* Make gas grid links bidirectional
-  `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
 * Fix solar rooftop in test mode
   `#1055 <https://github.com/openego/eGon-data/issues/1055>`_
 * Add missing filter for scenario name in chp expansion
