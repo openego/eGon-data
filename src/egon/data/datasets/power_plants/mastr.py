@@ -27,7 +27,6 @@ from pathlib import Path
 
 from geoalchemy2 import Geometry
 from loguru import logger
-from shapely.geometry import Point
 from sqlalchemy import (
     Boolean,
     Column,
@@ -44,6 +43,9 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    federal_state_data,
+)
 
 Base = declarative_base()
 
@@ -451,6 +453,11 @@ def import_mastr() -> None:
             f"{len_old - len(units)} units outside of Germany dropped..."
         )
 
+        # get boundary
+        boundary = (
+            federal_state_data(geocoding_gdf.crs).dissolve().at[0, "geom"]
+        )
+
         # filter for SH units if in testmode
         if not TESTMODE_OFF:
             logger.info(
@@ -549,9 +556,21 @@ def import_mastr() -> None:
             units.geometry_geocoded, "temp"
         ]
 
-        # fill None and NaN values with empty geom because to_postgis fails
-        # otherwise
-        units.geometry.fillna(Point(np.nan, np.nan), inplace=True)
+        init_len = len(units)
+
+        logger.info(
+            "Dropping units outside boundary by geometry or without geometry"
+            "..."
+        )
+
+        units.dropna(subset=["geometry"], inplace=True)
+
+        units = units.loc[units.geometry.within(boundary)]
+
+        logger.debug(
+            f"{init_len - len(units)}/{init_len} "
+            f"({((init_len - len(units)) / init_len) * 100: g} %) dropped."
+        )
 
         # drop unnecessary and rename columns
         logger.debug("Reformatting...")

@@ -44,7 +44,7 @@ class DataBundle(Dataset):
         ]
         super().__init__(
             name="DataBundle",
-            version=str(deposit_id) + "-0.0.0.dev",
+            version=f"{deposit_id}-0.0.0.dev",
             dependencies=dependencies,
-            tasks=(download),
+            tasks=(download,),
         )
