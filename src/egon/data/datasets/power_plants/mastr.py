@@ -27,6 +27,7 @@ from pathlib import Path
 
 from geoalchemy2 import Geometry
 from loguru import logger
+from shapely.geometry import Point
 from sqlalchemy import (
     Boolean,
     Column,
@@ -547,6 +548,10 @@ def import_mastr() -> None:
         units.loc[units.geometry_geocoded, "geometry"] = units.loc[
             units.geometry_geocoded, "temp"
         ]
+
+        # fill None and NaN values with empty geom because to_postgis fails
+        # otherwise
+        units.geometry.fillna(Point(np.nan, np.nan), inplace=True)
 
         # drop unnecessary and rename columns
         logger.debug("Reformatting...")
