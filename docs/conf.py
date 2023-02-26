@@ -46,3 +46,4 @@ napoleon_use_rtype = False
 napoleon_use_param = False
 
 add_module_names = False
+modindex_common_prefix = ["egon.data.", "egon.data.datasets."]
