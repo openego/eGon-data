@@ -1,7 +1,10 @@
-pipeline
+
+
+loadarea
 ========
 
-.. automodule:: egon.data.airflow.dags.pipeline
+
+.. automodule:: egon.data.datasets.loadarea
    :members:
    :undoc-members:
    :show-inheritance:

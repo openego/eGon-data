@@ -1,10 +1,7 @@
+config
+======
 
-
-airflow
-=======
-
-
-.. automodule:: egon.data.airflow
+.. automodule:: egon.data.config
    :members:
    :undoc-members:
    :show-inheritance:

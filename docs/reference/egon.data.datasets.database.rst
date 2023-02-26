@@ -1,7 +1,7 @@
-pipeline
+database
 ========
 
-.. automodule:: egon.data.airflow.dags.pipeline
+.. automodule:: egon.data.datasets.database
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
-pipeline
+metadata
 ========
 
-.. automodule:: egon.data.airflow.dags.pipeline
+.. automodule:: egon.data.metadata
    :members:
    :undoc-members:
    :show-inheritance:

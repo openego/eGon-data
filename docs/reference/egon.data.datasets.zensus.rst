@@ -1,10 +1,10 @@
 
 
-airflow
-=======
+zensus
+======
 
 
-.. automodule:: egon.data.airflow
+.. automodule:: egon.data.datasets.zensus
    :members:
    :undoc-members:
    :show-inheritance:

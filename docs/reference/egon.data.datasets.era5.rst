@@ -1,10 +1,7 @@
+era5
+====
 
-
-airflow
-=======
-
-
-.. automodule:: egon.data.airflow
+.. automodule:: egon.data.datasets.era5
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
-pipeline
+temporal
 ========
 
-.. automodule:: egon.data.airflow.dags.pipeline
+.. automodule:: egon.data.datasets.industry.temporal
    :members:
    :undoc-members:
    :show-inheritance:

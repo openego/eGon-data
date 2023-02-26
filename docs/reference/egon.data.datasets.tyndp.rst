@@ -1,10 +1,7 @@
+tyndp
+=====
 
-
-airflow
-=======
-
-
-.. automodule:: egon.data.airflow
+.. automodule:: egon.data.datasets.tyndp
    :members:
    :undoc-members:
    :show-inheritance:

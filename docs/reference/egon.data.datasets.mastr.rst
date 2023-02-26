@@ -1,10 +1,7 @@
+mastr
+=====
 
-
-airflow
-=======
-
-
-.. automodule:: egon.data.airflow
+.. automodule:: egon.data.datasets.mastr
    :members:
    :undoc-members:
    :show-inheritance:

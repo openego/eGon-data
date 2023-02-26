@@ -1,7 +1,7 @@
-cli
+bus
 ===
 
-.. automodule:: egon.data.cli
+.. automodule:: egon.data.datasets.hydrogen_etrago.bus
    :members:
    :undoc-members:
    :show-inheritance:

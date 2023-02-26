@@ -1,10 +1,10 @@
 
 
-airflow
-=======
+osm
+===
 
 
-.. automodule:: egon.data.airflow
+.. automodule:: egon.data.datasets.osm
    :members:
    :undoc-members:
    :show-inheritance:
