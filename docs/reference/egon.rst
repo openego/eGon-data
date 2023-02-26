@@ -1,6 +1,0 @@
-
-
-egon
-====
-
-.. py:module:: egon
