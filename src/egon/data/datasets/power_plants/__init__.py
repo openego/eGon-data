@@ -29,7 +29,6 @@ from egon.data.datasets.power_plants.mastr import (
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
-    geocode_mastr_data,
     pv_rooftop_to_buildings,
 )
 import egon.data.config
@@ -73,7 +72,6 @@ class PowerPlants(Dataset):
                     pv_ground_mounted.insert,
                     (
                         pv_rooftop_per_mv_grid,
-                        geocode_mastr_data,
                         pv_rooftop_to_buildings,
                     ),
                 },

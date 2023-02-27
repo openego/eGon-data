@@ -455,8 +455,6 @@ def import_mastr() -> None:
 
         # write to DB
         logger.info(f"Writing {len(units)} units to DB...")
-        target_tables[tech].__table__.drop(bind=engine, checkfirst=True)
-        target_tables[tech].__table__.create(bind=engine, checkfirst=True)
 
         units.to_postgis(
             name=target_tables[tech].__tablename__,
