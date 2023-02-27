@@ -68,8 +68,6 @@ Base = declarative_base()
 SEED = int(config.settings()["egon-data"]["--random-seed"])
 
 # TODO: move to yml
-# mastr datay
-
 MASTR_INDEX_COL = "gens_id"
 
 EPSG = 4326
@@ -95,7 +93,7 @@ PV_ROOFTOP_LIFETIME = pd.Timedelta(20 * 365, unit="D")
 
 # Example Modul Trina Vertex S TSM-400DE09M.08 400 Wp
 # https://www.photovoltaik4all.de/media/pdf/92/64/68/Trina_Datasheet_VertexS_DE09-08_2021_A.pdf
-MODUL_CAP = 0.4  # kWp
+MODUL_CAP = 0.4 / 10**3  # MWp
 MODUL_SIZE = 1.096 * 1.754  # m²
 PV_CAP_PER_SQ_M = MODUL_CAP / MODUL_SIZE
 
@@ -112,9 +110,9 @@ PV_CAP_PER_SQ_M = MODUL_CAP / MODUL_SIZE
 ROOF_FACTOR = 0.5
 
 CAP_RANGES = [
-    (0, 30),
-    (30, 100),
-    (100, float("inf")),
+    (0, 30 / 10**3),
+    (30 / 10**3, 100 / 10**3),
+    (100 / 10**3, float("inf")),
 ]
 
 MIN_BUILDING_SIZE = 10.0
@@ -199,8 +197,6 @@ def clean_mastr_data(
 
     * Drop MaStR ID duplicates.
     * Drop generators with implausible capacities.
-    * Drop generators without any kind of start-up date.
-    * Clean up site column and capacity.
 
     Parameters
     -----------
@@ -1160,7 +1156,6 @@ def cap_per_bus_id(
     WHERE carrier = 'solar_rooftop'
     AND scn_name = '{scenario}'
     """
-    # TODO: woher kommen die Slack rows???
 
     df = db.select_dataframe(sql, index_col="bus_id")
 
@@ -1216,6 +1211,7 @@ def calculate_max_pv_cap_per_building(
 ) -> gpd.GeoDataFrame:
     """
     Calculate the estimated maximum possible PV capacity per building.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1368,9 +1364,9 @@ def probabilities(
     """
     if cap_ranges is None:
         cap_ranges = [
-            (0, 30),
-            (30, 100),
-            (100, float("inf")),
+            (0, 30 / 10**3),
+            (30 / 10**3, 100 / 10**3),
+            (100 / 10**3, float("inf")),
         ]
     if properties is None:
         properties = [
@@ -1408,6 +1404,7 @@ def cap_share_per_cap_range(
     """
     Calculate the share of PV capacity from the total PV capacity within
     capacity ranges.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1423,9 +1420,9 @@ def cap_share_per_cap_range(
     """
     if cap_ranges is None:
         cap_ranges = [
-            (0, 30),
-            (30, 100),
-            (100, float("inf")),
+            (0, 30 / 10**3),
+            (30 / 10**3, 100 / 10**3),
+            (100 / 10**3, float("inf")),
         ]
 
     cap_share_dict = {}
@@ -1467,9 +1464,9 @@ def mean_load_factor_per_cap_range(
     """
     if cap_ranges is None:
         cap_ranges = [
-            (0, 30),
-            (30, 100),
-            (100, float("inf")),
+            (0, 30 / 10**3),
+            (30 / 10**3, 100 / 10**3),
+            (100 / 10**3, float("inf")),
         ]
 
     load_factor_dict = {}
@@ -1518,9 +1515,9 @@ def building_area_range_per_cap_range(
     """
     if cap_ranges is None:
         cap_ranges = [
-            (0, 30),
-            (30, 100),
-            (100, float("inf")),
+            (0, 30 / 10**3),
+            (30 / 10**3, 100 / 10**3),
+            (100 / 10**3, float("inf")),
         ]
 
     building_area_range_dict = {}
@@ -1747,6 +1744,7 @@ def desaggregate_pv(
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1818,7 +1816,7 @@ def desaggregate_pv(
 
             continue
 
-        pv_target = cap_df.at[bus_id, "capacity"] * 1000
+        pv_target = cap_df.at[bus_id, "capacity"]
 
         logger.debug(f"pv_target: {pv_target}")
 
@@ -1837,8 +1835,8 @@ def desaggregate_pv(
         if pot_buildings_gdf.max_cap.sum() < pv_missing:
             logger.error(
                 f"In grid {bus_id} there is less PV potential ("
-                f"{pot_buildings_gdf.max_cap.sum():g} kW) than allocated PV "
-                f"capacity ({pv_missing:g} kW). The average roof utilization "
+                f"{pot_buildings_gdf.max_cap.sum():g} MW) than allocated PV "
+                f"capacity ({pv_missing:g} MW). The average roof utilization "
                 f"will be very high."
             )
 
@@ -1881,8 +1879,7 @@ def desaggregate_pv(
     logger.debug("Desaggregated scenario.")
     logger.debug(f"Scenario capacity: {cap_df.capacity.sum(): g}")
     logger.debug(
-        f"Generator capacity: "
-        f"{allocated_buildings_gdf.capacity.sum() / 1000: g}"
+        f"Generator capacity: " f"{allocated_buildings_gdf.capacity.sum(): g}"
     )
 
     return gpd.GeoDataFrame(
@@ -2000,8 +1997,8 @@ def add_voltage_level(
     # Infer missing values
     mask = buildings_gdf.voltage_level.isna()
     buildings_gdf.loc[mask, "voltage_level"] = buildings_gdf.loc[
-        mask
-    ].capacity.apply(voltage_levels)
+        mask, "capacity"
+    ].apply(voltage_levels)
 
     return buildings_gdf
 
@@ -2172,9 +2169,7 @@ def create_scenario_table(buildings_gdf):
         bind=engine, checkfirst=True
     )
 
-    buildings_gdf.assign(
-        capacity=buildings_gdf.capacity.div(10**3)  # kW -> MW
-    )[COLS_TO_EXPORT].reset_index().to_sql(
+    buildings_gdf[COLS_TO_EXPORT].reset_index().to_sql(
         name=EgonPowerPlantPvRoofBuildingScenario.__table__.name,
         schema=EgonPowerPlantPvRoofBuildingScenario.__table__.schema,
         con=db.engine(),
@@ -2210,8 +2205,8 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     if buildings_gdf.weather_cell_id.isna().any():
         missing = buildings_gdf.loc[
-            buildings_gdf.weather_cell_id.isna()
-        ].building_id.tolist()
+            buildings_gdf.weather_cell_id.isna(), "building_id"
+        ].tolist()
 
         raise ValueError(
             f"Following buildings don't have a weather cell id: {missing}"
