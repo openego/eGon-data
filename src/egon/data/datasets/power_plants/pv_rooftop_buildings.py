@@ -178,7 +178,7 @@ def mastr_data(
 
     gdf = gpd.read_postgis(
         query.statement, query.session.bind, index_col=index_col
-    )
+    ).drop(columns="id")
 
     logger.debug("MaStR data loaded.")
 
@@ -2083,6 +2083,9 @@ def allocate_scenarios(
         ROOF_FACTOR,
     )
 
+    print(mastr_gdf.columns.tolist())
+    print(buildings_gdf.columns.tolist())
+
     mastr_gdf = calculate_building_load_factor(
         mastr_gdf,
         buildings_gdf,
@@ -2143,7 +2146,7 @@ def allocate_scenarios(
     )
 
 
-class EgonPowerPlantPvRoofBuildingScenario(Base):
+class EgonPowerPlantPvRoofBuilding(Base):
     __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
@@ -2153,25 +2156,21 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
     building_id = Column(Integer)
     gens_id = Column(String, nullable=True)
     capacity = Column(Float)
-    einheitliche_ausrichtung_und_neigungswinkel = Column(Float)
-    hauptausrichtung = Column(String)
-    hauptausrichtung_neigungswinkel = Column(String)
+    orientation_uniform = Column(Float)
+    orientation_primary = Column(String)
+    orientation_primary_angle = Column(String)
     voltage_level = Column(Integer)
     weather_cell_id = Column(Integer)
 
 
 def create_scenario_table(buildings_gdf):
     """Create mapping table pv_unit <-> building for scenario"""
-    EgonPowerPlantPvRoofBuildingScenario.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonPowerPlantPvRoofBuildingScenario.__table__.create(
-        bind=engine, checkfirst=True
-    )
+    EgonPowerPlantPvRoofBuilding.__table__.drop(bind=engine, checkfirst=True)
+    EgonPowerPlantPvRoofBuilding.__table__.create(bind=engine, checkfirst=True)
 
     buildings_gdf[COLS_TO_EXPORT].reset_index().to_sql(
-        name=EgonPowerPlantPvRoofBuildingScenario.__table__.name,
-        schema=EgonPowerPlantPvRoofBuildingScenario.__table__.schema,
+        name=EgonPowerPlantPvRoofBuilding.__table__.name,
+        schema=EgonPowerPlantPvRoofBuilding.__table__.schema,
         con=db.engine(),
         if_exists="append",
         index=False,
