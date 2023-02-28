@@ -1946,63 +1946,6 @@ def add_buildings_meta_data(
     return buildings_gdf
 
 
-def add_voltage_level(
-    buildings_gdf: gpd.GeoDataFrame,
-) -> gpd.GeoDataFrame:
-    """
-    Get voltage level data from mastr table and assign to units. Infer missing
-    values derived from generator capacity to the power plants.
-
-    Parameters
-    -----------
-    buildings_gdf : geopandas.GeoDataFrame
-        GeoDataFrame containing OSM buildings data with desaggregated PV
-        plants.
-    Returns
-    -------
-    geopandas.GeoDataFrame
-        GeoDataFrame containing OSM building data with voltage level per
-        generator.
-    """
-
-    def voltage_levels(p: float) -> int:
-        if p <= 100:
-            return 7
-        elif p <= 200:
-            return 6
-        elif p <= 5500:
-            return 5
-        elif p <= 20000:
-            return 4
-        elif p <= 120000:
-            return 3
-        return 1
-
-    # Join mastr table
-    with db.session_scope() as session:
-        query = session.query(
-            EgonPowerPlantsPv.gens_id,
-            EgonPowerPlantsPv.voltage_level,
-        )
-    voltage_levels_df = pd.read_sql(
-        query.statement, query.session.bind, index_col=None
-    )
-    buildings_gdf = buildings_gdf.merge(
-        voltage_levels_df,
-        left_on="gens_id",
-        right_on="gens_id",
-        how="left",
-    )
-
-    # Infer missing values
-    mask = buildings_gdf.voltage_level.isna()
-    buildings_gdf.loc[mask, "voltage_level"] = buildings_gdf.loc[
-        mask, "capacity"
-    ].apply(voltage_levels)
-
-    return buildings_gdf
-
-
 def add_commissioning_date(
     buildings_gdf: gpd.GeoDataFrame,
     start: pd.Timestamp,
@@ -2082,9 +2025,6 @@ def allocate_scenarios(
         PV_CAP_PER_SQ_M,
         ROOF_FACTOR,
     )
-
-    print(mastr_gdf.columns.tolist())
-    print(buildings_gdf.columns.tolist())
 
     mastr_gdf = calculate_building_load_factor(
         mastr_gdf,
@@ -2294,4 +2234,4 @@ def pv_rooftop_to_buildings():
     all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf)
 
     # export scenario
-    create_scenario_table(add_voltage_level(all_buildings_gdf))
+    create_scenario_table(all_buildings_gdf)
