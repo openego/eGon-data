@@ -115,6 +115,15 @@ packages are required too. Right now these are:
   :code:`sudo apt install default-jre` and
   :code:`sudo apt install default-jdk`.
 
+* conda is needed for the subprocess of running pypsa-eur-sec.
+  For the installation of miniconda, check out the
+  `conda installation guide
+  <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_.
+
+* pypsa-eur-sec resp. Fiona needs the additional library :code:`libtbb2`.
+  On recent Ubuntu version you can install it via
+  :code:`sudo apt install libtbb2`
+
 * `gdal <https://gdal.org/>`_
   On recent Ubuntu version you can install it via
   :code:`sudo apt install gdal-bin`.
@@ -185,8 +194,18 @@ If running :code:`egon-data` results in an error, we also have collected
 a list of `known runtime errors`_, which can consult in search of a
 solution.
 
+To run the workflow from the CLI without using :code:`egon-data serve` you can use
+
+.. code-block:: bash
+
+   egon-data airflow scheduler
+   egon-data airflow dags trigger egon-data-processing-pipeline
+
+For further details how to use the CLI see `Apache Airflow CLI Reference`_.
+
 .. _Apache Airflow: https://airflow.apache.org/docs/apache-airflow/stable/ui.html#ui-screenshots
 .. _known runtime errors: https://eGon-data.readthedocs.io/en/latest/troubleshooting.html#runtime-errors
+.. _Apache Airflow CLI Reference: https://airflow.apache.org/docs/apache-airflow/stable/cli-and-env-variables-ref.html
 
 .. warning::
 

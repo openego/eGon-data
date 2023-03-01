@@ -14,14 +14,14 @@ import egon.data.config
 Base = declarative_base()
 
 
-class EgonEhvSubstation(Base):
-    __tablename__ = "egon_ehv_substation"
+class EgonEhvTransferBuses(Base):
+    __tablename__ = "egon_ehv_transfer_buses"
     __table_args__ = {"schema": "grid"}
     bus_id = Column(
         Integer,
-        Sequence("egon_ehv_substation_bus_id_seq", schema="grid"),
+        Sequence("egon_ehv_transfer_buses_bus_id_seq", schema="grid"),
         server_default=Sequence(
-            "egon_ehv_substation_bus_id_seq", schema="grid"
+            "egon_ehv_transfer_buses_bus_id_seq", schema="grid"
         ).next_value(),
         primary_key=True,
     )
@@ -42,14 +42,14 @@ class EgonEhvSubstation(Base):
     status = Column(Integer)
 
 
-class EgonHvmvSubstation(Base):
-    __tablename__ = "egon_hvmv_substation"
+class EgonHvmvTransferBuses(Base):
+    __tablename__ = "egon_hvmv_transfer_buses"
     __table_args__ = {"schema": "grid"}
     bus_id = Column(
         Integer,
-        Sequence("egon_hvmv_substation_bus_id_seq", schema="grid"),
+        Sequence("egon_hvmv_transfer_buses_bus_id_seq", schema="grid"),
         server_default=Sequence(
-            "egon_hvmv_substation_bus_id_seq", schema="grid"
+            "egon_hvmv_transfer_buses_bus_id_seq", schema="grid"
         ).next_value(),
         primary_key=True,
     )
@@ -74,7 +74,7 @@ class SubstationExtraction(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="substation_extraction",
-            version="0.0.0",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -97,6 +97,7 @@ class SubstationExtraction(Dataset):
                         autocommit=True,
                     ),
                 },
+                transfer_busses,
             ),
         )
 
@@ -141,8 +142,8 @@ def create_tables():
     )
 
     engine = db.engine()
-    EgonEhvSubstation.__table__.create(bind=engine, checkfirst=True)
-    EgonHvmvSubstation.__table__.create(bind=engine, checkfirst=True)
+    EgonEhvTransferBuses.__table__.create(bind=engine, checkfirst=True)
+    EgonHvmvTransferBuses.__table__.create(bind=engine, checkfirst=True)
 
 
 def create_sql_functions():
@@ -233,3 +234,24 @@ def create_sql_functions():
         COST 100;
         """
     )
+
+
+def transfer_busses():
+
+    targets = egon.data.config.datasets()["substation_extraction"][
+        "targets"
+    ]
+
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS {targets['transfer_busses']['table']};
+        CREATE TABLE {targets['transfer_busses']['table']} AS
+        SELECT DISTINCT ON (osm_id) * FROM
+        (SELECT * FROM {targets['ehv_substation']['schema']}.
+         {targets['ehv_substation']['table']}
+        UNION SELECT bus_id, lon, lat, point, polygon, voltage,
+        power_type, substation, osm_id, osm_www, frequency, subst_name,
+        ref, operator, dbahn, status
+        FROM {targets['hvmv_substation']['schema']}.
+         {targets['hvmv_substation']['table']} ORDER BY osm_id) as foo;
+        """)

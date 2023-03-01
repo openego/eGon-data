@@ -8,13 +8,13 @@ import os
 import shutil
 import sys
 
-from airflow.operators.postgres_operator import PostgresOperator
-import importlib_resources as resources
 import psycopg2
 
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.osmtgmod.substation import extract
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
 
@@ -180,7 +180,9 @@ def osmtgmod(
     docker_db_config=None,
 ):
 
-    if "germany-21" in filtered_osm_pbf_path_to_file:
+    if ("germany-21" in filtered_osm_pbf_path_to_file) | (
+        "germany-22" in filtered_osm_pbf_path_to_file
+    ):
         """
         Manually add under construction substation expansion in Garenfeld
         to existing substation. (see:)
@@ -362,21 +364,6 @@ def osmtgmod(
         )
         conn.commit()
 
-        # using the base egon database for transfer bus creation.
-        cur.execute(
-            """
-        DROP TABLE if exists transfer_busses_complete;
-        CREATE TABLE transfer_busses_complete as
-        SELECT DISTINCT ON (osm_id) * FROM
-        (SELECT * FROM grid.egon_ehv_substation
-        UNION SELECT bus_id, lon, lat, point, polygon, voltage,
-        power_type, substation, osm_id, osm_www, frequency, subst_name,
-        ref, operator, dbahn, status
-        FROM grid.egon_hvmv_substation ORDER BY osm_id) as foo;
-        """
-        )
-        conn.commit()
-
         with open(path_for_transfer_busses, "w") as this_file:
             cur.copy_expert(
                 """COPY transfer_busses_complete to
@@ -535,11 +522,17 @@ def to_pypsa():
 
     for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
 
+        capital_cost = get_sector_parameters(
+            "electricity", scenario_name.replace("'", "")
+        )["capital_cost"]
+        lifetime = get_sector_parameters(
+            "electricity", scenario_name.replace("'", "")
+        )["lifetime"]
         db.execute_sql(
             f"""
             -- BUS DATA
             INSERT INTO grid.egon_etrago_bus (scn_name, bus_id, v_nom,
-                                             geom, x, y, carrier)
+                                             geom, x, y, carrier, country)
             SELECT
               {scenario_name},
               bus_i AS bus_id,
@@ -547,15 +540,17 @@ def to_pypsa():
               geom,
               ST_X(geom) as x,
               ST_Y(geom) as y,
-              'AC' as carrier
+              'AC' as carrier,
+              cntr_id
               FROM osmtgmod_results.bus_data
               WHERE result_id = 1;
 
 
             -- BRANCH DATA
             INSERT INTO grid.egon_etrago_line (scn_name, line_id, bus0,
-                                              bus1, x, r, b, s_nom, cables, v_nom,
-                                              geom, topo)
+                                              bus1, x, r, b, s_nom, s_nom_min, s_nom_extendable,
+                                              cables, v_nom,
+                                              geom, topo, carrier)
             SELECT
               {scenario_name},
               branch_id AS line_id,
@@ -565,10 +560,13 @@ def to_pypsa():
               br_r AS r,
               br_b as b,
               rate_a as s_nom,
+              rate_a as s_nom_min,
+              TRUE,
               cables,
               branch_voltage/1000 as v_nom,
               geom,
-              topo
+              topo,
+              'AC' as carrier
               FROM osmtgmod_results.branch_data
               WHERE result_id = 1 and (link_type = 'line' or
                                        link_type = 'cable');
@@ -577,15 +575,17 @@ def to_pypsa():
             -- TRANSFORMER DATA
             INSERT INTO grid.egon_etrago_transformer (scn_name,
                                                      trafo_id, bus0, bus1, x,
-                                                     s_nom, tap_ratio,
+                                                     s_nom, s_nom_min, s_nom_extendable, tap_ratio,
                                                      phase_shift, geom, topo)
             SELECT
               {scenario_name},
               branch_id AS trafo_id,
               f_bus AS bus0,
               t_bus AS bus1,
-              br_x/100 AS x,
+              br_x/100 AS x, --- change base from 100MVA (osmtgmod) to 1 MVA (pypsa)
               rate_a as s_nom,
+              rate_a as s_nom_min,
+              TRUE,
               tap AS tap_ratio,
               shift AS phase_shift,
               geom,
@@ -612,7 +612,8 @@ def to_pypsa():
                             FROM grid.egon_etrago_bus b
                             WHERE bus_id=bus1
                             AND a.scn_name = b.scn_name
-                            )*1000)^2 / (100 * 10^6));
+                            )*1000)^2 / (100 * 10^6))
+            WHERE scn_name = {scenario_name};
 
             -- calculate line length (in km) from geoms
 
@@ -623,9 +624,131 @@ def to_pypsa():
                  (SELECT b.line_id, st_length(b.geom,false)/1000 as length
                   from grid.egon_etrago_line b)
                  as result
-            WHERE a.line_id = result.line_id;
+            WHERE a.line_id = result.line_id
+            AND scn_name = {scenario_name};
 
+            -- set capital costs for eHV-lines 
+            UPDATE grid.egon_etrago_line
+            SET capital_cost = {capital_cost['ac_ehv_overhead_line']} * length
+            WHERE v_nom > 110
+            AND scn_name = {scenario_name};
 
+            -- set capital costs for HV-lines 
+            UPDATE grid.egon_etrago_line
+            SET capital_cost = {capital_cost['ac_hv_overhead_line']} * length
+            WHERE v_nom = 110
+            AND scn_name = {scenario_name};
+            
+            -- set capital costs for transformers 
+            UPDATE grid.egon_etrago_transformer a
+            SET capital_cost = {capital_cost['transformer_380_220']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380))
+            AND scn_name = {scenario_name};
+
+            UPDATE grid.egon_etrago_transformer a
+            SET capital_cost = {capital_cost['transformer_380_110']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380))
+            AND scn_name = {scenario_name};
+
+            UPDATE grid.egon_etrago_transformer a
+            SET capital_cost = {capital_cost['transformer_220_110']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220))
+            AND scn_name = {scenario_name};
+            
+            -- set lifetime for eHV-lines 
+            UPDATE grid.egon_etrago_line
+            SET lifetime = {lifetime['ac_ehv_overhead_line']} 
+            WHERE v_nom > 110
+            AND scn_name = {scenario_name};
+
+            -- set capital costs for HV-lines 
+            UPDATE grid.egon_etrago_line
+            SET lifetime = {lifetime['ac_hv_overhead_line']}
+            WHERE v_nom = 110
+            AND scn_name = {scenario_name};
+            
+            -- set capital costs for transformers 
+            UPDATE grid.egon_etrago_transformer a
+            SET lifetime = {lifetime['transformer_380_220']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380))
+            AND scn_name = {scenario_name};
+
+            UPDATE grid.egon_etrago_transformer a
+            SET lifetime = {lifetime['transformer_380_110']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 380))
+            AND scn_name = {scenario_name};
+
+            UPDATE grid.egon_etrago_transformer a
+            SET lifetime = {lifetime['transformer_220_110']}
+            WHERE (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110))
+            OR (a.bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 110)
+            AND a.bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE v_nom = 220))
+            AND scn_name = {scenario_name};
+            
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
@@ -652,20 +775,13 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.0",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
                 run,
                 {
-                    PostgresOperator(
-                        task_id="osmtgmod_substation",
-                        sql=resources.read_text(
-                            __name__, "substation_otg.sql"
-                        ),
-                        postgres_conn_id="egon_data",
-                        autocommit=True,
-                    ),
+                    extract,
                     to_pypsa,
                 },
             ),

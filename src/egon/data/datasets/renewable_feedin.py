@@ -5,14 +5,15 @@ Central module containing all code dealing with processing era5 weather data.
 import datetime
 import json
 import time
-
+from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.era5 import EgonRenewableFeedIn, import_cutout
+from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
@@ -21,6 +22,7 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
+from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 import egon.data.config
 
 
@@ -28,10 +30,34 @@ class RenewableFeedin(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="RenewableFeedin",
-            version="0.0.6",
+            version="0.0.8",
             dependencies=dependencies,
-            tasks={wind, pv, solar_thermal, heat_pump_cop, wind_offshore},
+            tasks={
+                wind,
+                pv,
+                solar_thermal,
+                heat_pump_cop,
+                wind_offshore,
+                mapping_zensus_weather,
+            },
         )
+
+
+Base = declarative_base()
+engine = db.engine()
+
+
+class MapZensusWeatherCell(Base):
+    __tablename__ = "egon_map_zensus_weather_cell"
+    __table_args__ = {"schema": "boundaries"}
+
+    zensus_population_id = Column(
+        Integer,
+        ForeignKey(DestatisZensusPopulationPerHa.id),
+        primary_key=True,
+        index=True,
+    )
+    w_id = Column(Integer, ForeignKey(EgonEra5Cells.w_id), index=True)
 
 
 def weather_cells_in_germany(geom_column="geom"):
@@ -74,7 +100,8 @@ def offshore_weather_cells(geom_column="geom"):
         FROM {cfg['weather_cells']['schema']}.
         {cfg['weather_cells']['table']}
         WHERE ST_Intersects('SRID=4326;
-        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))', geom)""",
+        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
+         geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -197,7 +224,8 @@ def feedin_per_turbine():
     gdf = gpd.GeoDataFrame(geometry=cutout.grid_cells(), crs=4326)
 
     # Calculate feedin-timeseries for E-141
-    # source: https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
+    # source:
+    # https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
     turbine_e141 = {
         "name": "E141 4200 kW",
         "hub_height": 129,
@@ -240,7 +268,8 @@ def feedin_per_turbine():
     gdf["E-141"] = ts_e141.to_pandas().transpose().values.tolist()
 
     # Calculate feedin-timeseries for E-126
-    # source: https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
+    # source:
+    # https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
     turbine_e126 = {
         "name": "E126 4200 kW",
         "hub_height": 159,
@@ -549,6 +578,51 @@ def insert_feedin(data, carrier, weather_year):
         con=db.engine(),
         if_exists="append",
     )
+
+
+def mapping_zensus_weather():
+    """Perform mapping between era5 weather cell and zensus grid"""
+
+    with db.session_scope() as session:
+        cells_query = session.query(
+            DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
+            DestatisZensusPopulationPerHa.geom_point,
+        )
+
+    gdf_zensus_population = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+        geom_col="geom_point",
+    )
+
+    with db.session_scope() as session:
+        cells_query = session.query(EgonEra5Cells.w_id, EgonEra5Cells.geom)
+
+    gdf_weather_cell = gpd.read_postgis(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+        geom_col="geom",
+    )
+    # CRS is 4326
+    gdf_weather_cell = gdf_weather_cell.to_crs(epsg=3035)
+
+    gdf_zensus_weather = gdf_zensus_population.sjoin(
+        gdf_weather_cell, how="left", predicate="within"
+    )
+
+    MapZensusWeatherCell.__table__.drop(bind=engine, checkfirst=True)
+    MapZensusWeatherCell.__table__.create(bind=engine, checkfirst=True)
+
+    # Write mapping into db
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            MapZensusWeatherCell,
+            gdf_zensus_weather[["zensus_population_id", "w_id"]].to_dict(
+                orient="records"
+            ),
+        )
 
 
 def add_metadata():

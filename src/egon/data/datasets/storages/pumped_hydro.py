@@ -2,26 +2,27 @@
 The module containing code allocating pumped hydro plants based on
 data from MaStR and NEP.
 """
-   
-import pandas as pd
+
+from geopy.geocoders import Nominatim
+from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
-import egon.data.config
-from egon.data import db, config
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets.chp.match_nep import match_nep_chp
+from egon.data.datasets.chp.small_chp import assign_use_case
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
-    assign_voltage_level,
     assign_bus_id,
-    assign_gas_bus_id,
+    assign_voltage_level,
     filter_mastr_geometry,
     select_target,
 )
-from egon.data.datasets.chp.match_nep import match_nep_chp
-from egon.data.datasets.chp.small_chp import assign_use_case
-from geopy.geocoders import Nominatim
-from sqlalchemy.orm import sessionmaker
+import egon.data.config
 
 
 def select_nep_pumped_hydro():
-    """ Select pumped hydro plants from NEP power plants list
+    """Select pumped hydro plants from NEP power plants list
 
 
     Returns
@@ -58,7 +59,7 @@ def select_nep_pumped_hydro():
 
 
 def select_mastr_pumped_hydro():
-    """ Select pumped hydro plants from MaStR
+    """Select pumped hydro plants from MaStR
 
 
     Returns
@@ -70,7 +71,7 @@ def select_mastr_pumped_hydro():
 
     # Read-in data from MaStR
     mastr_ph = pd.read_csv(
-        sources["mastr_storage"],
+        WORKING_DIR_MASTR_OLD / sources["mastr_storage"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
@@ -140,7 +141,7 @@ def match_storage_units(
     consider_carrier=True,
     consider_capacity=True,
 ):
-    """ Match storage_units (in this case only pumped hydro) from MaStR
+    """Match storage_units (in this case only pumped hydro) from MaStR
     to list of power plants from NEP
 
     Parameters
@@ -255,7 +256,7 @@ def match_storage_units(
 
 
 def get_location(unmatched):
-    """ Gets a geolocation for units which couldn't be matched using MaStR data.
+    """Gets a geolocation for units which couldn't be matched using MaStR data.
     Uses geolocator and the city name from NEP data to create longitude and
     latitude for a list of unmatched units.
 

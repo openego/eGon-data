@@ -3,6 +3,8 @@ The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
 
+from pathlib import Path
+
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
 from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
@@ -11,6 +13,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
+import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
@@ -19,9 +22,10 @@ from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
     extension_per_federal_state,
+    extension_to_areas,
     select_target,
 )
-from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -57,6 +61,9 @@ class EgonMaStRConventinalWithoutChp(Base):
     EinheitMastrNummer = Column(String)
     carrier = Column(String)
     el_capacity = Column(Float)
+    plz = Column(Integer)
+    city = Column(String)
+    federal_state = Column(String)
     geometry = Column(Geometry("POINT", 4326))
 
 
@@ -114,7 +121,6 @@ def nearest(
         unary_union = df.centroid.unary_union
     else:
         unary_union = df[df_geom_col].unary_union
-
     # Find the geometry that is closest
     nearest = (
         df[df_geom_col] == nearest_points(row[row_geom_col], unary_union)[1]
@@ -244,9 +250,9 @@ def insert_biomass_chp(scenario):
     target = select_target("biomass", scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv(cfg["sources"]["mastr_biomass"]).query(
-        "EinheitBetriebsstatus=='InBetrieb'"
-    )
+    mastr = pd.read_csv(
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
+    ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
@@ -266,7 +272,6 @@ def insert_biomass_chp(scenario):
         level = "federal_state"
     else:
         level = "country"
-
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
 
@@ -275,9 +280,10 @@ def insert_biomass_chp(scenario):
 
     # Assign bus_id
     if len(mastr_loc) > 0:
-        mastr_loc["voltage_level"] = assign_voltage_level(mastr_loc, cfg)
+        mastr_loc["voltage_level"] = assign_voltage_level(
+            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+        )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
-
     mastr_loc = assign_use_case(mastr_loc, cfg["sources"])
 
     # Insert entries with location
@@ -313,8 +319,6 @@ def insert_chp_egon2035():
 
     """
 
-    create_tables()
-
     sources = config.datasets()["chp_location"]["sources"]
 
     targets = config.datasets()["chp_location"]["targets"]
@@ -329,7 +333,15 @@ def insert_chp_egon2035():
 
     gpd.GeoDataFrame(
         MaStR_konv[
-            ["EinheitMastrNummer", "el_capacity", "geometry", "carrier"]
+            [
+                "EinheitMastrNummer",
+                "el_capacity",
+                "geometry",
+                "carrier",
+                "plz",
+                "city",
+                "federal_state",
+            ]
         ]
     ).to_postgis(
         targets["mastr_conventional_without_chp"]["table"],
@@ -403,13 +415,98 @@ def extension_SH():
     extension_per_federal_state("SchleswigHolstein", EgonChp)
 
 
+def insert_chp_egon100re():
+    """Insert CHP plants for eGon100RE considering results from pypsa-eur-sec
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = config.datasets()["chp_location"]["sources"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {EgonChp.__table__.schema}.{EgonChp.__table__.name}
+        WHERE scenario = 'eGon100RE'
+        """
+    )
+
+    # select target values from pypsa-eur-sec
+    additional_capacity = db.select_dataframe(
+        """
+        SELECT capacity
+        FROM supply.egon_scenario_capacities
+        WHERE scenario_name = 'eGon100RE'
+        AND carrier = 'urban_central_gas_CHP'
+        """
+    ).capacity[0]
+
+    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
+        additional_capacity /= 16
+    target_file = (
+        Path(".")
+        / "data_bundle_egon_data"
+        / "pypsa_eur_sec"
+        / "2022-07-26-egondata-integration"
+        / "postnetworks"
+        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+    )
+
+    network = pypsa.Network(str(target_file))
+    chp_index = "DE0 0 urban central gas CHP"
+
+    standard_chp_th = 10
+    standard_chp_el = (
+        standard_chp_th
+        * network.links.loc[chp_index, "efficiency"]
+        / network.links.loc[chp_index, "efficiency2"]
+    )
+
+    areas = db.select_geodataframe(
+        f"""
+            SELECT
+            residential_and_service_demand as demand, area_id,
+            ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
+            FROM
+            {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
+            WHERE scenario = 'eGon100RE'
+            """
+    )
+
+    existing_chp = pd.DataFrame(
+        data={
+            "el_capacity": standard_chp_el,
+            "th_capacity": standard_chp_th,
+            "voltage_level": 5,
+        },
+        index=range(1),
+    )
+
+    flh = (
+        network.links_t.p0[chp_index].sum()
+        / network.links.p_nom_opt[chp_index]
+    )
+
+    extension_to_areas(
+        areas,
+        additional_capacity,
+        existing_chp,
+        flh,
+        EgonChp,
+        district_heating=True,
+        scenario="eGon100RE",
+    )
+
+
 # Add one task per federal state for small CHP extension
 if (
     config.settings()["egon-data"]["--dataset-boundary"]
     == "Schleswig-Holstein"
 ):
     extension = extension_SH
-
 else:
     extension = {
         extension_BW,
@@ -435,11 +532,11 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.2",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                insert_chp_egon2035,
+                {insert_chp_egon2035, insert_chp_egon100re},
                 assign_heat_bus,
                 extension,
             ),

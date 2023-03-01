@@ -14,21 +14,21 @@ from urllib.request import urlretrieve
 import datetime
 import json
 import os
+import re
 import shutil
 import time
-import re
 
 import importlib_resources as resources
 
 from egon.data import db
 from egon.data.config import settings
+from egon.data.datasets import Dataset
 from egon.data.metadata import (
     context,
+    generate_resource_fields_from_db_table,
     license_odbl,
     meta_metadata,
-    generate_resource_fields_from_db_table,
 )
-from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.subprocess as subprocess
 
@@ -123,9 +123,7 @@ def to_postgres(cache_size=4096):
 
 
 def add_metadata():
-    """Writes metadata JSON string into table comment.
-
-    """
+    """Writes metadata JSON string into table comment."""
     # Prepare variables
     osm_config = egon.data.config.datasets()["openstreetmap"]
 
@@ -301,7 +299,7 @@ class OpenStreetMap(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OpenStreetMap",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(download, to_postgres, modify_tables, add_metadata),
         )

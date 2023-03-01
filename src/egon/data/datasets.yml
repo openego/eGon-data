@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-210101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-210101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-220101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-220101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-210101.osm.pbf"
-      file_testmode: "schleswig-holstein-210101.osm.pbf"
+      file: "germany-220101.osm.pbf"
+      file_testmode: "schleswig-holstein-220101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -33,6 +33,24 @@ vg250:
       "VG250_KRS.shp": "vg250_krs"
       "VG250_VWG.shp": "vg250_vwg"
       "VG250_GEM.shp": "vg250_gem"
+
+bgr:
+  processed:
+    schema: "boundaries"
+    file_table_map:
+      "Potenzialbewertung_InSpEE_InSpEE_DS.shp": "inspee_saltstructures"
+  sources:
+    vg250_federal_states:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    saltcaverns:
+      schema: 'boundaries'
+      table: 'inspee_saltstructures'
+  targets:
+    storage_potential:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+
 zensus_population:
   original_data:
     source:
@@ -118,6 +136,10 @@ demandregio_cts_ind_demand:
       schema: 'boundaries'
       table: 'vg250_krs'
     new_consumers_2035: 'new_largescale_consumers_nep.csv'
+    new_consumers_2050:
+      "pes-demand-today": "industrial_energy_demand_per_country_today.csv"
+      "pes-production-tomorrow": "industrial_production_per_country_tomorrow_2050.csv"
+      "pes-sector-ratios": "industry_sector_ratios.csv"
     wz_definitions:
       "CTS": 'CTS_WZ_definition.csv'
       "industry": 'ind_WZ_definition.csv'
@@ -189,10 +211,12 @@ substation_extraction:
   targets:
     hvmv_substation:
       schema: 'grid'
-      table: 'egon_hvmv_substation'
+      table: 'egon_hvmv_transfer_buses'
     ehv_substation:
       schema: 'grid'
-      table: 'egon_ehv_substation'
+      table: 'egon_ehv_transfer_buses'
+    transfer_busses:
+      table: 'transfer_busses_complete'
 
 substation_voronoi:
   sources:
@@ -240,10 +264,25 @@ society_prognosis:
       table: 'egon_household_prognosis'
 
 scenario_input:
-  eGon2035:
-    paths:
-      "capacities": "NEP2035_V2021_scnC2035.xlsx"
-      "list_conv_pp": "Kraftwerksliste_NEP_2021_konv.csv"
+  sources:
+    eGon2035:
+      capacities: "NEP2035_V2021_scnC2035.xlsx"
+      list_conv_pp: "Kraftwerksliste_NEP_2021_konv.csv"
+    eGon100RE:
+      capacities: "nodal_capacities.csv"
+    boundaries:
+      schema: 'boundaries'
+      table: 'vg250_lan'
+    zensus_population:
+      schema: 'society'
+      table: 'destatis_zensus_population_per_ha'
+  targets:
+    scenario_capacities:
+      schema: 'supply'
+      table: 'egon_scenario_capacities'
+    nep_conventional_powerplants:
+      schema: 'supply'
+      table: 'egon_nep_2021_conventional_powerplants'
 
 mastr:
   technologies:
@@ -258,24 +297,26 @@ mastr:
   file_basename: "bnetza_mastr"
   deposit_id: 808086
 
+mastr_new:
+  technologies:
+    - "wind"
+    - "hydro"
+    - "solar"
+    - "biomass"
+  file_basename: "bnetza_mastr"
+  deposit_id: 1132987
+
 re_potential_areas:
-  original_data:
-    source:
-      url:
-        #TODO: finally replace sandbox
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_agriculture.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_road_railway.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_wind.gpkg?download=1"
-      url_testmode:
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_agriculture_SH.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_pv_road_railway_SH.gpkg?download=1"
-        - "https://sandbox.zenodo.org/record/746695/files/potentialarea_wind_SH.gpkg?download=1"
-    target:
-      schema: "supply"
-      path_table_map:
-        "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
-        "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
-        "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
+  target:
+    schema: "supply"
+    path_table_map:
+      "potentialarea_pv_agriculture.gpkg": "egon_re_potential_area_pv_agriculture"
+      "potentialarea_pv_road_railway.gpkg": "egon_re_potential_area_pv_road_railway"
+      "potentialarea_wind.gpkg": "egon_re_potential_area_wind"
+    path_table_map_testmode:
+      "potentialarea_pv_agriculture_SH.gpkg": "egon_re_potential_area_pv_agriculture"
+      "potentialarea_pv_road_railway_SH.gpkg": "egon_re_potential_area_pv_road_railway"
+      "potentialarea_wind_SH.gpkg": "egon_re_potential_area_wind"
 
 peta5_0_1_res_heat_demands:
   original_data:
@@ -306,13 +347,22 @@ peta5_0_1_ser_heat_demands:
     file_table_map:
     table: # 2015 heat demand data not stored in database
 
+hotmaps_current_policy_scenario_heat_demands_buildings:
+  sources:
+      url: "https://gitlab.com/hotmaps/scen_current_building_demand/-/raw/master/data/scen_current_building_demand.csv?inline=false"
+  targets:
+      path: "scen_current_building_demand.csv"
+
 power_plants:
   sources:
+      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
+      mastr_wind: "bnetza_mastr_wind_cleaned.csv"
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
       mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
       mastr_storage: "bnetza_mastr_storage_cleaned.csv"
+      mastr_gsgk: "bnetza_mastr_gsgk_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
@@ -335,6 +385,9 @@ storages:
       egon_mv_grid_district: "grid.egon_mv_grid_district"
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
+      nep_capacities: "NEP2035_V2021_scnC2035.xlsx"
+      generators: "grid.egon_etrago_generator"
+      bus: "grid.egon_etrago_bus"
   target:
       table: 'egon_storages'
       schema: 'supply'
@@ -421,8 +474,8 @@ electrical_load_curves_cts:
 hh_demand_profiles:
   sources:
     household_electricity_demand_profiles:
-      path_testmode: "household_electricity_demand_profiles_2400.hdf5"
-      path: "household_electricity_demand_profiles_100k.hdf5"
+      path_testmode: "hh_el_load_profiles_2511.hdf"
+      path: "hh_el_load_profiles_100k.hdf"
 
     zensus_household_types:
       path: "Zensus2011_Personen.csv"
@@ -477,10 +530,21 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 5645351
+      deposit_id: 1095882
   targets:
     file:
       'data_bundle_egon_data.zip'
+
+pypsa-technology-data:
+  sources:
+    zenodo:
+      deposit_id: 5544025
+      file: 'PyPSA/technology-data-v0.3.0.zip'
+  targets:
+    file:
+      'pypsa_technology_data_egon_data.zip'
+    data_dir:
+      'PyPSA-technology-data-94085a8/outputs/'
 
 heat_supply:
   sources:
@@ -512,7 +576,7 @@ heat_supply:
       schema: 'demand'
       table: 'egon_map_zensus_district_heating_areas'
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
   targets:
     district_heating_supply:
@@ -556,7 +620,7 @@ etrago_heat:
       table: 'egon_peta_heat'
     ch4_voronoi:
       schema: 'grid'
-      table: 'egon_voronoi_ch4'
+      table: 'egon_gas_voronoi'
   targets:
     heat_buses:
       schema: 'grid'
@@ -573,6 +637,31 @@ etrago_heat:
     heat_link_timeseries:
       schema: 'grid'
       table: 'egon_etrago_link_timeseries'
+    heat_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+etrago_hydrogen:
+  sources:
+    saltcavern_data:
+      schema: 'grid'
+      table: 'egon_saltstructures_storage_potential'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    H2_AC_map:
+      schema: 'grid'
+      table: 'egon_etrago_ac_h2'
+  targets:
+    hydrogen_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    hydrogen_links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    hydrogen_stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
 
 industrial_sites:
   sources:
@@ -603,7 +692,7 @@ distributed_industrial_demand:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios: ["eGon2021", "eGon2035", "eGon100RE"]
     wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -653,16 +742,28 @@ electrical_load_curves_industry:
     egon_mv_grid_district:
       schema: 'grid'
       table: 'egon_mv_grid_district'
+    egon_ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
   targets:
     osm_load:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    osm_load_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     sites_load:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    sites_load_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
 
 etrago_electricity:
   sources:
+    etrago_buses:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
     osm_curves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
@@ -672,6 +773,9 @@ etrago_electricity:
     cts_curves:
       schema: 'demand'
       table: 'egon_etrago_electricity_cts'
+    household_curves:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_households'
   targets:
     etrago_load:
       schema: 'grid'
@@ -690,7 +794,7 @@ chp_location:
     egon_mv_grid_district: 'grid.egon_mv_grid_district'
     ehv_voronoi: "grid.egon_ehv_substation_voronoi"
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
     osm_landuse:
       table: 'osm_landuse'
@@ -725,7 +829,7 @@ chp_etrago:
       schema: 'demand'
       table: 'egon_district_heating_areas'
     etrago_buses:
-      table: 'egon_pf_hv_bus'
+      table: 'egon_etrago_bus'
       schema: 'grid'
   targets:
     link:
@@ -743,9 +847,15 @@ DSM_CTS_industry:
     ind_osm_loadcurves:
       schema: 'demand'
       table: 'egon_osm_ind_load_curves'
+    ind_osm_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual'
     ind_sites_loadcurves:
       schema: 'demand'
       table: 'egon_sites_ind_load_curves'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual'
     ind_sites:
       schema: 'demand'
       table: 'egon_industrial_sites'
@@ -771,9 +881,24 @@ DSM_CTS_industry:
     store_timeseries:
       schema: 'grid'
       table: 'egon_etrago_store_timeseries'
+    cts_loadcurves_dsm:
+      schema: 'demand'
+      table: 'egon_etrago_electricity_cts_dsm_timeseries'
+    ind_osm_loadcurves_individual_dsm:
+      schema: 'demand'
+      table: 'egon_osm_ind_load_curves_individual_dsm_timeseries'
+    demandregio_ind_sites_dsm:
+      schema: 'demand'
+      table: 'egon_demandregio_sites_ind_electricity_dsm_timeseries'
+    ind_sites_loadcurves_individual:
+      schema: 'demand'
+      table: 'egon_sites_ind_load_curves_individual_dsm_timeseries'
 
 generators_etrago:
   sources:
+    bus:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
     power_plants:
       schema: 'supply'
       table: 'egon_power_plants'
@@ -792,7 +917,44 @@ generators_etrago:
     etrago_gen_time:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
-      
+
+
+gas_grid:
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+
+
+gas_stores:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+
+pypsa-eur-sec:
+  target:
+    scenario_parameters:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
+
+gas_prod:
+  source:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+  target:
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+
 weather_BusID:
   sources:
     power_plants:
@@ -814,6 +976,29 @@ weather_BusID:
       schema: 'supply'
       table: 'egon_power_plants'
 
+storage_etrago:
+  sources:
+    storage:
+      table: 'egon_storages'
+      schema: 'supply'
+    scenario_parameters:
+      table: 'egon_scenario_parameters'
+      schema: 'scenario'
+    bus:
+      table: 'egon_etrago_bus'
+      schema: 'grid'
+    ehv-substation:
+      table: 'egon_ehv_substation'
+      schema: 'grid'
+    hv-substation:
+      table: 'egon_hvmv_substation'
+      schema: 'grid'
+  targets:
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+
+
 dlr:
   sources:
     trans_lines:
@@ -826,3 +1011,233 @@ dlr:
     line_timeseries:
       schema: "grid"
       table: "egon_etrago_line_timeseries"
+
+electrical_neighbours:
+  sources:
+    electricity_buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_etrago_line'
+    german_borders:
+      schema: 'boundaries'
+      table: 'vg250_sta_union'
+    osmtgmod_bus:
+      schema: 'osmtgmod_results'
+      table: 'bus_data'
+    osmtgmod_branch:
+      schema: 'osmtgmod_results'
+      table: 'branch_data'
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    tyndp_demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+    tyndp_demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    lines:
+      schema: 'grid'
+      table: 'egon_etrago_line'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    transformers:
+      schema: 'grid'
+      table: 'egon_etrago_transformer'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    generators_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_generator_timeseries'
+    storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+
+tyndp:
+  sources:
+      capacities: "https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+  targets:
+      capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+      demand_2030: "Demand_TimeSeries_2030_DistributedEnergy.xlsx"
+      demand_2040: "Demand_TimeSeries_2040_DistributedEnergy.xlsx"
+
+gas_neighbours:
+  sources:
+    tyndp_capacities: "TYNDP-2020-Scenario-Datafile.xlsx.zip"
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+  targets:
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    stores:
+      schema: 'grid'
+      table: 'egon_etrago_store'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+
+emobility_mit:
+  original_data:
+    sources:
+      RS7:
+        url: "https://www.bmvi.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
+        file: "regiostar-referenzdateien.xlsx"
+        file_processed: "regiostar-referenzdateien_preprocessed.csv"
+        sheet: "ReferenzGebietsstand2020"
+      KBA:
+        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2"
+        file: "fz1_2021.xlsx"
+        file_processed: "fz1_2021_preprocessed.csv"
+        sheet: "FZ1.1"
+        columns: "D, J:N"
+        skiprows: 8
+      trips:
+        eGon2035:
+          file: "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+        eGon100RE:
+          file: "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+  scenario:
+    # used scenario variation (available scenarios see parameters.py)
+    variation:
+      eGon2035: "NEP C 2035"
+      eGon100RE: "Reference 2050"
+    # name of low-flex scenario
+    lowflex:
+      create_lowflex_scenario: True
+      names:
+        eGon2035: "eGon2035_lowflex"
+        eGon100RE: "eGon100RE_lowflex"
+
+  model_timeseries:
+    reduce_memory: True
+    export_results_to_csv: True
+    parallel_tasks: 10
+
+demand_timeseries_mvgd:
+  parallel_tasks: 10
+
+charging_infrastructure:
+  original_data:
+    sources:
+      tracbev:
+        url: "https://zenodo.org/record/6466480/files/data.zip?download=1"
+        file: "data.zip"
+        files_to_use:
+          - "hpc_positions.gpkg"
+          - "landuse.gpkg"
+          - "poi_cluster.gpkg"
+          - "public_positions.gpkg"
+        srid: 3035
+  constants:
+    work_weight_retail: 0.8
+    work_weight_commercial: 1.25
+    work_weight_industrial: 1
+    single_family_home_share: 0.6
+    single_family_home_spots: 1.5
+    multi_family_home_share: 0.4
+    multi_family_home_spots: 10
+    random_seed: 5
+  targets:
+    charging_infrastructure:
+      schema: "grid"
+      table: "egon_emob_charging_infrastructure"
+      cols_to_export:
+        - "mv_grid_id"
+        - "use_case"
+        - "weight"
+        - "geometry"
+
+mobility_hgv:
+    original_data:
+      sources:
+        BAST:
+          url: "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+          file: "Jawe2020.csv"
+          relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
+          srid: 4326
+        germany:
+          url: "https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/1_deutschland/1_sehr_hoch.geo.json"
+        NUTS:
+          url: "https://daten.gdz.bkg.bund.de/produkte/vg/nuts250_1231/aktuell/nuts250_12-31.utm32s.shape.zip"
+          file: "nuts250_12-31.utm32s.shape.zip"
+          shp_file: "nuts250_12-31.utm32s.shape/nuts250_1231/250_NUTS1.shp"
+          NUTS_CODE: "DEF"
+    tables:
+      srid: 3035
+      srid_buses: 4326
+    constants:
+      # leakage rate / losses - constant
+      # https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery
+      # --> 0.5%
+      leakage: True
+      leakage_rate: 0.005
+      # Hydrogen
+      # HGV traffic hydrogen consumption in kg per 100 km
+      # Assumption: 30L Diesel / 100 km --> kgH2/100 km
+      hydrogen_consumption: 6.68
+      # share of FCEV trucks
+      # within the egon project the flat guess is 100%
+      fcev_share: 1.
+      scenarios:
+        - "eGon2035"
+        - "eGon100RE"
+      carrier: "H2_hgv_load"
+      energy_value_h2: 39.4  # kWh/kg
+      hours_per_year: 8760
+      fac: 0.001
+    hgv_mileage:
+      # NEP data
+      # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf
+      # total amount of HGVs  - Scenario C 2035
+      # hgv_amount = 100000
+      # HGV traffic annual mileage per vehicle
+      # hgv_mean_mileage = 100000
+      # Total mileage
+      eGon2035: 10000000000
+      # Langfristszenarien
+      # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
+      eGon100RE: 40000000000
+
+home_batteries:
+  constants:
+    scenarios:
+      - "eGon2035"
+      - "eGon100RE"
+    # Mean ratio between the storage capacity and the power of the pv rooftop system
+    cbat_ppv_ratio: 1
+    rtol: 0.05
+    max_it: 100
+  sources:
+    etrago_storage:
+      schema: 'grid'
+      table: 'egon_etrago_storage'
+    storage:
+      schema: 'supply'
+      table: 'egon_storages'
+  targets:
+    home_batteries:
+      schema: 'supply'
+      table: 'egon_home_batteries'

@@ -1,13 +1,20 @@
 """The central module containing all code dealing with scenario table.
 """
-from egon.data import db
-from sqlalchemy import Column, String, VARCHAR
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from pathlib import Path
+from urllib.request import urlretrieve
+import shutil
+import zipfile
+
+from sqlalchemy import VARCHAR, Column, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import pandas as pd
-import egon.data.datasets.scenario_parameters.parameters as parameters
+
+from egon.data import db
 from egon.data.datasets import Dataset
+import egon.data.config
+import egon.data.datasets.scenario_parameters.parameters as parameters
 
 Base = declarative_base()
 
@@ -97,9 +104,31 @@ def insert_scenarios():
 
     session.commit()
 
+    # Scenario eGon2021
+    eGon2021 = EgonScenario(name="eGon2021")
+
+    eGon2021.description = """
+        Status quo scenario for 2021. Note: This is NOT A COMPLETE SCENARIO
+        and covers only some sector data required by ding0, such as demand
+        on NUTS 3 level and generation units .
+        """
+    eGon2021.global_parameters = parameters.global_settings(eGon2021.name)
+
+    eGon2021.electricity_parameters = parameters.electricity(eGon2021.name)
+
+    eGon2021.gas_parameters = parameters.gas(eGon2021.name)
+
+    eGon2021.heat_parameters = parameters.heat(eGon2021.name)
+
+    eGon2021.mobility_parameters = parameters.mobility(eGon2021.name)
+
+    session.add(eGon2021)
+
+    session.commit()
+
 
 def get_sector_parameters(sector, scenario=None):
-    """ Returns parameters for each sector as dictionary.
+    """Returns parameters for each sector as dictionary.
 
     If scenario=None data for all scenarios is returned as pandas.DataFrame.
     Otherwise the parameters of the specific scenario are returned as a dict.
@@ -153,16 +182,52 @@ def get_sector_parameters(sector, scenario=None):
                 ).val[0],
                 index=["eGon100RE"],
             )
+        ).append(
+            pd.DataFrame(
+                db.select_dataframe(
+                    f"""
+                        SELECT {sector}_parameters as val
+                        FROM scenario.egon_scenario_parameters
+                        WHERE name='eGon2021'"""
+                ).val[0],
+                index=["eGon2021"],
+            )
         )
 
     return values
+
+
+def download_pypsa_technology_data():
+    """Downlad PyPSA technology data results."""
+    data_path = Path(".") / "pypsa_technology_data"
+    # Delete folder if it already exists
+    if data_path.exists() and data_path.is_dir():
+        shutil.rmtree(data_path)
+    # Get parameters from config and set download URL
+    sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
+        "zenodo"
+    ]
+    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
+    target_file = egon.data.config.datasets()["pypsa-technology-data"][
+        "targets"
+    ]["file"]
+
+    # Retrieve files
+    urlretrieve(url, target_file)
+
+    with zipfile.ZipFile(target_file, "r") as zip_ref:
+        zip_ref.extractall(".")
 
 
 class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.1",
+            version="0.0.12",
             dependencies=dependencies,
-            tasks=(create_table, insert_scenarios),
+            tasks=(
+                create_table,
+                download_pypsa_technology_data,
+                insert_scenarios,
+            ),
         )

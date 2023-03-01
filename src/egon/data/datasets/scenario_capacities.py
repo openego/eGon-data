@@ -12,6 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import pandas as pd
+import yaml
 
 from egon.data import db
 from egon.data.config import settings
@@ -25,7 +26,6 @@ from egon.data.metadata import (
 )
 import egon.data.config
 
-### will be later imported from another file ###
 Base = declarative_base()
 
 
@@ -70,29 +70,11 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.6",
+            version="0.0.12",
             dependencies=dependencies,
-            tasks=(create_table, insert_data_nep, add_metadata),
+            tasks=(create_table, insert_data_nep, eGon100_capacities, add_metadata),
         )
 
-
-def scenario_config(scn_name):
-    """Get scenario settings from datasets.yml
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario.
-
-    Returns
-    -------
-    dict
-        Configuration data for the specified scenario
-
-    """
-    data_config = egon.data.config.datasets()
-
-    return data_config["scenario_input"][scn_name]
 
 
 def create_table():
@@ -112,6 +94,30 @@ def create_table():
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 
+def nuts_mapping():
+
+    nuts_mapping = {
+        "BW": "DE1",
+        "NW": "DEA",
+        "HE": "DE7",
+        "BB": "DE4",
+        "HB": "DE5",
+        "RP": "DEB",
+        "ST": "DEE",
+        "SH": "DEF",
+        "MV": "DE8",
+        "TH": "DEG",
+        "NI": "DE9",
+        "SN": "DED",
+        "HH": "DE6",
+        "SL": "DEC",
+        "BE": "DE3",
+        "BY": "DE2",
+    }
+
+    return nuts_mapping
+
+
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state accordning to
     NEP 2035 (version 2021), scenario 2035 C
@@ -122,14 +128,21 @@ def insert_capacities_per_federal_state_nep():
 
     """
 
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
     # Connect to local database
     engine = db.engine()
 
     # Delete rows if already exist
     db.execute_sql(
-        "DELETE FROM supply.egon_scenario_capacities "
-        "WHERE scenario_name = 'eGon2035' "
-        "AND nuts != 'DE'"
+        f"""
+        DELETE FROM
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        WHERE scenario_name = 'eGon2035'
+        AND nuts != 'DE'
+        """
     )
 
     # read-in installed capacities per federal state of germany
@@ -137,7 +150,7 @@ def insert_capacities_per_federal_state_nep():
         Path(".")
         / "data_bundle_egon_data"
         / "nep2035_version2021"
-        / scenario_config("eGon2035")["paths"]["capacities"]
+        / sources["eGon2035"]["capacities"]
     )
 
     df = pd.read_excel(
@@ -152,11 +165,37 @@ def insert_capacities_per_federal_state_nep():
         index_col="Unnamed: 0",
     )
 
+    # Import data on wind offshore capacities
+    df_windoff = pd.read_excel(
+        target_file,
+        sheet_name="WInd_Offshore_NEP",
+    ).dropna(subset=["Bundesland", "Netzverknuepfungspunkt"])
+
+    # Remove trailing whitespace from column Bundesland
+    df_windoff["Bundesland"] = df_windoff["Bundesland"].str.strip()
+
+    # Group and sum capacities per federal state
+    df_windoff_fs = (
+        df_windoff[["Bundesland", "C 2035"]].groupby(["Bundesland"]).sum()
+    )
+
+    # List federal state with an assigned wind offshore capacity
+    index_list = list(df_windoff_fs.index.values)
+
+    # Overwrite capacities in df_windoff with more accurate values from
+    # df_windoff_fs
+
+    for state in index_list:
+
+        df.at["Wind offshore", state] = (
+            df_windoff_fs.at[state, "C 2035"] / 1000
+        )
+
     # sort NEP-carriers:
     rename_carrier = {
         "Wind onshore": "wind_onshore",
         "Wind offshore": "wind_offshore",
-        "sonstige Konventionelle": "other_non_renewable",
+        "sonstige Konventionelle": "others",
         "Speicherwasser": "reservoir",
         "Laufwasser": "run_of_river",
         "Biomasse": "biomass",
@@ -165,17 +204,20 @@ def insert_capacities_per_federal_state_nep():
         "PV (Aufdach)": "solar_rooftop",
         "PV (Freiflaeche)": "solar",
         "Pumpspeicher": "pumped_hydro",
-        "sonstige EE": "other_renewable",
+        "sonstige EE": "others",
         "Oel": "oil",
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
     }
-    #'Elektromobilitaet gesamt': 'transport',
+    # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
 
     # nuts1 to federal state in Germany
     map_nuts = pd.read_sql(
-        "SELECT DISTINCT ON (nuts) gen, nuts FROM boundaries.vg250_lan",
+        f"""
+        SELECT DISTINCT ON (nuts) gen, nuts
+        FROM {sources['boundaries']['schema']}.{sources['boundaries']['table']}
+        """,
         engine,
         index_col="gen",
     )
@@ -217,8 +259,9 @@ def insert_capacities_per_federal_state_nep():
         data["nuts"] = map_nuts.nuts[bl]
         data["scenario_name"] = "eGon2035"
 
-        # According to NEP, each heatpump has 3kW_el installed capacity
-        data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 3e-6
+        # According to NEP, each heatpump has 5kW_el installed capacity
+        # source: Entwurf des Szenariorahmens NEP 2035, version 2021, page 47
+        data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
         data.loc[
             data.carrier == "residential_rural_heat_pump", "component"
         ] = "link"
@@ -230,11 +273,35 @@ def insert_capacities_per_federal_state_nep():
 
         insert_data = insert_data.append(data)
 
+    # Get aggregated capacities from nep's power plant list for certain carrier
+
+    carriers = ["oil", "other_non_renewable", "pumped_hydro"]
+
+    capacities_list = aggr_nep_capacities(carriers)
+
+    # Filter by carrier
+    updated = insert_data[insert_data["carrier"].isin(carriers)]
+
+    # Merge to replace capacities for carriers "oil", "other_non_renewable" and
+    # "pumped_hydro"
+    updated = (
+        updated.merge(capacities_list, on=["carrier", "nuts"], how="left")
+        .fillna(0)
+        .drop(["capacity"], axis=1)
+        .rename(columns={"c2035_capacity": "capacity"})
+    )
+
+    # Remove updated entries from df
+    original = insert_data[~insert_data["carrier"].isin(carriers)]
+
+    # Join dfs
+    insert_data = pd.concat([original, updated])
+
     # Insert data to db
     insert_data.to_sql(
-        "egon_scenario_capacities",
+        targets["scenario_capacities"]["table"],
         engine,
-        schema="supply",
+        schema=targets["scenario_capacities"]["schema"],
         if_exists="append",
         index=insert_data.index,
     )
@@ -253,15 +320,57 @@ def population_share():
 
     """
 
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+
     return (
         pd.read_sql(
-            """SELECT SUM(population)
-    FROM society.destatis_zensus_population_per_ha
-    WHERE population>0""",
+            f"""
+            SELECT SUM(population)
+            FROM {sources['zensus_population']['schema']}.
+            {sources['zensus_population']['table']}
+            WHERE population>0
+            """,
             con=db.engine(),
         )["sum"][0]
         / 80324282
     )
+
+
+def aggr_nep_capacities(carriers):
+    """Aggregates capacities from NEP power plants list by carrier and federal
+    state
+
+    Returns
+    -------
+    pandas.Dataframe
+        Dataframe with capacities per federal state and carrier
+
+    """
+    # Get list of power plants from nep
+    nep_capacities = insert_nep_list_powerplants(export=False)[
+        ["federal_state", "carrier", "c2035_capacity"]
+    ]
+
+    # Sum up capacities per federal state and carrier
+    capacities_list = (
+        nep_capacities.groupby(["federal_state", "carrier"])["c2035_capacity"]
+        .sum()
+        .to_frame()
+        .reset_index()
+    )
+
+    # Neglect entries with carriers not in argument
+    capacities_list = capacities_list[capacities_list.carrier.isin(carriers)]
+
+    # Include NUTS code
+    capacities_list["nuts"] = capacities_list.federal_state.map(nuts_mapping())
+
+    # Drop entries for foreign plants with nan values and federal_state column
+    capacities_list = capacities_list.dropna(subset=["nuts"]).drop(
+        columns=["federal_state"]
+    )
+
+    return capacities_list
 
 
 def map_carrier():
@@ -275,18 +384,18 @@ def map_carrier():
     """
     return pd.Series(
         data={
-            "Abfall": "other_non_renewable",
+            "Abfall": "others",
             "Erdgas": "gas",
-            "Sonstige\nEnergieträger": "other_non_renewable",
+            "Sonstige\nEnergieträger": "others",
             "Steinkohle": "coal",
             "Kuppelgase": "gas",
             "Mineralöl-\nprodukte": "oil",
             "Braunkohle": "lignite",
-            "Waerme": "other_non_renewable",
+            "Waerme": "others",
             "Mineraloelprodukte": "oil",
-            "NichtBiogenerAbfall": "other_non_renewable",
+            "NichtBiogenerAbfall": "others",
             "AndereGase": "gas",
-            "Sonstige_Energietraeger": "other_non_renewable",
+            "Sonstige_Energietraeger": "others",
             "Kernenergie": "nuclear",
             "Pumpspeicher": "pumped_hydro",
             "Mineralöl-\nProdukte": "oil",
@@ -294,15 +403,26 @@ def map_carrier():
     )
 
 
-def insert_nep_list_powerplants():
-    """Insert list of conventional powerplants attachd to the approval
+def insert_nep_list_powerplants(export=True):
+    """Insert list of conventional powerplants attached to the approval
     of the scenario report by BNetzA
+
+    Parameters
+    ----------
+    export : bool
+        Choose if nep list should be exported to the data
+        base. The default is True.
+        If export=False a data frame will be returned
 
     Returns
     -------
-    None.
-
+    kw_liste_nep : pandas.DataFrame
+        List of conventional power plants from nep if export=False
     """
+
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
     # Connect to local database
     engine = db.engine()
 
@@ -311,7 +431,7 @@ def insert_nep_list_powerplants():
         Path(".")
         / "data_bundle_egon_data"
         / "nep2035_version2021"
-        / scenario_config("eGon2035")["paths"]["list_conv_pp"]
+        / sources["eGon2035"]["list_conv_pp"]
     )
 
     kw_liste_nep = pd.read_csv(target_file, delimiter=";", decimal=",")
@@ -380,13 +500,16 @@ def insert_nep_list_powerplants():
 
     kw_liste_nep["carrier"] = map_carrier()[kw_liste_nep.carrier_nep].values
 
-    # Insert data to db
-    kw_liste_nep.to_sql(
-        "egon_nep_2021_conventional_powerplants",
-        engine,
-        schema="supply",
-        if_exists="replace",
-    )
+    if export is True:
+        # Insert data to db
+        kw_liste_nep.to_sql(
+            targets["nep_conventional_powerplants"]["table"],
+            engine,
+            schema=targets["nep_conventional_powerplants"]["schema"],
+            if_exists="replace",
+        )
+    else:
+        return kw_liste_nep
 
 
 def district_heating_input():
@@ -397,12 +520,15 @@ def district_heating_input():
     None.
 
     """
+
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+
     # import data to dataframe
     file = (
         Path(".")
         / "data_bundle_egon_data"
         / "nep2035_version2021"
-        / scenario_config("eGon2035")["paths"]["capacities"]
+        / sources["eGon2035"]["capacities"]
     )
     df = pd.read_excel(
         file, sheet_name="Kurzstudie_KWK", dtype={"Wert": float}
@@ -466,9 +592,176 @@ def insert_data_nep():
 
     """
 
+    insert_nep_list_powerplants(export=True)
+
     insert_capacities_per_federal_state_nep()
 
-    insert_nep_list_powerplants()
+
+def eGon100_capacities():
+    """Inserts installed capacities for the eGon100 scenario
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
+    # read-in installed capacities
+    execute_pypsa_eur_sec = False
+    cwd = Path(".")
+
+    if execute_pypsa_eur_sec:
+        filepath = cwd / "run-pypsa-eur-sec"
+        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
+        # Read YAML file
+        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
+        with open(pes_egonconfig, "r") as stream:
+            data_config = yaml.safe_load(stream)
+
+        target_file = (
+            pypsa_eur_sec_repos
+            / "results"
+            / data_config["run"]
+            / "csvs"
+            / sources["eGon100RE"]["capacities"]
+        )
+
+    else:
+        target_file = (
+            cwd
+            / "data_bundle_egon_data"
+            / "pypsa_eur_sec"
+            / "2022-07-26-egondata-integration"
+            / "csvs"
+            / sources["eGon100RE"]["capacities"]
+        )
+
+    df = pd.read_csv(target_file, skiprows=5)
+    df.columns = ["component", "country", "carrier", "p_nom"]
+
+    df.set_index("carrier", inplace=True)
+
+    df = df[df.country.str[:2] == "DE"]
+
+    # Drop country column
+    df.drop("country", axis=1, inplace=True)
+
+    # Drop copmponents which will be optimized in eGo
+    unused_carrier = [
+        "BEV charger",
+        "DAC",
+        "H2 Electrolysis",
+        "electricity distribution grid",
+        "home battery charger",
+        "home battery discharger",
+        "H2",
+        "Li ion",
+        "home battery",
+        "residential rural water tanks charger",
+        "residential rural water tanks discharger",
+        "services rural water tanks charger",
+        "services rural water tanks discharger",
+        "residential rural water tanks",
+        "services rural water tanks",
+        "urban central water tanks",
+        "urban central water tanks charger",
+        "urban central water tanks discharger",
+        "H2 Fuel Cell",
+    ]
+
+    df = df[~df.index.isin(unused_carrier)]
+
+    df.index = df.index.str.replace(" ", "_")
+
+    # Aggregate offshore wind
+    df = df.append(
+        pd.DataFrame(
+            index=["wind_offshore"],
+            data={
+                "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
+                "component": df.component["offwind-ac"],
+            },
+        )
+    )
+    df = df.drop(["offwind-ac", "offwind-dc"])
+
+    # Aggregate technologies with and without carbon_capture (CC)
+    for carrier in ["SMR", "urban_central_gas_CHP"]:
+        df.p_nom[carrier] += df.p_nom[f"{carrier}_CC"]
+        df = df.drop([f"{carrier}_CC"])
+
+    # Aggregate residential and services rural heat supply
+    for merge_carrier in [
+        "rural_resistive_heater",
+        "rural_ground_heat_pump",
+        "rural_gas_boiler",
+        "rural_solar_thermal",
+    ]:
+        if f"residential_{merge_carrier}" in df.index:
+            df = df.append(
+                pd.DataFrame(
+                    index=[merge_carrier],
+                    data={
+                        "p_nom": (
+                            df.p_nom[f"residential_{merge_carrier}"]
+                            + df.p_nom[f"services_{merge_carrier}"]
+                        ),
+                        "component": df.component[
+                            f"residential_{merge_carrier}"
+                        ],
+                    },
+                )
+            )
+            df = df.drop(
+                [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
+            )
+
+    # Rename carriers
+    df.rename(
+        {
+            "onwind": "wind_onshore",
+            "ror": "run_of_river",
+            "PHS": "pumped_hydro",
+            "OCGT": "gas",
+            "rural_ground_heat_pump": "residential_rural_heat_pump",
+            "urban_central_air_heat_pump": "urban_central_heat_pump",
+            "urban_central_solar_thermal": (
+                "urban_central_solar_thermal_collector"
+            ),
+        },
+        inplace=True,
+    )
+
+    # Reset index
+    df = df.reset_index()
+
+    # Rename columns
+    df.rename(
+        {"p_nom": "capacity", "index": "carrier"}, axis="columns", inplace=True
+    )
+
+    df["scenario_name"] = "eGon100RE"
+    df["nuts"] = "DE"
+
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
+        WHERE scenario_name='eGon100RE'
+        """
+    )
+
+    df.to_sql(
+        targets["scenario_capacities"]["table"],
+        schema=targets["scenario_capacities"]["schema"],
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
+
 
 
 def add_metadata():

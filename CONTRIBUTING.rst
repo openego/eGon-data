@@ -236,7 +236,8 @@ Things that definitely should be checked during a review of a PR:
 * *Was* ``CHANGELOG.rst`` *updated accordingly?* Should be the case, please
   verify.
 * *Is metadata complete and correct (in case of data integration)?* Please
-  verify. In case of a pending metadata creation make sure an appropriate issue is filed.
+  verify. In case of a pending metadata creation make sure an appropriate
+  issue is filed.
 
 
 Extending the data workflow
@@ -305,7 +306,7 @@ standard version 1.4.1 using the `OMI tool
 
 .. code-block:: bash
 
-  omi translate -f oep-v1.4 metadata_file.json
+  omi translate -f oep-v1.4 -t oep-v1.4 metadata_file.json
 
 If your metadata string is correct, OMI puts the keys in the correct order and
 prints the full string (use `-o` option for export).
@@ -321,6 +322,12 @@ For previous discussions on metadata, you may want to check
 
 Helpers
 ^^^^^^^
+
+You can use the
+`Metadata creator <https://meta.rl-institut.de/meta_creator/141>`_ **GUI**.
+Fill the fields and hit `Edit JSON` to get the metadata string. Vice versa,
+you can paste a metadata string into this box and the fields will be filled
+automatically which may be helpful if you want to amend existing strings.
 
 There are some **licence templates** provided in :py:mod:`egon.data.metadata`
 you can make use of for fields 11.4 and 12 of the

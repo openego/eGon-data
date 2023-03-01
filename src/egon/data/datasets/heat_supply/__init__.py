@@ -7,6 +7,7 @@ from egon.data import db, config
 from egon.data.datasets.heat_supply.district_heating import (
     cascade_heat_supply,
     backup_gas_boilers,
+    backup_resistive_heaters,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
@@ -124,6 +125,16 @@ def district_heating():
         if_exists="append",
     )
 
+    backup_rh = backup_resistive_heaters("eGon2035")
+
+    if not backup_rh.empty:
+        backup_rh.to_postgis(
+            targets["district_heating_supply"]["table"],
+            schema=targets["district_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
 
 def individual_heating():
     """Insert supply for individual heating
@@ -160,12 +171,14 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.3",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                {district_heating,
-                individual_heating,
-                potential_germany},
+                {
+                    district_heating,
+                    individual_heating,
+                    potential_germany,
+                },
             ),
         )

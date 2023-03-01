@@ -20,7 +20,7 @@ def insert():
     """
     # Read file with all required input/output tables' names
     cfg = egon.data.config.datasets()["power_plants"]
-    
+
     # load NEP2035_V2021_scnC2035 file
     offshore_path = (
         Path(".")
@@ -32,12 +32,17 @@ def insert():
     offshore = pd.read_excel(
         offshore_path,
         sheet_name="WInd_Offshore_NEP",
-        usecols=["Netzverknuepfungspunkt", "Spannungsebene in kV", "C 2035"],
+        usecols=[
+            "Netzverknuepfungspunkt",
+            "Spannungsebene in kV",
+            "C 2035",
+            "B 2040 ",
+        ],
     )
     offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
 
-    # Import manually generated list of wind offshore farms with their connexion
-    # points (OSM_id)
+    # Import manually generated list of wind offshore farms with their
+    # connection points (OSM_id)
     id_bus = {
         "Büttel": "136034396",
         "Heide/West": "603661085",
@@ -48,7 +53,7 @@ def insert():
         "Garrel/Ost": "23837631",
         "Diele": "177829920",
         "Dörpen/West": "142487746",
-        "Emden/Borßum":	"34835258",
+        "Emden/Borßum": "34835258",
         "Emden/Ost": "34835258",
         "Hagermarsch": "79316833",
         "Hanekenfähr": "61918154",
@@ -72,7 +77,7 @@ def insert():
         "Garrel/Ost": "16139",
         "Diele": "16138",
         "Dörpen/West": "15952",
-        "Emden/Borßum":	"15762",
+        "Emden/Borßum": "15762",
         "Emden/Ost": "16140",
         "Hagermarsch": "15951",
         "Hanekenfähr": "16139",
@@ -98,39 +103,29 @@ def insert():
         SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
         as osm_id FROM {cfg["sources"]["buses_data"]}
         """
-        
+
     busses = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="point"
     )
-    
+
     # Drop NANs in column osm_id
-    busses.dropna(subset= ['osm_id'], inplace= True)
-    
+    busses.dropna(subset=["osm_id"], inplace=True)
+
     # Create columns for bus_id and geometry in the offshore df
     offshore["bus_id"] = np.nan
     offshore["geom"] = Point(0, 0)
 
     # Match bus_id and geometry
     for index, wind_park in offshore.iterrows():
-        if (
-            len(
-                busses[
-                    busses["osm_id"] == wind_park["osm_id"]
-                ].index
-            )
-            > 0
-        ):
-            bus_ind = busses[
-                busses["osm_id"] == wind_park["osm_id"]
-            ].index[0]
+        if len(busses[busses["osm_id"] == wind_park["osm_id"]].index) > 0:
+            bus_ind = busses[busses["osm_id"] == wind_park["osm_id"]].index[0]
             offshore.at[index, "bus_id"] = busses.at[bus_ind, "bus_id"]
             offshore.at[index, "geom"] = busses.at[bus_ind, "point"]
         else:
             print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
-            
-    
-    offshore["weather_cell_id"] = offshore['Netzverknuepfungspunkt'].map(w_id)
-    offshore['weather_cell_id'] = offshore['weather_cell_id'].apply(int)
+
+    offshore["weather_cell_id"] = offshore["Netzverknuepfungspunkt"].map(w_id)
+    offshore["weather_cell_id"] = offshore["weather_cell_id"].apply(int)
     # Drop offshore wind farms without found connexion point
     offshore.dropna(subset=["bus_id"], inplace=True)
 
@@ -144,22 +139,46 @@ def insert():
         offshore[offshore["Spannungsebene in kV"] > 110].index, "voltage_level"
     ] = 1
 
-    # Assign static values
-    offshore["carrier"] = "wind_offshore"
-    offshore["el_capacity"] = offshore["C 2035"]
-    offshore["scenario"] = "eGon2035"
-    
     # Delete unnecessary columns
     offshore.drop(
         [
             "Netzverknuepfungspunkt",
             "Spannungsebene in kV",
-            "C 2035",
             "osm_id",
         ],
         axis=1,
         inplace=True,
     )
+
+    # Assign static values
+    offshore["carrier"] = "wind_offshore"
+
+    # Create wind farms for the different scenarios
+    offshore_2035 = offshore.drop(columns=["B 2040 "]).copy()
+    offshore_2035["scenario"] = "eGon2035"
+    offshore_2035.rename(columns={"C 2035": "el_capacity"}, inplace=True)
+
+    offshore_100RE = offshore.drop(columns=["C 2035"]).copy()
+    offshore_100RE["scenario"] = "eGon100RE"
+    offshore_100RE.rename(columns={"B 2040 ": "el_capacity"}, inplace=True)
+
+    # Import capacity targets for wind_offshore per scenario
+    sql = f"""
+        SELECT * FROM {cfg["sources"]["capacities"]}
+        WHERE scenario_name = 'eGon100RE' AND
+        carrier = 'wind_offshore'
+        """
+    capacities = pd.read_sql(sql, con)
+    cap_100RE = capacities.capacity.sum()
+
+    # Scale capacities to match  target
+    scale_factor = cap_100RE / offshore_100RE.el_capacity.sum()
+    offshore_100RE["el_capacity"] = (
+        offshore_100RE["el_capacity"] * scale_factor
+    )
+
+    # Join power plants from the different scenarios
+    offshore = pd.concat([offshore_2035, offshore_100RE], axis=0)
 
     # convert column "bus_id" and "voltage_level" to integer
     offshore["bus_id"] = offshore["bus_id"].apply(int)
@@ -168,9 +187,9 @@ def insert():
     # Delete, in case of existing, previous wind offshore parks
 
     db.execute_sql(
-        f""" 
-    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']} 
-    WHERE carrier IN ('wind_offshore') 
+        f"""
+    DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    WHERE carrier IN ('wind_offshore')
     """
     )
 
@@ -183,7 +202,7 @@ def insert():
     )
     max_id = pd.read_sql(sql, con)
     max_id = max_id["max"].iat[0]
-    if max_id == None:
+    if max_id is None:
         ini_id = 1
     else:
         ini_id = int(max_id + 1)
@@ -204,5 +223,4 @@ def insert():
         if_exists="append",
     )
 
-    return 0
-    
+    return "Off shore wind farms successfully created"

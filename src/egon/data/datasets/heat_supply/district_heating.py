@@ -9,7 +9,7 @@ from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 
 
 def capacity_per_district_heating_category(district_heating_areas, scenario):
-    """ Calculates target values per district heating category and technology
+    """Calculates target values per district heating category and technology
 
     Parameters
     ----------
@@ -36,6 +36,7 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
             'urban_central_resistive_heater',
             'urban_central_geo_thermal',
             'urban_central_solar_thermal_collector')
+        AND scenario_name = '{scenario}'
         """,
         index_col="technology",
     )
@@ -108,7 +109,7 @@ def set_technology_data():
 
 
 def select_district_heating_areas(scenario):
-    """ Selects district heating areas per scenario and assigns size-category
+    """Selects district heating areas per scenario and assigns size-category
 
     Parameters
     ----------
@@ -163,7 +164,7 @@ def cascade_per_technology(
     areas, technologies, capacity_per_category, size_dh, max_geothermal_costs=2
 ):
 
-    """ Add plants of one technology suppliing district heating
+    """Add plants of one technology suppliing district heating
 
     Parameters
     ----------
@@ -398,6 +399,64 @@ def backup_gas_boilers(scenario):
             "scenario": scenario,
         }
     )
+
+
+def backup_resistive_heaters(scenario):
+    """Adds backup resistive heaters to district heating grids to
+    meet target values of installed capacities.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    Geopandas.GeoDataFrame
+        List of gas boilers for district heating
+
+    """
+
+    # Select district heating areas from database
+    district_heating_areas = select_district_heating_areas(scenario)
+
+    # Select target value
+    target_value = db.select_dataframe(
+        f"""
+        SELECT capacity
+        FROM supply.egon_scenario_capacities
+        WHERE carrier = 'urban_central_resistive_heater'
+        AND scenario_name = '{scenario}'
+        """
+    ).capacity[0]
+
+    distributed = db.select_dataframe(
+        f"""
+        SELECT SUM(capacity) as capacity
+        FROM supply.egon_district_heating
+        WHERE carrier = 'resistive_heater'
+        AND scenario = '{scenario}'
+        """
+    ).capacity[0]
+
+    if target_value > distributed:
+        df = gpd.GeoDataFrame(
+            data={
+                "district_heating_id": district_heating_areas.index,
+                "capacity": district_heating_areas.demand.div(
+                    district_heating_areas.demand.sum()
+                ).mul(target_value - distributed),
+                "carrier": "resistive_heater",
+                "category": district_heating_areas.category,
+                "geometry": district_heating_areas.geom.centroid,
+                "scenario": scenario,
+            }
+        )
+
+    else:
+        df = gpd.GeoDataFrame()
+
+    return df
 
 
 def plot_heat_supply(resulting_capacities):

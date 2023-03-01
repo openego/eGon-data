@@ -2,10 +2,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, print_function
 
-import io
-import re
 from glob import glob
 from os.path import basename, dirname, join, splitext
+import io
+import re
 
 from setuptools import find_packages, setup
 
@@ -79,32 +79,41 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires=">=3.7.*",
+    python_requires=">=3.7",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "apache-airflow>=1.10.14,<2.0",
+        "apache-airflow>=1.10.14,<2.0",  # See accompanying commit message
         "atlite==0.2.5",
         "cdsapi",
         "click",
-        "geopandas>=0.10.0",
+        "geopandas>=0.10.0,<0.11.0",
         "geopy",
+        "geovoronoi==0.3.0",
         "importlib-resources",
         "loguru",
+        "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
         "matplotlib",
         "netcdf4",
+        "numpy<1.23",  # incompatibilities with shapely 1.7.
+        # See: https://stackoverflow.com/a/73354885/12460232
         "oedialect==0.0.8",
+        "omi",
         "openpyxl",
-        "pandas>1.2.0",
+        "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
         "psycopg2",
         "pyaml",
         "pypsa==0.17.1",
         "rasterio",
+        "rioxarray",
         "rtree",
-        "sqlalchemy<1.4",
+        "saio",
+        "seaborn",
+        "shapely",
+        "snakemake<7",
+        "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
+        "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
         "xarray",
         "xlrd",
-        "rioxarray",
-        "omi",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]

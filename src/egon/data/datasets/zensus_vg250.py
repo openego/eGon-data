@@ -261,8 +261,10 @@ def inside_germany():
     engine_local_db = db.engine()
 
     # Create new table
-    DestatisZensusPopulationPerHaInsideGermany.__table__.drop(
-        bind=engine_local_db, checkfirst=True
+    db.execute_sql(
+        f"""
+        DROP TABLE IF EXISTS {DestatisZensusPopulationPerHaInsideGermany.__table__.schema}.{DestatisZensusPopulationPerHaInsideGermany.__table__.name} CASCADE;
+        """
     )
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
         bind=engine_local_db, checkfirst=True

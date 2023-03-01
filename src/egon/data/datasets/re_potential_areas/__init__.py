@@ -3,9 +3,7 @@ potential areas for wind onshore and ground-mounted PV.
 """
 
 from functools import partial
-from urllib.request import urlretrieve
 from pathlib import Path
-import os
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, Integer
@@ -40,51 +38,11 @@ class EgonRePotentialAreaWind(Base):
     geom = Column(Geometry("MULTIPOLYGON", 3035))
 
 
-def download_datasets():
-    """Download geopackages from Zenodo."""
-
-    data_config = egon.data.config.datasets()
-    pa_config = data_config["re_potential_areas"]
-
-    def ve(s):
-        raise (ValueError(s))
-
-    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
-    url_section = (
-        "url"
-        if dataset == "Everything"
-        else "url_testmode"
-        if dataset == "Schleswig-Holstein"
-        else ve(f"'{dataset}' is not a valid dataset boundary.")
-    )
-
-    download_directory = Path(".") / "re_potential_areas"
-    # Create the folder, if it does not exists already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
-
-    url_target_file_map = zip(
-        pa_config["original_data"]["source"][url_section],
-        [
-            # os.path.join(os.path.dirname(__file__), file)
-            Path(".") / "re_potential_areas" / Path(file).name
-            for file in pa_config["original_data"]["target"][
-                "path_table_map"
-            ].keys()
-        ],
-    )
-
-    for url, file in url_target_file_map:
-        if not os.path.isfile(file):
-            urlretrieve(url, file)
-
-
 def create_tables():
     """Create tables for RE potential areas"""
 
     data_config = egon.data.config.datasets()
-
-    schema = data_config["re_potential_areas"]["original_data"]["target"].get(
+    schema = data_config["re_potential_areas"]["target"].get(
         "schema", "supply"
     )
 
@@ -109,29 +67,41 @@ def create_tables():
 def insert_data():
     """Insert data into DB"""
 
+    data_bundle_dir = Path(
+        ".",
+        "data_bundle_egon_data",
+        "re_potential_areas",
+    )
+
+    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+    if dataset == "Everything":
+        map_section = "path_table_map"
+    elif dataset == "Schleswig-Holstein":
+        map_section = "path_table_map_testmode"
+    else:
+        raise ValueError(f"'{dataset}' is not a valid dataset boundary.")
+
     data_config = egon.data.config.datasets()
     pa_config = data_config["re_potential_areas"]
 
     file_table_map = {
-        Path(".") / "re_potential_areas" / Path(file).name: table
-        for file, table in pa_config["original_data"]["target"][
-            "path_table_map"
-        ].items()
+        data_bundle_dir / Path(file).name: table
+        for file, table in pa_config["target"][map_section].items()
     }
 
-    engine_local_db = db.engine()
+    engine = db.engine()
 
     for file, table in file_table_map.items():
         data = gpd.read_file(file).to_crs("EPSG:3035")
         data.rename(columns={"geometry": "geom"}, inplace=True)
         data.set_geometry("geom", inplace=True)
 
-        schema = pa_config["original_data"]["target"].get("schema", "supply")
+        schema = pa_config["target"].get("schema", "supply")
 
         # create database table from geopandas dataframe
-        data.to_postgis(
+        data[["id", "geom"]].to_postgis(
             table,
-            engine_local_db,
+            engine,
             schema=schema,
             index=False,
             if_exists="append",
@@ -143,7 +113,7 @@ def insert_data():
 re_potential_area_setup = partial(
     Dataset,
     name="RePotentialAreas",
-    version="0.0.0",
+    version="0.0.1",
     dependencies=[],
-    tasks=(download_datasets, create_tables, insert_data),
+    tasks=(create_tables, insert_data),
 )

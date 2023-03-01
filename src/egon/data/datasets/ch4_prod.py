@@ -2,39 +2,46 @@
 """
 The central module containing all code dealing with importing CH4 production data
 """
-# import os
-import ast
 from pathlib import Path
 from urllib.request import urlretrieve
-
-import numpy as np
+import ast
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
-from egon.data import db
+
+from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Production(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="CH4Production",
-            version="0.0.5",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(import_gas_generators),
         )
 
 
-def load_NG_generators():
+def load_NG_generators(scn_name):
     """Define the natural CH4 production units in Germany
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     Returns
     -------
     CH4_generators_list :
         Dataframe containing the natural gas production units in Germany
 
     """
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     target_file = (
         Path(".")
         / "datasets"
@@ -100,19 +107,16 @@ def load_NG_generators():
     ).set_geometry("geom", crs=4326)
 
     # Insert p_nom
-    # Total production in Germany
-    Total_NG_extracted_2035 = 36  # [TWh] Netzentwicklungsplan Gas 2020–2030
-    Total_NG_capacity_2035 = Total_NG_extracted_2035 * 1000000 / (24 * 365)
-
-    # Regionalization of the production
-    share = []
+    p_nom = []
     for index, row in NG_generators_list.iterrows():
         param = ast.literal_eval(row["param"])
-        share.append(param["max_supply_M_m3_per_d"])
+        p_nom.append(param["max_supply_M_m3_per_d"])
 
-    NG_generators_list["p_nom"] = [
-        (i / (sum(share)) * Total_NG_capacity_2035) for i in share
-    ]
+    conversion_factor = 437.5  # MCM/day to MWh/h
+    NG_generators_list["p_nom"] = [i * conversion_factor for i in p_nom]
+
+    # Add missing columns
+    NG_generators_list["marginal_cost"] = scn_params["marginal_cost"]["CH4"]
 
     # Remove useless columns
     NG_generators_list = NG_generators_list.drop(
@@ -122,15 +126,22 @@ def load_NG_generators():
     return NG_generators_list
 
 
-def load_biogas_generators():
+def load_biogas_generators(scn_name):
     """Define the biogas production units in Germany
 
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     Returns
     -------
     CH4_generators_list :
         Dataframe containing the biogas production units in Germany
 
     """
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+
     # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
     url = (
@@ -203,20 +214,17 @@ def load_biogas_generators():
         )
 
     # Insert p_nom
-    # Total production in Germany
-    Total_biogas_extracted_2035 = (
-        10
-    )  # [TWh] Netzentwicklungsplan Gas 2020–2030
-    Total_biogas_capacity_2035 = (
-        Total_biogas_extracted_2035 * 1000000 / (24 * 365)
-    )
+    conversion_factor = 0.01083  # m^3/h to MWh/h
+    biogas_generators_list["p_nom"] = [
+        i * conversion_factor
+        for i in biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"]
+    ]
 
-    # Regionalization of the production
-    biogas_generators_list["p_nom"] = (
-        biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"]
-        / biogas_generators_list["Einspeisung Biomethan [(N*m^3)/h)]"].sum()
-        * Total_biogas_capacity_2035
-    )
+    # Add missing columns
+    biogas_generators_list["marginal_cost"] = scn_params["marginal_cost"][
+        "biogas"
+    ]
+
     # Remove useless columns
     biogas_generators_list = biogas_generators_list.drop(
         columns=["x", "y", "Koordinaten", "Einspeisung Biomethan [(N*m^3)/h)]"]
@@ -224,111 +232,68 @@ def load_biogas_generators():
     return biogas_generators_list
 
 
-def assign_ch4_bus_id(dataframe):
-    """Assigns bus_ids (for CH4 buses) to points (contained in a dataframe) according to location
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame cointaining points
-
-    Returns
-    -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and bus_id
-    """
-
-    CH4_voronoi = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_voronoi_ch4
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(dataframe, CH4_voronoi)
-    res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right", "id"])
-
-    # Assert that all power plants have a bus_id
-    assert (
-        res.bus.notnull().all()
-    ), "Some points are not attached to a CH4 bus."
-
-    return res
-
-
-def assign_h2_bus_id(dataframe):
-    """Assigns bus_ids (for H2 buses) to points (contained in a dataframe) according to location
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame cointaining points
-
-    Returns
-    -------
-    power_plants : pandas.DataFrame
-        Power plants (including voltage level) and bus_id
-    """
-
-    H2_voronoi = db.select_geodataframe(
-        """
-        SELECT * FROM grid.egon_voronoi_h2
-        """,
-        epsg=4326,
-    )
-
-    res = gpd.sjoin(dataframe, H2_voronoi)
-    res["bus"] = res["bus_id"]
-    res = res.drop(columns=["index_right", "id"])
-
-    # Assert that all power plants have a bus_id
-    assert res.bus.notnull().all(), "Some points are not attached to a H2 bus."
-
-    return res
-
-
-def import_gas_generators():
+def import_gas_generators(scn_name="eGon2035"):
     """Insert list of gas production units in database
 
-    Returns
-    -------
-     None.
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
     """
     # Connect to local database
     engine = db.engine()
 
+    # Select source and target from dataset configuration
+    source = config.datasets()["gas_prod"]["source"]
+    target = config.datasets()["gas_prod"]["target"]
+
     # Clean table
     db.execute_sql(
+        f"""
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
+        WHERE "carrier" = 'CH4' AND
+        scn_name = '{scn_name}' AND bus not IN (
+            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+            WHERE scn_name = '{scn_name}' AND country != 'DE'
+        );
         """
-    DELETE FROM grid.egon_etrago_generator WHERE "carrier" = 'CH4';
-    """
     )
-
-    # Select next id value
-    new_id = db.next_etrago_id("generator")
 
     CH4_generators_list = pd.concat(
-        [load_NG_generators(), load_biogas_generators()]
-    )
-    CH4_generators_list["generator_id"] = range(
-        new_id, new_id + len(CH4_generators_list)
+        [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
     )
 
     # Add missing columns
-    #    CH4_generators_list['p_set_fixed'] = CH4_generators_list['p_nom']
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": "CH4"}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
-    CH4_generators_list = CH4_generators_list.reset_index(drop=True)
-
     # Match to associated CH4 bus
-    CH4_generators_list = assign_ch4_bus_id(CH4_generators_list)
+    CH4_generators_list = db.assign_gas_bus_id(
+        CH4_generators_list, scn_name, "CH4"
+    )
 
     # Remove useless columns
     CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])
 
+    # Aggregate ch4 productions with same properties at the same bus
+    CH4_generators_list = (
+        CH4_generators_list.groupby(
+            ["bus", "carrier", "scn_name", "marginal_cost"]
+        )
+        .agg({"p_nom": "sum"})
+        .reset_index(drop=False)
+    )
+
+    new_id = db.next_etrago_id("generator")
+    CH4_generators_list["generator_id"] = range(
+        new_id, new_id + len(CH4_generators_list)
+    )
+
     # Insert data to db
     CH4_generators_list.to_sql(
-        "egon_etrago_generator",
+        target["stores"]["table"],
         engine,
-        schema="grid",
+        schema=target["stores"]["schema"],
         index=False,
         if_exists="append",
     )

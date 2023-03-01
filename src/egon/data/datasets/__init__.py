@@ -8,7 +8,6 @@ from functools import reduce
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
 
-from airflow import DAG
 from airflow.operators import BaseOperator as Operator
 from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
@@ -231,7 +230,7 @@ class Dataset:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
             name = prefix(self)
-            name = name if name else f"{self.name}."
+            name = f"{name if name else f'{self.__module__}.'}{self.name}."
             update_version = PythonOperator(
                 task_id=f"{name}update-version",
                 # Do nothing, because updating will be added later.
@@ -265,10 +264,3 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
-
-    def insert_into(self, dag: DAG):
-        for task in self.tasks.values():
-            for attribute in dag.default_args:
-                if getattr(task, attribute) is None:
-                    setattr(task, attribute, dag.default_args[attribute])
-        dag.add_tasks(self.tasks.values())
