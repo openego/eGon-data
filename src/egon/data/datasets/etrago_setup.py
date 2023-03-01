@@ -4,6 +4,7 @@ import json
 
 from geoalchemy2.types import Geometry
 from shapely.geometry import LineString
+from sqlalchemy import schema  # ???
 from sqlalchemy import (
     ARRAY,
     BigInteger,
@@ -15,7 +16,6 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
-    schema, #???
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -26,11 +26,11 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_sqla_model,
     license_ccby,
     meta_metadata,
     sources,
-    contributors
 )
 
 Base = declarative_base()
@@ -38,7 +38,7 @@ metadata = Base.metadata
 
 network = pypsa.Network()
 # add Storage key (called StorageUnit in PyPSA)
-network.component_attrs['Storage'] = network.component_attrs['StorageUnit']
+network.component_attrs["Storage"] = network.component_attrs["StorageUnit"]
 
 
 def get_pypsa_field_descriptors(component):
@@ -59,7 +59,12 @@ def get_pypsa_field_descriptors(component):
 
 
 def get_meta(
-    schema, component, description="TODO", source_list=[], license_list=[], contributor_list=[]
+    schema,
+    component,
+    description="TODO",
+    source_list=[],
+    license_list=[],
+    contributor_list=[],
 ):
 
     table = "egon_etrago_" + component.lower()
@@ -367,10 +372,11 @@ class EgonPfHvStorageTimeseries(Base):
 class EgonPfHvStore(Base):
     source_dict = sources()
     source_list = [
-        source_dict['bgr_inspee'], source_dict['bgr_inspeeds'],
-        source_dict['bgr_inspeeds_data_bundle'],
-        source_dict['bgr_inspeeds_data_bundle'],
-        source_dict['bgr_inspeeds_report']
+        source_dict["bgr_inspee"],
+        source_dict["bgr_inspeeds"],
+        source_dict["bgr_inspeeds_data_bundle"],
+        source_dict["bgr_inspeeds_data_bundle"],
+        source_dict["bgr_inspeeds_report"],
     ]
     contributors_dict = contributors()
     contributor_list = [
@@ -383,9 +389,10 @@ class EgonPfHvStore(Base):
     license_list = [data["license"] for data in source_list]
     __tablename__ = "egon_etrago_store"
     __table_args__ = {
-        "schema": "grid", "comment": get_meta(
+        "schema": "grid",
+        "comment": get_meta(
             "grid", "Store", source_list, license_list, contributor_list
-        )
+        ),
     }
 
     scn_name = Column(String, primary_key=True, nullable=False)
@@ -617,7 +624,7 @@ def create_tables():
 
 
 def temp_resolution():
-    """ Insert temporal resolution for etrago
+    """Insert temporal resolution for etrago
 
     Returns
     -------
@@ -635,7 +642,7 @@ def temp_resolution():
 
 
 def link_geom_from_buses(df, scn_name):
-    """ Add LineString geometry accoring to geometry of buses to links
+    """Add LineString geometry accoring to geometry of buses to links
 
     Parameters
     ----------

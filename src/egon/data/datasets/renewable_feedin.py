@@ -2,25 +2,26 @@
 Central module containing all code dealing with processing era5 weather data.
 """
 
+import datetime
+import json
+import time
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.era5 import import_cutout, EgonRenewableFeedIn
+from egon.data.datasets.era5 import EgonRenewableFeedIn, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.config
-import time
-import datetime
 from egon.data.metadata import (
     context,
-    meta_metadata,
-    license_ccby,
-    sources,
     generate_resource_fields_from_sqla_model,
+    license_ccby,
+    meta_metadata,
+    sources,
 )
-import json
+import egon.data.config
 
 
 class RenewableFeedin(Dataset):
@@ -469,7 +470,7 @@ def heat_pump_cop():
 
     # Calculate coefficient of performance for air sourced heat pumps
     # according to Brown et. al
-    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t ** 2
+    cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t**2
 
     df = pd.DataFrame(
         index=temperature.to_pandas().index,

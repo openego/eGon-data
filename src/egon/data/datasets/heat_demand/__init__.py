@@ -14,10 +14,12 @@ database with assigned census cell IDs.
 
 from pathlib import Path  # for database import
 from urllib.request import urlretrieve
+import datetime
 
 # for metadata creation
 import json
 import os
+import time
 import zipfile
 
 from jinja2 import Template
@@ -37,17 +39,14 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
-import egon.data.config
 from egon.data.metadata import (
     context,
-    meta_metadata,
-    license_ccby,
-    sources,
     generate_resource_fields_from_sqla_model,
+    license_ccby,
+    meta_metadata,
+    sources,
 )
-import json
-import time
-import datetime
+import egon.data.config
 
 
 # class for airflow task management (and version control)
