@@ -331,6 +331,7 @@ def import_mastr() -> None:
             ),
             index_col=None,
             dtype={"Postleitzahl": str},
+            low_memory=False,
         ).rename(columns=cols_mapping)
 
         # drop units outside of Germany
