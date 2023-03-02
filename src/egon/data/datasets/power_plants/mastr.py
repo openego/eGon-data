@@ -36,6 +36,7 @@ from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
     EgonPowerPlantsCombustion,
+    EgonPowerPlantsGsgk,
     EgonPowerPlantsHydro,
     EgonPowerPlantsPv,
     EgonPowerPlantsWind,
@@ -240,6 +241,10 @@ def import_mastr() -> None:
             "Technologie": "technology",
             "ThermischeNutzleistung": "th_capacity",
         },
+        "gsgk": {
+            "Energietraeger": "carrier",
+            "Technologie": "technology",
+        },
     }
 
     source_files = {
@@ -249,6 +254,7 @@ def import_mastr() -> None:
         "hydro": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"],
         "combustion": WORKING_DIR_MASTR_NEW
         / cfg["sources"]["mastr_combustion"],
+        "gsgk": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"],
     }
     target_tables = {
         "pv": EgonPowerPlantsPv,
@@ -256,6 +262,7 @@ def import_mastr() -> None:
         "biomass": EgonPowerPlantsBiomass,
         "hydro": EgonPowerPlantsHydro,
         "combustion": EgonPowerPlantsCombustion,
+        "gsgk": EgonPowerPlantsGsgk,
     }
     vlevel_mapping = {
         "Höchstspannung": 1,
@@ -282,7 +289,7 @@ def import_mastr() -> None:
     )
 
     # import units
-    technologies = ["pv", "wind", "biomass", "hydro", "combustion"]
+    technologies = ["pv", "wind", "biomass", "hydro", "combustion", "gsgk"]
     for tech in technologies:
         # read units
         logger.info(f"===== Importing MaStR dataset: {tech} =====")
