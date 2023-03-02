@@ -252,6 +252,8 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add MaStR geocoding and handling of conventional generators
+  `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -484,10 +486,13 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
-
-.. _#799: https://github.com/openego/eGon-data/issues/799
 * Change desposit ID for data_bundle download from zenodo sandbox
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
+* Use MaStR geocoding results for pv rooftop to buildings mapping workflow
+  `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
+
+.. _#799: https://github.com/openego/eGon-data/issues/799
+
 
 Bug Fixes
 ---------
