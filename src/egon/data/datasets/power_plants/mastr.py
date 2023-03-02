@@ -346,6 +346,24 @@ def import_mastr() -> None:
             federal_state_data(geocoding_gdf.crs).dissolve().at[0, "geom"]
         )
 
+        # drop units installed after reference date from cfg
+        # (eGon2021 scenario)
+        len_old = len(units)
+        ts = pd.Timestamp(config.datasets()["mastr_new"]["egon2021_date_max"])
+        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
+        logger.debug(
+            f"{len_old - len(units)} units installed after {ts} dropped..."
+        )
+
+        # drop not operating units
+        len_old = len(units)
+        units = units.loc[
+            units.EinheitBetriebsstatus.isin(
+                ["InBetrieb", "VoruebergehendStillgelegt"]
+            )
+        ]
+        logger.debug(f"{len_old - len(units)} not operating units dropped...")
+
         # filter for SH units if in testmode
         if not TESTMODE_OFF:
             logger.info(
