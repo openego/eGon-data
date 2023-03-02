@@ -40,6 +40,7 @@ from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonPowerPlantsHydro,
     EgonPowerPlantsNuclear,
     EgonPowerPlantsPv,
+    EgonPowerPlantsStorage,
     EgonPowerPlantsWind,
 )
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
@@ -250,6 +251,12 @@ def import_mastr() -> None:
             "Energietraeger": "carrier",
             "Technologie": "technology",
         },
+        "storage": {
+            "Energietraeger": "carrier",
+            "Technologie": "technology",
+            "Batterietechnologie": "battery_type",
+            "Pumpspeichertechnologie": "pump_storage_type",
+        },
     }
 
     source_files = {
@@ -261,7 +268,9 @@ def import_mastr() -> None:
         / cfg["sources"]["mastr_combustion"],
         "gsgk": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"],
         "nuclear": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_nuclear"],
+        "storage": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_storage"],
     }
+
     target_tables = {
         "pv": EgonPowerPlantsPv,
         "wind": EgonPowerPlantsWind,
@@ -270,7 +279,9 @@ def import_mastr() -> None:
         "combustion": EgonPowerPlantsCombustion,
         "gsgk": EgonPowerPlantsGsgk,
         "nuclear": EgonPowerPlantsNuclear,
+        "storage": EgonPowerPlantsStorage,
     }
+
     vlevel_mapping = {
         "Höchstspannung": 1,
         "UmspannungZurHochspannung": 2,
@@ -304,6 +315,7 @@ def import_mastr() -> None:
         "combustion",
         "gsgk",
         "nuclear",
+        "storage",
     ]
 
     for tech in technologies:

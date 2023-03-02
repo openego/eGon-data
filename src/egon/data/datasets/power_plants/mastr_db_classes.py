@@ -226,7 +226,7 @@ class EgonPowerPlantsNuclear(Base):
     __tablename__ = "egon_power_plants_nuclear"
     __table_args__ = {"schema": "supply"}
 
-    id = Column(Integer, Sequence("pp_gsgk_seq"), primary_key=True)
+    id = Column(Integer, Sequence("pp_nuclear_seq"), primary_key=True)
     bus_id = Column(Integer, nullable=True)  # Grid district id
     gens_id = Column(String, nullable=True)  # EinheitMastrNummer
 
@@ -240,6 +240,37 @@ class EgonPowerPlantsNuclear(Base):
 
     carrier = Column(String)  # Energietraeger
     technology = Column(String)  # Technologie
+
+    capacity = Column(Float, nullable=True)  # Nettonennleistung
+    th_capacity = Column(Float, nullable=True)  # ThermischeNutzleistung
+    feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
+    voltage_level = Column(Integer, nullable=True)
+    voltage_level_inferred = Column(Boolean, nullable=True)
+
+    geometry_geocoded = Column(Boolean)
+    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+
+
+class EgonPowerPlantsStorage(Base):
+    __tablename__ = "egon_power_plants_storage"
+    __table_args__ = {"schema": "supply"}
+
+    id = Column(Integer, Sequence("pp_storage_seq"), primary_key=True)
+    bus_id = Column(Integer, nullable=True)  # Grid district id
+    gens_id = Column(String, nullable=True)  # EinheitMastrNummer
+
+    status = Column(String, nullable=True)  # EinheitBetriebsstatus
+    commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    postcode = Column(String(5), nullable=True)  # Postleitzahl
+    city = Column(String(50), nullable=True)  # Ort
+    municipality = Column(String, nullable=True)  # Gemeinde
+    federal_state = Column(String(31), nullable=True)  # Bundesland
+    zip_and_municipality = Column(String, nullable=True)
+
+    carrier = Column(String)  # Energietraeger
+    technology = Column(String)  # Technologie
+    battery_type = Column(String)  # Batterietechnologie
+    pump_storage_type = Column(String)  # Pumpspeichertechnologie
 
     capacity = Column(Float, nullable=True)  # Nettonennleistung
     th_capacity = Column(Float, nullable=True)  # ThermischeNutzleistung
