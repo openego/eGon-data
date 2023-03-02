@@ -362,15 +362,16 @@ hotmaps_current_policy_scenario_heat_demands_buildings:
 
 power_plants:
   sources:
-      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
-      mastr_wind: "bnetza_mastr_wind_cleaned.csv"
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
-      mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
-      mastr_location: "location_elec_generation_raw.csv"
       mastr_combustion: "bnetza_mastr_combustion_cleaned.csv"
       mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
-      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
       mastr_gsgk: "bnetza_mastr_gsgk_cleaned.csv"
+      mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
+      mastr_location: "location_elec_generation_raw.csv"
+      mastr_nuclear: "bnetza_mastr_nuclear_cleaned.csv"
+      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
+      mastr_storage: "bnetza_mastr_storage_cleaned.csv"
+      mastr_wind: "bnetza_mastr_wind_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
