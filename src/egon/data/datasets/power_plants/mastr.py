@@ -35,6 +35,7 @@ from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
+    EgonPowerPlantsCombustion,
     EgonPowerPlantsHydro,
     EgonPowerPlantsPv,
     EgonPowerPlantsWind,
@@ -224,13 +225,20 @@ def import_mastr() -> None:
         },
         "biomass": {
             "Technologie": "technology",
-            "Hauptbrennstoff": "fuel_name",
+            "Hauptbrennstoff": "main_fuel",
             "Biomasseart": "fuel_type",
             "ThermischeNutzleistung": "th_capacity",
         },
         "hydro": {
             "ArtDerWasserkraftanlage": "plant_type",
             "ArtDesZuflusses": "water_origin",
+        },
+        "combustion": {
+            "Energietraeger": "carrier",
+            "Hauptbrennstoff": "main_fuel",
+            "WeitererHauptbrennstoff": "other_main_fuel",
+            "Technologie": "technology",
+            "ThermischeNutzleistung": "th_capacity",
         },
     }
 
@@ -239,12 +247,15 @@ def import_mastr() -> None:
         "wind": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"],
         "biomass": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"],
         "hydro": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"],
+        "combustion": WORKING_DIR_MASTR_NEW
+        / cfg["sources"]["mastr_combustion"],
     }
     target_tables = {
         "pv": EgonPowerPlantsPv,
         "wind": EgonPowerPlantsWind,
         "biomass": EgonPowerPlantsBiomass,
         "hydro": EgonPowerPlantsHydro,
+        "combustion": EgonPowerPlantsCombustion,
     }
     vlevel_mapping = {
         "Höchstspannung": 1,
@@ -271,7 +282,7 @@ def import_mastr() -> None:
     )
 
     # import units
-    technologies = ["pv", "wind", "biomass", "hydro"]
+    technologies = ["pv", "wind", "biomass", "hydro", "combustion"]
     for tech in technologies:
         # read units
         logger.info(f"===== Importing MaStR dataset: {tech} =====")

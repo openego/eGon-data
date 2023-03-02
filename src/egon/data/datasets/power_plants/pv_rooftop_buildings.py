@@ -2196,7 +2196,7 @@ def pv_rooftop_to_buildings():
     all_buildings_gdf = (
         desagg_mastr_gdf.assign(scenario="status_quo")
         .reset_index()
-        .rename(columns={"geometry": "geom", "gens_id": "gens_id"})
+        .rename(columns={"geometry": "geom"})
     )
 
     scenario_buildings_gdf = all_buildings_gdf.copy()

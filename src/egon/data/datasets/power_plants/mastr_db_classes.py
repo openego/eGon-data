@@ -123,7 +123,7 @@ class EgonPowerPlantsBiomass(Base):
     zip_and_municipality = Column(String, nullable=True)
 
     technology = Column(String(45), nullable=True)  # Technologie
-    fuel_name = Column(String(52), nullable=True)  # Hauptbrennstoff
+    main_fuel = Column(String(52), nullable=True)  # Hauptbrennstoff
     fuel_type = Column(String(19), nullable=True)  # Biomasseart
 
     capacity = Column(Float, nullable=True)  # Nettonennleistung
@@ -157,6 +157,41 @@ class EgonPowerPlantsHydro(Base):
     water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
 
     capacity = Column(Float, nullable=True)  # Nettonennleistung
+    feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
+    voltage_level = Column(Integer, nullable=True)
+    voltage_level_inferred = Column(Boolean, nullable=True)
+
+    geometry_geocoded = Column(Boolean)
+
+    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+
+
+class EgonPowerPlantsCombustion(Base):
+    __tablename__ = "egon_power_plants_combustion"
+    __table_args__ = {"schema": "supply"}
+
+    id = Column(Integer, Sequence("pp_combustion_seq"), primary_key=True)
+    bus_id = Column(Integer, nullable=True)  # Grid district id
+    gens_id = Column(String, nullable=True)  # EinheitMastrNummer
+
+    status = Column(String, nullable=True)  # EinheitBetriebsstatus
+    commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    postcode = Column(String(5), nullable=True)  # Postleitzahl
+    city = Column(String(50), nullable=True)  # Ort
+    municipality = Column(String, nullable=True)  # Gemeinde
+    federal_state = Column(String(31), nullable=True)  # Bundesland
+    zip_and_municipality = Column(String, nullable=True)
+
+    carrier = Column(String)  # Energietraeger
+    main_fuel = Column(String)  # Hauptbrennstoff
+    other_main_fuel = Column(String)  # WeitererHauptbrennstoff
+    technology = Column(String)  # Technologie
+
+    plant_type = Column(String(39), nullable=True)  # ArtDerWasserkraftanlage
+    water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
+
+    capacity = Column(Float, nullable=True)  # Nettonennleistung
+    th_capacity = Column(Float, nullable=True)  # ThermischeNutzleistung
     feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
     voltage_level = Column(Integer, nullable=True)
     voltage_level_inferred = Column(Boolean, nullable=True)
