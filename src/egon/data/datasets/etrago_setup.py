@@ -113,7 +113,7 @@ def get_meta(
     }
 
     # Create json dump
-    meta_json = "'" + json.dumps(meta, indent=4) + "'"
+    meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
 
     return meta_json
 
@@ -391,12 +391,7 @@ class EgonPfHvStore(Base):
         source_dict["bgr_inspeeds_data_bundle"],
         source_dict["bgr_inspeeds_report"],
     ]
-    contributors_dict = contributors()
-    contributor_list = [
-        {key: value for key, value in contributors_dict[author]}
-        for author in ["an", "fw"]
-    ]
-
+    contributor_list = contributors(["an", "fw"])
     contributor_list[0]["comment"] = "Add H2 storage"
     contributor_list[1]["comment"] = "Add CH4 storage"
     license_list = [data["license"] for data in source_list]
@@ -404,7 +399,11 @@ class EgonPfHvStore(Base):
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Store", source_list, license_list, contributor_list
+            "grid",
+            "Store",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
         ),
     }
 

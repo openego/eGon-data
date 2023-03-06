@@ -546,15 +546,17 @@ def sources():
             "und Familien- sowie Gebäude- und Wohnungs­merkmalen. Die Ergebnisse liegen auf Bundes-, "
             "Länder-, Kreis- und Gemeinde­ebene vor. Außerdem sind einzelne Ergebnisse für Gitterzellen verfügbar.",
             "path": "https://www.zensus2011.de/SharedDocs/Aktuelles/Ergebnisse/DemografischeGrunddaten.html;jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380?nn=3065474",
-            "license": [licenses_datenlizenz_deutschland(
-                "© Statistische Ämter des Bundes und der Länder 2014"
-            )],
+            "license": [
+                licenses_datenlizenz_deutschland(
+                    "© Statistische Ämter des Bundes und der Länder 2014"
+                )
+            ],
         },
     }
 
 
-def contributors():
-    return {
+def contributors(authorlist):
+    contributors_dict = {
         "am": {
             "title": "Aadit Malla",
             "email": "https://github.com/aadit879",
@@ -604,3 +606,7 @@ def contributors():
             "email": "https://github.com/ulfmueller",
         },
     }
+    return [
+        {key: value for key, value in contributors_dict[author].items()}
+        for author in authorlist
+    ]
