@@ -6,16 +6,6 @@ This module contains the functions to import the existing methane stores
 in Germany and to insert them into the database. They are modelled as
 PyPSA stores and are not extendable.
 
-Dependencies (pipeline)
-=======================
-* :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-* :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
-* :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-
-Resulting tables
-================
-* :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
-
 """
 from pathlib import Path
 from telnetlib import GA
@@ -36,12 +26,21 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Storages(Dataset):
-    """Insert the non extendable gas stores in Germany into the database
+    """
+    Insert the non extendable gas stores in Germany into the database
 
     Insert the non extendable gas stores into the database in Germany
     for the scnenarios eGon2035 and eGon100RE using the function
-    :py:func:`insert_ch4_storages`
-    which extends the :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` table.
+    :py:func:`insert_ch4_storages`.
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
+
 
     """
 
@@ -60,12 +59,13 @@ class CH4Storages(Dataset):
 
 
 def import_installed_ch4_storages(scn_name):
-    """Define list of CH4 stores from the SciGRID_gas data
+    """
+    Define list of CH4 stores from the SciGRID_gas data
 
     This function reads from the SciGRID_gas dataset the existing CH4
-    cavern stores in Germany, adjuts and returns them.
+    cavern stores in Germany, adjusts and returns them.
     Caverns reference: SciGRID_gas dataset (datasets/gas_data/data/IGGIELGN_Storages.csv
-    downloaded in :func:`insert_gas_data <egon.data.datasets.gas_grid.insert_gas_data>`).
+    downloaded in :func:`download_SciGRID_gas_data <egon.data.datasets.gas_grid.download_SciGRID_gas_data>`).
     For more information on these data, refer to the
     `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
 
@@ -186,12 +186,13 @@ def import_installed_ch4_storages(scn_name):
 
 
 def import_ch4_grid_capacity(scn_name):
-    """Define the gas stores modelling the store capacity of the grid
+    """
+    Define the gas stores modelling the store capacity of the grid
 
     Define dataframe containing the modelling of the grid storage
     capacity. The whole storage capacity of the grid (130000 MWh,
     estimation of the Bundesnetzagentur) is split uniformly between
-    all the german gas nodes of the grid (without consideration of the
+    all the German gas nodes of the grid (without consideration of the
     capacities of the pipes).
     In eGon100RE, the storage capacity of the grid is split between H2
     and CH4 stores, with the same share than the pipes capacity (value
@@ -219,7 +220,7 @@ def import_ch4_grid_capacity(scn_name):
     )  # Number of nodes in Germany
     Store_capacity = (
         Gas_grid_capacity / N_ch4_nodes_G
-    )  # Storage capacity associated to each CH4 node of the german grid
+    )  # Storage capacity associated to each CH4 node of the German grid
 
     sql_gas = f"""SELECT bus_id, scn_name, carrier, geom
                 FROM {source['buses']['schema']}.{source['buses']['table']}
@@ -246,7 +247,8 @@ def import_ch4_grid_capacity(scn_name):
 
 
 def insert_ch4_stores(scn_name):
-    """Insert gas stores for specific scenario
+    """
+    Insert gas stores for specific scenario
 
     Insert non extendable gas stores for specific scenario in Germany
     by executing the following steps:
@@ -322,7 +324,8 @@ def insert_ch4_stores(scn_name):
 
 
 def insert_ch4_storages():
-    """Overall function to import non extendable gas stores in Germany
+    """
+    Overall function to import non extendable gas stores in Germany
 
     This function inserts the methane stores in Germany for the
     scenarios eGon2035 and eGon100RE by using the function

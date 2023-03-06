@@ -10,15 +10,6 @@ the Netzentwicklungsplan Gas 2020–2030 (36 TWh natural gas and 10 TWh
 biogas), also stored in the table
 :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>`.
 
-Dependencies (pipeline)
-=======================
-* :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-* :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-
-Resulting tables
-================
-* :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
-
 """
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -35,10 +26,18 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class CH4Production(Dataset):
-    """Insert the CH4 productions in the database for eGon2035
+    """
+    Insert the CH4 productions into the database for eGon2035
 
-    Insert the CH4 productions in the database for eGon2035 by using the
-    function :py:func:`import_gas_generators`.
+    Insert the CH4 productions into the database for eGon2035 by using
+    the function :py:func:`import_gas_generators`.
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
 
     """
 
@@ -58,12 +57,13 @@ class CH4Production(Dataset):
 
 
 def load_NG_generators(scn_name):
-    """Define the fossil CH4 production units in Germany
+    """
+    Define the fossil CH4 production units in Germany
 
     This function reads from the SciGRID_gas dataset the fossil CH4
     production units in Germany, adjuts and returns them.
     Natural gas production reference: SciGRID_gas dataset (datasets/gas_data/data/IGGIELGN_Production.csv
-    downloaded in :func:`insert_gas_data <egon.data.datasets.gas_grid.insert_gas_data>`).
+    downloaded in :func:`download_SciGRID_gas_data <egon.data.datasets.gas_grid.download_SciGRID_gas_data>`).
     For more information on these data, refer to the
     `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
 
@@ -71,6 +71,7 @@ def load_NG_generators(scn_name):
     ----------
     scn_name : str
         Name of the scenario.
+
     Returns
     -------
     CH4_generators_list : pandas.DataFrame
@@ -165,7 +166,8 @@ def load_NG_generators(scn_name):
 
 
 def load_biogas_generators(scn_name):
-    """Define the biogas production units in Germany
+    """
+    Define the biogas production units in Germany
 
     This function download the Biogaspartner Einspeiseatlas into
     (datasets/gas_data/Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx),
@@ -279,9 +281,10 @@ def load_biogas_generators(scn_name):
 
 
 def import_gas_generators(scn_name="eGon2035"):
-    """Insert list of gas production units in database
+    """
+    Insert list of gas production units into the database
 
-    To insert the gas production units in the database, the following
+    To insert the gas production units into the database, the following
     steps are followed:
 
       * cleaning of the database table grid.egon_etrago_generator of the
