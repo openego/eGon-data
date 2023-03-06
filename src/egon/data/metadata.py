@@ -1,9 +1,10 @@
 import time
 
-from egon.data.db import engine
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
+
+from egon.data.db import engine
 
 
 def context():
@@ -179,6 +180,7 @@ def license_geonutzv(attribution):
         "Rechte Dritter dem nicht entgegenstehen.",
         "attribution": attribution,
     }
+
 
 def license_agpl(attribution):
     """
@@ -375,7 +377,11 @@ def sources():
             "description": "Workflow to download, process and generate data sets"
             "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
             "path": "https://github.com/openego/eGon-data",
-            "licenses": [license_agpl("© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte")]
+            "licenses": [
+                license_agpl(
+                    "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte"
+                )
+            ],
         },
         "Einspeiseatlas": {
             "title": "Einspeiseatlas",
@@ -383,9 +389,7 @@ def sources():
             "zu realisierten und geplanten Biomethanaufbereitungsanlagen - mit "
             "und ohne Einspeisung ins Gasnetz - in Deutschland und weltweit.",
             "path": "https://www.biogaspartner.de/einspeiseatlas/",
-            "license": license_ccby(
-            "Deutsche Energie-Agentur (dena, 2021)"
-            ),
+            "license": license_ccby("Deutsche Energie-Agentur (dena, 2021)"),
         },
         "era5": {
             "title": "ERA5 global reanalysis",
@@ -397,31 +401,37 @@ def sources():
             "(https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency) "
             "for more information.",
             "path": "https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency",
-            "license": [{
-                "name": "Licence to use Copernicus Products",
-                "title": "Licence to use Copernicus Products",
-                "path": "https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf",
-                "instruction": "This Licence is free of charge, worldwide, non-exclusive, royalty free and perpetual. "
-                "Access to Copernicus Products is given for any purpose in so far as it is lawful, whereas use "
-                "may include, but is not limited to: reproduction; distribution; communication to the public; "
-                "adaptation, modification and combination with other data and information; or any "
-                "combination of the foregoing",
-                "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
-            },]
+            "license": [
+                {
+                    "name": "Licence to use Copernicus Products",
+                    "title": "Licence to use Copernicus Products",
+                    "path": "https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf",
+                    "instruction": "This Licence is free of charge, worldwide, non-exclusive, royalty free and perpetual. "
+                    "Access to Copernicus Products is given for any purpose in so far as it is lawful, whereas use "
+                    "may include, but is not limited to: reproduction; distribution; communication to the public; "
+                    "adaptation, modification and combination with other data and information; or any "
+                    "combination of the foregoing",
+                    "attribution": "Copernicus Climate Change Service (C3S) Climate Data Store",
+                },
+            ],
         },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
             "path": "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database",
-            "licenses": [license_ccby("© 2016-2018: Pia Manz, Tobias Fleiter")],
+            "licenses": [
+                license_ccby("© 2016-2018: Pia Manz, Tobias Fleiter")
+            ],
         },
         "hotmaps_scen_buildings": {
             "titel": "scen_current_building_demand",
             "description": "Energy demand scenarios in buidlings until the year 2050 - current policy scenario",
             "path": "https://gitlab.com/hotmaps/scen_current_building_demand",
-            "licenses": [license_ccby(
-                "© 2016-2018: Michael Hartner, Lukas Kranzl, Sebastian Forthuber, Sara Fritz, Andreas Müller"
-            )],
+            "licenses": [
+                license_ccby(
+                    "© 2016-2018: Michael Hartner, Lukas Kranzl, Sebastian Forthuber, Sara Fritz, Andreas Müller"
+                )
+            ],
         },
         "mastr": {
             "title": "open-MaStR power unit registry",
@@ -430,9 +440,11 @@ def sources():
             "There are duplicates included. For further information read in the documentation"
             "of the original data source: https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html",
             "path": "https://sandbox.zenodo.org/record/808086",
-            "licenses": [licenses_datenlizenz_deutschland(
-                "© 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen"
-            )],
+            "licenses": [
+                licenses_datenlizenz_deutschland(
+                    "© 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen"
+                )
+            ],
         },
         "nep2021": {
             "title": "Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf",
@@ -473,19 +485,19 @@ def sources():
             "For further information please see the documentation available on the Heat Roadmap Europe website, "
             "in particular D2.3 report 'Methodologies and assumptions used in the mapping'.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/search",
-            "license": [license_ccby(
-                "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
-            )],
+            "license": [
+                license_ccby(
+                    "© Europa-Universität Flensburg, Halmstad University and Aalborg University"
+                )
+            ],
         },
         "pipeline_classification": {
-                    "title": "Technical pipeline characteristics for high pressure pipelines",
-                    "description": "Parameters for the classification of gas pipelines, "
-                    "the whole documentation could is available at: "
-                    "https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf",
-                    "path": "https://zenodo.org/record/5743452",
-                    "license": license_ccby(
-                    "Â© DIW Berlin, 2017"
-                    ),
+            "title": "Technical pipeline characteristics for high pressure pipelines",
+            "description": "Parameters for the classification of gas pipelines, "
+            "the whole documentation could is available at: "
+            "https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf",
+            "path": "https://zenodo.org/record/5743452",
+            "license": license_ccby("Â© DIW Berlin, 2017"),
         },
         "schmidt": {
             "title": "Supplementary material to the masters thesis: "
@@ -497,23 +509,23 @@ def sources():
             "licenses": [license_ccby("© 2019 Danielle Schmidt")],
         },
         "SciGRID_gas": {
-                    "title": "SciGRID_gas IGGIELGN",
-                    "description": "The SciGRID_gas dataset represents the European "
-                    "gas transport network (pressure levels of 20 bars and higher) "
-                    "including the geo-referenced transport pipelines,  compressor "
-                    "stations, LNG terminals, storage, production sites, gas power "
-                    "plants, border points, and demand time series. ",
-                    "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-                    "license": license_ccby(
-                    " Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
-                    ),
+            "title": "SciGRID_gas IGGIELGN",
+            "description": "The SciGRID_gas dataset represents the European "
+            "gas transport network (pressure levels of 20 bars and higher) "
+            "including the geo-referenced transport pipelines,  compressor "
+            "stations, LNG terminals, storage, production sites, gas power "
+            "plants, border points, and demand time series. ",
+            "path": "https://dx.doi.org/10.5281/zenodo.4896526",
+            "license": license_ccby(
+                " Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
+            ),
         },
         "seenergies": {
             "title": "D5 1 Industry Dataset With Demand Data",
             "description": "Georeferenced EU28 industrial sites with quantified annual excess heat volumes and demand data"
             "within main sectors: Chemical industry, Iron and steel, Non-ferrous metals, Non-metallic minerals, Paper and printing, and Refineries.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0/about",
-            "licenses": [license_ccby("© Europa-Universität Flensburg")]
+            "licenses": [license_ccby("© Europa-Universität Flensburg")],
         },
         "tyndp": {
             "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
@@ -534,10 +546,12 @@ def sources():
             "Verwaltungseinheit sowie die spezifische Bezeichnung der "
             "Verwaltungsebene des jeweiligen Landes.",
             "path": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip",
-            "licenses": [licenses_datenlizenz_deutschland(
-                "© Bundesamt für Kartographie und Geodäsie "
-                "2020 (Daten verändert)"
-            )],
+            "licenses": [
+                licenses_datenlizenz_deutschland(
+                    "© Bundesamt für Kartographie und Geodäsie "
+                    "2020 (Daten verändert)"
+                )
+            ],
         },
         "zensus": {
             "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download",
