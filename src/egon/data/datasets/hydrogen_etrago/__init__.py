@@ -9,9 +9,9 @@ linked to the hydrogen sector are present only in Germany.
 
 In the eGon100RE scenario, the potential and installed capacities abroad
 arrise from the PyPSA-eur-sec run. For this reason, this module focuses
-only on the hydrogen related components in Germany and the module
+only on the hydrogen related components in Germany, and the module
 :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>` on the hydrogen
-related components.
+related components abroad.
 
 """
 from egon.data.datasets import Dataset
@@ -37,7 +37,8 @@ from egon.data.datasets.hydrogen_etrago.storage import (
 
 
 class HydrogenBusEtrago(Dataset):
-    """Insert the H2 buses into the database for Germany
+    """
+    Insert the H2 buses into the database for Germany
 
     Insert the H2 buses in Germany into the database for the scenarios
     eGon2035 and eGon100RE by executing successively the functions
@@ -74,7 +75,8 @@ class HydrogenBusEtrago(Dataset):
 
 
 class HydrogenStoreEtrago(Dataset):
-    """Insert the H2 stores into the database for Germany
+    """
+    Insert the H2 stores into the database for Germany
 
     Insert the H2 stores in Germany into the database for the scenarios
     eGon2035 and eGon100RE:
@@ -119,7 +121,8 @@ class HydrogenStoreEtrago(Dataset):
 
 
 class HydrogenPowerLinkEtrago(Dataset):
-    """Insert the electrolysis and the fuel cells into the database
+    """
+    Insert the electrolysis and the fuel cells into the database
 
     Insert the the electrolysis and the fuel cell links in Germany into
     the database for the scenarios eGon2035 and eGon100RE by executing
@@ -156,7 +159,8 @@ class HydrogenPowerLinkEtrago(Dataset):
 
 
 class HydrogenMethaneLinkEtrago(Dataset):
-    """Insert the methanisation, feed in and SMR into the database
+    """
+    Insert the methanisation, feed in and SMR into the database
 
     Insert the the methanisation, feed in (only in eGon2035) and Steam
     Methane Reaction (SMR) links in Germany into the database for the
@@ -192,7 +196,8 @@ class HydrogenMethaneLinkEtrago(Dataset):
 
 
 class HydrogenGridEtrago(Dataset):
-    """Insert the H2 grid in Germany into the database for eGon100RE
+    """
+    Insert the H2 grid in Germany into the database for eGon100RE
 
     Insert the H2 links (pipelines) into Germany in the database for the
     scenario eGon100RE by executing the function
