@@ -129,8 +129,32 @@ class EtragoSetup(Dataset):
 
 
 class EgonPfHvBus(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["openstreetmap"],
+        sources()["peta"],
+
+    ]
+
+    contributor_list = contributors(["ic", "cb", "ke", "an"])
+    contributor_list[0]["comment"] = "Added electricity substations"
+    contributor_list[1]["comment"] = "Added heat buses"
+    contributor_list[2]["comment"] = "Added DSM buses"
+    contributor_list[3]["comment"] = "Added gas sector buses"
+    
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_bus"
-    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Bus")}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid", "Bus",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -156,10 +180,33 @@ class EgonPfHvBusTimeseries(Base):
 
 
 class EgonPfHvGenerator(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["openstreetmap"],
+        sources()["mastr"],
+        sources()["nep2021"],
+        sources()["tyndp"],
+    ]
+
+    contributor_list = contributors(["ic", "cb", "ce", "an", "ke"])
+    contributor_list[0]["comment"] = "Added hydro and biomass plants"
+    contributor_list[1]["comment"] = "Added solar and geothermal plants"
+    contributor_list[2]["comment"] = "Added wind on- and offshore plants"
+    contributor_list[3]["comment"] = "Added gas feedin generators"
+    contributor_list[4]["comment"] = "Added pv ground mounted"
+    
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_generator"
     __table_args__ = {
         "schema": "grid",
-        "comment": get_meta("grid", "Generator"),
+        "comment": get_meta(
+            "grid", "Generator",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
     }
 
     scn_name = Column(String, primary_key=True, nullable=False)
@@ -213,8 +260,28 @@ class EgonPfHvGeneratorTimeseries(Base):
 
 
 class EgonPfHvLine(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["openstreetmap"],
+    ]
+
+    contributor_list = contributors(["ic", "cb"])
+    contributor_list[0]["comment"] = "Added lines from osmTGmod tables"
+    contributor_list[1]["comment"] = "Added meta data"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_line"
-    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Line")}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid", "Line",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -256,6 +323,34 @@ class EgonPfHvLineTimeseries(Base):
 
 
 class EgonPfHvLink(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["openstreetmap"],
+        sources()["nep2021"],
+        sources()["peta"],
+        sources()["mastr"],
+    ]
+
+    contributor_list = contributors(["ic", "cb", "ke", "ja"])
+    contributor_list[0]["comment"] = "Added DC lines from osmTGmod tables"
+    contributor_list[1]["comment"] = "Added CHPs and heat links"
+    contributor_list[2]["comment"] = "Added DSM links"
+    contributor_list[3]["comment"] = "Added e-Mobility links"
+
+    license_list = [data["licenses"] for data in source_list]
+
+    __tablename__ = "egon_etrago_link"
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid", "Link",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
+    }
+    
     __tablename__ = "egon_etrago_link"
     __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Link")}
 
@@ -298,8 +393,35 @@ class EgonPfHvLinkTimeseries(Base):
 
 
 class EgonPfHvLoad(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["demandregio"],
+        sources()["nep2021"],
+        sources()["peta"],
+        sources()["schmidt"],
+        sources()["hotmaps_industrial_sites"],
+        sources()["openstreetmap"],
+    ]
+
+    contributor_list = contributors(["ic", "cb", "an", "ja"])
+    contributor_list[0]["comment"] = "Added electrical demands"
+    contributor_list[1]["comment"] = "Added heat deands"
+    contributor_list[2]["comment"] = "Added gas demands"
+    contributor_list[3]["comment"] = "Added mobility demands"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_load"
-    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Load")}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid", "Load",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -334,8 +456,28 @@ class EgonPfHvCarrier(Base):
 
 
 class EgonPfHvStorage(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["nep2021"],
+        sources()["mastr"],
+    ]
+
+    contributor_list = contributors(["ic"])
+    contributor_list[0]["comment"] = "Added battery and pumped hydro storage units"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_storage"
-    __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Storage")}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid", "Storage",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -391,10 +533,14 @@ class EgonPfHvStore(Base):
         source_dict["bgr_inspeeds_data_bundle"],
         source_dict["bgr_inspeeds_report"],
     ]
-    contributor_list = contributors(["an", "fw"])
+    contributor_list = contributors(["an", "fw", "ke", "cb", "ja"])
     contributor_list[0]["comment"] = "Add H2 storage"
     contributor_list[1]["comment"] = "Add CH4 storage"
-    license_list = [data["license"] for data in source_list]
+    contributor_list[2]["comment"] = "Add DSM storage"
+    contributor_list[3]["comment"] = "Add heat storage"
+    contributor_list[4]["comment"] = "Add e-mobility storage"
+    
+    license_list = [data["licenses"] for data in source_list]
     __tablename__ = "egon_etrago_store"
     __table_args__ = {
         "schema": "grid",
@@ -455,10 +601,27 @@ class EgonPfHvTempResolution(Base):
 
 
 class EgonPfHvTransformer(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["openstreetmap"],
+    ]
+
+    contributor_list = contributors(["ic", "cb"])
+    contributor_list[0]["comment"] = "Added transformes from osmTGmod tables"
+    contributor_list[1]["comment"] = "Added meta data"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_transformer"
     __table_args__ = {
         "schema": "grid",
-        "comment": get_meta("grid", "Transformer"),
+        "comment": get_meta(
+            "grid", "Transformer",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
     }
 
     scn_name = Column(String, primary_key=True, nullable=False)
