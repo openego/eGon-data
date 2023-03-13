@@ -354,7 +354,7 @@ def sources():
             " in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include all bgr data sources when using "
             "the data.",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "licenses": [license_geonutzv("???")],
+            "licenses": [license_geonutzv("© BGR, Hannover, 2021")],
         },
         "bgr_inspeeds_report": {
             "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
@@ -497,7 +497,7 @@ def sources():
             "the whole documentation could is available at: "
             "https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf",
             "path": "https://zenodo.org/record/5743452",
-            "licenses": license_ccby("Â© DIW Berlin, 2017"),
+            "licenses": license_ccby("© DIW Berlin, 2017"),
         },
         "schmidt": {
             "title": "Supplementary material to the masters thesis: "
@@ -517,7 +517,7 @@ def sources():
             "plants, border points, and demand time series. ",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
             "licenses": license_ccby(
-                " Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
+                "Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
             ),
         },
         "seenergies": {
