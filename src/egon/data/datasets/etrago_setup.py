@@ -134,13 +134,16 @@ class EgonPfHvBus(Base):
         sources()["egon-data"],
         sources()["openstreetmap"],
         sources()["peta"],
+        sources()["SciGRID_gas"],
+        sources()["bgr_inspeeds_data_bundle"],
     ]
 
-    contributor_list = contributors(["ic", "cb", "ke", "an"])
+    contributor_list = contributors(["ic", "cb", "ke", "an", "fw"])
     contributor_list[0]["comment"] = "Added electricity substations"
     contributor_list[1]["comment"] = "Added heat buses"
     contributor_list[2]["comment"] = "Added DSM buses"
-    contributor_list[3]["comment"] = "Added gas sector buses"
+    contributor_list[3]["comment"] = "Added CH4 sector buses"
+    contributor_list[4]["comment"] = "Added H2 sector buses"
 
     license_list = [data["licenses"] for data in source_list]
 
@@ -187,6 +190,8 @@ class EgonPfHvGenerator(Base):
         sources()["mastr"],
         sources()["nep2021"],
         sources()["tyndp"],
+        sources()["SciGRID_gas"],
+        sources()["Einspeiseatlas"],
     ]
 
     contributor_list = contributors(["ic", "cb", "ce", "an", "ke"])
@@ -332,13 +337,17 @@ class EgonPfHvLink(Base):
         sources()["nep2021"],
         sources()["peta"],
         sources()["mastr"],
+        sources()["SciGRID_gas"],
+        sources()["pipeline_classification"],
     ]
 
-    contributor_list = contributors(["ic", "cb", "ke", "ja"])
+    contributor_list = contributors(["ic", "cb", "ke", "ja", "fw", "an"])
     contributor_list[0]["comment"] = "Added DC lines from osmTGmod tables"
     contributor_list[1]["comment"] = "Added CHPs and heat links"
     contributor_list[2]["comment"] = "Added DSM links"
     contributor_list[3]["comment"] = "Added e-Mobility links"
+    contributor_list[4]["comment"] = "Added H2 related links"
+    contributor_list[5]["comment"] = "Added CH4 links"
 
     license_list = [data["licenses"] for data in source_list]
 
@@ -405,6 +414,8 @@ class EgonPfHvLoad(Base):
         sources()["schmidt"],
         sources()["hotmaps_industrial_sites"],
         sources()["openstreetmap"],
+        sources()["openffe_gas"],
+        sources()["tyndp"],
     ]
 
     contributor_list = contributors(["ic", "cb", "an", "ja"])
@@ -537,8 +548,8 @@ class EgonPfHvStore(Base):
         source_dict["bgr_inspee"],
         source_dict["bgr_inspeeds"],
         source_dict["bgr_inspeeds_data_bundle"],
-        source_dict["bgr_inspeeds_data_bundle"],
         source_dict["bgr_inspeeds_report"],
+        source_dict["SciGRID_gas"],
     ]
     contributor_list = contributors(["an", "fw", "ke", "cb", "ja"])
     contributor_list[0]["comment"] = "Add H2 storage"
