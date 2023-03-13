@@ -125,10 +125,10 @@ def global_settings(scenario):
             "weather_year": 2011,
             "population_year": 2021,
         }
-    elif scenario == "SQ2015_hist":
+    elif scenario == "2019":
         parameters = {
-            "weather_year": 2015,
-            "population_year": 2015,
+            "weather_year": 2019,
+            "population_year": 2019,
         }
 
     else:
