@@ -129,12 +129,11 @@ class EtragoSetup(Dataset):
 
 
 class EgonPfHvBus(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["openstreetmap"],
         sources()["peta"],
-
     ]
 
     contributor_list = contributors(["ic", "cb", "ke", "an"])
@@ -142,14 +141,15 @@ class EgonPfHvBus(Base):
     contributor_list[1]["comment"] = "Added heat buses"
     contributor_list[2]["comment"] = "Added DSM buses"
     contributor_list[3]["comment"] = "Added gas sector buses"
-    
+
     license_list = [data["licenses"] for data in source_list]
 
     __tablename__ = "egon_etrago_bus"
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Bus",
+            "grid",
+            "Bus",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
@@ -180,7 +180,7 @@ class EgonPfHvBusTimeseries(Base):
 
 
 class EgonPfHvGenerator(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["openstreetmap"],
@@ -195,14 +195,15 @@ class EgonPfHvGenerator(Base):
     contributor_list[2]["comment"] = "Added wind on- and offshore plants"
     contributor_list[3]["comment"] = "Added gas feedin generators"
     contributor_list[4]["comment"] = "Added pv ground mounted"
-    
+
     license_list = [data["licenses"] for data in source_list]
 
     __tablename__ = "egon_etrago_generator"
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Generator",
+            "grid",
+            "Generator",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
@@ -260,7 +261,7 @@ class EgonPfHvGeneratorTimeseries(Base):
 
 
 class EgonPfHvLine(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["openstreetmap"],
@@ -276,7 +277,8 @@ class EgonPfHvLine(Base):
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Line",
+            "grid",
+            "Line",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
@@ -323,7 +325,7 @@ class EgonPfHvLineTimeseries(Base):
 
 
 class EgonPfHvLink(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["openstreetmap"],
@@ -344,13 +346,14 @@ class EgonPfHvLink(Base):
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Link",
+            "grid",
+            "Link",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
         ),
     }
-    
+
     __tablename__ = "egon_etrago_link"
     __table_args__ = {"schema": "grid", "comment": get_meta("grid", "Link")}
 
@@ -393,7 +396,7 @@ class EgonPfHvLinkTimeseries(Base):
 
 
 class EgonPfHvLoad(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["demandregio"],
@@ -416,7 +419,8 @@ class EgonPfHvLoad(Base):
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Load",
+            "grid",
+            "Load",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
@@ -456,7 +460,7 @@ class EgonPfHvCarrier(Base):
 
 
 class EgonPfHvStorage(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["nep2021"],
@@ -464,7 +468,9 @@ class EgonPfHvStorage(Base):
     ]
 
     contributor_list = contributors(["ic"])
-    contributor_list[0]["comment"] = "Added battery and pumped hydro storage units"
+    contributor_list[0][
+        "comment"
+    ] = "Added battery and pumped hydro storage units"
 
     license_list = [data["licenses"] for data in source_list]
 
@@ -472,7 +478,8 @@ class EgonPfHvStorage(Base):
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Storage",
+            "grid",
+            "Storage",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
@@ -539,7 +546,7 @@ class EgonPfHvStore(Base):
     contributor_list[2]["comment"] = "Add DSM storage"
     contributor_list[3]["comment"] = "Add heat storage"
     contributor_list[4]["comment"] = "Add e-mobility storage"
-    
+
     license_list = [data["licenses"] for data in source_list]
     __tablename__ = "egon_etrago_store"
     __table_args__ = {
@@ -601,7 +608,7 @@ class EgonPfHvTempResolution(Base):
 
 
 class EgonPfHvTransformer(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["openstreetmap"],
@@ -617,7 +624,8 @@ class EgonPfHvTransformer(Base):
     __table_args__ = {
         "schema": "grid",
         "comment": get_meta(
-            "grid", "Transformer",
+            "grid",
+            "Transformer",
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
