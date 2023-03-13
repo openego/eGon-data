@@ -595,7 +595,7 @@ def contributors(authorlist):
             "title": "Guido Pleßmann",
             "email": "https://github.com/gplssm",
         },
-        "ik": {
+        "ic": {
             "title": "Ilka Cußmann",
             "email": "https://github.com/IlkaCu",
         },
