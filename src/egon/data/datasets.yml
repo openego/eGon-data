@@ -939,6 +939,12 @@ gas_stores:
       schema: 'grid'
       table: 'egon_etrago_store'
 
+pypsa-eur-sec:
+  target:
+    scenario_parameters:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
+
 gas_prod:
   source:
     buses:

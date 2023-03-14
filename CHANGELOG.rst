@@ -461,6 +461,8 @@ Changed
 * Update creation of heat demand timeseries
   `#857 <https://github.com/openego/eGon-data/issues/857>`_
   `#856 <https://github.com/openego/eGon-data/issues/856>`_
+* Overwrite retrofitted_CH4pipeline-to-H2pipeline_share with pes result
+  `#933 <https://github.com/openego/eGon-data/issues/933>`_
 * Adjust H2 industry profiles abroad for eGon2035
   `#940 <https://github.com/openego/eGon-data/issues/940>`_
 * Introduce carrier name 'others'
@@ -690,6 +692,10 @@ Bug Fixes
 * Overwrite capacities for conventional power plants with data from nep
   list
   `#403 <https://github.com/openego/eGon-data/issues/403>`_
+* Make gas grid links bidirectional
+  `#1021 <https://github.com/openego/eGon-data/issues/1021>`_
+* Correct gas technology costs for eGon100RE
+  `#984 <https://github.com/openego/eGon-data/issues/984>`_
 * Adjust p_nom and marginal cost for OCGT in eGon2035
   `#863 <https://github.com/openego/eGon-data/issues/863>`_
 * Mismatch of building bus_ids from cts_heat_demand_building_share
@@ -703,6 +709,8 @@ Bug Fixes
   `#1015 <https://github.com/openego/eGon-data/issues/1015>`_
 * Fix installed capacity per individual heat pump
   `#1058 <https://github.com/openego/eGon-data/issues/1058>`_
+* Add missing gas turbines abroad
+  `#1079 <https://github.com/openego/eGon-data/issues/1079>`_
 * Fix gas generators abroad (marginal cost and e_nom_max)
   `#1075 <https://github.com/openego/eGon-data/issues/1075>`_
 * Fix gas pipelines isolated of the German grid
@@ -714,6 +722,8 @@ Bug Fixes
   Fixes issue `#985`_ via PR `#986`_.
 * Bypass SSL verification
   `#1102 <https://github.com/openego/eGon-data/issues/1102>`_
+* Fix conversion factor for CH4 loads abroad in eGon2035
+  `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

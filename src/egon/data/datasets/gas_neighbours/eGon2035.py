@@ -43,7 +43,7 @@ countries = [
 def get_foreign_gas_bus_id(carrier="CH4"):
     """Calculate the etrago bus id based on the geometry
 
-    Mapp node_ids from TYNDP and etragos bus_id
+    Map node_ids from TYNDP and etragos bus_id
 
     Parameters
     ----------
@@ -594,8 +594,8 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
         .drop(columns=["Parameter", "Year"])
     )
 
-    # Conversion GWh/d to MWh/h
-    conversion_factor = 1000 / 24
+    # Conversion GWh/d to MWh/y
+    conversion_factor = 1000 * 365
 
     df_2035 = pd.concat([df_2040, df_2030], axis=1)
     df_2035["GlobD_2035"] = (
@@ -604,7 +604,7 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     df_2035.loc["NOS0"] = [
         0,
         0,
-        Norway_global_demand_1y / 8760,
+        Norway_global_demand_1y,
     ]  # Manually add Norway demand
     grouped_demands = df_2035.drop(
         columns=["Value_2030", "Value_2040"]
@@ -939,8 +939,8 @@ def calc_global_power_to_h2_demand():
 
     Returns
     -------
-    pandas.DataFrame
-        Global power-to-h2 demand per foreign node
+    global_power_to_h2_demand : pandas.DataFrame
+        Global hourly power-to-h2 demand per foreign node
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -1027,12 +1027,12 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     """Insert H2 demands into database for eGon2035
 
     Detailled description
-    This function insert data in the database and has no return.
+    This function inserts data in the database and has no return.
 
     Parameters
     ----------
     global_power_to_h2_demand : pandas.DataFrame
-        Global H2 demand per foreign node in 1 year
+        Global hourly power-to-h2 demand per foreign node
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -1375,7 +1375,7 @@ def calculate_ch4_grid_capacities():
     )
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": "eGon2035", "carrier": "CH4", "p_min_pu": -1.0}
     Neighbouring_pipe_capacities_list = (
         Neighbouring_pipe_capacities_list.assign(**c)
     )
@@ -1444,4 +1444,127 @@ def grid():
     Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
     insert_gas_grid_capacities(
         Neighbouring_pipe_capacities_list, scn_name="eGon2035"
+    )
+
+
+def calculate_ocgt_capacities():
+    """Calculate gas turbine capacities abroad for eGon2035
+
+    Calculate gas turbine capacities abroad for eGon2035 based on TYNDP
+    2020, scenario "Distributed Energy", interpolated between 2030 and 2040
+
+    Returns
+    -------
+    df_ocgt: pandas.DataFrame
+        Gas turbine capacities per foreign node
+
+    """
+    sources = config.datasets()["gas_neighbours"]["sources"]
+
+    # insert installed capacities
+    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    df = pd.read_excel(
+        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
+        sheet_name="Capacity",
+    )
+
+    df_ocgt = df[
+        [
+            "Node/Line",
+            "Scenario",
+            "Climate Year",
+            "Generator_ID",
+            "Year",
+            "Value",
+        ]
+    ]
+    df_ocgt = df_ocgt[
+        (df_ocgt["Scenario"] == "Distributed Energy")
+        & (df_ocgt["Climate Year"] == 1984)
+    ]
+    df_ocgt = df_ocgt[df_ocgt["Generator_ID"].str.contains("Gas")]
+    df_ocgt = df_ocgt[df_ocgt["Year"].isin([2030, 2040])]
+
+    df_ocgt = (
+        df_ocgt.groupby(["Node/Line", "Year"])["Value"].sum().reset_index()
+    )
+    df_ocgt = df_ocgt.groupby([df_ocgt["Node/Line"], "Year"]).sum()
+    df_ocgt = df_ocgt.groupby("Node/Line")["Value"].mean()
+    df_ocgt = pd.DataFrame(df_ocgt, columns=["Value"]).rename(
+        columns={"Value": "p_nom"}
+    )
+
+    # Choose capacities for considered countries
+    df_ocgt = df_ocgt[df_ocgt.index.str[:2].isin(countries)]
+
+    # Attribute bus0 and bus1
+    df_ocgt["bus0"] = get_foreign_gas_bus_id()[df_ocgt.index]
+    df_ocgt["bus1"] = get_foreign_bus_id()[df_ocgt.index]
+    df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
+
+    return df_ocgt
+
+
+def insert_ocgt_abroad():
+    """Insert gas turbine capicities abroad for eGon2035 in the database
+
+    This function inserts data in the database and has no return.
+
+    Parameters
+    ----------
+    df_ocgt: pandas.DataFrame
+        Gas turbine capacities per foreign node
+
+    """
+    scn_name = "eGon2035"
+    carrier = "OCGT"
+
+    # Connect to local database
+    engine = db.engine()
+
+    df_ocgt = calculate_ocgt_capacities()
+
+    df_ocgt["p_nom_extendable"] = False
+    df_ocgt["carrier"] = carrier
+    df_ocgt["scn_name"] = scn_name
+
+    buses = tuple(
+        db.select_dataframe(
+            f"""SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country != 'DE';
+        """
+        )["bus_id"]
+    )
+
+    # Delete old entries
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
+        AND scn_name = '{scn_name}'
+        AND bus0 IN {buses} AND bus1 IN {buses};
+        """
+    )
+
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+    df_ocgt["efficiency"] = scn_params["efficiency"][carrier]
+    df_ocgt["marginal_cost"] = (
+        scn_params["marginal_cost"][carrier]
+        / scn_params["efficiency"][carrier]
+    )
+
+    # Adjust p_nom
+    df_ocgt["p_nom"] = df_ocgt["p_nom"] / scn_params["efficiency"][carrier]
+
+    # Select next id value
+    new_id = db.next_etrago_id("link")
+    df_ocgt["link_id"] = range(new_id, new_id + len(df_ocgt))
+
+    # Insert data to db
+    df_ocgt.to_sql(
+        "egon_etrago_link",
+        engine,
+        schema="grid",
+        index=False,
+        if_exists="append",
     )
