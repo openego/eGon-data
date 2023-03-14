@@ -192,6 +192,7 @@ class EgonPfHvGenerator(Base):
         sources()["tyndp"],
         sources()["SciGRID_gas"],
         sources()["Einspeiseatlas"],
+        sources()["technology-data"],
     ]
 
     contributor_list = contributors(["ic", "cb", "ce", "an", "ke"])
@@ -339,6 +340,8 @@ class EgonPfHvLink(Base):
         sources()["mastr"],
         sources()["SciGRID_gas"],
         sources()["pipeline_classification"],
+        sources()["technology-data"],
+        sources()["dsm-heitkoetter"],
     ]
 
     contributor_list = contributors(["ic", "cb", "ke", "ja", "fw", "an"])
@@ -476,6 +479,7 @@ class EgonPfHvStorage(Base):
         sources()["egon-data"],
         sources()["nep2021"],
         sources()["mastr"],
+        sources()["technology-data"],
     ]
 
     contributor_list = contributors(["ic"])
@@ -544,12 +548,15 @@ class EgonPfHvStorageTimeseries(Base):
 
 class EgonPfHvStore(Base):
     source_dict = sources()
+    # TODO: Add other sources for dsm
     source_list = [
         source_dict["bgr_inspee"],
         source_dict["bgr_inspeeds"],
         source_dict["bgr_inspeeds_data_bundle"],
         source_dict["bgr_inspeeds_report"],
         source_dict["SciGRID_gas"],
+        sources()["technology-data"],
+        sources()["dsm-heitkoetter"],
     ]
     contributor_list = contributors(["an", "fw", "ke", "cb", "ja"])
     contributor_list[0]["comment"] = "Add H2 storage"
