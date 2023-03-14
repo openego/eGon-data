@@ -43,19 +43,14 @@ def insert_h2_pipelines():
     scn_params = get_sector_parameters("gas", "eGon100RE")
 
     pipelines["carrier"] = "H2_retrofit"
-    # the volumetric energy density of pure H2 at 50 bar vs. pure CH4 at
-    # 50 bar is at about 30 %, however due to less friction volumetric flow can
-    # be increased for pure H2 leading to higher capacities. Data for both
-    # the retriffiting share and the capacity factor are obtained from the
-    # scenario parameters
     pipelines["p_nom"] *= (
         scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
-        * scn_params["retrofitted_capacity_share"]
     )
     # map pipeline buses
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
     pipelines["bus1"] = CH4_H2_busmap.loc[pipelines["bus1"], "bus_H2"].values
     pipelines["scn_name"] = "eGon100RE"
+    pipelines["p_min_pu"] = -1.0
     pipelines["capital_cost"] = (
         scn_params["capital_cost"]["H2_pipeline_retrofit"]
         * pipelines["length"]
@@ -88,10 +83,11 @@ def insert_h2_pipelines():
     new_pipelines = new_pipelines.set_geometry("geom", crs=4326)
     new_pipelines["carrier"] = "H2_gridextension"
     new_pipelines["scn_name"] = "eGon100RE"
+    new_pipelines["p_min_pu"] = -1.0
     new_pipelines["p_nom_extendable"] = True
     new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
-    # ToDo: insert capital cost data
+    # Insert capital cost data
     new_pipelines["capital_cost"] = (
         scn_params["capital_cost"]["H2_pipeline"]
         * new_pipelines["length"]
@@ -143,14 +139,14 @@ def insert_h2_pipelines():
         """
     select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
 
-    INSERT INTO grid.egon_etrago_link (scn_name,
+    INSERT INTO grid.egon_etrago_link (scn_name, capital_cost,
                                               link_id, carrier,
-                                              bus0, bus1,
+                                              bus0, bus1, p_min_pu,
                                               p_nom_extendable, length,
                                               geom, topo)
-    SELECT scn_name,
+    SELECT scn_name, capital_cost,
                 link_id, carrier,
-                bus0, bus1,
+                bus0, bus1, p_min_pu,
                 p_nom_extendable, length,
                 geom, topo
 

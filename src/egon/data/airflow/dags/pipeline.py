@@ -414,6 +414,7 @@ with airflow.DAG(
             create_gas_polygons_egon2035,
             gas_grid_insert_data,
             insert_hydrogen_buses,
+            run_pypsaeursec,
         ]
     )
 
