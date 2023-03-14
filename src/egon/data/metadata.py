@@ -455,6 +455,22 @@ def sources():
                 },
             ],
         },
+        "dsm-heitkoetter": {
+            "title": "Assessment of the regionalised demand response potential "
+            "in Germany using an open source tool and dataset",
+            "description": "With the expansion of renewable energies in Germany, "
+            "imminent grid congestion events occur more often. One approach for "
+            "avoiding curtailment of renewable energies is to cover excess feed-in "
+            "by demand response. As curtailment is often a local phenomenon, in "
+            "this work we determine the regional demand response potential for "
+            "the 401 German administrative districts with a temporal resolution "
+            "of 15 min, including technical, socio-technical and economic "
+            "restrictions.",
+            "path": "https://doi.org/10.1016/j.adapen.2020.100001",
+            "licenses": [
+                license_ccby("© 2020 German Aerospace Center (DLR), "
+                             "Institute of Networked Energy Systems.")],
+        },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
@@ -566,6 +582,21 @@ def sources():
             "within main sectors: Chemical industry, Iron and steel, Non-ferrous metals, Non-metallic minerals, Paper and printing, and Refineries.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0/about",
             "licenses": [license_ccby("© Europa-Universität Flensburg")],
+        },
+        "technology-data": {
+            "titel": "Energy System Technology Data v0.3.0",
+            "description": "This script compiles assumptions on energy system "
+            "technologies (such as costs, efficiencies, lifetimes, etc.) for "
+            "chosen years (e.g. [2020, 2030, 2050]) from a variety of sources "
+            "into CSV files to be read by energy system modelling software. "
+            "The merged outputs have standardized cost years, technology names, "
+            "units and source information.",
+            "path": "https://github.com/PyPSA/technology-data/tree/v0.3.0",
+            "licenses": [
+                license_agpl(
+                    "© Marta Victoria (Aarhus University), Kun Zhu (Aarhus University), Elisabeth Zeyen (TUB), Tom Brown (TUB)"
+                )
+            ],
         },
         "tyndp": {
             "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
