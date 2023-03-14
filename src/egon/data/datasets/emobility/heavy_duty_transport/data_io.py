@@ -26,29 +26,20 @@ def get_data():
 
 def boundary_gdf():
     """
-    Read in German Border from geo.json file.
+    Get outer boundary from database.
     """
-    sources = DATASET_CFG["original_data"]["sources"]
     srid = DATASET_CFG["tables"]["srid"]
 
-    if TESTMODE_OFF:
-        gdf = gpd.read_file(sources["germany"]["url"]).to_crs(epsg=srid)
+    gdf = select_geodataframe(
+        """
+        SELECT id, geometry FROM boundaries.vg250_lan
+        ORDER BY id
+        """,
+        geom_col="geometry",
+        index_col="id",
+    ).to_crs(epsg=srid)
 
-        logger.debug("Downloaded germany GeoJSON.")
-    else:
-        path = (
-            WORKING_DIR
-            / "_".join(sources["NUTS"]["file"].split(".")[:-1])
-            / sources["NUTS"]["shp_file"]
-        )
-
-        gdf = gpd.read_file(path).to_crs(epsg=srid)
-
-        gdf = gdf.loc[gdf.NUTS_CODE == sources["NUTS"]["NUTS_CODE"]].dissolve()
-
-        logger.debug("Loaded SH shape file.")
-
-    return gdf
+    return gdf.dissolve()
 
 
 def bast_gdf():
