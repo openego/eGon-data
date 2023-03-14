@@ -174,8 +174,94 @@ class EgonPfHvBus(Base):
 
 
 class EgonPfHvBusTimeseries(Base):
+    
+    metadata = {
+    "name": "grid.egon_etrago_bus_timeseries",
+    "title": "Bus Timeseries",
+    "id": "WILL_BE_SET_AT_PUBLICATION",
+    "description": "TODO",
+    "language": [
+        "en-EN"
+    ],
+    "publicationDate": "2023-03-14",
+    "context": context(),
+    "spatial": {
+        "location": "",
+        "extent": "Germany",
+        "resolution": ""
+    },
+    "sources": [
+        sources()["egon-data"]
+    ],
+    "licenses": [
+        sources()["egon-data"]["licenses"]
+    ],
+    "contributors": [
+        {
+            "title": "Clara Büttner",
+            "email": "https://github.com/ClaraBuettner",
+            "comment": "Added meta data"
+        },
+    ],
+    "resources": [
+        {
+            "profile": "tabular-data-resource",
+            "name": "grid.egon_etrago_bus_timeseries",
+            "path": "",
+            "format": "PostgreSQL",
+            "encoding": "UTF-8",
+            "schema": {
+                "fields": [
+                    {
+                        "attribute": "bus_id",
+                        "type": "int",
+                        "unit": "",
+                        "default": "",
+                        "description": "Unique name",
+                        "status": "Input (required)"
+                    },
+                    {
+                        "attribute": "v_mag_pu_set",
+                        "type": "array",
+                        "unit": "per unit",
+                        "default": "1.",
+                        "description": "Voltage magnitude set point, per unit of v_nom.",
+                        "status": "Input (optional)"
+                    },
+                    {
+                        "attribute": "scn_name",
+                        "type": "string",
+                        "unit": "n/a",
+                        "default": "n/a",
+                        "description": "Name of the eGon scenario",
+                        "status": "Input"
+                    }
+                ],
+                "primaryKey": [
+                    "scn_name",
+                    "bus_id"
+                ],
+                "foreignKeys": []
+            },
+            "dialect": {
+                "delimiter": "",
+                "decimalSeparator": "."
+            }
+        }
+    ],
+    "metaMetadata": {
+        "metadataVersion": "OEP-1.4.1",
+        "metadataLicense": {
+            "name": "CC0-1.0",
+            "title": "Creative Commons Zero v1.0 Universal",
+            "path": "https://creativecommons.org/publicdomain/zero/1.0/"
+        }
+    }
+    }
+    
     __tablename__ = "egon_etrago_bus_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid",
+                      "comment": metadata}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -253,8 +339,130 @@ class EgonPfHvGenerator(Base):
 
 
 class EgonPfHvGeneratorTimeseries(Base):
+    
+    metadata = {
+    "name": "grid.egon_etrago_generator_timeseries",
+    "title": "Generator Timeseries",
+    "id": "WILL_BE_SET_AT_PUBLICATION",
+    "description": "TODO",
+    "language": [
+        "en-EN"
+    ],
+    "publicationDate": "2023-03-14",
+    "context": context(),
+    "spatial": {
+        "location": "",
+        "extent": "Germany",
+        "resolution": ""
+    },
+    "sources": [
+        sources()["egon-data"],
+        sources()["era5"]
+    ],
+    "licenses": [
+        sources()["egon-data"]["licenses"][0],
+        sources()["era5"]["licenses"][0],
+    ],
+    "contributors": [
+        {
+            "title": "Clara Büttner",
+            "email": "https://github.com/ClaraBuettner",
+            "comment": "Added meta data"
+        },
+    ],
+    "resources": [
+        {
+            "profile": "tabular-data-resource",
+            "name": "grid.egon_etrago_bus_timeseries",
+            "path": "",
+            "format": "PostgreSQL",
+            "encoding": "UTF-8",
+            "schema": {
+                "fields": [
+                    {
+                        "attribute": "generator_id",
+                        "type": "int",
+                        "unit": "",
+                        "default": "",
+                        "description": "Unique name",
+                    },
+                    {
+                        "attribute": "scn_name",
+                        "type": "string",
+                        "unit": "n/a",
+                        "default": "n/a",
+                        "description": "Name of the eGon scenario",
+                    },
+                    {
+                        "attribute": "temp_id",
+                        "type": "integer",
+                        "unit": "n/a",
+                        "default": "n/a",
+                        "description": "Unique identifyier of temporal index",
+                    },
+                    {
+                        "attribute": "p_min_pu",
+                        "type": "array of floats",
+                        "unit": "per unit",
+                        "default": "0.",
+                        "description": "The minimum output for each snapshot per unit of p_nom for the OPF (e.g. for variable renewable generators this can change due to weather conditions and compulsory feed-in; for conventional generators it represents a minimal dispatch). Note that if comittable is False and p_min_pu > 0, this represents a must-run condition.",
+                        "status": "Input (optional)"
+                    },
+                    {
+                        "attribute": "p_max_pu",
+                        "type": "array of floats",
+                        "unit": "per unit",
+                        "default": "1.",
+                        "description": "The maximum output for each snapshot per unit of p_nom for the OPF (e.g. for variable renewable generators this can change due to weather conditions; for conventional generators it represents a maximum dispatch).",
+                    },
+                    {
+                        "attribute": "p_set",
+                        "type": "array of floats",
+                        "unit": "MW",
+                        "default": "0.",
+                        "description": "active power set point (for PF)",
+                    },
+                    {
+                        "attribute": "q_set",
+                        "type": "array of floats",
+                        "unit": "MVar",
+                        "default": "0.",
+                        "description": "reactive power set point (for PF)",
+                    },
+                    {
+                        "attribute": "marginal_cost",
+                        "type": "array of floats",
+                        "unit": "currency/MWh",
+                        "default": "0.",
+                        "description": "Marginal cost of production of 1 MWh.",
+                    },
+                ],
+                "primaryKey": [
+                    "scn_name",
+                    "generator_id"
+                    "temp_id"
+                ],
+                "foreignKeys": []
+            },
+            "dialect": {
+                "delimiter": "",
+                "decimalSeparator": "."
+            }
+        }
+    ],
+    "metaMetadata": {
+        "metadataVersion": "OEP-1.4.1",
+        "metadataLicense": {
+            "name": "CC0-1.0",
+            "title": "Creative Commons Zero v1.0 Universal",
+            "path": "https://creativecommons.org/publicdomain/zero/1.0/"
+        }
+    }
+    }
+    
     __tablename__ = "egon_etrago_generator_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid",
+                      "comment": metadata}
 
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
