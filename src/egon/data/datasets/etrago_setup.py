@@ -789,11 +789,6 @@ class EgonPfHvStoreTimeseries(Base):
     source_dict = sources()
     # TODO: Add other sources for dsm
     source_list = [
-        source_dict["bgr_inspee"],
-        source_dict["bgr_inspeeds"],
-        source_dict["bgr_inspeeds_data_bundle"],
-        source_dict["bgr_inspeeds_report"],
-        source_dict["SciGRID_gas"],
         sources()["technology-data"],
         sources()["dsm-heitkoetter"],
         sources()["schmidt"],
