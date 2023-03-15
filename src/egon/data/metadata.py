@@ -389,7 +389,7 @@ def sources():
             "zu realisierten und geplanten Biomethanaufbereitungsanlagen - mit "
             "und ohne Einspeisung ins Gasnetz - in Deutschland und weltweit.",
             "path": "https://www.biogaspartner.de/einspeiseatlas/",
-            "licenses": license_ccby("Deutsche Energie-Agentur (dena, 2021)"),
+            "licenses": [license_ccby("Deutsche Energie-Agentur (dena, 2021)")],
         },
         "era5": {
             "title": "ERA5 global reanalysis",
@@ -513,7 +513,7 @@ def sources():
             "the whole documentation could is available at: "
             "https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf",
             "path": "https://zenodo.org/record/5743452",
-            "licenses": license_ccby("© DIW Berlin, 2017"),
+            "licenses": [license_ccby("© DIW Berlin, 2017")],
         },
         "schmidt": {
             "title": "Supplementary material to the masters thesis: "
@@ -532,9 +532,9 @@ def sources():
             "stations, LNG terminals, storage, production sites, gas power "
             "plants, border points, and demand time series. ",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "licenses": license_ccby(
+            "licenses": [license_ccby(
                 "Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
-            ),
+            ),]
         },
         "seenergies": {
             "title": "D5 1 Industry Dataset With Demand Data",
