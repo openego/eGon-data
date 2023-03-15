@@ -25,12 +25,7 @@ import pypsa
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.metadata import (
-    context,
-    contributors,
-    meta_metadata,
-    sources,
-)
+from egon.data.metadata import context, contributors, meta_metadata, sources
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -45,11 +40,10 @@ def get_pypsa_field_descriptors(component, timeseries=False):
     ident = component.lower() + "_id"
 
     data = network.component_attrs[component].rename({"name": ident})
-    data = data[data.status!="Output"]
+    data = data[data.status != "Output"]
 
-    
-    if timeseries: 
-        data = data[data['type'].str.contains('series')]  
+    if timeseries:
+        data = data[data["type"].str.contains("series")]
         data.loc["temp_id"] = [
             "integer",
             "n/a",
@@ -80,7 +74,7 @@ def get_meta(
 ):
 
     table = "egon_etrago_" + component.lower()
-    
+
     if timeseries:
         table = table + "_timeseries"
     fields = (
@@ -130,6 +124,7 @@ def get_meta(
     meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
 
     return meta_json
+
 
 class EtragoSetup(Dataset):
     def __init__(self, dependencies):
@@ -187,7 +182,6 @@ class EgonPfHvBus(Base):
 
 
 class EgonPfHvBusTimeseries(Base):
-    
 
     source_list = [
         sources()["egon-data"],
@@ -287,16 +281,16 @@ class EgonPfHvGenerator(Base):
 
 
 class EgonPfHvGeneratorTimeseries(Base):
-    
- 
+
     source_list = [
         sources()["egon-data"],
         sources()["era5"],
     ]
 
     contributor_list = contributors(["cb"])
-    contributor_list[0]["comment"] = "Added p_max_pu timeseries for pv and wind"
-
+    contributor_list[0][
+        "comment"
+    ] = "Added p_max_pu timeseries for pv and wind"
 
     license_list = [data["licenses"] for data in source_list]
 
@@ -312,7 +306,6 @@ class EgonPfHvGeneratorTimeseries(Base):
             timeseries=True,
         ),
     }
-
 
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
@@ -379,7 +372,7 @@ class EgonPfHvLine(Base):
 
 
 class EgonPfHvLineTimeseries(Base):
-    
+
     source_list = [
         sources()["egon-data"],
         sources()["nep2021"],
@@ -392,16 +385,17 @@ class EgonPfHvLineTimeseries(Base):
     license_list = [data["licenses"] for data in source_list]
 
     __tablename__ = "egon_etrago_line_timeseries"
-    __table_args__ = {"schema": "grid",
-                      "comment": get_meta(
-                          "grid",
-                          "Line",
-                          source_list=source_list,
-                          license_list=license_list,
-                          contributor_list=contributor_list,
-                          timeseries=True
-                      ),
-                  }
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Line",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -487,13 +481,14 @@ class EgonPfHvLinkTimeseries(Base):
     ]
 
     contributor_list = contributors(["cb", "ke", "ja"])
-    contributor_list[0]["comment"] = "Added efficiency timeseries for heat pumps"
+    contributor_list[0][
+        "comment"
+    ] = "Added efficiency timeseries for heat pumps"
     contributor_list[1]["comment"] = "Added dsm link timeseries"
     contributor_list[2]["comment"] = "Added e mobility link timeseries"
 
     license_list = [data["licenses"] for data in source_list]
-    
-    
+
     __tablename__ = "egon_etrago_link_timeseries"
     __table_args__ = {
         "schema": "grid",
@@ -562,7 +557,7 @@ class EgonPfHvLoad(Base):
 
 
 class EgonPfHvLoadTimeseries(Base):
-    source_list =  [
+    source_list = [
         sources()["egon-data"],
         sources()["demandregio"],
         sources()["nep2021"],
@@ -582,8 +577,7 @@ class EgonPfHvLoadTimeseries(Base):
     contributor_list[3]["comment"] = "Added gas load timeseries"
 
     license_list = [data["licenses"] for data in source_list]
-    
-    
+
     __tablename__ = "egon_etrago_load_timeseries"
     __table_args__ = {
         "schema": "grid",
@@ -610,22 +604,21 @@ class EgonPfHvCarrier(Base):
     ]
 
     contributor_list = contributors(["fw"])
-    contributor_list[0][
-        "comment"
-    ] = "Added list of carriers"
-    
+    contributor_list[0]["comment"] = "Added list of carriers"
+
     license_list = [data["licenses"] for data in source_list]
-    
+
     __tablename__ = "egon_etrago_carrier"
-    __table_args__ = {        "schema": "grid",
-            "comment": get_meta(
-                "grid",
-                "Carrier",
-                source_list=source_list,
-                license_list=license_list,
-                contributor_list=contributor_list,
-            ),
-        }
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Carrier",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+        ),
+    }
 
     name = Column(Text, primary_key=True, nullable=False)
     co2_emissions = Column(Float(53), server_default="0.")
@@ -697,9 +690,7 @@ class EgonPfHvStorageTimeseries(Base):
     ]
 
     contributor_list = contributors(["cb"])
-    contributor_list[0][
-        "comment"
-    ] = "Added metadata"
+    contributor_list[0]["comment"] = "Added metadata"
 
     license_list = [data["licenses"] for data in source_list]
 
@@ -712,10 +703,9 @@ class EgonPfHvStorageTimeseries(Base):
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
-            timeseries=True
+            timeseries=True,
         ),
     }
-
 
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -818,7 +808,7 @@ class EgonPfHvStoreTimeseries(Base):
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
-            timeseries=True
+            timeseries=True,
         ),
     }
     scn_name = Column(String, primary_key=True, nullable=False)
@@ -914,7 +904,7 @@ class EgonPfHvTransformerTimeseries(Base):
             source_list=source_list,
             license_list=license_list,
             contributor_list=contributor_list,
-            timeseries=True
+            timeseries=True,
         ),
     }
 
