@@ -42,11 +42,24 @@ network = pypsa.Network()
 network.component_attrs["Storage"] = network.component_attrs["StorageUnit"]
 
 
-def get_pypsa_field_descriptors(component):
+def get_pypsa_field_descriptors(component, timeseries=False):
 
     ident = component.lower() + "_id"
 
     data = network.component_attrs[component].rename({"name": ident})
+    data = data[data.status!="Output"]
+
+    
+    if timeseries: 
+        data = data[data['type'].str.contains('series')]  
+        data.loc["temp_id"] = [
+            "integer",
+            "n/a",
+            "n/a",
+            "Unique identifyier of temporal index",
+            "Input",
+        ]
+
     data.loc[ident, "type"] = "int"
     data.loc["scn_name"] = [
         "string",
@@ -55,7 +68,6 @@ def get_pypsa_field_descriptors(component):
         "Name of the eGon scenario",
         "Input",
     ]
-
     return data
 
 
@@ -66,11 +78,15 @@ def get_meta(
     source_list=[],
     license_list=[],
     contributor_list=[],
+    timeseries=False,
 ):
 
     table = "egon_etrago_" + component.lower()
+    
+    if timeseries:
+        table = table + "_timeseries"
     fields = (
-        get_pypsa_field_descriptors(component)
+        get_pypsa_field_descriptors(component, timeseries)
         .reset_index()
         .to_dict(orient="records")
     )
@@ -116,7 +132,6 @@ def get_meta(
     meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
 
     return meta_json
-
 
 class EtragoSetup(Dataset):
     def __init__(self, dependencies):
@@ -175,93 +190,28 @@ class EgonPfHvBus(Base):
 
 class EgonPfHvBusTimeseries(Base):
     
-    metadata = {
-    "name": "grid.egon_etrago_bus_timeseries",
-    "title": "Bus Timeseries",
-    "id": "WILL_BE_SET_AT_PUBLICATION",
-    "description": "TODO",
-    "language": [
-        "en-EN"
-    ],
-    "publicationDate": "2023-03-14",
-    "context": context(),
-    "spatial": {
-        "location": "",
-        "extent": "Germany",
-        "resolution": ""
-    },
-    "sources": [
-        sources()["egon-data"]
-    ],
-    "licenses": [
-        sources()["egon-data"]["licenses"]
-    ],
-    "contributors": [
-        {
-            "title": "Clara Büttner",
-            "email": "https://github.com/ClaraBuettner",
-            "comment": "Added meta data"
-        },
-    ],
-    "resources": [
-        {
-            "profile": "tabular-data-resource",
-            "name": "grid.egon_etrago_bus_timeseries",
-            "path": "",
-            "format": "PostgreSQL",
-            "encoding": "UTF-8",
-            "schema": {
-                "fields": [
-                    {
-                        "attribute": "bus_id",
-                        "type": "int",
-                        "unit": "",
-                        "default": "",
-                        "description": "Unique name",
-                        "status": "Input (required)"
-                    },
-                    {
-                        "attribute": "v_mag_pu_set",
-                        "type": "array",
-                        "unit": "per unit",
-                        "default": "1.",
-                        "description": "Voltage magnitude set point, per unit of v_nom.",
-                        "status": "Input (optional)"
-                    },
-                    {
-                        "attribute": "scn_name",
-                        "type": "string",
-                        "unit": "n/a",
-                        "default": "n/a",
-                        "description": "Name of the eGon scenario",
-                        "status": "Input"
-                    }
-                ],
-                "primaryKey": [
-                    "scn_name",
-                    "bus_id"
-                ],
-                "foreignKeys": []
-            },
-            "dialect": {
-                "delimiter": "",
-                "decimalSeparator": "."
-            }
-        }
-    ],
-    "metaMetadata": {
-        "metadataVersion": "OEP-1.4.1",
-        "metadataLicense": {
-            "name": "CC0-1.0",
-            "title": "Creative Commons Zero v1.0 Universal",
-            "path": "https://creativecommons.org/publicdomain/zero/1.0/"
-        }
-    }
-    }
-    
+
+    source_list = [
+        sources()["egon-data"],
+    ]
+
+    contributor_list = contributors(["cb"])
+    contributor_list[0]["comment"] = "Added metadata"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_bus_timeseries"
-    __table_args__ = {"schema": "grid",
-                      "comment": metadata}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Bus",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -340,129 +290,31 @@ class EgonPfHvGenerator(Base):
 
 class EgonPfHvGeneratorTimeseries(Base):
     
-    metadata = {
-    "name": "grid.egon_etrago_generator_timeseries",
-    "title": "Generator Timeseries",
-    "id": "WILL_BE_SET_AT_PUBLICATION",
-    "description": "TODO",
-    "language": [
-        "en-EN"
-    ],
-    "publicationDate": "2023-03-14",
-    "context": context(),
-    "spatial": {
-        "location": "",
-        "extent": "Germany",
-        "resolution": ""
-    },
-    "sources": [
+ 
+    source_list = [
         sources()["egon-data"],
-        sources()["era5"]
-    ],
-    "licenses": [
-        sources()["egon-data"]["licenses"][0],
-        sources()["era5"]["licenses"][0],
-    ],
-    "contributors": [
-        {
-            "title": "Clara Büttner",
-            "email": "https://github.com/ClaraBuettner",
-            "comment": "Added meta data"
-        },
-    ],
-    "resources": [
-        {
-            "profile": "tabular-data-resource",
-            "name": "grid.egon_etrago_bus_timeseries",
-            "path": "",
-            "format": "PostgreSQL",
-            "encoding": "UTF-8",
-            "schema": {
-                "fields": [
-                    {
-                        "attribute": "generator_id",
-                        "type": "int",
-                        "unit": "",
-                        "default": "",
-                        "description": "Unique name",
-                    },
-                    {
-                        "attribute": "scn_name",
-                        "type": "string",
-                        "unit": "n/a",
-                        "default": "n/a",
-                        "description": "Name of the eGon scenario",
-                    },
-                    {
-                        "attribute": "temp_id",
-                        "type": "integer",
-                        "unit": "n/a",
-                        "default": "n/a",
-                        "description": "Unique identifyier of temporal index",
-                    },
-                    {
-                        "attribute": "p_min_pu",
-                        "type": "array of floats",
-                        "unit": "per unit",
-                        "default": "0.",
-                        "description": "The minimum output for each snapshot per unit of p_nom for the OPF (e.g. for variable renewable generators this can change due to weather conditions and compulsory feed-in; for conventional generators it represents a minimal dispatch). Note that if comittable is False and p_min_pu > 0, this represents a must-run condition.",
-                        "status": "Input (optional)"
-                    },
-                    {
-                        "attribute": "p_max_pu",
-                        "type": "array of floats",
-                        "unit": "per unit",
-                        "default": "1.",
-                        "description": "The maximum output for each snapshot per unit of p_nom for the OPF (e.g. for variable renewable generators this can change due to weather conditions; for conventional generators it represents a maximum dispatch).",
-                    },
-                    {
-                        "attribute": "p_set",
-                        "type": "array of floats",
-                        "unit": "MW",
-                        "default": "0.",
-                        "description": "active power set point (for PF)",
-                    },
-                    {
-                        "attribute": "q_set",
-                        "type": "array of floats",
-                        "unit": "MVar",
-                        "default": "0.",
-                        "description": "reactive power set point (for PF)",
-                    },
-                    {
-                        "attribute": "marginal_cost",
-                        "type": "array of floats",
-                        "unit": "currency/MWh",
-                        "default": "0.",
-                        "description": "Marginal cost of production of 1 MWh.",
-                    },
-                ],
-                "primaryKey": [
-                    "scn_name",
-                    "generator_id"
-                    "temp_id"
-                ],
-                "foreignKeys": []
-            },
-            "dialect": {
-                "delimiter": "",
-                "decimalSeparator": "."
-            }
-        }
-    ],
-    "metaMetadata": {
-        "metadataVersion": "OEP-1.4.1",
-        "metadataLicense": {
-            "name": "CC0-1.0",
-            "title": "Creative Commons Zero v1.0 Universal",
-            "path": "https://creativecommons.org/publicdomain/zero/1.0/"
-        }
-    }
-    }
-    
+        sources()["era5"],
+    ]
+
+    contributor_list = contributors(["cb"])
+    contributor_list[0]["comment"] = "Added p_max_pu timeseries for pv and wind"
+
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_generator_timeseries"
-    __table_args__ = {"schema": "grid",
-                      "comment": metadata}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Generator",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True,
+        ),
+    }
+
 
     scn_name = Column(String, primary_key=True, nullable=False)
     generator_id = Column(Integer, primary_key=True, nullable=False)
@@ -529,8 +381,29 @@ class EgonPfHvLine(Base):
 
 
 class EgonPfHvLineTimeseries(Base):
+    
+    source_list = [
+        sources()["egon-data"],
+        sources()["nep2021"],
+    ]
+
+    contributor_list = contributors(["ce", "cb"])
+    contributor_list[0]["comment"] = "Added s_max_pu timeseries"
+    contributor_list[1]["comment"] = "Added meta data"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_line_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {"schema": "grid",
+                      "comment": get_meta(
+                          "grid",
+                          "Line",
+                          source_list=source_list,
+                          license_list=license_list,
+                          contributor_list=contributor_list,
+                          timeseries=True
+                      ),
+                  }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     line_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -602,8 +475,36 @@ class EgonPfHvLink(Base):
 
 
 class EgonPfHvLinkTimeseries(Base):
+    source_list = [
+        sources()["egon-data"],
+        sources()["era5"],
+        sources()["dsm-heitkoetter"],
+        sources()["schmidt"],
+        sources()["hotmaps_industrial_sites"],
+        sources()["openstreetmap"],
+        sources()["demandregio"],
+    ]
+
+    contributor_list = contributors(["cb", "ke", "ja"])
+    contributor_list[0]["comment"] = "Added efficiency timeseries for heat pumps"
+    contributor_list[1]["comment"] = "Added dsm link timeseries"
+    contributor_list[2]["comment"] = "Added e mobility link timeseries"
+
+    license_list = [data["licenses"] for data in source_list]
+    
+    
     __tablename__ = "egon_etrago_link_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Link",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     link_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -660,8 +561,40 @@ class EgonPfHvLoad(Base):
 
 
 class EgonPfHvLoadTimeseries(Base):
+    source_list =  [
+        sources()["egon-data"],
+        sources()["demandregio"],
+        sources()["nep2021"],
+        sources()["peta"],
+        sources()["openffe_gas"],
+        sources()["tyndp"],
+        sources()["era5"],
+        sources()["schmidt"],
+        sources()["hotmaps_industrial_sites"],
+        sources()["openstreetmap"],
+    ]
+
+    contributor_list = contributors(["cb", "ic", "ja", "an"])
+    contributor_list[0]["comment"] = "Added heat load timeseries"
+    contributor_list[1]["comment"] = "Added electricity load timeseries"
+    contributor_list[2]["comment"] = "Added e mobility load timeseries"
+    contributor_list[3]["comment"] = "Added gas load timeseries"
+
+    license_list = [data["licenses"] for data in source_list]
+    
+    
     __tablename__ = "egon_etrago_load_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Load",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True,
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     load_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -671,8 +604,27 @@ class EgonPfHvLoadTimeseries(Base):
 
 
 class EgonPfHvCarrier(Base):
+    source_list = [
+        sources()["egon-data"],
+    ]
+
+    contributor_list = contributors(["fw"])
+    contributor_list[0][
+        "comment"
+    ] = "Added list of carriers"
+    
+    license_list = [data["licenses"] for data in source_list]
+    
     __tablename__ = "egon_etrago_carrier"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {        "schema": "grid",
+            "comment": get_meta(
+                "grid",
+                "Carrier",
+                source_list=source_list,
+                license_list=license_list,
+                contributor_list=contributor_list,
+            ),
+        }
 
     name = Column(Text, primary_key=True, nullable=False)
     co2_emissions = Column(Float(53), server_default="0.")
@@ -739,8 +691,30 @@ class EgonPfHvStorage(Base):
 
 
 class EgonPfHvStorageTimeseries(Base):
+    source_list = [
+        sources()["egon-data"],
+    ]
+
+    contributor_list = contributors(["cb"])
+    contributor_list[0][
+        "comment"
+    ] = "Added metadata"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_storage_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Storage",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True
+        ),
+    }
+
 
     scn_name = Column(String, primary_key=True, nullable=False)
     storage_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -810,9 +784,38 @@ class EgonPfHvStore(Base):
 
 
 class EgonPfHvStoreTimeseries(Base):
-    __tablename__ = "egon_etrago_store_timeseries"
-    __table_args__ = {"schema": "grid"}
+    source_dict = sources()
+    # TODO: Add other sources for dsm
+    source_list = [
+        source_dict["bgr_inspee"],
+        source_dict["bgr_inspeeds"],
+        source_dict["bgr_inspeeds_data_bundle"],
+        source_dict["bgr_inspeeds_report"],
+        source_dict["SciGRID_gas"],
+        sources()["technology-data"],
+        sources()["dsm-heitkoetter"],
+        sources()["schmidt"],
+        sources()["hotmaps_industrial_sites"],
+        sources()["openstreetmap"],
+        sources()["demandregio"],
+    ]
+    contributor_list = contributors(["ke", "ja"])
+    contributor_list[0]["comment"] = "Add DSM storage"
+    contributor_list[1]["comment"] = "Add e-mobility storage"
 
+    license_list = [data["licenses"] for data in source_list]
+    __tablename__ = "egon_etrago_store_timeseries"
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Store",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True
+        ),
+    }
     scn_name = Column(String, primary_key=True, nullable=False)
     store_id = Column(BigInteger, primary_key=True, nullable=False)
     temp_id = Column(Integer, primary_key=True, nullable=False)
@@ -888,8 +891,27 @@ class EgonPfHvTransformer(Base):
 
 
 class EgonPfHvTransformerTimeseries(Base):
+    source_list = [
+        sources()["egon-data"],
+    ]
+
+    contributor_list = contributors(["cb"])
+    contributor_list[0]["comment"] = "Added meta data"
+
+    license_list = [data["licenses"] for data in source_list]
+
     __tablename__ = "egon_etrago_transformer_timeseries"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": get_meta(
+            "grid",
+            "Transformer",
+            source_list=source_list,
+            license_list=license_list,
+            contributor_list=contributor_list,
+            timeseries=True
+        ),
+    }
 
     scn_name = Column(String, primary_key=True, nullable=False)
     trafo_id = Column(BigInteger, primary_key=True, nullable=False)
