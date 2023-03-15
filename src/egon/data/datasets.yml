@@ -299,12 +299,20 @@ mastr:
 
 mastr_new:
   technologies:
-    - "wind"
-    - "hydro"
-    - "solar"
     - "biomass"
+    - "combustion"
+    - "gsgk"
+    - "hydro"
+    - "nuclear"
+    - "solar"
+    - "storage"
+    - "wind"
   file_basename: "bnetza_mastr"
   deposit_id: 1132987
+  egon2021_date_max: "2021-12-31 23:59:00"
+  geocoding_path:
+    - "data_bundle_egon_data"
+    - "mastr_geocoding"
 
 re_potential_areas:
   target:
@@ -355,14 +363,16 @@ hotmaps_current_policy_scenario_heat_demands_buildings:
 
 power_plants:
   sources:
-      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
-      mastr_wind: "bnetza_mastr_wind_cleaned.csv"
       mastr_biomass: "bnetza_mastr_biomass_cleaned.csv"
+      mastr_combustion: "bnetza_mastr_combustion_cleaned.csv"
+      mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
+      mastr_gsgk: "bnetza_mastr_gsgk_cleaned.csv"
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
-      mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
+      mastr_nuclear: "bnetza_mastr_nuclear_cleaned.csv"
+      mastr_pv: "bnetza_mastr_solar_cleaned.csv"
       mastr_storage: "bnetza_mastr_storage_cleaned.csv"
-      mastr_gsgk: "bnetza_mastr_gsgk_cleaned.csv"
+      mastr_wind: "bnetza_mastr_wind_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"
       geom_germany: "boundaries.vg250_sta_union"
       geom_federal_states: "boundaries.vg250_lan"
@@ -530,7 +540,7 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 1095882
+      deposit_id: 1167119
   targets:
     file:
       'data_bundle_egon_data.zip'
