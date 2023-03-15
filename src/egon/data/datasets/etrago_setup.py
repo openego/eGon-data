@@ -421,6 +421,9 @@ class EgonPfHvLink(Base):
         sources()["pipeline_classification"],
         sources()["technology-data"],
         sources()["dsm-heitkoetter"],
+        sources()["schmidt"],
+        sources()["hotmaps_industrial_sites"],
+        sources()["demandregio"],
     ]
 
     contributor_list = contributors(["ic", "cb", "ke", "ja", "fw", "an"])
@@ -728,7 +731,7 @@ class EgonPfHvStorageTimeseries(Base):
 
 class EgonPfHvStore(Base):
     source_dict = sources()
-    # TODO: Add other sources for dsm
+
     source_list = [
         source_dict["bgr_inspee"],
         source_dict["bgr_inspeeds"],
@@ -737,6 +740,10 @@ class EgonPfHvStore(Base):
         source_dict["SciGRID_gas"],
         sources()["technology-data"],
         sources()["dsm-heitkoetter"],
+        sources()["schmidt"],
+        sources()["hotmaps_industrial_sites"],
+        sources()["openstreetmap"],
+        sources()["demandregio"],
     ]
     contributor_list = contributors(["an", "fw", "ke", "cb", "ja"])
     contributor_list[0]["comment"] = "Add H2 storage"
