@@ -1,3 +1,6 @@
+import datetime
+import json
+
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     Boolean,
@@ -9,6 +12,14 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy.ext.declarative import declarative_base
+
+from egon.data import config, db
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_db_table,
+    license_dedl,
+    meta_metadata,
+)
 
 Base = declarative_base()
 
@@ -280,3 +291,145 @@ class EgonPowerPlantsStorage(Base):
 
     geometry_geocoded = Column(Boolean)
     geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+
+
+def add_metadata():
+    technologies = config.datasets()["mastr_new"]["technologies"]
+
+    target_tables = {
+        "pv": EgonPowerPlantsPv,
+        "wind": EgonPowerPlantsWind,
+        "biomass": EgonPowerPlantsBiomass,
+        "hydro": EgonPowerPlantsHydro,
+        "combustion": EgonPowerPlantsCombustion,
+        "gsgk": EgonPowerPlantsGsgk,
+        "nuclear": EgonPowerPlantsNuclear,
+        "storage": EgonPowerPlantsStorage,
+    }
+
+    for technology in technologies:
+        target_table = target_tables[technology]
+
+        meta = {
+            "name": (
+                f"{target_table.__table_args__['schema']}."
+                f"{target_table.__tablename__}"
+            ),
+            "title": f"eGon {technology} power plants",
+            "id": "WILL_BE_SET_AT_PUBLICATION",
+            "description": (
+                f"eGon {technology} power plants status quo derived from MaStR"
+            ),
+            "language": "en-US",
+            "keywords": [technology, "mastr"],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": context(),
+            "spatial": {
+                "location": "none",
+                "extent": "Germany",
+                "resolution": "1 m",
+            },
+            "temporal": {
+                "referenceDate": (
+                    config.datasets()["mastr_new"]["egon2021_date_max"].split(
+                        " "
+                    )[0]
+                ),
+                "timeseries": {
+                    "start": "",
+                    "end": "",
+                    "resolution": "",
+                    "alignment": "",
+                    "aggregationType": "",
+                },
+            },
+            "sources": [
+                {
+                    "title": "Data bundle for egon-data",
+                    "description": (
+                        "Data bundle for egon-data: A transparent and "
+                        "reproducible data processing pipeline for energy "
+                        "system modeling"
+                    ),
+                    "path": (
+                        "https://sandbox.zenodo.org/record/"
+                        "1167119#.Y_dWM4CZMVM"
+                    ),
+                    "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
+                },
+                {
+                    "title": (
+                        "open-MaStR power unit registry for eGo^n project"
+                    ),
+                    "description": (
+                        "Data from Marktstammdatenregister (MaStR) data using "
+                        "the data dump from 2022-11-17 for eGon-data."
+                    ),
+                    "path": "https://sandbox.zenodo.org/record/1132987",
+                    "licenses": [license_dedl(attribution="© Amme, Jonathan")],
+                },
+            ],
+            "licenses": [license_dedl(attribution="© eGon development team")],
+            "contributors": [
+                {
+                    "title": "khelfen",
+                    "email": "Kilian.Helfenbein@rl-institut.de",
+                    "date": "2023-03-15",
+                    "object": "metadata",
+                    "comment": "Create metadata",
+                }
+            ],
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": (
+                        f"{target_table.__table_args__['schema']}."
+                        f"{target_table.__tablename__}"
+                    ),
+                    "path": "None",
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": generate_resource_fields_from_db_table(
+                            target_table.__table_args__["schema"],
+                            target_table.__tablename__,
+                        ),
+                        "primaryKey": "id",
+                    },
+                    "dialect": {"delimiter": "", "decimalSeparator": ""},
+                }
+            ],
+            "review": {"path": "", "badge": ""},
+            "metaMetadata": meta_metadata(),
+            "_comment": {
+                "metadata": (
+                    "Metadata documentation and explanation (https://github."
+                    "com/OpenEnergyPlatform/oemetadata/blob/master/metadata/"
+                    "v141/metadata_key_description.md)"
+                ),
+                "dates": (
+                    "Dates and time must follow the ISO8601 including time "
+                    "zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
+                ),
+                "units": "Use a space between numbers and units (100 m)",
+                "languages": (
+                    "Languages must follow the IETF (BCP47) format (en-GB, "
+                    "en-US, de-DE)"
+                ),
+                "licenses": (
+                    "License name must follow the SPDX License List "
+                    "(https://spdx.org/licenses/)"
+                ),
+                "review": (
+                    "Following the OEP Data Review (https://github.com/"
+                    "OpenEnergyPlatform/data-preprocessing/wiki)"
+                ),
+                "none": "If not applicable use (none)",
+            },
+        }
+
+        db.submit_comment(
+            f"'{json.dumps(meta)}'",
+            target_table.__table_args__["schema"],
+            target_table.__tablename__,
+        )

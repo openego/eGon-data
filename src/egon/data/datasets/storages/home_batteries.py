@@ -181,6 +181,8 @@ def allocate_home_batteries_to_buildings():
 
     create_table(pd.concat(df_list, ignore_index=True))
 
+    add_metadata()
+
 
 class EgonHomeBatteries(Base):
     targets = config.datasets()["home_batteries"]["targets"]
