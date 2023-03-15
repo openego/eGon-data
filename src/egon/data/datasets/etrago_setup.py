@@ -394,7 +394,7 @@ class EgonPfHvStore(Base):
     contributor_list = contributors(["an", "fw"])
     contributor_list[0]["comment"] = "Add H2 storage"
     contributor_list[1]["comment"] = "Add CH4 storage"
-    license_list = [data["license"] for data in source_list]
+    license_list = [data["licenses"] for data in source_list]
     __tablename__ = "egon_etrago_store"
     __table_args__ = {
         "schema": "grid",

@@ -13,12 +13,7 @@ from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
 )
-from egon.data.metadata import (
-    context,
-    contributors,
-    license_ccby,
-    meta_metadata,
-)
+from egon.data.metadata import context, contributors, meta_metadata, sources
 
 
 def insert_hydrogen_buses(scenario="eGon2035"):
@@ -54,6 +49,11 @@ Base = declarative_base()
 
 
 class EgonMapACH2(Base):
+    source_list = [
+        sources()["openstreetmap"],
+        sources()["SciGRID_gas"],
+        sources()["bgr_inspeeds_data_bundle"],
+    ]
     meta_ac_h2 = {
         "name": "grid.egon_etrago_ac_h2",
         "title": "Mapping table of AC-H2 buses",
@@ -67,8 +67,8 @@ class EgonMapACH2(Base):
             "extent": "Germany",
             "resolution": None,
         },
-        "sources": None,
-        "licenses": [license_ccby("eGon development team")],
+        "sources": source_list,
+        "licenses": [data["licenses"] for data in source_list],
         "contributors": contributors(["fw"]),
         "resources": [
             {
@@ -194,6 +194,11 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
 
 
 class EgonMapH2CH4(Base):
+    source_list = [
+        sources()["openstreetmap"],
+        sources()["SciGRID_gas"],
+        sources()["bgr_inspeeds_data_bundle"],
+    ]
     meta_H2_CH4 = {
         "name": "grid.egon_etrago_ch4_h2",
         "title": "Mapping table of CH4-H2 buses",
@@ -207,8 +212,8 @@ class EgonMapH2CH4(Base):
             "extent": "Germany",
             "resolution": None,
         },
-        "sources": None,
-        "licenses": [license_ccby("eGon development team")],
+        "sources": source_list,
+        "licenses": [data["licenses"] for data in source_list],
         "contributors": contributors(["fw"]),
         "resources": [
             {

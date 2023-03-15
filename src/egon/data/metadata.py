@@ -320,7 +320,7 @@ def sources():
             "salt structures: planning basis, selection criteria and estimation of the potential for the construction "
             'of salt caverns for the storage of renewable energies (hydrogen and compressed air)".',
             "path": "https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=338136ea-261a-4569-a2bf-92999d09bad2",
-            "license": [license_geonutzv("© BGR, Hannover, 2015")],
+            "licenses": [license_geonutzv("© BGR, Hannover, 2015")],
         },
         "bgr_inspeeds": {
             "title": "Flat layered salts in Germany",
