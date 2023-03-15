@@ -379,7 +379,7 @@ def sources():
             "path": "https://github.com/openego/eGon-data",
             "licenses": [
                 license_agpl(
-                    "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte"
+                    "© eGon development team"
                 )
             ],
         },
