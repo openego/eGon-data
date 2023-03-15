@@ -307,6 +307,11 @@ def add_metadata():
         "storage": EgonPowerPlantsStorage,
     }
 
+    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
+        "zenodo"
+    ]["deposit_id"]
+    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
+
     for technology in technologies:
         target_table = target_tables[technology]
 
@@ -353,7 +358,7 @@ def add_metadata():
                     ),
                     "path": (
                         "https://sandbox.zenodo.org/record/"
-                        "1167119#.Y_dWM4CZMVM"
+                        f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
                     ),
                     "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
                 },
@@ -365,7 +370,9 @@ def add_metadata():
                         "Data from Marktstammdatenregister (MaStR) data using "
                         "the data dump from 2022-11-17 for eGon-data."
                     ),
-                    "path": "https://sandbox.zenodo.org/record/1132987",
+                    "path": (
+                        f"https://sandbox.zenodo.org/record/{deposit_id_mastr}"
+                    ),
                     "licenses": [license_dedl(attribution="© Amme, Jonathan")],
                 },
             ],
