@@ -60,6 +60,8 @@ def get_pypsa_field_descriptors(component, timeseries=False):
         "Name of the eGon scenario",
         "Input",
     ]
+    data.unit.fillna("none", inplace=True)
+    data.default.fillna("n/a", inplace=True)
     return data
 
 
@@ -114,7 +116,10 @@ def get_meta(
                     "primaryKey": ["scn_name", component.lower() + "_id"],
                     "foreignKeys": [],
                 },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
+                "dialect": {
+                    "delimiter": "",
+                    "decimalSeparator": ""
+                    },
             }
         ],
         "metaMetadata": meta_metadata(),
