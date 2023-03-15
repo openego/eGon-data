@@ -382,6 +382,7 @@ class EgonPfHvLineTimeseries(Base):
     source_list = [
         sources()["egon-data"],
         sources()["nep2021"],
+        sources()["era5"],
     ]
 
     contributor_list = contributors(["ce", "cb"])
