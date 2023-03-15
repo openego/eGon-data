@@ -1,7 +1,8 @@
-"""Module containing functions to insert gas abroad
+"""
+Module containing functions to insert the gas sector abroad
 
 In this module, functions useful to insert the gas components (H2 and
-CH4) abroad for eGon2035 and eGon100RE are defined.
+CH4) abroad for the scenarios eGon2035 and eGon100RE are defined.
 
 """
 
@@ -11,15 +12,17 @@ from egon.data import config, db
 
 
 def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
-    """Insert crossbordering gas pipelines in the database
+    """
+    Insert crossbordering gas pipelines into the database
 
-    This function insert a list of crossbordering gas pipelines after
+    This function inserts a list of crossbordering gas pipelines after
     cleaning the database.
     For eGon2035, all the CH4 crossbordering pipelines are inserted
     there (no H2 grid in this scenario).
     For eGon100RE, only the the crossbordering pipelines with Germany
-    are inserted there (the other ones are inerted in PypsaEurSec),
+    are inserted there (the other ones are inserted in PypsaEurSec),
     but in this scenario there are H2 and CH4 pipelines.
+    This function inserts data in the database and has no return.
 
     Parameters
     ----------
@@ -27,10 +30,6 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         List of the crossbordering gas pipelines
     scn_name : str
         Name of the scenario
-
-    Returns
-    -------
-    None
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
