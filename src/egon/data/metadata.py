@@ -1,5 +1,3 @@
-import time
-
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
@@ -206,7 +204,49 @@ def license_agpl(attribution):
         "work, under the same license. Copyright and license notices must be"
         "preserved. Contributors provide an express grant of patent rights."
         "When a modified version is used to provide a service over a network,"
-        "the complete source code of the modified version must be made available.",
+        "the complete source code of the modified version must be made "
+        "available.",
+        "attribution": attribution,
+    }
+
+
+def license_dedl(attribution):
+    """
+    License information for Data licence Germany – attribution – version 2.0
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g. '© GeoBasis-DE / BKG'
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+    return {
+        "name": "DL-DE-BY-2.0",
+        "title": "Data licence Germany – attribution – version 2.0",
+        "path": "https://www.govdata.de/dl-de/by-2-0",
+        "instruction": (
+            "Any use will be permitted provided it fulfils the requirements of"
+            " this 'Data licence Germany – attribution – Version 2.0'. The "
+            "data and meta-data provided may, for commercial and "
+            "non-commercial use, in particular be copied, printed, presented, "
+            "altered, processed and transmitted to third parties; be merged "
+            "with own data and with the data of others and be combined to form"
+            " new and independent datasets; be integrated in internal and "
+            "external business processes, products and applications in public "
+            "and non-public electronic networks. The user must ensure that the"
+            " source note contains the following information: the name of the "
+            "provider, the annotation 'Data licence Germany – attribution – "
+            "Version 2.0' or 'dl-de/by-2-0' referring to the licence text "
+            "available at www.govdata.de/dl-de/by-2-0, and a reference to the "
+            "dataset (URI). This applies only if the entity keeping the data "
+            "provides the pieces of information 1-3 for the source note. "
+            "Changes, editing, new designs or other amendments must be marked "
+            "as such in the source note."
+        ),
         "attribution": attribution,
     }
 
