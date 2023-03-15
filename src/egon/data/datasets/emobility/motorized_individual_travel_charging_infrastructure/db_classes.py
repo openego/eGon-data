@@ -40,6 +40,9 @@ class EgonEmobChargingInfrastructure(Base):
 
 
 def add_metadata():
+    """
+    Add metadata to table grid.egon_emob_charging_infrastructure
+    """
     meta = {
         "name": "grid.egon_emob_charging_infrastructure",
         "title": "eGon Electromobility Charging Infrastructure",
@@ -147,10 +150,8 @@ def add_metadata():
         },
     }
 
-    meta_json = "'" + json.dumps(meta) + "'"
-
     db.submit_comment(
-        meta_json,
+        f"'{json.dumps(meta)}'",
         DATASET_CFG["targets"]["charging_infrastructure"]["schema"],
         DATASET_CFG["targets"]["charging_infrastructure"]["table"],
     )

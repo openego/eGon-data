@@ -32,6 +32,9 @@ this specification.
 The selection of buildings is done randomly until a result is reached which is
 close to achieving the sizing specification.
 """
+import datetime
+import json
+
 from loguru import logger
 from numpy.random import RandomState
 from sqlalchemy import Column, Float, Integer, String
@@ -40,6 +43,11 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_db_table,
+    meta_metadata,
+)
 
 Base = declarative_base()
 
@@ -186,6 +194,129 @@ class EgonHomeBatteries(Base):
     building_id = Column(Integer)
     p_nom = Column(Float)
     capacity = Column(Float)
+
+
+def add_metadata():
+    """
+    Add metadata to table supply.egon_home_batteries
+    """
+    targets = config.datasets()["home_batteries"]["targets"]
+
+    meta = {
+        "name": (
+            f"{targets['home_batteries']['schema']}."
+            f"{targets['home_batteries']['table']}"
+        ),
+        "title": "eGon Home Batteries",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Home storage systems allocated to buildings",
+        "language": "en-US",
+        "keywords": ["battery", "batteries", "home", "storage", "building"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": "none",
+            "extent": "Germany",
+            "resolution": "building",
+        },
+        "temporal": {
+            "referenceDate": "2021-12-31",
+            "timeseries": {
+                "start": "",
+                "end": "",
+                "resolution": "",
+                "alignment": "",
+                "aggregationType": "",
+            },
+        },
+        "sources": [
+            {
+                "title": "TODO",
+                "description": "TODO",
+                "path": "TODO",
+                "licenses": [
+                    {
+                        "name": "TODO",
+                        "title": "TODO",
+                        "path": "TODO",
+                        "instruction": "TODO",
+                        "attribution": "TODO",
+                    }
+                ],
+            }
+        ],
+        "licenses": [
+            {
+                "name": "TODO",
+                "title": "TODO",
+                "path": "TODO",
+                "instruction": "TODO",
+                "attribution": "© eGon development team",
+            }
+        ],
+        "contributors": [
+            {
+                "title": "khelfen",
+                "email": "Kilian.Helfenbein@rl-institut.de",
+                "date": "2023-03-15",
+                "object": "metadata",
+                "comment": "Create metadata",
+            }
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": (
+                    f"{targets['home_batteries']['schema']}."
+                    f"{targets['home_batteries']['table']}"
+                ),
+                "path": "None",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": generate_resource_fields_from_db_table(
+                        targets["home_batteries"]["schema"],
+                        targets["home_batteries"]["table"],
+                    ),
+                    "primaryKey": "index",
+                },
+                "dialect": {"delimiter": "", "decimalSeparator": ""},
+            }
+        ],
+        "review": {"path": "", "badge": ""},
+        "metaMetadata": meta_metadata(),
+        "_comment": {
+            "metadata": (
+                "Metadata documentation and explanation (https://github.com/"
+                "OpenEnergyPlatform/oemetadata/blob/master/metadata/v141/"
+                "metadata_key_description.md)"
+            ),
+            "dates": (
+                "Dates and time must follow the ISO8601 including time zone "
+                "(YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
+            ),
+            "units": "Use a space between numbers and units (100 m)",
+            "languages": (
+                "Languages must follow the IETF (BCP47) format (en-GB, en-US, "
+                "de-DE)"
+            ),
+            "licenses": (
+                "License name must follow the SPDX License List "
+                "(https://spdx.org/licenses/)"
+            ),
+            "review": (
+                "Following the OEP Data Review (https://github.com/"
+                "OpenEnergyPlatform/data-preprocessing/wiki)"
+            ),
+            "none": "If not applicable use (none)",
+        },
+    }
+
+    db.submit_comment(
+        f"'{json.dumps(meta)}'",
+        targets["home_batteries"]["schema"],
+        targets["home_batteries"]["table"],
+    )
 
 
 def create_table(df):
