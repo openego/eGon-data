@@ -28,8 +28,6 @@ from egon.data.datasets import Dataset
 from egon.data.metadata import (
     context,
     contributors,
-    generate_resource_fields_from_sqla_model,
-    license_ccby,
     meta_metadata,
     sources,
 )
