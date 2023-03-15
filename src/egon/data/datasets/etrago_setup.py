@@ -221,6 +221,7 @@ class EgonPfHvGenerator(Base):
         sources()["SciGRID_gas"],
         sources()["Einspeiseatlas"],
         sources()["technology-data"],
+        sources()["vg250"],
     ]
 
     contributor_list = contributors(["ic", "cb", "ce", "an", "ke"])
