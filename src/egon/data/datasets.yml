@@ -305,6 +305,7 @@ mastr_new:
     - "biomass"
   file_basename: "bnetza_mastr"
   deposit_id: 1132987
+  egon2021_date_max: "2021-12-31 23:59:00"
 
 re_potential_areas:
   target:
@@ -939,6 +940,12 @@ gas_stores:
       schema: 'grid'
       table: 'egon_etrago_store'
 
+pypsa-eur-sec:
+  target:
+    scenario_parameters:
+      schema: 'scenario'
+      table: 'egon_scenario_parameters'
+
 gas_prod:
   source:
     buses:
@@ -1130,6 +1137,9 @@ emobility_mit:
     export_results_to_csv: True
     parallel_tasks: 10
 
+demand_timeseries_mvgd:
+  parallel_tasks: 10
+
 charging_infrastructure:
   original_data:
     sources:
@@ -1169,13 +1179,6 @@ mobility_hgv:
           file: "Jawe2020.csv"
           relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
           srid: 4326
-        germany:
-          url: "https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/1_deutschland/1_sehr_hoch.geo.json"
-        NUTS:
-          url: "https://daten.gdz.bkg.bund.de/produkte/vg/nuts250_1231/aktuell/nuts250_12-31.utm32s.shape.zip"
-          file: "nuts250_12-31.utm32s.shape.zip"
-          shp_file: "nuts250_12-31.utm32s.shape/nuts250_1231/250_NUTS1.shp"
-          NUTS_CODE: "DEF"
     tables:
       srid: 3035
       srid_buses: 4326
