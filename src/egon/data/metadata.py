@@ -417,11 +417,7 @@ def sources():
             "description": "Workflow to download, process and generate data sets"
             "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
             "path": "https://github.com/openego/eGon-data",
-            "licenses": [
-                license_agpl(
-                    "© eGon development team"
-                )
-            ],
+            "licenses": [license_agpl("© eGon development team")],
         },
         "Einspeiseatlas": {
             "title": "Einspeiseatlas",
@@ -429,7 +425,9 @@ def sources():
             "zu realisierten und geplanten Biomethanaufbereitungsanlagen - mit "
             "und ohne Einspeisung ins Gasnetz - in Deutschland und weltweit.",
             "path": "https://www.biogaspartner.de/einspeiseatlas/",
-            "licenses": [license_ccby("Deutsche Energie-Agentur (dena, 2021)")],
+            "licenses": [
+                license_ccby("Deutsche Energie-Agentur (dena, 2021)")
+            ],
         },
         "era5": {
             "title": "ERA5 global reanalysis",
@@ -468,8 +466,11 @@ def sources():
             "restrictions.",
             "path": "https://doi.org/10.1016/j.adapen.2020.100001",
             "licenses": [
-                license_ccby("© 2020 German Aerospace Center (DLR), "
-                             "Institute of Networked Energy Systems.")],
+                license_ccby(
+                    "© 2020 German Aerospace Center (DLR), "
+                    "Institute of Networked Energy Systems."
+                )
+            ],
         },
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
@@ -572,9 +573,11 @@ def sources():
             "stations, LNG terminals, storage, production sites, gas power "
             "plants, border points, and demand time series. ",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "licenses": [license_ccby(
-                "Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
-            ),]
+            "licenses": [
+                license_ccby(
+                    "Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
+                ),
+            ],
         },
         "seenergies": {
             "title": "D5 1 Industry Dataset With Demand Data",
@@ -681,6 +684,10 @@ def contributors(authorlist):
         "ke": {
             "title": "Katharina Esterl",
             "email": "https://github.com/KathiEsterl",
+        },
+        "kh": {
+            "title": "Kilian Helfenbein",
+            "email": "https://github.com/khelfen",
         },
         "sg": {
             "title": "Stephan Günther",
