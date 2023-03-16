@@ -4,7 +4,6 @@ import json
 
 from geoalchemy2.types import Geometry
 from shapely.geometry import LineString
-from sqlalchemy import schema  # ???
 from sqlalchemy import (
     ARRAY,
     BigInteger,

@@ -35,7 +35,6 @@ from egon.data.metadata import (
     meta_metadata,
     license_ccby,
     sources,
-    generate_resource_fields_from_sqla_model,
 )
 import json
 
