@@ -722,6 +722,8 @@ Bug Fixes
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
+* Fix faulty DSM time series
+  `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
 * Set upper limit on commissioning date for units from MaStR
   dataset
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
