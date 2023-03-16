@@ -819,7 +819,7 @@ def add_metadata():
             license_ccby(
                 "© Übertragungsnetzbetreiber; "
                 "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
-                "© Statistische Ämter des Bundes und der Länder 2014",
+                "© Statistische Ämter des Bundes und der Länder 2014; "
                 "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
             )
         ],
