@@ -305,6 +305,7 @@ mastr_new:
     - "biomass"
   file_basename: "bnetza_mastr"
   deposit_id: 1132987
+  egon2021_date_max: "2021-12-31 23:59:00"
 
 re_potential_areas:
   target:
