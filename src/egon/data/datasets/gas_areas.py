@@ -11,7 +11,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
-from egon.data.metadata import context, contributors, meta_metadata, sources
+from egon.data.metadata import (
+    context,
+    contributors,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+)
 
 
 class GasAreaseGon2035(Dataset):
@@ -57,7 +63,7 @@ class EgonPfHvGasVoronoi(Base):
             "resolution": None,
         },
         "sources": source_list,
-        "licenses": [data["licenses"] for data in source_list],
+        "licenses": [license_egon_data_odbl()],
         "contributors": contributors(["fw"]),
         "resources": [
             {

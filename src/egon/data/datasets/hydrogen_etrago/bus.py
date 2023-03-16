@@ -13,7 +13,13 @@ from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
 )
-from egon.data.metadata import context, contributors, meta_metadata, sources
+from egon.data.metadata import (
+    context,
+    contributors,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+)
 
 
 def insert_hydrogen_buses(scenario="eGon2035"):
@@ -68,7 +74,7 @@ class EgonMapACH2(Base):
             "resolution": None,
         },
         "sources": source_list,
-        "licenses": [data["licenses"] for data in source_list],
+        "licenses": [license_egon_data_odbl()],
         "contributors": contributors(["fw"]),
         "resources": [
             {
@@ -213,7 +219,7 @@ class EgonMapH2CH4(Base):
             "resolution": None,
         },
         "sources": source_list,
-        "licenses": [data["licenses"] for data in source_list],
+        "licenses": [license_egon_data_odbl()],
         "contributors": contributors(["fw"]),
         "resources": [
             {
