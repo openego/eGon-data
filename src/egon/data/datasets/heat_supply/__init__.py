@@ -2,6 +2,11 @@
 
 """
 
+import datetime
+import json
+import time
+import pandas as pd
+
 from egon.data import db, config
 
 from egon.data.datasets.heat_supply.district_heating import (
@@ -18,6 +23,15 @@ from sqlalchemy import Column, String, Float, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
 from egon.data.datasets import Dataset
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_sqla_model,
+    license_ccby,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+    
+)
 
 # Will later be imported from another file.
 Base = declarative_base()
@@ -166,12 +180,172 @@ def individual_heating():
         if_exists="append",
     )
 
+def metadata():
+    """Write metadata for heat supply tables    
 
+    Returns
+    -------
+    None.
+
+    """    
+    
+    fields = generate_resource_fields_from_sqla_model(
+        EgonDistrictHeatingSupply)
+    
+    fields_df = pd.DataFrame(data=fields).set_index("name")
+    fields_df.loc["index", "description"] = "Unique identifyer"
+    fields_df.loc["district_heating_id", "description"] = "Index of the corresponding district heating grid"
+    fields_df.loc["carrier", "description"] = "Name of energy carrier"
+    fields_df.loc["category", "description"] = "Size-category of district heating grid"
+    fields_df.loc["capacity", "description"] = "Installed heating capacity"
+    fields_df.loc["geometry", "description"] = "Location of thermal power plant"
+    fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
+    
+    fields_df.loc["capacity", "unit"] = "MW_th"
+    fields_df.unit.fillna("none", inplace=True)
+    
+    fields = fields_df.reset_index().to_dict(orient='records')
+    
+    meta_district = {
+        "name": "supply.egon_district_heating",
+        "title": "eGon heat supply for district heating grids",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Heat supply technologies for district heating grids",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["egon-data_bundle"],
+            sources()["openstreetmap"],
+            sources()["mastr"],
+            sources()["peta"]
+        ],
+        "licenses": [
+            license_egon_data_odbl()            
+        ],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_district_heating",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+    
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        "'" + json.dumps(meta_district) + "'",
+        EgonDistrictHeatingSupply.__table__.schema,
+        EgonDistrictHeatingSupply.__table__.name,
+    )
+    
+    fields = generate_resource_fields_from_sqla_model(
+        EgonIndividualHeatingSupply)
+    
+    fields_df = pd.DataFrame(data=fields).set_index("name")
+    fields_df.loc["index", "description"] = "Unique identifyer"
+    fields_df.loc["mv_grid_id", "description"] = "Index of the corresponding mv grid district"
+    fields_df.loc["carrier", "description"] = "Name of energy carrier"
+    fields_df.loc["category", "description"] = "Size-category"
+    fields_df.loc["capacity", "description"] = "Installed heating capacity"
+    fields_df.loc["geometry", "description"] = "Location of thermal power plant"
+    fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
+    
+    fields_df.loc["capacity", "unit"] = "MW_th"
+    fields_df.unit.fillna("none", inplace=True)
+    
+    fields = fields_df.reset_index().to_dict(orient='records')        
+    
+    meta_district = {
+        "name": "supply.egon_individual_heating",
+        "title": "eGon heat supply for individual supplied buildings",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Heat supply technologies for individual supplied buildings",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["egon-data_bundle"],
+            sources()["openstreetmap"],
+            sources()["mastr"],
+            sources()["peta"]
+        ],
+        "licenses": [
+            license_egon_data_odbl()            
+        ],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_individual_heating",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+    
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        "'" + json.dumps(meta_district) + "'",
+        EgonIndividualHeatingSupply.__table__.schema,
+        EgonIndividualHeatingSupply.__table__.name,
+    )
+    
 class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -180,5 +354,6 @@ class HeatSupply(Dataset):
                     individual_heating,
                     potential_germany,
                 },
+                metadata,
             ),
         )
