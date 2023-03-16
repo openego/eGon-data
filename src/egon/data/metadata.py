@@ -1,5 +1,3 @@
-import time
-
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
@@ -206,9 +204,63 @@ def license_agpl(attribution):
         "work, under the same license. Copyright and license notices must be"
         "preserved. Contributors provide an express grant of patent rights."
         "When a modified version is used to provide a service over a network,"
-        "the complete source code of the modified version must be made available.",
+        "the complete source code of the modified version must be made "
+        "available.",
         "attribution": attribution,
     }
+
+
+def license_dedl(attribution):
+    """
+    License information for Data licence Germany – attribution – version 2.0
+
+    Parameters
+    ----------
+    attribution : str
+        Attribution for the dataset incl. © symbol, e.g. '© GeoBasis-DE / BKG'
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information
+    """
+    return {
+        "name": "DL-DE-BY-2.0",
+        "title": "Data licence Germany – attribution – version 2.0",
+        "path": "https://www.govdata.de/dl-de/by-2-0",
+        "instruction": (
+            "Any use will be permitted provided it fulfils the requirements of"
+            " this 'Data licence Germany – attribution – Version 2.0'. The "
+            "data and meta-data provided may, for commercial and "
+            "non-commercial use, in particular be copied, printed, presented, "
+            "altered, processed and transmitted to third parties; be merged "
+            "with own data and with the data of others and be combined to form"
+            " new and independent datasets; be integrated in internal and "
+            "external business processes, products and applications in public "
+            "and non-public electronic networks. The user must ensure that the"
+            " source note contains the following information: the name of the "
+            "provider, the annotation 'Data licence Germany – attribution – "
+            "Version 2.0' or 'dl-de/by-2-0' referring to the licence text "
+            "available at www.govdata.de/dl-de/by-2-0, and a reference to the "
+            "dataset (URI). This applies only if the entity keeping the data "
+            "provides the pieces of information 1-3 for the source note. "
+            "Changes, editing, new designs or other amendments must be marked "
+            "as such in the source note."
+        ),
+        "attribution": attribution,
+    }
+
+
+def license_egon_data_odbl():
+    """
+    ODbL license with eGon data attribution
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information for eGon tables
+    """
+    return license_odbl("© eGon development team")
 
 
 def generate_resource_fields_from_sqla_model(model):
@@ -354,7 +406,7 @@ def sources():
             " in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include all bgr data sources when using "
             "the data.",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "licenses": [license_geonutzv("???")],
+            "licenses": [license_geonutzv("© BGR, Hannover, 2021")],
         },
         "bgr_inspeeds_report": {
             "title": "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung für die "
@@ -373,15 +425,17 @@ def sources():
             "licenses": [license_ccby("© FZJ, TUB, FfE")],
         },
         "egon-data": {
-            "titel": "eGon-data",
+            "title": "eGon-data",
             "description": "Workflow to download, process and generate data sets"
             "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
             "path": "https://github.com/openego/eGon-data",
-            "licenses": [
-                license_agpl(
-                    "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte"
-                )
-            ],
+            "licenses": [license_agpl("© eGon development team")],
+        },
+        "egon-data_bundle": {
+            "title": "Data bundle for egon-data",
+            "description": "Zenodo repository to provide several different input data sets for eGon-data",
+            "path": "https://sandbox.zenodo.org/record/1167119",
+            "licenses": [license_ccby("© eGon development team")],
         },
         "Einspeiseatlas": {
             "title": "Einspeiseatlas",
@@ -389,7 +443,9 @@ def sources():
             "zu realisierten und geplanten Biomethanaufbereitungsanlagen - mit "
             "und ohne Einspeisung ins Gasnetz - in Deutschland und weltweit.",
             "path": "https://www.biogaspartner.de/einspeiseatlas/",
-            "licenses": license_ccby("Deutsche Energie-Agentur (dena, 2021)"),
+            "licenses": [
+                license_ccby("Deutsche Energie-Agentur (dena, 2021)")
+            ],
         },
         "era5": {
             "title": "ERA5 global reanalysis",
@@ -415,6 +471,26 @@ def sources():
                 },
             ],
         },
+        "dsm-heitkoetter": {
+            "title": "Assessment of the regionalised demand response potential "
+            "in Germany using an open source tool and dataset",
+            "description": "With the expansion of renewable energies in Germany, "
+            "imminent grid congestion events occur more often. One approach for "
+            "avoiding curtailment of renewable energies is to cover excess feed-in "
+            "by demand response. As curtailment is often a local phenomenon, in "
+            "this work we determine the regional demand response potential for "
+            "the 401 German administrative districts with a temporal resolution "
+            "of 15 min, including technical, socio-technical and economic "
+            "restrictions.",
+            "path": "https://doi.org/10.1016/j.adapen.2020.100001",
+            "licenses": [
+                license_ccby(
+                    "© 2020 German Aerospace Center (DLR), "
+                    "Institute of Networked Energy Systems."
+                )
+            ],
+        },
+
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
@@ -483,7 +559,7 @@ def sources():
             "water and process heat) buildings for the year 2015, were distributed using modelled, spatial "
             "statistics based floor areas in 100x100m grids and a population grid. "
             "For further information please see the documentation available on the Heat Roadmap Europe website, "
-            "in particular D2.3 report 'Methodologies and assumptions used in the mapping'.",
+            "in particular D2.3 report: Methodologies and assumptions used in the mapping.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/search",
             "licenses": [
                 license_ccby(
@@ -497,7 +573,7 @@ def sources():
             "the whole documentation could is available at: "
             "https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf",
             "path": "https://zenodo.org/record/5743452",
-            "licenses": license_ccby("Â© DIW Berlin, 2017"),
+            "licenses": [license_ccby("© DIW Berlin, 2017")],
         },
         "schmidt": {
             "title": "Supplementary material to the masters thesis: "
@@ -516,9 +592,11 @@ def sources():
             "stations, LNG terminals, storage, production sites, gas power "
             "plants, border points, and demand time series. ",
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "licenses": license_ccby(
-                " Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
-            ),
+            "licenses": [
+                license_ccby(
+                    "Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
+                ),
+            ],
         },
         "seenergies": {
             "title": "D5 1 Industry Dataset With Demand Data",
@@ -526,6 +604,21 @@ def sources():
             "within main sectors: Chemical industry, Iron and steel, Non-ferrous metals, Non-metallic minerals, Paper and printing, and Refineries.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0/about",
             "licenses": [license_ccby("© Europa-Universität Flensburg")],
+        },
+        "technology-data": {
+            "titel": "Energy System Technology Data v0.3.0",
+            "description": "This script compiles assumptions on energy system "
+            "technologies (such as costs, efficiencies, lifetimes, etc.) for "
+            "chosen years (e.g. [2020, 2030, 2050]) from a variety of sources "
+            "into CSV files to be read by energy system modelling software. "
+            "The merged outputs have standardized cost years, technology names, "
+            "units and source information.",
+            "path": "https://github.com/PyPSA/technology-data/tree/v0.3.0",
+            "licenses": [
+                license_agpl(
+                    "© Marta Victoria (Aarhus University), Kun Zhu (Aarhus University), Elisabeth Zeyen (TUB), Tom Brown (TUB)"
+                )
+            ],
         },
         "tyndp": {
             "title": "Ten-Year Network Development Plan (TYNDP) 2020 Scenarios",
@@ -595,7 +688,7 @@ def contributors(authorlist):
             "title": "Guido Pleßmann",
             "email": "https://github.com/gplssm",
         },
-        "ik": {
+        "ic": {
             "title": "Ilka Cußmann",
             "email": "https://github.com/IlkaCu",
         },
@@ -610,6 +703,10 @@ def contributors(authorlist):
         "ke": {
             "title": "Katharina Esterl",
             "email": "https://github.com/KathiEsterl",
+        },
+        "kh": {
+            "title": "Kilian Helfenbein",
+            "email": "https://github.com/khelfen",
         },
         "sg": {
             "title": "Stephan Günther",
