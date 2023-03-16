@@ -413,11 +413,17 @@ def sources():
             "licenses": [license_ccby("© FZJ, TUB, FfE")],
         },
         "egon-data": {
-            "titel": "eGon-data",
+            "title": "eGon-data",
             "description": "Workflow to download, process and generate data sets"
             "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
             "path": "https://github.com/openego/eGon-data",
             "licenses": [license_agpl("© eGon development team")],
+        },
+        "egon-data_bundle": {
+            "title": "Data bundle for egon-data",
+            "description": "Zenodo repository to provide several different input data sets for eGon-data",
+            "path": "https://sandbox.zenodo.org/record/1167119",
+            "licenses": [license_ccby("© eGon development team")],
         },
         "Einspeiseatlas": {
             "title": "Einspeiseatlas",
@@ -472,6 +478,7 @@ def sources():
                 )
             ],
         },
+
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
