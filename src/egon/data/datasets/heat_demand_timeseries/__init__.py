@@ -1,9 +1,8 @@
+from pathlib import Path
 import datetime
 import json
-import time
-
-from pathlib import Path
 import os
+import time
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -36,7 +35,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-
 import egon
 
 Base = declarative_base()
@@ -1071,7 +1069,8 @@ def export_etrago_cts_heat_profiles():
             df_etrago_cts_heat_profiles.to_dict(orient="records"),
         )
 
-def metadata():    
+
+def metadata():
 
     fields = [
         {
@@ -1092,7 +1091,7 @@ def metadata():
             "type": "array of floats",
             "unit": "MW",
         },
-        ]
+    ]
 
     meta_district = {
         "name": "demand.egon_timeseries_district_heating",
@@ -1148,6 +1147,7 @@ def metadata():
         EgonTimeseriesDistrictHeating.__table__.schema,
         EgonTimeseriesDistrictHeating.__table__.name,
     )
+
 
 class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
