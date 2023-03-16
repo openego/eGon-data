@@ -251,6 +251,18 @@ def license_dedl(attribution):
     }
 
 
+def license_egon_data_odbl():
+    """
+    ODbL license with eGon data attribution
+
+    Returns
+    -------
+    dict
+        OEP metadata conform data license information for eGon tables
+    """
+    return license_odbl("© eGon development team")
+
+
 def generate_resource_fields_from_sqla_model(model):
     """Generate a template for the resource fields for metadata from a SQL
     Alchemy model.
