@@ -2,6 +2,9 @@
 The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
+import datetime
+import json
+import time
 
 from pathlib import Path
 
@@ -32,6 +35,14 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_sqla_model,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+)
+
 
 Base = declarative_base()
 
@@ -66,6 +77,94 @@ class EgonMaStRConventinalWithoutChp(Base):
     federal_state = Column(String)
     geometry = Column(Geometry("POINT", 4326))
 
+def metadata():
+    """Write metadata for heat supply tables
+
+    Returns
+    -------
+    None.
+
+    """
+
+    fields = generate_resource_fields_from_sqla_model(
+        EgonChp
+    )
+
+    fields_df = pd.DataFrame(data=fields).set_index("name")
+    fields_df.loc["id", "description"] = "Unique identifyer"
+    fields_df.loc["sources", "description"] = "List of sources"
+    fields_df.loc["source_id", "description"] = "Names of sources, e.g. MaStr_id"
+    fields_df.loc["carrier", "description"] = "Energy carrier"
+    fields_df.loc["district_heating", "description"] = "Used in district heating or not"
+    fields_df.loc["el_capacity", "description"] = "Installed electrical capacity"
+    fields_df.loc["th_capacity", "description"] = "Installed thermal capacity"
+    fields_df.loc["electrical_bus_id", "description"] = "Index of corresponding electricity bus"
+    fields_df.loc["district_heating_area_id", "description"] = "Index of corresponding district heating bus"
+    fields_df.loc["ch4_bus_id", "description"] = "Index of corresponding methane bus"
+    fields_df.loc["voltage_level", "description"] = "Voltage level"
+    fields_df.loc["scenario", "description"] = "Name of scenario"
+    fields_df.loc["geom", "description"] = "Location of CHP plant"
+    
+    fields_df.loc["el_capacity", "unit"] = "MW_el"
+    fields_df.loc["th_capacity", "unit"] = "MW_th"
+    fields_df.unit.fillna("none", inplace=True)
+
+    fields = fields_df.reset_index().to_dict(orient="records")
+
+    meta_district = {
+        "name": "supply.egon_chp_plants",
+        "title": "eGon combined heat and power plants",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Combined heat and power plants",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["egon-data_bundle"],
+            sources()["openstreetmap"],
+            sources()["mastr"],
+        ],
+        "licenses": [license_egon_data_odbl()],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_chp_plants",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        "'" + json.dumps(meta_district) + "'",
+        EgonChp.__table__.schema,
+        EgonChp.__table__.name,
+    )
 
 def create_tables():
     """Create tables for chp data
@@ -532,12 +631,13 @@ class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Chp",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 {insert_chp_egon2035, insert_chp_egon100re},
                 assign_heat_bus,
                 extension,
+                metadata,
             ),
         )
