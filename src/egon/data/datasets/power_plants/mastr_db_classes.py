@@ -19,6 +19,7 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     meta_metadata,
+    sources,
 )
 
 Base = declarative_base()
@@ -375,6 +376,7 @@ def add_metadata():
                     ),
                     "licenses": [license_dedl(attribution="© Amme, Jonathan")],
                 },
+                sources()["egon-data"],
             ],
             "licenses": [license_dedl(attribution="© eGon development team")],
             "contributors": [
@@ -400,6 +402,7 @@ def add_metadata():
                         "fields": generate_resource_fields_from_db_table(
                             target_table.__table_args__["schema"],
                             target_table.__tablename__,
+                            geom_columns=["geom"],
                         ),
                         "primaryKey": "id",
                     },

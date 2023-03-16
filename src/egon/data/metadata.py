@@ -4,6 +4,8 @@ from sqlalchemy.dialects.postgresql.base import ischema_names
 
 from egon.data.db import engine
 
+EGON_ATTRIBUTION: str = "© eGon development team"
+
 
 def context():
     """
@@ -51,7 +53,7 @@ def meta_metadata():
     }
 
 
-def licenses_datenlizenz_deutschland(attribution):
+def licenses_datenlizenz_deutschland(attribution=EGON_ATTRIBUTION):
     """
     License information for Datenlizenz Deutschland
 
@@ -99,7 +101,7 @@ def licenses_datenlizenz_deutschland(attribution):
     }
 
 
-def license_odbl(attribution):
+def license_odbl(attribution=EGON_ATTRIBUTION):
     """
     License information for Open Data Commons Open Database License (ODbL-1.0)
 
@@ -124,7 +126,7 @@ def license_odbl(attribution):
     }
 
 
-def license_ccby(attribution):
+def license_ccby(attribution=EGON_ATTRIBUTION):
     """
     License information for Creative Commons Attribution 4.0 International
     (CC-BY-4.0)
@@ -149,7 +151,7 @@ def license_ccby(attribution):
     }
 
 
-def license_geonutzv(attribution):
+def license_geonutzv(attribution=EGON_ATTRIBUTION):
     """
     License information for GeoNutzV
 
@@ -180,7 +182,7 @@ def license_geonutzv(attribution):
     }
 
 
-def license_agpl(attribution):
+def license_agpl(attribution=EGON_ATTRIBUTION):
     """
     License information for GNU Affero General Public License v3.0
 
@@ -210,7 +212,7 @@ def license_agpl(attribution):
     }
 
 
-def license_dedl(attribution):
+def license_dedl(attribution=EGON_ATTRIBUTION):
     """
     License information for Data licence Germany – attribution – version 2.0
 
@@ -417,7 +419,7 @@ def sources():
             "description": "Workflow to download, process and generate data sets"
             "suitable for the further research conducted in the project eGon (https://ego-n.org/)",
             "path": "https://github.com/openego/eGon-data",
-            "licenses": [license_agpl("© eGon development team")],
+            "licenses": [license_agpl(EGON_ATTRIBUTION)],
         },
         "Einspeiseatlas": {
             "title": "Einspeiseatlas",
