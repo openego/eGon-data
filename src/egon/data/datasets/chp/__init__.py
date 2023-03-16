@@ -2,11 +2,10 @@
 The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
+from pathlib import Path
 import datetime
 import json
 import time
-
-from pathlib import Path
 
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
@@ -43,7 +42,6 @@ from egon.data.metadata import (
     sources,
 )
 
-
 Base = declarative_base()
 
 
@@ -77,6 +75,7 @@ class EgonMaStRConventinalWithoutChp(Base):
     federal_state = Column(String)
     geometry = Column(Geometry("POINT", 4326))
 
+
 def metadata():
     """Write metadata for heat supply tables
 
@@ -86,25 +85,35 @@ def metadata():
 
     """
 
-    fields = generate_resource_fields_from_sqla_model(
-        EgonChp
-    )
+    fields = generate_resource_fields_from_sqla_model(EgonChp)
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["id", "description"] = "Unique identifyer"
     fields_df.loc["sources", "description"] = "List of sources"
-    fields_df.loc["source_id", "description"] = "Names of sources, e.g. MaStr_id"
+    fields_df.loc[
+        "source_id", "description"
+    ] = "Names of sources, e.g. MaStr_id"
     fields_df.loc["carrier", "description"] = "Energy carrier"
-    fields_df.loc["district_heating", "description"] = "Used in district heating or not"
-    fields_df.loc["el_capacity", "description"] = "Installed electrical capacity"
+    fields_df.loc[
+        "district_heating", "description"
+    ] = "Used in district heating or not"
+    fields_df.loc[
+        "el_capacity", "description"
+    ] = "Installed electrical capacity"
     fields_df.loc["th_capacity", "description"] = "Installed thermal capacity"
-    fields_df.loc["electrical_bus_id", "description"] = "Index of corresponding electricity bus"
-    fields_df.loc["district_heating_area_id", "description"] = "Index of corresponding district heating bus"
-    fields_df.loc["ch4_bus_id", "description"] = "Index of corresponding methane bus"
+    fields_df.loc[
+        "electrical_bus_id", "description"
+    ] = "Index of corresponding electricity bus"
+    fields_df.loc[
+        "district_heating_area_id", "description"
+    ] = "Index of corresponding district heating bus"
+    fields_df.loc[
+        "ch4_bus_id", "description"
+    ] = "Index of corresponding methane bus"
     fields_df.loc["voltage_level", "description"] = "Voltage level"
     fields_df.loc["scenario", "description"] = "Name of scenario"
     fields_df.loc["geom", "description"] = "Location of CHP plant"
-    
+
     fields_df.loc["el_capacity", "unit"] = "MW_el"
     fields_df.loc["th_capacity", "unit"] = "MW_th"
     fields_df.unit.fillna("none", inplace=True)
@@ -165,6 +174,7 @@ def metadata():
         EgonChp.__table__.schema,
         EgonChp.__table__.name,
     )
+
 
 def create_tables():
     """Create tables for chp data
