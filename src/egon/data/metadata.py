@@ -1,4 +1,6 @@
 from pathlib import Path
+from urllib.request import urlretrieve
+from zipfile import ZipFile
 import os
 
 from geoalchemy2 import Geometry
@@ -731,10 +733,20 @@ def contributors(authorlist):
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
 
-    path = Path(".") / "data_bundle_egon_data" / "json_metadata"
+    path = Path(".") / "data_bundle_egon_data" / "json_metadata.zip"
     v = "oep-v1.4"
 
-    for file in os.listdir(path=path):
+    # TODO remove after json added to data_bundle issue #1110
+    if not os.path.exists(path):
+        url = "https://wolke.rl-institut.de/s/HtLtKsiefz9XFqm"
+        os.makedirs(path.parent, exist_ok=True)
+        urlretrieve(url, path)
+
+    with ZipFile(path, "r") as zip_ref:
+        path = str(path).rstrip(".zip")
+        zip_ref.extractall(path)
+
+    for file in os.listdir(path=str(path)):
 
         if file.endswith(".json"):
             split = file.split(".")
