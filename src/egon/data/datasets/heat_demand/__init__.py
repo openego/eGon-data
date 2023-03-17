@@ -14,7 +14,6 @@ database with assigned census cell IDs.
 
 from pathlib import Path  # for database import
 from urllib.request import urlretrieve
-import datetime
 
 # for metadata creation
 import json
@@ -41,7 +40,6 @@ from egon.data.datasets.scenario_parameters import (
 )
 from egon.data.metadata import (
     context,
-    generate_resource_fields_from_sqla_model,
     license_ccby,
     meta_metadata,
     sources,

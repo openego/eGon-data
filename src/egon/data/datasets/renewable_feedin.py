@@ -17,7 +17,6 @@ from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_c
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
-    generate_resource_fields_from_sqla_model,
     license_ccby,
     meta_metadata,
     sources,
