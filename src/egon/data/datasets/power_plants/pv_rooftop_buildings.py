@@ -61,7 +61,6 @@ from egon.data import config, db
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
 )
-from egon.data.datasets.power_plants.mastr import infer_voltage_level
 from egon.data.datasets.power_plants.mastr_db_classes import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
@@ -2325,6 +2324,46 @@ def add_bus_ids_sq(
     )
 
     return buildings_gdf
+
+
+def infer_voltage_level(
+    units_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Infer nan values in voltage level derived from generator capacity to
+    the power plants.
+
+    Parameters
+    -----------
+    units_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing units with voltage levels from MaStR
+    Returnsunits_gdf: gpd.GeoDataFrame
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing units all having assigned a voltage level.
+    """
+
+    def voltage_levels(p: float) -> int:
+        if p <= 100:
+            return 7
+        elif p <= 200:
+            return 6
+        elif p <= 5500:
+            return 5
+        elif p <= 20000:
+            return 4
+        elif p <= 120000:
+            return 3
+        return 1
+
+    units_gdf["voltage_level_inferred"] = False
+    mask = units_gdf.voltage_level.isna()
+    units_gdf.loc[mask, "voltage_level_inferred"] = True
+    units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[
+        mask
+    ].Nettonennleistung.apply(voltage_levels)
+
+    return units_gdf
 
 
 def pv_rooftop_to_buildings():
