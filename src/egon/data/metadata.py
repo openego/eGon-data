@@ -1,6 +1,4 @@
 from pathlib import Path
-from urllib.request import urlretrieve
-from zipfile import ZipFile
 import os
 
 from geoalchemy2 import Geometry
