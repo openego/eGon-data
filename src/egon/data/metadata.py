@@ -232,7 +232,7 @@ def license_dedl(attribution=EGON_ATTRIBUTION):
         "path": "https://www.govdata.de/dl-de/by-2-0",
         "instruction": (
             "Any use will be permitted provided it fulfils the requirements of"
-            " this 'Data licence Germany – attribution – Version 2.0'. The "
+            ' this "Data licence Germany – attribution – Version 2.0". The '
             "data and meta-data provided may, for commercial and "
             "non-commercial use, in particular be copied, printed, presented, "
             "altered, processed and transmitted to third parties; be merged "
@@ -241,8 +241,8 @@ def license_dedl(attribution=EGON_ATTRIBUTION):
             "external business processes, products and applications in public "
             "and non-public electronic networks. The user must ensure that the"
             " source note contains the following information: the name of the "
-            "provider, the annotation 'Data licence Germany – attribution – "
-            "Version 2.0' or 'dl-de/by-2-0' referring to the licence text "
+            'provider, the annotation "Data licence Germany – attribution – '
+            'Version 2.0" or "dl-de/by-2-0" referring to the licence text '
             "available at www.govdata.de/dl-de/by-2-0, and a reference to the "
             "dataset (URI). This applies only if the entity keeping the data "
             "provides the pieces of information 1-3 for the source note. "
