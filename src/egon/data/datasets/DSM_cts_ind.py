@@ -79,7 +79,7 @@ class DsmPotential(Dataset):
             name="DsmPotential",
             version="0.0.4",
             dependencies=dependencies,
-            tasks=(dsm_cts_ind_processing),
+            tasks=(dsm_cts_ind_processing,),
         )
 
 
@@ -162,6 +162,19 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
     p_min_pu = Column(ARRAY(Float))
     e_max_pu = Column(ARRAY(Float))
     e_min_pu = Column(ARRAY(Float))
+
+
+# def add_metadata():
+#     targets = config.datasets()["DSM_CTS_industry"]["targets"]
+#
+#     targets = {
+#         k: v for k, v in targets.items() if "dsm_timeseries" in v["table"]
+#     }
+#
+#     for t_dict in targets.items():
+#         schema = t_dict["schema"]
+#         table = t_dict["table"]
+#         name = f"{schema}.{table}"
 
 
 # Code
@@ -959,8 +972,10 @@ def delete_dsm_entries(carrier):
 
     # buses
 
-    sql = f"""DELETE FROM {targets["bus"]["schema"]}.{targets["bus"]["table"]} b
-     WHERE (b.carrier LIKE '{carrier}');"""
+    sql = (
+        f"DELETE FROM {targets['bus']['schema']}.{targets['bus']['table']} b"
+        f"WHERE (b.carrier LIKE '{carrier}');"
+    )
     db.execute_sql(sql)
 
     # links
