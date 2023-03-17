@@ -59,6 +59,7 @@ from egon.data import config, db
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
 )
+from egon.data.datasets.power_plants.mastr import infer_voltage_level
 from egon.data.datasets.power_plants.mastr_db_classes import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
@@ -2234,4 +2235,4 @@ def pv_rooftop_to_buildings():
     all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf)
 
     # export scenario
-    create_scenario_table(all_buildings_gdf)
+    create_scenario_table(infer_voltage_level(all_buildings_gdf))
