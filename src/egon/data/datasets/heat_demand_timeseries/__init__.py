@@ -1,6 +1,8 @@
-from datetime import datetime
 from pathlib import Path
+import datetime
+import json
 import os
+import time
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -26,6 +28,12 @@ from egon.data.datasets.heat_demand_timeseries.daily import (
 from egon.data.datasets.heat_demand_timeseries.idp_pool import create, select
 from egon.data.datasets.heat_demand_timeseries.service_sector import (
     CTS_demand_scale,
+)
+from egon.data.metadata import (
+    context,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
 )
 import egon
 
@@ -1062,11 +1070,90 @@ def export_etrago_cts_heat_profiles():
         )
 
 
+def metadata():
+
+    fields = [
+        {
+            "description": "Index of corresponding district heating area",
+            "name": "area_id",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "description": "Name of scenario",
+            "name": "scenario",
+            "type": "str",
+            "unit": "none",
+        },
+        {
+            "description": "Heat demand time series",
+            "name": "dist_aggregated_mw",
+            "type": "array of floats",
+            "unit": "MW",
+        },
+    ]
+
+    meta_district = {
+        "name": "demand.egon_timeseries_district_heating",
+        "title": "eGon heat demand time series for district heating grids",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Heat demand time series for district heating grids",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["egon-data_bundle"],
+            sources()["peta"],
+        ],
+        "licenses": [license_egon_data_odbl()],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "demand.egon_timeseries_district_heating",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        "'" + json.dumps(meta_district) + "'",
+        EgonTimeseriesDistrictHeating.__table__.schema,
+        EgonTimeseriesDistrictHeating.__table__.name,
+    )
+
+
 class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 {
@@ -1077,6 +1164,7 @@ class HeatTimeSeries(Dataset):
                 },
                 select,
                 district_heating,
+                metadata,
                 # store_national_profiles,
             ),
         )
