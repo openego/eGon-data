@@ -732,7 +732,7 @@ def contributors(authorlist):
 
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
-    path = Path(data_path[0]) / "json_metdata"
+    path = Path(data_path[0]) / "json_metadata"
 
     v = "oep-v1.4"
 
