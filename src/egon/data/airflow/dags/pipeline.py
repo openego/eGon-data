@@ -689,3 +689,12 @@ with airflow.DAG(
             low_flex_scenario,
         ]
     )
+
+    # upload json metadata at the end
+    json_metadata = Json_Metadata(
+        dependencies=[
+            load_areas,
+            cts_demand_buildings,
+            heat_pumps_2050
+        ]
+    )
