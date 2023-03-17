@@ -69,7 +69,6 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     license_odbl,
-    licenses_datenlizenz_deutschland,
     meta_metadata,
     sources,
 )
@@ -2127,7 +2126,9 @@ def add_metadata():
         "name": name,
         "title": "eGon power plants rooftop solar",
         "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "eGon power plants rooftop solar systems allocated to buildings",
+        "description": (
+            "eGon power plants rooftop solar systems allocated to buildings"
+        ),
         "language": "en-US",
         "keywords": ["photovoltaik", "solar", "pv", "mastr", "status quo"],
         "publicationDate": datetime.date.today().isoformat(),

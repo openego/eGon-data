@@ -46,7 +46,10 @@ from egon.data import config, db
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_db_table,
+    license_dedl,
+    license_odbl,
     meta_metadata,
+    sources,
 )
 
 Base = declarative_base()
@@ -203,6 +206,10 @@ def add_metadata():
     Add metadata to table supply.egon_home_batteries
     """
     targets = config.datasets()["home_batteries"]["targets"]
+    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
+    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
+        "zenodo"
+    ]["deposit_id"]
 
     meta = {
         "name": (
@@ -233,29 +240,38 @@ def add_metadata():
         },
         "sources": [
             {
-                "title": "TODO",
-                "description": "TODO",
-                "path": "TODO",
-                "licenses": [
-                    {
-                        "name": "TODO",
-                        "title": "TODO",
-                        "path": "TODO",
-                        "instruction": "TODO",
-                        "attribution": "TODO",
-                    }
-                ],
-            }
-        ],
-        "licenses": [
+                "title": "Data bundle for egon-data",
+                "description": (
+                    "Data bundle for egon-data: A transparent and "
+                    "reproducible data processing pipeline for energy "
+                    "system modeling"
+                ),
+                "path": (
+                    "https://sandbox.zenodo.org/record/"
+                    f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
+                ),
+                "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
+            },
             {
-                "name": "TODO",
-                "title": "TODO",
-                "path": "TODO",
-                "instruction": "TODO",
-                "attribution": "© eGon development team",
-            }
+                "title": ("open-MaStR power unit registry for eGo^n project"),
+                "description": (
+                    "Data from Marktstammdatenregister (MaStR) data using "
+                    "the data dump from 2022-11-17 for eGon-data."
+                ),
+                "path": (
+                    f"https://sandbox.zenodo.org/record/{deposit_id_mastr}"
+                ),
+                "licenses": [license_dedl(attribution="© Amme, Jonathan")],
+            },
+            sources()["openstreetmap"],
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["nep2021"],
+            sources()["mastr"],
+            sources()["technology-data"],
         ],
+        "licenses": [license_odbl("© eGon development team")],
         "contributors": [
             {
                 "title": "khelfen",
