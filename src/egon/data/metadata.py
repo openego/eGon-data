@@ -3,7 +3,11 @@ from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
 
 from egon.data.db import engine
-
+import os
+from omi.dialects import get_dialect
+from pathlib import Path
+from egon.data import db, logger
+from egon.data.datasets import Dataset
 
 def context():
     """
@@ -721,3 +725,41 @@ def contributors(authorlist):
         {key: value for key, value in contributors_dict[author].items()}
         for author in authorlist
     ]
+
+
+def upload_json_metadata():
+    """Upload json metadata into db from zenodo"""
+
+    path = Path(".") / "data_bundle_egon_data" / "json_metadata"
+    v = "oep-v1.4"
+
+    for file in os.listdir(path=path):
+
+        if file.endswith(".json"):
+            split = file.split(".")
+            if len(split) != 3:
+                continue
+            schema = split[0]
+            table = split[1]
+
+            dialect = get_dialect(v)()
+
+            with open(file, "r") as infile:
+                obj = dialect.parse(infile.read())
+
+            meta_data_string = dialect.compile_and_render(obj)
+            meta_json = "'" + meta_data_string + "'"
+            db.submit_comment(meta_json, schema, table)
+            logger.info(f"{schema}.{table} uploaded!")
+
+
+class Json_Metadata(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="JsonMetadata",
+            version="0.0.0",
+            dependencies=dependencies,
+            tasks={
+                upload_json_metadata
+            },
+        )

@@ -689,3 +689,8 @@ with airflow.DAG(
             low_flex_scenario,
         ]
     )
+
+    # upload json metadata at the end
+    json_metadata = Json_Metadata(
+        dependencies=[sanity_checks]
+    )
