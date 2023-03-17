@@ -239,7 +239,7 @@ def add_metadata_individual():
         "egon_sites_ind_load_curves_individual_dsm_timeseries": ["site_id"],
     }
 
-    for t_dict in targets.items():
+    for t_dict in targets.values():
         schema = t_dict["schema"]
         table = t_dict["table"]
         name = f"{schema}.{table}"
