@@ -482,7 +482,7 @@ def add_metadata():
                         schema,
                         table,
                     ),
-                    "primaryKey": "scenario",
+                    "primaryKey": "id",
                 },
                 "dialect": {"delimiter": "", "decimalSeparator": ""},
             }
@@ -614,7 +614,7 @@ def add_metadata():
                         schema,
                         table,
                     ),
-                    "primaryKey": "scenario",
+                    "primaryKey": ["scenario", "event_id"],
                 },
                 "dialect": {"delimiter": "", "decimalSeparator": ""},
             }
