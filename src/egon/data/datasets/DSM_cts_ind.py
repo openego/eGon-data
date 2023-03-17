@@ -1127,7 +1127,7 @@ def delete_dsm_entries(carrier):
     # buses
 
     sql = (
-        f"DELETE FROM {targets['bus']['schema']}.{targets['bus']['table']} b"
+        f"DELETE FROM {targets['bus']['schema']}.{targets['bus']['table']} b "
         f"WHERE (b.carrier LIKE '{carrier}');"
     )
     db.execute_sql(sql)
