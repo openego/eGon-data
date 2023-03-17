@@ -80,7 +80,7 @@ class PowerPlants(Dataset):
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,
-                pp_metadata,
+                pp_metadata.metadata,
             ),
         )
 
