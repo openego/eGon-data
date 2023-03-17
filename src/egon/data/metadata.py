@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql.base import ischema_names
 from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.db import engine
-
+from egon.data import __path__ as data_path
 
 def context():
     """
@@ -732,19 +732,9 @@ def contributors(authorlist):
 
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
+    path = Path(data_path[0]) / "json_metdata"
 
-    path = Path(".") / "data_bundle_egon_data" / "json_metadata.zip"
     v = "oep-v1.4"
-
-    # TODO remove after json added to data_bundle issue #1110
-    if not os.path.exists(path):
-        url = "https://wolke.rl-institut.de/s/HtLtKsiefz9XFqm"
-        os.makedirs(path.parent, exist_ok=True)
-        urlretrieve(url, path)
-
-    with ZipFile(path, "r") as zip_ref:
-        path = str(path).rstrip(".zip")
-        zip_ref.extractall(path)
 
     for file in os.listdir(path=str(path)):
 
