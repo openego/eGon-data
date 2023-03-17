@@ -542,7 +542,7 @@ def sources():
             "water and process heat) buildings for the year 2015, were distributed using modelled, spatial "
             "statistics based floor areas in 100x100m grids and a population grid. "
             "For further information please see the documentation available on the Heat Roadmap Europe website, "
-            "in particular D2.3 report 'Methodologies and assumptions used in the mapping'.",
+            "in particular D2.3 report: Methodologies and assumptions used in the mapping.",
             "path": "https://s-eenergies-open-data-euf.hub.arcgis.com/search",
             "licenses": [
                 license_ccby(
