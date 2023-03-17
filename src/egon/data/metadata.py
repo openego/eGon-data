@@ -1,13 +1,15 @@
+from pathlib import Path
+import os
+
 from geoalchemy2 import Geometry
+from omi.dialects import get_dialect
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
 
-from egon.data.db import engine
-import os
-from omi.dialects import get_dialect
-from pathlib import Path
 from egon.data import db, logger
 from egon.data.datasets import Dataset
+from egon.data.db import engine
+
 
 def context():
     """
@@ -494,7 +496,6 @@ def sources():
                 )
             ],
         },
-
         "hotmaps_industrial_sites": {
             "titel": "industrial_sites_Industrial_Database",
             "description": "Georeferenced industrial sites of energy-intensive industry sectors in EU28",
@@ -759,7 +760,5 @@ class Json_Metadata(Dataset):
             name="JsonMetadata",
             version="0.0.0",
             dependencies=dependencies,
-            tasks={
-                upload_json_metadata
-            },
+            tasks={upload_json_metadata},
         )
