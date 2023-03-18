@@ -74,7 +74,7 @@ def create_timeseries_for_building(building_id, scenario):
 
     Returns
     -------
-    pandas.DataFrame
+    pd.DataFrame
         Hourly heat demand timeseries in MW for the selected building
 
     """
@@ -131,20 +131,23 @@ def create_timeseries_for_building(building_id, scenario):
 
 
 def create_district_heating_profile(scenario, area_id):
-    """Create heat demand profile for district heating grid including demands of
-    households and service sector.
+    """Create a heat demand profile for a district heating grid.
+
+    The created heat demand profile includes the demands of households
+    and the service sector.
 
     Parameters
     ----------
     scenario : str
-        Name of the selected scenario.
+        The name of the selected scenario.
     area_id : int
-        Index of the selected district heating grid
+        The index of the selected district heating grid.
 
     Returns
     -------
-    df : pandas,DataFrame
-        Hourly heat demand timeseries in MW for the selected district heating grid
+    pd.DataFrame
+        An hourly heat demand timeseries in MW for the selected district
+        heating grid.
 
     """
 
