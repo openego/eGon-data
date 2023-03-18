@@ -209,7 +209,7 @@ def create_district_heating_profile(scenario, area_id):
        WHERE scenario = '{scenario}'
        AND area_id = {area_id}
        ))
-		GROUP BY zensus_population_id) building
+        GROUP BY zensus_population_id) building
         ON building.zensus_population_id = b.zensus_population_id,
 
         UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
@@ -473,7 +473,7 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
         boundaries.egon_map_zensus_grid_districts
         WHERE bus_id = {mv_grid_id}
        ))
-		GROUP BY zensus_population_id) building
+        GROUP BY zensus_population_id) building
         ON building.zensus_population_id = b.zensus_population_id,
 
         UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
@@ -994,7 +994,7 @@ def store_national_profiles():
         SELECT zensus_population_id FROM
         demand.egon_heat_timeseries_selected_profiles
         )
-		GROUP BY zensus_population_id) building
+        GROUP BY zensus_population_id) building
         ON building.zensus_population_id = b.zensus_population_id,
 
         UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
