@@ -629,9 +629,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     start_time = datetime.now()
 
     idp_df = db.select_dataframe(
-        f"""
-        SELECT index, idp FROM demand.egon_heat_idp_pool
-        """,
+        "SELECT index, idp FROM demand.egon_heat_idp_pool",
         index_col="index",
     )
 
@@ -673,7 +671,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     )
 
     daily_demand_shares = db.select_dataframe(
-        f"""
+        """
         SELECT climate_zone, day_of_year as day, daily_demand_share FROM
         demand.egon_daily_heat_demand_per_climate_zone
         """
