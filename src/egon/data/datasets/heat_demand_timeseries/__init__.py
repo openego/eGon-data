@@ -222,9 +222,9 @@ def create_district_heating_profile(scenario, area_id):
     )
 
     print(
-        f"Time to create time series for district heating grid {scenario} {area_id}:"
+        f"Time to create time series for district heating grid {scenario}"
+        f" {area_id}:\n{datetime.now() - start_time}"
     )
-    print(datetime.now() - start_time)
 
     return df
 
@@ -687,9 +687,9 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     session = sessionmaker(bind=db.engine())()
 
     print(
-        f"Time to create overhead for time series for district heating scenario {scenario}"
+        "Time to create overhead for time series for district heating"
+        f" scenario {scenario}:\n{datetime.now() - start_time}"
     )
-    print(datetime.now() - start_time)
 
     start_time = datetime.now()
     for grid in annual_demand.bus_id.unique():
