@@ -335,7 +335,6 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         )
 
         if not selected_profiles.empty:
-
             df = pd.merge(
                 selected_profiles,
                 daily_demand_shares,
@@ -488,7 +487,6 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
 
 
 def calulate_peak_load(df, scenario):
-
     # peat load in W_th
     data = (
         df.groupby("building_id")
@@ -513,7 +511,6 @@ def calulate_peak_load(df, scenario):
 
 
 def create_individual_heating_peak_loads(scenario="eGon2035"):
-
     engine = db.engine()
 
     EgonIndividualHeatingPeakLoads.__table__.drop(bind=engine, checkfirst=True)
@@ -572,7 +569,6 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
 
     start_time = datetime.now()
     for grid in annual_demand.bus_id.unique():
-
         selected_profiles = db.select_dataframe(
             f"""
             SELECT a.zensus_population_id, building_id, c.climate_zone,
@@ -623,7 +619,6 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
 
 
 def create_individual_heating_profile_python_like(scenario="eGon2035"):
-
     start_time = datetime.now()
 
     idp_df = db.select_dataframe(
@@ -688,7 +683,6 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
     start_time = datetime.now()
     for grid in annual_demand.bus_id.unique():
-
         selected_profiles = db.select_dataframe(
             f"""
             SELECT a.zensus_population_id, building_id, c.climate_zone,
@@ -781,7 +775,6 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
 
 def district_heating(method="python"):
-
     engine = db.engine()
     EgonTimeseriesDistrictHeating.__table__.drop(bind=engine, checkfirst=True)
     EgonTimeseriesDistrictHeating.__table__.create(
@@ -793,7 +786,6 @@ def district_heating(method="python"):
         create_district_heating_profile_python_like("eGon100RE")
 
     else:
-
         CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
             aggregation_level="district"
         )
@@ -869,7 +861,6 @@ def individual_heating_per_mv_grid_100(method="python"):
 
 
 def individual_heating_per_mv_grid(method="python"):
-
     if method == "python":
         engine = db.engine()
         EgonEtragoTimeseriesIndividualHeating.__table__.drop(
@@ -883,7 +874,6 @@ def individual_heating_per_mv_grid(method="python"):
         create_individual_heating_profile_python_like("eGon100RE")
 
     else:
-
         engine = db.engine()
         EgonEtragoTimeseriesIndividualHeating.__table__.drop(
             bind=engine, checkfirst=True
@@ -905,7 +895,6 @@ def individual_heating_per_mv_grid(method="python"):
         )
 
         for index, row in ids.iterrows():
-
             for scenario in ["eGon2035", "eGon100RE"]:
                 series = create_individual_heat_per_mv_grid(
                     scenario, row.bus_id
@@ -946,7 +935,6 @@ def individual_heating_per_mv_grid(method="python"):
 
 
 def store_national_profiles():
-
     scenario = "eGon100RE"
 
     df = db.select_dataframe(
@@ -1071,7 +1059,6 @@ def export_etrago_cts_heat_profiles():
 
 
 def metadata():
-
     fields = [
         {
             "description": "Index of corresponding district heating area",
