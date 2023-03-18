@@ -375,10 +375,10 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 annual_demand[annual_demand.area_id == area].demand_total.sum()
             )
 
-            assert (
-                abs(diff) < 0.03
-            ), f"""Deviation of residential heat demand time 
-            series for district heating grid {str(area)} is {diff}"""
+            assert abs(diff) < 0.03, (
+                "Deviation of residential heat demand time series for"
+                f" district heating grid {str(area)} is {diff}"
+            )
 
             hh = np.concatenate(
                 slice_df.groupby("day").sum()[range(24)].values
@@ -754,10 +754,10 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
             - annual_demand[annual_demand.bus_id == grid].demand_total.sum()
         ) / (annual_demand[annual_demand.bus_id == grid].demand_total.sum())
 
-        assert (
-            abs(diff) < 0.03
-        ), f"""Deviation of residential heat demand time 
-        series for mv grid {str(grid)} is {diff}"""
+        assert abs(diff) < 0.03, (
+            "Deviation of residential heat demand time series for mv"
+            f" grid {grid} is {diff}"
+        )
 
         if not (slice_df[hour].empty or cts.empty):
             entry = EgonEtragoTimeseriesIndividualHeating(
