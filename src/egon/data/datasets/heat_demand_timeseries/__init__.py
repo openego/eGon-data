@@ -331,9 +331,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 WHERE scenario = '{scenario}'
                 AND area_id = '{area}'
             ) b ON a.zensus_population_id = b.zensus_population_id        ,
-    
+
             UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
-    
+
             """
         )
 
