@@ -1,5 +1,5 @@
+from datetime import date, datetime
 from pathlib import Path
-import datetime
 import json
 import os
 import time
@@ -1101,7 +1101,7 @@ def metadata():
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": "Heat demand time series for district heating grids",
         "language": ["EN"],
-        "publicationDate": datetime.date.today().isoformat(),
+        "publicationDate": date.today().isoformat(),
         "context": context(),
         "spatial": {
             "location": None,
