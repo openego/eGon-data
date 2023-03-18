@@ -6,20 +6,10 @@ import time
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import db
-import egon.data.datasets.era5 as era
-
-try:
-    from disaggregator import temporal
-except ImportError as e:
-    pass
-
-from math import ceil
-
 from egon.data.datasets import Dataset
 from egon.data.datasets.heat_demand_timeseries.daily import (
     daily_demand_shares_per_climate_zone,
@@ -35,7 +25,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-import egon
 
 Base = declarative_base()
 
