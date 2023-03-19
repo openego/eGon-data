@@ -592,11 +592,14 @@ def sources():
         },
         "SciGRID_gas": {
             "title": "SciGRID_gas IGGIELGN",
-            "description": "The SciGRID_gas dataset represents the European "
-            "gas transport network (pressure levels of 20 bars and higher) "
-            "including the geo-referenced transport pipelines,  compressor "
-            "stations, LNG terminals, storage, production sites, gas power "
-            "plants, border points, and demand time series. ",
+            "description": (
+                "The SciGRID_gas dataset represents the European gas"
+                " transport network (pressure levels of 20 bars and"
+                " higher) including the geo-referenced transport"
+                " pipelines, compressor stations, LNG terminals,"
+                " storage, production sites, gas power plants, border"
+                " points, and demand time series."
+            ),
             "path": "https://dx.doi.org/10.5281/zenodo.4896526",
             "licenses": [
                 license_ccby(
@@ -613,12 +616,15 @@ def sources():
         },
         "technology-data": {
             "titel": "Energy System Technology Data v0.3.0",
-            "description": "This script compiles assumptions on energy system "
-            "technologies (such as costs, efficiencies, lifetimes, etc.) for "
-            "chosen years (e.g. [2020, 2030, 2050]) from a variety of sources "
-            "into CSV files to be read by energy system modelling software. "
-            "The merged outputs have standardized cost years, technology names, "
-            "units and source information.",
+            "description": (
+                "This script compiles assumptions on energy system"
+                " technologies (such as costs, efficiencies, lifetimes,"
+                " etc.) for chosen years (e.g. [2020, 2030, 2050]) from"
+                " a variety of sources into CSV files to be read by"
+                " energy system modelling software. The merged outputs"
+                " have standardized cost years, technology names, units"
+                " and source information."
+            ),
             "path": "https://github.com/PyPSA/technology-data/tree/v0.3.0",
             "licenses": [
                 license_agpl(
