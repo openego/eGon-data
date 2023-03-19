@@ -961,7 +961,7 @@ def upload_json_metadata():
 
         dialect = get_dialect(v)()
 
-        with open(file, "r") as infile:
+        with open(path / file, "r") as infile:
             obj = dialect.parse(infile.read())
 
         metadata = f"'{dialect.compile_and_render(obj)}'"
