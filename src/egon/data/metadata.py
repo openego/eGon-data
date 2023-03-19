@@ -967,7 +967,7 @@ def upload_json_metadata():
         meta_data_string = dialect.compile_and_render(obj)
         meta_json = "'" + meta_data_string + "'"
         db.submit_comment(meta_json, schema, table)
-        logger.info(f"{schema}.{table} uploaded!")
+        logger.info(f"Metadata comment for {schema}.{table} stored.")
 
 
 class Json_Metadata(Dataset):
