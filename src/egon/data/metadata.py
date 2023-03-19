@@ -950,7 +950,7 @@ def upload_json_metadata():
 
     v = "oep-v1.4"
 
-    for file in os.listdir(path=str(path)):
+    for file in os.listdir(path=path):
         if file.endswith(".json"):
             split = file.split(".")
             if len(split) != 3:
