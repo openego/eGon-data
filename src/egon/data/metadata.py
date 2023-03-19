@@ -11,6 +11,7 @@ from egon.data.datasets import Dataset
 from egon.data.db import engine
 from egon.data import __path__ as data_path
 
+
 def context():
     """
     Project context information for metadata
@@ -735,7 +736,6 @@ def upload_json_metadata():
     v = "oep-v1.4"
 
     for file in os.listdir(path=str(path)):
-
         if file.endswith(".json"):
             split = file.split(".")
             if len(split) != 3:
