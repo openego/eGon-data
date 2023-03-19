@@ -964,9 +964,8 @@ def upload_json_metadata():
         with open(file, "r") as infile:
             obj = dialect.parse(infile.read())
 
-        meta_data_string = dialect.compile_and_render(obj)
-        meta_json = "'" + meta_data_string + "'"
-        db.submit_comment(meta_json, schema, table)
+        metadata = f"'{dialect.compile_and_render(obj)}'"
+        db.submit_comment(metadata, schema, table)
         logger.info(f"Metadata comment for {schema}.{table} stored.")
 
 
