@@ -492,8 +492,8 @@ def sources():
             "path": "https://doi.org/10.1016/j.adapen.2020.100001",
             "licenses": [
                 license_ccby(
-                    "© 2020 German Aerospace Center (DLR), "
-                    "Institute of Networked Energy Systems."
+                    "© 2020 German Aerospace Center (DLR),"
+                    " Institute of Networked Energy Systems."
                 )
             ],
         },
@@ -647,8 +647,8 @@ def sources():
             "path": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip",
             "licenses": [
                 licenses_datenlizenz_deutschland(
-                    "© Bundesamt für Kartographie und Geodäsie "
-                    "2020 (Daten verändert)"
+                    "© Bundesamt für Kartographie und Geodäsie"
+                    " 2020 (Daten verändert)"
                 )
             ],
         },
