@@ -871,10 +871,8 @@ def sources():
                 " Ergebnisse für Gitterzellen verfügbar."
             ),
             "path": (
-                "https://www.zensus2011.de/SharedDocs/Aktuelles"
-                "/Ergebnisse/DemografischeGrunddaten.html"
-                ";jsessionid=E0A2B4F894B258A3B22D20448F2E4A91.2_cid380"
-                "?nn=3065474"
+                "https://www.zensus2011.de/DE/Home/Aktuelles"
+                "/DemografischeGrunddaten.html"
             ),
             "licenses": [
                 licenses_datenlizenz_deutschland(
