@@ -6,10 +6,10 @@ from omi.dialects import get_dialect
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
 
+from egon.data import __path__ as data_path
 from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.db import engine
-from egon.data import __path__ as data_path
 
 
 def context():
