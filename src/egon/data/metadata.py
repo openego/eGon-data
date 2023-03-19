@@ -951,22 +951,23 @@ def upload_json_metadata():
     v = "oep-v1.4"
 
     for file in os.listdir(path=path):
-        if file.endswith(".json"):
-            split = file.split(".")
-            if len(split) != 3:
-                continue
-            schema = split[0]
-            table = split[1]
+        if not file.endswith(".json"):
+            continue
+        split = file.split(".")
+        if len(split) != 3:
+            continue
+        schema = split[0]
+        table = split[1]
 
-            dialect = get_dialect(v)()
+        dialect = get_dialect(v)()
 
-            with open(file, "r") as infile:
-                obj = dialect.parse(infile.read())
+        with open(file, "r") as infile:
+            obj = dialect.parse(infile.read())
 
-            meta_data_string = dialect.compile_and_render(obj)
-            meta_json = "'" + meta_data_string + "'"
-            db.submit_comment(meta_json, schema, table)
-            logger.info(f"{schema}.{table} uploaded!")
+        meta_data_string = dialect.compile_and_render(obj)
+        meta_json = "'" + meta_data_string + "'"
+        db.submit_comment(meta_json, schema, table)
+        logger.info(f"{schema}.{table} uploaded!")
 
 
 class Json_Metadata(Dataset):
