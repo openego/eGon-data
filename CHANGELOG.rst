@@ -486,6 +486,8 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Change hgv data source to use database
+  `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
 * Change desposit ID for data_bundle download from zenodo sandbox
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
 * Use MaStR geocoding results for pv rooftop to buildings mapping workflow
@@ -727,9 +729,13 @@ Bug Fixes
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
+* Fix faulty DSM time series
+  `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
 * Set upper limit on commissioning date for units from MaStR
   dataset
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
+* Fix conversion factor for CH4 loads abroad in eGon2035
+  `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
