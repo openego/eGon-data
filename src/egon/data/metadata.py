@@ -369,7 +369,7 @@ def sources():
             "description": "Which salt formations are suitable for storing hydrogen or compressed air? "
             "In the InSpEE-DS research project, scientists developed requirements and criteria for the assessment "
             "of suitable sites even if their exploration is still at an early stage and there is little knowledge of "
-            "the salinaries' structures. Scientists at DEEP.KBB GmbH in Hanover, worked together with their project "
+            "the salinaries structures. Scientists at DEEP.KBB GmbH in Hanover, worked together with their project "
             "partners at the Federal Institute for Geosciences and Natural Resources and the Leibniz University "
             "Hanover, Institute for Geotechnics Hanover, to develop the planning basis for the site selection and for "
             "the construction of storage caverns in flat layered salt and multiple or double saliniferous formations. "
