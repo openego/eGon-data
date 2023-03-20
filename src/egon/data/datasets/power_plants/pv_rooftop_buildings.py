@@ -2344,24 +2344,24 @@ def infer_voltage_level(
     """
 
     def voltage_levels(p: float) -> int:
-        if p <= 100:
+        if p <= 0.1:
             return 7
-        elif p <= 200:
+        elif p <= 0.2:
             return 6
-        elif p <= 5500:
+        elif p <= 5.5:
             return 5
-        elif p <= 20000:
+        elif p <= 20:
             return 4
-        elif p <= 120000:
+        elif p <= 120:
             return 3
         return 1
 
     units_gdf["voltage_level_inferred"] = False
     mask = units_gdf.voltage_level.isna()
     units_gdf.loc[mask, "voltage_level_inferred"] = True
-    units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[
-        mask
-    ].Nettonennleistung.apply(voltage_levels)
+    units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[mask].capacity.apply(
+        voltage_levels
+    )
 
     return units_gdf
 
