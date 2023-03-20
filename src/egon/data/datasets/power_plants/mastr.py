@@ -473,10 +473,11 @@ def import_mastr() -> None:
 
         units = units.loc[units.geometry.within(boundary)]
 
-        logger.debug(
-            f"{init_len - len(units)}/{init_len} "
-            f"({((init_len - len(units)) / init_len) * 100: g} %) dropped."
-        )
+        if init_len > 0:
+            logger.debug(
+                f"{init_len - len(units)}/{init_len} "
+                f"({((init_len - len(units)) / init_len) * 100: g} %) dropped."
+            )
 
         # drop unnecessary and rename columns
         logger.debug("Reformatting...")
