@@ -72,9 +72,13 @@ class ScenarioCapacities(Dataset):
             name="ScenarioCapacities",
             version="0.0.12",
             dependencies=dependencies,
-            tasks=(create_table, insert_data_nep, eGon100_capacities, add_metadata),
+            tasks=(
+                create_table,
+                insert_data_nep,
+                eGon100_capacities,
+                add_metadata,
+            ),
         )
-
 
 
 def create_table():
@@ -763,7 +767,6 @@ def eGon100_capacities():
     )
 
 
-
 def add_metadata():
     """Add metdata to supply.egon_scenario_capacities
 
@@ -800,7 +803,9 @@ def add_metadata():
         "name": "supply.egon_scenario_capacities",
         "title": "eGon scenario capacities",
         "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Installed capacities of scenarios used in the eGon project",
+        "description": (
+            "Installed capacities of scenarios used in the eGon project"
+        ),
         "language": ["de-DE"],
         "publicationDate": datetime.date.today().isoformat(),
         "context": context(),
@@ -817,10 +822,11 @@ def add_metadata():
         ],
         "licenses": [
             license_ccby(
-                "© Übertragungsnetzbetreiber; "
-                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
-                "© Statistische Ämter des Bundes und der Länder 2014",
-                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+                "© Übertragungsnetzbetreiber; © Bundesamt für Kartographie und"
+                " Geodäsie 2020 (Daten verändert); © Statistische Ämter des "
+                "Bundes und der Länder 2014; © Jonathan Amme, Clara Büttner, "
+                "Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, "
+                "Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
             )
         ],
         "contributors": [
