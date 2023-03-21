@@ -470,6 +470,9 @@ def electricity(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
+    
+    elif scenario == "status2019":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -655,6 +658,9 @@ def gas(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
+    
+    elif scenario == "status2019":
+        parameters = {}
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -738,6 +744,9 @@ def mobility(scenario):
         }
 
     elif scenario == "eGon2021":
+        parameters = {}
+    
+    elif scenario == "status2019":
         parameters = {}
 
     else:
@@ -851,6 +860,9 @@ def heat(scenario):
         }
 
     elif scenario == "eGon2021":
+        parameters = {}
+        
+    elif scenario == "status2019":
         parameters = {}
 
     else:
