@@ -69,7 +69,7 @@ def import_cutout(boundary="Europe"):
         Weather data stored in cutout
 
     """
-    weather_year = get_sector_parameters("global", "2019")["weather_year"]
+    weather_year = get_sector_parameters("global", "status2019")["weather_year"]
 
     if boundary == "Europe":
         xs = slice(-12.0, 35.1)

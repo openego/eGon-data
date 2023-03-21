@@ -433,7 +433,7 @@ def disagg_households_power(
     )
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
-    if scenario in ["2019", "eGon2021", "eGon2035"]:
+    if scenario in ["status2019", "eGon2021", "eGon2035"]:
         # chose demand per household size from survey including weighted DHW
         power_per_HH = demand_per_hh_size["weighted DWH"] / 1e3
 
@@ -600,7 +600,7 @@ def insert_household_demand():
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
         )
 
-    for scn in ["2019", "eGon2021", "eGon2035", "eGon100RE"]:
+    for scn in ["status2019", "eGon2021", "eGon2035", "eGon100RE"]:
 
         year = scenario_parameters.global_settings(scn)["population_year"]
 
@@ -629,7 +629,7 @@ def insert_cts_ind_demands():
 
     insert_cts_ind_wz_definitions()
 
-    for scn in ["2019", "eGon2021", "eGon2035", "eGon100RE"]:
+    for scn in ["status2019", "eGon2021", "eGon2035", "eGon100RE"]:
 
         year = scenario_parameters.global_settings(scn)["population_year"]
 

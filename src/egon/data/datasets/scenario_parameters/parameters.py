@@ -125,7 +125,7 @@ def global_settings(scenario):
             "weather_year": 2011,
             "population_year": 2021,
         }
-    elif scenario == "2019":
+    elif scenario == "status2019":
         parameters = {
             "weather_year": 2019,
             "population_year": 2019,
