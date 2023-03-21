@@ -74,7 +74,6 @@ from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.sanity_checks import SanityChecks
-from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import Storages
@@ -349,7 +348,7 @@ with airflow.DAG(
     )
     # Create gas voronoi eGon2035 TODO: adjust for SQ
     create_gas_polygons_egon2035 = GasAreaseGon2035(
-        dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
+        dependencies=[setup_etrago, vg250]
     )
 
     # Gas abroad
@@ -358,8 +357,6 @@ with airflow.DAG(
             gas_grid_insert_data,
             run_pypsaeursec,
             foreign_lines,
-            insert_hydrogen_buses,
-            create_gas_polygons_egon100RE,
         ]
     )
 
@@ -388,7 +385,6 @@ with airflow.DAG(
             osm_landuse,
             mastr_data,
             mv_grid_districts,
-            scenario_capacities,
         ]
     )
 
@@ -401,7 +397,6 @@ with airflow.DAG(
             mastr_data,
             mv_grid_districts,
             renewable_feedin,
-            scenario_capacities,
             scenario_parameters,
             setup,
             substation_extraction,
@@ -435,7 +430,6 @@ with airflow.DAG(
             mastr_data,
             mv_grid_districts,
             power_plants,
-            scenario_capacities,
             scenario_parameters,
             setup,
             vg250_mv_grid_districts,
@@ -483,14 +477,9 @@ with airflow.DAG(
             storage_etrago,
             hts_etrago_table,
             chp_etrago,
-            components_dsm,
             heat_etrago,
             fill_etrago_generators,
             create_ocgt,
-            insert_H2_storage,
-            insert_power_to_h2_installations,
-            insert_h2_to_ch4_grid_links,
-            create_gas_polygons_egon100RE,
             gas_production_insert_data,
             insert_data_ch4_storages,
         ]
