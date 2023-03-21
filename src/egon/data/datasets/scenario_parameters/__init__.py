@@ -124,6 +124,8 @@ def insert_scenarios():
 
     session.add(eGon2021)
     
+    session.commit()    
+    
     # Scenario status2019
     status2019 = EgonScenario(name="status2019")
 
