@@ -1,1 +1,155 @@
-{"name": "demand.egon_heat_idp_pool", "title": "eGon pool of residential intra-day heat demand profiles", "id": "WILL_BE_SET_AT_PUBLICATION", "description": "Pool of individual, normlized intra-day heat demand profiles of residential buildings", "language": ["en-EN", "de-DE"], "keywords": [], "publicationDate": "2022-09-14", "context": {"homepage": "https://ego-n.org/", "documentation": "https://egon-data.readthedocs.io/en/latest/", "sourceCode": "https://github.com/openego/eGon-data", "contact": "https://ego-n.org/partners/", "grantNo": "03EI1002", "fundingAgency": "Bundesministerium f\u00fcr Wirtschaft und Klimaschutz", "fundingAgencyLogo": "https://www.innovation-beratung-foerderung.de/INNO/Redaktion/DE/Bilder/Titelbilder/titel_foerderlogo_bmwi.jpg?__blob=normal&v=3", "publisherLogo": "https://ego-n.org/images/eGon_logo_noborder_transbg.svg"}, "spatial": {"location": "none", "extent": "Germany", "resolution": ""}, "temporal": {"referenceDate": "2022-09-14", "timeseries": {"start": "0 h", "end": "23 h", "resolution": "1 h", "alignment": "left", "aggregationType": "sum"}}, "sources": [{"title": "eGon-data", "description": "Workflow to download, process and generate data sets suitable for the further research conducted in the project eGon (https://ego-n.org/)", "path": "https://github.com/openego/eGon-data", "licenses": [{"name": "AGPL-3.0 License", "title": "GNU Affero General Public License v3.0", "path": "https://www.gnu.org/licenses/agpl-3.0.de.html", "instruction": "Permissions of this strongest copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. When a modified version is used to provide a service over a network, the complete source code of the modified version must be made available.", "attribution": "\u00a9 eGon-data developers"}]}, {"title": "Data bundle for egon-data: A transparent and reproducible data processing pipeline for energy system modeling", "description": "egon-data provides a transparent and reproducible open data based data processing pipeline for generating data models suitable for energy system modeling. The data is customized for the requirements of the research project eGon. The research project aims to develop tools for an open and cross-sectoral planning of transmission and distribution grids. For further information please visit the eGon project website or its Github repository.  egon-data retrieves and processes data from several different external input sources. As not all data dependencies can be downloaded automatically from external sources we provide a data bundle to be downloaded by egon-data.", "path": "https://doi.org/10.5281/zenodo.6630616", "licenses": [{"name": "CC-BY-4.0", "title": "Creative Commons Attribution 4.0 International", "path": "https://creativecommons.org/licenses/by/4.0/legalcode", "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute.", "attribution": "\u00a9 eGon-data developers, \u00a9 Leibniz Institute for Applied Geophysics, \u00a9 Fraunhofer IEE, \u00a9 BGR Hannover, \u00a9 Danielle Schmidt, \u00a9 \u00dcbertragungsnetzbetreiber, \u00a9 DIW Berlin, \u00a9 Reiner Lemoine Institut, \u00a9 Statistisches Bundesamt, Wiesbaden 2008, \u00a9 Statistische \u00c4mter des Bundes und der L\u00e4nder 2021"}]}], "licenses": [{"name": "CC-BY-4.0", "title": "Creative Commons Attribution 4.0 International", "path": "https://creativecommons.org/licenses/by/4.0/legalcode", "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute.", "attribution": "Europa-Universit\u00e4t Flensburg"}], "contributors": [{"title": "ClaraBuettner", "email": "https://github.com/ClaraBuettner", "date": "2022-09-12", "object": "metadata", "comment": "Create metadata"}, {"title": "nesnoj", "email": "https://github.com/nesnoj", "date": "2022-09-14", "object": "metadata", "comment": "Update metadata"}], "resources": [{"profile": "tabular-data-resource", "name": "demand.egon_heat_idp_pool", "path": "", "format": "PostgreSQL", "encoding": "UTF-8", "schema": {"fields": [{"name": "house", "description": "Type of residential house, either SFH (single family house) or MFH (multi family house)", "type": "str", "unit": "none"}, {"name": "idp", "description": "Normalized intra-day-profile", "type": "array of double precision", "unit": "per unit"}, {"name": "index", "description": "Unique identifier", "type": "integer", "unit": "none"}, {"name": "temperature_class", "description": "Temperature class (considering the mean outside temeperature during the day)", "type": "integer", "unit": "none"}], "primaryKey": "index"}, "dialect": {"delimiter": "", "decimalSeparator": ""}}], "review": {"path": "", "badge": ""}, "metaMetadata": {"metadataVersion": "OEP-1.4.1", "metadataLicense": {"name": "CC0-1.0", "title": "Creative Commons Zero v1.0 Universal", "path": "https://creativecommons.org/publicdomain/zero/1.0/"}}, "_comment": {"metadata": "Metadata documentation and explanation (https://github.com/OpenEnergyPlatform/oemetadata/blob/master/metadata/v141/metadata_key_description.md)", "dates": "Dates and time must follow the ISO8601 including time zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss\u00b1hh)", "units": "Use a space between numbers and units (100 m)", "languages": "Languages must follow the IETF (BCP47) format (en-GB, en-US, de-DE)", "licenses": "License name must follow the SPDX License List (https://spdx.org/licenses/)", "review": "Following the OEP Data Review (https://github.com/OpenEnergyPlatform/data-preprocessing/wiki)", "none": "If not applicable use (none)"}}
+{
+  "name": "demand.egon_heat_idp_pool",
+  "title": "eGon pool of residential intra-day heat demand profiles",
+  "id": "WILL_BE_SET_AT_PUBLICATION",
+  "description": "Pool of individual, normlized intra-day heat demand profiles of residential buildings",
+  "language": [
+    "en-EN",
+    "de-DE"
+  ],
+  "keywords": [],
+  "publicationDate": "2022-09-14",
+  "context": {
+    "homepage": "https://ego-n.org/",
+    "documentation": "https://egon-data.readthedocs.io/en/latest/",
+    "sourceCode": "https://github.com/openego/eGon-data",
+    "contact": "https://ego-n.org/partners/",
+    "grantNo": "03EI1002",
+    "fundingAgency": "Bundesministerium f\u00fcr Wirtschaft und Klimaschutz",
+    "fundingAgencyLogo": "https://www.innovation-beratung-foerderung.de/INNO/Redaktion/DE/Bilder/Titelbilder/titel_foerderlogo_bmwi.jpg?__blob=normal&v=3",
+    "publisherLogo": "https://ego-n.org/images/eGon_logo_noborder_transbg.svg"
+  },
+  "spatial": {
+    "location": "none",
+    "extent": "Germany",
+    "resolution": ""
+  },
+  "temporal": {
+    "referenceDate": "2022-09-14",
+    "timeseries": {
+      "start": "0 h",
+      "end": "23 h",
+      "resolution": "1 h",
+      "alignment": "left",
+      "aggregationType": "sum"
+    }
+  },
+  "sources": [
+    {
+      "title": "eGon-data",
+      "description": "Workflow to download, process and generate data sets suitable for the further research conducted in the project eGon (https://ego-n.org/)",
+      "path": "https://github.com/openego/eGon-data",
+      "licenses": [
+        {
+          "name": "AGPL-3.0 License",
+          "title": "GNU Affero General Public License v3.0",
+          "path": "https://www.gnu.org/licenses/agpl-3.0.de.html",
+          "instruction": "Permissions of this strongest copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. When a modified version is used to provide a service over a network, the complete source code of the modified version must be made available.",
+          "attribution": "\u00a9 eGon-data developers"
+        }
+      ]
+    },
+    {
+      "title": "Data bundle for egon-data: A transparent and reproducible data processing pipeline for energy system modeling",
+      "description": "egon-data provides a transparent and reproducible open data based data processing pipeline for generating data models suitable for energy system modeling. The data is customized for the requirements of the research project eGon. The research project aims to develop tools for an open and cross-sectoral planning of transmission and distribution grids. For further information please visit the eGon project website or its Github repository.  egon-data retrieves and processes data from several different external input sources. As not all data dependencies can be downloaded automatically from external sources we provide a data bundle to be downloaded by egon-data.",
+      "path": "https://doi.org/10.5281/zenodo.6630616",
+      "licenses": [
+        {
+          "name": "CC-BY-4.0",
+          "title": "Creative Commons Attribution 4.0 International",
+          "path": "https://creativecommons.org/licenses/by/4.0/legalcode",
+          "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute.",
+          "attribution": "\u00a9 eGon-data developers, \u00a9 Leibniz Institute for Applied Geophysics, \u00a9 Fraunhofer IEE, \u00a9 BGR Hannover, \u00a9 Danielle Schmidt, \u00a9 \u00dcbertragungsnetzbetreiber, \u00a9 DIW Berlin, \u00a9 Reiner Lemoine Institut, \u00a9 Statistisches Bundesamt, Wiesbaden 2008, \u00a9 Statistische \u00c4mter des Bundes und der L\u00e4nder 2021"
+        }
+      ]
+    }
+  ],
+  "licenses": [
+    {
+      "name": "CC-BY-4.0",
+      "title": "Creative Commons Attribution 4.0 International",
+      "path": "https://creativecommons.org/licenses/by/4.0/legalcode",
+      "instruction": "You are free: To Share, To Create, To Adapt; As long as you: Attribute.",
+      "attribution": "Europa-Universit\u00e4t Flensburg"
+    }
+  ],
+  "contributors": [
+    {
+      "title": "ClaraBuettner",
+      "email": "https://github.com/ClaraBuettner",
+      "date": "2022-09-12",
+      "object": "metadata",
+      "comment": "Create metadata"
+    },
+    {
+      "title": "nesnoj",
+      "email": "https://github.com/nesnoj",
+      "date": "2022-09-14",
+      "object": "metadata",
+      "comment": "Update metadata"
+    }
+  ],
+  "resources": [
+    {
+      "profile": "tabular-data-resource",
+      "name": "demand.egon_heat_idp_pool",
+      "path": "",
+      "format": "PostgreSQL",
+      "encoding": "UTF-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "house",
+            "description": "Type of residential house, either SFH (single family house) or MFH (multi family house)",
+            "type": "str",
+            "unit": "none"
+          },
+          {
+            "name": "idp",
+            "description": "Normalized intra-day-profile",
+            "type": "array of double precision",
+            "unit": "per unit"
+          },
+          {
+            "name": "index",
+            "description": "Unique identifier",
+            "type": "integer",
+            "unit": "none"
+          },
+          {
+            "name": "temperature_class",
+            "description": "Temperature class (considering the mean outside temeperature during the day)",
+            "type": "integer",
+            "unit": "none"
+          }
+        ],
+        "primaryKey": "index"
+      },
+      "dialect": {
+        "delimiter": "",
+        "decimalSeparator": ""
+      }
+    }
+  ],
+  "review": {
+    "path": "",
+    "badge": ""
+  },
+  "metaMetadata": {
+    "metadataVersion": "OEP-1.4.1",
+    "metadataLicense": {
+      "name": "CC0-1.0",
+      "title": "Creative Commons Zero v1.0 Universal",
+      "path": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  },
+  "_comment": {
+    "metadata": "Metadata documentation and explanation (https://github.com/OpenEnergyPlatform/oemetadata/blob/master/metadata/v141/metadata_key_description.md)",
+    "dates": "Dates and time must follow the ISO8601 including time zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss\u00b1hh)",
+    "units": "Use a space between numbers and units (100 m)",
+    "languages": "Languages must follow the IETF (BCP47) format (en-GB, en-US, de-DE)",
+    "licenses": "License name must follow the SPDX License List (https://spdx.org/licenses/)",
+    "review": "Following the OEP Data Review (https://github.com/OpenEnergyPlatform/data-preprocessing/wiki)",
+    "none": "If not applicable use (none)"
+  }
+}
