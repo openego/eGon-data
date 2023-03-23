@@ -5,8 +5,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   about
    getting_started
-   workflow
    troubleshooting
    data
    literature
