@@ -2,10 +2,8 @@
 Workflow
 ********
 
-Data
-----
-
-egon-data retrieves and processes data from several different external input sources which are all freely available and published under an open data license. The process handles data with different data types, such as spatial data with a high geographical resolution or load/generation time series with an hourly resolution.  
+Workflow management
+-------------------
 
 Execution
 ---------
