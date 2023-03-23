@@ -50,11 +50,11 @@ Dynamic line rating
 E-Mobility
 ----------
 
-Battery storages
+Battery stores
 ----------------
 
-Hydrogen storages
+Hydrogen stores
 -----------------
 
-Heat storages
+Heat stores
 -------------
