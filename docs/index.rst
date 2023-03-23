@@ -6,6 +6,7 @@ Contents
    :maxdepth: 2
 
    about
+   workflow
    getting_started
    troubleshooting
    data
