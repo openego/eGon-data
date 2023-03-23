@@ -2,8 +2,59 @@
 Data
 ****
 
-Scenarios
-=========
+Grid models
+===========
 
-Published data
-==============
+Electricity grid
+----------------
+
+Gas grid
+--------
+
+Demand
+======
+
+Electricity
+-----------
+
+Heat
+----
+
+Gas
+---
+
+Mobility
+--------
+
+Supply
+======
+
+Electricity
+-----------
+
+Heat
+----
+
+Gas
+---
+
+Flexibility options
+===================
+
+Demand-Side-Management
+----------------------
+
+Dynamic line rating
+-------------------
+
+E-Mobility
+----------
+
+Battery storages
+----------------
+
+Hydrogen storages
+-----------------
+
+Heat storages
+-------------
