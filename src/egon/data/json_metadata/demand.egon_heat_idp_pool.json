@@ -24,8 +24,8 @@
   "temporal": {
     "referenceDate": "2022-09-14",
     "timeseries": {
-      "start": "",
-      "end": "",
+      "start": "0 h",
+      "end": "23 h",
       "resolution": "1 h",
       "alignment": "left",
       "aggregationType": "sum"
