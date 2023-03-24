@@ -2,7 +2,7 @@
   "name": "demand.egon_heat_idp_pool",
   "title": "eGon pool of residential intra-day heat demand profiles",
   "id": "WILL_BE_SET_AT_PUBLICATION",
-  "description": "Pool of individual, normalized intra-day heat demand profiles of residential buildings",
+  "description": "Pool of individual, normalized intra-day heat demand profiles of residential buildings. Timeseries only represent one day but are used to be merged for a whole year ",
   "language": "undefined",
   "keywords": [],
   "publicationDate": "2022-09-14",
@@ -24,8 +24,8 @@
   "temporal": {
     "referenceDate": "2022-09-14",
     "timeseries": {
-      "start": "0 h",
-      "end": "23 h",
+      "start": "2011-01-01 00:00",
+      "end": "2011-01-01 00:00",
       "resolution": "1 h",
       "alignment": "left",
       "aggregationType": "sum"
