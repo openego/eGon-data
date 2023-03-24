@@ -11,6 +11,7 @@ for updates.
 import datetime
 import json
 
+from omi.dialects import get_dialect
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -27,6 +28,7 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_odbl,
     meta_metadata,
+    oep_metadata_version,
 )
 
 # CONSTANTS
@@ -327,6 +329,10 @@ def add_metadata_individual():
                 "none": "If not applicable use (none)",
             },
         }
+
+        dialect = get_dialect(oep_metadata_version())()
+
+        meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
         db.submit_comment(
             f"'{json.dumps(meta)}'",

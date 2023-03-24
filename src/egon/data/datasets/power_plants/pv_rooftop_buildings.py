@@ -49,6 +49,7 @@ import json
 from geoalchemy2 import Geometry
 from loguru import logger
 from numpy.random import RandomState, default_rng
+from omi.dialects import get_dialect
 from pyproj.crs.crs import CRS
 from sqlalchemy import BigInteger, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
@@ -71,6 +72,7 @@ from egon.data.metadata import (
     license_dedl,
     license_odbl,
     meta_metadata,
+    oep_metadata_version,
     sources,
 )
 
@@ -2155,13 +2157,7 @@ def add_metadata():
                     0
                 ]
             ),
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
+            "timeseries": {},
         },
         "sources": [
             {
@@ -2240,6 +2236,10 @@ def add_metadata():
             "none": "If not applicable use (none)",
         },
     }
+
+    dialect = get_dialect(oep_metadata_version())()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",

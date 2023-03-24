@@ -37,6 +37,7 @@ import json
 
 from loguru import logger
 from numpy.random import RandomState
+from omi.dialects import get_dialect
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
@@ -50,6 +51,7 @@ from egon.data.metadata import (
     license_dedl,
     license_odbl,
     meta_metadata,
+    oep_metadata_version,
     sources,
 )
 
@@ -241,13 +243,7 @@ def add_metadata():
         },
         "temporal": {
             "referenceDate": "2021-12-31",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
+            "timeseries": {},
         },
         "sources": [
             {
@@ -332,6 +328,10 @@ def add_metadata():
             "none": "If not applicable use (none)",
         },
     }
+
+    dialect = get_dialect(oep_metadata_version())()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",

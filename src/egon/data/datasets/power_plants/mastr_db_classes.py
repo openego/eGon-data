@@ -2,6 +2,7 @@ import datetime
 import json
 
 from geoalchemy2 import Geometry
+from omi.dialects import get_dialect
 from sqlalchemy import (
     Boolean,
     Column,
@@ -20,6 +21,7 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     meta_metadata,
+    oep_metadata_version,
     sources,
 )
 
@@ -352,13 +354,7 @@ def add_metadata():
                         " "
                     )[0]
                 ),
-                "timeseries": {
-                    "start": "",
-                    "end": "",
-                    "resolution": "",
-                    "alignment": "",
-                    "aggregationType": "",
-                },
+                "timeseries": {},
             },
             "sources": [
                 {
@@ -440,6 +436,10 @@ def add_metadata():
                 "none": "If not applicable use (none)",
             },
         }
+
+        dialect = get_dialect(oep_metadata_version())()
+
+        meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
         db.submit_comment(
             f"'{json.dumps(meta)}'",

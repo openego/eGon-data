@@ -4,6 +4,7 @@ DB tables / SQLAlchemy ORM classes for motorized individual travel
 import datetime
 import json
 
+from omi.dialects import get_dialect
 from sqlalchemy import (
     Boolean,
     Column,
@@ -31,6 +32,7 @@ from egon.data.metadata import (
     license_ccby,
     license_odbl,
     meta_metadata,
+    oep_metadata_version,
     sources,
 )
 
@@ -308,13 +310,7 @@ def add_metadata():
         },
         "temporal": {
             "referenceDate": f"{meta_run_config.start_date}",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
+            "timeseries": {},
         },
         "sources": [
             sources()["egon-data"],
@@ -387,6 +383,10 @@ def add_metadata():
         },
     }
 
+    dialect = get_dialect(oep_metadata_version())()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+
     db.submit_comment(
         f"'{json.dumps(meta)}'",
         schema,
@@ -412,13 +412,7 @@ def add_metadata():
         },
         "temporal": {
             "referenceDate": f"{meta_run_config.start_date}",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
+            "timeseries": {},
         },
         "sources": [
             sources()["bgr_inspee"],
@@ -511,6 +505,10 @@ def add_metadata():
         },
     }
 
+    dialect = get_dialect(oep_metadata_version())()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+
     db.submit_comment(
         f"'{json.dumps(meta)}'",
         schema,
@@ -536,13 +534,7 @@ def add_metadata():
         },
         "temporal": {
             "referenceDate": f"{meta_run_config.start_date}",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
+            "timeseries": {},
         },
         "sources": [
             sources()["bgr_inspee"],
@@ -634,6 +626,10 @@ def add_metadata():
             "none": "If not applicable use (none)",
         },
     }
+
+    dialect = get_dialect(oep_metadata_version())()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",

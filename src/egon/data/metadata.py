@@ -7,6 +7,19 @@ from egon.data.db import engine
 EGON_ATTRIBUTION: str = "© eGon development team"
 
 
+def oep_metadata_version():
+    """
+    Get OEP metadata version string.
+
+    Returns
+    -------
+    str
+        OEP metadata version string
+
+    """
+    return "oep-v1.4"
+
+
 def context():
     """
     Project context information for metadata
