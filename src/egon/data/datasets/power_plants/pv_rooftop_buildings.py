@@ -66,6 +66,7 @@ from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_db_table,
     license_dedl,
     license_odbl,
@@ -2122,6 +2123,16 @@ def add_metadata():
         "zenodo"
     ]["deposit_id"]
 
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-16"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "add metadata to dataset."
+    contris[1]["comment"] = "Add worflow to generate dataset."
+
     meta = {
         "name": name,
         "title": "eGon power plants rooftop solar",
@@ -2183,15 +2194,7 @@ def add_metadata():
             sources()["egon-data"],
         ],
         "licenses": [license_odbl("© eGon development team")],
-        "contributors": [
-            {
-                "title": "khelfen",
-                "email": "Kilian.Helfenbein@rl-institut.de",
-                "date": "2023-03-16",
-                "object": "metadata",
-                "comment": "Create metadata",
-            }
-        ],
+        "contributors": contris,
         "resources": [
             {
                 "profile": "tabular-data-resource",

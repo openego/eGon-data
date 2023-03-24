@@ -25,6 +25,7 @@ from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.scenario_parameters import EgonScenario
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_db_table,
     license_agpl,
     license_ccby,
@@ -276,6 +277,16 @@ def add_metadata():
         "basic"
     ]
 
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-17"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "add metadata to dataset."
+    contris[1]["comment"] = "Add worflow to generate dataset."
+
     table = "egon_ev_metadata"
     name = f"{schema}.{table}"
 
@@ -329,15 +340,7 @@ def add_metadata():
             },
         ],
         "licenses": [license_ccby()],
-        "contributors": [
-            {
-                "title": "khelfen",
-                "email": "Kilian.Helfenbein@rl-institut.de",
-                "date": "2023-03-17",
-                "object": "metadata",
-                "comment": "Create metadata",
-            }
-        ],
+        "contributors": contris,
         "resources": [
             {
                 "profile": "tabular-data-resource",
@@ -461,15 +464,7 @@ def add_metadata():
             },
         ],
         "licenses": [license_odbl()],
-        "contributors": [
-            {
-                "title": "khelfen",
-                "email": "Kilian.Helfenbein@rl-institut.de",
-                "date": "2023-03-17",
-                "object": "metadata",
-                "comment": "Create metadata",
-            }
-        ],
+        "contributors": contris,
         "resources": [
             {
                 "profile": "tabular-data-resource",
@@ -593,15 +588,7 @@ def add_metadata():
             },
         ],
         "licenses": [license_odbl()],
-        "contributors": [
-            {
-                "title": "khelfen",
-                "email": "Kilian.Helfenbein@rl-institut.de",
-                "date": "2023-03-17",
-                "object": "metadata",
-                "comment": "Create metadata",
-            }
-        ],
+        "contributors": contris,
         "resources": [
             {
                 "profile": "tabular-data-resource",

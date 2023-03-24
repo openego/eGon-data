@@ -16,6 +16,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data import config, db
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_db_table,
     license_dedl,
     meta_metadata,
@@ -313,6 +314,16 @@ def add_metadata():
     ]["deposit_id"]
     deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
 
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-15"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "add metadata to dataset."
+    contris[1]["comment"] = "Add worflow to generate dataset."
+
     for technology in technologies:
         target_table = target_tables[technology]
 
@@ -379,15 +390,7 @@ def add_metadata():
                 sources()["egon-data"],
             ],
             "licenses": [license_dedl(attribution="© eGon development team")],
-            "contributors": [
-                {
-                    "title": "khelfen",
-                    "email": "Kilian.Helfenbein@rl-institut.de",
-                    "date": "2023-03-15",
-                    "object": "metadata",
-                    "comment": "Create metadata",
-                }
-            ],
+            "contributors": contris,
             "resources": [
                 {
                     "profile": "tabular-data-resource",

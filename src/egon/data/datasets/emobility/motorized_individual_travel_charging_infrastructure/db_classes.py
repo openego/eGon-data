@@ -12,6 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data import config, db
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_db_table,
     license_odbl,
     meta_metadata,
@@ -43,6 +44,16 @@ def add_metadata():
     """
     Add metadata to table grid.egon_emob_charging_infrastructure
     """
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-14"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "add metadata to dataset."
+    contris[1]["comment"] = "Add worflow to generate dataset."
+
     meta = {
         "name": "grid.egon_emob_charging_infrastructure",
         "title": "eGon Electromobility Charging Infrastructure",
@@ -91,15 +102,7 @@ def add_metadata():
         "licenses": [
             license_odbl(attribution="© eGon development team"),
         ],
-        "contributors": [
-            {
-                "title": "khelfen",
-                "email": "Kilian.Helfenbein@rl-institut.de",
-                "date": "2023-03-14",
-                "object": "metadata",
-                "comment": "Create metadata",
-            }
-        ],
+        "contributors": contris,
         "resources": [
             {
                 "profile": "tabular-data-resource",

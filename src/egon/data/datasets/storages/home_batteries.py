@@ -45,6 +45,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_db_table,
     license_dedl,
     license_odbl,
@@ -211,6 +212,16 @@ def add_metadata():
         "zenodo"
     ]["deposit_id"]
 
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-15"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "add metadata to dataset."
+    contris[1]["comment"] = "Add worflow to generate dataset."
+
     meta = {
         "name": (
             f"{targets['home_batteries']['schema']}."
@@ -272,15 +283,7 @@ def add_metadata():
             sources()["technology-data"],
         ],
         "licenses": [license_odbl("© eGon development team")],
-        "contributors": [
-            {
-                "title": "khelfen",
-                "email": "Kilian.Helfenbein@rl-institut.de",
-                "date": "2023-03-15",
-                "object": "metadata",
-                "comment": "Create metadata",
-            }
-        ],
+        "contributors": contris,
         "resources": [
             {
                 "profile": "tabular-data-resource",

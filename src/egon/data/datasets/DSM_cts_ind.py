@@ -23,6 +23,7 @@ from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
 from egon.data.metadata import (
     context,
+    contributors,
     generate_resource_fields_from_db_table,
     license_odbl,
     meta_metadata,
@@ -239,6 +240,16 @@ def add_metadata_individual():
         "egon_sites_ind_load_curves_individual_dsm_timeseries": ["site_id"],
     }
 
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-17"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "add metadata to dataset."
+    contris[1]["comment"] = "Add worflow to generate dataset."
+
     for t_dict in targets.values():
         schema = t_dict["schema"]
         table = t_dict["table"]
@@ -270,15 +281,7 @@ def add_metadata_individual():
             },
             "sources": ["TODO"],
             "licenses": [license_odbl("© eGon development team")],
-            "contributors": [
-                {
-                    "title": "khelfen",
-                    "email": "Kilian.Helfenbein@rl-institut.de",
-                    "date": "2023-03-17",
-                    "object": "metadata",
-                    "comment": "Create metadata",
-                }
-            ],
+            "contributors": contris,
             "resources": [
                 {
                     "profile": "tabular-data-resource",
