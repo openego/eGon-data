@@ -1,4 +1,15 @@
-"""The central module containing all code dealing with heat sector in etrago
+"""
+The central module containing all code dealing with H2 stores in Germany
+
+This module contains the functions used to insert the two types of H2
+store potentials in Germany:
+  * H2 overground stores (carrier: 'H2_overground'): steel tanks at
+    every H2_grid bus
+  * H2 underground stores (carrier: 'H2_underground'): saltcavern store
+    at every H2_saltcavern bus.
+    NB: the saltcavern locations define the H2_saltcavern buses locations.
+All these stores are modelled as extendable PyPSA stores.
+
 """
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -10,7 +21,13 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_H2_overground_storage(scn_name="eGon2035"):
-    """Insert H2 steel tank storage for every H2 bus."""
+    """
+    Insert H2_overground stores into the database.
+
+    Insert extendable H2_overground stores (steel tanks) at each H2_grid
+    bus. This function inserts data into the database and has no return.
+
+    """
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     targets = config.datasets()["etrago_hydrogen"]["targets"]
@@ -69,7 +86,14 @@ def insert_H2_overground_storage(scn_name="eGon2035"):
 
 
 def insert_H2_saltcavern_storage(scn_name="eGon2035"):
-    """Insert H2 saltcavern storage for every H2_saltcavern bus in the table."""
+    """
+    Insert H2_underground stores into the database.
+
+    Insert extendable H2_underground stores (saltcavern potentials) at
+    every H2_saltcavern bus.This function inserts data into the database
+    and has no return.
+
+    """
 
     # Datatables sources and targets
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -155,7 +179,12 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
 
 
 def calculate_and_map_saltcavern_storage_potential():
-    """Calculate site specific storage potential based on InSpEE-DS report."""
+    """
+    Calculate site specific storage potential based on InSpEE-DS report.
+
+    This function inserts data into the database and has no return.
+
+    """
 
     # select onshore vg250 data
     sources = config.datasets()["bgr"]["sources"]

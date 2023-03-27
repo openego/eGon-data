@@ -1,4 +1,17 @@
-"""The central module containing all code dealing with heat sector in etrago
+"""
+The central module containing all code dealing with the hydrogen buses
+
+In this module, the functions allowing to create the H2 buses in Germany
+for eTraGo are to be found.
+The H2 buses in the neighbouring countries (only present in eGon100RE)
+are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
+In both scenarios, there are two types of H2 buses in Germany:
+  * H2_grid buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
+    these buses are located at the places than the CH4 buses.
+  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
+    these buses are located at the intersection of AC buses and
+    potential for H2 saltcavern.
+
 """
 
 from geoalchemy2 import Geometry
@@ -12,14 +25,18 @@ from egon.data.datasets.etrago_helpers import (
 
 
 def insert_hydrogen_buses(scenario="eGon2035"):
-    """ Insert hydrogen buses to etrago table
+    """
+    Insert hydrogen buses into the database (in etrago table)
 
-    Hydrogen buses are divided into cavern and methane grid attached buses
+    Hydrogen buses are inserted into the database using the functions:
+      * :py:func:`insert_H2_buses_from_CH4_grid` for H2_grid buses
+      * :py:func:`insert_H2_buses_from_saltcavern` for the H2_saltcavern
+        buses
 
     Parameters
     ----------
     scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+        Name of the scenario, the default is 'eGon2035'.
 
     """
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -41,7 +58,11 @@ def insert_hydrogen_buses(scenario="eGon2035"):
 
 
 def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
-    """Insert the H2 buses based saltcavern locations to db.
+    """
+    Insert the H2 buses based saltcavern locations into the database.
+
+    These buses are located at the intersection of AC buses and
+    potential for H2 saltcavern.
 
     Parameters
     ----------
@@ -104,7 +125,11 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
 
 
 def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
-    """Insert the H2 buses based on CH4 grid to db.
+    """
+    Insert the H2 buses based on CH4 grid into the database.
+
+    At each CH4 location, in other words at each intersection of the CH4
+    grid, a H2 bus is created.
 
     Parameters
     ----------
