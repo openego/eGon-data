@@ -80,10 +80,10 @@ Battery stores
 
 .. include:: data/batteries.rst
 
-Hydrogen stores
+Gas stores
 -----------------
 
-.. include:: data/h2_stores.rst
+.. include:: data/gas_stores.rst
 
 Heat stores
 -------------
