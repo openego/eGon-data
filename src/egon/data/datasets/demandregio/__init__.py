@@ -647,6 +647,7 @@ def insert_cts_ind_demands():
             "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
             # no adjustments for status quo
             "eGon2021": {},
+            "status2019": {},
         }
 
         insert_cts_ind(scn, year, engine, target_values)
