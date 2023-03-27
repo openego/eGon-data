@@ -1,4 +1,15 @@
-"""The central module containing all code dealing with heat sector in etrago
+"""
+The central module containing all code dealing with the H2 grid in eGon100RE
+
+The H2 grid, present only in eGon100RE, is composed of two parts:
+  * a fixed part with the same topology than the CH4 grid and with
+    carrier 'H2_retrofit' corresponding to the retrofiting of a share of
+    the CH4 grid into an hydrogen grid,
+  * an extendable part with carrier 'H2_gridextension', linking each
+    H2_salcavern bus to the closest H2_grid bus: this part as no
+    capacity (p_nom = 0) but it could be extended.
+As the CH4 grid, the H2 pipelines are modelled by PyPSA links.
+
 """
 from geoalchemy2.types import Geometry
 from shapely.geometry import MultiLineString
@@ -10,7 +21,27 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_h2_pipelines():
-    """Insert hydrogen grid to etrago table based on CH4 grid."""
+    """
+    Insert hydrogen grid (H2 links) into the database for eGon100RE.
+
+    Insert the H2 grid by executing the following steps:
+      * Copy the CH4 links in Germany from eGon2035
+      * Overwrite the followings columns:
+          * bus0 and bus1 using the grid.egon_etrago_ch4_h2 table
+          * carrier, scn_name
+          * p_nom: the value attributed there corresponds to the share
+            of p_nom of the specific pipe that could be retrofited into
+            H2 pipe. This share is the same for every pipeline and is
+            calculated in the PyPSA-eur-sec run.
+      * Create new extendable pipelines to link the existing grid to the
+        H2_saltcavern buses
+      * Clean database
+      * Attribute link_id to the links
+      * Insert the into the database
+
+    This function inserts data into the database and has no return.
+
+    """
     H2_buses = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon100RE' AND
@@ -43,19 +74,14 @@ def insert_h2_pipelines():
     scn_params = get_sector_parameters("gas", "eGon100RE")
 
     pipelines["carrier"] = "H2_retrofit"
-    # the volumetric energy density of pure H2 at 50 bar vs. pure CH4 at
-    # 50 bar is at about 30 %, however due to less friction volumetric flow can
-    # be increased for pure H2 leading to higher capacities. Data for both
-    # the retriffiting share and the capacity factor are obtained from the
-    # scenario parameters
     pipelines["p_nom"] *= (
         scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
-        * scn_params["retrofitted_capacity_share"]
     )
     # map pipeline buses
     pipelines["bus0"] = CH4_H2_busmap.loc[pipelines["bus0"], "bus_H2"].values
     pipelines["bus1"] = CH4_H2_busmap.loc[pipelines["bus1"], "bus_H2"].values
     pipelines["scn_name"] = "eGon100RE"
+    pipelines["p_min_pu"] = -1.0
     pipelines["capital_cost"] = (
         scn_params["capital_cost"]["H2_pipeline_retrofit"]
         * pipelines["length"]
@@ -88,10 +114,11 @@ def insert_h2_pipelines():
     new_pipelines = new_pipelines.set_geometry("geom", crs=4326)
     new_pipelines["carrier"] = "H2_gridextension"
     new_pipelines["scn_name"] = "eGon100RE"
+    new_pipelines["p_min_pu"] = -1.0
     new_pipelines["p_nom_extendable"] = True
     new_pipelines["length"] = new_pipelines.to_crs(epsg=3035).geometry.length
 
-    # ToDo: insert capital cost data
+    # Insert capital cost data
     new_pipelines["capital_cost"] = (
         scn_params["capital_cost"]["H2_pipeline"]
         * new_pipelines["length"]
@@ -140,22 +167,22 @@ def insert_h2_pipelines():
     )
 
     db.execute_sql(
-        """
+    """
     select UpdateGeometrySRID('grid', 'egon_etrago_h2_link', 'topo', 4326) ;
 
-    INSERT INTO grid.egon_etrago_link (scn_name,
+    INSERT INTO grid.egon_etrago_link (scn_name, capital_cost,
                                               link_id, carrier,
-                                              bus0, bus1,
+                                              bus0, bus1, p_min_pu,
                                               p_nom_extendable, length,
                                               geom, topo)
-    SELECT scn_name,
+    SELECT scn_name, capital_cost,
                 link_id, carrier,
-                bus0, bus1,
+                bus0, bus1, p_min_pu,
                 p_nom_extendable, length,
                 geom, topo
 
     FROM grid.egon_etrago_h2_link;
 
     DROP TABLE grid.egon_etrago_h2_link;
-        """
+    """
     )

@@ -586,7 +586,7 @@ def write_model_data_to_db(
         """Write model data to eTraGo tables"""
 
         @db.check_db_unique_violation
-        def write_bus(scenario_name: str) -> None:
+        def write_bus(scenario_name: str) -> int:
             # eMob MIT bus
             emob_bus_id = db.next_etrago_id("bus")
             with db.session_scope() as session:
