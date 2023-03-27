@@ -1,9 +1,17 @@
 egon.data
 =========
 
-.. testsetup::
-
-    from egon.data import *
-
 .. automodule:: egon.data
-    :members:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. toctree::
+   egon.data.airflow
+   egon.data.cli
+   egon.data.config
+   egon.data.dataset_configuration
+   egon.data.datasets
+   egon.data.db
+   egon.data.metadata
+   egon.data.subprocess

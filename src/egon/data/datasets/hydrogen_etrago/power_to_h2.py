@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 Module containing the definition of the AC grid to H2 links
+
+In this module the functions used to define and insert into the database
+the links between H2 and AC buses are to be found.
+These links are modelling:
+  * Electrolysis (carrier name: 'power_to_H2'): technology to produce H2
+    from AC
+  * Fuel cells (carrier name: 'H2_to_power'): techonology to produce
+    power from H2
+
 """
 from geoalchemy2.types import Geometry
 from pyproj import Geod
@@ -15,15 +24,23 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_power_to_h2_to_power(scn_name="eGon2035"):
-    """Define power-to-H2-to-power capacities and insert in etrago_link table.
+    """
+    Insert electrolysis and fuel cells capacities into the database.
 
-    The potentials for power-to-h2 in electrolysis and h2-to-power in fuel
-    cells are created between each H2 bus and its closest HV power bus.
+    The potentials for power-to-H2 in electrolysis and H2-to-power in
+    fuel cells are created between each H2 bus (H2_grid and
+    H2_saltcavern) and its closest HV power bus.
+    These links are extendable. For the electrolysis, if the distance
+    between the AC and the H2 bus is > 500m, the maximum capacity of
+    the installation is limited to 1 MW.
+
+    This function inserts data into the database and has no return.
 
     Parameters
     ----------
     scn_name : str
-        Name of the scenario.
+        Name of the scenario
+
     """
 
     # Connect to local database
@@ -161,7 +178,8 @@ def insert_power_to_h2_to_power(scn_name="eGon2035"):
 
 
 def map_buses(scn_name):
-    """Map H2 buses to nearest HV AC bus.
+    """
+    Map H2 buses to nearest HV AC bus.
 
     Parameters
     ----------
@@ -172,6 +190,7 @@ def map_buses(scn_name):
     -------
     gdf : geopandas.GeoDataFrame
         GeoDataFrame with connected buses.
+
     """
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = f"""SELECT bus_id, geom
