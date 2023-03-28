@@ -39,9 +39,9 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
-from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
+# from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
-from egon.data.datasets.gas_grid import GasNodesandPipes
+from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
@@ -49,6 +49,11 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2035,
+    HeatPumps2050,
+    HeatPumpsPypsaEurSec,
+)
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenGridEtrago,
@@ -58,6 +63,7 @@ from egon.data.datasets.hydrogen_etrago import (
 )
 from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
+    IndustrialGasDemandeGon100RE,
     IndustrialGasDemandeGon2035,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
@@ -173,7 +179,7 @@ with airflow.DAG(
     )
 
     # Fix eHV subnetworks in Germany manually
-    fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
+    # fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
 
     # Retrieve MaStR (Marktstammdatenregister) data
     mastr_data = mastr_data_setup(dependencies=[setup])
@@ -218,7 +224,7 @@ with airflow.DAG(
     # TODO: What does "trans" stand for?
     # Calculate dynamic line rating for HV (high voltage) trans lines
     dlr = Calculate_dlr(
-        dependencies=[data_bundle, osmtgmod, weather_data, fix_subnetworks]
+        dependencies=[data_bundle, osmtgmod, weather_data] # , fix_subnetworks]
     )
 
     # Map zensus grid districts
@@ -318,6 +324,24 @@ with airflow.DAG(
         ]
     )
 
+    cts_demand_buildings = CtsDemandBuildings(
+        dependencies=[
+            osm_buildings_streets,
+            cts_electricity_demand_annual,
+            hh_demand_buildings_setup,
+            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
+        ]
+    )
+
+    # Minimum heat pump capacity for pypsa-eur-sec
+    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_time_series,
+        ]
+    )
+
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -328,6 +352,7 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
+            heat_pumps_pypsa_eur_sec,
         ]
     )
 
@@ -337,7 +362,7 @@ with airflow.DAG(
     )
 
     # Import gas grid
-    gas_grid_insert_data = GasNodesandPipes(
+    gas_grid_insert_data = GasNodesAndPipes(
         dependencies=[
             data_bundle,
             foreign_lines,
