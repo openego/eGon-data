@@ -1,0 +1,1 @@
+Information on heat stores
