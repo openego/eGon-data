@@ -364,6 +364,16 @@ def generate_resource_fields_from_db_table(schema, table, geom_columns=None):
 
 
 def sources():
+    shared_licenses = [license_geonutzv("© BGR, Hannover, 2021")]
+    shared_path = "https://dx.doi.org/10.5281/zenodo.4896526"
+    shared_title = (
+        "Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien"
+        " und Potenzialabschätzung für die Errichtung von Salzkavernen"
+        " zur Speicherung von Erneuerbaren Energien"
+        " (Wasserstoff und Druckluft)"
+        " – Doppelsalinare und flach lagernde Salzschichten."
+        " Teilprojekt Bewertungskriterien und Potenzialabschätzung"
+    )
     return {
         "bgr_inspee": {
             "title": "Salt structures in Northern Germany",
@@ -443,18 +453,10 @@ def sources():
                 "https://produktcenter.bgr.de/terraCatalog/DetailResult.do"
                 "?fileIdentifier=630430b8-4025-4d6f-9a62-025b53bc8b3d"
             ),
-            "licenses": [license_geonutzv("© BGR, Hannover, 2021")],
+            "licenses": shared_licenses,
         },
         "bgr_inspeeds_data_bundle": {
-            "title": (
-                "Informationssystem Salz: Planungsgrundlagen,"
-                " Auswahlkriterien und Potenzialabschätzung für die"
-                " Errichtung von Salzkavernen zur Speicherung von"
-                " Erneuerbaren Energien (Wasserstoff und Druckluft)"
-                " – Doppelsalinare und flach lagernde Salzschichten."
-                " Teilprojekt Bewertungskriterien und"
-                " Potenzialabschätzung"
-            ),
+            "title": shared_title,
             "description": (
                 "Shapefiles corresponding to the data provided in"
                 " figure 7-1 (Donadei, S., et al., 2020, p. 7-5)."
@@ -464,19 +466,11 @@ def sources():
                 " Note: Please include all bgr data sources when using"
                 " the data."
             ),
-            "path": "https://dx.doi.org/10.5281/zenodo.4896526",
-            "licenses": [license_geonutzv("© BGR, Hannover, 2021")],
+            "path": shared_path,
+            "licenses": shared_licenses,
         },
         "bgr_inspeeds_report": {
-            "title": (
-                "Informationssystem Salz: Planungsgrundlagen,"
-                " Auswahlkriterien und Potenzialabschätzung für die"
-                " Errichtung von Salzkavernen zur Speicherung von"
-                " Erneuerbaren Energien (Wasserstoff und Druckluft)"
-                " – Doppelsalinare und flach lagernde Salzschichten."
-                " Teilprojekt Bewertungskriterien und"
-                " Potenzialabschätzung"
-            ),
+            "title": shared_title,
             "description": (
                 "The report includes availability of saltstructures for"
                 " energy storage and energy storage potential"
@@ -488,7 +482,7 @@ def sources():
                 "/InSpeeDS_TP_Bewertungskriterien.pdf"
                 "?__blob=publicationFile&v=3"
             ),
-            "licenses": [license_geonutzv("© BGR, Hannover, 2021")],
+            "licenses": shared_licenses,
         },
         "demandregio": {
             "title": "DemandRegio",
@@ -774,7 +768,7 @@ def sources():
                 " storage, production sites, gas power plants, border"
                 " points, and demand time series."
             ),
-            "path": "https://dx.doi.org/10.5281/zenodo.4896526",
+            "path": shared_path,
             "licenses": [
                 license_ccby(
                     "Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)"
