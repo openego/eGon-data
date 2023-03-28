@@ -81,7 +81,7 @@ Battery stores
 .. include:: data/batteries.rst
 
 Gas stores
------------------
+----------
 
 .. include:: data/gas_stores.rst
 
