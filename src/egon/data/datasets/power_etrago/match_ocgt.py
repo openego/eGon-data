@@ -13,12 +13,16 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
-    """Insert gas turbine links in egon_etrago_link table.
+    """
+    Insert gas turbine links in egon_etrago_link table.
+
+    This function inserts data into the database and has no return.
 
     Parameters
     ----------
     scn_name : str
         Name of the scenario.
+
     """
 
     # Connect to local database
@@ -80,7 +84,8 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
 
 
 def map_buses(scn_name):
-    """Map OCGT AC buses to nearest CH4 bus.
+    """
+    Map OCGT AC buses to nearest CH4 bus.
 
     Parameters
     ----------
@@ -91,6 +96,7 @@ def map_buses(scn_name):
     -------
     gdf : geopandas.GeoDataFrame
         GeoDataFrame with connected buses.
+
     """
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = f"""SELECT bus_id, el_capacity as p_nom, geom
