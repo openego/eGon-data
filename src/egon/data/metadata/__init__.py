@@ -937,7 +937,7 @@ def contributors(authorlist):
 
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
-    v = "oep-v1.4"
+    dialect = get_dialect("oep-v1.4")()
 
     for path in importlib_resources.files(__name__).glob("*.json"):
         split = path.name.split(".")
@@ -945,8 +945,6 @@ def upload_json_metadata():
             continue
         schema = split[0]
         table = split[1]
-
-        dialect = get_dialect(v)()
 
         with open(path, "r") as infile:
             obj = dialect.parse(infile.read())
