@@ -371,9 +371,9 @@ with airflow.DAG(
             tasks["etrago_setup.create-tables"],
         ]
     )
-    # Create gas voronoi eGon2035 TODO: adjust for SQ
-    create_gas_polygons_egon2035 = GasAreaseGon2035(
-        dependencies=[setup_etrago, vg250]
+    # Create gas voronoi status2019
+    create_gas_polygons_status2019 = GasAreasstatus2019(
+        dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
     )
 
     # Gas abroad
@@ -382,6 +382,7 @@ with airflow.DAG(
             gas_grid_insert_data,
             run_pypsaeursec,
             foreign_lines,
+            create_gas_polygons_status2019,
         ]
     )
 

@@ -69,6 +69,34 @@ class GasAreaseGon100RE(Dataset):
         )
 
 
+class GasAreasstatus2019(Dataset):
+    """Create the gas voronoi table and the gas voronoi areas for status2019
+
+    *Dependencies*
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+
+    *Resulting tables*
+      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+
+    """
+
+    #:
+    name: str = "GasAreasstatus2019"
+    #:
+    version: str = "0.0.1"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(create_gas_voronoi_table, voronoi_status2019),
+        )
+
+
+
 Base = declarative_base()
 
 
@@ -113,6 +141,13 @@ def voronoi_egon100RE():
     """
     for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
+        
+def voronoi_status2019():
+    """
+    Create voronoi polygons for all gas carriers in status2019 scenario
+    """
+    for carrier in ["CH4"]:
+        create_voronoi("status2019", carrier)
 
 
 def create_voronoi(scn_name, carrier):
