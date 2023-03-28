@@ -26,9 +26,9 @@ The resulting data is stored in separate tables
     Table including the mv substation heat profile share of all selected
     cts buildings for scenario eGon2035 and eGon100RE. This table is created
     within :func:`cts_heat()`
-* `demand.egon_building_peak_loads`:
-    Mapping of demand time series and buildings including cell_id, building
-    area and peak load. This table is already created within
+* `demand.egon_building_electricity_peak_loads`:
+    Mapping of electricity demand time series and buildings including cell_id,
+    building area and peak load. This table is already created within
     :func:`hh_buildings.get_building_peak_loads()`
 * `boundaries.egon_map_zensus_mvgd_buildings`:
     A final mapping table including all buildings used for residential and
@@ -262,7 +262,7 @@ class CtsDemandBuildings(Dataset):
             tasks=(
                 cts_buildings,
                 {cts_electricity, cts_heat},
-                {get_cts_electricity_peak_load, get_cts_heat_peak_load},
+                get_cts_electricity_peak_load,
                 map_all_used_buildings,
                 assign_voltage_level_to_buildings,
             ),
@@ -918,33 +918,6 @@ def calc_building_demand_profile_share(
         "building_amenity_share"
     ].multiply(df_demand_share["cell_share"])
 
-    # # Fix #989
-    # # Mismatched bus_id
-    # # May result in failing sanity checks
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    #
-    # with db.session_scope() as session:
-    #     query = session.query(
-    #         egon_map_zensus_buildings_filtered_all.id,
-    #         MapZensusGridDistricts.bus_id,
-    #     ).filter(
-    #         egon_map_zensus_buildings_filtered_all.id.in_(
-    #             df_cts_buildings.id.values
-    #         ),
-    #         MapZensusGridDistricts.zensus_population_id
-    #         == egon_map_zensus_buildings_filtered_all.zensus_population_id,
-    #     )
-    #
-    #     df_map_bus_id = pd.read_sql(
-    #         query.statement, session.connection(), index_col=None
-    #     )
-    #
-    # df_demand_share = pd.merge(
-    #     left=df_demand_share.drop(columns="bus_id"),
-    #     right=df_map_bus_id,
-    #     on="id",
-    # )
-
     # only pass selected columns
     df_demand_share = df_demand_share[
         ["id", "bus_id", "scenario", "profile_share"]
@@ -963,8 +936,51 @@ def calc_building_demand_profile_share(
     return df_demand_share
 
 
+def get_peta_demand(mvgd, scenario):
+    """
+    Retrieve annual peta heat demand for CTS for either
+    eGon2035 or eGon100RE scenario.
+
+    Parameters
+    ----------
+    mvgd : int
+        ID of substation for which to get CTS demand.
+    scenario : str
+        Possible options are eGon2035 or eGon100RE
+
+    Returns
+    -------
+    df_peta_demand : pd.DataFrame
+        Annual residential heat demand per building and scenario. Columns of
+        the dataframe are zensus_population_id and demand.
+
+    """
+
+    with db.session_scope() as session:
+        query = (
+            session.query(
+                MapZensusGridDistricts.zensus_population_id,
+                EgonPetaHeat.demand,
+            )
+            .filter(MapZensusGridDistricts.bus_id == int(mvgd))
+            .filter(
+                MapZensusGridDistricts.zensus_population_id
+                == EgonPetaHeat.zensus_population_id
+            )
+            .filter(
+                EgonPetaHeat.sector == "service",
+                EgonPetaHeat.scenario == scenario,
+            )
+        )
+
+        df_peta_demand = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+
+    return df_peta_demand
+
+
 def calc_cts_building_profiles(
-    egon_building_ids,
     bus_ids,
     scenario,
     sector,
@@ -975,8 +991,6 @@ def calc_cts_building_profiles(
 
     Parameters
     ----------
-    egon_building_ids: list of int
-        Ids of the building for which the profile is calculated.
     bus_ids: list of int
         Ids of the substation for which selected building profiles are
         calculated.
@@ -988,7 +1002,9 @@ def calc_cts_building_profiles(
     Returns
     -------
     df_building_profiles: pd.DataFrame
-        Table of demand profile per building
+        Table of demand profile per building. Column names are building IDs
+        and index is hour of the year as int (0-8759).
+
     """
     if sector == "electricity":
         # Get cts building electricity demand share of selected buildings
@@ -1001,9 +1017,7 @@ def calc_cts_building_profiles(
                     EgonCtsElectricityDemandBuildingShare.scenario == scenario
                 )
                 .filter(
-                    EgonCtsElectricityDemandBuildingShare.building_id.in_(
-                        egon_building_ids
-                    )
+                    EgonCtsElectricityDemandBuildingShare.bus_id.in_(bus_ids)
                 )
             )
 
@@ -1019,12 +1033,12 @@ def calc_cts_building_profiles(
                 )
             ).filter(EgonEtragoElectricityCts.bus_id.in_(bus_ids))
 
-        df_cts_profiles = pd.read_sql(
+        df_cts_substation_profiles = pd.read_sql(
             cells_query.statement,
             cells_query.session.bind,
         )
-        df_cts_profiles = pd.DataFrame.from_dict(
-            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+        df_cts_substation_profiles = pd.DataFrame.from_dict(
+            df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
         )
         # df_cts_profiles = calc_load_curves_cts(scenario)
@@ -1037,11 +1051,7 @@ def calc_cts_building_profiles(
                     EgonCtsHeatDemandBuildingShare,
                 )
                 .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
-                .filter(
-                    EgonCtsHeatDemandBuildingShare.building_id.in_(
-                        egon_building_ids
-                    )
-                )
+                .filter(EgonCtsHeatDemandBuildingShare.bus_id.in_(bus_ids))
             )
 
         df_demand_share = pd.read_sql(
@@ -1049,6 +1059,9 @@ def calc_cts_building_profiles(
         )
 
         # Get substation cts heat load profiles of selected bus_ids
+        # (this profile only contains zensus cells with individual heating;
+        #  in order to obtain a profile for the whole MV grid it is afterwards
+        #  scaled by the grids total CTS demand from peta)
         with db.session_scope() as session:
             cells_query = (
                 session.query(EgonEtragoHeatCts).filter(
@@ -1056,14 +1069,27 @@ def calc_cts_building_profiles(
                 )
             ).filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
 
-        df_cts_profiles = pd.read_sql(
+        df_cts_substation_profiles = pd.read_sql(
             cells_query.statement,
             cells_query.session.bind,
         )
-        df_cts_profiles = pd.DataFrame.from_dict(
-            df_cts_profiles.set_index("bus_id")["p_set"].to_dict(),
+        df_cts_substation_profiles = pd.DataFrame.from_dict(
+            df_cts_substation_profiles.set_index("bus_id")["p_set"].to_dict(),
             orient="index",
         )
+        for bus_id in bus_ids:
+            if bus_id in df_cts_substation_profiles.index:
+                # get peta demand to scale load profile to
+                peta_cts_demand = get_peta_demand(bus_id, scenario)
+                scaling_factor = (
+                    peta_cts_demand.demand.sum()
+                    / df_cts_substation_profiles.loc[bus_id, :].sum()
+                )
+                # scale load profile
+                df_cts_substation_profiles.loc[bus_id, :] *= scaling_factor
+
+    else:
+        raise KeyError("Sector needs to be either 'electricity' or 'heat'")
 
     # TODO remove after #722
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
@@ -1072,7 +1098,16 @@ def calc_cts_building_profiles(
     df_building_profiles = pd.DataFrame()
     for bus_id, df in df_demand_share.groupby("bus_id"):
         shares = df.set_index("building_id", drop=True)["profile_share"]
-        profile_ts = df_cts_profiles.loc[bus_id]
+        try:
+            profile_ts = df_cts_substation_profiles.loc[bus_id]
+        except KeyError:
+            # This should only happen within the SH cutout
+            log.info(
+                f"No CTS profile found for substation with bus_id:"
+                f" {bus_id}"
+            )
+            continue
+
         building_profiles = np.outer(profile_ts, shares)
         building_profiles = pd.DataFrame(
             building_profiles, index=profile_ts.index, columns=shares.index
@@ -1339,30 +1374,6 @@ def cts_buildings():
     df_cts_buildings = df_cts_buildings.reset_index().rename(
         columns={"index": "serial"}
     )
-
-    # # Fix #989
-    # # Mismatched zensus population id
-    # from saio.boundaries import egon_map_zensus_buildings_filtered_all
-    #
-    # with db.session_scope() as session:
-    #     query = session.query(
-    #         egon_map_zensus_buildings_filtered_all.id,
-    #         egon_map_zensus_buildings_filtered_all.zensus_population_id,
-    #     ).filter(
-    #         egon_map_zensus_buildings_filtered_all.id.in_(
-    #             df_cts_buildings.id.values
-    #         )
-    #     )
-    #
-    #     df_map_zensus_population_id = pd.read_sql(
-    #         query.statement, session.connection(), index_col=None
-    #     )
-    #
-    # df_cts_buildings = pd.merge(
-    #     left=df_cts_buildings.drop(columns="zensus_population_id"),
-    #     right=df_map_zensus_population_id,
-    #     on="id",
-    # )
 
     # Write table to db for debugging and postprocessing
     write_table_to_postgis(
