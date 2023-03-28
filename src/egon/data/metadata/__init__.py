@@ -1,12 +1,9 @@
-from pathlib import Path
-import os
-
 from geoalchemy2 import Geometry
 from omi.dialects import get_dialect
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
+import importlib_resources
 
-from egon.data import __path__ as data_path
 from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.db import engine
@@ -940,14 +937,10 @@ def contributors(authorlist):
 
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
-    path = Path(data_path[0]) / "json_metadata"
-
     v = "oep-v1.4"
 
-    for file in os.listdir(path=path):
-        if not file.endswith(".json"):
-            continue
-        split = file.split(".")
+    for path in importlib_resources.files(__name__).glob("*.json"):
+        split = path.name.split(".")
         if len(split) != 3:
             continue
         schema = split[0]
@@ -955,7 +948,7 @@ def upload_json_metadata():
 
         dialect = get_dialect(v)()
 
-        with open(path / file, "r") as infile:
+        with open(path, "r") as infile:
             obj = dialect.parse(infile.read())
 
         metadata = f"'{dialect.compile_and_render(obj)}'"
