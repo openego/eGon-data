@@ -492,6 +492,8 @@ Changed
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
 * Use MaStR geocoding results for pv rooftop to buildings mapping workflow
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
