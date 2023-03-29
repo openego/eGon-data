@@ -25,7 +25,7 @@
     "referenceDate": "2022-09-14",
     "timeseries": {
       "start": "2011-01-01 00:00",
-      "end": "2011-01-01 00:00",
+      "end": "2011-12-31 23:00",
       "resolution": "1 h",
       "alignment": "left",
       "aggregationType": "sum"
