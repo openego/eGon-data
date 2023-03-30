@@ -1,3 +1,13 @@
+"""
+Currently, there are differences in the aggregated and individual DSM time
+series. These are caused by the truncation of the values at zero.
+
+The sum of the individual time series is a more accurate value than the
+aggregated time series used so far and should replace it in the future. Since
+the deviations are relatively small, a tolerance is currently accepted in the
+sanity checks. See [#1120](https://github.com/openego/eGon-data/issues/1120)
+for updates.
+"""
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
