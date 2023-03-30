@@ -2182,6 +2182,46 @@ def add_bus_ids_sq(
     return buildings_gdf
 
 
+def infer_voltage_level(
+    units_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Infer nan values in voltage level derived from generator capacity to
+    the power plants.
+
+    Parameters
+    -----------
+    units_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing units with voltage levels from MaStR
+    Returnsunits_gdf: gpd.GeoDataFrame
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing units all having assigned a voltage level.
+    """
+
+    def voltage_levels(p: float) -> int:
+        if p <= 0.1:
+            return 7
+        elif p <= 0.2:
+            return 6
+        elif p <= 5.5:
+            return 5
+        elif p <= 20:
+            return 4
+        elif p <= 120:
+            return 3
+        return 1
+
+    units_gdf["voltage_level_inferred"] = False
+    mask = units_gdf.voltage_level.isna()
+    units_gdf.loc[mask, "voltage_level_inferred"] = True
+    units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[mask].capacity.apply(
+        voltage_levels
+    )
+
+    return units_gdf
+
+
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
@@ -2234,4 +2274,4 @@ def pv_rooftop_to_buildings():
     all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf)
 
     # export scenario
-    create_scenario_table(all_buildings_gdf)
+    create_scenario_table(infer_voltage_level(all_buildings_gdf))

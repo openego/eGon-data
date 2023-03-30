@@ -473,10 +473,11 @@ def import_mastr() -> None:
 
         units = units.loc[units.geometry.within(boundary)]
 
-        logger.debug(
-            f"{init_len - len(units)}/{init_len} "
-            f"({((init_len - len(units)) / init_len) * 100: g} %) dropped."
-        )
+        if init_len > 0:
+            logger.debug(
+                f"{init_len - len(units)}/{init_len} "
+                f"({((init_len - len(units)) / init_len) * 100: g} %) dropped."
+            )
 
         # drop unnecessary and rename columns
         logger.debug("Reformatting...")
@@ -499,7 +500,7 @@ def import_mastr() -> None:
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
 
         units.set_geometry("geom", inplace=True)
-        units["id"] = range(0, len(units))
+        units["id"] = range(len(units))
 
         # change capacity unit: kW to MW
         units["capacity"] = units["capacity"] / 1e3
