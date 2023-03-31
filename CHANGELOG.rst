@@ -488,6 +488,8 @@ Changed
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
