@@ -492,6 +492,8 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Add sanity checks for gas sector in eGon100RE
+  `#1067 <https://github.com/openego/eGon-data/issues/1067>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
 * Insert lifetime for components from p-e-s in eGon100RE
@@ -743,6 +745,8 @@ Bug Fixes
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
+* Bypass SSL verification
+  `#1102 <https://github.com/openego/eGon-data/issues/1102>`_
 * Fix faulty DSM time series
   `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
 * Set upper limit on commissioning date for units from MaStR
