@@ -1044,10 +1044,10 @@ def sanitycheck_emobility_mit():
                     EgonPfHvStoreTimeseries.store_id == EgonPfHvStore.store_id,
                 )
                 .filter(
-                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.carrier == "land_transport_EV",
                     EgonPfHvLoad.scn_name == scenario_name,
                     EgonPfHvLoadTimeseries.scn_name == scenario_name,
-                    EgonPfHvStore.carrier == "battery storage",
+                    EgonPfHvStore.carrier == "battery_storage",
                     EgonPfHvStore.scn_name == scenario_name,
                     EgonPfHvStoreTimeseries.scn_name == scenario_name,
                     EgonPfHvLink.scn_name == scenario_name,
@@ -1090,7 +1090,7 @@ def sanitycheck_emobility_mit():
         # Get all model timeseries
         model_ts_dict = {
             "Load": {
-                "carrier": "land transport EV",
+                "carrier": "land_transport_EV",
                 "table": EgonPfHvLoad,
                 "table_ts": EgonPfHvLoadTimeseries,
                 "column_id": "load_id",
@@ -1098,7 +1098,7 @@ def sanitycheck_emobility_mit():
                 "ts": None,
             },
             "Link": {
-                "carrier": "BEV charger",
+                "carrier": "BEV_charger",
                 "table": EgonPfHvLink,
                 "table_ts": EgonPfHvLinkTimeseries,
                 "column_id": "link_id",
@@ -1106,7 +1106,7 @@ def sanitycheck_emobility_mit():
                 "ts": None,
             },
             "Store": {
-                "carrier": "battery storage",
+                "carrier": "battery_storage",
                 "table": EgonPfHvStore,
                 "table_ts": EgonPfHvStoreTimeseries,
                 "column_id": "store_id",
@@ -1192,7 +1192,7 @@ def sanitycheck_emobility_mit():
                 func.sum(EgonPfHvStore.e_nom).label("e_nom")
             ).filter(
                 EgonPfHvStore.scn_name == scenario_name,
-                EgonPfHvStore.carrier == "battery storage",
+                EgonPfHvStore.carrier == "battery_storage",
             )
         storage_capacity_model = (
             pd.read_sql(
@@ -1292,7 +1292,7 @@ def sanitycheck_emobility_mit():
                     EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
                 )
                 .filter(
-                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.carrier == "land_transport_EV",
                     EgonPfHvLoad.scn_name == "eGon2035",
                     EgonPfHvLoadTimeseries.scn_name == "eGon2035",
                 )
@@ -1317,7 +1317,7 @@ def sanitycheck_emobility_mit():
                     EgonPfHvLoadTimeseries.load_id == EgonPfHvLoad.load_id,
                 )
                 .filter(
-                    EgonPfHvLoad.carrier == "land transport EV",
+                    EgonPfHvLoad.carrier == "land_transport_EV",
                     EgonPfHvLoad.scn_name == "eGon2035_lowflex",
                     EgonPfHvLoadTimeseries.scn_name == "eGon2035_lowflex",
                 )

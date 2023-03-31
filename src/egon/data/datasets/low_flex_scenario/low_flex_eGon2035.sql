@@ -33,7 +33,7 @@ INSERT INTO grid.egon_etrago_bus
 		 'rural_heat_store',
 		 'central_heat_store',
 	  	 'H2_saltcavern',
-		 'Li ion');
+		 'Li_ion');
 
 INSERT INTO grid.egon_etrago_bus_timeseries
 	SELECT
@@ -182,7 +182,7 @@ INSERT INTO grid.egon_etrago_link
 		'rural_heat_store_discharger',
 		'central_heat_store_charger',
 		'central_heat_store_discharger',
-		'BEV charger'
+		'BEV_charger'
 	)
     AND link_id NOT IN (
         SELECT link_id FROM grid.egon_etrago_link
@@ -220,9 +220,9 @@ INSERT INTO grid.egon_etrago_link_timeseries
 -- have been created in egon.data.datasets.emobility.motorized_individual_travel.model_timeseries
 DELETE FROM grid.egon_etrago_load_timeseries WHERE scn_name='eGon2035_lowflex'
 AND load_id NOT IN (
- SELECT load_id FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier = 'land transport EV'
+ SELECT load_id FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier = 'land_transport_EV'
 );
-DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land transport EV';
+DELETE FROM grid.egon_etrago_load WHERE scn_name='eGon2035_lowflex' AND carrier != 'land_transport_EV';
 
 INSERT INTO grid.egon_etrago_load
     SELECT
@@ -236,7 +236,7 @@ INSERT INTO grid.egon_etrago_load
 		sign
     FROM grid.egon_etrago_load
 	WHERE scn_name='eGon2035'
-	AND carrier != 'land transport EV';
+	AND carrier != 'land_transport_EV';
 
 INSERT INTO grid.egon_etrago_load_timeseries
     SELECT
@@ -251,7 +251,7 @@ INSERT INTO grid.egon_etrago_load_timeseries
 	SELECT load_id
 	FROM grid.egon_etrago_load
 	WHERE scn_name = 'eGon2035_lowflex'
-	AND carrier != 'land transport EV')
+	AND carrier != 'land_transport_EV')
 	;
 
 -- Copy relevant storage components including time series
@@ -339,7 +339,7 @@ INSERT INTO grid.egon_etrago_store
 		 'rural_heat_store',
 	   	 'central_heat_store',
 	     'H2_underground',
-		 'battery storage');
+		 'battery_storage');
 
 INSERT INTO grid.egon_etrago_store_timeseries
     SELECT
