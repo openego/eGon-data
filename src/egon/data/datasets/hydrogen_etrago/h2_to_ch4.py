@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Module containing the definition of the CH4 grid to H2 links
+Module containing the definition of the links between H2 and CH4 buses
+
+In this module the functions used to define and insert into the database
+the links between H2 and CH4 buses are to be found.
+These links are modelling:
+  * Methanisation (carrier name: 'H2_to_CH4'): technology to produce CH4
+    from H2
+  * H2_feedin: Injection of H2 into the CH4 grid
+  * Steam Methane Reaction (SMR, carrier name: 'CH4_to_H2'): techonology
+    to produce CH4 from H2
+
 """
 
 from geoalchemy2.types import Geometry
@@ -13,10 +23,21 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 def insert_h2_to_ch4_to_h2():
     """
-    Define methanisation, feed in and SMR capacities and insert in etrago_link.
+    Inserts methanisation, feed in and SMR links into the database
 
-    The potentials for methanisation and SMR are created between CH4 and H2
-    buses of the CH4 grid.
+    Define the potentials for methanisation and Steam Methane Reaction
+    (SMR) modelled as extendable links as well as the H2 feedin
+    capacities modelled as non extendable links and insert all of them
+    into the database.
+    These tree technologies are connecting CH4 and H2_grid buses only.
+
+    The capacity of the H2_feedin links is considerated as constant and
+    calculated as the sum of the capacities of the CH4 links connected
+    to the CH4 bus multiplied by the H2 energy share allowed to be fed.
+    This share is calculated in the function :py:func:`H2_CH4_mix_energy_fractions`.
+
+    This function inserts data into the database and has no return.
+
     """
     # Connect to local database
     engine = db.engine()
@@ -148,6 +169,7 @@ def H2_CH4_mix_energy_fractions(x, T=25, p=50):
     -------
     float
         Fraction of H2 in mixture with respect to energy (LHV)
+
     """
 
     # molar masses
