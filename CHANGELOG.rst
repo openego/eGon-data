@@ -484,6 +484,10 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Change hgv data source to use database
+  `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
@@ -722,6 +726,11 @@ Bug Fixes
   Fixes issue `#985`_ via PR `#986`_.
 * Adjust capcities of German CH4 stores
   `#1096 <https://github.com/openego/eGon-data/issues/1096>`_
+* Fix faulty DSM time series
+  `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
+* Set upper limit on commissioning date for units from MaStR
+  dataset
+  `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 * Fix conversion factor for CH4 loads abroad in eGon2035
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
 
