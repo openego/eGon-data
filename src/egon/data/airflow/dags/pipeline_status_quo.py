@@ -40,7 +40,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 # from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
-from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
+from egon.data.datasets.gas_areas import GasAreasstatus2019
 from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -223,9 +223,9 @@ with airflow.DAG(
 
     # TODO: What does "trans" stand for?
     # Calculate dynamic line rating for HV (high voltage) trans lines
-    dlr = Calculate_dlr(
-        dependencies=[data_bundle, osmtgmod, weather_data] # , fix_subnetworks]
-    )
+    # dlr = Calculate_dlr(
+    #    dependencies=[data_bundle, osmtgmod, weather_data] # , fix_subnetworks]
+    #)
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
@@ -388,23 +388,23 @@ with airflow.DAG(
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[create_gas_polygons_status2019]
     )
 
     # Import CH4 storages
     insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[create_gas_polygons_status2019]
     )
 
     # Assign industrial gas demand eGon2035 TODO: adjust for SQ
     IndustrialGasDemandeGon2035(
-        dependencies=[create_gas_polygons_egon2035, industrial_gas_demand]
+        dependencies=[create_gas_polygons_status2019, industrial_gas_demand]
     )
 
     # CHP locations
     chp = Chp(
         dependencies=[
-            create_gas_polygons_egon2035,
+            create_gas_polygons_status2019,
             demand_curves_industry,
             district_heating_areas,
             industrial_sites,
@@ -433,7 +433,7 @@ with airflow.DAG(
     )
 
     create_ocgt = OpenCycleGasTurbineEtrago(
-        dependencies=[create_gas_polygons_egon2035, power_plants]
+        dependencies=[create_gas_polygons_status2019, power_plants]
     )
 
     # Fill eTraGo generators tables
@@ -517,7 +517,7 @@ with airflow.DAG(
 
     # eMobility: heavy duty transport TODO: adjust for SQ
     heavy_duty_transport = HeavyDutyTransport(
-        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
+        dependencies=[vg250, setup_etrago, create_gas_polygons_status2019]
     )
 
     cts_demand_buildings = CtsDemandBuildings(
