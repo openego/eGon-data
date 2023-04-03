@@ -272,7 +272,7 @@ def add_metadata_individual():
                 "resolution": "none",
             },
             "temporal": {
-                "referenceDate": "scenario-specific",
+                "referenceDate": "2011-01-01",
                 "timeseries": {
                     "start": "2011-01-01",
                     "end": "2011-12-31",
