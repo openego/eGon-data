@@ -281,7 +281,7 @@ def add_metadata_individual():
                     "aggregationType": "average",
                 },
             },
-            "sources": ["TODO"],
+            "sources": [],
             "licenses": [license_odbl("© eGon development team")],
             "contributors": contris,
             "resources": [
