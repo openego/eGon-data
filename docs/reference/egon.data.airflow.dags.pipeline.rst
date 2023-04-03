@@ -1,5 +1,5 @@
-egon.data.airflow.dags.pipeline module
-======================================
+pipeline
+========
 
 .. automodule:: egon.data.airflow.dags.pipeline
    :members:

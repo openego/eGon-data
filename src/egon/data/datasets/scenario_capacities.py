@@ -70,7 +70,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.12",
+            version="0.0.13",
             dependencies=dependencies,
             tasks=(
                 create_table,
@@ -655,14 +655,14 @@ def eGon100_capacities():
 
     # Drop copmponents which will be optimized in eGo
     unused_carrier = [
-        "BEV charger",
+        "BEV_charger",
         "DAC",
         "H2 Electrolysis",
         "electricity distribution grid",
         "home battery charger",
         "home battery discharger",
         "H2",
-        "Li ion",
+        "Li_ion",
         "home battery",
         "residential rural water tanks charger",
         "residential rural water tanks discharger",

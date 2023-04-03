@@ -1,13 +1,11 @@
-egon.data.airflow.dags namespace
-================================
 
-Submodules
-----------
 
-egon.data.airflow.dags.pipeline module
---------------------------------------
+dags
+====
 
-.. automodule:: egon.data.airflow.dags.pipeline
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. py:module:: egon.data.airflow.dags
+
+.. toctree::
+   :maxdepth: 1
+
+   egon.data.airflow.dags.pipeline
