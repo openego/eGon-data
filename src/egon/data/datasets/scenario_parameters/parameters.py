@@ -884,7 +884,11 @@ def heat(scenario):
         parameters = {}
         
     elif scenario == "status2019":
-        parameters = {}
+        parameters = {
+            "DE_demand_residential_TJ": 1658400+383300, # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            "DE_demand_service_TJ": 567300+71500, # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            "DE_district_heating_share": 228008/(1658400+383300+567300+71500), # [TJ], source: AG Energiebilanzen 2019
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")

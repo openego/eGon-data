@@ -243,7 +243,7 @@ class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.12",
+            version="0.0.13",
             dependencies=dependencies,
             tasks=(
                 create_table,
