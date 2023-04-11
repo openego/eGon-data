@@ -768,7 +768,21 @@ def mobility(scenario):
         parameters = {}
     
     elif scenario == "status2019":
-        parameters = {}
+        parameters = {
+            "motorized_individual_travel": {
+                "status2019": {
+                    "ev_count": 200000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                }
+            }
+        }
+
 
     else:
         print(f"Scenario name {scenario} is not valid.")
