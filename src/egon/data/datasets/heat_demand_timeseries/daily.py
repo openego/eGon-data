@@ -321,7 +321,7 @@ def temp_interval():
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2019, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
     temp_profile = temperature_profile_extract()
 
@@ -348,7 +348,7 @@ def h_value():
         Extracted from demandlib.
 
     """
-    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    index = pd.date_range(datetime(2019, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 
