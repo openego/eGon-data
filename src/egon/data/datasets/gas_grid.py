@@ -900,7 +900,7 @@ def insert_gas_data_eGon2035():
 
     """
     # copy buses
-    copy_and_modify_buses("status2019", "eGon100RE", {"carrier": ["CH4"]})
+    copy_and_modify_buses("status2019", "eGon2035", {"carrier": ["CH4"]})
 
     # get CH4 pipelines and modify their nominal capacity with the
     # retrofitting factor

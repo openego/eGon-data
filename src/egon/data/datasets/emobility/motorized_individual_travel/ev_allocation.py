@@ -423,7 +423,7 @@ def allocate_evs_numbers():
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in ["eGon2035", "eGon100RE", "status2019"]:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
             "mobility", scenario=scenario_name
@@ -438,7 +438,6 @@ def allocate_evs_numbers():
         ) in scenario_parameters.items():
 
             print(f"  SCENARIO VARIATION: {scenario_variation_name}")
-
             # Get EV target
             ev_target = scenario_variation_parameters["ev_count"]
 
@@ -541,7 +540,7 @@ def allocate_evs_to_grid_districts():
             .ev_id.to_list()
         )
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in ["eGon2035", "eGon100RE", "status2019"]:
         print(f"SCENARIO: {scenario_name}")
 
         # Load EVs per grid district
