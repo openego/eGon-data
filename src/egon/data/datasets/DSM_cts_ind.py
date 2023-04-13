@@ -29,6 +29,7 @@ from egon.data.metadata import (
     license_odbl,
     meta_metadata,
     oep_metadata_version,
+    sources,
 )
 
 # CONSTANTS
@@ -242,6 +243,27 @@ def add_metadata_individual():
         "egon_sites_ind_load_curves_individual_dsm_timeseries": ["site_id"],
     }
 
+    sources_dict = {
+        "egon_etrago_electricity_cts_dsm_timeseries": [
+            sources()["nep2021"],
+            sources()["zensus"],
+        ],
+        "egon_osm_ind_load_curves_individual_dsm_timeseries": [
+            sources()["hotmaps_industrial_sites"],
+            sources()["schmidt"],
+            sources()["seenergies"],
+        ],
+        "egon_demandregio_sites_ind_electricity_dsm_timeseries": [
+            sources()["openstreetmap"],
+        ],
+        "egon_sites_ind_load_curves_individual_dsm_timeseries": [
+            sources()["hotmaps_industrial_sites"],
+            sources()["openstreetmap"],
+            sources()["schmidt"],
+            sources()["seenergies"],
+        ],
+    }
+
     contris = contributors(["kh", "kh"])
 
     contris[0]["date"] = "2023-03-17"
@@ -249,8 +271,8 @@ def add_metadata_individual():
     contris[0]["object"] = "metadata"
     contris[1]["object"] = "dataset"
 
-    contris[0]["comment"] = "add metadata to dataset."
-    contris[1]["comment"] = "Add worflow to generate dataset."
+    contris[0]["comment"] = "Add metadata to dataset."
+    contris[1]["comment"] = "Add workflow to generate dataset."
 
     for t_dict in targets.values():
         schema = t_dict["schema"]
@@ -281,7 +303,12 @@ def add_metadata_individual():
                     "aggregationType": "average",
                 },
             },
-            "sources": [],
+            "sources": [
+                sources()["egon-data"],
+                sources()["vg250"],
+                sources()["demandregio"],
+            ]
+            + sources_dict[table],
             "licenses": [license_odbl("© eGon development team")],
             "contributors": contris,
             "resources": [

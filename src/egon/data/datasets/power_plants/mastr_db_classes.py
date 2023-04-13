@@ -323,8 +323,8 @@ def add_metadata():
     contris[0]["object"] = "metadata"
     contris[1]["object"] = "dataset"
 
-    contris[0]["comment"] = "add metadata to dataset."
-    contris[1]["comment"] = "Add worflow to generate dataset."
+    contris[0]["comment"] = "Add metadata to dataset."
+    contris[1]["comment"] = "Add workflow to generate dataset."
 
     for technology in technologies:
         target_table = target_tables[technology]
