@@ -13,7 +13,7 @@ Contents
    contributing
    authors
    changelog
-   Module documentation <reference/index>
+   API Reference: egon.data <reference/egon.data>
 
 Indices and tables
 ==================

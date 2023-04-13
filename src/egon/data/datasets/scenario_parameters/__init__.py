@@ -123,6 +123,26 @@ def insert_scenarios():
     eGon2021.mobility_parameters = parameters.mobility(eGon2021.name)
 
     session.add(eGon2021)
+    
+    session.commit()    
+    
+    # Scenario status2019
+    status2019 = EgonScenario(name="status2019")
+
+    status2019.description = """
+        Status quo ante scenario for 2019 for validation use within the project PoWerD.
+        """
+    status2019.global_parameters = parameters.global_settings(status2019.name)
+
+    status2019.electricity_parameters = parameters.electricity(status2019.name)
+
+    status2019.gas_parameters = parameters.gas(status2019.name)
+
+    status2019.heat_parameters = parameters.heat(status2019.name)
+
+    status2019.mobility_parameters = parameters.mobility(status2019.name)
+
+    session.add(status2019)
 
     session.commit()
 
@@ -223,7 +243,7 @@ class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.12",
+            version="0.0.13",
             dependencies=dependencies,
             tasks=(
                 create_table,

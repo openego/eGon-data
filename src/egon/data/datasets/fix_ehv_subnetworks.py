@@ -379,3 +379,4 @@ def fix_subnetworks(scn_name):
 def run():
     fix_subnetworks("eGon2035")
     fix_subnetworks("eGon100RE")
+    fix_subnetworks("status2019")

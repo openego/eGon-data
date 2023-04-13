@@ -1,5 +1,5 @@
-egon.data.cli module
-====================
+cli
+===
 
 .. automodule:: egon.data.cli
    :members:
