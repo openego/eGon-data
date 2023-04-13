@@ -681,7 +681,9 @@ def gas(scenario):
         parameters = {}
     
     elif scenario == "status2019":
-        parameters = {}
+        parameters = {
+            "main_gas_carrier": "CH4",
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
