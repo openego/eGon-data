@@ -309,7 +309,36 @@ def insert_biomass_chp(scenario):
             session.add(entry)
     session.commit()
 
+def insert_chp_statusquo(baseyear=2019):
 
+    # import data for MaStR
+    mastr = pd.read_csv(
+        "/home/clara/test-powerd-data/bnetza_mastr/dump_2022-11-17/bnetza_mastr_combustion_cleaned.csv"
+
+    )
+
+    mastr = mastr.loc[mastr.ThermischeNutzleistung > 0]
+    
+    mastr = mastr.loc[mastr.Energietraeger.isin([
+        'Erdgas', 'Mineralölprodukte', 'andere Gase',
+        'nicht biogener Abfall', 'Braunkohle', 'Steinkohle',
+        ])]
+    
+    mastr.Inbetriebnahmedatum = pd.to_datetime(mastr.Inbetriebnahmedatum)
+    mastr.DatumEndgueltigeStilllegung = pd.to_datetime(mastr.DatumEndgueltigeStilllegung)
+    mastr = mastr.loc[mastr.Inbetriebnahmedatum<="2019-12-31"]
+    
+    mastr = mastr.loc[(mastr.DatumEndgueltigeStilllegung>="2019-12-31")
+                      |(mastr.DatumEndgueltigeStilllegung.isnull())]
+    
+    mastr.groupby("Energietraeger").Nettonennleistung.sum().mul(1e-6)
+    
+    mastr_no_location = mastr[mastr.Laengengrad.isnull()]
+    
+    mastr_location = mastr[~mastr.Laengengrad.isnull()]
+
+    
+    
 def insert_chp_egon2035():
     """Insert CHP plants for eGon2035 considering NEP and MaStR data
 
