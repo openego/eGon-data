@@ -25,7 +25,10 @@ from egon.data.datasets.chp.small_chp import (
     extension_to_areas,
     select_target,
 )
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD, WORKING_DIR_MASTR_NEW
+from egon.data.datasets.mastr import (
+    WORKING_DIR_MASTR_OLD,
+    WORKING_DIR_MASTR_NEW,
+)
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -147,8 +150,8 @@ def assign_heat_bus():
     """
     sources = config.datasets()["chp_location"]["sources"]
     target = config.datasets()["chp_location"]["targets"]["chp_table"]
-    
-    for scenario in ["status2019"]:    
+
+    for scenario in ["status2019"]:
         # Select CHP with use_case = 'district_heating'
         chp = db.select_geodataframe(
             f"""
@@ -160,7 +163,7 @@ def assign_heat_bus():
             index_col="id",
             epsg=4326,
         )
-    
+
         # Select district heating areas and their centroid
         district_heating = db.select_geodataframe(
             f"""
@@ -172,7 +175,7 @@ def assign_heat_bus():
             """,
             epsg=4326,
         )
-    
+
         # Assign district heating area_id to district_heating_chp
         # According to nearest centroid of district heating area
         chp["district_heating_area_id"] = chp.apply(
@@ -184,7 +187,7 @@ def assign_heat_bus():
             src_column="area_id",
             axis=1,
         )
-    
+
         # Drop district heating CHP without heat_bus_id
         db.execute_sql(
             f"""
@@ -193,7 +196,7 @@ def assign_heat_bus():
             AND district_heating = True
             """
         )
-    
+
         # Insert district heating CHP with heat_bus_id
         session = sessionmaker(bind=db.engine())()
         for i, row in chp.iterrows():
@@ -310,30 +313,41 @@ def insert_biomass_chp(scenario):
             session.add(entry)
     session.commit()
 
-def insert_chp_statusquo():
 
+def insert_chp_statusquo():
     cfg = config.datasets()["chp_location"]
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_NEW/"bnetza_mastr_combustion_cleaned.csv"
-
+        WORKING_DIR_MASTR_NEW / "bnetza_mastr_combustion_cleaned.csv"
     )
 
     mastr = mastr.loc[mastr.ThermischeNutzleistung > 0]
-    
-    mastr = mastr.loc[mastr.Energietraeger.isin([
-        'Erdgas', 'Mineralölprodukte', 'andere Gase',
-        'nicht biogener Abfall', 'Braunkohle', 'Steinkohle',
-        ])]
-    
+
+    mastr = mastr.loc[
+        mastr.Energietraeger.isin(
+            [
+                "Erdgas",
+                "Mineralölprodukte",
+                "andere Gase",
+                "nicht biogener Abfall",
+                "Braunkohle",
+                "Steinkohle",
+            ]
+        )
+    ]
+
     mastr.Inbetriebnahmedatum = pd.to_datetime(mastr.Inbetriebnahmedatum)
-    mastr.DatumEndgueltigeStilllegung = pd.to_datetime(mastr.DatumEndgueltigeStilllegung)
-    mastr = mastr.loc[mastr.Inbetriebnahmedatum<="2019-12-31"]
-    
-    mastr = mastr.loc[(mastr.DatumEndgueltigeStilllegung>="2019-12-31")
-                      |(mastr.DatumEndgueltigeStilllegung.isnull())]
-    
+    mastr.DatumEndgueltigeStilllegung = pd.to_datetime(
+        mastr.DatumEndgueltigeStilllegung
+    )
+    mastr = mastr.loc[mastr.Inbetriebnahmedatum <= "2019-12-31"]
+
+    mastr = mastr.loc[
+        (mastr.DatumEndgueltigeStilllegung >= "2019-12-31")
+        | (mastr.DatumEndgueltigeStilllegung.isnull())
+    ]
+
     mastr.groupby("Energietraeger").Nettonennleistung.sum().mul(1e-6)
 
     geom_municipalities = db.select_geodataframe(
@@ -342,45 +356,51 @@ def insert_chp_statusquo():
         FROM boundaries.vg250_gem
         GROUP BY gen
         """
-        ).set_index("gen")
+    ).set_index("gen")
 
     # Assing Laengengrad and Breitengrad to chps without location data
-    # based on the centroid of the municipaltiy    
-    idx_no_location = mastr[(mastr.Laengengrad.isnull()) &
-          (mastr.Gemeinde.isin(geom_municipalities.index))].index
+    # based on the centroid of the municipaltiy
+    idx_no_location = mastr[
+        (mastr.Laengengrad.isnull())
+        & (mastr.Gemeinde.isin(geom_municipalities.index))
+    ].index
 
     mastr.loc[idx_no_location, "Laengengrad"] = (
-        geom_municipalities.to_crs(epsg='4326').centroid.x.loc[
+        geom_municipalities.to_crs(epsg="4326").centroid.x.loc[
             mastr.Gemeinde[idx_no_location]
-            ]
+        ]
     ).values
 
-    mastr.loc[idx_no_location, "Breitengrad"]  = (
-        geom_municipalities.to_crs(epsg='4326').centroid.y.loc[
+    mastr.loc[idx_no_location, "Breitengrad"] = (
+        geom_municipalities.to_crs(epsg="4326").centroid.y.loc[
             mastr.Gemeinde[idx_no_location]
-            ]
+        ]
     ).values
-    
+
     if (
         config.settings()["egon-data"]["--dataset-boundary"]
         == "Schleswig-Holstein"
     ):
-        dropped_capacity = mastr[(mastr.Laengengrad.isnull())&(mastr.Bundesland=='SchleswigHolstein')].Nettonennleistung.sum()
-    
+        dropped_capacity = mastr[
+            (mastr.Laengengrad.isnull())
+            & (mastr.Bundesland == "SchleswigHolstein")
+        ].Nettonennleistung.sum()
+
     else:
-        
-        dropped_capacity = mastr[(mastr.Laengengrad.isnull())].Nettonennleistung.sum()
-                                  
-                                  
-    print(f"""          
+        dropped_capacity = mastr[
+            (mastr.Laengengrad.isnull())
+        ].Nettonennleistung.sum()
+
+    print(
+        f"""          
           CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped 
           because of missing or wrong location data          
-          """)
-    
-   
+          """
+    )
+
     mastr = mastr[~mastr.Laengengrad.isnull()]
     mastr = filter_mastr_geometry(mastr).set_geometry("geometry")
-    
+
     # Assign bus_id
     if len(mastr) > 0:
         mastr["voltage_level"] = assign_voltage_level(
@@ -411,8 +431,8 @@ def insert_chp_statusquo():
             )
             session.add(entry)
     session.commit()
-    
-    
+
+
 def insert_chp_egon2035():
     """Insert CHP plants for eGon2035 considering NEP and MaStR data
 
