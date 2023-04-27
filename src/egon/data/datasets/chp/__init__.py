@@ -132,7 +132,7 @@ def nearest(
     return value
 
 
-def assign_heat_bus(scenario="eGon2035"):
+def assign_heat_bus():
     """Selects heat_bus for chps used in district heating.
 
     Parameters
@@ -147,88 +147,89 @@ def assign_heat_bus(scenario="eGon2035"):
     """
     sources = config.datasets()["chp_location"]["sources"]
     target = config.datasets()["chp_location"]["targets"]["chp_table"]
-
-    # Select CHP with use_case = 'district_heating'
-    chp = db.select_geodataframe(
-        f"""
-        SELECT * FROM
-        {target['schema']}.{target['table']}
-        WHERE scenario = '{scenario}'
-        AND district_heating = True
-        """,
-        index_col="id",
-        epsg=4326,
-    )
-
-    # Select district heating areas and their centroid
-    district_heating = db.select_geodataframe(
-        f"""
-        SELECT area_id, ST_Centroid(geom_polygon) as geom
-        FROM
-        {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['table']}
-        WHERE scenario = '{scenario}'
-        """,
-        epsg=4326,
-    )
-
-    # Assign district heating area_id to district_heating_chp
-    # According to nearest centroid of district heating area
-    chp["district_heating_area_id"] = chp.apply(
-        nearest,
-        df=district_heating,
-        row_geom_col="geom",
-        df_geom_col="geom",
-        centroid=True,
-        src_column="area_id",
-        axis=1,
-    )
-
-    # Drop district heating CHP without heat_bus_id
-    db.execute_sql(
-        f"""
-        DELETE FROM {target['schema']}.{target['table']}
-        WHERE scenario = '{scenario}'
-        AND district_heating = True
-        """
-    )
-
-    # Insert district heating CHP with heat_bus_id
-    session = sessionmaker(bind=db.engine())()
-    for i, row in chp.iterrows():
-        if row.carrier != "biomass":
-            entry = EgonChp(
-                id=i,
-                sources=row.sources,
-                source_id=row.source_id,
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                th_capacity=row.th_capacity,
-                electrical_bus_id=row.electrical_bus_id,
-                ch4_bus_id=row.ch4_bus_id,
-                district_heating_area_id=row.district_heating_area_id,
-                district_heating=row.district_heating,
-                voltage_level=row.voltage_level,
-                scenario=scenario,
-                geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
-            )
-        else:
-            entry = EgonChp(
-                id=i,
-                sources=row.sources,
-                source_id=row.source_id,
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                th_capacity=row.th_capacity,
-                electrical_bus_id=row.electrical_bus_id,
-                district_heating_area_id=row.district_heating_area_id,
-                district_heating=row.district_heating,
-                voltage_level=row.voltage_level,
-                scenario=scenario,
-                geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
-            )
-        session.add(entry)
-    session.commit()
+    
+    for scenario in ["status2019"]:    
+        # Select CHP with use_case = 'district_heating'
+        chp = db.select_geodataframe(
+            f"""
+            SELECT * FROM
+            {target['schema']}.{target['table']}
+            WHERE scenario = '{scenario}'
+            AND district_heating = True
+            """,
+            index_col="id",
+            epsg=4326,
+        )
+    
+        # Select district heating areas and their centroid
+        district_heating = db.select_geodataframe(
+            f"""
+            SELECT area_id, ST_Centroid(geom_polygon) as geom
+            FROM
+            {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
+            WHERE scenario = '{scenario}'
+            """,
+            epsg=4326,
+        )
+    
+        # Assign district heating area_id to district_heating_chp
+        # According to nearest centroid of district heating area
+        chp["district_heating_area_id"] = chp.apply(
+            nearest,
+            df=district_heating,
+            row_geom_col="geom",
+            df_geom_col="geom",
+            centroid=True,
+            src_column="area_id",
+            axis=1,
+        )
+    
+        # Drop district heating CHP without heat_bus_id
+        db.execute_sql(
+            f"""
+            DELETE FROM {target['schema']}.{target['table']}
+            WHERE scenario = '{scenario}'
+            AND district_heating = True
+            """
+        )
+    
+        # Insert district heating CHP with heat_bus_id
+        session = sessionmaker(bind=db.engine())()
+        for i, row in chp.iterrows():
+            if row.carrier != "biomass":
+                entry = EgonChp(
+                    id=i,
+                    sources=row.sources,
+                    source_id=row.source_id,
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    th_capacity=row.th_capacity,
+                    electrical_bus_id=row.electrical_bus_id,
+                    ch4_bus_id=row.ch4_bus_id,
+                    district_heating_area_id=row.district_heating_area_id,
+                    district_heating=row.district_heating,
+                    voltage_level=row.voltage_level,
+                    scenario=scenario,
+                    geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+                )
+            else:
+                entry = EgonChp(
+                    id=i,
+                    sources=row.sources,
+                    source_id=row.source_id,
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    th_capacity=row.th_capacity,
+                    electrical_bus_id=row.electrical_bus_id,
+                    district_heating_area_id=row.district_heating_area_id,
+                    district_heating=row.district_heating,
+                    voltage_level=row.voltage_level,
+                    scenario=scenario,
+                    geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+                )
+            session.add(entry)
+        session.commit()
 
 
 def insert_biomass_chp(scenario):
