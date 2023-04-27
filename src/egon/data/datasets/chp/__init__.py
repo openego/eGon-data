@@ -17,7 +17,7 @@ import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.chp.match_nep import insert_large_chp
+from egon.data.datasets.chp.match_nep import insert_large_chp, map_carrier
 from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
@@ -25,7 +25,7 @@ from egon.data.datasets.chp.small_chp import (
     extension_to_areas,
     select_target,
 )
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD, WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -309,11 +309,13 @@ def insert_biomass_chp(scenario):
             session.add(entry)
     session.commit()
 
-def insert_chp_statusquo(baseyear=2019):
+def insert_chp_statusquo():
+
+    cfg = config.datasets()["chp_location"]
 
     # import data for MaStR
     mastr = pd.read_csv(
-        "/home/clara/test-powerd-data/bnetza_mastr/dump_2022-11-17/bnetza_mastr_combustion_cleaned.csv"
+        WORKING_DIR_MASTR_NEW/"bnetza_mastr_combustion_cleaned.csv"
 
     )
 
@@ -332,11 +334,82 @@ def insert_chp_statusquo(baseyear=2019):
                       |(mastr.DatumEndgueltigeStilllegung.isnull())]
     
     mastr.groupby("Energietraeger").Nettonennleistung.sum().mul(1e-6)
-    
-    mastr_no_location = mastr[mastr.Laengengrad.isnull()]
-    
-    mastr_location = mastr[~mastr.Laengengrad.isnull()]
 
+    geom_municipalities = db.select_geodataframe(
+        """
+        SELECT gen, ST_UNION(geometry) as geom
+        FROM boundaries.vg250_gem
+        GROUP BY gen
+        """
+        ).set_index("gen")
+
+    # Assing Laengengrad and Breitengrad to chps without location data
+    # based on the centroid of the municipaltiy    
+    idx_no_location = mastr[(mastr.Laengengrad.isnull()) &
+          (mastr.Gemeinde.isin(geom_municipalities.index))].index
+
+    mastr.loc[idx_no_location, "Laengengrad"] = (
+        geom_municipalities.to_crs(epsg='4326').centroid.x.loc[
+            mastr.Gemeinde[idx_no_location]
+            ]
+    ).values
+
+    mastr.loc[idx_no_location, "Breitengrad"]  = (
+        geom_municipalities.to_crs(epsg='4326').centroid.y.loc[
+            mastr.Gemeinde[idx_no_location]
+            ]
+    ).values
+    
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        dropped_capacity = mastr[(mastr.Laengengrad.isnull())&(mastr.Bundesland=='SchleswigHolstein')].Nettonennleistung.sum()
+    
+    else:
+        
+        dropped_capacity = mastr[(mastr.Laengengrad.isnull())].Nettonennleistung.sum()
+                                  
+                                  
+    print(f"""          
+          CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped 
+          because of missing or wrong location data          
+          """)
+    
+   
+    mastr = mastr[~mastr.Laengengrad.isnull()]
+    mastr = filter_mastr_geometry(mastr).set_geometry("geometry")
+    
+    # Assign bus_id
+    if len(mastr) > 0:
+        mastr["voltage_level"] = assign_voltage_level(
+            mastr, cfg, WORKING_DIR_MASTR_NEW
+        )
+        mastr = assign_bus_id(mastr, cfg)
+    mastr = assign_use_case(mastr, cfg["sources"])
+
+    # Insert entries with location
+    session = sessionmaker(bind=db.engine())()
+    for i, row in mastr.iterrows():
+        if row.ThermischeNutzleistung > 0:
+            entry = EgonChp(
+                sources={
+                    "chp": "MaStR",
+                    "el_capacity": "MaStR",
+                    "th_capacity": "MaStR",
+                },
+                source_id={"MastrNummer": row.EinheitMastrNummer},
+                carrier=map_carrier().loc[row.Energietraeger],
+                el_capacity=row.Nettonennleistung,
+                th_capacity=row.ThermischeNutzleistung / 1000,
+                scenario="status2019",
+                district_heating=row.district_heating,
+                electrical_bus_id=row.bus_id,
+                voltage_level=row.voltage_level,
+                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+            )
+            session.add(entry)
+    session.commit()
     
     
 def insert_chp_egon2035():
