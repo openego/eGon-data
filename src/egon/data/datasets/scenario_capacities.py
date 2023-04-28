@@ -61,9 +61,14 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.12",
+            version="0.0.13",
             dependencies=dependencies,
-            tasks=(create_table, insert_data_nep, eGon100_capacities),
+            tasks=(
+                create_table,
+                insert_capacities_status2019,
+                insert_data_nep,
+                eGon100_capacities,
+            ),
         )
 
 
@@ -85,7 +90,6 @@ def create_table():
 
 
 def nuts_mapping():
-
     nuts_mapping = {
         "BW": "DE1",
         "NW": "DEA",
@@ -106,6 +110,50 @@ def nuts_mapping():
     }
 
     return nuts_mapping
+
+
+def insert_capacities_status2019():
+    """Insert capacity of rural heat pumps for status2019
+
+    Returns
+    -------
+    None.
+
+    """
+
+    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+
+    # Delete rows if already exist
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        WHERE scenario_name = 'status2019'
+        """
+    )
+
+    # Rural heat capacity for 2019 according to NEP 2035, version 2021
+    rural_heat_capacity = 1e6 * 5e-3
+
+    if settings()["egon-data"]["--dataset-boundary"] != "Everything":
+        rural_heat_capacity *= population_share()
+
+    db.execute_sql(
+        f"""
+        INSERT INTO 
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        (component, carrier, capacity, nuts, scenario_name)
+        VALUES (
+            'link',
+            'residential_rural_heat_pump',
+            {rural_heat_capacity},
+            'DE',
+            'status2019'            
+            )
+        """
+    )
 
 
 def insert_capacities_per_federal_state_nep():
@@ -176,7 +224,6 @@ def insert_capacities_per_federal_state_nep():
     # df_windoff_fs
 
     for state in index_list:
-
         df.at["Wind offshore", state] = (
             df_windoff_fs.at[state, "C 2035"] / 1000
         )
@@ -221,7 +268,6 @@ def insert_capacities_per_federal_state_nep():
     ]
 
     for bl in map_nuts.index:
-
         data = pd.DataFrame(df[bl])
 
         # if distribution to federal states is not provided,
