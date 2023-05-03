@@ -781,6 +781,7 @@ def district_heating(method="python"):
     )
 
     if method == "python":
+        create_district_heating_profile_python_like("status2019")
         create_district_heating_profile_python_like("eGon2035")
         create_district_heating_profile_python_like("eGon100RE")
 

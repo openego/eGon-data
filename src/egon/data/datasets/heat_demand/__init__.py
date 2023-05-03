@@ -48,13 +48,14 @@ class HeatDemandImport(Dataset):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.1",  # maybe rethink the naming
+            version="0.0.2",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
 
 
 Base = declarative_base()
+
 
 # class for the final dataset in the database
 class EgonPetaHeat(Base):
@@ -346,6 +347,17 @@ def future_heat_demand_germany(scenario_name):
     if scenario_name == "eGon2015":
         res_hd_reduction = 1
         ser_hd_reduction = 1
+
+    elif scenario_name == "status2019":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = (
+            heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483
+        )
+        ser_hd_reduction = (
+            heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158
+        )
     else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
@@ -463,7 +475,6 @@ def heat_demand_to_db_table():
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
     for source in sources:
-
         if not "2015" in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
@@ -836,10 +847,12 @@ def scenario_data_import():
     unzip_peta5_0_1_heat_demands()
     cutout_heat_demand_germany()
     # Specifiy the scenario names for loading factors from csv file
+    future_heat_demand_germany("status2019")
     future_heat_demand_germany("eGon2035")
     future_heat_demand_germany("eGon100RE")
     # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
+    adjust_residential_heat_to_zensus("status2019")
     adjust_residential_heat_to_zensus("eGon2035")
     adjust_residential_heat_to_zensus("eGon100RE")
     # future_heat_demand_germany("eGon2015")
