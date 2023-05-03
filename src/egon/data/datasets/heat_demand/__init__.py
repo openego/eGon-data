@@ -48,13 +48,14 @@ class HeatDemandImport(Dataset):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.1",  # maybe rethink the naming
+            version="0.0.2",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
 
 
 Base = declarative_base()
+
 
 # class for the final dataset in the database
 class EgonPetaHeat(Base):
@@ -346,6 +347,17 @@ def future_heat_demand_germany(scenario_name):
     if scenario_name == "eGon2015":
         res_hd_reduction = 1
         ser_hd_reduction = 1
+
+    elif scenario_name == "status2019":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = (
+            heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483
+        )
+        ser_hd_reduction = (
+            heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158
+        )
     else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 

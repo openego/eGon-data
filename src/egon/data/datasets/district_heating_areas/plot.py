@@ -53,13 +53,15 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     fig, ax = plt.subplots(1, 1)
 
     colors = pd.DataFrame(
-        columns=["share", "curve"], index=["eGon2035", "eGon100RE"]
+        columns=["share", "curve"], index=["status2019", "eGon2035", "eGon100RE"]
     )
 
     colors["share"]["eGon2035"] = "darkblue"
     colors["curve"]["eGon2035"] = "blue"
     colors["share"]["eGon100RE"] = "red"
     colors["curve"]["eGon100RE"] = "orange"
+    colors["share"]["status2019"] = "darkgreen"
+    colors["curve"]["status2019"] = "green"
 
     for scenario in heat_denisty_per_scenario.keys():
 
