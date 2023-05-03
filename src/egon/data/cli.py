@@ -168,7 +168,7 @@ from sqlalchemy.orm import Session
     default=["status2019", "eGon2035"],
     metavar="SCENARIOS",
     help=(
-        "List of scenario names."
+        "List of scenario names for which a data model shall be created."
     ),
     show_default=True,
 )
