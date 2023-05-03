@@ -341,10 +341,16 @@ def insert_chp_statusquo():
     mastr.DatumEndgueltigeStilllegung = pd.to_datetime(
         mastr.DatumEndgueltigeStilllegung
     )
-    mastr = mastr.loc[mastr.Inbetriebnahmedatum <= "2019-12-31"]
+    mastr = mastr.loc[
+        mastr.Inbetriebnahmedatum
+        <= config.datasets()["mastr_new"]["status2019_date_max"]
+    ]
 
     mastr = mastr.loc[
-        (mastr.DatumEndgueltigeStilllegung >= "2019-12-31")
+        (
+            mastr.DatumEndgueltigeStilllegung
+            >= config.datasets()["mastr_new"]["status2019_date_max"]
+        )
         | (mastr.DatumEndgueltigeStilllegung.isnull())
     ]
 
