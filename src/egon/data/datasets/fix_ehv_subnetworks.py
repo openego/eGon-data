@@ -21,7 +21,6 @@ class FixEhvSubnetworks(Dataset):
 
 
 def select_bus_id(x, y, v_nom, scn_name, carrier):
-
     bus_id = db.select_dataframe(
         f"""
         SELECT bus_id
@@ -65,7 +64,7 @@ def add_bus(x, y, v_nom, scn_name):
 def drop_bus(x, y, v_nom, scn_name):
     bus = select_bus_id(x, y, v_nom, scn_name, carrier="AC")
 
-    if bus != None:
+    if bus is not None:
         db.execute_sql(
             f"""
             DELETE FROM grid.egon_etrago_bus
@@ -121,7 +120,7 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
     bus0 = select_bus_id(x0, y0, v_nom, scn_name, carrier="AC")
     bus1 = select_bus_id(x1, y1, v_nom, scn_name, carrier="AC")
 
-    if (bus0 != None) and (bus1 != None):
+    if (bus0 is not None) and (bus1 is not None):
         db.execute_sql(
             f"""
             DELETE FROM grid.egon_etrago_line
@@ -135,7 +134,6 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
 
 
 def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
-
     bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
     bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
 
@@ -169,11 +167,10 @@ def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
 
 
 def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
-
     bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
     bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
 
-    if (bus0 != None) and (bus1 != None):
+    if (bus0 is not None) and (bus1 is not None):
         db.execute_sql(
             f"""
             DELETE FROM grid.egon_etrago_transformer
@@ -186,7 +183,6 @@ def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
 
 
 def fix_subnetworks(scn_name):
-
     # Missing 220kV line to Lübeck Siems
     # add 220kV bus at substation Lübeck Siems
     add_bus(10.760835327266625, 53.90974536547805, 220, scn_name)
@@ -218,7 +214,6 @@ def fix_subnetworks(scn_name):
     # )
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-
         # Missing line from USW Uchtelfangen to 'Kraftwerk Weiher'
         add_line(
             7.032657738999395,  # Kraftwerk Weiher
@@ -229,24 +224,32 @@ def fix_subnetworks(scn_name):
             scn_name,
             6,
         )
-        
+
         # Missing line from Umspannwerk Plottling to Gänsdorf UW
         add_line(
-            12,853318030996972,  # Umspannwerk Plottling
-            48,76508569478315,
-            12,769768646403532,  # Gänsdorf UW
-            48,80533685376445,
+            12,
+            853318030996972,  # Umspannwerk Plottling
+            48,
+            76508569478315,
+            12,
+            769768646403532,  # Gänsdorf UW
+            48,
+            80533685376445,
             380,
             scn_name,
             3,
         )
-        
+
         # Missing line inside Ottstedt
         add_line(
-            11,4295305,  # Ottstedt
-            50,9115176,
-            11,4299277,  # Ottstedt
-            50,9114496,
+            11,
+            4295305,  # Ottstedt
+            50,
+            9115176,
+            11,
+            4299277,  # Ottstedt
+            50,
+            9114496,
             380,
             scn_name,
             3,
@@ -390,12 +393,10 @@ def fix_subnetworks(scn_name):
         # drop_trafo(11.121774798935334, 51.00038603925895, 220, 380, scn_name)
         # drop_bus(11.121774798935334, 51.00038603925895, 380, scn_name)
 
-
         # # Umspannwerk Waldlaubersheim
         # # delete isolated bus and trafo
         # drop_trafo(7.815993836091339, 49.92211102637183, 110, 380, scn_name)
         # drop_bus(7.815993836091339, 49.92211102637183, 380, scn_name)
-
 
 
 def run():
