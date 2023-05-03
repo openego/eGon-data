@@ -600,7 +600,7 @@ def insert_household_demand():
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
         )
 
-    for scn in egon.data.config.settings()["egon-data"]["scenarios"]:
+    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
 
         year = scenario_parameters.global_settings(scn)["population_year"]
 
@@ -629,7 +629,7 @@ def insert_cts_ind_demands():
 
     insert_cts_ind_wz_definitions()
 
-    for scn in egon.data.config.settings()["egon-data"]["scenarios"]:
+    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
 
         year = scenario_parameters.global_settings(scn)["population_year"]
 

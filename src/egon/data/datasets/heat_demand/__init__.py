@@ -836,12 +836,12 @@ def scenario_data_import():
     unzip_peta5_0_1_heat_demands()
     cutout_heat_demand_germany()
     # Specifiy the scenario names for loading factors from csv file
-    for scenario in egon.data.config.settings()["egon-data"]["scenarios"]:
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         future_heat_demand_germany(scenario)
 
     # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
-    for scenario in egon.data.config.settings()["egon-data"]["scenarios"]:
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         adjust_residential_heat_to_zensus(scenario)
 
     # future_heat_demand_germany("eGon2015")
