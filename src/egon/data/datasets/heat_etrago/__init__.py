@@ -372,7 +372,7 @@ def insert_central_direct_heat(scenario):
         FROM {sources['feedin_timeseries']['schema']}.
             {sources['feedin_timeseries']['table']}
         WHERE carrier = 'solar_thermal'
-        AND weather_year = 2011
+        AND weather_year = 2019
         """,
         index_col="w_id",
     )
