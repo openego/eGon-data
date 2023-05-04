@@ -190,6 +190,7 @@ def insert_central_power_to_heat(scenario):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level > 3],
         multiple_per_mv_grid=False,
+        carrier = "central_heat_pump",
         scenario=scenario,
     )
     # Insert heat pumps in hv grid
@@ -197,6 +198,7 @@ def insert_central_power_to_heat(scenario):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level < 3],
         multiple_per_mv_grid=True,
+        carrier = "central_heat_pump",
         scenario=scenario,
     )
 
