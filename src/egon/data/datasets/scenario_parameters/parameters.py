@@ -919,6 +919,13 @@ def heat(scenario):
             "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
