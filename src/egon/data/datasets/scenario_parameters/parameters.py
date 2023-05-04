@@ -129,24 +129,6 @@ def global_settings(scenario):
         parameters = {
             "weather_year": 2019,
             "population_year": 2019,
-            "fuel_costs": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
-                "oil": 73.8,  # [EUR/MWh]
-                "gas": 25.6,  # [EUR/MWh]
-                "coal": 20.2,  # [EUR/MWh]
-                "lignite": 4.0,  # [EUR/MWh]
-                "nuclear": 1.7,  # [EUR/MWh]
-                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
-            },
-            "co2_costs": 76.5,  # [EUR/t_CO2]
-            "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
-                "waste": 0.165,  # [t_CO2/MW_th]
-                "lignite": 0.393,  # [t_CO2/MW_th]
-                "gas": 0.201,  # [t_CO2/MW_th]
-                "nuclear": 0.0,  # [t_CO2/MW_th]
-                "oil": 0.288,  # [t_CO2/MW_th]
-                "coal": 0.335,  # [t_CO2/MW_th]
-                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
-            },
             "interest_rate": 0.05,  # [p.u.]
         }
 
@@ -630,38 +612,6 @@ def electricity(scenario):
             + parameters["efficiency"]["battery"]["max_hours"]
             * parameters["capital_cost"]["battery storage"]
         )
-
-        # Insert marginal_costs in EUR/MWh
-        # marginal cost can include fuel, C02 and operation and maintenance costs
-        parameters["marginal_cost"] = {
-            "oil": global_settings(scenario)["fuel_costs"]["oil"]
-            + read_costs(costs, "oil", "VOM")
-            + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["oil"],
-            "other_non_renewable": global_settings(scenario)["fuel_costs"][
-                "gas"
-            ]
-            + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"][
-                "other_non_renewable"
-            ],
-            "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
-            + read_costs(costs, "lignite", "VOM")
-            + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["lignite"],
-            "coal": global_settings(scenario)["fuel_costs"]["coal"]
-            + read_costs(costs, "coal", "VOM")
-            + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["coal"],
-            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
-            + read_costs(costs, "nuclear", "VOM"),
-            "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
-            + read_costs(costs, "biomass CHP", "VOM"),
-            "wind_offshore": read_costs(costs, "offwind", "VOM"),
-            "wind_onshore": read_costs(costs, "onwind", "VOM"),
-            "solar": read_costs(costs, "solar", "VOM"),
-        }
-
 
     else:
         print(f"Scenario name {scenario} is not valid.")
