@@ -15,7 +15,7 @@ class ChpEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ChpEtrago",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(insert),
         )
@@ -127,18 +127,7 @@ def insert_egon100re():
     )
 
 
-def insert():
-    """Insert combined heat and power plants into eTraGo tables.
-
-    Gas CHP plants are modeled as links to the gas grid,
-    biomass CHP plants (only in eGon2035) are modeled as generators
-
-    Returns
-    -------
-    None.
-
-    """
-
+def insert_scenario(scenario):
     sources = config.datasets()["chp_etrago"]["sources"]
 
     targets = config.datasets()["chp_etrago"]["targets"]
@@ -147,16 +136,16 @@ def insert():
         f"""
         DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
         WHERE carrier LIKE '%%CHP%%'
-        AND scn_name = 'eGon2035'
+        AND scn_name = '{scenario}'
         AND bus0 IN
         (SELECT bus_id
          FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
-         WHERE scn_name = 'eGon2035'
+         WHERE scn_name = '{scenario}'
          AND country = 'DE')
         AND bus1 IN
         (SELECT bus_id
          FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
-         WHERE scn_name = 'eGon2035'
+         WHERE scn_name = '{scenario}'
          AND country = 'DE')
         """
     )
@@ -164,7 +153,7 @@ def insert():
         f"""
         DELETE FROM {targets['generator']['schema']}.{targets['generator']['table']}
         WHERE carrier LIKE '%%CHP%%'
-        AND scn_name = 'eGon2035'
+        AND scn_name = '{scenario}'
         """
     )
     # Select all CHP plants used in district heating
@@ -181,9 +170,9 @@ def insert():
         JOIN grid.egon_etrago_bus c
         ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
 
-        WHERE a.scenario='eGon2035'
-        AND b.scenario = 'eGon2035'
-        AND c.scn_name = 'eGon2035'
+        WHERE a.scenario='{scenario}'
+        AND b.scenario = '{scenario}'
+        AND c.scn_name = '{scenario}'
         AND c.carrier = 'central_heat'
         AND NOT district_heating_area_id IS NULL
         GROUP BY (
@@ -191,15 +180,15 @@ def insert():
         """
     )
     # Divide into biomass and gas CHP which are modelled differently
-    chp_link_dh = chp_dh[chp_dh.carrier != "biomass"].index
-    chp_generator_dh = chp_dh[chp_dh.carrier == "biomass"].index
+    chp_link_dh = chp_dh[chp_dh.carrier == "gas"].index
+    chp_generator_dh = chp_dh[chp_dh.carrier != "gas"].index
 
     # Create geodataframes for gas CHP plants
     chp_el = link_geom_from_buses(
         gpd.GeoDataFrame(
             index=chp_link_dh,
             data={
-                "scn_name": "eGon2035",
+                "scn_name": scenario,
                 "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"].astype(int),
                 "bus1": chp_dh.loc[chp_link_dh, "electrical_bus_id"].astype(
                     int
@@ -216,7 +205,7 @@ def insert():
     )
 
     # Add marginal cost which is only VOM in case of gas chp
-    chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
+    chp_el["marginal_cost"] = get_sector_parameters("gas", scenario)[
         "marginal_cost"
     ]["chp_gas"]
 
@@ -233,7 +222,7 @@ def insert():
         gpd.GeoDataFrame(
             index=chp_link_dh,
             data={
-                "scn_name": "eGon2035",
+                "scn_name": scenario,
                 "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"].astype(int),
                 "bus1": chp_dh.loc[chp_link_dh, "heat_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[chp_link_dh, "th_capacity"],
@@ -254,17 +243,17 @@ def insert():
         if_exists="append",
     )
 
-    # Insert biomass CHP as generators
+    # Insert biomass, coal, oil and other CHP as generators
     # Create geodataframes for CHP plants
     chp_el_gen = pd.DataFrame(
         index=chp_generator_dh,
         data={
-            "scn_name": "eGon2035",
+            "scn_name": scenario,
             "bus": chp_dh.loc[chp_generator_dh, "electrical_bus_id"].astype(
                 int
             ),
             "p_nom": chp_dh.loc[chp_generator_dh, "el_capacity"],
-            "carrier": "central_biomass_CHP",
+            "carrier": chp_dh.loc[chp_generator_dh, "carrier"],
         },
     )
 
@@ -274,9 +263,17 @@ def insert():
     )
 
     # Add marginal cost
-    chp_el_gen["marginal_cost"] = get_sector_parameters(
-        "electricity", "eGon2035"
-    )["marginal_cost"]["biomass"]
+    chp_el_gen["marginal_cost"] = (
+        pd.Series(
+            get_sector_parameters("electricity", scenario)["marginal_cost"]
+        )
+        .rename({"other_non_renewable": "others"})
+        .loc[chp_el_gen["carrier"]]
+    )
+
+    chp_el_gen["carrier"] = (
+        "central_" + chp_dh.loc[chp_generator_dh, "carrier"] + "_CHP"
+    )
 
     chp_el_gen.to_sql(
         targets["generator"]["table"],
@@ -289,10 +286,12 @@ def insert():
     chp_heat_gen = pd.DataFrame(
         index=chp_generator_dh,
         data={
-            "scn_name": "eGon2035",
+            "scn_name": scenario,
             "bus": chp_dh.loc[chp_generator_dh, "heat_bus_id"].astype(int),
             "p_nom": chp_dh.loc[chp_generator_dh, "th_capacity"],
-            "carrier": "central_biomass_CHP_heat",
+            "carrier": "central_"
+            + chp_dh.loc[chp_generator_dh, "carrier"]
+            + "_CHP_heat",
         },
     )
 
@@ -314,20 +313,20 @@ def insert():
         SELECT electrical_bus_id, ch4_bus_id, carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity
         FROM {sources['chp_table']['schema']}.{sources['chp_table']['table']}
-        WHERE scenario='eGon2035'
+        WHERE scenario='{scenario}'
         AND district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, ch4_bus_id, carrier)
         """
     )
-    chp_link_ind = chp_industry[chp_industry.carrier != "biomass"].index
+    chp_link_ind = chp_industry[chp_industry.carrier == "gas"].index
 
-    chp_generator_ind = chp_industry[chp_industry.carrier == "biomass"].index
+    chp_generator_ind = chp_industry[chp_industry.carrier != "gas"].index
 
     chp_el_ind = link_geom_from_buses(
         gpd.GeoDataFrame(
             index=chp_link_ind,
             data={
-                "scn_name": "eGon2035",
+                "scn_name": scenario,
                 "bus0": chp_industry.loc[chp_link_ind, "ch4_bus_id"].astype(
                     int
                 ),
@@ -338,7 +337,7 @@ def insert():
                 "carrier": "industrial_gas_CHP",
             },
         ),
-        "eGon2035",
+        scenario,
     )
 
     chp_el_ind["link_id"] = range(
@@ -346,7 +345,7 @@ def insert():
     )
 
     # Add marginal cost which is only VOM in case of gas chp
-    chp_el_ind["marginal_cost"] = get_sector_parameters("gas", "eGon2035")[
+    chp_el_ind["marginal_cost"] = get_sector_parameters("gas", scenario)[
         "marginal_cost"
     ]["chp_gas"]
 
@@ -361,12 +360,12 @@ def insert():
     chp_el_ind_gen = pd.DataFrame(
         index=chp_generator_ind,
         data={
-            "scn_name": "eGon2035",
+            "scn_name": scenario,
             "bus": chp_industry.loc[
                 chp_generator_ind, "electrical_bus_id"
             ].astype(int),
             "p_nom": chp_industry.loc[chp_generator_ind, "el_capacity"],
-            "carrier": "industrial_biomass_CHP",
+            "carrier": chp_industry.loc[chp_generator_ind, "carrier"],
         },
     )
 
@@ -374,11 +373,19 @@ def insert():
         db.next_etrago_id("generator"),
         len(chp_el_ind_gen) + db.next_etrago_id("generator"),
     )
-
     # Add marginal cost
-    chp_el_ind_gen["marginal_cost"] = get_sector_parameters(
-        "electricity", "eGon2035"
-    )["marginal_cost"]["biomass"]
+    chp_el_ind_gen["marginal_cost"] = (
+        pd.Series(
+            get_sector_parameters("electricity", scenario)["marginal_cost"]
+        )
+        .rename({"other_non_renewable": "others"})
+        .loc[chp_el_ind_gen["carrier"]]
+    )
+
+    # Update carrier
+    chp_el_ind_gen["carrier"] = (
+        "industrial_" + chp_el_ind_gen.loc[chp_el_ind_gen, "carrier"] + "_CHP"
+    )
 
     chp_el_ind_gen.to_sql(
         targets["generator"]["table"],
@@ -388,4 +395,22 @@ def insert():
         index=False,
     )
 
-    insert_egon100re()
+
+def insert():
+    """Insert combined heat and power plants into eTraGo tables.
+
+    Gas CHP plants are modeled as links to the gas grid,
+    biomass CHP plants (only in eGon2035) are modeled as generators
+
+    Returns
+    -------
+    None.
+
+    """
+
+    for scenario in ["status2019"]:
+        if scenario != "eGon100RE":
+            insert_scenario(scenario)
+
+        else:
+            insert_egon100re()
