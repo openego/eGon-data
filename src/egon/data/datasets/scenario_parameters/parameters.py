@@ -7,7 +7,6 @@ import egon.data.config
 
 
 def read_csv(year):
-
     source = egon.data.config.datasets()["pypsa-technology-data"]["targets"][
         "data_dir"
     ]
@@ -16,7 +15,6 @@ def read_csv(year):
 
 
 def read_costs(df, technology, parameter, value_only=True):
-
     result = df.loc[
         (df.technology == technology) & (df.parameter == parameter)
     ].squeeze()
@@ -153,7 +151,6 @@ def electricity(scenario):
     """
 
     if scenario == "eGon2035":
-
         costs = read_csv(2035)
 
         parameters = {"grid_topology": "Status Quo"}
@@ -325,7 +322,6 @@ def electricity(scenario):
         }
 
     elif scenario == "eGon100RE":
-
         costs = read_csv(2050)
 
         parameters = {"grid_topology": "Status Quo"}
@@ -470,7 +466,7 @@ def electricity(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
-    
+
     elif scenario == "status2019":
         parameters = {}
 
@@ -496,7 +492,6 @@ def gas(scenario):
     """
 
     if scenario == "eGon2035":
-
         costs = read_csv(2035)
 
         parameters = {
@@ -572,7 +567,6 @@ def gas(scenario):
         }
 
     elif scenario == "eGon100RE":
-
         costs = read_csv(2050)
         interest_rate = 0.07  # [p.u.]
 
@@ -650,14 +644,12 @@ def gas(scenario):
         parameters["capital_cost"] = {}
 
         for comp in parameters["overnight_cost"].keys():
-            parameters["capital_cost"][comp] = (
-                annualize_capital_costs(
-                    parameters["overnight_cost"][comp],
-                    parameters["lifetime"][comp],
-                    interest_rate,
-                )
-                + parameters["overnight_cost"][comp]
-                * (parameters["FOM"][comp] / 100)
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                interest_rate,
+            ) + parameters["overnight_cost"][comp] * (
+                parameters["FOM"][comp] / 100
             )
 
         for comp in ["H2_to_power", "H2_to_CH4"]:
@@ -679,7 +671,7 @@ def gas(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
-    
+
     elif scenario == "status2019":
         parameters = {
             "main_gas_carrier": "CH4",
@@ -768,7 +760,7 @@ def mobility(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
-    
+
     elif scenario == "status2019":
         parameters = {
             "motorized_individual_travel": {
@@ -784,7 +776,6 @@ def mobility(scenario):
                 }
             }
         }
-
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -809,7 +800,6 @@ def heat(scenario):
     """
 
     if scenario == "eGon2035":
-
         costs = read_csv(2035)
 
         parameters = {
@@ -898,12 +888,35 @@ def heat(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
-        
+
     elif scenario == "status2019":
         parameters = {
-            "DE_demand_residential_TJ": 1658400+383300, # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
-            "DE_demand_service_TJ": 567300+71500, # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
-            "DE_district_heating_share": (189760+38248)/(1658400+383300+567300+71500), # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+            "DE_demand_residential_TJ": 1658400
+            + 383300,  # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            "DE_demand_service_TJ": 567300
+            + 71500,  # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            "DE_district_heating_share": (189760 + 38248)
+            / (
+                1658400 + 383300 + 567300 + 71500
+            ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+        }
+
+        costs = read_csv(2020)
+
+        # Insert marginal_costs in EUR/MWh
+        # marginal cost can include fuel, C02 and operation and maintenance costs
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
     else:
