@@ -183,10 +183,10 @@ def insert_store(scenario, carrier):
             "bus0": dh_bus.bus_id,
             "bus1": water_tank_bus.bus_id,
             "carrier": carrier + "_store_charger",
-            "efficiency": get_sector_parameters("heat", "eGon2035")[
+            "efficiency": get_sector_parameters("heat", scenario)[
                 "efficiency"
             ]["water_tank_charger"],
-            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+            "marginal_cost": get_sector_parameters("heat", scenario)[
                 "marginal_cost"
             ]["water_tank_charger"],
             "p_nom_extendable": True,
@@ -211,10 +211,10 @@ def insert_store(scenario, carrier):
             "bus0": water_tank_bus.bus_id,
             "bus1": dh_bus.bus_id,
             "carrier": carrier + "_store_discharger",
-            "efficiency": get_sector_parameters("heat", "eGon2035")[
+            "efficiency": get_sector_parameters("heat", scenario)[
                 "efficiency"
             ]["water_tank_discharger"],
-            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+            "marginal_cost": get_sector_parameters("heat", scenario)[
                 "marginal_cost"
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
@@ -238,10 +238,10 @@ def insert_store(scenario, carrier):
             "scn_name": scenario,
             "bus": water_tank_bus.bus_id,
             "carrier": carrier + "_store",
-            "capital_cost": get_sector_parameters("heat", "eGon2035")[
+            "capital_cost": get_sector_parameters("heat", scenario)[
                 "capital_cost"
             ][f"{carrier.split('_')[0]}_water_tank"],
-            "lifetime": get_sector_parameters("heat", "eGon2035")["lifetime"][
+            "lifetime": get_sector_parameters("heat", scenario)["lifetime"][
                 f"{carrier.split('_')[0]}_water_tank"
             ],
             "e_nom_extendable": True,
@@ -266,13 +266,13 @@ def store():
     insert_store("eGon2035", "rural_heat")
 
 
-def insert_central_direct_heat(scenario="eGon2035"):
+def insert_central_direct_heat(scenario):
     """Insert renewable heating technologies (solar and geo thermal)
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario
 
     Returns
     -------
@@ -405,13 +405,13 @@ def insert_central_direct_heat(scenario="eGon2035"):
     )
 
 
-def insert_central_gas_boilers(scenario="eGon2035"):
+def insert_central_gas_boilers(scenario):
     """Inserts gas boilers for district heating to eTraGo-table
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario. The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario.
 
     Returns
     -------
@@ -456,11 +456,11 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
     # Add efficiency and marginal costs of gas boilers
-    central_boilers["efficiency"] = get_sector_parameters("heat", "eGon2035")[
+    central_boilers["efficiency"] = get_sector_parameters("heat", scenario)[
         "efficiency"
     ]["central_gas_boiler"]
     central_boilers["marginal_cost"] = get_sector_parameters(
-        "heat", "eGon2035"
+        "heat", scenario
     )["marginal_cost"]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
@@ -486,13 +486,13 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     )
 
 
-def insert_rural_gas_boilers(scenario="eGon2035"):
+def insert_rural_gas_boilers(scenario):
     """Inserts gas boilers for individual heating to eTraGo-table
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario. The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario.
 
     Returns
     -------
@@ -549,7 +549,7 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
     rural_boilers = link_geom_from_buses(rural_boilers, scenario)
 
     # Add efficiency of gas boilers
-    rural_boilers["efficiency"] = get_sector_parameters("heat", "eGon2035")[
+    rural_boilers["efficiency"] = get_sector_parameters("heat", scenario)[
         "efficiency"
     ]["rural_gas_boiler"]
 
@@ -587,11 +587,9 @@ def buses():
     None.
 
     """
-
-    insert_buses("central_heat", scenario="eGon2035")
-    insert_buses("rural_heat", scenario="eGon2035")
-    insert_buses("central_heat", scenario="eGon100RE")
-    insert_buses("rural_heat", scenario="eGon100RE")
+    for scenario in ["status2019", "eGon2035", "eGon100RE"]:
+        insert_buses("central_heat", scenario)
+        insert_buses("rural_heat", scenario)
 
 
 def supply():
@@ -606,19 +604,20 @@ def supply():
 
     """
 
-    insert_central_direct_heat(scenario="eGon2035")
-    insert_central_power_to_heat(scenario="eGon2035")
-    insert_individual_power_to_heat(scenario="eGon2035")
-
-    # insert_rural_gas_boilers(scenario="eGon2035")
-    insert_central_gas_boilers(scenario="eGon2035")
+    for scenario in ["status2019", "eGon2035", "eGon100RE"]:
+        # There is no direct heat in status2019 scenario
+        if scenario != "status2019":
+            insert_central_direct_heat(scenario)
+            insert_central_power_to_heat(scenario)
+        insert_individual_power_to_heat(scenario)
+        insert_central_gas_boilers(scenario)
 
 
 class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.10",
+            version="0.0.11",
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )
