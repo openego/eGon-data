@@ -200,19 +200,6 @@ def fix_subnetworks(scn_name):
         3,
     )
 
-    # # Missing 220kV line from Audorf to Kiel
-    # add_line(
-    #     # Audorf
-    #     9.726992766257577,
-    #     54.291420962253234,
-    #     # Kiel
-    #     9.9572075,
-    #     54.321589,
-    #     220,
-    #     scn_name,
-    #     6,
-    # )
-
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         # Missing line from USW Uchtelfangen to 'Kraftwerk Weiher'
         add_line(
@@ -227,14 +214,10 @@ def fix_subnetworks(scn_name):
 
         # Missing line from Umspannwerk Plottling to Gänsdorf UW
         add_line(
-            12,
-            853318030996972,  # Umspannwerk Plottling
-            48,
-            76508569478315,
-            12,
-            769768646403532,  # Gänsdorf UW
-            48,
-            80533685376445,
+            12.853318030996972,  # Umspannwerk Plottling
+            48.76508569478315,
+            12.769768646403532,  # Gänsdorf UW
+            48.80533685376445,
             380,
             scn_name,
             3,
@@ -242,162 +225,14 @@ def fix_subnetworks(scn_name):
 
         # Missing line inside Ottstedt
         add_line(
-            11,
-            4295305,  # Ottstedt
-            50,
-            9115176,
-            11,
-            4299277,  # Ottstedt
-            50,
-            9114496,
+            11.4295305,  # Ottstedt
+            50.9115176,
+            11.4299277,  # Ottstedt
+            50.9114496,
             380,
             scn_name,
             3,
         )
-
-        # # Missing 380kV line near Elsfleth
-        # add_line(
-        #     # Line
-        #     8.419326700000001,
-        #     53.229867000000006,
-        #     # Schaltanlage Elsfleth/West
-        #     8.402976949446648,
-        #     53.2371468322213,
-        #     380,
-        #     scn_name,
-        #     6,
-        # )
-
-        # # Missing 380kV line near Magdala
-        # add_line(
-        #     # Line north south
-        #     11.4298432,
-        #     50.9117467,
-        #     # Line east
-        #     11.4295305,
-        #     50.9115176,
-        #     380,
-        #     scn_name,
-        #     3,
-        # )
-
-        # Missing 220kV line near Frimmersdorf
-        # add_line(
-        #     # Line west
-        #     6.585418000000001,
-        #     51.0495723,
-        #     # Line east
-        #     6.5867616,
-        #     51.0520915,
-        #     220,
-        #     scn_name,
-        #     6,
-        # )
-
-        # # Missing 220kV line from Wolmirstedt to Stendal
-        # add_line(
-        #     # Wolmirstedt
-        #     11.637225336209951,
-        #     52.26707328151311,
-        #     # Stendal
-        #     11.7689,
-        #     52.505533,
-        #     220,
-        #     scn_name,
-        #     6,
-        # )
-
-        # Plattling
-        # Update way for osmTGmod in
-        # 'LINESTRING (12.85328076018362 48.76616932172957,
-        # 12.85221826521118 48.76597882857125,
-        # 12.85092755963579 48.76451816626182,
-        # 12.85081583430311 48.76336597271223,
-        # 12.85089191559093 48.76309793961921,
-        # 12.85171674549663 48.76313124988151,
-        # 12.85233496021983 48.76290980724934,
-        # 12.85257485139349 48.76326650768988,
-        # 12.85238077788078 48.76354965879587,
-        # 12.85335698387775 48.76399030383004,
-        # 12.85444925633996 48.76422235417385,
-        # 12.853289544662 48.76616304929393)'
-
-        # # Lamspringe 380kV lines
-        # drop_line(
-        #     9.988215035677026,
-        #     51.954230057487926,
-        #     9.991477300000001,
-        #     51.939711,
-        #     380,
-        #     scn_name,
-        # )
-
-        # drop_line(
-        #     9.995589,
-        #     51.969716000000005,
-        #     9.988215035677026,
-        #     51.954230057487926,
-        #     380,
-        #     scn_name,
-        # )
-
-        # drop_line(
-        #     9.982829,
-        #     51.985980000000005,
-        #     9.995589,
-        #     51.969716000000005,
-        #     380,
-        #     scn_name,
-        # )
-
-        # drop_line(
-        #     10.004865,
-        #     51.999120000000005,
-        #     9.982829,
-        #     51.985980000000005,
-        #     380,
-        #     scn_name,
-        # )
-
-        # drop_line(
-        #     10.174395,
-        #     52.036448,
-        #     9.988215035677026,
-        #     51.954230057487926,
-        #     380,
-        #     scn_name,
-        # )
-
-        # drop_line(
-        #     10.195144702845797,
-        #     52.079851837273964,
-        #     10.174395,
-        #     52.036448,
-        #     380,
-        #     scn_name,
-        # )
-
-        # drop_trafo(9.988215035677026, 51.954230057487926, 110, 380, scn_name)
-
-        # drop_bus(9.988215035677026, 51.954230057487926, 380, scn_name)
-        # drop_bus(9.991477300000001, 51.939711, 380, scn_name)
-        # drop_bus(9.995589, 51.969716000000005, 380, scn_name)
-        # drop_bus(9.982829, 51.985980000000005, 380, scn_name)
-        # drop_bus(10.174395, 52.036448, 380, scn_name)
-        # drop_bus(10.195144702845797, 52.079851837273964, 380, scn_name)
-
-        # drop_bus(10.004865, 51.999120000000005, 380, scn_name)
-
-        # Umspannwerk Vieselbach
-        # delete isolated bus and trafo
-        # drop_trafo(11.121774798935334, 51.00038603925895, 220, 380, scn_name)
-        # drop_bus(11.121774798935334, 51.00038603925895, 380, scn_name)
-
-        # # Umspannwerk Waldlaubersheim
-        # # delete isolated bus and trafo
-        # drop_trafo(7.815993836091339, 49.92211102637183, 110, 380, scn_name)
-        # drop_bus(7.815993836091339, 49.92211102637183, 380, scn_name)
-
 
 def run():
     fix_subnetworks("eGon2035")
