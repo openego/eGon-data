@@ -1282,7 +1282,7 @@ def tyndp_demand():
         session.add(entry_ts)
         session.commit()
         
-def entsoe_historic_generation_capacities(entsoe_token=None, year_start="20190101", year_end="20200101"):
+def entsoe_historic_generation_capacities(entsoe_token="29e40f71-3ab5-4435-97dd-060039b962af", year_start="20190101", year_end="20200101"):
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1323,7 +1323,7 @@ def entsoe_historic_generation_capacities(entsoe_token=None, year_start="2019010
     df.fillna(0, inplace=True)
     return df
 
-def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="20200101"):
+def entsoe_historic_demand(entsoe_token="29e40f71-3ab5-4435-97dd-060039b962af", year_start="20190101", year_end="20200101"):
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
     
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1333,20 +1333,20 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
     countries= ["LU", "AT", "FR", "NL", 
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
-    
 
     # todo: define wanted countries
 
 
     not_retrieved = []
     dfs = []
+
     for country in countries:
         if country == 'GB':
             kwargs = dict(start=start_gb, end=end_gb)
         else:
             kwargs = dict(start=start, end=end)
         try:
-            dfs.append(client.query_load(country, **kwargs))
+            dfs.append(client.query_load(country, **kwargs).resample("H")["Actual Load"].mean())
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
             pass
@@ -1354,6 +1354,7 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
         logger.warning(
             f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
         )
+
     df = pd.concat(dfs, axis=1)
     df.columns = countries
     df.fillna(0, inplace=True)
