@@ -475,6 +475,7 @@ def heat_demand_to_db_table():
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
     for source in sources:
+
         if not "2015" in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
@@ -847,14 +848,14 @@ def scenario_data_import():
     unzip_peta5_0_1_heat_demands()
     cutout_heat_demand_germany()
     # Specifiy the scenario names for loading factors from csv file
-    future_heat_demand_germany("status2019")
-    future_heat_demand_germany("eGon2035")
-    future_heat_demand_germany("eGon100RE")
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        future_heat_demand_germany(scenario)
+
     # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
-    adjust_residential_heat_to_zensus("status2019")
-    adjust_residential_heat_to_zensus("eGon2035")
-    adjust_residential_heat_to_zensus("eGon100RE")
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        adjust_residential_heat_to_zensus(scenario)
+
     # future_heat_demand_germany("eGon2015")
     add_metadata()
 
