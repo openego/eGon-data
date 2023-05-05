@@ -151,7 +151,7 @@ def assign_heat_bus():
     sources = config.datasets()["chp_location"]["sources"]
     target = config.datasets()["chp_location"]["targets"]["chp_table"]
 
-    for scenario in ["status2019"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         # Select CHP with use_case = 'district_heating'
         chp = db.select_geodataframe(
             f"""
@@ -637,31 +637,45 @@ def insert_chp_egon100re():
     )
 
 
-# Add one task per federal state for small CHP extension
-if (
-    config.settings()["egon-data"]["--dataset-boundary"]
-    == "Schleswig-Holstein"
-):
-    extension = extension_SH
-else:
-    extension = {
-        extension_BW,
-        extension_BY,
-        extension_HB,
-        extension_BB,
-        extension_HE,
-        extension_MV,
-        extension_NS,
-        extension_NW,
-        extension_SH,
-        extension_HH,
-        extension_RP,
-        extension_SL,
-        extension_SN,
-        extension_ST,
-        extension_TH,
-        extension_BE,
-    }
+insert_per_scenario = set()
+
+if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_statusquo)
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_egon2035)
+
+if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_egon100re)
+
+extension = set()
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    # Add one task per federal state for small CHP extension
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        extension = extension_SH
+    else:
+        extension = {
+            extension_BW,
+            extension_BY,
+            extension_HB,
+            extension_BB,
+            extension_HE,
+            extension_MV,
+            extension_NS,
+            extension_NW,
+            extension_SH,
+            extension_HH,
+            extension_RP,
+            extension_SL,
+            extension_SN,
+            extension_ST,
+            extension_TH,
+            extension_BE,
+        }
 
 
 class Chp(Dataset):
@@ -672,11 +686,7 @@ class Chp(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                {
-                    insert_chp_statusquo,
-                    insert_chp_egon2035,
-                    insert_chp_egon100re,
-                },
+                insert_per_scenario,
                 assign_heat_bus,
                 extension,
             ),
