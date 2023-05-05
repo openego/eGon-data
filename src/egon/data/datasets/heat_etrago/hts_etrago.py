@@ -7,11 +7,10 @@ import pandas as pd
 import numpy as np
 
 
-def hts_to_etrago():
+def hts_to_etrago(scenario):
 
     sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
-    scenario = "eGon2035"
     carriers = ["central_heat", "rural_heat", "rural_gas_boiler"]
 
     for carrier in carriers:
@@ -90,7 +89,7 @@ def hts_to_etrago():
 
         else:
 
-            efficiency_gas_boiler = get_sector_parameters("heat", "eGon2035")[
+            efficiency_gas_boiler = get_sector_parameters("heat", scenario)[
                 "efficiency"
             ]["rural_gas_boiler"]
 
@@ -209,12 +208,22 @@ def hts_to_etrago():
             index=False,
         )
 
+def demand(): 
+    """ Insert demand timeseries for heat into eTraGo tables
+
+    Returns
+    -------
+    None.
+
+    """
+    for scenario in ["status2019", "eGon2035", "eGon100RE"]:
+        hts_to_etrago(scenario)
 
 class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
-            tasks=(hts_to_etrago,),
+            tasks=(demand),
         )
