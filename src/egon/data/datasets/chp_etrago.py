@@ -406,7 +406,7 @@ def insert():
 
     """
 
-    for scenario in ["status2019"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         if scenario != "eGon100RE":
             insert_scenario(scenario)
 
