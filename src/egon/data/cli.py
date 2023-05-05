@@ -162,6 +162,17 @@ from sqlalchemy.orm import Session
     ),
     show_default=True,
 )
+
+@click.option(
+    "--scenarios",
+    default=["status2019", "eGon2035"],
+    metavar="SCENARIOS",
+    help=(
+        "List of scenario names for which a data model shall be created."
+    ),
+    show_default=True,
+)
+
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
