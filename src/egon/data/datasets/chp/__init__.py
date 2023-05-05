@@ -412,7 +412,13 @@ def insert_chp_statusquo():
         mastr["voltage_level"] = assign_voltage_level(
             mastr, cfg, WORKING_DIR_MASTR_NEW
         )
+
+        gas_bus_id = db.assign_gas_bus_id(mastr, "status2019", "CH4").bus
+
         mastr = assign_bus_id(mastr, cfg)
+
+        mastr["gas_bus_id"] = gas_bus_id
+
     mastr = assign_use_case(mastr, cfg["sources"])
 
     # Insert entries with location
@@ -432,6 +438,7 @@ def insert_chp_statusquo():
                 scenario="status2019",
                 district_heating=row.district_heating,
                 electrical_bus_id=row.bus_id,
+                ch4_bus_id=row.gas_bus_id,
                 voltage_level=row.voltage_level,
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
