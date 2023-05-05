@@ -197,7 +197,7 @@ def insert_scenario(scenario):
                 "carrier": "central_gas_CHP",
             },
         ),
-        "eGon2035",
+        scenario,
     )
     # Set index
     chp_el["link_id"] = range(
@@ -229,7 +229,7 @@ def insert_scenario(scenario):
                 "carrier": "central_gas_CHP_heat",
             },
         ),
-        "eGon2035",
+        scenario,
     )
 
     chp_heat["link_id"] = range(
@@ -269,7 +269,7 @@ def insert_scenario(scenario):
         )
         .rename({"other_non_renewable": "others"})
         .loc[chp_el_gen["carrier"]]
-    )
+    ).values
 
     chp_el_gen["carrier"] = (
         "central_" + chp_dh.loc[chp_generator_dh, "carrier"] + "_CHP"
@@ -380,12 +380,10 @@ def insert_scenario(scenario):
         )
         .rename({"other_non_renewable": "others"})
         .loc[chp_el_ind_gen["carrier"]]
-    )
+    ).values
 
     # Update carrier
-    chp_el_ind_gen["carrier"] = (
-        "industrial_" + chp_el_ind_gen.loc[chp_el_ind_gen, "carrier"] + "_CHP"
-    )
+    chp_el_ind_gen["carrier"] = "industrial_" + chp_el_ind_gen.carrier + "_CHP"
 
     chp_el_ind_gen.to_sql(
         targets["generator"]["table"],
