@@ -673,8 +673,18 @@ def gas(scenario):
         parameters = {}
 
     elif scenario == "status2019":
+        costs = read_csv(2020)
         parameters = {
             "main_gas_carrier": "CH4",
+        }
+
+        parameters["marginal_cost"] = {
+            "CH4": global_settings(scenario)["fuel_costs"]["gas"]
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["gas"],
+            "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
 
     else:
