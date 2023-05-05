@@ -82,7 +82,7 @@ def district_heating():
         """
     )
 
-    for scenario in ["status2019", "eGon2035"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         supply = cascade_heat_supply(scenario, plotting=False)
 
         supply["scenario"] = scenario
@@ -151,7 +151,7 @@ def individual_heating():
     """
     targets = config.datasets()["heat_supply"]["targets"]
 
-    for scenario in ["status2019", "eGon2035"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         db.execute_sql(
             f"""
             DELETE FROM {targets['individual_heating_supply']['schema']}.
