@@ -930,3 +930,47 @@ def allocate_other_power_plants():
         )
         session.add(entry)
     session.commit()
+
+def power_plants_status_quo(scn_name = "status2019"):
+    scn_name = "status2019"
+    con = db.engine()
+    cfg = egon.data.config.datasets()["power_plants"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+        WHERE carrier IN ('wind_onshore', 'solar', 'biomass', 'hydro',
+                          'run_of_river', 'reservoir')
+        AND scenario = '{scn_name}'
+        """
+    )
+
+    # Write hydro power plants in supply.egon_power_plants
+    map_hydro = {
+        "Laufwasseranlage": "run_of_river",
+        "Speicherwasseranlage": "reservoir",
+    }
+
+    hydro = pd.read_sql(
+        f"""SELECT * FROM {cfg['sources']['hydro']}
+        WHERE plant_type IN ('Laufwasseranlage', 'Speicherwasseranlage')""",
+        con,
+    )
+
+    # Insert into target table
+    session = sessionmaker(bind=db.engine())()
+    for i, row in hydro.iterrows():
+        entry = EgonPowerPlants(
+            sources="Mastr",
+            source_id={"MastrNummer": row.gens_id},
+            carrier=map_hydro[row.plant_type],
+            el_capacity=row.capacity,
+            voltage_level=row.voltage_level,
+            bus_id=row.bus_id,
+            scenario=scn_name,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    return
