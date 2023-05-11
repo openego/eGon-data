@@ -374,6 +374,10 @@ power_plants:
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
       buses_data: "osmtgmod_results.bus_data"
       power_plants: 'supply.egon_power_plants'
+      biomass: 'supply.egon_power_plants_biomass'
+      hydro: 'supply.egon_power_plants_hydro'
+      pv: 'supply.egon_power_plants_pv'
+      wind: 'supply.egon_power_plants_wind'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
   target:
       table: 'egon_power_plants'
