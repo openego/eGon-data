@@ -934,12 +934,13 @@ def allocate_other_power_plants():
 def power_plants_status_quo(scn_name = "status2019"):
     scn_name = "status2019"
     con = db.engine()
+    session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
 
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
-        WHERE carrier IN ('wind_onshore', 'solar', 'biomass', 'hydro',
+        WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
                           'run_of_river', 'reservoir')
         AND scenario = '{scn_name}'
         """
@@ -957,11 +958,9 @@ def power_plants_status_quo(scn_name = "status2019"):
         con,
     )
 
-    # Insert into target table
-    session = sessionmaker(bind=db.engine())()
     for i, row in hydro.iterrows():
         entry = EgonPowerPlants(
-            sources="Mastr",
+            sources={"el_capacity": "MaStR"},
             source_id={"MastrNummer": row.gens_id},
             carrier=map_hydro[row.plant_type],
             el_capacity=row.capacity,
@@ -972,5 +971,81 @@ def power_plants_status_quo(scn_name = "status2019"):
         )
         session.add(entry)
     session.commit()
+
+    print(f"""
+          {len(hydro)} hydro generators with a total installed capacity of
+          {hydro.capacity.sum()}MW were inserted in db
+          """)
+    # Write biomass power plants in supply.egon_power_plants
+    biomass = pd.read_sql(
+        f"""SELECT * FROM {cfg['sources']['biomass']}""",
+        con,
+    )
+    for i, row in biomass.iterrows():
+        entry = EgonPowerPlants(
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier="biomass",
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    print(f"""
+          {len(biomass)} biomass generators with a total installed capacity of
+          {biomass.capacity.sum()}MW were inserted in db
+          """)
+
+    # Write solar power plants in supply.egon_power_plants
+    solar = pd.read_sql(
+        f"""SELECT * FROM {cfg['sources']['pv']}""",
+        con,
+    )
+    for i, row in solar.iterrows():
+        entry = EgonPowerPlants(
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier="solar",
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    print(f"""
+          {len(solar)} solar generators with a total installed capacity of
+          {solar.capacity.sum()}MW were inserted in db
+          """)
+
+    # Write wind_onshore power plants in supply.egon_power_plants
+    wind_onshore = pd.read_sql(
+        f"""SELECT * FROM {cfg['sources']['wind']}""",
+        con,
+    )
+    for i, row in wind_onshore.iterrows():
+        entry = EgonPowerPlants(
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier="wind_onshore",
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    print(f"""
+          {len(wind_onshore)} wind_onshore generators with a total installed capacity of
+          {wind_onshore.capacity.sum()}MW were inserted in db
+          """)
 
     return
