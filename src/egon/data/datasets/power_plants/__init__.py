@@ -60,11 +60,12 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.17",
+            version="0.0.18",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 import_mastr,
+                power_plants_status_quo,
                 insert_hydro_biomass,
                 allocate_conventional_non_chp_power_plants,
                 allocate_other_power_plants,
@@ -932,7 +933,6 @@ def allocate_other_power_plants():
     session.commit()
 
 def power_plants_status_quo(scn_name = "status2019"):
-    scn_name = "status2019"
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
