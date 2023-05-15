@@ -16,16 +16,6 @@ from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-class ElectricalNeighbours(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="ElectricalNeighbours",
-            version="0.0.7",
-            dependencies=dependencies,
-            tasks=(grid, {tyndp_generation, tyndp_demand}),
-        )
-
-
 def get_cross_border_buses(scenario, sources):
     """Returns buses from osmTGmod which are outside of Germany.
 
@@ -488,7 +478,6 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Add one transformer per central foreign bus with v_nom != 380
     for i, row in central_buses[central_buses.v_nom != 380].iterrows():
-
         s_nom_0 = new_lines[new_lines.bus0 == row.bus_id].s_nom.sum()
         s_nom_1 = new_lines[new_lines.bus1 == row.bus_id].s_nom.sum()
         if s_nom_0 == 0.0:
@@ -673,8 +662,7 @@ def grid():
     sources = config.datasets()["electrical_neighbours"]["sources"]
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
-    for scenario in ["eGon2035"]:
-
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         central_buses = buses(scenario, sources, targets)
 
         foreign_lines = cross_border_lines(
@@ -1078,9 +1066,12 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store[
-        "max_hours"
-    ] = (None, None, None, None)
+    (
+        store["dispatch"],
+        store["store"],
+        store["standing_loss"],
+        store["max_hours"],
+    ) = (None, None, None, None)
 
     # Insert carrier specific parameters
 
@@ -1276,3 +1267,19 @@ def tyndp_demand():
         session.add(entry)
         session.add(entry_ts)
         session.commit()
+
+
+tasks = grid
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    tasks = (grid, {tyndp_generation, tyndp_demand})
+
+
+class ElectricalNeighbours(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ElectricalNeighbours",
+            version="0.0.8",
+            dependencies=dependencies,
+            tasks=tasks,
+        )
