@@ -1328,8 +1328,9 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
     
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
     end = pd.Timestamp(year_end, tz="Europe/Brussels")
-    start_gb = pd.Timestamp(year_start, tz="Europe/London")
-    end_gb = pd.Timestamp(year_end, tz="Europe/London")
+    start_gb = start.tz_convert("Europe/London")
+    end_gb = end.tz_convert("Europe/London")
+
     countries= ["LU", "AT", "FR", "NL", 
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
@@ -1346,7 +1347,10 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
         else:
             kwargs = dict(start=start, end=end)
         try:
-            dfs.append(client.query_load(country, **kwargs).resample("H")["Actual Load"].mean())
+            country_data = client.query_load(country, **kwargs).resample("H")["Actual Load"].mean()
+            if country == 'GB':
+                country_data.index = country_data.index.tz_convert("Europe/Brussels")
+            dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
             pass
@@ -1356,5 +1360,6 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
         )
     df = pd.concat(dfs, axis=1)
     df.columns = countries
-    df.fillna(0, inplace=True)
+    df.index = pd.date_range(year_start, periods=8760 , freq="H")
+
     return df
