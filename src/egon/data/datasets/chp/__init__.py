@@ -636,6 +636,7 @@ def insert_chp_egon100re():
         scenario="eGon100RE",
     )
 
+tasks = (create_tables, )
 
 insert_per_scenario = set()
 
@@ -647,6 +648,8 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 
 if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(insert_chp_egon100re)
+
+tasks = tasks + (insert_per_scenario, assign_heat_bus)
 
 extension = set()
 
@@ -677,6 +680,8 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
             extension_BE,
         }
 
+if len(extension)>0:
+    tasks = tasks + (extension,)
 
 class Chp(Dataset):
     def __init__(self, dependencies):
@@ -684,10 +689,5 @@ class Chp(Dataset):
             name="Chp",
             version="0.0.7",
             dependencies=dependencies,
-            tasks=(
-                create_tables,
-                insert_per_scenario,
-                assign_heat_bus,
-                extension,
-            ),
+            tasks=tasks
         )
