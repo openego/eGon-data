@@ -173,8 +173,7 @@ def export_to_db():
     sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
     targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
 
-    for scenario in ["eGon2035", "eGon100RE"]:
-
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
         db.execute_sql(
             f"""
@@ -271,7 +270,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )
