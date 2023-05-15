@@ -140,7 +140,7 @@ def create_tables():
 # https://geopandas.org/docs/user_guide/geometric_manipulations.html
 
 
-def load_census_data():
+def load_census_data(minimum_connection_rate=0.3):
     """
     Load the heating type information from the census database table.
 
@@ -220,7 +220,7 @@ def load_census_data():
     # district_heat.head
     # district_heat['connection_rate'].describe()
 
-    district_heat = district_heat[district_heat["connection_rate"] >= 0.3]
+    district_heat = district_heat[district_heat["connection_rate"] >= minimum_connection_rate]
     # district_heat.columns
 
     return district_heat, heating_type
@@ -499,6 +499,7 @@ def district_heating_areas(scenario_name, plotting=False):
 
     """
 
+
     # Load district heating shares from the scenario table
     if scenario_name == "eGon2015":
         district_heating_share = 0.08
@@ -506,6 +507,13 @@ def district_heating_areas(scenario_name, plotting=False):
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         district_heating_share = heat_parameters["DE_district_heating_share"]
+
+    minimum_connection_rate=0.3
+
+    # Adjust minimum connection rate for status2019, 
+    # otherwise the existing district heating grids would have too much demand
+    if scenario_name=="status2019":
+        minimum_connection_rate=0.6
 
     # heat_demand is scenario specific
     heat_demand_cells = load_heat_demands(scenario_name)
@@ -515,7 +523,7 @@ def district_heating_areas(scenario_name, plotting=False):
     # by the area grouping function), load only the first returned result: [0]
     min_hd_census = 10000 / 3.6  # in MWh
 
-    census_plus_heat_demand = load_census_data()[0].copy()
+    census_plus_heat_demand = load_census_data(minimum_connection_rate=minimum_connection_rate)[0].copy()
     census_plus_heat_demand[
         "residential_and_service_demand"
     ] = heat_demand_cells.loc[
@@ -1131,6 +1139,9 @@ def demarcation(plotting=True):
 
     heat_density_per_scenario = {}
     # scenario specific district heating areas
+    heat_density_per_scenario["status2019"] = district_heating_areas(
+        "status2019", plotting
+    )
     heat_density_per_scenario["eGon2035"] = district_heating_areas(
         "eGon2035", plotting
     )

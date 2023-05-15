@@ -520,7 +520,7 @@ def to_pypsa():
             """
     )
 
-    for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
+    for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
 
         capital_cost = get_sector_parameters(
             "electricity", scenario_name.replace("'", "")

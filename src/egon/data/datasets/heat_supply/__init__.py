@@ -82,58 +82,63 @@ def district_heating():
         """
     )
 
-    supply_2035 = cascade_heat_supply("eGon2035", plotting=False)
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        supply = cascade_heat_supply(scenario, plotting=False)
 
-    supply_2035["scenario"] = "eGon2035"
+        supply["scenario"] = scenario
 
-    supply_2035.to_postgis(
-        targets["district_heating_supply"]["table"],
-        schema=targets["district_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
-
-    # Compare target value with sum of distributed heat supply
-    df_check = db.select_dataframe(
-        f"""
-        SELECT a.carrier,
-        (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
-        FROM {targets['district_heating_supply']['schema']}.
-        {targets['district_heating_supply']['table']} a,
-        {sources['scenario_capacities']['schema']}.
-        {sources['scenario_capacities']['table']} b
-        WHERE a.scenario = 'eGon2035'
-        AND b.scenario_name = 'eGon2035'
-        AND b.carrier = CONCAT('urban_central_', a.carrier)
-        GROUP BY (a.carrier,  b.capacity);
-        """
-    )
-    # If the deviation is > 1%, throw an error
-    assert (
-        df_check.deviation.abs().max() < 1
-    ), f"""Unexpected deviation between target value and distributed
-        heat supply: {df_check}
-        """
-
-    # Add gas boilers as conventional backup capacities
-    backup = backup_gas_boilers("eGon2035")
-
-    backup.to_postgis(
-        targets["district_heating_supply"]["table"],
-        schema=targets["district_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
-
-    backup_rh = backup_resistive_heaters("eGon2035")
-
-    if not backup_rh.empty:
-        backup_rh.to_postgis(
+        supply.to_postgis(
             targets["district_heating_supply"]["table"],
             schema=targets["district_heating_supply"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
+
+        # Do not check data for status2019 as is it not listed in the table
+        if scenario != "status2019":
+            # Compare target value with sum of distributed heat supply
+            df_check = db.select_dataframe(
+                f"""
+                SELECT a.carrier,
+                (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
+                FROM {targets['district_heating_supply']['schema']}.
+                {targets['district_heating_supply']['table']} a,
+                {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} b
+                WHERE a.scenario = '{scenario}'
+                AND b.scenario_name = '{scenario}'
+                AND b.carrier = CONCAT('urban_central_', a.carrier)
+                GROUP BY (a.carrier,  b.capacity);
+                """
+            )
+            # If the deviation is > 1%, throw an error
+            assert (
+                df_check.deviation.abs().max() < 1
+            ), f"""Unexpected deviation between target value and distributed
+                heat supply: {df_check}
+            """
+
+        # Add gas boilers as conventional backup capacities
+        backup = backup_gas_boilers(scenario)
+
+        backup.to_postgis(
+            targets["district_heating_supply"]["table"],
+            schema=targets["district_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+        # Insert resistive heaters which are not available in status2019
+        if scenario != "status2019":
+            backup_rh = backup_resistive_heaters(scenario)
+
+            if not backup_rh.empty:
+                backup_rh.to_postgis(
+                    targets["district_heating_supply"]["table"],
+                    schema=targets["district_heating_supply"]["schema"],
+                    con=db.engine(),
+                    if_exists="append",
+                )
 
 
 def individual_heating():
@@ -146,32 +151,38 @@ def individual_heating():
     """
     targets = config.datasets()["heat_supply"]["targets"]
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['individual_heating_supply']['schema']}.
-        {targets['individual_heating_supply']['table']}
-        """
-    )
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets['individual_heating_supply']['schema']}.
+            {targets['individual_heating_supply']['table']}
+            WHERE scenario = '{scenario}'
+            """
+        )
+        if scenario == "eGon2035":
+            distribution_level = "federal_states"
+        else:
+            distribution_level = "national"
 
-    supply_2035 = cascade_heat_supply_indiv(
-        "eGon2035", distribution_level="federal_states", plotting=False
-    )
+        supply = cascade_heat_supply_indiv(
+            scenario, distribution_level=distribution_level, plotting=False
+        )
 
-    supply_2035["scenario"] = "eGon2035"
+        supply["scenario"] = scenario
 
-    supply_2035.to_postgis(
-        targets["individual_heating_supply"]["table"],
-        schema=targets["individual_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
+        supply.to_postgis(
+            targets["individual_heating_supply"]["table"],
+            schema=targets["individual_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
 
 
 class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 create_tables,
