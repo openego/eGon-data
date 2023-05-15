@@ -151,7 +151,7 @@ def assign_heat_bus():
     sources = config.datasets()["chp_location"]["sources"]
     target = config.datasets()["chp_location"]["targets"]["chp_table"]
 
-    for scenario in ["status2019"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         # Select CHP with use_case = 'district_heating'
         chp = db.select_geodataframe(
             f"""
@@ -412,7 +412,13 @@ def insert_chp_statusquo():
         mastr["voltage_level"] = assign_voltage_level(
             mastr, cfg, WORKING_DIR_MASTR_NEW
         )
+
+        gas_bus_id = db.assign_gas_bus_id(mastr, "status2019", "CH4").bus
+
         mastr = assign_bus_id(mastr, cfg)
+
+        mastr["gas_bus_id"] = gas_bus_id
+
     mastr = assign_use_case(mastr, cfg["sources"])
 
     # Insert entries with location
@@ -432,6 +438,7 @@ def insert_chp_statusquo():
                 scenario="status2019",
                 district_heating=row.district_heating,
                 electrical_bus_id=row.bus_id,
+                ch4_bus_id=row.gas_bus_id,
                 voltage_level=row.voltage_level,
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
@@ -630,31 +637,45 @@ def insert_chp_egon100re():
     )
 
 
-# Add one task per federal state for small CHP extension
-if (
-    config.settings()["egon-data"]["--dataset-boundary"]
-    == "Schleswig-Holstein"
-):
-    extension = extension_SH
-else:
-    extension = {
-        extension_BW,
-        extension_BY,
-        extension_HB,
-        extension_BB,
-        extension_HE,
-        extension_MV,
-        extension_NS,
-        extension_NW,
-        extension_SH,
-        extension_HH,
-        extension_RP,
-        extension_SL,
-        extension_SN,
-        extension_ST,
-        extension_TH,
-        extension_BE,
-    }
+insert_per_scenario = set()
+
+if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_statusquo)
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_egon2035)
+
+if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_egon100re)
+
+extension = set()
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    # Add one task per federal state for small CHP extension
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        extension = extension_SH
+    else:
+        extension = {
+            extension_BW,
+            extension_BY,
+            extension_HB,
+            extension_BB,
+            extension_HE,
+            extension_MV,
+            extension_NS,
+            extension_NW,
+            extension_SH,
+            extension_HH,
+            extension_RP,
+            extension_SL,
+            extension_SN,
+            extension_ST,
+            extension_TH,
+            extension_BE,
+        }
 
 
 class Chp(Dataset):
@@ -665,11 +686,7 @@ class Chp(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                {
-                    insert_chp_statusquo,
-                    insert_chp_egon2035,
-                    insert_chp_egon100re,
-                },
+                insert_per_scenario,
                 assign_heat_bus,
                 extension,
             ),
