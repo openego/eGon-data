@@ -216,14 +216,14 @@ def demand():
     None.
 
     """
-    for scenario in ["status2019", "eGon2035", "eGon100RE"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         hts_to_etrago(scenario)
 
 class HtsEtragoTable(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HtsEtragoTable",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(demand),
         )
