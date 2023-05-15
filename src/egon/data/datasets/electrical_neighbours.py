@@ -1346,7 +1346,7 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
         else:
             kwargs = dict(start=start, end=end)
         try:
-            dfs.append(client.query_load(country, **kwargs))
+            dfs.append(client.query_load(country, **kwargs).resample("H")["Actual Load"].mean())
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
             pass
