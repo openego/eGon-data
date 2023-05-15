@@ -25,9 +25,6 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     CtsDemandBuildings,
 )
-from egon.data.datasets.emobility.heavy_duty_transport import (
-    HeavyDutyTransport,
-)
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -487,11 +484,6 @@ with airflow.DAG(
 
     mit_charging_infrastructure = MITChargingInfrastructure(
         dependencies=[mv_grid_districts, hh_demand_buildings_setup]
-    )
-
-    # eMobility: heavy duty transport TODO: adjust for SQ
-    heavy_duty_transport = HeavyDutyTransport(
-        dependencies=[vg250, setup_etrago, create_gas_polygons_status2019]
     )
 
     cts_demand_buildings = CtsDemandBuildings(
