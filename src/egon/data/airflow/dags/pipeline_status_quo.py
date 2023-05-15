@@ -5,7 +5,6 @@ import airflow
 
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
-from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_prod import CH4Production
 from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
@@ -13,7 +12,6 @@ from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
-from egon.data.datasets.DSM_cts_ind import DsmPotential
 from egon.data.datasets.electrical_neighbours import ElectricalNeighbours
 from egon.data.datasets.electricity_demand import (
     CtsElectricityDemand,
@@ -54,18 +52,6 @@ from egon.data.datasets.heat_supply.individual_heating import (
     HeatPumps2050,
     HeatPumpsPypsaEurSec,
 )
-from egon.data.datasets.hydrogen_etrago import (
-    HydrogenBusEtrago,
-    HydrogenGridEtrago,
-    HydrogenMethaneLinkEtrago,
-    HydrogenPowerLinkEtrago,
-    HydrogenStoreEtrago,
-)
-from egon.data.datasets.industrial_gas_demand import (
-    IndustrialGasDemand,
-    IndustrialGasDemandeGon100RE,
-    IndustrialGasDemandeGon2035,
-)
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
@@ -78,8 +64,6 @@ from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.renewable_feedin import RenewableFeedin
-from egon.data.datasets.saltcavern import SaltcavernData
-from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import Storages
@@ -197,11 +181,6 @@ with airflow.DAG(
     # Calculate future heat demand based on Peta5_0_1 data
     heat_demand_Germany = HeatDemandImport(
         dependencies=[scenario_parameters, vg250, zensus_vg250]
-    )
-
-    # Download industrial gas demand
-    industrial_gas_demand = IndustrialGasDemand(
-        dependencies=[scenario_parameters]
     )
 
     # Extract landuse areas from the `osm` dataset
@@ -396,11 +375,6 @@ with airflow.DAG(
         dependencies=[create_gas_polygons_status2019]
     )
 
-    # Assign industrial gas demand eGon2035 TODO: adjust for SQ
-    IndustrialGasDemandeGon2035(
-        dependencies=[create_gas_polygons_status2019, industrial_gas_demand]
-    )
-
     # CHP locations
     chp = Chp(
         dependencies=[
@@ -545,15 +519,3 @@ with airflow.DAG(
         ]
     )
 
-    # ########## Keep this dataset at the end
-    # Sanity Checks
-    sanity_checks = SanityChecks(
-        dependencies=[
-            storage_etrago,
-            hts_etrago_table,
-            fill_etrago_generators,
-            household_electricity_demand_annual,
-            cts_demand_buildings,
-            emobility_mit,
-        ]
-    )
