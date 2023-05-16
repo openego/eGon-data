@@ -109,6 +109,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
     delete_model_data_from_db,
     generate_model_data_bunch,
+    generate_model_data_status2019_remaining,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
     read_simbev_metadata_file,
@@ -445,6 +446,8 @@ class MotorizedIndividualTravel(Dataset):
                     )
                 )
 
+            if scenario_name == "status2019":
+                tasks.add(generate_model_data_status2019_remaining)
             if scenario_name == "eGon2035":
                 tasks.add(generate_model_data_eGon2035_remaining)
             elif scenario_name == "eGon100RE":
@@ -453,7 +456,7 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -471,6 +474,7 @@ class MotorizedIndividualTravel(Dataset):
                 allocate_evs_to_grid_districts,
                 delete_model_data_from_db,
                 {
+                    *generate_model_data_tasks(scenario_name="status2019"),
                     *generate_model_data_tasks(scenario_name="eGon2035"),
                     *generate_model_data_tasks(scenario_name="eGon100RE"),
                 },

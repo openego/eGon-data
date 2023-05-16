@@ -1058,6 +1058,14 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             bat_cap=meta_tech_data.battery_capacity,
         )
 
+def generate_model_data_status2019_remaining():
+    """Generates timeseries for status2019 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="status2019",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    )
 
 def generate_model_data_eGon2035_remaining():
     """Generates timeseries for eGon2035 scenario for grid districts which
