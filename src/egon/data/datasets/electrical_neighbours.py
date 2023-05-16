@@ -27,8 +27,8 @@ class ElectricalNeighbours(Dataset):
             name="ElectricalNeighbours",
             version="0.0.7",
             dependencies=dependencies,
-            tasks=(grid, {tyndp_generation, tyndp_demand}),
-        )
+            tasks=(grid, {tyndp_generation, tyndp_demand}, insert_generators_sq)
+            )
 
 
 def get_cross_border_buses(scenario, sources):
@@ -1393,7 +1393,7 @@ def map_carriers_entsoe():
             'Wind Onshore': "wind_onshore",
         }
 
-def insert_generators_sq(gen_sq, scn_name = "status2019"):
+def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
 
@@ -1413,7 +1413,7 @@ def insert_generators_sq(gen_sq, scn_name = "status2019"):
     ################# TEMPORAL ####################
     gen_sq = pd.read_csv("data_bundle_egon_data/gen_entsoe.csv", index_col="Index")
     ################# TEMPORAL ####################
-    
+
     targets = config.datasets()["electrical_neighbours"]["targets"]
     # Delete existing data
     db.execute_sql(
