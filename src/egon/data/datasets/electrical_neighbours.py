@@ -237,9 +237,8 @@ def buses(scenario, sources, targets):
         "geometry", axis="columns"
     )
     central_buses.scn_name = scenario
-
     # Insert all central buses for eGon2035
-    if scenario == "eGon2035":
+    if scenario in ["eGon2035", "status2019"]:
         central_buses.to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
@@ -678,7 +677,7 @@ def grid():
     sources = config.datasets()["electrical_neighbours"]["sources"]
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
-    for scenario in ["eGon2035"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
 
         central_buses = buses(scenario, sources, targets)
 
