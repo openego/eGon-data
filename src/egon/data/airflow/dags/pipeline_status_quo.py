@@ -44,11 +44,6 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2035,
-    HeatPumps2050,
-    HeatPumpsPypsaEurSec,
-)
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
@@ -309,15 +304,6 @@ with airflow.DAG(
         ]
     )
 
-    # Minimum heat pump capacity for pypsa-eur-sec
-    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
-        dependencies=[
-            cts_demand_buildings,
-            DistrictHeatingAreas,
-            heat_time_series,
-        ]
-    )
-
     # run pypsa-eur-sec
     run_pypsaeursec = PypsaEurSec(
         dependencies=[
@@ -328,7 +314,6 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
-            heat_pumps_pypsa_eur_sec,
         ]
     )
 
