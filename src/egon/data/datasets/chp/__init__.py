@@ -680,7 +680,7 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
             extension_BE,
         }
 
-if len(extension)>0:
+if extension != set():
     tasks = tasks + (extension,)
 
 class Chp(Dataset):
