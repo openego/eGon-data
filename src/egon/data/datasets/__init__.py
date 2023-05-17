@@ -213,9 +213,9 @@ class Dataset:
         dependencies = (
             session.query(Model)
             .filter(
-                tuple_(Model.name, Model.version, Model.scenarios).in_(
+                tuple_(Model.name, Model.version).in_(
                     [
-                        (dataset.name, dataset.version, dataset.scenarios)
+                        (dataset.name, dataset.version)
                         for dependency in self.dependencies
                         if isinstance(dependency, Dataset)
                         or hasattr(dependency, "dataset")
