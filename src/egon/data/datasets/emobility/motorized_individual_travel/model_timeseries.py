@@ -745,6 +745,12 @@ def write_model_data_to_db(
                     hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
                 ),
             )
+        elif scenario_name=='status2019':
+            write_load(
+                scenario_name=scenario_name,
+                connection_bus_id=etrago_bus.bus_id,
+                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+            )
         else:
             # Get lowflex scenario name
             lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
