@@ -3,7 +3,7 @@
 
 import zipfile
 
-import entsoe
+#import entsoe
 import requests
 import logging
 
@@ -1393,6 +1393,24 @@ def map_carriers_entsoe():
             'Wind Onshore': "wind_onshore",
         }
 
+def entsoe_to_bus_etrago():
+    map_entsoe= pd.Series({"LU": "LU00",
+                 "AT": "AT00",
+                 "FR": "FR00",
+                 "NL": "NL00",
+                 "DK_1": "DK00",
+                 "DK_2": "DKE1",
+                 "PL": "PL00",
+                 "CH": "CH00",
+                 "NO": "NO00",
+                 "BE": "BE00",
+                 "SE": "SE00",
+                 "GB": "UK00"})
+
+    for_bus = get_foreign_bus_id()
+
+    return map_entsoe.map(for_bus)
+
 def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
@@ -1443,25 +1461,10 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
         """
     )
 
-    map_entsoe= pd.Series({"LU": "LU00",
-                 "AT": "AT00",
-                 "FR": "FR00",
-                 "NL": "NL00",
-                 "DK_1": "DK00",
-                 "DK_2": "DKE1",
-                 "PL": "PL00",
-                 "CH": "CH00",
-                 "NO": "NO00",
-                 "BE": "BE00",
-                 "SE": "SE00",
-                 "GB": "UK00"})
+    entsoe_to_bus = entsoe_to_bus_etrago()
 
-    for_bus = get_foreign_bus_id()
-
-    entsoe_to_bus = map_entsoe.map(for_bus)
-
-    map_entsoe = map_carriers_entsoe()
-    gen_sq = gen_sq.groupby(axis=1, by=map_entsoe).sum()
+    carrier_entsoe = map_carriers_entsoe()
+    gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
     gen_sq = gen_sq.iloc[:, gen_sq.columns.isin(
             [
                 "others",
@@ -1570,3 +1573,83 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
         session.commit()
 
     return
+
+def insert_loads_sq(load_sq=None, scn_name = "status2019"):
+    """
+    Copy load timeseries data from entso-e.
+
+    Returns
+    -------
+    None.
+
+    """
+    sources = config.datasets()["electrical_neighbours"]["sources"]
+    targets = config.datasets()["electrical_neighbours"]["targets"]
+
+    ################# TEMPORAL ####################
+    load_sq = pd.read_csv("data_bundle_egon_data/load_entsoe.csv", index_col="Index")
+    ################# TEMPORAL ####################
+
+    # Delete existing data
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['load_timeseries']['schema']}.
+        {targets['load_timeseries']['table']}
+        WHERE
+        scn_name = '{scn_name}'
+        AND load_id IN (
+        SELECT load_id FROM {targets['loads']['schema']}.
+        {targets['loads']['table']}
+        WHERE
+        scn_name = '{scn_name}'
+        AND carrier = 'AC'
+        AND bus NOT IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']}))
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['loads']['schema']}.
+        {targets['loads']['table']}
+        WHERE
+        scn_name = '{scn_name}'
+        AND carrier = 'AC'
+        AND bus NOT IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']})
+        """
+    )
+
+    # Connect to database
+    engine = db.engine()
+    session = sessionmaker(bind=engine)()
+
+    # get the corresponding bus per foreign country
+    entsoe_to_bus = entsoe_to_bus_etrago()
+
+    # Calculate and insert demand timeseries per etrago bus_id
+    for country in load_sq.columns:
+
+        load_id = db.next_etrago_id("load")
+
+        entry = etrago.EgonPfHvLoad(
+            scn_name=scn_name,
+            load_id=int(load_id),
+            carrier="AC",
+            bus=int(entsoe_to_bus[country]),
+        )
+
+        entry_ts = etrago.EgonPfHvLoadTimeseries(
+            scn_name=scn_name,
+            load_id=int(load_id),
+            temp_id=1,
+            p_set=list(load_sq[country]),
+        )
+
+        session.add(entry)
+        session.add(entry_ts)
+        session.commit()
