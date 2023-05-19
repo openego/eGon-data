@@ -27,7 +27,8 @@ class ElectricalNeighbours(Dataset):
             name="ElectricalNeighbours",
             version="0.0.7",
             dependencies=dependencies,
-            tasks=(grid, {tyndp_generation, tyndp_demand}, insert_generators_sq)
+            tasks=(grid, {tyndp_generation, tyndp_demand},
+                   insert_generators_sq, insert_loads_sq)
             )
 
 
