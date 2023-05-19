@@ -214,8 +214,8 @@ def fix_subnetworks(scn_name):
 
         # Missing line from Umspannwerk Plottling to Gänsdorf UW
         add_line(
-            12.853318030996972,  # Umspannwerk Plottling
-            48.76508569478315,
+            12.85381530378627,  # Umspannwerk Plottling
+            48.764209444817745,
             12.769768646403532,  # Gänsdorf UW
             48.80533685376445,
             380,
@@ -228,7 +228,7 @@ def fix_subnetworks(scn_name):
             11.4295305,  # Ottstedt
             50.9115176,
             11.4299277,  # Ottstedt
-            50.9114496,
+            50.911449600000005,
             380,
             scn_name,
             3,
