@@ -181,7 +181,6 @@ def insert_cts_ind_wz_definitions():
     engine = db.engine()
 
     for sector in source["wz_definitions"]:
-
         file_path = (
             Path(".")
             / "data_bundle_egon_data"
@@ -448,7 +447,6 @@ def disagg_households_power(
             df *= 119000000 / df.sum().sum()
 
     elif scenario == "eGon100RE":
-
         # chose demand per household size from survey without DHW
         power_per_HH = demand_per_hh_size["without DHW"] / 1e3
 
@@ -595,13 +593,16 @@ def insert_household_demand():
     ]
     engine = db.engine()
 
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
+    scenarios.append("eGon2021")
+
     for t in targets:
         db.execute_sql(
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
         )
 
-    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
+    for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
 
         # Insert demands of private households
@@ -629,8 +630,11 @@ def insert_cts_ind_demands():
 
     insert_cts_ind_wz_definitions()
 
-    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
+    scenarios.append("eGon2021")
+
+    for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
 
         if year > 2035:
@@ -785,7 +789,5 @@ def timeseries_per_wz():
     years = get_sector_parameters("global").weather_year.unique()
 
     for year in years:
-
         for sector in ["CTS", "industry"]:
-
             insert_timeseries_per_wz(sector, int(year))

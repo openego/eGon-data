@@ -12,7 +12,7 @@ densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
 import os
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
     EgonScenario,
@@ -39,19 +39,22 @@ from geoalchemy2.types import Geometry
 
 from egon.data.datasets import Dataset
 
+
 # class for airflow task management (and version control)
 class DistrictHeatingAreas(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.1",  # maybe rethink the naming
+            version="0.0.2",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )
 
 
 Base = declarative_base()
+
+
 # definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
     __tablename__ = "egon_map_zensus_district_heating_areas"
@@ -220,7 +223,9 @@ def load_census_data(minimum_connection_rate=0.3):
     # district_heat.head
     # district_heat['connection_rate'].describe()
 
-    district_heat = district_heat[district_heat["connection_rate"] >= minimum_connection_rate]
+    district_heat = district_heat[
+        district_heat["connection_rate"] >= minimum_connection_rate
+    ]
     # district_heat.columns
 
     return district_heat, heating_type
@@ -394,7 +399,6 @@ def area_grouping(
         maximum_total_demand
         and "residential_and_service_demand" in join.columns
     ):
-
         huge_areas_index = (
             join.groupby("area_id").residential_and_service_demand.sum()
             > maximum_total_demand
@@ -499,7 +503,6 @@ def district_heating_areas(scenario_name, plotting=False):
 
     """
 
-
     # Load district heating shares from the scenario table
     if scenario_name == "eGon2015":
         district_heating_share = 0.08
@@ -508,12 +511,12 @@ def district_heating_areas(scenario_name, plotting=False):
 
         district_heating_share = heat_parameters["DE_district_heating_share"]
 
-    minimum_connection_rate=0.3
+    minimum_connection_rate = 0.3
 
-    # Adjust minimum connection rate for status2019, 
+    # Adjust minimum connection rate for status2019,
     # otherwise the existing district heating grids would have too much demand
-    if scenario_name=="status2019":
-        minimum_connection_rate=0.6
+    if scenario_name == "status2019":
+        minimum_connection_rate = 0.6
 
     # heat_demand is scenario specific
     heat_demand_cells = load_heat_demands(scenario_name)
@@ -523,7 +526,9 @@ def district_heating_areas(scenario_name, plotting=False):
     # by the area grouping function), load only the first returned result: [0]
     min_hd_census = 10000 / 3.6  # in MWh
 
-    census_plus_heat_demand = load_census_data(minimum_connection_rate=minimum_connection_rate)[0].copy()
+    census_plus_heat_demand = load_census_data(
+        minimum_connection_rate=minimum_connection_rate
+    )[0].copy()
     census_plus_heat_demand[
         "residential_and_service_demand"
     ] = heat_demand_cells.loc[
@@ -1139,15 +1144,11 @@ def demarcation(plotting=True):
 
     heat_density_per_scenario = {}
     # scenario specific district heating areas
-    heat_density_per_scenario["status2019"] = district_heating_areas(
-        "status2019", plotting
-    )
-    heat_density_per_scenario["eGon2035"] = district_heating_areas(
-        "eGon2035", plotting
-    )
-    heat_density_per_scenario["eGon100RE"] = district_heating_areas(
-        "eGon100RE", plotting
-    )
+
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        heat_density_per_scenario[scenario] = district_heating_areas(
+            scenario, plotting
+        )
 
     if plotting:
         plot_heat_density_sorted(heat_density_per_scenario)

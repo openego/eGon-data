@@ -208,7 +208,7 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     write_table_to_postgres,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    reduce_mem_usage,
+    reduce_mem_usage
 )
 from egon.data.datasets.heat_demand import EgonPetaHeat
 from egon.data.datasets.heat_demand_timeseries.daily import (
@@ -385,6 +385,7 @@ def cascade_per_technology(
     distribution_level,
     max_size_individual_chp=0.05,
 ):
+
     """Add plants for individual heat.
     Currently only on mv grid district level.
 
@@ -414,6 +415,7 @@ def cascade_per_technology(
 
     # Distribute heat pumps linear to remaining demand.
     if tech.index == "heat_pump":
+
         if distribution_level == "federal_state":
             # Select target values per federal state
             target = db.select_dataframe(
@@ -465,6 +467,7 @@ def cascade_per_technology(
         )
 
     elif tech.index == "gas_boiler":
+
         append_df = pd.DataFrame(
             data={
                 "capacity": heat_per_mv.remaining_demand.div(
@@ -820,10 +823,8 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         left=df_peta_demand, right=df_profiles_ids, on="zensus_population_id"
     )
 
-    df_profile_merge.demand = df_profile_merge.demand.div(
-        df_profile_merge.buildings
-    )
-    df_profile_merge.drop("buildings", axis="columns", inplace=True)
+    df_profile_merge.demand = df_profile_merge.demand.div(df_profile_merge.buildings)
+    df_profile_merge.drop('buildings', axis='columns', inplace=True)
 
     # Merge daily demand to daily profile ids by zensus_population_id and day
     df_profile_merge = pd.merge(
@@ -832,9 +833,8 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         on=["zensus_population_id", "day_of_year"],
     )
     df_profile_merge.demand = df_profile_merge.demand.mul(
-        df_profile_merge.daily_demand_share
-    )
-    df_profile_merge.drop("daily_demand_share", axis="columns", inplace=True)
+        df_profile_merge.daily_demand_share)
+    df_profile_merge.drop('daily_demand_share', axis='columns', inplace=True)
     df_profile_merge = reduce_mem_usage(df_profile_merge)
 
     # Merge daily profiles by profile id
@@ -847,13 +847,10 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
     df_profile_merge = reduce_mem_usage(df_profile_merge)
 
     df_profile_merge.demand = df_profile_merge.demand.mul(
-        df_profile_merge.idp.astype(float)
-    )
-    df_profile_merge.drop("idp", axis="columns", inplace=True)
+        df_profile_merge.idp.astype(float))
+    df_profile_merge.drop('idp', axis='columns', inplace=True)
 
-    df_profile_merge.rename(
-        {"demand": "demand_ts"}, axis="columns", inplace=True
-    )
+    df_profile_merge.rename({'demand': 'demand_ts'}, axis='columns', inplace=True)
 
     df_profile_merge = reduce_mem_usage(df_profile_merge)
 
@@ -861,6 +858,7 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
 
 
 def plot_heat_supply(resulting_capacities):
+
     from matplotlib import pyplot as plt
 
     mv_grids = db.select_geodataframe(
@@ -1434,6 +1432,7 @@ def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
     )
 
     if hp_cap_grid > 0.0:
+
         # get buildings with decentral heating systems
         building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
             mv_grid_id, scenario="eGon100RE"
@@ -1494,6 +1493,7 @@ def determine_hp_cap_buildings_eGon100RE():
     )
 
     for mvgd_id in mvgd_ids:
+
         logger.info(f"MVGD={mvgd_id} | Start")
 
         hp_cap_per_building_100RE = (
@@ -1645,7 +1645,9 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
         os.mkdir(folder)
     if not file.is_file():
         logger.info(f"Create {file}")
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file, mode="w", header=True)
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
+            file, mode="w", header=True
+        )
     else:
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
@@ -1718,6 +1720,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     df_heat_mvgd_ts_db = pd.DataFrame()
 
     for mvgd in mvgd_ids:
+
         logger.info(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
@@ -1851,6 +1854,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     df_hp_min_cap_mv_grid_pypsa_eur_sec = pd.Series(dtype="float64")
 
     for mvgd in mvgd_ids:
+
         logger.info(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
