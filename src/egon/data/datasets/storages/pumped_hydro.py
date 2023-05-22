@@ -21,7 +21,7 @@ from egon.data.datasets.power_plants import (
 import egon.data.config
 
 
-def select_nep_pumped_hydro():
+def select_nep_pumped_hydro(scn):
     """Select pumped hydro plants from NEP power plants list
 
 
@@ -34,17 +34,32 @@ def select_nep_pumped_hydro():
 
     carrier = "pumped_hydro"
 
-    # Select plants with geolocation from list of conventional power plants
-    nep_ph = db.select_dataframe(
-        f"""
-        SELECT bnetza_id, name, carrier, postcode, capacity, city,
-        federal_state, c2035_capacity
-        FROM {cfg['sources']['nep_conv']}
-        WHERE carrier = '{carrier}'
-        AND c2035_capacity > 0
-        AND postcode != 'None';
-        """
-    )
+    if scn == "eGon2035":
+        # Select plants with geolocation from list of conventional power plants
+        nep_ph = db.select_dataframe(
+            f"""
+            SELECT bnetza_id, name, carrier, postcode, capacity, city,
+            federal_state, c2035_capacity
+            FROM {cfg['sources']['nep_conv']}
+            WHERE carrier = '{carrier}'
+            AND c2035_capacity > 0
+            AND postcode != 'None';
+            """
+        )
+    elif scn == "status2019":
+        # Select plants with geolocation from list of conventional power plants
+        nep_ph = db.select_dataframe(
+            f"""
+            SELECT bnetza_id, name, carrier, postcode, capacity, city,
+            federal_state, capacity, commissioned
+            FROM {cfg['sources']['nep_conv']}
+            WHERE carrier = '{carrier}'
+            AND capacity > 0
+            AND postcode != 'None';
+            """
+        )
+    else:
+        raise SystemExit(f"{scn} not recognised")
 
     # Removing plants out of Germany
     nep_ph["postcode"] = nep_ph["postcode"].astype(str)
