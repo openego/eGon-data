@@ -82,7 +82,7 @@ from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
 
-from egon.data import db, subprocess
+from egon.data import config, db, subprocess
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
@@ -242,7 +242,7 @@ def extract_trip_file():
     """Extract trip file from data bundle"""
     trip_dir = DATA_BUNDLE_DIR / Path("mit_trip_data")
 
-    for scenario_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
         trip_file = trip_dir / Path(
             DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
@@ -270,7 +270,7 @@ def write_evs_trips_to_db():
         df["simbev_ev_id"] = "_".join(f.name.split("_")[0:3])
         return df
 
-    for scenario_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
         trip_dir_name = Path(
             DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
@@ -377,7 +377,7 @@ def write_metadata_to_db():
         "grid_timeseries_by_usecase": bool,
     }
 
-    for scenario_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         meta_run_config = read_simbev_metadata_file(
             scenario_name, "config"
         ).loc["basic"]
