@@ -470,10 +470,10 @@ class MotorizedIndividualTravel(Dataset):
                 allocate_evs_to_grid_districts,
                 delete_model_data_from_db, )
     
-        *generate_model_data_tasks = set()
+        generate_model_data_tasks = set()
         
         for scenario_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
-            *generate_model_data_tasks.add(*generate_model_data_tasks(scenario_name=scenario_name))
+            generate_model_data_tasks.add(generate_model_data_tasks(scenario_name=scenario_name))
             
         tasks = tasks +  ({*generate_model_data_tasks},)
         
