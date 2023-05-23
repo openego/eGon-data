@@ -46,11 +46,11 @@ class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                allocate_pumped_hydro_eGon2035,
+                allocate_pumped_hydro_2035_sq,
                 allocate_pumped_hydro_eGon100RE,
                 allocate_pv_home_batteries_to_grids,
                 allocate_home_batteries_to_buildings,
@@ -432,3 +432,9 @@ def allocate_pv_home_batteries_to_grids():
 
     home_batteries_per_scenario("eGon2035")
     home_batteries_per_scenario("eGon100RE")
+    
+def allocate_pumped_hydro_2035_sq():
+    
+    allocate_pumped_hydro(scn="eGon2035")
+    allocate_pumped_hydro(scn="status2019")
+    
