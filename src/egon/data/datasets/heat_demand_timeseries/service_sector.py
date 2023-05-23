@@ -215,7 +215,7 @@ def CTS_demand_scale(aggregation_level):
            Profiles scaled up to annual demand
 
     """
-    scenarios = ["eGon2035", "eGon100RE"]
+    scenarios = ["status2019", "eGon2035", "eGon100RE"]
 
     CTS_district = pd.DataFrame()
     CTS_grid = pd.DataFrame()

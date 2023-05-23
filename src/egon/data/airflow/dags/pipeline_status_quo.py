@@ -39,7 +39,7 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
-# from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
+from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreasstatus2019
 from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
@@ -179,7 +179,7 @@ with airflow.DAG(
     )
 
     # Fix eHV subnetworks in Germany manually
-    # fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
+    fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
 
     # Retrieve MaStR (Marktstammdatenregister) data
     mastr_data = mastr_data_setup(dependencies=[setup])

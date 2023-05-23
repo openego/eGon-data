@@ -3,7 +3,7 @@
 
 import zipfile
 
-import entsoe
+#import entsoe
 import requests
 import logging
 
@@ -27,8 +27,9 @@ class ElectricalNeighbours(Dataset):
             name="ElectricalNeighbours",
             version="0.0.7",
             dependencies=dependencies,
-            tasks=(grid, {tyndp_generation, tyndp_demand}),
-        )
+            tasks=(grid, {tyndp_generation, tyndp_demand},
+                   insert_generators_sq, insert_loads_sq)
+            )
 
 
 def get_cross_border_buses(scenario, sources):
@@ -239,7 +240,7 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     # Insert all central buses for eGon2035
-    if scenario == "eGon2035":
+    if scenario in ["eGon2035", "status2019"]:
         central_buses.to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
@@ -678,7 +679,7 @@ def grid():
     sources = config.datasets()["electrical_neighbours"]["sources"]
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
-    for scenario in ["eGon2035"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
 
         central_buses = buses(scenario, sources, targets)
 
@@ -1282,7 +1283,7 @@ def tyndp_demand():
         session.add(entry_ts)
         session.commit()
         
-def entsoe_historic_generation_capacities(entsoe_token="29e40f71-3ab5-4435-97dd-060039b962af", year_start="20190101", year_end="20200101"):
+def entsoe_historic_generation_capacities(entsoe_token=None, year_start="20190101", year_end="20200101"):
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1323,15 +1324,17 @@ def entsoe_historic_generation_capacities(entsoe_token="29e40f71-3ab5-4435-97dd-
     df.fillna(0, inplace=True)
     return df
 
-def entsoe_historic_demand(entsoe_token="29e40f71-3ab5-4435-97dd-060039b962af", year_start="20190101", year_end="20200101"):
+def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="20200101"):
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
     
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
     end = pd.Timestamp(year_end, tz="Europe/Brussels")
-    start_gb = pd.Timestamp(year_start, tz="Europe/London")
-    end_gb = pd.Timestamp(year_end, tz="Europe/London")
+    start_gb = start.tz_convert("Europe/London")
+    end_gb = end.tz_convert("Europe/London")
+
     countries= ["LU", "AT", "FR", "NL", 
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
+    
     
 
     # todo: define wanted countries
@@ -1346,7 +1349,10 @@ def entsoe_historic_demand(entsoe_token="29e40f71-3ab5-4435-97dd-060039b962af", 
         else:
             kwargs = dict(start=start, end=end)
         try:
-            dfs.append(client.query_load(country, **kwargs).resample("H")["Actual Load"].mean())
+            country_data = client.query_load(country, **kwargs).resample("H")["Actual Load"].mean()
+            if country == 'GB':
+                country_data.index = country_data.index.tz_convert("Europe/Brussels")
+            dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
             pass
@@ -1357,5 +1363,297 @@ def entsoe_historic_demand(entsoe_token="29e40f71-3ab5-4435-97dd-060039b962af", 
 
     df = pd.concat(dfs, axis=1)
     df.columns = countries
-    df.fillna(0, inplace=True)
+    df.index = pd.date_range(year_start, periods=8760 , freq="H")
+
     return df
+
+def map_carriers_entsoe():
+    """Map carriers from entsoe-data to carriers used in eGon
+    Returns
+    -------
+    dict
+        Carrier from entsoe to eGon
+    """
+    return {
+            'Biomass': "biomass",
+            'Fossil Brown coal/Lignite': "lignite",
+            'Fossil Coal-derived gas': "coal",
+            'Fossil Gas': "CH4_NG",
+            'Fossil Hard coal': "coal",
+            'Fossil Oil': "oil",
+            'Fossil Oil shale': "oil",
+            'Fossil Peat': "biomass",
+            'Geothermal': "geo_thermal",
+            'Hydro Pumped Storage': "Hydro Pumped Storage",
+            'Hydro Run-of-river and poundage': "run_of_river",
+            'Hydro Water Reservoir': "reservoir",
+            'Marine': "marine",
+            'Nuclear': "nuclear",
+            'Other': "others",
+            'Other renewable': "others",
+            'Solar': "solar",
+            'Waste': "others",
+            'Wind Offshore': "wind_offshore",
+            'Wind Onshore': "wind_onshore",
+        }
+
+def entsoe_to_bus_etrago():
+    map_entsoe= pd.Series({"LU": "LU00",
+                 "AT": "AT00",
+                 "FR": "FR00",
+                 "NL": "NL00",
+                 "DK_1": "DK00",
+                 "DK_2": "DKE1",
+                 "PL": "PL00",
+                 "CH": "CH00",
+                 "NO": "NO00",
+                 "BE": "BE00",
+                 "SE": "SE00",
+                 "GB": "UK00"})
+
+    for_bus = get_foreign_bus_id()
+
+    return map_entsoe.map(for_bus)
+
+def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
+    """
+    Insert generators for foreign countries based on ENTSO-E data
+
+    Parameters
+    ----------
+    gen_sq : pandas dataframe
+        df with all the foreign generators produced by the function
+        entsoe_historic_generation_capacities
+    scn_name : str
+        The default is "status2019".
+
+    Returns
+    -------
+    None.
+
+    """
+    ################# TEMPORAL ####################
+    gen_sq = pd.read_csv("data_bundle_egon_data/gen_entsoe.csv", index_col="Index")
+    ################# TEMPORAL ####################
+
+    targets = config.datasets()["electrical_neighbours"]["targets"]
+    # Delete existing data
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['generators']['schema']}.{targets['generators']['table']}
+        WHERE bus IN (
+            SELECT bus_id FROM
+            {targets['buses']['schema']}.{targets['buses']['table']}
+            WHERE country != 'DE'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        AND carrier != 'CH4'
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['generators_timeseries']['schema']}.
+        {targets['generators_timeseries']['table']}
+        WHERE generator_id NOT IN (
+            SELECT generator_id FROM
+            {targets['generators']['schema']}.{targets['generators']['table']}
+        )
+        AND scn_name = '{scn_name}'
+        """
+    )
+
+    entsoe_to_bus = entsoe_to_bus_etrago()
+
+    carrier_entsoe = map_carriers_entsoe()
+    gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
+    gen_sq = gen_sq.iloc[:, gen_sq.columns.isin(
+            [
+                "others",
+                "wind_offshore",
+                "wind_onshore",
+                "solar",
+                "reservoir",
+                "run_of_river",
+                "lignite",
+                "coal",
+                "oil",
+                "nuclear",
+            ]
+        )
+    ]
+
+    list_gen_sq = pd.DataFrame(dtype=int, columns=["carrier", "country", "capacity"])
+    for carrier in gen_sq.columns:
+        gen_carry = gen_sq[carrier]
+        for country, cap in gen_carry.iteritems():
+            gen = pd.DataFrame({"carrier": carrier, "country": country, "capacity": cap}, index=[1])
+            #print(gen)
+            list_gen_sq = pd.concat([list_gen_sq, gen], ignore_index=True)
+
+    list_gen_sq = list_gen_sq[list_gen_sq.capacity > 0]
+    list_gen_sq["scenario"] = scn_name
+
+    # Add marginal costs
+    list_gen_sq = add_marginal_costs(list_gen_sq)
+
+    # Find foreign bus to assign the generator
+    list_gen_sq["bus"] = list_gen_sq.country.map(entsoe_to_bus)
+
+    # insert generators data
+    session = sessionmaker(bind=db.engine())()
+    for i, row in list_gen_sq.iterrows():
+        entry = etrago.EgonPfHvGenerator(
+            scn_name=row.scenario,
+            generator_id=int(db.next_etrago_id("generator")),
+            bus=row.bus,
+            carrier=row.carrier,
+            p_nom=row.capacity,
+            marginal_cost=row.marginal_cost,
+        )
+
+        session.add(entry)
+        session.commit()
+
+    # assign generators time-series data
+    renew_carriers_sq = ["wind_onshore", "wind_offshore", "solar"]
+
+    sql = f"""SELECT * FROM
+    {targets['generators_timeseries']['schema']}.
+    {targets['generators_timeseries']['table']}
+    WHERE scn_name = 'eGon100RE'
+    """
+    series_egon100 = pd.read_sql_query(sql, db.engine())
+
+    sql = f""" SELECT * FROM
+    {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE bus IN (
+        SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+    """
+    gen_sq = pd.read_sql_query(sql, db.engine())
+    gen_sq = gen_sq[gen_sq.carrier.isin(renew_carriers_sq)]
+
+    sql = f""" SELECT * FROM
+    {targets['generators']['schema']}.{targets['generators']['table']}
+    WHERE bus IN (
+        SELECT bus_id FROM
+                {targets['buses']['schema']}.{targets['buses']['table']}
+                WHERE country != 'DE'
+                AND scn_name = 'eGon100RE')
+        AND scn_name = 'eGon100RE'
+    """
+    gen_100 = pd.read_sql_query(sql, db.engine())
+    gen_100 = gen_100[gen_100["carrier"].isin(renew_carriers_sq)]
+
+    # egon_sq_to_100 map the timeseries used in the scenario eGon100RE
+    # to the same bus and carrier for the status quo scenario
+    egon_sq_to_100 = {}
+    for i, gen in gen_sq.iterrows():
+        gen_id_100 = gen_100[
+            (gen_100["bus"] == gen["bus"])
+            & (gen_100["carrier"] == gen["carrier"])
+        ]["generator_id"].values[0]
+
+        egon_sq_to_100[gen["generator_id"]] = gen_id_100
+
+    # insert generators_timeseries data
+    session = sessionmaker(bind=db.engine())()
+
+    for gen_id in gen_sq.generator_id:
+        serie = series_egon100[
+            series_egon100.generator_id == egon_sq_to_100[gen_id]
+        ]["p_max_pu"].values[0]
+        entry = etrago.EgonPfHvGeneratorTimeseries(
+            scn_name=scn_name, generator_id=gen_id, temp_id=1, p_max_pu=serie
+        )
+
+        session.add(entry)
+        session.commit()
+
+    return
+
+def insert_loads_sq(load_sq=None, scn_name = "status2019"):
+    """
+    Copy load timeseries data from entso-e.
+
+    Returns
+    -------
+    None.
+
+    """
+    sources = config.datasets()["electrical_neighbours"]["sources"]
+    targets = config.datasets()["electrical_neighbours"]["targets"]
+
+    ################# TEMPORAL ####################
+    load_sq = pd.read_csv("data_bundle_egon_data/load_entsoe.csv", index_col="Index")
+    ################# TEMPORAL ####################
+
+    # Delete existing data
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['load_timeseries']['schema']}.
+        {targets['load_timeseries']['table']}
+        WHERE
+        scn_name = '{scn_name}'
+        AND load_id IN (
+        SELECT load_id FROM {targets['loads']['schema']}.
+        {targets['loads']['table']}
+        WHERE
+        scn_name = '{scn_name}'
+        AND carrier = 'AC'
+        AND bus NOT IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']}))
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['loads']['schema']}.
+        {targets['loads']['table']}
+        WHERE
+        scn_name = '{scn_name}'
+        AND carrier = 'AC'
+        AND bus NOT IN (
+            SELECT bus_i
+            FROM  {sources['osmtgmod_bus']['schema']}.
+            {sources['osmtgmod_bus']['table']})
+        """
+    )
+
+    # Connect to database
+    engine = db.engine()
+    session = sessionmaker(bind=engine)()
+
+    # get the corresponding bus per foreign country
+    entsoe_to_bus = entsoe_to_bus_etrago()
+
+    # Calculate and insert demand timeseries per etrago bus_id
+    for country in load_sq.columns:
+
+        load_id = db.next_etrago_id("load")
+
+        entry = etrago.EgonPfHvLoad(
+            scn_name=scn_name,
+            load_id=int(load_id),
+            carrier="AC",
+            bus=int(entsoe_to_bus[country]),
+        )
+
+        entry_ts = etrago.EgonPfHvLoadTimeseries(
+            scn_name=scn_name,
+            load_id=int(load_id),
+            temp_id=1,
+            p_set=list(load_sq[country]),
+        )
+
+        session.add(entry)
+        session.add(entry_ts)
+        session.commit()
