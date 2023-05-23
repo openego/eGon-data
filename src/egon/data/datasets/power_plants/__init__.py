@@ -941,7 +941,7 @@ def power_plants_status_quo(scn_name = "status2019"):
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
-                          'run_of_river', 'reservoir')
+                          'run_of_river', 'reservoir', 'solar_rooftop')
         AND scenario = '{scn_name}'
         """
     )
@@ -1002,14 +1002,21 @@ def power_plants_status_quo(scn_name = "status2019"):
 
     # Write solar power plants in supply.egon_power_plants
     solar = pd.read_sql(
-        f"""SELECT * FROM {cfg['sources']['pv']}""",
+        f"""SELECT * FROM {cfg['sources']['pv']}
+        WHERE site_type IN ('Freifläche',
+        'Bauliche Anlagen (Hausdach, Gebäude und Fassade)') """,
         con,
     )
+    map_solar = {
+        "Freifläche": "solar",
+        "Bauliche Anlagen (Hausdach, Gebäude und Fassade)": "solar_rooftop",
+    }
+    solar["site_type"] = solar["site_type"].map(map_solar)
     for i, row in solar.iterrows():
         entry = EgonPowerPlants(
             sources={"el_capacity": "MaStR"},
             source_id={"MastrNummer": row.gens_id},
-            carrier="solar",
+            carrier=row.site_type,
             el_capacity=row.capacity,
             scenario=scn_name,
             bus_id=row.bus_id,
