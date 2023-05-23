@@ -745,6 +745,12 @@ def write_model_data_to_db(
                     hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
                 ),
             )
+        elif scenario_name=='status2019':
+            write_load(
+                scenario_name=scenario_name,
+                connection_bus_id=etrago_bus.bus_id,
+                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+            )
         else:
             # Get lowflex scenario name
             lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
@@ -1058,6 +1064,14 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             bat_cap=meta_tech_data.battery_capacity,
         )
 
+def generate_model_data_status2019_remaining():
+    """Generates timeseries for status2019 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="status2019",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    )
 
 def generate_model_data_eGon2035_remaining():
     """Generates timeseries for eGon2035 scenario for grid districts which

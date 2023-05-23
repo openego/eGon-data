@@ -7,12 +7,17 @@ from scipy.spatial import cKDTree
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
+def insert_open_cycle_gas_turbines():
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        insert_open_cycle_gas_turbines_per_scenario(scenario)
+
+
+def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     """Insert gas turbine links in egon_etrago_link table.
 
     Parameters

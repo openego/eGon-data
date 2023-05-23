@@ -36,41 +36,6 @@ from egon.data.datasets.etrago_helpers import copy_and_modify_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-class GasNodesAndPipes(Dataset):
-    """
-    Insert the CH4 buses and links into the database.
-
-    Insert the CH4 buses and links, which for the case of gas represent
-    pipelines, into the database for the scenarios status2019, eGon2035 and eGon100RE
-    with the functions :py:func:`insert_gas_data` and :py:func:`insert_gas_data_eGon100RE`.
-
-    *Dependencies*
-      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`ElectricalNeighbours <egon.data.datasets.electrical_neighbours.ElectricalNeighbours>`
-      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>` (more specifically the :func:`create_tables <egon.data.datasets.etrago_setup.create_tables>` task)
-
-    *Resulting tables*
-      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
-      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
-
-    """
-
-    #:
-    name: str = "GasNodesAndPipes"
-    #:
-    version: str = "0.0.9"
-
-    def __init__(self, dependencies):
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=(insert_gas_data, insert_gas_data_eGon2035, insert_gas_data_eGon100RE),
-        )
-
-
 def download_SciGRID_gas_data():
     """
     Download SciGRID_gas IGGIELGN data from Zenodo
@@ -547,7 +512,6 @@ def insert_gas_pipeline_list(
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
     if boundary != "Everything":
-
         gas_pipelines_list = gas_pipelines_list[
             gas_pipelines_list["NUTS1_0"].str.contains(map_states[boundary])
             | gas_pipelines_list["NUTS1_1"].str.contains(map_states[boundary])
@@ -565,7 +529,6 @@ def insert_gas_pipeline_list(
     length_km = []
 
     for index, row in gas_pipelines_list.iterrows():
-
         param = ast.literal_eval(row["param"])
         diameter.append(param["diameter_mm"])
         length_km.append(param["length_km"])
@@ -882,7 +845,6 @@ def insert_gas_data():
     remove_isolated_gas_buses()
 
 
-   
 def insert_gas_data_eGon2035():
     """
     Overall function for importing methane data for eGon100RE
@@ -953,7 +915,8 @@ def insert_gas_data_eGon2035():
         con=db.engine(),
         index=False,
         dtype={"geom": Geometry(), "topo": Geometry()},
-    )    
+    )
+
 
 def insert_gas_data_eGon100RE():
     """
@@ -1031,5 +994,46 @@ def insert_gas_data_eGon100RE():
         index=False,
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
-    
- 
+
+
+class GasNodesAndPipes(Dataset):
+    """
+    Insert the CH4 buses and links into the database.
+
+    Insert the CH4 buses and links, which for the case of gas represent
+    pipelines, into the database for the scenarios status2019, eGon2035 and eGon100RE
+    with the functions :py:func:`insert_gas_data` and :py:func:`insert_gas_data_eGon100RE`.
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ElectricalNeighbours <egon.data.datasets.electrical_neighbours.ElectricalNeighbours>`
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>` (more specifically the :func:`create_tables <egon.data.datasets.etrago_setup.create_tables>` task)
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+
+    """
+
+    #:
+    name: str = "GasNodesAndPipes"
+    #:
+    version: str = "0.0.9"
+
+    tasks = (insert_gas_data,)
+
+    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+        tasks = tasks + (insert_gas_data_eGon2035,)
+
+    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+        tasks = tasks + (insert_gas_data_eGon100RE,)
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=self.tasks,
+        )

@@ -19,18 +19,6 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
-logger = logging.getLogger(__name__)
-
-class ElectricalNeighbours(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="ElectricalNeighbours",
-            version="0.0.7",
-            dependencies=dependencies,
-            tasks=(grid, {tyndp_generation, tyndp_demand},
-                   insert_generators_sq, insert_loads_sq)
-            )
-
 
 def get_cross_border_buses(scenario, sources):
     """Returns buses from osmTGmod which are outside of Germany.
@@ -1084,9 +1072,12 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store[
-        "max_hours"
-    ] = (None, None, None, None)
+    (
+        store["dispatch"],
+        store["store"],
+        store["standing_loss"],
+        store["max_hours"],
+    ) = (None, None, None, None)
 
     # Insert carrier specific parameters
 
@@ -1293,9 +1284,7 @@ def entsoe_historic_generation_capacities(entsoe_token=None, year_start="2019010
     countries= ["LU", "AT", "FR", "NL", 
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
-    
-
-    # todo: define wanted countries
+     # todo: define wanted countries
 
 
     not_retrieved = []
@@ -1657,3 +1646,24 @@ def insert_loads_sq(load_sq=None, scn_name = "status2019"):
         session.add(entry)
         session.add(entry_ts)
         session.commit()
+
+tasks = (grid, )
+
+insert_per_scenario = set()
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.update([{tyndp_generation, tyndp_demand}])
+
+if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.update([{insert_generators_sq, insert_loads_sq}])
+
+tasks = tasks + insert_per_scenario
+
+class ElectricalNeighbours(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ElectricalNeighbours",
+            version="0.0.8",
+            dependencies=dependencies,
+            tasks=tasks,
+        )

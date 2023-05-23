@@ -199,7 +199,7 @@ def industrial_demand_distr():
         f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
     )
 
-    for scn in sources["demandregio"]["scenarios"]:
+    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
 
         # Select spatial information from local database
         # Select administrative districts (Landkreise) including its boundaries

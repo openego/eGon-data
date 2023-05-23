@@ -446,7 +446,6 @@ def generate_mapping_table(
     """
 
     def create_pool(buildings, profiles):
-
         if profiles > buildings:
             surplus = profiles - buildings
             surplus = rng.integers(0, buildings, surplus)
@@ -642,6 +641,7 @@ def get_building_peak_loads():
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2019,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
@@ -689,10 +689,12 @@ def get_building_peak_loads():
 
             df_building_peak_load_nuts3 = pd.DataFrame(
                 [
+                    df_building_peak_load_nuts3 * df["factor_2019"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2035"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
                 index=[
+                    "status2019",
                     "eGon2035",
                     "eGon100RE",
                 ],

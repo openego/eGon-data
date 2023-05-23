@@ -164,6 +164,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     cell_profile_ids = Column(ARRAY(String, dimensions=1))
     nuts3 = Column(String)
     nuts1 = Column(String)
+    factor_2019 = Column(Float)
     factor_2035 = Column(Float)
     factor_2050 = Column(Float)
 
@@ -195,28 +196,50 @@ class EgonEtragoElectricityHouseholds(Base):
 
 class HouseholdDemands(Dataset):
     def __init__(self, dependencies):
-        mv_hh_electricity_load_2035 = PythonOperator(
-            task_id="MV-hh-electricity-load-2035",
-            python_callable=mv_grid_district_HH_electricity_load,
-            op_args=["eGon2035", 2035],
-            op_kwargs={"drop_table": True},
-        )
+        tasks = (houseprofiles_in_census_cells,)
 
-        mv_hh_electricity_load_2050 = PythonOperator(
-            task_id="MV-hh-electricity-load-2050",
-            python_callable=mv_grid_district_HH_electricity_load,
-            op_args=["eGon100RE", 2050],
-        )
+        if (
+            "status2019"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2019",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["status2019", 2019],
+                op_kwargs={"drop_table": True},
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
+            "eGon2035"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2035",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["eGon2035", 2035],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
+            "eGon100RE"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2050 = PythonOperator(
+                task_id="MV-hh-electricity-load-2050",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["eGon100RE", 2050],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2050,)
 
         super().__init__(
             name="Household Demands",
-            version="0.0.10",
+            version="0.0.11",
             dependencies=dependencies,
-            tasks=(
-                houseprofiles_in_census_cells,
-                mv_hh_electricity_load_2035,
-                mv_hh_electricity_load_2050,
-            ),
+            tasks=tasks,
         )
 
 
@@ -843,7 +866,6 @@ def impute_missing_hh_in_populated_cells(df_census_households_grid):
 
     # iterate over unique population values
     for population in df_wo_hh["population"].sort_values().unique():
-
         # create fallback if no cell with specific population available
         if population in df_w_hh["population"].unique():
             fallback_value = population
@@ -1271,7 +1293,6 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     # only use non zero entries
     df_zensus_cells = df_zensus_cells.loc[df_zensus_cells["hh_10types"] != 0]
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
-
         # random sampling of household profiles for each cell
         # with or without replacement (see :func:`get_cell_demand_profile_ids`)
         # within cell but after number of households are rounded to the nearest
@@ -1342,16 +1363,42 @@ def adjust_to_demand_regio_nuts3_annual(
         # ##############
         # demand regio in MWh
         # profiles in Wh
-        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2035"] = (
-            df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
-            * 1e3
-            / (nuts3_profiles_sum_annual / 1e3)
-        )
-        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2050"] = (
-            df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
-            * 1e3
-            / (nuts3_profiles_sum_annual / 1e3)
-        )
+
+        if (
+            "status2019"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            df_hh_profiles_in_census_cells.loc[
+                nuts3_cell_ids, "factor_2019"
+            ] = (
+                df_demand_regio.loc[(2019, nuts3_id), "demand_mwha"]
+                * 1e3
+                / (nuts3_profiles_sum_annual / 1e3)
+            )
+
+        if (
+            "eGon2035"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            df_hh_profiles_in_census_cells.loc[
+                nuts3_cell_ids, "factor_2035"
+            ] = (
+                df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
+                * 1e3
+                / (nuts3_profiles_sum_annual / 1e3)
+            )
+
+        if (
+            "eGon100RE"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            df_hh_profiles_in_census_cells.loc[
+                nuts3_cell_ids, "factor_2050"
+            ] = (
+                df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
+                * 1e3
+                / (nuts3_profiles_sum_annual / 1e3)
+            )
 
     return df_hh_profiles_in_census_cells
 
