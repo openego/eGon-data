@@ -77,9 +77,9 @@ def create_tables():
     EgonStorages.__table__.create(bind=engine, checkfirst=True)
 
 
-def allocate_pumped_hydro_eGon2035(export=True):
-    """Allocates pumped_hydro plants for eGon2035 scenario and either exports
-    results to data base or returns as a dataframe
+def allocate_pumped_hydro(scn, export=True):
+    """Allocates pumped_hydro plants for eGon2035 and scenario2019 scenarios 
+    and either exports results to data base or returns as a dataframe
 
     Parameters
     ----------
@@ -91,14 +91,14 @@ def allocate_pumped_hydro_eGon2035(export=True):
     Returns
     -------
     power_plants : pandas.DataFrame
-        List of pumped hydro plants in 'eGon2035' scenario
+        List of pumped hydro plants in 'eGon2035' and 'scenario2019' scenarios
     """
 
     carrier = "pumped_hydro"
 
     cfg = config.datasets()["power_plants"]
 
-    nep = select_nep_pumped_hydro()
+    nep = select_nep_pumped_hydro(scn= scn)
     mastr = select_mastr_pumped_hydro()
 
     # Assign voltage level to MaStR
@@ -124,7 +124,12 @@ def allocate_pumped_hydro_eGon2035(export=True):
     # Match pumped_hydro units from NEP list
     # using PLZ and capacity
     matched, mastr, nep = match_storage_units(
-        nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False
+        nep,
+        mastr,
+        matched,
+        buffer_capacity=0.1,
+        consider_carrier=False,
+        scn=scn
     )
 
     # Match plants from NEP list using plz,
@@ -136,6 +141,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         consider_location="plz",
         consider_carrier=False,
         consider_capacity=False,
+        scn=scn,
     )
 
     # Match plants from NEP list using city,
@@ -147,6 +153,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         consider_location="city",
         consider_carrier=False,
         consider_capacity=False,
+        scn=scn,
     )
 
     # Match remaining plants from NEP using the federal state
@@ -157,6 +164,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         buffer_capacity=0.1,
         consider_location="federal_state",
         consider_carrier=False,
+        scn=scn,
     )
 
     # Match remaining plants from NEP using the federal state
@@ -167,12 +175,13 @@ def allocate_pumped_hydro_eGon2035(export=True):
         buffer_capacity=0.7,
         consider_location="federal_state",
         consider_carrier=False,
+        scn=scn,
     )
 
     print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
-    print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
+    print(f"{nep.elec_capacity.sum()} MW of {carrier} not matched")
 
-    if nep.c2035_capacity.sum() > 0:
+    if nep.elec_capacity.sum() > 0:
 
         # Get location using geolocator and city information
         located, unmatched = get_location(nep)
