@@ -200,7 +200,7 @@ def distribute_cts_demands():
     )
 
     # Insert data per scenario
-    for scn in sources["demandregio"]["scenarios"]:
+    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
 
         # Select heat_demand per zensus cell
         peta = db.select_dataframe(
