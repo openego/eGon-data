@@ -732,7 +732,7 @@ def map_carriers_tyndp():
     }
 
 
-def get_foreign_bus_id():
+def get_foreign_bus_id(scenario):
     """Calculte the etrago bus id from Nodes of TYNDP based on the geometry
 
     Returns
@@ -745,9 +745,9 @@ def get_foreign_bus_id():
     sources = config.datasets()["electrical_neighbours"]["sources"]
 
     bus_id = db.select_geodataframe(
-        """SELECT bus_id, ST_Buffer(geom, 1) as geom, country
+        f"""SELECT bus_id, ST_Buffer(geom, 1) as geom, country
         FROM grid.egon_etrago_bus
-        WHERE scn_name = 'eGon2035'
+        WHERE scn_name = '{scenario}'
         AND carrier = 'AC'
         AND v_nom = 380.
         AND country != 'DE'
@@ -932,7 +932,7 @@ def insert_generators(capacities):
     )
 
     gen.loc[:, "bus"] = (
-        get_foreign_bus_id().loc[gen.loc[:, "Node/Line"]].values
+        get_foreign_bus_id(scenario='eGon2035').loc[gen.loc[:, "Node/Line"]].values
     )
 
     # Add scenario column
@@ -1068,7 +1068,7 @@ def insert_storage(capacities):
     )
 
     store.loc[:, "bus"] = (
-        get_foreign_bus_id().loc[store.loc[:, "Node/Line"]].values
+        get_foreign_bus_id(scenario='eGon2035').loc[store.loc[:, "Node/Line"]].values
     )
 
     # Add columns for additional parameters to df
@@ -1212,7 +1212,7 @@ def tyndp_demand():
         buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
     ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
     buses.loc[:, "bus"] = (
-        get_foreign_bus_id().loc[buses.loc[:, "nodes"]].values
+        get_foreign_bus_id(scenario='eGon2035').loc[buses.loc[:, "nodes"]].values
     )
     buses.set_index("nodes", inplace=True)
     buses = buses[~buses.index.duplicated(keep="first")]
@@ -1400,7 +1400,7 @@ def entsoe_to_bus_etrago():
                  "SE": "SE00",
                  "GB": "UK00"})
 
-    for_bus = get_foreign_bus_id()
+    for_bus = get_foreign_bus_id(scenario='status2019')
 
     return map_entsoe.map(for_bus)
 
