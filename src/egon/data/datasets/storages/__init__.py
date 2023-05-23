@@ -231,9 +231,9 @@ def allocate_pumped_hydro_eGon2035(export=True):
 
     # Delete existing units in the target table
     db.execute_sql(
-        f""" DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
+        f""" DELETE FROM {cfg ['sources']['storages']}
         WHERE carrier IN ('pumped_hydro')
-        AND scenario='eGon2035';"""
+        AND scenario='{scn}';"""
     )
 
     # If export = True export pumped_hydro plants to data base

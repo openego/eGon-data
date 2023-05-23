@@ -375,6 +375,7 @@ power_plants:
       buses_data: "osmtgmod_results.bus_data"
       power_plants: 'supply.egon_power_plants'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
+      storages: 'supply.egon_storages'
   target:
       table: 'egon_power_plants'
       schema: 'supply'
