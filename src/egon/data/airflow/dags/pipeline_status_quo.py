@@ -56,6 +56,7 @@ from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeursec import PypsaEurSec
 from egon.data.datasets.renewable_feedin import RenewableFeedin
+from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import Storages
@@ -322,6 +323,17 @@ with airflow.DAG(
         dependencies=[run_pypsaeursec, tyndp_data]
     )
 
+    # Import NEP (Netzentwicklungsplan) data
+    scenario_capacities = ScenarioCapacities(
+        dependencies=[
+            data_bundle,
+            run_pypsaeursec,
+            setup,
+            vg250,
+            zensus_population,
+        ]
+    )
+
     # Import gas grid
     gas_grid_insert_data = GasNodesAndPipes(
         dependencies=[
@@ -404,6 +416,7 @@ with airflow.DAG(
             data_bundle,
             district_heating_areas,
             zensus_mv_grid_districts,
+            scenario_capacities,
         ]
     )
     # Pumped hydro units

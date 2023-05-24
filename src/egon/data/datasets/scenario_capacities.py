@@ -57,21 +57,6 @@ class NEP2021ConvPowerPlants(Base):
     b2040_capacity = Column(Float)
 
 
-class ScenarioCapacities(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="ScenarioCapacities",
-            version="0.0.13",
-            dependencies=dependencies,
-            tasks=(
-                create_table,
-                insert_capacities_status2019,
-                insert_data_nep,
-                eGon100_capacities,
-            ),
-        )
-
-
 def create_table():
     """Create input tables for scenario setup
 
@@ -800,3 +785,25 @@ def eGon100_capacities():
         if_exists="append",
         index=False,
     )
+
+
+tasks = (create_table,)
+
+if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (insert_capacities_status2019,)
+
+if "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (insert_data_nep,)
+
+if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (eGon100_capacities,)
+
+
+class ScenarioCapacities(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="ScenarioCapacities",
+            version="0.0.14",
+            dependencies=dependencies,
+            tasks=tasks,
+        )
