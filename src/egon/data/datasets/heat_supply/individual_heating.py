@@ -334,7 +334,7 @@ class HeatPumps2019(Dataset):
             return tasks
 
         super().__init__(
-            name="HeatPumps2035",
+            name="HeatPumps2019",
             version="0.0.2",
             dependencies=dependencies,
             tasks=(
