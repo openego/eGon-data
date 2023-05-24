@@ -136,7 +136,7 @@ with airflow.DAG(
         dependencies=[scenario_parameters, setup, vg250]
     )
 
-    # Future national demands for foreign countries based on Hotmaps
+    # Future national heat demands for foreign countries based on Hotmaps
     # download only, processing in PyPSA-Eur-Sec fork
     hd_abroad = HeatDemandEurope(dependencies=[setup])
 
