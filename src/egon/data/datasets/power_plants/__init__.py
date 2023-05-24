@@ -946,17 +946,62 @@ def power_plants_status_quo(scn_name = "status2019"):
         """
     )
 
+    # import municipalities to assign missing geom and bus_id
+    geom_municipalities = gpd.GeoDataFrame.from_postgis(
+        """
+        SELECT gen, ST_UNION(geometry) as geom
+        FROM boundaries.vg250_gem
+        GROUP BY gen
+        """,
+        con,
+        geom_col = "geom"
+    ).set_index("gen")
+    geom_municipalities["geom"] = geom_municipalities["geom"].centroid
+
+    mv_grid_districts = gpd.GeoDataFrame.from_postgis(
+        f"""
+        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        """,
+        con,
+    )
+    mv_grid_districts.geom = mv_grid_districts.geom.to_crs(4326)
+
+    def fill_missing_bus_and_geom(gens, carrier):
+        # drop generators without data to get geometry.
+        drop_id = gens[(gens.geom.is_empty) & ~(gens.city.isin(geom_municipalities.index))].index
+        new_geom = gens["capacity"][(gens.geom.is_empty) & (gens.city.isin(geom_municipalities.index))]
+        print(f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
+              .sum()}MW) were drop""")
+
+        print(f"""{len(new_geom)} {carrier} generator(s) ({new_geom
+              .sum()}MW) received a geom based on city
+              """)
+        gens.drop(index=drop_id, inplace=True)
+
+        # assign missing geometries based on city and buses based on geom
+
+        gens["geom"] = gens.apply(lambda x: geom_municipalities.at[x["city"],"geom"] if x["geom"].is_empty else x["geom"], axis=1)
+        gens["bus_id"] = gens.sjoin(mv_grid_districts[["bus_id", "geom"]], how="left").bus_id_right.values
+
+        gens = gens.dropna(subset=["bus_id"])
+        # convert geom to WKB
+        gens["geom"] = gens["geom"].to_wkt()
+
+        return gens
+
     # Write hydro power plants in supply.egon_power_plants
     map_hydro = {
         "Laufwasseranlage": "run_of_river",
         "Speicherwasseranlage": "reservoir",
     }
 
-    hydro = pd.read_sql(
+    hydro = gpd.GeoDataFrame.from_postgis(
         f"""SELECT * FROM {cfg['sources']['hydro']}
         WHERE plant_type IN ('Laufwasseranlage', 'Speicherwasseranlage')""",
-        con,
+        con, geom_col="geom"
     )
+
+    hydro = fill_missing_bus_and_geom(hydro, carrier = "hydro")
 
     for i, row in hydro.iterrows():
         entry = EgonPowerPlants(
@@ -976,11 +1021,15 @@ def power_plants_status_quo(scn_name = "status2019"):
           {len(hydro)} hydro generators with a total installed capacity of
           {hydro.capacity.sum()}MW were inserted in db
           """)
+
     # Write biomass power plants in supply.egon_power_plants
-    biomass = pd.read_sql(
+    biomass = gpd.GeoDataFrame.from_postgis(
         f"""SELECT * FROM {cfg['sources']['biomass']}""",
-        con,
+        con, geom_col="geom"
     )
+
+    biomass = fill_missing_bus_and_geom(biomass, carrier = "biomass")
+
     for i, row in biomass.iterrows():
         entry = EgonPowerPlants(
             sources={"el_capacity": "MaStR"},
@@ -1001,17 +1050,21 @@ def power_plants_status_quo(scn_name = "status2019"):
           """)
 
     # Write solar power plants in supply.egon_power_plants
-    solar = pd.read_sql(
+    solar = gpd.GeoDataFrame.from_postgis(
         f"""SELECT * FROM {cfg['sources']['pv']}
         WHERE site_type IN ('Freifläche',
         'Bauliche Anlagen (Hausdach, Gebäude und Fassade)') """,
-        con,
+        con, geom_col="geom"
     )
     map_solar = {
         "Freifläche": "solar",
         "Bauliche Anlagen (Hausdach, Gebäude und Fassade)": "solar_rooftop",
     }
     solar["site_type"] = solar["site_type"].map(map_solar)
+
+    solar = fill_missing_bus_and_geom(solar, carrier = "solar")
+
+    solar = pd.DataFrame(solar, index = solar.index)
     for i, row in solar.iterrows():
         entry = EgonPowerPlants(
             sources={"el_capacity": "MaStR"},
@@ -1032,10 +1085,13 @@ def power_plants_status_quo(scn_name = "status2019"):
           """)
 
     # Write wind_onshore power plants in supply.egon_power_plants
-    wind_onshore = pd.read_sql(
+    wind_onshore = gpd.GeoDataFrame.from_postgis(
         f"""SELECT * FROM {cfg['sources']['wind']}""",
-        con,
+        con, geom_col="geom"
     )
+
+    wind_onshore = fill_missing_bus_and_geom(wind_onshore, carrier = "wind_onshore")
+
     for i, row in wind_onshore.iterrows():
         entry = EgonPowerPlants(
             sources={"el_capacity": "MaStR"},
