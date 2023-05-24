@@ -44,6 +44,7 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.heat_supply.individual_heating import HeatPumps2019
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
@@ -135,7 +136,7 @@ with airflow.DAG(
         dependencies=[scenario_parameters, setup, vg250]
     )
 
-    # Future national heat demands for foreign countries based on Hotmaps
+    # Future national demands for foreign countries based on Hotmaps
     # download only, processing in PyPSA-Eur-Sec fork
     hd_abroad = HeatDemandEurope(dependencies=[setup])
 
@@ -496,3 +497,13 @@ with airflow.DAG(
         ]
     )
 
+    # Heat pump disaggregation for status2019
+    heat_pumps_2019 = HeatPumps2019(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
+        ]
+    )
