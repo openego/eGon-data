@@ -1958,18 +1958,12 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
             hp_cap_per_building_2019.index,
         ].sum(axis=1)
 
-        # heat demand time series for buildings with gas boiler
-        df_mvgd_ts_2019_gas = df_heat_ts.loc[:, buildings_gas_2019].sum(axis=1)
-
         df_heat_mvgd_ts = pd.DataFrame(
             data={
-                "carrier": ["heat_pump", "CH4"],
+                "carrier": "heat_pump",
                 "bus_id": mvgd,
-                "scenario": ["status2019", "status2019"],
-                "dist_aggregated_mw": [
-                    df_mvgd_ts_2019_hp.to_list(),
-                    df_mvgd_ts_2019_gas.to_list(),
-                ],
+                "scenario": "status2019",
+                "dist_aggregated_mw": [df_mvgd_ts_2019_hp.to_list()],
             }
         )
 
