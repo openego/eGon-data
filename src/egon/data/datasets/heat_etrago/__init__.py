@@ -262,8 +262,10 @@ def insert_store(scenario, carrier):
 
 
 def store():
-    insert_store("eGon2035", "central_heat")
-    insert_store("eGon2035", "rural_heat")
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if scenario != "status2019":
+            insert_store(scenario, "central_heat")
+            insert_store(scenario, "rural_heat")
 
 
 def insert_central_direct_heat(scenario):
@@ -587,7 +589,7 @@ def buses():
     None.
 
     """
-    for scenario in ["status2019", "eGon2035", "eGon100RE"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         insert_buses("central_heat", scenario)
         insert_buses("rural_heat", scenario)
 
@@ -604,7 +606,7 @@ def supply():
 
     """
 
-    for scenario in ["status2019", "eGon2035", "eGon100RE"]:
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         # There is no direct heat in status2019 scenario
         if scenario != "status2019":
             insert_central_direct_heat(scenario)
