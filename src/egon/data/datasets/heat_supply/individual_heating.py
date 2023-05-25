@@ -1805,7 +1805,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
         hp_cap_per_building_2035 = (
             determine_hp_cap_buildings_pvbased_per_mvgd(
-                scenario='eGon2035',
+                'eGon2035',
                 mvgd,
                 peak_load_2035,
                 buildings_decentral_heating,
@@ -1940,7 +1940,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
 
         hp_cap_per_building_2019 = (
             determine_hp_cap_buildings_pvbased_per_mvgd(
-                scenario="status2019",
+                "status2019",
                 mvgd,
                 peak_load_2019,
                 buildings_decentral_heating,
