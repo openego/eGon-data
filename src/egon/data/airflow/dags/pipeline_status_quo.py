@@ -420,6 +420,8 @@ with airflow.DAG(
             scenario_capacities,
         ]
     )
+    
+    
     # Pumped hydro units
     pumped_hydro = Storages(
         dependencies=[
@@ -445,6 +447,17 @@ with airflow.DAG(
 
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
+
+    # Heat pump disaggregation for status2019
+    heat_pumps_2019 = HeatPumps2019(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
+        ]
+    )
 
     # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
@@ -508,16 +521,5 @@ with airflow.DAG(
             ],
             cts_demand_buildings,
             demand_curves_industry,
-        ]
-    )
-
-    # Heat pump disaggregation for status2019
-    heat_pumps_2019 = HeatPumps2019(
-        dependencies=[
-            cts_demand_buildings,
-            DistrictHeatingAreas,
-            heat_supply,
-            heat_time_series,
-            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
         ]
     )
